@@ -312,10 +312,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(in crate::gameplay_transport) async fn refresh_terrain_tools(&self) {
-        let Some(scope) = self.terrain_scope() else {
+        if self.terrain_scope().is_none() {
+            return;
+        }
+        let Some(permit) = self.spell_lane_permit().await else {
             return;
         };
-        let Some(permit) = self.spell_lane_permit().await else {
+        self.refresh_terrain_tools_in_lane(&permit).await;
+    }
+
+    /// Source transactions that already own the same lane must never recursively
+    /// acquire it while publishing their committed terrain successor.
+    pub(in crate::gameplay_transport) async fn refresh_terrain_tools_in_lane(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+    ) {
+        let Some(scope) = self.terrain_scope() else {
             return;
         };
         let fence = {
@@ -335,7 +347,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let Ok(rows) = self
             .root
-            .terrain_tool_snapshot(&permit, self.character, self.holder, fence, scope)
+            .terrain_tool_snapshot(permit, self.character, self.holder, fence, scope)
             .await
         else {
             return;

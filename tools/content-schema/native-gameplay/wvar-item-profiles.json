@@ -22,6 +22,18 @@
     {
       "path": "data-crystal/monster/bosses/bibby_bloodbath.lua",
       "sha256": "62bc99a21a214baaf6e1b0a8dba5ee595674c7baf15b0b3f952925ea3b58e5a2"
+    },
+    {
+      "path": "src/items/items.hpp",
+      "sha256": "06d52ee83250ba852fe804c6b006b0aac150ceb26893e9079fa8c93502d209ca"
+    },
+    {
+      "path": "data/scripts/actions/tools/prepared_bucket.lua",
+      "sha256": "5e0d0253f913cb788a7fcbd6be41ad465b56ab1026c68226f80f79c31cefe01f"
+    },
+    {
+      "path": "data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua",
+      "sha256": "802b9f599c96f18742b57f43b00f78998328f4d5f81bd8793fb92ed20827d3f3"
     }
   ],
   "binding_table_sha256": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a",
@@ -1093,6 +1105,313 @@
       "authoring": {
         "item": {
           "family": "Item",
+          "key": "candidate:item/12722",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "bucket of bog water"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "It seems the water wants to go back to the bog it came from. Soon it will all be trickled away"
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 3000
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "KNOWN",
+          "value": {
+            "consumption_mode": {
+              "state": "KNOWN",
+              "value": "DURABLE_ABSOLUTE_DEADLINE"
+            },
+            "duration": {
+              "state": "KNOWN",
+              "value": 3600000
+            },
+            "stop_duration": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "decay_target": {
+              "state": "KNOWN",
+              "value": {
+                "key": "oteryn:item.tibia.i12819",
+                "revision": "definition-r1"
+              }
+            }
+          }
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "12722",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i12722",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i12722",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/12819",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "prepared bucket"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "This bucket is specially prepared for magical water, which is known to escape just about any vessel"
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 2000
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "12819",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i12819",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i12819",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
           "key": "candidate:item/13992",
           "revision": "spell-p2-r21"
         }
@@ -1454,5 +1773,76 @@
         }
       ]
     }
-  ]
+  ],
+  "prepared_bucket_recipe": {
+    "kind": "item_conversion",
+    "identity": {
+      "key": "oteryn:item-conversion.thornfire-prepared-bucket",
+      "revision": "craft-r1"
+    },
+    "fields": [],
+    "recipe": {
+      "capacity_check": true,
+      "input_item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i11466",
+        "revision": "definition-r1"
+      },
+      "tool": "none",
+      "target": {
+        "kind": "carried"
+      },
+      "operands": [
+        {
+          "role": "USED",
+          "item_id": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i11466",
+            "revision": "definition-r1"
+          },
+          "count": 1,
+          "effect": "CONSUME"
+        },
+        {
+          "role": "TARGET",
+          "item_id": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i2873",
+            "revision": "definition-r1"
+          },
+          "count": 1,
+          "effect": "TRANSFORM_TO",
+          "output_item_id": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i12819",
+            "revision": "definition-r1"
+          },
+          "lifecycle": "REPLACE_INSTANCE"
+        }
+      ],
+      "outputs": {
+        "kind": "fixed",
+        "entries": []
+      },
+      "result_message": {
+        "success": "",
+        "empty": "There was just rubbish in it.",
+        "no_fish": "no fish",
+        "no_room": "not enough room",
+        "not_owner": "You are not the owner.",
+        "too_heavy": "too heavy"
+      },
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua",
+        "sha256": "802b9f599c96f18742b57f43b00f78998328f4d5f81bd8793fb92ed20827d3f3",
+        "line_start": 67,
+        "line_end": 71,
+        "lines": 76,
+        "evidence": "OtsHypothesisOnly",
+        "differences": []
+      }
+    }
+  }
 }

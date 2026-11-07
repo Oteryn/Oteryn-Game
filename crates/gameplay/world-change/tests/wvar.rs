@@ -9,7 +9,17 @@ fn wvar_selection_is_stored_and_old_decisions_never_activate_variants()
     assert_eq!(first.variant("fury_gates"), Some(0));
     assert_eq!(first.variant("nightmare_isles"), Some(0));
     let bytes = serde_json::to_vec(&first)?;
-    assert_eq!(serde_json::from_slice::<DailyWorldChanges>(&bytes)?, first);
+    let snapshot: serde_json::Value = serde_json::from_slice(&bytes)?;
+    assert!(snapshot.get("counter_stages").is_none());
+    assert!(snapshot.get("counter_generations").is_none());
+    let restored: DailyWorldChanges = serde_json::from_slice(&bytes)?;
+    assert_eq!(serde_json::to_value(restored)?, snapshot);
+    assert_eq!(restored.counter_stages, [0; 8]);
+    assert_eq!(restored.counter_generations, [0; 8]);
+    let mut persisted = first;
+    persisted.counter_stages = [0; 8];
+    persisted.counter_generations = [0; 8];
+    assert_eq!(restored, persisted);
     let mut legacy = serde_json::to_value(first)?;
     legacy.as_object_mut().ok_or("object")?.remove("variants");
     let legacy: DailyWorldChanges = serde_json::from_value(legacy)?;

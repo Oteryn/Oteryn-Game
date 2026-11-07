@@ -20,7 +20,7 @@ mod harvest;
 mod planting;
 mod rope;
 mod terrain;
-mod world_changes;
+pub(super) mod world_changes;
 
 pub(super) async fn dispatch<A: FreshAdmissionAuthority>(
     authority: &A,

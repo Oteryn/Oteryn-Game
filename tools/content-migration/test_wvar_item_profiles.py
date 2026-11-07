@@ -9,7 +9,7 @@ class WvarItemProfilesTests(unittest.TestCase):
     @unittest.skipUnless(ARCHIVE.is_file(), "optional pinned donor archive unavailable")
     def test_pinned_native_sandfish_is_portable_stackable_and_edible(self):
         data=wvar.build_archive(ARCHIVE)
-        self.assertEqual(len(data['records']),7)
+        self.assertEqual(len(data['records']),9)
         row=next(r for r in data['records'] if r['production_definition']['production_key']=='oteryn:item.tibia.i13992')
         self.assertEqual(row['production_definition']['production_key'],'oteryn:item.tibia.i13992')
         self.assertEqual(row['semantics']['consumption'],{'state':'KNOWN','value':{'kind':'FOOD','value':{'regeneration_seconds':660}}})
@@ -20,7 +20,7 @@ class WvarItemProfilesTests(unittest.TestCase):
     def test_only_six_genuine_reward_leaves_join_existing_sandfish(self):
         rows=wvar.build_archive(ARCHIVE)['records']
         keys={r['production_definition']['production_key'] for r in rows}
-        self.assertEqual(keys,{f'oteryn:item.tibia.i{i}' for i in [13992,8031,7412,7395,817,3316,3265]})
+        self.assertEqual(keys,{f'oteryn:item.tibia.i{i}' for i in [13992,8031,7412,7395,817,3316,3265,12722,12819]})
         self.assertNotIn('oteryn:item.tibia.i44612',keys)
 
     def test_reward_overlay_replaces_only_the_two_source_actors(self):
@@ -58,7 +58,7 @@ class WvarItemProfilesTests(unittest.TestCase):
         canonical=lambda value:(json.dumps(value,sort_keys=True)+'\n').encode()
         order=lambda row:row['production_definition']['production_key']
         wvar.admit(wvar.ROOT,generated,'profiles','manifest',order,canonical)
-        self.assertEqual(len(json.loads(generated['profiles'])['records']),7)
+        self.assertEqual(len(json.loads(generated['profiles'])['records']),9)
         with self.assertRaisesRegex(ValueError,'WVAR_ITEM_PROFILE_DUPLICATE'):
             wvar.admit(wvar.ROOT,generated,'profiles','manifest',order,canonical)
 
@@ -69,12 +69,46 @@ class WvarItemProfilesTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'WVAR_ITEM_SOURCE_HASH'):
             wvar.build_sources(sources)
 
+class ThornfireBucketProfilesTests(unittest.TestCase):
+    @unittest.skipUnless(ARCHIVE.is_file(),"pinned archive unavailable")
+    def test_two_source_buckets_have_exact_supported_lifetime_and_custody(self):
+        rows={row['production_definition']['production_key']:row for row in wvar.build_archive(ARCHIVE)['records']}
+        filled=rows['oteryn:item.tibia.i12722'];empty=rows['oteryn:item.tibia.i12819']
+        for row,weight in [(filled,3000),(empty,2000)]:
+            self.assertEqual(row['admission'],{'materializable':True,'stack_class':'NonStackable','legal_destinations':['CharacterInventory','Ground']})
+            self.assertEqual(row['semantics']['physical']['value']['weight'],{'state':'KNOWN','value':weight})
+        time=filled['semantics']['temporal']['value']
+        self.assertEqual(time['duration'],{'state':'KNOWN','value':3600000})
+        self.assertEqual(time['decay_target'],{'state':'KNOWN','value':{'key':'oteryn:item.tibia.i12819','revision':'definition-r1'}})
+        self.assertEqual(time['stop_duration'],{'state':'KNOWN','value':False})
+        self.assertEqual(empty['semantics']['temporal'],{'state':'NOT_APPLICABLE'})
+
+    @unittest.skipUnless(ARCHIVE.is_file(),"pinned archive unavailable")
+    def test_preparation_is_existing_carried_one_plus_one_target_transform(self):
+        recipe=wvar.build_archive(ARCHIVE)['prepared_bucket_recipe']['recipe']
+        self.assertEqual(recipe['target'],{'kind':'carried'})
+        self.assertEqual(recipe['tool'],'none')
+        used,target=recipe['operands']
+        self.assertEqual((used['item_id']['key'],used['count'],used['effect']),('oteryn:item.tibia.i11466',1,'CONSUME'))
+        self.assertEqual((target['item_id']['key'],target['count'],target['effect'],target['lifecycle']),('oteryn:item.tibia.i2873',1,'TRANSFORM_TO','REPLACE_INSTANCE'))
+        self.assertEqual(target['output_item_id']['key'],'oteryn:item.tibia.i12819')
+        self.assertEqual(recipe['outputs'],{'kind':'fixed','entries':[]})
+
+    def test_preparation_inputs_already_have_native_custody_admission(self):
+        import json
+        rows={r['production_definition']['production_key']:r for r in json.loads((wvar.ROOT/'content/items/definitions/spell-native-profiles.json').read_bytes())['records']}
+        for item,weight,stack in [(11466,75,'StackCapable'),(2873,2000,'NonStackable')]:
+            row=rows[f'oteryn:item.tibia.i{item}']
+            self.assertEqual(row['admission'],{'materializable':True,'stack_class':stack,'legal_destinations':['CharacterInventory','Ground']})
+            self.assertEqual(row['semantics']['physical']['value']['weight'],{'state':'KNOWN','value':weight})
+
 class RecipeRewardClosureTests(unittest.TestCase):
     @unittest.skipUnless(ARCHIVE.is_file(), "pinned donor archive unavailable")
     def test_all_recipe_source_rewards_have_exact_physical_dependencies(self):
         data=wvar.build_recipe_reward_archive(ARCHIVE)
         rows={row['creature']:row for row in data['creatures']}
-        self.assertEqual(len(rows),41) #42keys minus intentionally authored Mamma
+        self.assertEqual(len(rows),42) #43keys minus intentionally authored Mamma
+        self.assertEqual(len(rows['oteryn:creature.crystal_wolf']['loot']['entries']),6)
         self.assertEqual(len(rows['oteryn:creature.arthom_the_hunter']['loot']['entries']),15)
         self.assertEqual(len(rows['oteryn:creature.hive_overseer']['loot']['entries']),16)
         self.assertIsNone(rows['oteryn:creature.dog']['loot'])

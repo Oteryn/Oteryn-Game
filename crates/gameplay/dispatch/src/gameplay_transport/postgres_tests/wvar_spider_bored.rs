@@ -413,7 +413,7 @@ fn scenario() -> TestResult {
             Some(exit.destination)
         );
         eprintln!(
-            "WVAR_SPIDER_BORED POSTGRES_CASE_COMPLETED native42policy-health-reward-rows,three1800hp,6600xp,nestling,entrylimit,permanentescape,wyda20hp,wyda12xp,bibby1500xp,native-corpse-materialization,achievement,current-fences duration={:?}",
+            "WVAR_SPIDER_BORED POSTGRES_CASE_COMPLETED native43policy-health-reward-rows,three1800hp,6600xp,nestling,entrylimit,permanentescape,wyda20hp,wyda12xp,bibby1500xp,native-corpse-materialization,achievement,current-fences duration={:?}",
             started.elapsed()
         );
         drop(owner);
@@ -450,6 +450,7 @@ fn inventory(
         "elf_arcanist",
         "elf_overseer",
         "thornfire_wolf",
+        "crystal_wolf",
     ] {
         keys.insert(format!("oteryn:creature.{key}"));
     }
@@ -470,7 +471,7 @@ fn inventory(
         keys, source_keys,
         "every authored/dynamic population has a source-bound closure row"
     );
-    assert_eq!(keys.len(), 42);
+    assert_eq!(keys.len(), 43);
     for key in keys {
         let policy = runtime
             .companion_policy(&key)
@@ -507,7 +508,7 @@ fn inventory(
         runtime.remove_encounter_actor(actor).map_err(debug)?;
     }
     eprintln!(
-        "WVAR_NATIVE_ADMISSION_INVENTORY_EXECUTED creatures=42 actual-native-policy-health-and-reward-rows"
+        "WVAR_NATIVE_ADMISSION_INVENTORY_EXECUTED creatures=43 actual-native-policy-health-and-reward-rows"
     );
     Ok(())
 }

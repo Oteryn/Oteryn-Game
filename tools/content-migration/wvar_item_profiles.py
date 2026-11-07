@@ -28,9 +28,16 @@ SOURCES=(('data/items/items.xml','8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c
          ('data/scripts/actions/items/foods.lua','6023845b3f982b4a7cc9cf3e43bb8d33f467e3e10f9bdf3f0713aeae88de902f'),
          ('data-crystal/monster/raids/giant_spider_wyda.lua','d64925aa3300e7bb6c8ec8abcfd815500624d344e4e2b411f8559624108993d6'),
          ('data-crystal/monster/bosses/bibby_bloodbath.lua','62bc99a21a214baaf6e1b0a8dba5ee595674c7baf15b0b3f952925ea3b58e5a2'))
+
+BUCKET_IDS=frozenset((12722,12819))
+SOURCES=SOURCES+(
+    ('src/items/items.hpp','06d52ee83250ba852fe804c6b006b0aac150ceb26893e9079fa8c93502d209ca'),
+    ('data/scripts/actions/tools/prepared_bucket.lua','5e0d0253f913cb788a7fcbd6be41ad465b56ab1026c68226f80f79c31cefe01f'),
+    ('data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua','802b9f599c96f18742b57f43b00f78998328f4d5f81bd8793fb92ed20827d3f3'))
+
 KEY='oteryn:item.tibia.i13992'
 REWARD_IDS=frozenset((8031,7412,7395,817,3316,3265))
-OWNED_IDS=REWARD_IDS|{13992}
+OWNED_IDS=REWARD_IDS|{13992}|BUCKET_IDS
 KEYS={f'oteryn:item.tibia.i{i}' for i in OWNED_IDS}
 CANONICAL='content/items/definitions/items-03500-03999.json'
 
@@ -38,7 +45,7 @@ CANONICAL='content/items/definitions/items-03500-03999.json'
 # A bounded successor of the existing WVAR source Item/corpse/loot producers.
 REWARD_PATH='tools/content-schema/native-gameplay/wvar-reward-closure.json'
 REWARD_ARCHIVE_SHA='2b734db10c8c00e7a11a59f1cb49a786099959e98a622732b7fb80bcc8345b9d'
-REWARD_EXTRA_KEYS={'oteryn:creature.'+name for name in ('elf','elf_scout','elf_arcanist','elf_overseer','thornfire_wolf')}
+REWARD_EXTRA_KEYS={'oteryn:creature.'+name for name in ('elf','elf_scout','elf_arcanist','elf_overseer','thornfire_wolf','crystal_wolf')}
 
 def recipe_creature_keys(root=ROOT):
     keys=set(REWARD_EXTRA_KEYS)
@@ -238,8 +245,23 @@ def build_sources(sources):
     return {'schema':'OTERYN_NATIVE_WVAR_ITEM_PROFILES/v1','producer':'tools/content-migration/wvar_item_profiles.py','source_revision':REVISION,
             'source_files':[{'path':p,'sha256':h} for p,h in SOURCES],
             'binding_table_sha256':hashlib.sha256(native.BINDINGS.read_bytes()).hexdigest(),'records':bound['records'],
-            'loot_tables':loot_sources(captured,index,bindings)}
+            'loot_tables':loot_sources(captured,index,bindings),'prepared_bucket_recipe':prepared_bucket_recipe(captured,bindings)}
 
+
+
+def prepared_bucket_recipe(captured,bindings):
+    path='data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua'
+    lines=captured[path].decode().splitlines()
+    if not all(text in '\n'.join(lines[66:71]) for text in ['item.itemid == 11466 and target.itemid == 2873','target:transform(12819)','item:remove(1)']):
+        raise ValueError('WVAR_PREPARED_BUCKET_SOURCE')
+    if b'uint32_t decayTime = 0' not in captured['src/items/items.hpp']:raise ValueError('WVAR_BUCKET_LOADER_DEFAULT')
+    ref=lambda item:copy.deepcopy(bindings[str(item)]['target'])
+    return {'kind':'item_conversion','identity':{'key':'oteryn:item-conversion.thornfire-prepared-bucket','revision':'craft-r1'},'fields':[],
+        'recipe':{'capacity_check':True,'input_item':ref(11466),'tool':'none','target':{'kind':'carried'},
+            'operands':[{'role':'USED','item_id':ref(11466),'count':1,'effect':'CONSUME'},
+                        {'role':'TARGET','item_id':ref(2873),'count':1,'effect':'TRANSFORM_TO','output_item_id':ref(12819),'lifecycle':'REPLACE_INSTANCE'}],
+            'outputs':{'kind':'fixed','entries':[]},'result_message':{'success':'','empty':'There was just rubbish in it.','no_fish':'no fish','no_room':'not enough room','not_owner':'You are not the owner.','too_heavy':'too heavy'},
+            'source':{'repository':'zimbadev/crystalserver','revision':REVISION,'path':path,'sha256':dict(SOURCES)[path],'line_start':67,'line_end':71,'lines':len(lines),'evidence':'OtsHypothesisOnly','differences':[]}}}
 
 def loot_sources(captured,index,bindings):
     result=[]

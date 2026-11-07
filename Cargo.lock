@@ -2824,6 +2824,7 @@ dependencies = [
 name = "oteryn-gameplay-world-change"
 version = "0.1.0"
 dependencies = [
+ "oteryn-world-bundle",
  "serde",
  "serde_json",
  "sha2 0.11.1",

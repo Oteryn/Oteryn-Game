@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "30fc46fd20dcb6e8cdc7e1b73acf337fb9018b95a3b2923fd631f465df3735c5",
+  "input_sha256": "e51e6693290bcd4d20691dc6624f7ce81f4f17f64040a33493ca9063a7a1aa7f",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -2744,7 +2744,6 @@
     "oteryn:creature.crypt_warden",
     "oteryn:creature.crypt_warrior",
     "oteryn:creature.crystal_spider",
-    "oteryn:creature.crystal_wolf",
     "oteryn:creature.crystalcrusher",
     "oteryn:creature.cult_believer",
     "oteryn:creature.cult_enforcer",

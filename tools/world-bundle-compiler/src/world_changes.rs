@@ -129,5 +129,6 @@ pub fn admit(input: &Input<'_>, resolver: &dyn KeyResolver) -> Result<Option<Pac
     Ok(Some(Package::new(
         variants::RECIPES.into(),
         variants::LAYERS.into(),
+        oteryn_gameplay_world_change::counter::BINDINGS_JSON.into(),
     )))
 }

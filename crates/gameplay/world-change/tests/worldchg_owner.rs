@@ -70,7 +70,8 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
                     "chakoya_iceberg",
                     "spirit_grounds",
                     "hive_outpost",
-                    "poacher_caves"
+                    "poacher_caves",
+                    "thornfire"
                 ]
                 .contains(&key)
             );
@@ -84,7 +85,7 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
         }
     }
     assert_eq!(ready, 4);
-    assert_eq!(qualified, 16);
+    assert_eq!(qualified, 17);
     for key in [
         "river_runs_deep",
         "spider_nest",
@@ -134,11 +135,19 @@ fn worldchg_selection_replays_and_snapshot_retains_the_committed_epoch()
     use oteryn_gameplay_world_change::daily::DailyWorldChanges;
     let select = |epoch| DailyWorldChanges::roll(epoch, 6, 13, |_| 0);
     assert_eq!(select(7), select(7));
-    let bytes = serde_json::to_vec(&select(7))?;
-    assert_eq!(
-        serde_json::from_slice::<DailyWorldChanges>(&bytes)?,
-        select(7)
-    );
+    let selected = select(7);
+    let bytes = serde_json::to_vec(&selected)?;
+    let snapshot: serde_json::Value = serde_json::from_slice(&bytes)?;
+    assert!(snapshot.get("counter_stages").is_none());
+    assert!(snapshot.get("counter_generations").is_none());
+    let restored: DailyWorldChanges = serde_json::from_slice(&bytes)?;
+    assert_eq!(serde_json::to_value(restored)?, snapshot);
+    assert_eq!(restored.counter_stages, [0; 8]);
+    assert_eq!(restored.counter_generations, [0; 8]);
+    let mut persisted = selected;
+    persisted.counter_stages = [0; 8];
+    persisted.counter_generations = [0; 8];
+    assert_eq!(restored, persisted);
     assert_ne!(select(7), select(8));
     Ok(())
 }
@@ -156,6 +165,7 @@ fn worldchg_authored_candidate_probabilities_control_selection() {
                 voice_percent: percent,
                 trader_percent: percent,
                 stampede_permille: u16::from(percent) * 10,
+                fire_earth_permille: u16::from(percent) * 10,
             },
             |_| u64::MAX,
         )
@@ -184,6 +194,7 @@ fn worldchg_stampede_uses_accepted_daily_gate_and_preserves_legacy_snapshots()
                 voice_percent: 0,
                 trader_percent: 0,
                 stampede_permille: 125,
+                fire_earth_permille: 0,
             },
             |purpose| {
                 if purpose == "stampede" {

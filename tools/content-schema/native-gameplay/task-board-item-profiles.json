@@ -2086,7 +2086,7 @@
     {
       "key": "oteryn:item.tibia.i8050",
       "path": "content/items/definitions/items-32000-32499.json",
-      "definition_sha256": "74c5faf0292baed55752fcff12c889f010ba2b0aec01ae7b5680baf14f9fc5fb"
+      "definition_sha256": "2f7d489404792a41c87699674a55bfa301a3373ad96d60f0c66bf95ae5559bcd"
     },
     {
       "key": "oteryn:item.tibia.i8061",

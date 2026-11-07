@@ -647,7 +647,7 @@
     },
     "oteryn:creature.crystal_wolf": {
       "kills_per_hour_micros": 203533568,
-      "loot_per_kill_micros": 629890990,
+      "loot_per_kill_micros": 612030000,
       "tier": 2
     },
     "oteryn:creature.crystalcrusher": {
@@ -3881,7 +3881,7 @@
       "tier": 2
     }
   },
-  "model_input_sha256": "30fc46fd20dcb6e8cdc7e1b73acf337fb9018b95a3b2923fd631f465df3735c5",
+  "model_input_sha256": "e51e6693290bcd4d20691dc6624f7ce81f4f17f64040a33493ca9063a7a1aa7f",
   "npc_price_policy": "maximum_catalogue_offer",
   "npc_sell_prices": {
     "oteryn:item.tibia.i10196": 150,

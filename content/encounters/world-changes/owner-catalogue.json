@@ -1883,7 +1883,7 @@
       "key": "thornfire",
       "title": "Thornfire World Change",
       "quest": "oteryn:quest.thornfire_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00200-00299.json",
@@ -1896,6 +1896,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "thornfire; exact source, counter-stage selection and conservative placement assumptions"
         }
       ],
       "source_refs": [
@@ -1916,10 +1920,12 @@
           "url": "https://tibia.fandom.com/index.php?curid=54126&oldid=1020842"
         }
       ],
-      "reason": "Native global fire/spawn membership, water/action credit, release condition and reset transition are absent.",
-      "missing_facts": [
-        "Native global fire/spawn membership, water/action credit, release condition and reset transition are absent."
-      ]
+      "reason": "Existing World/reset owner stores restored54-Elf/burning24-Firestarter selection. Every one of54 unique source homes and all three Overseer releases are required before the next-save transition; one burning save epoch then restores the normal roster. Exact610 flame and56 bog stations reuse atomic craft/terrain/Item owners:11466+2873→empty12819, bog refill→filled12722, fire use→empty, filled decay1h and save-relative8h/16h restoration. The500-action Firefighter achievement grants only in the sourced10% two-wolf branch while progress counts extinguishing actions; no guaranteed mount is invented. Exact source citations and conservative phase/placement rules remain in variants.json and CONTRACT-NOTES.md. Qualification requires the actual native-home and station PostgreSQL proofs recorded below.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "world_change_variant",
+        "definition": "thornfire"
+      }
     },
     {
       "key": "twisted_waters",

@@ -399,6 +399,7 @@ mod tests {
             world_changes: Some(oteryn_world_bundle::world_changes::Package::new(
                 oteryn_gameplay_world_change::variants::RECIPES.into(),
                 oteryn_gameplay_world_change::variants::LAYERS.into(),
+                oteryn_gameplay_world_change::counter::BINDINGS_JSON.into(),
             )),
             subareas: Default::default(),
             format: bundle::FORMAT.into(),

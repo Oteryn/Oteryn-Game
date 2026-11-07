@@ -260,6 +260,20 @@ pub(super) async fn prepare_channel(
     }
     // NPC-LOAD-1: the bundle's NPC actors take their cells at Channel start, before any creature.
     bundle_npcs::place(&mut channel_runtime, npc_boot)?;
+    if daily.world_counters {
+        let cycles = oteryn_gameplay_world_change::counter::CounterKind::ALL
+            .into_iter()
+            .map(|kind| {
+                (
+                    kind.key().to_owned(),
+                    daily.counter_generations[kind.index()],
+                )
+            })
+            .collect();
+        channel_runtime
+            .install_world_change_cycles(daily.reset_epoch, cycles)
+            .map_err(|_| BootError::Readiness("world change counter projection"))?;
+    }
     // W05b: the server save's daily world changes, rolled once per reset epoch.
     let daily_npcs =
         daily_world_changes::apply(&mut channel_runtime, npc_boot, &daily, bundle.as_ref());
@@ -340,6 +354,10 @@ fn bootstrap_world_changes() -> oteryn_gameplay_world_change::daily::DailyWorldC
         grimvale_full_moon: false,
         flower_month: false,
         stampede: false,
+        fire_from_the_earth: false,
+        world_counters: false,
+        counter_stages: [0; 8],
+        counter_generations: [0; 8],
         variants: Default::default(),
     }
 }

@@ -1,6 +1,5 @@
 //! WVAR: bounded content recipes selected only by the existing World/reset owner.
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 use std::{collections::BTreeSet, sync::OnceLock};
 
 pub const CAPACITY: usize = 16;
@@ -16,12 +15,11 @@ pub const LAYERS: &str = include_str!("../../../../content/encounters/world-chan
 pub fn recipe_digest() -> [u8; 32] {
     static DIGEST: OnceLock<[u8; 32]> = OnceLock::new();
     *DIGEST.get_or_init(|| {
-        Sha256::new()
-            .chain_update(b"oteryn:wvar:recipes:v1\0")
-            .chain_update(RECIPES.as_bytes())
-            .chain_update(LAYERS.as_bytes())
-            .finalize()
-            .into()
+        oteryn_world_bundle::world_changes::fingerprint(
+            RECIPES,
+            LAYERS,
+            crate::counter::BINDINGS_JSON,
+        )
     })
 }
 
@@ -38,6 +36,8 @@ pub struct Definition {
     pub inactive_tiles: Vec<Tile>,
     #[serde(default)]
     pub reset_tally: Option<ResetTally>,
+    #[serde(default)]
+    pub reset_counter: Option<ResetCounter>,
     #[serde(default)]
     pub stations: Vec<UseStation>,
     #[serde(default)]
@@ -60,7 +60,9 @@ pub struct UseStation {
     pub position: Position,
     pub appearance: u16,
     pub material: String,
-    pub resource: crate::owner::ContributionKind,
+    pub resource: Option<crate::owner::ContributionKind>,
+    #[serde(default)]
+    pub restore_after_save_ms: Vec<u32>,
     pub after: Option<u16>,
     pub yield_item: Option<u16>,
 }
@@ -98,6 +100,21 @@ pub fn station_at(
             .find(|station| station.matches(position, appearance, material))
             .map(|station| (definition, station))
     })
+}
+
+/// Snapshot an existing World counter phase only when the reset owner writes a new day.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ResetCounter {
+    pub kind: crate::counter::CounterKind,
+    pub stages: Vec<(u8, u8)>,
+}
+impl ResetCounter {
+    pub fn variant(&self, phase: u8) -> Option<u8> {
+        self.stages
+            .iter()
+            .find_map(|(stage, index)| (*stage == phase).then_some(*index))
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -205,6 +222,17 @@ pub fn validate(definitions: &[Definition]) -> Result<(), &'static str> {
                     || limit.track.len() > 512
                     || !limit.track.starts_with("oteryn:quest-progress/")
             })
+            || d.reset_counter.as_ref().is_some_and(|rule| {
+                let mut stages = BTreeSet::new();
+                d.key != rule.kind.key()
+                    || rule.stages.is_empty()
+                    || rule.stages.len() > 6
+                    || rule.stages.iter().any(|(stage, variant)| {
+                        *stage > 5
+                            || !stages.insert(*stage)
+                            || usize::from(*variant) >= d.variants.len()
+                    })
+            })
             || d.entry_cooldown
                 .as_ref()
                 .is_some_and(|key| key != &d.key || key != "warpath" || key.len() > 64)
@@ -221,9 +249,20 @@ pub fn validate(definitions: &[Definition]) -> Result<(), &'static str> {
                 || station.material.len() > 512
                 || !matches!(
                     station.resource,
-                    crate::owner::ContributionKind::AwashCoal
-                        | crate::owner::ContributionKind::ThornfireExtinguished
+                    None | Some(
+                        crate::owner::ContributionKind::AwashCoal
+                            | crate::owner::ContributionKind::ThornfireExtinguished
+                    )
                 )
+                || station.restore_after_save_ms.len() > 2
+                || station
+                    .restore_after_save_ms
+                    .iter()
+                    .any(|offset| *offset == 0 || *offset > 86_400_000)
+                || station
+                    .restore_after_save_ms
+                    .windows(2)
+                    .any(|pair| pair[0] >= pair[1])
                 || station.after == Some(0)
                 || station.yield_item == Some(0)
                 || !stations.insert((
@@ -413,7 +452,8 @@ mod station_tests {
             position: (32558, 32007, 9),
             appearance: 12666,
             material: "oteryn:item.tibia.i12600".into(),
-            resource: crate::owner::ContributionKind::AwashCoal,
+            resource: Some(crate::owner::ContributionKind::AwashCoal),
+            restore_after_save_ms: Vec::new(),
             after: Some(12666),
             yield_item: None,
         };
