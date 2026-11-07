@@ -8,6 +8,17 @@ use std::path::Path;
 include!("character_core.rs");
 include!("floor_journey.rs");
 include!("full_e2ef7_mount.rs");
+include!("full_row_e12_mount.rs");
+include!("full_row_i14_mount.rs");
+include!("full_row_i03_mount.rs");
+include!("full_row_m10_mount.rs");
+include!("full_row_m09_mount.rs");
+include!("full_row_m06_mount.rs");
+include!("full_row_c15_mount.rs");
+include!("full_row_c08_mount.rs");
+include!("full_e2ef19_mount.rs");
+include!("full_e2ef18_mount.rs");
+include!("full_e2ef20_mount.rs");
 include!("full_e2ef5_mount.rs");
 #[path = "map_journey.rs"]
 mod map_journey;
@@ -242,6 +253,17 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     // Keep the high-level fixture on the other Character: the original
     // progression/death journey must retain its ordinary starter build.
     full_e2ef7::run_packet(clients).await;
+    full_row_e12::run_packet(clients).await;
+    full_row_i14::run_packet(clients).await;
+    full_row_i03::run_packet(clients).await;
+    full_row_m10::run_packet(clients).await;
+    full_row_m09::run_packet(clients).await;
+    full_row_m06::run_packet(clients).await;
+    full_row_c15::run_packet(clients).await;
+    full_row_c08::run_packet(clients).await;
+    full_e2ef19::run_packet(clients).await;
+    full_e2ef18::run_packet(clients).await;
+    full_e2ef20::run_packet(clients).await;
     include!("full_e2ef6_mount.rs");
     full_e2ef5::run(clients, &world).await;
     include!("full_e2ef4_mount.rs");
