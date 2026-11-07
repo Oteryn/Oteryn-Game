@@ -864,3 +864,10 @@ accept1..20items; both real chest routes resolve complete item vectors.
 Four changed crates checkGREEN1m25s; fmtcheckGREEN. Actual PG RED65.609s retained;
 focused multi-root/legacy rerun compiling. No qualification claimed yet.
 Fresh peer fetch14:29found no additional QUALIFIED matches; counts44/66.
+
+W15b first implemented real PostgreSQL run reached both-item delivery and
+once-only XP, then failed a test assumption: the bag reader sorts instance
+IDs, not placement ordinals (quantity2 was read before quantity10). Marker
+67.443390279s in /tmp/qengine2-w15b-multi-green1.log. Production four-crate
+check remains GREEN. Corrected ordinal-based assertion and a real-MINT
+19-input capacity-refusal test are rebuilding; neither is claimed GREEN.
