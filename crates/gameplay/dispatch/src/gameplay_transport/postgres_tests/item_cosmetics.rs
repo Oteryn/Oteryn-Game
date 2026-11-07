@@ -1,8 +1,8 @@
 //! W19d: ordinary USE, atomic source effects, exact replay, and fail-closed canonical admission.
-#[path = "item_cosmetics/ot_only.rs"]
-mod ot_only;
 #[path = "item_cosmetics/glider.rs"]
 mod glider;
+#[path = "item_cosmetics/ot_only.rs"]
+mod ot_only;
 #[path = "item_cosmetics/packet.rs"]
 mod packet;
 #[path = "item_cosmetics/positive.rs"]
@@ -79,7 +79,8 @@ fn run_configuration(
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(move || {
-            scenario(ground, afflicted, case, stock, wanted, None).map_err(|error| error.to_string())
+            scenario(ground, afflicted, case, stock, wanted, None)
+                .map_err(|error| error.to_string())
         })?
         .join()
         .map_err(|_| "cosmetic scenario thread")??;
@@ -158,7 +159,8 @@ fn scenario(
         };
         let (controller, pin) = if stock {
             super::death_ml_loss_composed::production_generation_with_pin(
-                deps.admitted.world_id, "content-1",
+                deps.admitted.world_id,
+                "content-1",
             )?
         } else {
             crate::content::native_gameplay::test_support::cosmetics_fixture::activated_with_optional_cosmetics(
@@ -531,7 +533,8 @@ fn srx4_ot_cosmetic_items_refuse_with_complete_synthetic_catalogue_on_postgres()
             std::thread::Builder::new()
                 .stack_size(256 << 20)
                 .spawn(move || {
-                    scenario(ground, false, None, false, None, Some(item)).map_err(|e| e.to_string())
+                    scenario(ground, false, None, false, None, Some(item))
+                        .map_err(|e| e.to_string())
                 })?
                 .join()
                 .map_err(|_| "OT exclusion thread")??;

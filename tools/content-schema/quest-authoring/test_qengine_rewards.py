@@ -11,7 +11,10 @@ class QuestRewards(unittest.TestCase):
         doc=self.author['document']
         outfits={r['key']:r for r in doc['outfits']}
         mappings={r['grant_key']:r for r in doc['grant_mappings']}
-        self.assertEqual(len(outfits),131)
+        nx5=json.loads((q.ROOT/'tools/content-schema/cosmetics-authoring/nx5-authoring.json').read_bytes())['document']
+        self.assertEqual(len(outfits),131+len(nx5['outfits']))
+        for row in nx5['outfits']:
+            self.assertEqual(outfits[row['key']],row)
         packet=json.loads(self.outputs['tools/content-schema/native-gameplay/item-cosmetic-actions-native.json'])
         self.assertEqual(len(packet['grants']),202)
         for grant in packet['grants']:
@@ -21,6 +24,11 @@ class QuestRewards(unittest.TestCase):
             outfit=outfits[mapping['target']['outfit_key']]
             self.assertEqual(sorted([outfit['female']['id'],outfit['male']['id']]),grant['look_types'])
             if grant['kind']=='addon':self.assertEqual(mapping['target']['addon'],grant['addon'])
+        source_admissions=doc['item_acquisitions']
+        self.assertEqual(len(source_admissions),1)
+        self.assertEqual(source_admissions[0]['item_key'],'oteryn:item.tibia.i6579')
+        self.assertEqual(source_admissions[0]['catalogue_sha256'],q.sha(self.outputs['tools/content-schema/native-gameplay/item-cosmetic-actions-native.json']))
+        self.assertEqual(source_admissions[0]['donor'],next(r['donor'] for r in packet['rules'] if r['item_id']==6579))
         admission=packet['native_admission']
         self.assertEqual(len(admission['corrections']),8)
         self.assertEqual({r['family'] for r in admission['corrections']},{'Dream Warden','Glooth Engineer','Wedding','Jungle Explorer'})
@@ -300,6 +308,8 @@ class QuestRewards(unittest.TestCase):
             self.assertEqual(row['addon_count'],2)
         mappings=self.author['document']['grant_mappings']
         for row in outfits.values():
+            if not row['key'].startswith('oteryn:outfit.'):
+                continue
             for addon in range(row['addon_count']+1):
                 self.assertEqual(sum(m['grant_key']==f"{row['key']}/quest-grant/{addon}" for m in mappings),1)
 

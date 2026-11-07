@@ -3091,16 +3091,77 @@
       }
     ]
   },
-  "validation_policy": "Owner2026-11-07: before every push, derive full reverse normal workspace dependencies with cargo tree -i for every changed crate and run cargo nextest run for the full set with PostgreSQL; collect all failures, fix by root cause, rerun full set, then one push. Merge origin/main every few hours and repeat those tests. This supersedes earlier no-full-suite / WIP-push exceptions.",
+  "validation_policy": {
+    "owner_decision": "2026-11-07 speed-first supersedes full reverse-dependency nextest before push",
+    "required": [
+      "Own mechanic RED then GREEN, including real PostgreSQL markers and durations",
+      "cargo check --workspace --all-targets",
+      "strict clippy changed crates and cargo fmt",
+      "repository duplicate-migration check and generated content/pins regeneration"
+    ],
+    "full_suites": "CI; collect all owner-reported failures, fix together, one push"
+  },
   "main_integration": {
-    "incoming": "bbb3e06d0",
-    "status": "MERGED_LOCAL_FULL_REVERSE_GATE_PENDING",
-    "changed_crates": 28,
+    "incoming": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+    "status": "GREEN_READY_TO_PUSH",
+    "changed_crates": 29,
     "reverse_dependency_test_packages": 43,
-    "package_manifest": "/tmp/qengine2-postmerge-required-test-crates.json",
+    "package_manifest": "/tmp/qengine2-secondmerge-required-test-crates.json",
     "merged_world_digest": "d528b2dfce1bedf9db643ff78c45060ef6c08f69459c9edbf632cdc4ca73eb95",
-    "compile_check": "GREEN server/dispatch allfeatures tests10m28s",
-    "pin_check": "GREEN /tmp/qengine2-main-pin-check.log",
-    "full_gate": "Pending nextest full43package run, no fail-fast, PostgreSQL enabled"
+    "compile_check": "GREEN dispatch/items all-features tests check5m33s",
+    "pin_check": "GREEN /tmp/qengine2-admission-pin-check.log; world digest d528b2dfce1bedf9db643ff78c45060ef6c08f69459c9edbf632cdc4ca73eb95",
+    "full_gate": "Owner speed directive: focused83/83PG/unit GREEN, workspace all-targets check, fmt; full suites in collector CI.",
+    "migration_resolution": "Main0999-1008 unchanged; no1200-1205 copies. Own unmerged additional-root and complete-piece extensions moved to1550/1551 under latest owner range1550-1569; intervening1095 only creates independent cast-account-bans table.",
+    "python_quest_tests": "GREEN32tests60.270s with regenerated source admission",
+    "python_cosmetics_tests": "GREEN29tests4.331s including new admission boundary/promotion tests",
+    "duplicate_migrations": "GREEN repository dup-migrations.sh on merged index",
+    "clippy": "GREEN strict changed-crate all-target/all-feature rerun5m50s; fixture expect replaced with direct identical typed value",
+    "workspace_compile_check": "GREEN post-source-admission cargo check --workspace --all-targets --keep-going -j2,5m51s",
+    "focused_red": {
+      "tests": 79,
+      "passed": 74,
+      "failed": 5,
+      "seconds": 962.998,
+      "root_cause": "Main donor-only random source guard; implement independent source-bound native admission",
+      "log": "/tmp/qengine2-mechanic-nextest/run1.log"
+    },
+    "source_admission": "Implemented optional128-bound unique source admissions with exact Item/donor/native catalogue SHA256 and independent OWNER_DECISION promotion; old exclusions remain default. PG rerun pending.",
+    "focused_green": {
+      "tests": 83,
+      "passed": 83,
+      "seconds": 1290.179,
+      "postgres_marker_cases": 27,
+      "log": "/tmp/qengine2-mechanic-nextest/run2.log",
+      "proof": "/tmp/qengine2-mechanic-nextest/run2-proof.json",
+      "junit": "/tmp/qengine2-mechanic-nextest/run2-junit.xml"
+    },
+    "remaining_pre_push": "Owner speed override: stopped extra migration-only PG rebuild after83own tests GREEN;1550/1551 fullworkspace check alreadyGREEN; finalcachedcheck/fmt beforepush.",
+    "reserved_range_check": "GREEN cargo check --workspace --all-targets11m10s. SQL bodies unchanged; only intervening1095 creates unrelated cast-account-bans table. Extra5PG+unit rerun stopped by explicit owner SPEED directive."
+  },
+  "engine_queue": [
+    {
+      "priority": 1,
+      "feature": "authored_trigger_and_delivery_bindings",
+      "quests_unblocked": 68,
+      "gaps": [
+        "quest_native_lowering_missing",
+        "authored_trigger_and_delivery_bindings_missing"
+      ],
+      "state": "QUEUED_AFTER_CURRENT_GREEN_PUSH"
+    },
+    {
+      "priority": 2,
+      "feature": "definition_ready_reward_claim_use_wiring",
+      "quests_unblocked": 42,
+      "gap": "REWARD_CLAIM_USE_PENDING",
+      "state": "QUEUED_AFTER_CURRENT_GREEN_PUSH"
+    }
+  ],
+  "owner_role": "Single shared quest engine owner for25lanes; coordinator ENGINE-REQUEST ordered by unblock count; collector wpkg; no PR; new migrations1550-1569",
+  "shared_reuse_check": {
+    "peer_heads_refreshed": 26,
+    "acquisition_api_implementations_found": 0,
+    "audit": "/tmp/qengine2-peer-admission-reuse-audit.json",
+    "next_features": "Inspect questpc2-8 callback extensions; qworld/qnpcfx/npcfix/wpkg before authored lowering and reward wiring"
   }
 }
