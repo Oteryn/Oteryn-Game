@@ -50,7 +50,7 @@ pub(super) fn source_world_rectangle_with_prefix(
     west: u16,
     prefix: &[u16],
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    source_world_rectangle_with_prefix_rows(chest, choices, appearance, height, west, prefix, &[chest.1])
+    source_world_rectangle_with_prefix_rows(chest, choices, appearance, height, west, prefix, &[(chest.1, appearance)])
 }
 
 /// Several native cache rows may share the same appearance and column.
@@ -61,7 +61,7 @@ pub(super) fn source_world_rectangle_with_prefix_rows(
     height: u16,
     west: u16,
     prefix: &[u16],
-    rows: &[u16],
+    rows: &[(u16, u16)],
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
@@ -91,6 +91,22 @@ pub(super) fn source_world_rectangle_with_prefix_rows(
             }),
         });
     }
+    let mut row_palettes = Vec::new();
+    for (row, row_appearance) in rows {
+        let key = format!("oteryn:terrain.tibia.i{row_appearance}");
+        let palette = if let Some(index) = data.manifest.palette.iter().position(|entry| entry.key == key) {
+            u32::try_from(index).map_err(debug)?
+        } else {
+            let id = u32::try_from(data.manifest.palette.len()).map_err(debug)?;
+            data.manifest.palette.push(bundle::PaletteEntry {
+                key, family: bundle::Family::Terrain, id,
+                terrain: Some(bundle::Terrain { kind: bundle::TerrainKind::Common, walkable: None, ground_speed: None }),
+            });
+            id
+        };
+        row_palettes.push((*row, palette));
+    }
+    let row_palettes = row_palettes.as_slice();
     let ground = || sector::Item {
         palette: 0,
         depth: 0,
@@ -125,7 +141,8 @@ pub(super) fn source_world_rectangle_with_prefix_rows(
                 zones: Vec::new(),
                 items: if let Some((_, unique)) = choices
                     .iter()
-                    .find(|(placed, _)| *placed == x && rows.contains(&y))
+                    .find(|(placed, _)| *placed == x)
+                    && let Some((_, row_palette)) = row_palettes.iter().find(|(row, _)| *row == y)
                 {
                     std::iter::once(ground())
                         .chain(prefix.iter().enumerate().map(|(index, _)| sector::Item {
@@ -134,7 +151,7 @@ pub(super) fn source_world_rectangle_with_prefix_rows(
                             attrs: sector::Attrs::default(),
                         }))
                         .chain(std::iter::once(sector::Item {
-                            palette: 1,
+                            palette: *row_palette,
                             depth: 0,
                             attrs: sector::Attrs {
                                 unique: (*unique != 0).then_some(*unique),

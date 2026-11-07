@@ -1,0 +1,61 @@
+{
+  "scope": "Complete chosen Premium two-cache Mastermind journey; documented conservative native campfire-cache alias",
+  "red": {
+    "duration_seconds": 2.91,
+    "marker": "POSTGRES_CASE_STARTED authored-mastermind after PostgreSQL fixture initialization",
+    "failure": "missing callback",
+    "log_sha256": "3f6286372efb1f081ff203a1f58ca2a9ed05aa67a5d886366fa49a4eeb0ca29b"
+  },
+  "green": {
+    "passed": 1,
+    "duration_seconds": 40.803601885,
+    "marker": "POSTGRES_CASE_COMPLETED questpc8_mastermind_two_native_caches_premium_and_exact_201_gold",
+    "log_sha256": "6e6270c28fd02881a57e0119d6e66364cc7a97799da3f73131a06f69cf844647",
+    "coverage": [
+      "absent native Premium authority cannot advance initial exploration",
+      "first cache gives potion1/perch1; no gold or trout yet",
+      "duplicate first cache refuses",
+      "second exploration required",
+      "absent native Premium authority cannot grant or complete final cache",
+      "final exact totals potion2/perch1/trout2/gold201",
+      "201gold bounded outputs100+100+1, no currency substitution",
+      "completion, replay and duplicate final claim refusal",
+      "no quest/reward receipt seeds; no mandatory Nightmare kills"
+    ]
+  },
+  "voodoo_regression": {
+    "passed": 1,
+    "duration_seconds": 40.665800954,
+    "marker": "POSTGRES_CASE_COMPLETED questpc8_voodoo_three_native_witches_two_boxes_and_replay",
+    "log_sha256": "d323529d714e0e806f980bcb2573d344433410f784b74de6b572e1aac8920c92"
+  },
+  "intermediate_compile_failure": "Fixed old Voodoo fixture row numbers to explicit appearance tuples; not counted as PostgreSQL RED.",
+  "checks_pending": [],
+  "checks": {
+    "fmt": "cargo fmt --all -- --check passed; new Mastermind fixture explicitly rustfmt2024",
+    "check": "content/dispatch/quests all features passed82s",
+    "clippy": "content/dispatch/quests all targets/all features -D warnings passed198s",
+    "regeneration": "40files passed, subsequent40file drift check passed; no native profile change",
+    "provenance_unit": "1 passed; pure unit, not PostgreSQL",
+    "pin_refresh": {
+      "inputs_digest": "20f3c65c5582907bb9b118c9830c0bf0abfbba1b0b60908ded771b87f24a7226",
+      "pins": [
+        {
+          "digest": "2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968",
+          "previous": "2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968",
+          "world": "oteryn"
+        }
+      ]
+    },
+    "self_review": "Exact source ordinals and explicit conservative fire-cache alias; both Premium gates and final rollback proven; duplicate coin output definitions retain separate bounded stack plans; no skipped/weakened assertions or new durable writer."
+  },
+  "logs": {
+    "questpc8-mastermind-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "questpc8-mastermind-check.log": "600911e0d5ba27a83263b331a9d0aead8d1a1109805646f5ac67dd1bba0a5b8a",
+    "questpc8-mastermind-clippy.log": "728dd7a89dd3b865a30bf2bfb4cb4ea6819e789684d74a8778c5cae6b5bb2185",
+    "questpc8-mastermind-regenerate.log": "e17883c3b904492b5238996447f88597b8e4d46e6c883b4445ed5f1e756d83aa",
+    "questpc8-mastermind-generator-check.log": "e17883c3b904492b5238996447f88597b8e4d46e6c883b4445ed5f1e756d83aa",
+    "questpc8-mastermind-pin.log": "2608cd5f8f5c8713d4b68350e21ab3d1d968fd2460863682066ce73121a5515a",
+    "questpc8-mastermind-provenance.log": "8823b01447b49ed7c9f0fd268816707a58a4baa7724ab22404927cf24bae6b32"
+  }
+}

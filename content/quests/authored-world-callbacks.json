@@ -590,6 +590,200 @@
           "contents": []
         }
       }
+    },
+    {
+      "quest": "oteryn:quest.authored.mastermind_potion_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:mastermind-potion:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=17060&oldid=842378",
+        "https://tibia.fandom.com/index.php?curid=18595&oldid=289008",
+        "Conservative two-cache restoration: native box32216,31168,z11 appearance2473 ordinal1, then concealed cache alias at retained unlit campfire32216,31172,z11 appearance2001 ordinal1. No fake UID, object creation or light-state edit. See qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-mastermind",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32216,
+          "y": 31170,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/mastermind/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "premium_required": true
+    },
+    {
+      "quest": "oteryn:quest.authored.mastermind_potion_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:mastermind-potion:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=17060&oldid=842378",
+        "https://tibia.fandom.com/index.php?curid=18595&oldid=289008",
+        "Conservative two-cache restoration: native box32216,31168,z11 appearance2473 ordinal1, then concealed cache alias at retained unlit campfire32216,31172,z11 appearance2001 ordinal1. No fake UID, object creation or light-state edit. See qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-mastermind-first",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32216,
+          "y": 31168,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2473,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/mastermind/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "premium_required": true,
+      "completes": false,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i7440",
+          "count": 1,
+          "contents": [],
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i7159",
+              "count": 1
+            }
+          ]
+        }
+      },
+      "success_message": "You recovered the first potion cache."
+    },
+    {
+      "quest": "oteryn:quest.authored.mastermind_potion_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:mastermind-potion:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=17060&oldid=842378",
+        "https://tibia.fandom.com/index.php?curid=18595&oldid=289008",
+        "Conservative two-cache restoration: native box32216,31168,z11 appearance2473 ordinal1, then concealed cache alias at retained unlit campfire32216,31172,z11 appearance2001 ordinal1. No fake UID, object creation or light-state edit. See qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-mastermind-second-route",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32215,
+          "y": 31172,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/mastermind/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "premium_required": true
+    },
+    {
+      "quest": "oteryn:quest.authored.mastermind_potion_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:mastermind-potion:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=17060&oldid=842378",
+        "https://tibia.fandom.com/index.php?curid=18595&oldid=289008",
+        "Conservative two-cache restoration: native box32216,31168,z11 appearance2473 ordinal1, then concealed cache alias at retained unlit campfire32216,31172,z11 appearance2001 ordinal1. No fake UID, object creation or light-state edit. See qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-mastermind-second",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32216,
+          "y": 31172,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2001,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/mastermind/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "premium_required": true,
+      "completes": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i7440",
+          "count": 1,
+          "contents": [],
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i7158",
+              "count": 2
+            },
+            {
+              "item": "oteryn:item.tibia.i3031",
+              "count": 100
+            },
+            {
+              "item": "oteryn:item.tibia.i3031",
+              "count": 100
+            },
+            {
+              "item": "oteryn:item.tibia.i3031",
+              "count": 1
+            }
+          ]
+        }
+      },
+      "success_message": "You recovered the second potion cache."
     }
   ]
 }

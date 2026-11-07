@@ -1,3 +1,8 @@
+Mastermind chosen programme now QUALIFIED: PG RED2.91s/GREEN40.803601885s,
+Voodoo regression40.665800954s, final checks/Clippy/fmt/40-file drift/pins passed.
+Eleven of23 L7 entries QUALIFIED,12 remain. See current QUEST-STATUS.json
+and cloud-mastermind-proof.json; historical run below is superseded.
+
 Voodoo chosen programme now QUALIFIED: PG RED2.85s/GREEN40.271014027s,
 exact native two-box grants, final checks/strict Clippy/fmt/generator/pins passed.
 Ten of23 L7 entries QUALIFIED,13 remain. Current QUEST-STATUS.json supersedes

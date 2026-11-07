@@ -78,9 +78,13 @@ fn scenario_case(
         }
         let world = if name == "authored-braindeath" {
             super::super::quest_callbacks::source_world((32546, 31522, -11), 0, 1983, 0)?
+        } else if name == "authored-mastermind" {
+            super::super::quest_callbacks::source_world_rectangle_with_prefix_rows(
+                (32216,31168,-11),&[(32216,0)],2473,5,4,&[],&[(31168,2473),(31172,2001)],
+            )?
         } else if name == "authored-voodoo" {
             super::super::quest_callbacks::source_world_rectangle_with_prefix_rows(
-                (32757,31953,-9), &[(32757,0)],2473,5,4,&[],&[31953,31957],
+                (32757,31953,-9), &[(32757,0)],2473,5,4,&[],&[(31953,2473),(31957,2473)],
             )?
         } else if name == "authored-kormarak" {
             super::super::quest_callbacks::source_world_rectangle_with_prefix(
@@ -260,6 +264,8 @@ fn scenario_case(
                 &h,
             )
             .await?;
+        } else if name == "authored-mastermind" {
+            super::super::questpc8_mastermind::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "authored-voodoo" {
             super::super::questpc8_voodoo::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "authored-kormarak" {

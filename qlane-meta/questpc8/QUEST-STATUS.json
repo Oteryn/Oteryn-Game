@@ -1130,28 +1130,13 @@
     "title": "Mastermind Potion Quest",
     "canonical": "oteryn:quest.authored.mastermind_potion_quest",
     "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/16/definition",
-    "status": "UNFINISHED",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
-    "queued_stage_binding": {
-      "stage": "s1",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
-    },
-    "blocker": {
-      "missing_piece": "The five-stage chosen programme, two Formorgar caches and consolidated 201-gold reward lack authored native bindings; explicit authored ordinal binding is now supported, but the chosen placements and stage graph still require composition."
-    },
-    "first_unqualified_stage": {
-      "key": "s1",
-      "kind": "explore",
-      "objective": "Enter Formorgar Mines and descend the first marked route past the Nightmare floor.",
-      "targets": [
-        "Formorgar Mines first cache route"
-      ]
-    },
-    "disposition": "authoring",
+    "blocker": null,
+    "disposition": "qualified-here",
     "qualified_elsewhere": [],
-    "mechanism": "native_reward_source_placement",
+    "mechanism": "ordered native two-cache journey, live Premium gates and exact atomic bounded 201-gold output",
     "round": "L7",
     "qualified_components": [
       {
@@ -1165,8 +1150,18 @@
         "qengine2_checked": "5a6de28c1",
         "qengine2_result": "no authored ordinal reward-claim selector present; reward/outfit components retained for subsequent reuse",
         "green_log_sha256": "d4b2067afeec1f3c5e9a9414f370bf01533afff7ce17a089de57baf7e16c5dd1"
+      },
+      {
+        "scope": "Complete chosen two-cache/Premium/reward/completion/replay programme",
+        "test": "questpc8_mastermind_two_native_caches_premium_and_exact_201_gold",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_mastermind_two_native_caches_premium_and_exact_201_gold",
+        "duration_seconds": 40.803601885,
+        "red_duration_seconds": 2.91,
+        "proof": "cloud-mastermind-proof.json"
       }
-    ]
+    ],
+    "proof": "cloud-mastermind-proof.json",
+    "qualification_scope": "Complete chosen Oteryn recipe only; conservative native fire-cache alias documented in CONTRACT-NOTES.md."
   },
   {
     "title": "Measuring Tibia Quest",
