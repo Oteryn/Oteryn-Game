@@ -124,13 +124,20 @@ impl ItemLoopContent for Content {
 fn gap_sv2_i05_postgres_chain_custody_handoff_and_replay() -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(|| scenario(false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "I05 worker panicked")?
         .map_err(Into::into)
 }
 
-fn scenario() -> TestResult {
+#[test]
+fn srx1_i05_depot_chain_pending_withdrawal_catchup_and_replay_postgres() -> TestResult {
+    std::thread::Builder::new().stack_size(64 << 20)
+        .spawn(|| scenario(true).map_err(|error|error.to_string()))?
+        .join().map_err(|_|"I05 depot worker panicked")?.map_err(Into::into)
+}
+
+fn scenario(depot: bool) -> TestResult {
     run("gap_sv2_i05", async |h| {
         let started = std::time::Instant::now();
         let (_runtime, origin) = spell_origin(h)?;
@@ -293,14 +300,29 @@ fn scenario() -> TestResult {
             assert!(moved.is_ok(), "custody move refused: {moved:?}");
         }
         drop(permit);
+        if depot {
+            let schedules:serde_json::Value=sqlx::query_scalar("SELECT jsonb_agg(to_jsonb(p) ORDER BY source_stage) FROM game_spell_field_temporal_schedules p").fetch_one(&h.pool).await?;
+            for (number,deposit) in [(804,true),(805,false)] {
+                let permit=SpellLanePermit::of_fresh_scope(harness::scope()?).await?;
+                let access=crate::durability::item_loop_move::DepotMove{town:1,box_number:1,deposit,
+                    request_digest:[if deposit {4} else {5};32],premium:crate::domain::premium::PremiumGate::CLOSED};
+                for _ in 0..2 {
+                    let moved=h.root.commit_depot_move(&permit,&recovery,&h.node,&fence,command(number)?,&Content,access,id(180)).await.map_err(debug)?;
+                    assert!(moved.is_ok(),"ordinary timed item depot movement/replay: {moved:?}");
+                }
+                drop(permit);
+                if deposit {assert_eq!(drain(h).await?,0,"inactive storage retains its pending source deadline");}
+                assert_eq!(sqlx::query_scalar::<_,serde_json::Value>("SELECT jsonb_agg(to_jsonb(p) ORDER BY source_stage) FROM game_spell_field_temporal_schedules p").fetch_one(&h.pool).await?,schedules);
+            }
+        }
         assert_eq!(drain(h).await?, 1);
         assert_eq!(drain(h).await?, 0);
         let stored: (String, String, i64) = sqlx::query_as("SELECT definition_production_key,state_revision::text,quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
             .bind(id(180).as_slice()).fetch_one(&h.pool).await?;
-        assert_eq!(stored, ("oteryn:item.tibia.i901003".into(), "5".into(), 1));
+        assert_eq!(stored, ("oteryn:item.tibia.i901003".into(), if depot {"7"} else {"5"}.into(), 1));
         assert_eq!(h.count("game_spell_field_temporal_receipts").await?, 2);
         assert_eq!(h.count("game_spell_field_temporal_audit").await?, 2);
-        assert_eq!(h.count("game_item_decay_handoffs").await?, 2);
+        assert_eq!(h.count("game_item_decay_handoffs").await?, if depot {4} else {2});
         let mut denied = h.pool.begin().await?;
         sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
             .execute(&mut *denied)
@@ -316,7 +338,7 @@ fn scenario() -> TestResult {
         );
         denied.rollback().await?;
         eprintln!(
-            "GAP-SV2 I05 PostgreSQL two stages, two real custody moves, replay PASS in {:?}",
+            "I05 PostgreSQL two stages, Ground/nested custody, depot={depot}, replay PASS in {:?}",
             started.elapsed()
         );
         Ok(())

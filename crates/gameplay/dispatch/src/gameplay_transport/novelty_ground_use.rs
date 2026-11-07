@@ -104,8 +104,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .read_actor_position(actor)
                     .map_err(|_| ())?
                     .position();
-                if !crate::gameplay_transport::attack::sees(from, target.position) {
-                    return Ok(Some(outcome(UseDisposition::TargetIllegal)));
+                if !oteryn_gameplay_items::reach::within_reach(
+                    (from.x, from.y, i32::from(from.floor)),
+                    (
+                        target.position.x,
+                        target.position.y,
+                        i32::from(target.position.floor),
+                    ),
+                ) {
+                    return Ok(Some(outcome(UseDisposition::TooFar)));
                 }
                 Some(target.actor)
             } else {

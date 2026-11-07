@@ -20,6 +20,7 @@ pub(super) struct PendingItemEffect {
     pub fence: CurrentCharacterItemFence,
     pub request: ConsumeTransformRequest,
     pub effects: NoveltyEffects,
+    pub cue_position: crate::foundation::MovementLocalPosition,
     pub before_revision: u64,
     pub after: Option<crate::spell::cast::PlayerSpellState>,
     pub death: Option<super::actor_spell::PlayerDeath>,
@@ -186,8 +187,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .read_actor_position(actor)
                     .map_err(|_| ())?
                     .position();
-                if !super::attack::sees(at, target.position) {
-                    return Ok(Some(outcome(UseDisposition::TargetIllegal)));
+                // Crystal actions.cpp default Action reach.
+                if !oteryn_gameplay_items::reach::within_reach(
+                    (at.x, at.y, i32::from(at.floor)),
+                    (
+                        target.position.x,
+                        target.position.y,
+                        i32::from(target.position.floor),
+                    ),
+                ) {
+                    return Ok(Some(outcome(UseDisposition::TooFar)));
                 }
                 Some(target.actor)
             } else {
@@ -236,7 +245,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Result<UseOutcome, ()> {
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
-        if let Some(effects) = states.settle_novelty_effect(&runtime, actor, request, &receipt)? {
+        if let Some((effects, position)) =
+            states.settle_novelty_effect(&runtime, actor, request, &receipt)?
+        {
+            states.publish_novelty_visuals(&runtime, actor, position, &effects);
             self.states.chat.publish_item_speech(
                 &runtime,
                 actor,

@@ -188,6 +188,10 @@ pub(super) async fn lose(
             .bind(id.firing_id.as_slice()).bind(id.channel.as_bytes().as_slice()).bind(now).execute(&mut **tx).await?;
     }
     insert(tx, id, owner, &CommittedRaidAction::Lost, now).await?;
+    // The durable LOST receipt itself proves source loss; cleanup ACK may never
+    // arrive from the previous scope owner and is not a settlement prerequisite.
+    crate::durability::world_event_outcomes::capture_raid(tx, id, "source-unavailable", now)
+        .await?;
     Ok(Some(CommittedRaidStep {
         identity: id,
         action: CommittedRaidAction::Lost,
@@ -295,6 +299,27 @@ pub(super) async fn acknowledge(
     if state == 2 {
         return Ok(RaidWrite::Replayed);
     }
+    if matches!(
+        effect.action,
+        CommittedRaidAction::Announcement { .. } | CommittedRaidAction::Wave { .. }
+    ) {
+        crate::durability::world_event_outcomes::capture_raid(tx, id, "admitted", now).await?;
+    }
+    if matches!(
+        effect.action,
+        CommittedRaidAction::Wave {
+            boss_step: true,
+            ..
+        }
+    ) {
+        let phase = if !outcomes.is_empty() && outcomes.values().all(|placed| *placed) {
+            "boss-admitted"
+        } else {
+            "boss-source-unavailable"
+        };
+        crate::durability::world_event_outcomes::capture_raid(tx, id, phase, now).await?;
+    }
+
     sqlx::query("UPDATE game_world_raid_effects SET state=2,settled_at_ms=$4 WHERE firing_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND step_ordinal=$3 AND state=1")
         .bind(id.firing_id.as_slice()).bind(id.channel.as_bytes().as_slice())
         .bind(i32::try_from(id.ordinal).map_err(|_| DurabilityError::InvalidStoredState)?)
@@ -319,6 +344,33 @@ pub(super) async fn acknowledge(
         if finished.rows_affected() != 0 {
             sqlx::query("UPDATE game_world_raid_scheduler_clocks SET last_end_at_ms=GREATEST(last_end_at_ms,$2) WHERE reset_epoch=(SELECT reset_epoch FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid) AND world_id=(SELECT f.world_id FROM game_world_raid_firings f WHERE f.firing_id=encode($1,'hex')::uuid AND NOT EXISTS(SELECT 1 FROM game_world_raid_schedule_sources s WHERE s.world_id=f.world_id AND s.raid_key=f.raid_key AND s.source_kind<>1))")
                 .bind(id.firing_id.as_slice()).bind(now).execute(&mut **tx).await?;
+        }
+    }
+    if matches!(
+        effect.action,
+        CommittedRaidAction::Complete { .. } | CommittedRaidAction::Lost
+    ) {
+        let captured = crate::durability::world_event_outcomes::capture_raid(
+            tx,
+            id,
+            if matches!(effect.action, CommittedRaidAction::Lost) {
+                "source-unavailable"
+            } else {
+                "completed"
+            },
+            if matches!(effect.action, CommittedRaidAction::Lost) {
+                row.try_get("committed_at_ms")?
+            } else {
+                now
+            },
+        )
+        .await?;
+        if matches!(
+            effect.action,
+            CommittedRaidAction::Complete { cleanup: true }
+        ) && captured == crate::durability::world_event_outcomes::Disposition::Applied
+        {
+            crate::durability::world_event_outcomes::capture_boss_completion(tx, id, now).await?;
         }
     }
     Ok(RaidWrite::Applied)

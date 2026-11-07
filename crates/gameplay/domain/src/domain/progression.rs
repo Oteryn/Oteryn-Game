@@ -115,6 +115,30 @@ where
     S: Clone,
     M: Clone,
 {
+    calculate_progression_with_bless(
+        snapshot,
+        operation_context,
+        operation_policy_revision,
+        operation,
+        policy,
+        0,
+    )
+}
+
+/// The death owner supplies the Bless percentage captured at the exact lethal creature hit.
+pub fn calculate_progression_with_bless<O, R, S, M, const N: usize>(
+    snapshot: &CurrentProgressionSnapshot<S, M>,
+    operation_context: &ProgressionRevisionContext<R>,
+    operation_policy_revision: &R,
+    operation: &ProgressionOperation<O, R>,
+    policy: &FiniteProgressionPolicy<R, N>,
+    bless_reduction_percent: u8,
+) -> Result<StagedProgressionOutcome<S, M>, ProgressionCalculationError>
+where
+    R: PartialEq,
+    S: Clone,
+    M: Clone,
+{
     validate_policy(policy)?;
     if operation_context != &policy.context || operation_policy_revision != &policy.policy_revision
     {
@@ -169,7 +193,7 @@ where
                 snapshot.total_experience,
                 *regular_blessings,
                 *promoted_with_current_premium,
-                0,
+                bless_reduction_percent,
             )
             .map_err(|error| match error {
                 PveDeathError::TooManyBlessings => ProgressionCalculationError::TooManyBlessings,

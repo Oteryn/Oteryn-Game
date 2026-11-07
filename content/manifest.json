@@ -292,6 +292,12 @@
       "path": "content/cosmetics/mounts/mounts-00000-00251.json"
     },
     {
+      "path": "content/cosmetics/outfits/authoring.json"
+    },
+    {
+      "path": "content/cosmetics/outfits/native-cosmetics.json"
+    },
+    {
       "path": "content/craft/index.json"
     },
     {
@@ -602,6 +608,9 @@
     },
     {
       "path": "content/items/definitions/spell-native-profiles.json"
+    },
+    {
+      "path": "content/items/definitions/srx1-item-updates.json"
     },
     {
       "path": "content/items/definitions/starting-loadout-profiles.json"
@@ -998,7 +1007,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3612,
+          "record_count": 3632,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1006,12 +1015,12 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "4bc6e3880c69ae4d2926a0b689be12ce6f280619cc655da5b4d0104807a892c0"
+          "sha256": "1785df0a365592beaeed2ca6dd92bc28bbf227c9611bdebe2a7be6f5bd423694"
         },
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/starting-loadout-profiles.json",
-          "record_count": 8,
+          "record_count": 13,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1019,7 +1028,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "20e098e915d0ff3e648cef2623a2d31ecbc21d824727a5557731d80c1abe98c9"
+          "sha256": "08c7126b73447929016e33fac7140a7027e7f16152fcfb2d8b28e326329e714c"
         }
       ],
       "Presentation": [

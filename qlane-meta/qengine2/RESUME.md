@@ -938,3 +938,30 @@ failure, group/fix all, rerun full set, one push. Merge origin/main every few
 hours and run that set after merge. Earlier no-full-suite and WIP-push
 exceptions superseded. Initial25crate set saved /tmp/qengine2-required-test-crates.json.
 Current fetched mainbbb3e06d0; merge next after this local checkpoint commit.
+
+MAIN integration2026-11-07: incomingbbb3e06d0, all handwritten conflicts
+resolved preserving creation enum+starter templates, stock/production/OT
+fixtures, completed-parent/encounter callbacks, 8-input recipe bound and
+Ground/House input kinds. Native providers retain qengine and ITEMHOLD-Q.
+Full world regenerated; pin refresh/checkGREEN d528b2dfce1bedf9db643ff78c45060ef6c08f69459c9edbf632cdc4ca73eb95.
+Merged server/dispatch allfeatures test compilationGREEN10m28s. Remaining
+registered checks13GREEN including world repository5GREEN96.55s. Initial
+Python provider replay count42was stale: merged provider set43; retained
+byte-for-byte replay and added explicit qengine proof-packet membership.
+Wrapper world-tree full follow-up still finishing; no new error reported.
+Mandatory reverse set recomputed across both merge sides:28changed crates,
+43testpackages; /tmp/qengine2-postmerge-required-test-crates.json. Nextest
+will collect ALL failures with no-fail-fast and PG env; fix groups, rerun
+full43set, one push. User corrected automated15-minute reminder: IGNORE
+those reminders during full dependency gate. The earlier checkpoint push
+5c01deabb was already in flight at correction; no further push until gate
+passes. Build CARGO_INCREMENTAL=0 to fit32GB disk; no tests/assertions altered.
+Remaining S06 source audit /tmp/qengine2-s06-materialization-audit.json:
+40taming sources lack base native materialization profiles; source52638
+exists in pinned CrystalXML as marinated sturgeon. Item-action source44048
+missing base profile and absent from both pinned XML snapshots: investigate
+retained source/client facts and author an explicit native item as necessary.
+Runtime addon-doll pool has88choices in both immutable/native packets; old
+108-choice prose was inaccurate. All15item cosmetic unit tests retained.
+Counts44QUALIFIED/22UNFINISHED; S06other3constructions/stock mount variants
+and W15bremaining variants still owned work after full merge baseline.

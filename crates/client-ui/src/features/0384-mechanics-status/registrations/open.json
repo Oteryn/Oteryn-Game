@@ -1,0 +1,9 @@
+{
+  "mechanic": "0384-mechanics-status",
+  "kind": "keybindings",
+  "id": "0384-mechanics-status-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+SHIFT+U",
+  "entry": "input.rs::open_key"
+}

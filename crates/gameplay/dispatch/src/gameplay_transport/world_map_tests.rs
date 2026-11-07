@@ -1336,39 +1336,19 @@ fn seeded_world(
     tiles
 }
 
-/// A running digest of every update a fixture sends.
-#[derive(Default)]
-struct Golden {
-    digest: sha2::Sha256,
-    updates: usize,
-    bytes: usize,
-}
-
-impl Golden {
-    fn record(&mut self, update: &Option<MapUpdate>) {
-        use sha2::Digest;
-        let (tag, revision, payload) = match update {
-            None => (0u8, 0u64, &[][..]),
-            Some(MapUpdate::Snapshot(snapshot)) => {
-                (1, snapshot.revision, snapshot.payload.as_slice())
-            }
-            Some(MapUpdate::Delta(delta)) => (2, delta.to, delta.payload.as_slice()),
-        };
-        self.digest.update([tag]);
-        self.digest.update(revision.to_be_bytes());
-        self.digest.update((payload.len() as u64).to_be_bytes());
-        self.digest.update(payload);
-        self.updates += 1;
-        self.bytes += payload.len();
-    }
-}
+#[path = "world_map_golden.rs"]
+mod golden_recording;
+use golden_recording::Golden;
 
 /// A walk of `steps` steps from `start` over a seeded world, with seeded overlay changes in
 /// view: steps, floor changes and teleports. Returns the digest of every payload.
 fn golden_walk(seed: u64, floors: &[i8], start: TilePos, steps: usize) -> Golden {
-    let mut fixture = Fixture::new(seeded_world(seed, floors, 24..72));
+    let tiles = seeded_world(seed, floors, 24..72);
+    let (bytes, _) = bundle_bytes(tiles.clone(), 150);
+    let legacy = golden_recording::legacy_digest(&bytes);
+    let mut fixture = Fixture::new(tiles);
     let mut rng = Seeded(seed ^ 0x9e37_79b9_7f4a_7c15);
-    let mut golden = Golden::default();
+    let mut golden = Golden::new(fixture.digest(), legacy);
     let mut actor = start;
     let join = fixture.join(actor);
     golden.record(&Some(MapUpdate::Snapshot(join)));
@@ -1436,10 +1416,12 @@ fn seeded_walks_send_the_bytes_recorded_before_the_viewport_optimisation() {
         golden_walk(14, &[-9, -8, -7], tp(48, 48, -8), 80),
     ];
     let mut all = sha2::Sha256::new();
+    let mut legacy = sha2::Sha256::new();
     let mut updates = 0;
     let mut bytes = 0;
     for walk in walks {
         all.update(walk.digest.finalize());
+        legacy.update(walk.legacy.finalize());
         updates += walk.updates;
         bytes += walk.bytes;
     }
@@ -1448,8 +1430,17 @@ fn seeded_walks_send_the_bytes_recorded_before_the_viewport_optimisation() {
         .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect();
+    let legacy: String = legacy
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    assert_eq!((updates, bytes, legacy.as_str()), LEGACY_GOLDEN);
+    println!("LEGACY_WIRE_VERIFIED updates={updates} bytes={bytes}");
     println!("GOLDEN updates={updates} bytes={bytes} digest={digest}");
-    assert_eq!((updates, bytes, digest.as_str()), GOLDEN);
+    if std::env::var_os("OTERYN_RECORD_MAP_GOLDEN").is_none() {
+        assert_eq!((updates, bytes, digest.as_str()), GOLDEN);
+    }
 }
 
 // Re-recorded for bundle format v5 (SUBAREA-ADMIT-1): the fixture bundles' digests changed, and
@@ -1463,6 +1454,14 @@ fn seeded_walks_send_the_bytes_recorded_before_the_viewport_optimisation() {
 // bundle_digest in each of the 283 payload-carrying updates changed; all other bytes,
 // update counts and payload lengths are identical.
 const GOLDEN: (usize, usize, &str) = (
+    324,
+    5_431_963,
+    "c114d516f4bd770c7d270c29447490a1368e98c921a6a2c4b6937b977cfb543a",
+);
+
+// v7 changes only bundle identity in these layerless fixtures. The recorder separately
+// reconstitutes v6 identity and must reproduce this retained wire digest byte for byte.
+const LEGACY_GOLDEN: (usize, usize, &str) = (
     324,
     5_431_963,
     "de9296f14dff732c590cdf36a8bcd6ae670db88662794e9605354f36b8dcb8d4",

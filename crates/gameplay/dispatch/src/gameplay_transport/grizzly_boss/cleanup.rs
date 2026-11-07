@@ -114,6 +114,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return true;
         }
+        // Serialize this cold-start lookup with the other connections' owner
+        // work before borrowing Root; a busy cohort must queue, not starve a
+        // peer's bounded callback-recovery read.
+        let Some(lookup_permit) = self.spell_lane_permit().await else {
+            return false;
+        };
         // Concurrent sessions share the non-blocking holder. Its being busy is
         // not evidence of an unresolved visit; retry only that transient failure.
         let entry = match AdmissionRetryBudget::for_command(self.root)
@@ -133,6 +139,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(entry) => entry,
             Err(_) => return false,
         };
+        // Expiry and return reconciliation below acquire their own lane permits.
+        drop(lookup_permit);
         if let Some(mut entry) = entry {
             let (actor, binding) = {
                 let runtime = self.runtime.lock().await;

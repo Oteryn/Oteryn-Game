@@ -20,6 +20,7 @@ where
         return Ok(None);
     };
     let source = session.admitted;
+    authority.cast_end(source).await;
     let sequence = session
         .sequence
         .checked_add(1)

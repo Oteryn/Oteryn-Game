@@ -1,4 +1,6 @@
 //! W19d: ordinary USE, atomic source effects, exact replay, and fail-closed canonical admission.
+#[path = "item_cosmetics/ot_only.rs"]
+mod ot_only;
 #[path = "item_cosmetics/glider.rs"]
 mod glider;
 #[path = "item_cosmetics/packet.rs"]
@@ -77,7 +79,7 @@ fn run_configuration(
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(move || {
-            scenario(ground, afflicted, case, stock, wanted).map_err(|error| error.to_string())
+            scenario(ground, afflicted, case, stock, wanted, None).map_err(|error| error.to_string())
         })?
         .join()
         .map_err(|_| "cosmetic scenario thread")??;
@@ -90,18 +92,27 @@ fn scenario(
     case: Option<positive::Case>,
     stock: bool,
     wanted: Option<&'static str>,
+    ot_only: Option<u32>,
 ) -> TestResult {
     let key = match case {
         Some(positive::Case::Glider { .. }) => "oteryn:item.tibia.i21897",
         Some(
-            positive::Case::Parts | positive::Case::OmittedGrant | positive::Case::ConcurrentGrant,
+            positive::Case::Parts
+            | positive::Case::OmittedGrant
+            | positive::Case::ConcurrentGrant
+            | positive::Case::ProductionParts,
         ) => "oteryn:item.tibia.i36938",
-        Some(positive::Case::Outfit) => "oteryn:item.tibia.i16252",
+        Some(positive::Case::Outfit | positive::Case::ProductionOutfit) => {
+            "oteryn:item.tibia.i16252"
+        }
+        Some(positive::Case::ProductionMount) => "oteryn:item.tibia.i23538",
         _ if afflicted => "oteryn:item.tibia.i12551",
         _ => "oteryn:item.tibia.i6579",
     };
+    let ot_key = ot_only.map(|id| format!("oteryn:item.tibia.i{id}"));
+    let key = ot_key.as_deref().unwrap_or(key);
     run(async |admin| {
-        let harness = if case.is_some() {
+        let harness = if case.is_some() || ot_only.is_some() {
             Harness::create_appearance(admin, "item_cosmetics_admitted").await?
         } else {
             Harness::create_with_admission_seed(admin, "item_cosmetics_unavailable", true, false)
@@ -116,11 +127,38 @@ fn scenario(
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
-        let cosmetic_packet = case.map(|_| packet::cosmetics_packet()).transpose()?;
+        let production = matches!(
+            case,
+            Some(
+                positive::Case::ProductionOutfit
+                    | positive::Case::ProductionParts
+                    | positive::Case::ProductionOtOnly
+                    | positive::Case::ProductionMount
+            )
+        );
+        let cosmetic_packet = if ot_only.is_some() {
+            Some(ot_only::packet()?)
+        } else if production {
+            let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../../content/spells.manifest.json");
+            Some(
+                crate::content::native_gameplay::NativeGameplayInput::from_manifest(&path)
+                    .map_err(debug)?
+                    .cosmetics
+                    .bytes,
+            )
+        } else {
+            match case {
+                Some(_) => Some(packet::cosmetics_packet()?),
+                None => Some(
+                    crate::content::native_gameplay::NativeGameplayInput::unavailable_cosmetics()
+                        .bytes,
+                ),
+            }
+        };
         let (controller, pin) = if stock {
             super::death_ml_loss_composed::production_generation_with_pin(
-                deps.admitted.world_id,
-                "content-1",
+                deps.admitted.world_id, "content-1",
             )?
         } else {
             crate::content::native_gameplay::test_support::cosmetics_fixture::activated_with_optional_cosmetics(
@@ -129,19 +167,19 @@ fn scenario(
         };
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
-        if case.is_none() {
+        if case.is_none() && ot_only.is_none() {
             assert!(
                 native.cosmetics().is_none(),
-                "current READY_UNPOPULATED catalogue"
+                "explicit unavailable-section fixture"
             );
         } else {
-            assert!(
-                native.cosmetics().is_some(),
-                "explicit synthetic test authoring"
-            );
+            assert!(native.cosmetics().is_some(), "explicit admitted authoring");
         }
         if !matches!(case, Some(positive::Case::Glider { .. })) {
             assert!(oteryn_gameplay_items::item_cosmetics::rule(key).is_some());
+        }
+        if ot_only.is_some() {
+            ot_only::qualify_complete_pool(native)?;
         }
         let index = native.item_index().ok_or("index")?;
         let oven = "oteryn:item.tibia.i2535";
@@ -302,9 +340,10 @@ fn scenario(
             Some(
                 positive::Case::Parts
                 | positive::Case::OmittedGrant
-                | positive::Case::ConcurrentGrant,
+                | positive::Case::ConcurrentGrant
+                | positive::Case::ProductionParts,
             ) => vec![(key, 1); 5],
-            Some(positive::Case::Outfit) => vec![
+            Some(positive::Case::Outfit | positive::Case::ProductionOutfit) => vec![
                 (key, 1),
                 ("oteryn:item.tibia.i16253", 1),
                 ("oteryn:item.tibia.i16254", 1),
@@ -437,7 +476,7 @@ fn scenario(
             .bind(source.as_slice()).fetch_one(&harness.pool).await?;
         assert_eq!(
             after, before,
-            "missing canonical authoring must not burn the source"
+            "unavailable or owner-excluded actions must not burn the source"
         );
         assert_eq!(
             sqlx::query_scalar::<_, serde_json::Value>(
@@ -478,4 +517,39 @@ fn scenario(
         drop(seal);
         harness.cleanup().await
     })
+}
+
+#[test]
+fn srx4_ot_cosmetic_items_refuse_with_complete_synthetic_catalogue_on_postgres() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        eprintln!("SRX4_OT_EXCLUSION_POSTGRES_SKIPPED no_admin_url");
+        return Ok(());
+    }
+    for ground in [false, true] {
+        for item in [6579, 37746] {
+            let started = std::time::Instant::now();
+            std::thread::Builder::new()
+                .stack_size(256 << 20)
+                .spawn(move || {
+                    scenario(ground, false, None, false, None, Some(item)).map_err(|e| e.to_string())
+                })?
+                .join()
+                .map_err(|_| "OT exclusion thread")??;
+            eprintln!(
+                "SRX4_OT_EXCLUSION_POSTGRES_EXECUTED item={item} ground={ground} duration={:.3}s",
+                started.elapsed().as_secs_f64()
+            );
+        }
+    }
+    Ok(())
+}
+
+pub(super) fn nx5_production_case(kind: u8) -> TestResult {
+    let case = match kind {
+        0 => positive::Case::ProductionOutfit,
+        1 => positive::Case::ProductionParts,
+        2 => positive::Case::ProductionOtOnly,
+        _ => positive::Case::ProductionMount,
+    };
+    run_all(false, false, Some(case))
 }

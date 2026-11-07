@@ -3091,5 +3091,16 @@
       }
     ]
   },
-  "validation_policy": "Owner2026-11-07: before every push, derive full reverse normal workspace dependencies with cargo tree -i for every changed crate and run cargo nextest run for the full set with PostgreSQL; collect all failures, fix by root cause, rerun full set, then one push. Merge origin/main every few hours and repeat those tests. This supersedes earlier no-full-suite / WIP-push exceptions."
+  "validation_policy": "Owner2026-11-07: before every push, derive full reverse normal workspace dependencies with cargo tree -i for every changed crate and run cargo nextest run for the full set with PostgreSQL; collect all failures, fix by root cause, rerun full set, then one push. Merge origin/main every few hours and repeat those tests. This supersedes earlier no-full-suite / WIP-push exceptions.",
+  "main_integration": {
+    "incoming": "bbb3e06d0",
+    "status": "MERGED_LOCAL_FULL_REVERSE_GATE_PENDING",
+    "changed_crates": 28,
+    "reverse_dependency_test_packages": 43,
+    "package_manifest": "/tmp/qengine2-postmerge-required-test-crates.json",
+    "merged_world_digest": "d528b2dfce1bedf9db643ff78c45060ef6c08f69459c9edbf632cdc4ca73eb95",
+    "compile_check": "GREEN server/dispatch allfeatures tests10m28s",
+    "pin_check": "GREEN /tmp/qengine2-main-pin-check.log",
+    "full_gate": "Pending nextest full43package run, no fail-fast, PostgreSQL enabled"
+  }
 }
