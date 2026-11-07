@@ -49,6 +49,17 @@
     "current_item_facts": {
       "guardian_ring_52732": "Served client appearance exists and matches the canonical portable ring; canonical weight90. Native admission remains to implement.",
       "scarf_3572": "Existing native custody/equipment overlay is admitted; canonical item remains nonmaterializable. Reconcile the existing source overlay before completing prerequisite item/XP flows."
+    },
+    "item_admission_progress": {
+      "items": [
+        52732,
+        3572,
+        51977
+      ],
+      "postgres_red_seconds": 4.48,
+      "postgres_native_mint_seconds": 53.100254427,
+      "proof": "cloud-newhaven-items-proof.json",
+      "whole_recipe_qualified": false
     }
   },
   {
@@ -56,7 +67,7 @@
     "title": "Newhaven Quest",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "The required Guardian Ring52732 and Scarf3572 are not materializable in the canonical Item catalogue. Their NPC reward/XP completion cannot be qualified using held rewards.",
+    "blocker": "Item closure implemented; active next slice is the selected tutor welcome, school/supply exploration, native ten-Troll goal, actual Book recovery/hand-in and complete 1600XP rewards. Shared native-goal implementation exists on questpc6 and will be reused.",
     "from_lanes": [
       "questpc2"
     ],
@@ -69,6 +80,17 @@
     "current_item_facts": {
       "guardian_ring_52732": "Served client appearance exists and matches the canonical portable ring; canonical weight90. Native admission remains to implement.",
       "scarf_3572": "Existing native custody/equipment overlay is admitted; canonical item remains nonmaterializable. Reconcile the existing source overlay before completing prerequisite item/XP flows."
+    },
+    "item_admission_progress": {
+      "items": [
+        52732,
+        3572,
+        51977
+      ],
+      "postgres_red_seconds": 4.48,
+      "postgres_native_mint_seconds": 53.100254427,
+      "proof": "cloud-newhaven-items-proof.json",
+      "whole_recipe_qualified": false
     }
   },
   {

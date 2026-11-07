@@ -8,6 +8,30 @@ import quest_finish_newhaven_items as newhaven
 
 
 class NewhavenItemTests(unittest.TestCase):
+    def test_reward_canonical_admission_preserves_known_facts_and_unrelated_items(self):
+        root = Path(__file__).resolve().parents[2]
+        selected = {f'oteryn:item.tibia.i{i}' for i in newhaven.REQUIRED_REWARDS}
+        reference = json.loads((root / 'content/world/definitions/reference.json').read_bytes())
+        definitions = [copy.deepcopy(d) for d in reference['records']
+                       if d['identity']['key'] in selected | {'oteryn:item.tibia.i3359'}]
+        before = copy.deepcopy(definitions)
+        newhaven.apply_admissions(definitions, root)
+        for old, current in zip(before, definitions):
+            if old['identity']['key'] not in selected:
+                self.assertEqual(current, old)
+                continue
+            self.assertTrue(current['materializable'])
+            for group, value in old['semantics'].items():
+                if value.get('state') in ('KNOWN', 'NOT_APPLICABLE'):
+                    # Partial groups may gain previously unknown nested facts.
+                    from task_board_item_profiles import retain_known
+                    self.assertEqual(retain_known(value, current['semantics'][group]),
+                                     current['semantics'][group])
+            self.assertEqual(current['semantics']['equipment'], old['semantics']['equipment'])
+        once = copy.deepcopy(definitions)
+        newhaven.apply_admissions(definitions, root)
+        self.assertEqual(once, definitions)
+
     def test_exact_current_client_proves_all_selected_portable_names(self):
         newhaven.verify_client(Path(__file__).resolve().parents[2])
 

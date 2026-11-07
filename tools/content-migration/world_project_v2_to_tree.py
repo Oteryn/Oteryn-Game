@@ -191,6 +191,8 @@ def main() -> int:
     apply_admissions(item_records, ROOT)
     from quest_encounter_item_semantics import apply_admissions as apply_encounter_admissions
     apply_encounter_admissions(item_records, ROOT)
+    from quest_finish_newhaven_items import apply_admissions as apply_newhaven_admissions
+    apply_newhaven_admissions(item_records, ROOT)
     apply_summer_item_admissions(item_records)
     apply_primal_item_admissions(item_records)
     from amber_item_semantics import apply_container_fact

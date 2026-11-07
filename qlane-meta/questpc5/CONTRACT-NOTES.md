@@ -91,3 +91,25 @@ Known-fact repair: Source imports fill only Unknown materialization groups (phys
 Projected dropdown USE: Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d data/scripts/actions/items/ladder_up.lua (SHA256730bc7664484e953b6efc3c8faeba9936d355c5cdde91d1f3e0686f714f4df13), https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data/scripts/actions/items/ladder_up.lua . Item435 is explicitly registered and takes the non-ladder branch: same x/y and source z+1. PZ-locked players cannot enter a protection-zone landing. The reusable map utility resolves the current opaque map identity and uses existing actor-control, USE lane/rate/replay, native reach, collision/occupancy and sealed movement commit owners. The Devil plate creates435at32482,32170,z14; USE lands32482,32170,z15 while a second player remains on25030. No quest flag, reward, carried Item or new persistence is introduced.
 
 Static source fields: the Devil key3610/UID5017 source tile is387small-hole ground plus2123fire field at32589,32100,z14. Existing qualified field profile content/test-packs/spells/r25/item_profiles.json:1397 at f3f6a43fb retains MAGIC_FIELD, immovable/non-pickupable facts and Canary99902524e052f37574194466c2949c576e4ab269 field recipe7x10fire/10000ms (items.xml SHA256bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85). Destroy Field3148 uses the existing pinned remove_field native plan and its exact listed field references. Static removal is a map placement, never an invented ItemInstance: preserve native rune cost/LOS/PZ/replay, bind one map_fields descriptor to the complete spell intent, commit the existing terrain zero-tombstone CAS in that same transaction, and require a same-xact exact map receipt. Existing physical Item-line/outbox guards remain intact. Tombstone lifetime follows the existing Channel/reset-epoch map owner. Native standing-field contact must read composed live placements after recovery so a removed2123 cannot remain a fire source.
+
+
+Newhaven required reward Item closure (2026-11-07): immutable Crystal source
+https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml
+SHA256 8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509
+selects Guardian Ring52732 (weight90, ring), Scarf3572 (weight200, necklace),
+and Book of Wisdom51977 (weight100, writable). Exact served client2dfa943b
+confirms their names, portability and absence of container flags. Only these
+three canonical admissions are promoted; accepted Known equipment and carrying
+facts are retained recursively. Ordinary nondecaying item rule applies because
+the pinned XML contains no decay/charge attributes for these identities. This
+item slice alone does not qualify either complete Newhaven quest recipe.
+
+Selected Newhaven recipe rule: canonical quests-00200-00299.json records/78
+stages s1..s6 explicitly mark CHOSEN_OTERYN_APPROXIMATION and select ten Trolls,
+Guardian Ring52732, Scarf3572 and1600XP. Crystal201189f Gustavo source
+data-global/npc/gustavo_the_guard.lua:74-100 instead requests twenty Muglex
+goblins and awards3052. That superseded branch is not transplanted. Reuse the
+existing generic personal native kill mechanism from questpc6 commit390e024503a7c02b9e15d67e680cec0ac711fd5b
+for the selected Troll goal; keep immutable donor source evidence unchanged.
+Item source exact ranges: scarf11307-11314, wisdom book87353-87358, guardian
+ring88295-88302 in the pinned XML cited above.

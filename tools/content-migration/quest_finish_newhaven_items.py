@@ -51,6 +51,8 @@ SPEC = {
     51119: ('simple jo staff', 1800, 'WEAPON', ('MONK',), 0, 108393, 1186982),
     51977: ('book of wisdom', 100, None, (), None, 109842, 1143205),
     3572: ('scarf', 200, 'AMULET', (), 0, 2473, 1194228),
+    # Crystal201189f8 items.xml: exact current-client ring, unrestricted moveevent.
+    52732: ('guardian ring', 90, 'RING', (), 0, None, None),
 }
 UNKNOWN_GROUPS = ('classification', 'container', 'equipment', 'weapon', 'protection',
                   'skill_modifiers', 'charges', 'imbuement', 'temporal', 'use_transform',
@@ -212,3 +214,59 @@ def apply_native(root, generated, profile_path, manifest_path, provider_order, c
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(raw).hexdigest()
     generated[manifest_path] = canonical_bytes(manifest)
+
+
+# This source-selected reward closure does not promote unrelated starter gear.
+REQUIRED_REWARDS = {3572, 51977, 52732}
+
+
+def apply_admissions(definitions, root):
+    """Fill only unknown carrying facts, preserving every accepted Known fact."""
+    from task_board_item_profiles import retain_known
+    selected = {f'oteryn:item.tibia.i{item}' for item in REQUIRED_REWARDS}
+    for definition in definitions:
+        if definition['identity']['key'] not in selected:
+            continue
+        projected = copy.deepcopy(definition)
+        apply(projected)
+        original = definition.get('semantics', {})
+        facts = copy.deepcopy(original)
+        for group in ('physical', 'stack', 'container'):
+            facts[group] = retain_known(original.get(group, unknown()),
+                                        projected['semantics'][group])
+        # Neither the pinned XML nor served client specifies decay for these
+        # ordinary items. Preserve any accepted temporal data if later supplied.
+        if facts.get('temporal', unknown()).get('state') == 'UNKNOWN':
+            facts['temporal'] = {'state': 'NOT_APPLICABLE'}
+        definition['semantics'] = facts
+        definition['materializable'] = True
+        definition['stack_class'] = 'NonStackable'
+
+
+def canonical_outputs(root):
+    import json
+    result = {}
+    for path in (root / 'content/items/definitions').glob('items-*.json'):
+        document = json.loads(path.read_bytes())
+        before = copy.deepcopy(document)
+        apply_admissions([row['definition'] for row in document['records']], root)
+        if before != document:
+            result[path] = (json.dumps(document, sort_keys=True,
+                separators=(',', ':'), ensure_ascii=False) + '\n').encode()
+    return result
+
+
+if __name__ == '__main__':
+    import argparse
+    from pathlib import Path
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--check', action='store_true')
+    arguments = parser.parse_args()
+    root = Path(__file__).resolve().parents[2]
+    verify_client(root)
+    pending = canonical_outputs(root)
+    if arguments.check and pending:
+        raise SystemExit('NEWHAVEN_CANONICAL_ITEM_DRIFT')
+    for path, raw in pending.items():
+        path.write_bytes(raw)
+    print('PASS Newhaven canonical reward Items=3')

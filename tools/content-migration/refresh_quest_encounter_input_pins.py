@@ -15,11 +15,14 @@ import quest_encounter_item_semantics as encounter
 ROOT = encounter.ROOT
 
 
-def outputs(base='HEAD', root=ROOT):
+def outputs(base='HEAD', root=ROOT, *, newhaven=False):
     changed = {}
     changed_definitions = {}
     previous_definitions = {}
     selected = set(encounter.profiles(root))
+    if newhaven:
+        import quest_finish_newhaven_items as newhaven_items
+        selected.update(f'oteryn:item.tibia.i{i}' for i in newhaven_items.REQUIRED_REWARDS)
     for path in (root / 'content/items/definitions').glob('items-*.json'):
         raw = path.read_bytes()
         if not any(r['definition']['identity']['key'] in selected for r in json.loads(raw)['records']):
@@ -39,6 +42,8 @@ def outputs(base='HEAD', root=ROOT):
                         materializable=False,stack_class='Unknown',kind='Item',client_projection='ClientSafe')
                    for key in captured if key not in local]
         encounter.apply_admissions(rows + missing, root)
+        if newhaven:
+            newhaven_items.apply_admissions(rows, root)
         if document != json.loads(raw):
             raise ValueError('ENCOUNTER_INPUT_PIN_UNRELATED_CHANGE:' + relative)
         changed[relative] = (hashlib.sha256(before).hexdigest(), hashlib.sha256(raw).hexdigest())
@@ -96,8 +101,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--base', default='HEAD')
     parser.add_argument('--check', action='store_true')
+    parser.add_argument('--newhaven', action='store_true')
     args = parser.parse_args()
-    updates = outputs(args.base)
+    updates = outputs(args.base, newhaven=args.newhaven)
     if args.check and updates:
         raise SystemExit('ENCOUNTER_CANONICAL_INPUT_PIN_DRIFT')
     for path, raw in updates.items():

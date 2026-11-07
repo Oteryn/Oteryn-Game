@@ -681,6 +681,8 @@ def main() -> int:
     apply_admissions([row for row in reference["records"] if row["identity"]["family"] == "Item"], ROOT)
     from quest_encounter_item_semantics import apply_admissions as apply_encounter_admissions
     apply_encounter_admissions([row for row in reference["records"] if row["identity"]["family"] == "Item"], ROOT)
+    from quest_finish_newhaven_items import apply_admissions as apply_newhaven_admissions
+    apply_newhaven_admissions([row for row in reference["records"] if row["identity"]["family"] == "Item"], ROOT)
     declarations = load(LEGACY / "definitions" / "declarations.json")
     legacy_mount_declarations = [row for row in declarations["records"] if row.get("kind") == "Mount"]
     require(len(legacy_mount_declarations) == 252, "LEGACY_MOUNT_COUNT")
