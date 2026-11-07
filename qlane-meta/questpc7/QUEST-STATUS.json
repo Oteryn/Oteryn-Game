@@ -112,7 +112,7 @@
       "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
       "scope": "Generic owner only; not this quest's route qualification"
     },
-    "current_batch": "Compiling authored-prop overlay checkpoint: PG18.6 RED42.342882583s missing pinned prop JSON. Generic in-memory overlay implemented;3 compiler tests (including13 invalid cases), check and strict Clippy PASS. Next publish source-qualified Ground-only props and perform actual native sampling settlement. No binary map files or SQL migrations changed; remains ACTIVE.",
+    "current_batch": "Source-backed fixed props published:6 exact native map placements compile and equivalence PASS40.79s. Full source item regeneration PASS;5 item tests PASS. Portable guards retained; Ground-only source constructors for fixed props. Actual native sampling/purification settlement and whole23-stage quest remain ACTIVE; pins pending.",
     "assumptions": "Feaster contact/quest/Thaian facts closed using Wiki revisions419674,368970,421868,445240; exact XML items retained. See RESUME and forthcoming source/prop contracts."
   },
   {

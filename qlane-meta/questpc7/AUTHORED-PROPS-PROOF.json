@@ -15,8 +15,19 @@
   "cargo_check": "PASS 3.45s",
   "strict_clippy": "PASS all-targets all-features -D warnings 2.40s",
   "pending": [
-    "publish pinned Feaster prop JSON and source-qualified Ground-only native Item profiles",
-    "repository-region compiler/native frame proof and real repeated USE PG settlement",
+    "real native repeated USE durable settlement",
     "pins and complete Feaster route"
-  ]
+  ],
+  "repository_proof": {
+    "test": "feaster_source_props_compile_and_retain_native_item_identity",
+    "seconds": 40.79,
+    "result": "PASS",
+    "scope": "six exact static props resolve/compile against retained regions and pass source-to-bundle equivalence"
+  },
+  "published_data": "content/world/authored-props/questpc7.json",
+  "physical_item_tests": {
+    "count": 5,
+    "result": "PASS",
+    "scope": "old conflict guards retained; only exact32228 canonical20/donor250 and active250-or20 reconcile"
+  }
 }

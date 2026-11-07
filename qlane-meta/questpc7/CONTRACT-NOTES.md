@@ -616,3 +616,10 @@ Optional Storage.add=1 explicitly opts into checked Add1, retaining set as the t
 ## First-party static quest props
 
 The optional placements-index authored_props array pins per-lane JSON, canonical quest definitions and selected recipe roles. The compiler derives touched B3 region bytes in memory using the existing sector codec; retained binary files are not rewritten. Construction is bounded to512 props,128 per document and64 pinned documents; it rejects duplicate cells/keys, missing regions/tiles, houses, malformed roles, unsafe or escaping paths, mismatched hashes and arbitrary item attributes. Existing compilation, parity, equivalence, native collision and content resolution still apply. Source-qualified static appearances stay Ground-only, preventing players from picking up anchored quest machines/resources. Initial proof covers compiler behavior only; real source data and native settlement remain ACTIVE.
+
+## Source fixed props and Purified Soul weight
+
+Ground-only source constructors8995/8996/21573/23163/32173/32537 are distinct from portable inventory inputs. Legacy canonical reference declarations remain unchanged; the source-qualified native Ground constructors use exact existing bindings and pinned XML/client physical facts. First-party lab, ulcer, soul-rift/purification and crystal placements are chosen native-clear quest sites, not claims that those props existed in the retained map. Quest page https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868 supplies the original context. Source XML SHA2561cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2.
+
+Purified Soul32228 keeps the canonical0.20oz instead of raw XML2.50oz (imports/canary/items-xml/items.xml:60455). Only canonical20/source250 centi-oz and matching active250-or20 records reconcile; any identity, binding, admission or other weight drift still refuses.
+Canonical citation: content/items/definitions/items-19000-19499.json:1#/records/476/definition/semantics/physical, SHA25624568a95f12ccef9c6540b46609e24c137ffd7161a7c8e211d5a85b3fc2853a5.

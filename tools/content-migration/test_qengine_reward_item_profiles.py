@@ -57,5 +57,31 @@ class SharedPhysicalAdmission(unittest.TestCase):
         self.assertEqual(json.loads(generated['manifest'])['schema'], 'OTERYN_NATIVE_GAMEPLAY_MANIFEST/v7')
 
 
+    def test_purified_soul_retains_only_the_exact_canonical_weight_pair(self):
+        definition={'semantics':{'physical':{'value':{'weight':{'state':'KNOWN','value':20}}}}}
+        record=self.record();record['semantics']['physical']['value']['weight']['value']=250
+        profiles.reconcile_canonical_physical(32228,definition,record)
+        self.assertEqual(record['semantics']['physical']['value']['weight'],{'state':'KNOWN','value':20})
+        for canonical,donor in [(21,250),(20,249),(20,20)]:
+            changed=copy.deepcopy(definition);changed['semantics']['physical']['value']['weight']['value']=canonical
+            candidate=self.record();candidate['semantics']['physical']['value']['weight']['value']=donor
+            with self.assertRaisesRegex(ValueError,'WEIGHT_DECISION_DRIFT'):
+                profiles.reconcile_canonical_physical(32228,changed,candidate)
+        other=self.record();before=copy.deepcopy(other)
+        profiles.reconcile_canonical_physical(11701,definition,other)
+        self.assertEqual(other,before)
+
+
+    def test_only_exact_existing_purified_soul_weight_is_reconciled(self):
+        target=self.record();target['production_definition']['production_key']='oteryn:item.tibia.i32228'
+        target['semantics']['physical']['value']['weight']['value']=20
+        for before in [250,20]:
+            existing=copy.deepcopy(target);existing['semantics']['physical']['value']['weight']['value']=before
+            result=self.run_admission(target,existing)
+            self.assertEqual(json.loads(result['profiles'])['records'][0]['semantics']['physical']['value']['weight']['value'],20)
+        existing=copy.deepcopy(target);existing['semantics']['physical']['value']['weight']['value']=249
+        with self.assertRaisesRegex(ValueError,'ACTIVE_WEIGHT_DRIFT'):self.run_admission(target,existing)
+
+
 if __name__ == '__main__':
     unittest.main()

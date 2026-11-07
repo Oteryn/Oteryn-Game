@@ -383,6 +383,8 @@ def build():
     import register_spell_families as native
     generated[reward_items.PROFILE]=(ROOT/reward_items.PROFILE).read_bytes()
     reward_items.admit(ROOT,generated,reward_items.PROFILE,'content/spells.manifest.json',native.provider_order,native.encoded)
+    props = load_module('questpc7_props','tools/content-schema/quest-authoring/questpc7_props.py')
+    generated.update(props.outputs(ROOT))
     return generated
 
 
@@ -422,6 +424,7 @@ def main():
             if not target.is_file() or target.read_bytes()!=raw:
                 raise ValueError('stale QENGINE reward output: '+path)
         elif not target.is_file() or target.read_bytes()!=raw:
+            target.parent.mkdir(parents=True,exist_ok=True)
             target.write_bytes(raw)
 
 if __name__=='__main__':

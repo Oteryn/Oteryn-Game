@@ -1,3 +1,24 @@
+# Feaster fixed source props published — 2026-11-07 15:25 UTC
+
+Generic3 compiler tests/check/strict Clippy passed previously. Real retained
+region proof now PASS40.79s: all6 exact props resolve, compile and satisfy
+source-to-bundle equivalence. Generated per-lane JSON is pinned from placements
+index; no binary B3 edits. Source profiles8995/8996/21573/23163/32173/32537
+are Ground-only NonStackable; portable tools/materials keep inventory guards.
+Full native item generator PASS. Canonical reference declarations are unchanged.
+Purified Soul32228 reconciles only exact canonical20/source250 centi-oz pair;
+active250 or already20 may normalize to20 only after identity/binding/admission
+match. Five item tests preserve prior guards and reject any other pair.
+
+Push compiling/source-data checkpoint now before15:26; Feaster stays ACTIVE.
+Next actual native sampling/purification prefix through ordinary commands and
+Root SQL settlement. PG prefix currently only asserts schema/prop document
+admission; DO NOT call it full settlement or qualify quest. Add actual source
+Para Norbert contact/phase progression and all20/20 bounded USEs with tool/
+Premium/refusal/replay/no-charge proof. Then complete all23 selected stages
+and missing Thaian source Creature. Four ACTIVE remain. Pins regenerate only
+after source is staged and prefix settles. No new SQL. Next push by15:40.
+
 # Authored world-prop compiler checkpoint — 2026-11-07 15:11 UTC
 
 Generic overlay compiled;3 focused tests PASS, check3.45s and strict all-target/

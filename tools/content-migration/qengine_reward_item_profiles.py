@@ -18,12 +18,36 @@ import grizzly_shop_profiles as accepted
 # the same physical qualifier; XML item type never activates a USE/teleport rule.
 IDS = {133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701,
        12599, 12601, 12803, 19083, 19151, 21897, 22074, 22082, 22516, 22721, 23986, 27565, 28792, 28793, 3560, 5941, 5886} | set(range(11545, 11553))
+STATIC_IDS = {8995, 8996, 21573, 23163, 32173, 32537}
+IDS |= STATIC_IDS | {3114, 3456, 3661, 32197, 32225, 32226, 32227, 32228, 32582, 32583, 32584, 32585, 32602, 32757}
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'
 XML_SHA = '1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2'
 CLIENT_SHA = '2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2'
 CLIENT = f'content/assets/files/appearances-{CLIENT_SHA}.dat'
+
+
+def reconcile_canonical_physical(item_id, definition, record):
+    # Purified Soul: retain the canonical0.20oz value; raw Canary XML says2.50oz.
+    # Admit only this exact reviewed pair, never a general weight override.
+    if item_id != 32228:return
+    known=lambda value:{'state':'KNOWN','value':value}
+    canonical=definition['semantics']['physical']['value']['weight']
+    donor=record['semantics']['physical']['value']['weight']
+    if canonical!=known(20) or donor!=known(250):
+        raise ValueError('QENGINE_PURIFIED_SOUL_WEIGHT_DECISION_DRIFT')
+    record['semantics']['physical']['value']['weight']=canonical.copy()
+
+
+def reconcile_active_physical(existing, record):
+    if record['production_definition']['production_key']!='oteryn:item.tibia.i32228':return
+    known=lambda value:{'state':'KNOWN','value':value}
+    before=existing['semantics']['physical']['value']['weight']
+    after=record['semantics']['physical']['value']['weight']
+    if before not in (known(250),known(20)) or after!=known(20):
+        raise ValueError('QENGINE_PURIFIED_SOUL_ACTIVE_WEIGHT_DRIFT')
+    existing['semantics']['physical']['value']['weight']=after.copy()
 
 
 def capture(root=ROOT):
@@ -52,21 +76,28 @@ def capture(root=ROOT):
             raise ValueError('QENGINE_REWARD_ITEM_FLUID_OWNER_REQUIRED')
         record=source.profile(item_id,node,objects[item_id],physical[item_id],bindings,None)
         definition=definitions[f'oteryn:item.tibia.i{item_id}']
+        reconcile_canonical_physical(item_id,definition,record)
+        semantics=definition.get('semantics') if item_id in STATIC_IDS else definition['semantics']
+        if item_id in STATIC_IDS and (definition.get('kind')!='Item' or definition['identity']['family']!='Item'):
+            raise ValueError('QENGINE_REWARD_STATIC_IDENTITY')
         for group in ('physical','stack','container'):
-            if accepted.known_conflict(definition['semantics'][group],record['semantics'][group]):
-                raise ValueError('QENGINE_REWARD_ITEM_CANONICAL_CONFLICT:'+group)
+            if semantics is not None and accepted.known_conflict(semantics[group],record['semantics'][group]):
+                raise ValueError('QENGINE_REWARD_ITEM_CANONICAL_CONFLICT:'+group+':'+str(item_id))
         if definition['stack_class'] not in ('Unknown',record['admission']['stack_class']):
             raise ValueError('QENGINE_REWARD_ITEM_STACK_CONFLICT')
-        if record['admission']['legal_destinations']!=['CharacterInventory','Ground']:
-            raise ValueError('QENGINE_REWARD_ITEM_NOT_PORTABLE')
-        record['semantics']=accepted.accepted_first(definition['semantics'],record['semantics'])
+        expected_destinations=['Ground'] if item_id in STATIC_IDS else ['CharacterInventory','Ground']
+        if record['admission']['legal_destinations']!=expected_destinations:
+            raise ValueError('QENGINE_REWARD_ITEM_DESTINATION_DRIFT')
+        if item_id in STATIC_IDS and record['admission']['stack_class']!='NonStackable':
+            raise ValueError('QENGINE_REWARD_STATIC_STACK_DRIFT')
+        if semantics is not None:record['semantics']=accepted.accepted_first(semantics,record['semantics'])
         records.append(record)
     records=source.bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,IDS)['records']
     return {'schema':'OTERYN_QENGINE_REWARD_ITEM_PROFILES/v1',
         'producer':'tools/content-migration/qengine_reward_item_profiles.py',
         'sources':[{'path':XML,'revision':'47dfd51f45280a59a1d3e50ba7edd573d7234446','sha256':XML_SHA},
                    {'path':CLIENT,'sha256':CLIENT_SHA}],
-        'scope':'Physical custody for the shared quest exchanges; no custom use or script activation.',
+        'scope':'Source-qualified portable quest custody and fixed Ground-only authored props; no custom use or script activation.',
         'records':records}
 
 
@@ -79,10 +110,10 @@ def admit(root,generated,profile_path,manifest_path,order,canonical):
         key=record['production_definition']['production_key']
         if key in present:
             existing=present[key]
-            if (any(existing[field]!=record[field] for field in
-                    ('production_definition','production_binding','admission'))
-                    or any(accepted.known_conflict(existing['semantics'][field],record['semantics'][field])
-                           for field in ('physical','stack','container'))):
+            if any(existing[field]!=record[field] for field in ('production_definition','production_binding','admission')):
+                raise ValueError('QENGINE_REWARD_ITEM_NATIVE_CONFLICT:'+key)
+            reconcile_active_physical(existing,record)
+            if any(accepted.known_conflict(existing['semantics'][field],record['semantics'][field]) for field in ('physical','stack','container')):
                 raise ValueError('QENGINE_REWARD_ITEM_NATIVE_CONFLICT:'+key)
             # Only the source-qualified custody groups are completed here.
             # Existing use, charge, timer and equipment owners retain authority.
