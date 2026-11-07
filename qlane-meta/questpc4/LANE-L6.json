@@ -19,11 +19,13 @@
         "questpc4"
       ],
       "blocker": {
-        "missing_piece": "Royal Rescue's minecart/rail route and NPC hand-ins remain unbound; all seven source reward placements passed separately.",
+        "missing_piece": "Reused main f641d8d6c's56-rule source NPC program; do not reauthor it. Royal Rescue's minecart/rail route and complete NPC hand-ins remain unqualified; native NPC level guard support requested. Existing seven source reward placements remain separately qualified.",
         "source": ".questpc4/evidence/wiki/The Hidden City of Beregar Quest_Spoiler.wiki:14",
         "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
         "canonical_json_pointer": "/records/25/definition",
-        "native_evidence": [],
+        "native_evidence": [
+          "Source NPC program reused from main f641d8d6c; whole quest remains IN_PROGRESS."
+        ],
         "tried": [
           "Read retained source at .questpc4/evidence/wiki/The Hidden City of Beregar Quest_Spoiler.wiki:14; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/25/definition).",
           "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
@@ -32,7 +34,8 @@
         "native_callbacks_present": [],
         "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
         "kind": null,
-        "dependency": null
+        "dependency": null,
+        "reuse_from_main": "f641d8d6c"
       },
       "sources": [
         {
@@ -83,11 +86,14 @@
         "questpc4"
       ],
       "blocker": {
-        "missing_piece": "The Etzel Writ/mandatory source quest progression and Eldoran finale have no selected native dialogue/USE/delivery binding; a death-binding packet alone does not implement the story.",
+        "missing_piece": "Reused main f641d8d6c's99-rule source NPC program. Its native acceptance and exact hand-in/replay PG case passed212.004999259s after permit integration. Whole route remains IN_PROGRESS: remaining native story/battle composition and source outfit-addon/achievement finale need qualification; NPC delivery support requested from qengine2.",
         "source": ".questpc4/evidence/wiki/The Order of the Stag Quest_Spoiler.wiki:18",
         "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
         "canonical_json_pointer": "/records/80/definition",
-        "native_evidence": [],
+        "native_evidence": [
+          "Source NPC program reused from main f641d8d6c; whole quest remains IN_PROGRESS.",
+          "PostgreSQL18.6 catalogue_npc_source_acceptance_is_atomic_and_replay_bound PASS212.004999259s /tmp/questpc4-f641-integration-pg.log"
+        ],
         "tried": [
           "Read retained source at .questpc4/evidence/wiki/The Order of the Stag Quest_Spoiler.wiki:18; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/80/definition).",
           "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
@@ -96,7 +102,8 @@
         "native_callbacks_present": [],
         "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
         "kind": null,
-        "dependency": null
+        "dependency": null,
+        "reuse_from_main": "f641d8d6c"
       },
       "sources": [
         {
@@ -418,7 +425,7 @@
         "questpc8"
       ],
       "blocker": {
-        "missing_piece": "Both exact source tools3304/9598 now execute UID3073 without changing the tool and commit latch plus Mission01 exactly once. Remaining: the other three sewer pipes and their transient effects, complete NPC exchanges/story progression and Azerus encounter/access/rewards. Continue implementation; no external-engine wait.",
+        "missing_piece": "Exact tools3304/9598 execute UID3073 without changing the tool and commit latch plus Mission01 once. Reuse main f641d8d6c's259-rule source NPC program; do not rewrite it. Remaining sewer routes/transient effects, native money/teleport/effect/outfit/achievement NPC delivery and Azerus encounter/access/rewards need qualification; NPC capabilities requested from qengine2.",
         "owner": "shared-world-callback-owner",
         "evidence": [
           "content/quests/definitions/quests-00100-00199.json:1#/records/63/definition",
@@ -432,7 +439,11 @@
         ],
         "recheck": "Reopen when shared-world-callback-owner supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification.",
         "kind": null,
-        "dependency": null
+        "dependency": null,
+        "reuse_from_main": "f641d8d6c",
+        "native_evidence": [
+          "Source NPC program reused from main f641d8d6c; whole quest remains IN_PROGRESS."
+        ]
       },
       "sources": [
         {
@@ -746,11 +757,13 @@
         "questpc4"
       ],
       "blocker": {
-        "missing_piece": "The Wooden Grinder, medusa-blood mixture and crystal portal need source-specific item transformation targets; the held recipe supplies identity candidates only.",
+        "missing_piece": "Reuse main f641d8d6c's16-rule source NPC storage/timer program. Full route still needs native grinder, inventory-pair mixtures, bell-created timed vortex, exact self-target wax and petrified-scream/pillar effects. Verified Crystal9f5a72c6 donor source consumes wax9106 and both mixture inputs; chosen approximation's reusable-wax claim is not authority. Source facts and decision recorded in CONTRACT-NOTES.md.",
         "source": ".questpc4/evidence/wiki/The Cursed Crystal Quest_Spoiler.wiki:16",
         "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
         "canonical_json_pointer": "/records/18/definition",
-        "native_evidence": [],
+        "native_evidence": [
+          "Source NPC program reused from main f641d8d6c; whole quest remains IN_PROGRESS."
+        ],
         "tried": [
           "Read retained source at .questpc4/evidence/wiki/The Cursed Crystal Quest_Spoiler.wiki:16; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/18/definition).",
           "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
@@ -759,7 +772,8 @@
         "native_callbacks_present": [],
         "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
         "kind": null,
-        "dependency": null
+        "dependency": null,
+        "reuse_from_main": "f641d8d6c"
       },
       "sources": [
         {

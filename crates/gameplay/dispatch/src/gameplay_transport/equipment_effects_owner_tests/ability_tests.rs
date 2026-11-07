@@ -344,7 +344,6 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         ORIGINAL_PROFILES
             + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
             + additions.len()
-            + npc_additions.len()
             // Source-backed QUESTPC4 floor/callback cohorts add 26 + 23 keys.
             + 26 + 23
     );

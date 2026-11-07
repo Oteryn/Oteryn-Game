@@ -53,11 +53,12 @@ fn registry() -> Result<&'static Registry, String> {
             }
             for callback in world_callbacks::load()? {
                 let protect = world_callbacks::gated_binding(&callback)?.is_some();
-                add(
-                    world_callbacks::primary_transition(&callback)?,
-                    true,
-                    protect,
-                )?;
+                let transition = if callback.key == super::rotten_blood::SACRIFICE {
+                    super::rotten_blood::altar_transition()
+                } else {
+                    world_callbacks::primary_transition(&callback)?
+                };
+                add(transition, true, protect)?;
             }
             // Native death writes share tracks with bound NPC trial stages.
             // Their specialised writer already requires an exact native-death proof.
@@ -97,6 +98,18 @@ pub fn validate(transition: &QuestTransition, world_context: bool) -> Result<(),
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn specialized_altar_owner_preserves_the_registered_increment() -> Result<(), String> {
+        let mut transition =
+            world_callbacks::primary_transition(&super::super::rotten_blood::altar_callback())?;
+        transition.effects[0].effect = QuestEffectKind::Add(1);
+        validate(&transition, true)?;
+        assert!(validate(&transition, false).is_err());
+        transition.effects[0].effect = QuestEffectKind::Set(1);
+        assert!(validate(&transition, true).is_err());
+        Ok(())
+    }
 
     #[test]
     fn canonical_trial_stages_can_reset_protected_native_counters() -> Result<(), String> {

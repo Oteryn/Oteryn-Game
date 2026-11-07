@@ -8,6 +8,9 @@
 
 use serde::{Deserialize, Serialize};
 
+mod altar_transition;
+pub(crate) use altar_transition::transition as altar_transition;
+
 pub const REQUIRED_LEVEL: u32 = 250;
 pub const ACCESS_TRACK: &str = "oteryn:quest-progress/rotten-blood/access";
 pub const QUEST: &str = "oteryn:quest/rotten-blood";
@@ -134,14 +137,6 @@ pub(super) fn extend(
             )],
         ),
         (
-            SACRIFICE,
-            vec![effect(
-                ACCESS_TRACK,
-                QuestComparison::Between(0, 3),
-                QuestEffectKind::Add(1),
-            )],
-        ),
-        (
             PURCHASE_ACCESS,
             vec![effect(
                 ACCESS_TRACK,
@@ -159,6 +154,7 @@ pub(super) fn extend(
             experience: None,
         });
     }
+    transitions.push(altar_transition());
     super::QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
         .map_err(|error| format!("{error:?}"))
 }

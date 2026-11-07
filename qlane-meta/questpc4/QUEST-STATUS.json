@@ -10632,5 +10632,44 @@
     "generated_checks": "PASS Item/Mount equivalence, full quest-authoring freshness, binding6628exactpointers, variant105, native43files and seven owner authoring producers",
     "duplicate_migrations": "PASS0duplicates; own1250-1258; no1259 or1200-1205",
     "cadence_decision": "PREPUSH-2 permits publication of main+regeneration+workspace-check+fmt while step3 remains running at the30minute cadence. Continue pending tests and group all failures before the next repair push."
+  },
+  "ci_cb38_complete_repair": {
+    "state": "COMPILE_FMT_REGEN_PASS_PUSH_NOW_OWNER_DIRECTION",
+    "base_main": "f641d8d6c",
+    "reported_leaf_failures": 3,
+    "root_causes": 2,
+    "equipment": {
+      "root": "QNPCFX1 is already in PROFILE_ADDITIONS; merge added its contribution a second time.",
+      "tool": "tools/content-migration/refresh_equipment_profile_pin.py; integrated into native/full regenerate_content and checks; validates independent declared cohort sum against base+updates+starting-loadout union and source proof identities.",
+      "declared_and_generated_count": 3720,
+      "tool_controls": "5PASS; regeneration12checksPASS",
+      "focused_green_seconds": 99.683,
+      "log": "/tmp/questpc4-equipment-duplicate-count-green.log"
+    },
+    "rotten_blood": {
+      "root": "Admission compared placeholder altar Set(1) with the pre-existing specialized catalogue Add(1). Shared18-line canonical transition now supplies both owners, retaining physical-context and exact-operation rejection. No altar assertions or consumption rules changed.",
+      "pg_marker": "PostgreSQL18.6 /tmp/questpc4-rotten-pg-marker.log",
+      "pg_red_seconds": 103.1,
+      "pg_red": "/tmp/questpc4-rotten-blood-red.log: same line63 Rejected vs Committed",
+      "unit_red": "/tmp/questpc4-rotten-owner-unit-red.log",
+      "unit_green": "PASS1 /0.07s /tmp/questpc4-rotten-owner-unit-green.log",
+      "full_quest_unit_green": "300PASS36.78s /tmp/questpc4-rotten-final-quest-units.log",
+      "pg_green": "BUILD_RUNNING /tmp/questpc4-rotten-blood-green.log"
+    },
+    "completed": {
+      "workspace_check": "PASS7m56s /tmp/questpc4-equipment-final-workspace-check.log; identical-source duplicate check cancelled",
+      "fmt": "PASS /tmp/questpc4-equipment-final-fmt.log",
+      "pins": "PASS /tmp/questpc4-equipment-final-pin-refresh.log; b2400c60 unchanged",
+      "full_three_crate_run": "3830PASS/1knowncountFAIL/18pre-existing skips in1933.458s; count regression subsequentlyGREEN99.683s; /tmp/questpc4-f641-crate-units.log",
+      "durability_units": "709PASS253.49s /tmp/questpc4-final-durability-unit-binary.log",
+      "python_units": "1099PASS98modules /tmp/questpc4-f641-python-unit.log",
+      "prior_clippy": "3cratesPASS14m19s /tmp/questpc4-f641-clippy.log"
+    },
+    "pending": [
+      "Rebuilt altar PG green case and equipment/unit regressions /tmp/questpc4-rotten-blood-green.log",
+      "Current changed-crate clippy /tmp/questpc4-final-repair-clippy.log queued after rebuilt binary",
+      "Consume MAINRED3027 canonical fix when it lands; do not extend existing temporary NPC/world reconciliation"
+    ],
+    "publication_exception": "Latest owner says push complete fix NOW per PREPUSH-2; steps1,2,4pass; step3 PG green rebuild remains explicitly pending. Continue immediately after publication."
   }
 }
