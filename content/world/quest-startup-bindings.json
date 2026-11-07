@@ -1,0 +1,239 @@
+{
+  "schema": 1,
+  "repository": "zimbadev/crystalserver",
+  "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+  "evidence_class": "OTS_HYPOTHESIS_ONLY",
+  "sources": [
+    {
+      "path": "data-global/startup/tables/lever.lua",
+      "sha256": "41e560708ca123dd7aba34b1e54adf73b843e61fe3eb72fa33ad380a92282a7e",
+      "git_blob_sha1": "31643d019244bd228c0355c9aed8522bce45aaf0"
+    },
+    {
+      "path": "data-global/startup/tables/tile.lua",
+      "sha256": "f6e1d120063105d19303c9e9c8a57b40a6419cc51c4998be58984c42dc67a2a7",
+      "git_blob_sha1": "e8780ad80e10d09eba2db1138e1cac4ba1d4b67b"
+    },
+    {
+      "path": "data-global/startup/tables/teleport.lua",
+      "sha256": "462248b3eeed3531d4f6bc14d47b6d7184741845106dc9ee9d9a0bee5856b042",
+      "git_blob_sha1": "2d798951e1d46b7198dacad57d792971d0045899"
+    },
+    {
+      "path": "data-global/startup/tables/corpse.lua",
+      "sha256": "51373610aa6f9d73b6e5a3496db2e70d93b3d3b914d54d84fcbfb08e6c844039",
+      "git_blob_sha1": "dc19373494f7b06943dcb2e02972cd8e8e5d48b2"
+    },
+    {
+      "path": "data-global/startup/tables/chest.lua",
+      "sha256": "0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
+      "git_blob_sha1": "ea2ef1963395a479ed927481bc3a14065b125a3f"
+    }
+  ],
+  "bindings": [
+    {
+      "position": [
+        32027,
+        31104,
+        11
+      ],
+      "item": 2472,
+      "attribute": "unique",
+      "value": 6214,
+      "source": "data-global/startup/tables/chest.lua",
+      "line": 2259
+    },
+    {
+      "position": [
+        32149,
+        32105,
+        11
+      ],
+      "item": 2472,
+      "attribute": "unique",
+      "value": 6113,
+      "source": "data-global/startup/tables/chest.lua",
+      "line": 1448
+    },
+    {
+      "position": [
+        32157,
+        31126,
+        9
+      ],
+      "item": 1949,
+      "attribute": "unique",
+      "value": 3059,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 387
+    },
+    {
+      "position": [
+        32157,
+        31126,
+        10
+      ],
+      "item": 1949,
+      "attribute": "unique",
+      "value": 3060,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 392
+    },
+    {
+      "position": [
+        32157,
+        31126,
+        11
+      ],
+      "item": 1949,
+      "attribute": "unique",
+      "value": 3061,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 397
+    },
+    {
+      "position": [
+        32211,
+        31273,
+        10
+      ],
+      "item": 4285,
+      "attribute": "unique",
+      "value": 20003,
+      "source": "data-global/startup/tables/corpse.lua",
+      "line": 87
+    },
+    {
+      "position": [
+        32225,
+        32268,
+        9
+      ],
+      "item": 431,
+      "attribute": "unique",
+      "value": 25010,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 2134
+    },
+    {
+      "position": [
+        32225,
+        32285,
+        10
+      ],
+      "item": 2772,
+      "attribute": "unique",
+      "value": 30005,
+      "source": "data-global/startup/tables/lever.lua",
+      "line": 775
+    },
+    {
+      "position": [
+        32227,
+        32278,
+        8
+      ],
+      "item": 2772,
+      "attribute": "unique",
+      "value": 30004,
+      "source": "data-global/startup/tables/lever.lua",
+      "line": 771
+    },
+    {
+      "position": [
+        32573,
+        32121,
+        7
+      ],
+      "item": 2772,
+      "attribute": "unique",
+      "value": 30034,
+      "source": "data-global/startup/tables/lever.lua",
+      "line": 1022
+    },
+    {
+      "position": [
+        32599,
+        31776,
+        9
+      ],
+      "item": 2473,
+      "attribute": "unique",
+      "value": 6151,
+      "source": "data-global/startup/tables/chest.lua",
+      "line": 1755
+    },
+    {
+      "position": [
+        32601,
+        31776,
+        9
+      ],
+      "item": 2473,
+      "attribute": "unique",
+      "value": 6152,
+      "source": "data-global/startup/tables/chest.lua",
+      "line": 1762
+    },
+    {
+      "position": [
+        32966,
+        32626,
+        5
+      ],
+      "item": 4634,
+      "attribute": "action",
+      "value": 50022,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 1204
+    },
+    {
+      "position": [
+        32967,
+        32630,
+        8
+      ],
+      "item": 1949,
+      "attribute": "action",
+      "value": 50022,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 247
+    },
+    {
+      "position": [
+        32968,
+        32629,
+        7
+      ],
+      "item": 1949,
+      "attribute": "action",
+      "value": 50022,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 247
+    },
+    {
+      "position": [
+        32968,
+        32630,
+        7
+      ],
+      "item": 1720,
+      "attribute": "action",
+      "value": 50022,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 1204
+    },
+    {
+      "position": [
+        33226,
+        31671,
+        13
+      ],
+      "item": 2772,
+      "attribute": "unique",
+      "value": 30025,
+      "source": "data-global/startup/tables/lever.lua",
+      "line": 977
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "schema": 1,
+  "scope": "Compiler-owned startup selector materialization; whole quest qualification remains active.",
+  "red": {
+    "postgres_marker_seconds": 3.502519594,
+    "case_seconds": 37.54,
+    "error": "startup selector at32157,31126,-9: None != Some(3059)"
+  },
+  "green": {
+    "postgres_marker_seconds": 4.148540152,
+    "case_seconds": 38.883907672,
+    "full_test_seconds": 39.16,
+    "native_objects_verified": 6
+  },
+  "source_bindings": 17,
+  "world_digest": "264a3573a295a70bf5fe6dfaa2f41a82fdedd9f37c4d1116c6386a66b178d24d",
+  "previous_world_digest": "2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968",
+  "source": "content/world/quest-startup-bindings.json",
+  "notes": "CONTRACT-NOTES.md",
+  "checks": {
+    "cargo_check": 0,
+    "clippy_changed_compiler_and_dispatch_all_targets_all_features_D_warnings": 0,
+    "cargo_fmt_and_mounted_rustfmt": 0,
+    "startup_unit_tests": 3,
+    "bundle_integration_tests": 12,
+    "python_source_and_physical_map_tests": 2,
+    "pin_refresh": 0,
+    "pin_check": 0,
+    "source_B3_files_changed": 0
+  },
+  "logs": {
+    "red": {
+      "sha256": "07a10be9c113912d7b63a4b8922257e88f60634715939ca6e78bdf5442b00b6a",
+      "path": "/tmp/questpc5-startup-red.log",
+      "evidence": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 45s",
+        "POSTGRES_CASE_STARTED real_world_startup_selectors 3.502519594s",
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2564 filtered out; finished in 37.54s"
+      ]
+    },
+    "green": {
+      "sha256": "76b26808ed6bcc83dbb1cfbf5be7e4917f3b7da79cff06ff4278e8016fc4a273",
+      "path": "/tmp/questpc5-startup-green.log",
+      "evidence": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 3m 43s",
+        "POSTGRES_CASE_STARTED real_world_startup_selectors 4.148540152s",
+        "POSTGRES_CASE_COMPLETED real_world_startup_selectors 38.883907672s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2564 filtered out; finished in 39.16s"
+      ]
+    },
+    "check": {
+      "sha256": "a08b32a0e69685d6cc7e87b81258274e59c1d7e0eb5dd263fb5f245e606fe49f",
+      "path": "/tmp/questpc5-startup-check.log",
+      "evidence": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.34s"
+      ]
+    },
+    "unit": {
+      "sha256": "25c1ba5534af925b55073bb0fd3058d44b6134daf26967aabcbfa774c1f0bdb3",
+      "path": "/tmp/questpc5-startup-unit.log",
+      "evidence": [
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s"
+      ]
+    },
+    "clippy": {
+      "sha256": "6320896bc373aeca25c10c9c2244cb6b13559f96a18bafd62ad351fb52f04239",
+      "path": "/tmp/questpc5-startup-clippy.log",
+      "evidence": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5m 42s"
+      ]
+    },
+    "bundle-tests": {
+      "sha256": "6a327b4756b7a8e75d4b69a48d835680c8cdd46e57024feaf542b52b7605d22c",
+      "path": "/tmp/questpc5-startup-bundle-tests.log",
+      "evidence": [
+        "test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.00s"
+      ]
+    },
+    "python": {
+      "sha256": "76a32f3d1bd984fd9c211863eeaeec35673cc2971f892b84f7da3fe3dc35bfd8",
+      "path": "/tmp/questpc5-startup-python.log",
+      "evidence": [
+        "Ran 2 tests in 4.398s",
+        "OK"
+      ]
+    },
+    "pins": {
+      "sha256": "700435309c4fd9e0ff15b3b251b2992baec78ba7f8cc940bdc0c05a1874a7f5d",
+      "path": "/tmp/questpc5-startup-pins.log",
+      "evidence": [
+        "    Finished `release` profile [optimized] target(s) in 0.10s",
+        "  \"inputs_digest\": \"16c8e55bc913937364ecc9225184199c15f7973e9e43a909195c7b59b418d12e\",",
+        "      \"digest\": \"264a3573a295a70bf5fe6dfaa2f41a82fdedd9f37c4d1116c6386a66b178d24d\","
+      ]
+    },
+    "pin-check": {
+      "sha256": "60baac33586224410b3f43c90c1f44a8b3c8c12a06060413448260ac43f6e37d",
+      "path": "/tmp/questpc5-startup-pin-check.log",
+      "evidence": [
+        "    Finished `release` profile [optimized] target(s) in 0.13s",
+        "  \"inputs_digest\": \"16c8e55bc913937364ecc9225184199c15f7973e9e43a909195c7b59b418d12e\",",
+        "      \"digest\": \"264a3573a295a70bf5fe6dfaa2f41a82fdedd9f37c4d1116c6386a66b178d24d\","
+      ]
+    }
+  }
+}

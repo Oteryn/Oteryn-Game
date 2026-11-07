@@ -10,3 +10,6 @@ pub mod resolve;
 pub mod source;
 
 pub use oteryn_world_bundle::{Error, npc, sector, spawn};
+
+/// Pinned startup selector projections for compiled World sectors.
+pub mod startup;

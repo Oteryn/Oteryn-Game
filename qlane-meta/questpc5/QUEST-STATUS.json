@@ -265,7 +265,8 @@
     "canonical_location": {
       "path": "content/quests/definitions/quests-00000-00099.json",
       "pointer": "/records/73/definition"
-    }
+    },
+    "startup_binding_evidence": "cloud-startup-bindings-proof.json"
   },
   {
     "canonical": "oteryn:quest.present_quest",
@@ -281,7 +282,8 @@
     "canonical_location": {
       "path": "content/quests/definitions/quests-00000-00099.json",
       "pointer": "/records/74/definition"
-    }
+    },
+    "startup_binding_evidence": "cloud-startup-bindings-proof.json"
   },
   {
     "canonical": "oteryn:quest.targuna_quest",
@@ -388,7 +390,7 @@
     "title": "Formorgar Mines Hoist Quest",
     "mechanism": "paired_portals_stepout_remote_predicates",
     "status": "UNFINISHED",
-    "blocker": "Remaining complete route: register UID3060 and implement the skeleton instruction acquisition, then compose both actual acquisitions with all hoist movements. UID6214 now grants the exact construction-plan book/text and its instruction flag through the existing claim obligation pipeline, including cold replay.",
+    "blocker": "Remaining complete route: admit the exact UID20003 skeleton instruction reward and compose both actual acquisitions with all hoist movements, including UID3060. The compiler now restores all three source forcefield UIDs and the exact skeleton UID from pinned startup tables, without source B3 changes.",
     "from_lanes": [
       "questpc",
       "questpc7"
@@ -415,7 +417,8 @@
     ],
     "assumptions": [
       "The construction plans teach the hoist chest instruction. This repairs the missing FormorgarMinesHoistChest writer: all three retained movement scripts read that flag, but UID6214 writes FormorgarGlacierChest. Keep the separate skeleton instruction mandatory. The owner explicitly authorized conservative rules for missing source mechanisms."
-    ]
+    ],
+    "startup_binding_evidence": "cloud-startup-bindings-proof.json"
   },
   {
     "canonical": "oteryn:quest.authored.last_creep_standing",
@@ -455,7 +458,7 @@
     "title": "Thais Lighthouse Quest",
     "mechanism": "paired_portals_stepout_remote_predicates",
     "status": "UNFINISHED",
-    "blocker": "Remaining whole route: global source bindings, ladder and all reward claims, plus creature relocation/end-path plate restoration. Shared source-bound UID30005 portal creation, actual travel, atomic removal and expiry have PostgreSQL proof. Repeated exact-source-coordinate player departure/stale-replay regression passes54.78758511s without quest writes.",
+    "blocker": "Remaining whole route: ladder and all reward claims, plus creature relocation/end-path plate restoration. Global source selectors now materialize during compilation; source-bound portal creation/travel/removal/expiry and repeated player departure/stale replay already have PostgreSQL proof.",
     "from_lanes": [
       "questpc4"
     ],
@@ -486,6 +489,7 @@
         "proof": "cloud-shared-engine-proof.json"
       }
     ],
-    "shared_engine_evidence": "cloud-shared-engine-proof.json"
+    "shared_engine_evidence": "cloud-shared-engine-proof.json",
+    "startup_binding_evidence": "cloud-startup-bindings-proof.json"
   }
 ]

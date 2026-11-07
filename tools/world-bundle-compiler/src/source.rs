@@ -165,7 +165,10 @@ fn project_selected(root: &Path, selected: Option<&[(u16, u16)]>) -> Result<Proj
             None => Err(Error::Format("placements shard is not a path".into())),
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let mut families = Families::default();
+    let mut families = Families {
+        startup: crate::startup::Source::load(root)?,
+        ..Families::default()
+    };
     for shard in shards(&root.join("content/world/transitions"), "teleports-")? {
         families.add_teleports(&shard)?;
     }

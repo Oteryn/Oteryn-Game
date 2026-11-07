@@ -315,7 +315,8 @@ fn cell_facts(
         sectors.entry((z, x / size, y / size)).or_default()[at / 64] |= 1 << (at % 64);
     }
     for data in input.regions {
-        let region = b3::decode_region(data, bundle::TILE_LIMITS, &mut budget)?;
+        let mut region = b3::decode_region(data, bundle::TILE_LIMITS, &mut budget)?;
+        input.families.startup.apply(&mut region, input.palette)?;
         for (sx, sy, tiles) in &region.sectors {
             let Some(cells) = sectors.get(&(region.z, *sx, *sy)) else {
                 continue;
@@ -1050,7 +1051,8 @@ fn base_map<'a>(
     };
     let (mut sectors, mut budget) = (BTreeMap::new(), bundle::BUNDLE_BUDGET);
     for data in input.regions {
-        let region = b3::decode_region(data, bundle::TILE_LIMITS, &mut budget)?;
+        let mut region = b3::decode_region(data, bundle::TILE_LIMITS, &mut budget)?;
+        input.families.startup.apply(&mut region, input.palette)?;
         state.region(region, &mut sectors)?;
     }
     if let Some(from) = input
@@ -1203,7 +1205,8 @@ fn prove(
     let (mut report, mut budget) = (Equivalence::default(), bundle::BUNDLE_BUDGET);
     let mut seen = BTreeSet::new();
     for data in input.regions {
-        let region = b3::decode_region(data, bundle::TILE_LIMITS, &mut budget)?;
+        let mut region = b3::decode_region(data, bundle::TILE_LIMITS, &mut budget)?;
+        input.families.startup.apply(&mut region, input.palette)?;
         let (z, floor) = (region.z, native_floor(region.z)?);
         for (sx, sy, tiles) in region.sectors {
             let at = (floor, sy, sx);
