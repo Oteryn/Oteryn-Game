@@ -237,10 +237,13 @@ impl QuestStateCopy {
         self.character_revision
     }
 
-    /// Global quest-door storage semantics: absent storage reads as `-1`; any
-    /// durable value for the source storage action id grants the door.
+    /// Source custom rules take precedence over the Global "storage is set" rule.
+    /// Both read this same durable quest copy; absent source storage reads as -1.
     #[must_use]
     pub fn meets_door_storage(&self, action: u16) -> bool {
+        if let Some(rule) = oteryn_gameplay_quests::quest::source_doors::rule(action) {
+            return rule.allows(self.tracks.get(rule.track).copied());
+        }
         // Crystal201189f storages.lua:3069 / torkada.lua:63-85; source door outside the historical generated sample.
         if action == oteryn_gameplay_quests::quest::rotten_blood::ACCESS_DOOR_STORAGE {
             return self

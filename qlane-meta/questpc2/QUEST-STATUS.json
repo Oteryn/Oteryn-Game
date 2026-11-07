@@ -1619,9 +1619,10 @@
     }
   },
   "current_batch": {
-    "state": "GREEN",
-    "record": "BATCH-group-authoring-integration-2026-11-07.json",
-    "whole_quest_qualifications": 0
+    "state": "GREEN_CHECKPOINT",
+    "record": "BATCH-local-door-prototype-2026-11-07.json",
+    "whole_quest_qualifications": 0,
+    "next": "Merge97c922c33 and adopt published source-correct owner before FF push."
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
@@ -1634,12 +1635,13 @@
     "BATCH-source-corpse-integration-2026-11-07.json",
     "BATCH-group-source-authoring-2026-11-07.json",
     "BATCH-group-source-key-2026-11-07.json",
-    "BATCH-group-authoring-integration-2026-11-07.json"
+    "BATCH-group-authoring-integration-2026-11-07.json",
+    "BATCH-local-door-prototype-2026-11-07.json"
   ],
   "next_batch": {
     "state": "AUTHORING",
     "work_owner": "questpc2",
-    "task": "Push integrated green head FF, then complete owned whole encounter/escape/door/reward paths; no entry-only whole qualification.",
+    "task": "Merge97c922c33 and adopt published source-correct owner before FF push.",
     "external_dependencies_to_wait_for": []
   },
   "remote_publications_reused": {

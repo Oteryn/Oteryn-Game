@@ -18,6 +18,7 @@ mod progression;
 mod quest;
 mod release;
 mod resume;
+mod source_doors;
 mod spells;
 mod training;
 mod vitals;

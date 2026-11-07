@@ -199,7 +199,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 // Arm recovery before the commit: the deadline may cancel an
                 // already committed mint before its acknowledgement reaches us.
-                if bound.placement.quest_transition.is_some() {
+                let refresh_quest = bound.placement.quest_transition.is_some()
+                    || oteryn_gameplay_quests::quest::claim_storage::affects_claim(
+                        claim.key.as_str(),
+                    );
+                if refresh_quest {
                     self.schedule_quest_refresh(command.game_session_id);
                 }
                 let result = async {
@@ -228,7 +232,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // The mint owns the atomic obligation insert. The quest owner applies
                 // it in its revision slot; admission/cadence resumes an unacknowledged
                 // commit without minting the reward or advancing the track twice.
-                if bound.placement.quest_transition.is_some() && result.is_ok() {
+                if refresh_quest && result.is_ok() {
                     self.refresh_quest_session(command.game_session_id, false)
                         .await;
                 }

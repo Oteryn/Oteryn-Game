@@ -603,6 +603,15 @@ impl BundleCollisionData {
         scope: &EngineeringStaticCellScope,
         cell: LogicalCell,
     ) -> Result<CollisionClass, StaticCellEngineError> {
+        self.lookup_with_opening(scope, cell, None)
+    }
+
+    fn lookup_with_opening(
+        &self,
+        scope: &EngineeringStaticCellScope,
+        cell: LogicalCell,
+        opening: Option<u64>,
+    ) -> Result<CollisionClass, StaticCellEngineError> {
         if scope != &self.scope {
             return Err(StaticCellEngineError::ScopeMismatch);
         }
@@ -615,7 +624,10 @@ impl BundleCollisionData {
                 .map
                 .facts
                 .quest_callback_blocked(&self.base, pos, self.blocked.contains(&pos))
-                && !self.map.facts.doors().blocks(pos)
+                && !opening.map_or_else(
+                    || self.map.facts.doors().blocks(pos),
+                    |key| self.map.facts.doors().blocks_except(pos, key),
+                )
             {
                 CollisionClass::Walkable
             } else {
@@ -646,6 +658,12 @@ impl crate::content::native_cell_lookup::BundleCollisionLookup for BundleCollisi
 pub use crate::content::native_cell_lookup::BundleCollisionIndex;
 pub trait BundleCollisionIndexExt {
     fn map(&self) -> &BundleMap;
+    fn lookup_except_door(
+        &self,
+        scope: &EngineeringStaticCellScope,
+        cell: LogicalCell,
+        opening: u64,
+    ) -> Result<CollisionClass, StaticCellEngineError>;
 }
 
 impl BundleCollisionIndexExt for BundleCollisionIndex {
@@ -659,6 +677,22 @@ impl BundleCollisionIndexExt for BundleCollisionIndex {
             .downcast_ref::<BundleCollisionData>()
             .expect("bundle map owner")
             .map
+    }
+
+    #[expect(
+        clippy::expect_used,
+        reason = "the bundle port is constructed only here from BundleCollisionData"
+    )]
+    fn lookup_except_door(
+        &self,
+        scope: &EngineeringStaticCellScope,
+        cell: LogicalCell,
+        opening: u64,
+    ) -> Result<CollisionClass, StaticCellEngineError> {
+        (self.0.as_ref() as &dyn std::any::Any)
+            .downcast_ref::<BundleCollisionData>()
+            .expect("bundle collision owner")
+            .lookup_with_opening(scope, cell, Some(opening))
     }
 }
 
@@ -1612,6 +1646,21 @@ pub mod tests {
         assert!(!world.enterable(DOOR_AT) && class() == Ok(CollisionClass::Blocked));
         let closed = world.facts().base_entry(DOOR_AT, 1, 0).ok_or("closed")?;
         assert_eq!(closed.appearance_id, 1629);
+        assert_eq!(world.facts().object_revision(key), 0);
+        let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+            cells.index()
+        else {
+            return Err("qualified bundle index".into());
+        };
+        assert_eq!(
+            index.lookup_except_door(cells.scope(), LogicalCell { x: 6, y: 0, z: 7 }, key),
+            Ok(CollisionClass::Walkable)
+        );
+        assert_eq!(
+            index.lookup_except_door(cells.scope(), LogicalCell { x: 6, y: 0, z: 7 }, key + 1),
+            Ok(CollisionClass::Blocked)
+        );
+        assert!(!world.enterable(DOOR_AT));
         assert_eq!(world.facts().object_revision(key), 0);
 
         // Open: walkable (live in the collision index too), the open item's facts, revision 1.

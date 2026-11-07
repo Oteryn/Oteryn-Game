@@ -210,6 +210,10 @@ impl DoorBook {
         self.find(key).is_some()
     }
 
+    pub fn is_open(&self, key: u64) -> Option<bool> {
+        self.state(key, None).map(|(_, state)| state & 3 == 1)
+    }
+
     /// The object revision of placement `key`: 0 for every entry that is no door.
     pub fn revision(&self, key: u64) -> u64 {
         self.revision_in(key, None)
@@ -245,6 +249,15 @@ impl DoorBook {
 
     /// Whether a door entry of `pos` is solid in its current state.
     pub fn blocks(&self, pos: TilePos) -> bool {
+        self.blocks_ignoring(pos, None)
+    }
+
+    /// Stage one exact door opening while retaining every other live blocker.
+    pub fn blocks_except(&self, pos: TilePos, opening: u64) -> bool {
+        self.blocks_ignoring(pos, Some(opening))
+    }
+
+    fn blocks_ignoring(&self, pos: TilePos, opening: Option<u64>) -> bool {
         let Some(tile) = super::view::placement_key(pos, 0) else {
             return false;
         };
@@ -252,7 +265,7 @@ impl DoorBook {
         self.doors[start..]
             .iter()
             .take_while(|door| door.key <= tile | 0xFF)
-            .any(Door::solid)
+            .any(|door| Some(door.key) != opening && door.solid())
     }
 
     /// Whether any door entry of `pos` exists.
@@ -565,6 +578,46 @@ mod key_tests {
             count: 1,
             sub_type: 0,
         }
+    }
+
+    #[test]
+    fn staged_opening_does_not_ignore_another_door_on_the_same_tile() -> Result<(), &'static str> {
+        let pos = TilePos {
+            x: 6,
+            y: 0,
+            floor: -7,
+        };
+        let first = super::super::view::placement_key(pos, 1).ok_or("door placement")?;
+        let second = super::super::view::placement_key(pos, 2).ok_or("other door placement")?;
+        let mut doors = DoorBook::default();
+        doors.push(
+            first,
+            true,
+            false,
+            open_facts(),
+            false,
+            Some(10102),
+            None,
+            Some(10102),
+        );
+        doors.finish();
+        assert!(doors.blocks(pos));
+        assert!(doors.blocks_except(pos, second));
+        assert!(!doors.blocks_except(pos, first));
+        assert_eq!(doors.is_open(first), Some(false));
+        doors.push(
+            second,
+            true,
+            false,
+            open_facts(),
+            false,
+            Some(10102),
+            None,
+            Some(10102),
+        );
+        doors.finish();
+        assert!(doors.blocks_except(pos, first));
+        Ok(())
     }
 
     #[test]

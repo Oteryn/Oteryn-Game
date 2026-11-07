@@ -1,3 +1,5 @@
+Current local checkpoint: BATCH-local-door-prototype-2026-11-07.json. Checks green; superseded by subsequently published source-correct97c922c33. Merge it before push, retain one runtime owner and port rollback/retry coverage. No whole qualification.
+
 Latest inert authoring integration: BATCH-group-authoring-integration-2026-11-07.json; product proof remains464bdc05f. No duplicate group engine.
 
 # questpc2 — continue now

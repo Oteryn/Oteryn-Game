@@ -188,6 +188,11 @@ fn scenario(case: Case) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "quest_container", false, false).await?;
+        if matches!(case, Case::Choice) {
+            let version: String = sqlx::query_scalar("SHOW server_version_num").fetch_one(&harness.pool).await?;
+            assert_eq!(version, "180006");
+            eprintln!("SOURCE_CLAIM_STORAGE POSTGRES_CASE_OBSERVED server_version_num={version}");
+        }
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
@@ -493,6 +498,9 @@ fn scenario(case: Case) -> TestResult {
                 owner.movement_cells = &cells;
                 owner.admit_progression_session(&mut admitted).await;
                 deps.initialize(&owner).await;
+                if matches!(case, Case::Choice) {
+                    owner.admit_quest_session(&admitted).await;
+                }
                 if cold_replay {
                     assert_eq!(
                         wire_use_targets(&owner, admitted, &[(1, &target)]).await?,
@@ -512,6 +520,26 @@ fn scenario(case: Case) -> TestResult {
                             (CommandStatus::Accepted, UseDisposition::NothingToUse),
                         ]
                     );
+                }
+                if matches!(case, Case::Choice) {
+                    let track = "oteryn:quest-progress/quest/u7_24/the_annihilator/reward";
+                    let copy = harness.root.read_character_quest_state(&authority, fence.character_id)
+                        .await.map_err(debug)?;
+                    assert_eq!(copy.tracks().get(track), Some(&1), "earned shared claim must expose its source storage");
+                    assert!(!copy.meets_door_storage(10102));
+                    {
+                        let sessions = owner.states.quest_sessions.lock().map_err(debug)?;
+                        let live = sessions.get(&admitted.game_session_id).and_then(|s| s.copy.as_ref())
+                            .ok_or("live quest copy")?;
+                        assert_eq!(live.tracks().get(track), Some(&1), "same-session claim refresh must expose source storage");
+                        assert!(!live.meets_door_storage(10102));
+                    }
+                    let stored_tracks: i64 = sqlx::query_scalar(
+                        "SELECT count(*) FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2"
+                    ).bind(fence.character_id.as_bytes().as_slice()).bind(track)
+                        .fetch_one(&harness.pool).await?;
+                    assert_eq!(stored_tracks, 0, "the existing claim remains the sole storage writer");
+                    eprintln!("SOURCE_CLAIM_STORAGE POSTGRES_CASE_COMPLETED cold_replay={cold_replay}");
                 }
                 let bag = harness
                     .root
