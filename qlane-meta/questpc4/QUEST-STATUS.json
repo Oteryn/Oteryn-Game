@@ -10526,5 +10526,16 @@
       "clippy": "running; not yet claimed PASS",
       "pin_refresh": "serialized retry pending after concurrent memory kill"
     }
+  },
+  "main_merge_669d5af5": {
+    "main": "669d5af5261a60d347167b7c880a4498aebe72ed",
+    "conflicts": 21,
+    "conflict_scope": "Generated quest shards, binding packets, completion/state data, source receipt, rollout, candidate and variant packets only. No Rust or hand-authored packet conflicts.",
+    "resolution": "Use incoming generated state then replay repository generators in dependency order. Reconcile source approval/receipt using existing callback-proof refresh and amend_monk_source_receipt.py; all 28 reviewed cores verified unchanged. Preserve incoming workflow/policy files byte-for-byte.",
+    "workspace_check": "PASS 3m57s /tmp/questpc4-main669-workspace-check.log",
+    "fmt": "PASS /tmp/questpc4-main669-fmt.log",
+    "pin_refresh": "PASS cached release compiler /tmp/questpc4-main669-pin-refresh.log; semantic world pin b2400c60f3a08b751ce3edee7a1ea7979c0fcc94a9cb2fefcab9d6a558d125e6",
+    "generation": "Quest tree then binding/catalogue/matrix/candidates/rollout/declarations/state lowering/binding plan/import/preflight/reward candidates/variant packet; native provider regeneration final.",
+    "remaining": "Previous CI repair PG/freshness obligations remain explicitly IN_PROGRESS; this batch reconciles current main and compile gates, not whole-quest qualification."
   }
 }
