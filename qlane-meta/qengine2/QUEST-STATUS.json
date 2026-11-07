@@ -3163,5 +3163,24 @@
     "acquisition_api_implementations_found": 0,
     "audit": "/tmp/qengine2-peer-admission-reuse-audit.json",
     "next_features": "Inspect questpc2-8 callback extensions; qworld/qnpcfx/npcfix/wpkg before authored lowering and reward wiring"
+  },
+  "shared_engine_increment": {
+    "state": "WIP; not qualified",
+    "feature": "catalogue-scoped authored stage bindings",
+    "implemented": [
+      "closed bounded binding document",
+      "NPC and carried-use callback lookup",
+      "world use and step-in callback lookup",
+      "definition hashing includes binding identities",
+      "catalogue extension preserves authored bindings and hashes"
+    ],
+    "remaining": [
+      "real-dispatch PostgreSQL qualification",
+      "kill trigger binding integration",
+      "world item-delivery composition",
+      "native content admission"
+    ],
+    "peer_reuse_audit": "26 origin lane heads inspected; questpc3 262618b3cd9fce9de09ee83064de6f31e95aa8e7 conditional kill progression and questpc7 653feac452d8dbb2cf03edbfc733a1bf59bd77d7 world reward composition identified for reuse",
+    "qualification_counts_unchanged": true
   }
 }

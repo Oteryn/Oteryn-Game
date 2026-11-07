@@ -140,6 +140,14 @@ struct Document {
 }
 
 /// Read the same closed content shape at boot and at the durable mutation boundary.
+/// Read the same catalogue-scoped bindings at dispatch and under the durable writer.
+pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String> {
+    match catalogue.authored_world_callbacks() {
+        Some(callbacks) => Ok(callbacks.to_vec()),
+        None => load(),
+    }
+}
+
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
     callbacks.extend(parse(include_str!(
@@ -158,6 +166,10 @@ pub fn load() -> Result<Vec<Callback>, String> {
         return Err("duplicate callback across registries".into());
     }
     Ok(callbacks)
+}
+
+pub(crate) fn validate_callbacks(callbacks: &[Callback]) -> Result<(), String> {
+    parse(&serde_json::json!({"schema":1,"callbacks":callbacks}).to_string()).map(|_| ())
 }
 
 fn parse(text: &str) -> Result<Vec<Callback>, String> {

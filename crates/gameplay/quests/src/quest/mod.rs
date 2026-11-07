@@ -18,6 +18,7 @@
 
 // Source qualification only: the coordinator retained new NPC execution in
 // Left out. These evaluators are not a second production conversation adapter.
+pub mod authored_bindings;
 #[cfg(test)]
 pub mod batch3_a;
 pub mod classic_dialogue;
@@ -275,6 +276,7 @@ pub struct QuestStateCatalogue {
     tracks: BTreeMap<String, QuestTrack>,
     transitions: BTreeMap<String, QuestTransition>,
     hashes: BTreeMap<String, [u8; 32]>,
+    authored_bindings: Option<std::sync::Arc<authored_bindings::RuntimeBindings>>,
 }
 
 impl QuestStateCatalogue {
@@ -381,6 +383,7 @@ impl QuestStateCatalogue {
             tracks: track_map,
             transitions: transition_map,
             hashes,
+            authored_bindings: None,
         })
     }
 
@@ -397,7 +400,7 @@ impl QuestStateCatalogue {
         if let Some(quest) = quests.find(|quest| self.hashes.contains_key(*quest)) {
             return Err(QuestCatalogueError::DuplicateKey(quest.clone()));
         }
-        Self::new(
+        let mut extended = Self::new(
             self.content_revision.clone(),
             self.tracks.values().cloned().chain(tracks).collect(),
             self.transitions
@@ -405,7 +408,11 @@ impl QuestStateCatalogue {
                 .cloned()
                 .chain(transitions)
                 .collect(),
-        )
+        )?;
+        // Existing definitions may include the immutable native binding document in their hash.
+        extended.hashes.extend(self.hashes.clone());
+        extended.authored_bindings = self.authored_bindings.clone();
+        Ok(extended)
     }
 
     /// A catalogue with no quest: every transition request is unknown.
@@ -415,6 +422,18 @@ impl QuestStateCatalogue {
     }
 
     #[must_use]
+    pub fn authored_world_callbacks(&self) -> Option<&[world_callbacks::Callback]> {
+        self.authored_bindings
+            .as_ref()
+            .map(|runtime| runtime.world.as_slice())
+    }
+
+    pub fn authored_bindings(&self) -> Option<&authored_bindings::Bindings> {
+        self.authored_bindings
+            .as_ref()
+            .map(|runtime| &runtime.source)
+    }
+
     pub fn content_revision(&self) -> &str {
         &self.content_revision
     }
