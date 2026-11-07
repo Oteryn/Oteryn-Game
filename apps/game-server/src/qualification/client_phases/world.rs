@@ -8,6 +8,9 @@ use std::path::Path;
 include!("character_core.rs");
 include!("floor_journey.rs");
 include!("full_e2ef7_mount.rs");
+include!("full_row_w22b_mount.rs");
+include!("full_row_c05_mount.rs");
+include!("full_row_c04_mount.rs");
 include!("full_row_w18_mount.rs");
 include!("full_row_c11_mount.rs");
 include!("full_row_w19a_mount.rs");
@@ -320,6 +323,9 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     // Keep the high-level fixture on the other Character: the original
     // progression/death journey must retain its ordinary starter build.
     full_e2ef7::run_packet(clients).await;
+    full_row_w22b::run_packet(clients).await;
+    full_row_c05::run_packet(clients).await;
+    full_row_c04::run_packet(clients).await;
     full_row_w18::run_packet(clients).await;
     full_row_c11::run_packet(clients).await;
     full_row_w19a::run_packet(clients).await;
