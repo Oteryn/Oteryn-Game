@@ -73,9 +73,9 @@ pub fn preview(
     now: i64,
 ) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError>
 {
-    let source = NpcRuleCatalog::runtime()?
-        .clone()
-        .with_native_bounds(catalogue)?;
+    let Some(source) = NpcRuleCatalog::runtime()?.admitted_for_npc(&request.npc, catalogue)? else {
+        return Ok(None);
+    };
     match evaluate_source(&source, request, tracks, catalogue, now, None) {
         Err(_) if request.npc == "oteryn:npc.tereban" => evaluate_source(
             &source,
@@ -112,7 +112,7 @@ fn evaluate_source(
 {
     let mut complete = tracks.clone();
     for program in source.programs() {
-        for rule in &program.document.rules {
+        for rule in program.document.rules.iter().filter(|rule| rule.npc == request.npc) {
             for guard in &rule.guards {
                 if let oteryn_gameplay_quests::quest::npc_rules::NpcRuleGuard::Storage {
                     track, ..
@@ -121,6 +121,9 @@ fn evaluate_source(
                     track,
                     ..
                 } = guard
+                    // Local absent values belong to the source evaluator. Only
+                    // foreign guards need a catalogue-backed snapshot entry.
+                    && !program.document.tracks.iter().any(|definition| definition.key == *track)
                     && let Some(definition) = catalogue.track(track)
                 {
                     let initial = source
@@ -151,7 +154,7 @@ fn evaluate_source(
     };
     if inventory.is_some() && marlin_trophy::owns(request) {
         source.plan_marlin_items(&input)
-    } else if inventory.is_some() && request.npc == "oteryn:npc.tereban" {
+    } else if inventory.is_some() && fathers_burden::owns(request) {
         source.plan_father_items(&input)
     } else if inventory.is_some() {
         source.plan_item_exchange(&input)
@@ -210,8 +213,9 @@ impl DurabilityRoot {
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
         let source = NpcRuleCatalog::runtime()
-            .and_then(|source| source.clone().with_native_bounds(&catalogue))
-            .map_err(|_| CharacterProgressionError::InvalidInput)?;
+            .and_then(|source| source.admitted_for_npc(&request.npc, &catalogue))
+            .map_err(|_| CharacterProgressionError::InvalidInput)?
+            .ok_or(CharacterProgressionError::InvalidInput)?;
         let mut content = items;
         self.try_issue_semantic_pass()?.run_with_context(&mut content, move |holder,deadline,content| Box::pin(async move {
             let mut tx=super::super::db::begin_type2_transaction(holder,deadline).await?;

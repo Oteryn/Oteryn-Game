@@ -765,6 +765,11 @@ pub(super) async fn npc_bank_talk(
         drop(runtime);
         return monk::apply(admission, actor, command, intent, step).await;
     }
+    if let Some(step) = hero_of_bounac::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return hero_of_bounac::apply(admission, actor, command, intent, step).await;
+    }
     if let Some(step) = catalogue::prepare(admission, actor, command, &intent, &runtime, &ordinary)
     {
         drop(runtime);
@@ -794,11 +799,6 @@ pub(super) async fn npc_bank_talk(
         drop(runtime);
         drop(_trade_permit);
         return wrath_sleeping_dragon::apply(admission, actor, command, intent, step).await;
-    }
-    if let Some(step) = hero_of_bounac::prepare(admission, actor, command, &intent, &runtime) {
-        drop(runtime);
-        drop(_trade_permit);
-        return hero_of_bounac::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = planegazer_finale::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
