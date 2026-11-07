@@ -640,6 +640,16 @@ async fn apply_input(
         return Err(DurabilityError::InvalidStoredState);
     };
     permit.check_channel(world_id, channel_id)?;
+    apply_input_rows(tx, input, transaction).await
+}
+
+/// Applies the row changes of one consumed input once the caller has proven
+/// its authority (spell lane channel check or the NPC item permit).
+async fn apply_input_rows(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    input: &Input,
+    transaction: &str,
+) -> Result<(), DurabilityError> {
     let changed = sqlx::query(
         "UPDATE game_item_instances SET \
          quantity=CASE WHEN $4::text IS NULL THEN quantity-$2 ELSE quantity END, \
