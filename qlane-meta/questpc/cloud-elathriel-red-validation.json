@@ -1,0 +1,30 @@
+{
+  "scope": "Elathriel carried/bank/capacity source-sale probes before reward-engine/source admission",
+  "cases": [
+    {
+      "case": "draconia-elathriel-bank",
+      "duration_seconds": 82.876288821,
+      "postgres": "18.6",
+      "result": "RED"
+    },
+    {
+      "case": "draconia-elathriel-coins",
+      "duration_seconds": 82.794019943,
+      "postgres": "18.6",
+      "result": "RED"
+    },
+    {
+      "case": "draconia-elathriel-full",
+      "duration_seconds": 82.310351405,
+      "postgres": "18.6",
+      "result": "RED"
+    }
+  ],
+  "harness_seconds": 247.98,
+  "cause": "Production framed hi returns NoConversation; source paid reward/NPC admission not bound.",
+  "log": "qlane-meta/questpc/cloud-elathriel-red.log",
+  "sha256": "3e3b6388b9524c34c0675466c9bb98bf676610ec7aebbac284360ffd3877c52b",
+  "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/elathriel.lua#L193-L238",
+  "source_sha256": "24dbbbe1ee2bcb74f74462ce131dd10cdf45801d53ecb586bd63993e1450cd7d",
+  "boundary": "Evidence/source-contract checkpoint only. Uncommitted generic engine integration is not qualified."
+}

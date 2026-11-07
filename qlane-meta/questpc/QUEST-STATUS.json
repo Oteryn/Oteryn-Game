@@ -9646,5 +9646,10 @@
     "cases": 3,
     "duration_seconds": 138.28,
     "validation": "qlane-meta/questpc/cloud-draconia-level-gate-validation.json"
+  },
+  "cloud_elathriel_progress": {
+    "phase": "actual PostgreSQL RED3 retained; reusable engine/source sale integration compiling",
+    "validation": "qlane-meta/questpc/cloud-elathriel-red-validation.json",
+    "whole_title_promoted": false
   }
 }

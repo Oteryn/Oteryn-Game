@@ -400,3 +400,21 @@ Source-derived closed physics block movement/projectiles; open physics block nei
 The focused PG scene supplies only initial canonical actor levels24/25/26 and
 unbound source door identity/position; the production source binder and wire owner
 must establish the action and evaluate the predicate. It does not certify XP gains.
+
+### Elathriel exact paid Hellgate key (2026-11-07)
+Primary: https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/elathriel.lua#L193-L238
+SHA25624dbbbe1ee2bcb74f74462ce131dd10cdf45801d53ecb586bd63993e1450cd7d.
+The verified offline corpus contains identical bytes. Key/keys asks5000, topic1;
+exact normalized yes at topic1 removesMoneyBank5000 and grants copper2970 with
+immutable action3012; success and insufficient funds reset topic0. No also resets0.
+The source has no quest storage guard. Extend the reusable paid reward engine to
+admit an exact source-bound stateless sale, with no invented progression flag.
+The existing world/ordinary quest constructor must continue rejecting unbound empty
+graphs; the durable writer must require the matching admitted fee/MINT participant.
+Source-owned failure text is Come back when you have enough money. Existing
+transaction-refusal protocol result is retained with source conversation text/topic.
+Conservative native delivery rule: a full backpack refuses without charging, rather
+than delivering a paid key outside the customer's carried custody. Reuse questpc6
+paid enginee30938891/2123b7871 and SQL0999/1096; preserve local typed input permits,
+Corym transactions, source world effects, and Father's atomic eleven-track write.
+Reviewed native placement32684,31671,z9; source copper2970 profile already exists.

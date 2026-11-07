@@ -1,3 +1,18 @@
+## Elathriel RED/source checkpoint — 2026-11-07
+Actual PostgreSQL18.6 RED3=247.98s: carried,bank,full-backpack probes fail on
+framed hi NoConversation. Evidence cloud-elathriel-red-validation.json.
+Uncommitted engine integration reuses qpc6e30938891 with typed reward input permit,
+stateless paid-sale authorization and exact predecessor hashes; no fake quest flag.
+Source programme/greeting/offers generated from hash-verified offline Lua; reviewed
+NPC placement generated46. Pins running session84262, check3 session76201,
+reward unit session4524. Logs/tmp/questpc-elathriel-{check3,quest-unit,pins}.log.
+Source integration not yet qualified. Finish compile/unit errors, strict Clippy,
+post-pin focused3PG GREEN, then relevant NPC/Father/world regressions and push.
+Do not run dispatch TEST rustc while pin compiler runs. No full PG/test suites.
+Source failure text/topic implemented in shared executor; test-source driver at
+postgres_tests/draconia_elathriel.rs. Need verify final static checks and source
+legacy hash exactness, then PG. Existing baseline key door/gates/Dragonlord green.
+
 ## Native Draconia level25 gate GREEN — 2026-11-07
 Exact source binding5102/action1025 at32804,31583,z2 reuses existing generic owner.
 Only5102/5103 profiles added with pinned importer; all old profiles byte-equivalent.
