@@ -59,7 +59,7 @@ fn acceptance(failure: Option<QuestRefusal>) -> TestResult<Arc<QuestStateCatalog
         QuestStateCatalogue::new(
             "content-1",
             tracks,
-            vec![QuestTransition {
+            vec![QuestTransition { world_change: None,
                 key: KEY.into(),
                 quest: QUEST.into(),
                 effects,

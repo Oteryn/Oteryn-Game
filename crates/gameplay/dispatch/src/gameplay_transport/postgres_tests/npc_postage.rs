@@ -16,6 +16,9 @@ use oteryn_protocol_oteryn::npc_service::{
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
+#[path = "npc_postage/duplicate_drop.rs"]
+mod duplicate_drop;
+
 #[path = "npc_postage/exact_shops.rs"]
 mod exact_shops;
 
@@ -194,19 +197,7 @@ fn scenario(keys: &[&str]) -> TestResult {
                         }
                     }
                 }
-                if key == "toffee" {
-                    // Retain two units of every offer while seven fresh coin payouts accumulate.
-                    // The source-backed backpack of holding has 24 entries; the 20-entry
-                    // default correctly refuses the sixth payout with this fixture inventory.
-                    super::item_look::seed_main_backpack_with_definition(
-                        &h,
-                        &inventory,
-                        "oteryn:item.tibia.i3253",
-                    )
-                    .await?;
-                } else {
-                    seed_main_backpack(&h, &inventory).await?;
-                }
+                seed_main_backpack(&h, &inventory).await?;
                 let current =
                     crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
                         .current_session_at(session)
@@ -266,7 +257,7 @@ fn scenario(keys: &[&str]) -> TestResult {
                         let intent = NpcTradeIntent { npc_actor: npc, catalogue_revision: revision,
                             offer_index: u32::try_from(offer_index)?, side, quantity: 1,
                             expected_unit_price: unit_price };
-                        let ordinal = 10 + u64::try_from(offset)? * 2;
+                        let ordinal = 10 + u64::try_from(offset)? * if key == "toffee" { 3 } else { 2 };
                         let before_gold = exact_shops::gold(&h).await?;
                         let before_items = exact_shops::quantity(&h, item).await?;
                         let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_npc_trades")
@@ -293,6 +284,11 @@ fn scenario(keys: &[&str]) -> TestResult {
                         let after: i64 = sqlx::query_scalar("SELECT count(*) FROM game_npc_trades")
                             .fetch_one(&h.pool).await?;
                         assert_eq!(after, receipts + 1, "one durable receipt per exact contract offer");
+                        if key == "toffee" {
+                            duplicate_drop::apply(&h, &owner, deps.actor,
+                                command(ordinal + 2), item).await?;
+                            assert_eq!(exact_shops::gold(&h).await?, gold, "moving the retained duplicate preserves money");
+                        }
                     }
                     return Ok(());
                 }

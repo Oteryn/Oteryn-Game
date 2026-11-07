@@ -213,6 +213,7 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
             continue;
         }
         let transition = QuestTransition {
+            world_change: None,
             key: branch.key.clone(),
             quest: branch.quest.clone(),
             effects,

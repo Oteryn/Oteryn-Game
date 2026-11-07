@@ -212,3 +212,92 @@ fn s17_media_speech_effects_and_output_names_roundtrip() -> Result<(), String> {
     assert!(Message::Chat("x".repeat(257)).encode().is_err());
     Ok(())
 }
+
+#[test]
+fn clcast_consent_query_uses_lane_kind_and_cannot_enter_observer_envelope()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_protocol_oteryn::cast::{Envelope, Message};
+    let bytes = Message::ConsentQuery
+        .encode()
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(bytes, [8, 52]);
+    assert_eq!(
+        Message::decode(&bytes).map_err(|e| format!("{e:?}"))?,
+        Message::ConsentQuery
+    );
+    assert!(Message::decode(&[8, 52, 16, 0]).is_err());
+    assert!(
+        Envelope {
+            generation: 1,
+            message: Message::ConsentQuery
+        }
+        .encode()
+        .is_err()
+    );
+    Ok(())
+}
+
+#[test]
+fn clcast_ready_and_caster_roster_are_strict_and_role_separated()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_protocol_oteryn::cast::{Envelope, Message};
+    let ready = Message::Ready {
+        epoch: 7,
+        chat: false,
+        delay: 300,
+    };
+    let bytes = Envelope {
+        generation: 9,
+        message: ready.clone(),
+    }
+    .encode()
+    .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        Envelope::decode(&bytes, false)
+            .map_err(|e| format!("{e:?}"))?
+            .message,
+        ready
+    );
+    assert!(Envelope::decode(&bytes, true).is_err());
+    let roster = Message::CasterRoster {
+        revision: 3,
+        subjects: vec![[1; 16], [2; 16]],
+    };
+    assert!(roster.encode().map_err(|e| format!("{e:?}"))?.len() < 1024);
+    assert_eq!(
+        Message::decode(&roster.encode().map_err(|e| format!("{e:?}"))?)
+            .map_err(|e| format!("{e:?}"))?,
+        roster
+    );
+    assert!(
+        Envelope {
+            generation: 9,
+            message: roster
+        }
+        .encode()
+        .is_err()
+    );
+    assert!(
+        Message::CasterRoster {
+            revision: 3,
+            subjects: vec![[2; 16], [1; 16]]
+        }
+        .encode()
+        .is_err()
+    );
+    assert!(
+        Message::CasterRoster {
+            revision: 3,
+            subjects: vec![[1; 16]; 51]
+        }
+        .encode()
+        .is_err()
+    );
+    assert_eq!(
+        Message::ControlQuery
+            .encode()
+            .map_err(|e| format!("{e:?}"))?,
+        [8, 55]
+    );
+    Ok(())
+}

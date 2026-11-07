@@ -93,7 +93,7 @@ fn install_clock_fixture(
         .map(|c| canonical.transition(&c.key).cloned().ok_or("transition"))
         .collect::<Result<Vec<_>, _>>()?;
     let quest = callbacks[0].quest.clone();
-    transitions.push(QuestTransition {
+    transitions.push(QuestTransition { world_change: None,
         key: READY.into(),
         quest: quest.clone(),
         effects: callbacks[0]
@@ -114,7 +114,7 @@ fn install_clock_fixture(
         .next()
         .ok_or("clock")?
         .track;
-    transitions.push(QuestTransition {
+    transitions.push(QuestTransition { world_change: None,
         key: ELAPSED.into(),
         quest,
         effects: vec![QuestEffect {

@@ -74,6 +74,7 @@ impl Settings {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct State {
+    pub chat_enabled: bool,
     pub cast_id: [u8; 16],
     pub revision: u64,
     pub epoch: u64,
@@ -207,6 +208,7 @@ impl CastOwner {
         let mut cast_id = [0; 16];
         aws_lc_rs::rand::fill(&mut cast_id).map_err(|_| Error::Unavailable)?;
         let state = State {
+            chat_enabled: settings.chat_enabled,
             cast_id,
             revision,
             epoch: revision,
@@ -275,6 +277,7 @@ impl CastOwner {
         let revision = self.next_revision()?;
         let cast = self.casts.get_mut(&target).ok_or(Error::Unavailable)?;
         cast.settings = settings;
+        cast.state.chat_enabled = settings.chat_enabled;
         cast.state.revision = revision;
         cast.state.epoch = revision;
         cast.state.delay_seconds = settings.delay_seconds;

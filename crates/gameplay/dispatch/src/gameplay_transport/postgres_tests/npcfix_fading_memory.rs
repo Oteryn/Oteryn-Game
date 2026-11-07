@@ -48,14 +48,14 @@ fn scenario(npc: &str, key: &str, input: Option<u16>, output: u16) -> TestResult
                 .cloned().ok_or("production reward track")).collect::<Result<Vec<_>,_>>()?;
             let setup = "oteryn:quest-transition/npcfix-fixture/reward-ready";
             let lapse = "oteryn:quest-transition/npcfix-fixture/cooldown-elapsed";
-            let mut transitions = vec![actual.clone(), QuestTransition {
+            let mut transitions = vec![actual.clone(), QuestTransition { world_change: None,
                 key: setup.into(), quest: actual.quest.clone(), completes: false, experience: None,
                 effects: tracks.iter().map(|track| QuestEffect { track: track.key.clone(),
                     from: QuestComparison::Any, effect: QuestEffectKind::Set(if track.key.ends_with("/mission05") { 2 } else { track.initial }) }).collect(),
             }];
             if npc == "a_fading_memory" {
                 let clock = tracks.iter().find(|track| track.key.ends_with("/ghost_tear_cooldown")).ok_or("source cooldown track")?;
-                transitions.push(QuestTransition { key: lapse.into(), quest: actual.quest.clone(),
+                transitions.push(QuestTransition { world_change: None, key: lapse.into(), quest: actual.quest.clone(),
                     effects: vec![QuestEffect { track: clock.key.clone(), from: QuestComparison::Ge(72_000), effect: QuestEffectKind::Add(-72_000) }],
                     completes: false, experience: None });
             }

@@ -116,6 +116,7 @@ fn npc(
     (
         reference(ProjectV2Family::Npc, key),
         ProjectV2Declaration::Npc {
+            visibility: Default::default(),
             identity: identity(key),
             presentation: None,
             behavior: None,

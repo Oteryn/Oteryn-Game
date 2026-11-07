@@ -59,7 +59,7 @@ fn scenario(npc: &str) -> TestResult {
                     .ok_or("production atomic restless-soul transition")?.clone();
                 let tracks = story.effects.iter().map(|effect| loaded.catalogue().track(&effect.track)
                     .cloned().ok_or("real story track")).collect::<Result<Vec<_>,_>>()?;
-                QuestStateCatalogue::new("content-1", tracks, vec![story.clone(), QuestTransition {
+                QuestStateCatalogue::new("content-1", tracks, vec![story.clone(), QuestTransition { world_change: None,
                     key: "oteryn:quest-transition/npcfix/fixture/spirit-language".into(), quest: story.quest,
                     effects: vec![QuestEffect { track: format!("{ICE}questline"), from: QuestComparison::Any, effect: QuestEffectKind::Set(37) }],
                     completes: false, experience: None,

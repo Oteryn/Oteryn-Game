@@ -9257,7 +9257,8 @@
         "evidence": "crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:599; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:2256"
       }
     ],
-    "publication_override": "Latest HARD RULE: within15 minutes publish current compiling state after workspace all-target check and fmt; tests/CI may remain pending. Thereafter publish compiling checkpoints at least every30 minutes."
+    "publication_override": "Latest HARD RULE: within15 minutes publish current compiling state after workspace all-target check and fmt; tests/CI may remain pending. Thereafter publish compiling checkpoints at least every30 minutes.",
+    "prepush2": "Before every push fetch/merge main; regenerate all generated files, pins and central evidence using repo tooling; unit-test every changed crate plus own real-PG cases; workspace alltargets check and all fmt. If step3 exceeds cadence, push only after1,2,4 pass and name pending tests."
   },
   "post3020_published_checkpoint": {
     "head": "18ca444be3c277ebd1e3dbbe190e74ecab3a0b3f",
@@ -9287,7 +9288,7 @@
     }
   },
   "toffee_fixture_capacity_repair": {
-    "state": "COMPILES; focused five-shop PostgreSQL retest queued",
+    "state": "Larger fixture attempt superseded: runtime global cap20; real item-loop duplicate preservation now authored, retest pending",
     "red": {
       "seconds": 434.46,
       "marker": "POSTGRES_STARTED NPCFIX postage toffee",
@@ -9314,6 +9315,26 @@
       "check": "PASS6m12s; cargo check --workspace --all-targets; /tmp/npcfix-evidence/npcfix-two-failure-workspace-check.log",
       "fmt": "PASS; cargo fmt --all -- --check; /tmp/npcfix-evidence/npcfix-two-failure-final-fmt.log",
       "focused_retest": "Queued behind check; /tmp/npcfix-evidence/npcfix-two-failure-focused-green.log"
+    }
+  },
+  "prepush2_main_integration": {
+    "last_pushed": "1c23eabb7a3bd13b365b461418960083a0fa841a",
+    "main": "e1ca3e003",
+    "merge": "CLEAN; uncommitted while repository generation runs",
+    "regeneration": "prepush2-main-regeneration-2.log; initial missing QuestTransition.world_change fixed with None for ordinary NPCFIX transitions and fixtures",
+    "unit_crates": "/tmp/npcfix-evidence/prepush2-changed-crates.json;10 own changed crates; unit run pending generation",
+    "own_pg": "Guardian eight-topic test GREEN136.793s with PG marker. Five shops RED401.352s after unsupported24-slot fixture; global GAMEITEM01_CONTAINER_ENTRIES_MAX is20. Reverted larger backpack fixture. New43-line helper moves each remaining duplicate to Ground through real fenced item-loop after all unchanged trade assertions; retest pending.",
+    "pending_tests": [
+      "all10 changed-crate unit suites",
+      "five exact shops including Toffee item-loop fixture",
+      "merged ordinary QuestTransition PG regressions"
+    ],
+    "first_gate": {
+      "main": "e1ca3e0033013c35b10d9b5b2be7f103f813fd14",
+      "generated": "PASS full content/native/proficiency/Crystal/bindings/world metadata, Item+Mount equivalence and world pins; prepush2-extra-generation-results.json",
+      "check": "PASS7m56s; prepush2-workspace-check.log",
+      "fmt": "PASS; prepush2-fmt.log",
+      "new_main": "Final fetch found f641d8d6c QNPCFX; merge and affected regeneration required before push"
     }
   }
 }
