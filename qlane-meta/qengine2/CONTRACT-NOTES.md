@@ -329,3 +329,18 @@ choice is unbound. Keep that guard. Native admission will retain each explicit
 source family draw, use the XML's exact sex pair, and deliver base only for an
 addonless family. The immutable capture is preserved; corrected native material
 carries source packet digest, XML citation and explicit owner decisions.
+
+S06 final source-family resolution supersedes the earlier Jersey assumption:
+addon_doll.lua:37/38 have incorrect Dream Warden/Glooth Engineer pairs; use their
+explicit family labels with the pinned XML pairs. :39 names Jungle Explorer,
+female620/male621 (the table's first field is female, confirmed by Citizen136/128
+at :4). This family was missing from the enabled XML catalogue and is now
+admitted from the exact script row and client observations. :27's Wedding label
+uses the already admitted Newly Wed328/329 pair. Wedding and Jungle Explorer
+have no admitted addon patterns: their weighted family draws deliver the base,
+without claiming invisible addons. All108 source draw branches and family
+weights remain; 201used native grants are bound exactly. Original capture is
+unchanged; 8 explicit lowering decisions carry original/native keys and sources.
+New Jungle Explorer starts locked for both sexes and is Premium to wear, an
+explicit conservative owner admission decision because its acquisition script
+does not state wearing Premium. Its source item keeps its original Premium rule.

@@ -840,3 +840,10 @@ Retained stock taming3casesGREEN againstcurrent131outfits/250mounts/201grants.
 Authoring31GREEN93.254s; final changed-crate check/clippy/fmt executing. Top-level
 S06 remainsAUTHORING for four construction rules; W15b actual multi-root PG RED
 retained. Generic additional-root MINT/SQL plan prepared under /tmp for next step.
+
+Stock catalogue/acquisition step final gates GREEN: items+dispatch check30.44s,
+strict clippy alltargets/allfeatures1m35s, fmtallcheck. Authoring31GREEN, five
+source PG storiesGREEN171.08s plus retained three stock taming regressions.
+Do not redo this step. Remaining S06 work: four construction source rules and
+stock mount-item variants (parts/random/direct). Next generic engine step W15b
+has actual PG RED65.609s and prepared code/SQL under /tmp. Counts44/66.

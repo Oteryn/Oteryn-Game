@@ -3006,7 +3006,7 @@
           "postgres_red_seconds": 65.354410807
         },
         "native_acquisition_step": {
-          "status": "PG_GREEN",
+          "status": "GREEN",
           "outfits": 131,
           "mounts": 250,
           "native_grants": 201,
@@ -3024,7 +3024,13 @@
             "POSTGRES_CASE_COMPLETED S06_SOURCE_OUTFIT Dream Warden duration=108.720900445s success=true",
             "POSTGRES_CASE_COMPLETED S06_STOCK_RANDOM_OUTFIT duration=79.47545189s success=true"
           ],
-          "remaining_gates": "Final items+dispatch check/clippy/fmt running; full S06 construction coverage continues."
+          "remaining_gates": "Stock catalogue/acquisition proof complete. Full S06 still needs construction mechanics and stock mount-item variant proof.",
+          "validation": {
+            "authoring": "31passed93.254s",
+            "check": "items+dispatch allfeatures30.44s",
+            "clippy": "items+dispatch alltargets/allfeatures -Dwarnings1m35s",
+            "fmt": "cargo fmt all check passed"
+          }
         }
       },
       {
