@@ -861,3 +861,11 @@ warnings denied (150.826 seconds), formatting (14.660 seconds), and architecture
 recorded above remain applicable to their unchanged sources and artifacts.
 No additional numbers were allocated after command 710, return reason 52, and
 migrations 1140/1141. Final acceptance changes only these lane notes.
+
+### Restored-workspace verification
+
+At 2026-11-07 14:29:32 UTC, local and remote delivery head both matched
+`4cf022101326ddb34957c7565893820cbcf2662d`, with a clean worktree.
+Fresh checks passed: architecture (3.587 seconds), source_generator (0.864 seconds), diff (0.029 seconds).
+W07 and W08 remain DONE; no mechanic source, allocations, or generated
+artifacts changed. This checkpoint records verification of the completed delivery.
