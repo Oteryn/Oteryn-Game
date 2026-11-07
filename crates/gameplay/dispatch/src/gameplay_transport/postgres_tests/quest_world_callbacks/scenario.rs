@@ -31,6 +31,7 @@ fn scenario_case(
     let spirit = name == "qengine-rewards-questpc4-spirit";
     let native_tower = name.starts_with("qengine-rewards-questpc4-native-tower-");
     let native_switch = name.starts_with("l6-tomb-switch-native-");
+    let native_signs = name.starts_with("l6-native-signs-");
     let native_flames = name.starts_with("l6-native-flames-");
     let native_room = name.starts_with("l6-native-room-");
     let native_altar = name.starts_with("l6-floor-assembly-native");
@@ -44,8 +45,11 @@ fn scenario_case(
         || native_gate
         || native_altar
         || native_room
-        || native_flames;
-    let start = if native_flames {
+        || native_flames
+        || native_signs;
+    let start = if native_signs {
+        super::super::l6_native_signs::start()?
+    } else if native_flames {
         super::super::l6_native_flames::start()?
     } else if native_room {
         super::super::l6_native_rooms::start(name)?
@@ -101,7 +105,9 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = if native_flames {
+    let mut callback = if native_signs {
+        callback("ancient-tombs-diprath-sign-1")?
+    } else if native_flames {
         callback("ancient-tombs-morguthis-seven-flame-gate")?
     } else if native_room {
         super::super::l6_native_rooms::callback(name)?
@@ -291,7 +297,11 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if native_flames {
+        let world = if native_signs {
+            super::super::l6_native_signs::world(
+                generation.native_gameplay().ok_or("native sign policies")?,
+            )?
+        } else if native_flames {
             super::super::l6_native_flames::world(
                 generation
                     .native_gameplay()
@@ -646,6 +656,8 @@ fn scenario_case(
             super::super::l6_ruby_profile::exercise(&owner, &h).await?;
         } else if floor_profiles {
             super::super::l6_floor_profiles::exercise(&mut owner, &mut admitted, &h, fence).await?;
+        } else if native_signs {
+            super::super::l6_native_signs::exercise(&mut owner, &mut admitted, &h, name).await?;
         } else if native_flames {
             super::super::l6_native_flames::exercise(&mut owner, &mut admitted, &h, name).await?;
         } else if native_room {
