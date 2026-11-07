@@ -1936,6 +1936,46 @@
         "POSTGRES_CASE_COMPLETED qengine-rewards-l6-beggar-male-story duration=44.20147279s success=false",
         "POSTGRES_CASE_COMPLETED qengine-rewards-l6-beggar-female-story duration=44.275113452s success=false"
       ]
+    },
+    {
+      "id": "L1-07",
+      "entries": [
+        "oteryn:quest.knight_outfits_quest",
+        "oteryn:quest.druid_outfits_quest",
+        "oteryn:quest.assassin_outfit"
+      ],
+      "phase": "COMPLETE:all3entries qualified and pushed;allsource/Rust/PostgreSQL/content/world/pin checks pass.",
+      "reuse_audit": "git fetch origin --no-tags refreshed branches;questpc6 3bfd856061e5aa89668747ec7405af8c2b8cf7f5 Druid UNFINISHED;questpc8 fced2532a67ec03571d21c2bdb244ac2f0017737 Knight BLOCKED;older questpc branch has no qlane-meta status tree. No newer matched QUALIFIED found. Reuse native timer/counter/owned-outfit/premium owners already delivered.",
+      "source_facts": "Pinned Crystal9f5a72c:Knight Morgan+Gregor+Sam exactore/crudeiron(existingknight-swordwordalreadycorrect);ApeCity>15 gate;100fangs/helmet/sweat/royalsteel and strict2h Samtimer. Druid Ustan paws plusCeiron completehat objectives/gifts/language thenWarwolf. AssassinVescu7ingredients/base,Erayo6cloth+yarn/ownedbase/Shipwrecked2,Atradclaw+ring;Vescuinitial greeting requiresDrunk,Atrad greeting requiresFire. Generic current actor-condition support is ours;implement/reuse,never defer.",
+      "red_command": "cargo test --locked -p oteryn-gameplay-dispatch qengine_l7_ -- --nocapture --test-threads=2",
+      "red_log": "/tmp/qengine2-batch7-red.log",
+      "red_markers": [
+        "POSTGRES_CASE_COMPLETED qengine-rewards-l7-druid-story duration=44.634701448s success=false",
+        "POSTGRES_CASE_COMPLETED qengine-rewards-l7-assassin-story duration=45.053551306s success=false",
+        "POSTGRES_CASE_COMPLETED qengine-rewards-l7-knight-story duration=42.499994174s success=false"
+      ],
+      "mechanisms": "Opaque native actor-condition sample binds exact command/callback/itemfence/native generation;existing native runtime/player stores only,no locks inside SQL. Generic unowned-addon read reuses existing compatible earned/starter owner;unknown identifiers failclosed. Source gifts use existing same-transaction MINT.",
+      "source_implementation": "39newsourcecallbacks:8Knight+12Druid+19Assassin;existing knight-sword retained with source unowned-addon check. SourceCorpus file:line+sha citations in callbacks and CONTRACT-NOTES.md. Existing Ref nonnegative normalization reused;strictSam deadline7201;actualApeCity16..18/Shipwrecked2 readonly under original owners.",
+      "checks": [
+        "22authoring8.293s;sourcecallback/placement reproduction",
+        "7Rustreward_callbacktests;fmt;check15.87s;strictclippy37.89s",
+        "pin-refresh24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25"
+      ],
+      "harness_correction": "Failed run3actualPGcases80.711302894s/80.780567711s/79.708959976s,all at same invalid missing-later-ingredient assertion on a fully funded single-input hand-in;0passed3failed160.42s. Production correctlyacceptedexactrecipes. No assertion removed for missing inputs;partialrecipe test now requires at least2inputs.",
+      "temporary_build_failure": {
+        "error": "could not create a temp dir: No space left on device (os error28), /workspace/oteryn-env/target/debug/deps/rustc2Xld2f",
+        "resolution": "Deleted only inactive incremental compiler caches,retained focused dispatch test cache;source,binaries,and test evidence intact;17GB free;rerun /tmp/qengine2-batch7-green5.log"
+      },
+      "green_markers": [
+        "POSTGRES_CASE_COMPLETED qengine-rewards-l7-knight-story duration=81.732860551s success=true",
+        "POSTGRES_CASE_COMPLETED qengine-rewards-l7-druid-story duration=88.001043398s success=true",
+        "POSTGRES_CASE_COMPLETED qengine-rewards-l7-assassin-story duration=92.810090059s success=true"
+      ],
+      "result": "3passed;0failed;0ignored;169.73s;actualPostgreSQL18.6",
+      "follow_on_verification": "COMPLETE:123content2.14s;5world46.32s;pin-check24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25",
+      "identity_correction": "Original L1 Assassin scope URI is oteryn:quest.assassin_outfit (singular),not inferred assassin_outfits_quest. Preserve original URI;native state remains General. Qualification attached to existing original entry;no new record fabricated.",
+      "commit": "2a27f66f4",
+      "push": "fast-forward confirmed"
     }
   ],
   "owner_rule": "This lane implements missing generic engine, reward/binding, world, NPC, item and callback features after checking/reusing related branches; dependency-only inherited blockers are superseded.",
@@ -2265,41 +2305,19 @@
   },
   "delivery_rule": "Push every finished green quest/mechanism slice immediately and at least every30minutes while green work exists. Bound each investigation/missing-fact search to10minutes; record conservative decisions in CONTRACT-NOTES.md and implement. No full workspace/PG suite.",
   "active_batch": {
-    "id": "L1-07",
+    "id": "L1-08",
     "entries": [
-      "oteryn:quest.knight_outfits_quest",
-      "oteryn:quest.druid_outfits_quest",
-      "oteryn:quest.assassin_outfit"
+      "oteryn:quest.hunter_outfits_quest",
+      "oteryn:quest.outfit_and_addon_quests",
+      "oteryn:quest.dream_warden_outfits_quest"
     ],
-    "phase": "QUALIFIED all3entries realPostgreSQL3passed0failed169.73s;commit/push now,then targetedcontent/world/pin checks and nextbatch.",
-    "reuse_audit": "git fetch origin --no-tags refreshed branches;questpc6 3bfd856061e5aa89668747ec7405af8c2b8cf7f5 Druid UNFINISHED;questpc8 fced2532a67ec03571d21c2bdb244ac2f0017737 Knight BLOCKED;older questpc branch has no qlane-meta status tree. No newer matched QUALIFIED found. Reuse native timer/counter/owned-outfit/premium owners already delivered.",
-    "source_facts": "Pinned Crystal9f5a72c:Knight Morgan+Gregor+Sam exactore/crudeiron(existingknight-swordwordalreadycorrect);ApeCity>15 gate;100fangs/helmet/sweat/royalsteel and strict2h Samtimer. Druid Ustan paws plusCeiron completehat objectives/gifts/language thenWarwolf. AssassinVescu7ingredients/base,Erayo6cloth+yarn/ownedbase/Shipwrecked2,Atradclaw+ring;Vescuinitial greeting requiresDrunk,Atrad greeting requiresFire. Generic current actor-condition support is ours;implement/reuse,never defer.",
-    "red_command": "cargo test --locked -p oteryn-gameplay-dispatch qengine_l7_ -- --nocapture --test-threads=2",
-    "red_log": "/tmp/qengine2-batch7-red.log",
-    "red_markers": [
-      "POSTGRES_CASE_COMPLETED qengine-rewards-l7-druid-story duration=44.634701448s success=false",
-      "POSTGRES_CASE_COMPLETED qengine-rewards-l7-assassin-story duration=45.053551306s success=false",
-      "POSTGRES_CASE_COMPLETED qengine-rewards-l7-knight-story duration=42.499994174s success=false"
+    "titles": [
+      "Hunter Outfits Quest",
+      "Mage Outfits Quest",
+      "Dream Warden Outfits Quest"
     ],
-    "mechanisms": "Opaque native actor-condition sample binds exact command/callback/itemfence/native generation;existing native runtime/player stores only,no locks inside SQL. Generic unowned-addon read reuses existing compatible earned/starter owner;unknown identifiers failclosed. Source gifts use existing same-transaction MINT.",
-    "source_implementation": "39newsourcecallbacks:8Knight+12Druid+19Assassin;existing knight-sword retained with source unowned-addon check. SourceCorpus file:line+sha citations in callbacks and CONTRACT-NOTES.md. Existing Ref nonnegative normalization reused;strictSam deadline7201;actualApeCity16..18/Shipwrecked2 readonly under original owners.",
-    "checks": [
-      "22authoring8.293s;sourcecallback/placement reproduction",
-      "7Rustreward_callbacktests;fmt;check15.87s;strictclippy37.89s",
-      "pin-refresh24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25"
-    ],
-    "harness_correction": "Failed run3actualPGcases80.711302894s/80.780567711s/79.708959976s,all at same invalid missing-later-ingredient assertion on a fully funded single-input hand-in;0passed3failed160.42s. Production correctlyacceptedexactrecipes. No assertion removed for missing inputs;partialrecipe test now requires at least2inputs.",
-    "temporary_build_failure": {
-      "error": "could not create a temp dir: No space left on device (os error28), /workspace/oteryn-env/target/debug/deps/rustc2Xld2f",
-      "resolution": "Deleted only inactive incremental compiler caches,retained focused dispatch test cache;source,binaries,and test evidence intact;17GB free;rerun /tmp/qengine2-batch7-green5.log"
-    },
-    "green_markers": [
-      "POSTGRES_CASE_COMPLETED qengine-rewards-l7-knight-story duration=81.732860551s success=true",
-      "POSTGRES_CASE_COMPLETED qengine-rewards-l7-druid-story duration=88.001043398s success=true",
-      "POSTGRES_CASE_COMPLETED qengine-rewards-l7-assassin-story duration=92.810090059s success=true"
-    ],
-    "result": "3passed;0failed;0ignored;169.73s;actualPostgreSQL18.6",
-    "follow_on_verification": "PENDING after immediate source push",
-    "identity_correction": "Original L1 Assassin scope URI is oteryn:quest.assassin_outfit (singular),not inferred assassin_outfits_quest. Preserve original URI;native state remains General. Qualification attached to existing original entry;no new record fabricated."
+    "phase": "ReadpinnedsourceandpreparePGREDbefore implementinggenericsex-specific/multi-target grants. PreserveoriginalscopeURIs;do notinfercanonicals.",
+    "source_facts": "Hunter Elane grantsmale129addon1/female137addon2,Legolamale2/female1. Mage/Summoner sourcegrantscrossdifferentfamilies andsexes,Lynda10wand/rod types atomic;Zoltanexactly1FerumbrasHat5903. DreamWardenEruaran requiresCurrentpremium and20276mask/20275claw;source duplicate577male grantbug must conservativelynormalizecanonicalfemale578 anddocument. Genericgrant support isours,neverdefer.",
+    "reuse_plan": "Reuse existing accountappearance owner/immutablefacts/nativegeneration mappings;add additive source target sex and bounded multi-target support,withlegacyneutral grants remaining compatible. No classname-specificbit patches;normalwardrobe projectionmustunderstand sex-qualifiedfacts."
   }
 }

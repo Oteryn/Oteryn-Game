@@ -525,3 +525,19 @@ qualification to original existingentry and retain General nativeowner.
 Countsrecomputedfromactualstatuses:21QUALIFIED45UNFINISHED0BLOCKED. No new
 questrecord invented and no source/PG work repeated. Source2a27f66f4 pushed;
 followon content/world/pin session40286 stillrunning.
+L1-07 followon COMPLETE:123content2.14s;5world46.32s;pin-check24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25.
+Source2a27f66f4 andidentityfixde9bb8bac pushed;21/66QUALIFIED45remaining.
+L1-08 proposed Hunter/Mage/DreamWarden. MUST use originalstatusentrycanonical
+lookupbytitle(neverinferURI). Pinned /tmp/qengine2-next-{elane,legola,zoltan,
+lynda,sandra,eruaran}.lua. Magefemalehat path needsMyra source. SourceHunter
+hat rawmale1/female2,glovemale2/female1;Mage/Summoner grantscrossfamilies/sextargets.
+Need genericsex-qualified ANDmulti-target accountgrants,normalwardrobesex-aware
+factprojection;legacyneutral21families remaincompatible. Avoidlossybitnamepatch.
+Lynda10distinctwand/rod types oneatomicrecipe:boundedtake16 required,current8.
+Zoltanmalehat checksgetItemCount5903==1:genericexactquantitypredicate required.
+Eruaran20276/20275Currentpremium,duplicate577sourcebug canonicalfemale578
+conservative normalizationdocumented;firstaddon implicitlyaddsbase,noownbaseguard.
+These are genericmechanismsOURS;no HELDsharedfeaturestates. PreparefullPGRED
+profilesfirst,thenmechanism+sourcebatch. No productionL8codeyet. Diskstrategy
+clearinactiveincrementalcaches beforeheavytestbuild(retainfocuseddispatchtest
+0clhrjm82foyu);15GBfreeafterL7,neverdeletebinaries/source/evidence.
