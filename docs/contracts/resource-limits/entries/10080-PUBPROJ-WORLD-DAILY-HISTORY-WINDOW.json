@@ -1,0 +1,22 @@
+{
+  "id": "PUBPROJ-WORLD-DAILY-HISTORY-WINDOW",
+  "owner_contract": "OTERYN_GAME_WORLD_DAILY_PROJECTION_V2.md",
+  "resource": "pubproj world daily history window",
+  "unit": "seconds",
+  "hard_maximum": 2592000,
+  "configurable_range": {
+    "minimum": 2592000,
+    "maximum": 2592000
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Complete replacement snapshots are refused on overflow; no truncation. Source retention is bounded per pass and runs independently of publication flags.",
+  "client_visible": false,
+  "boundary_tests": [
+    "crates/gameplay/native-admission-source/src/public_projections/v2/world_daily.rs:world_daily_refuses_future_raids_overlap_unknown_keys_and_coverage_overclaims"
+  ],
+  "consumers": [
+    "crates/gameplay/native-admission-source/src/public_projections/v2/world_daily.rs",
+    "crates/gameplay/durability/src/durability/public_projections/v2.rs"
+  ],
+  "notes": "Owner2026-11-07 PUBPROJ. Ordinals continue the allocation from base maximum10018: next10019 plus lane offset50. No numeric client protocol identifier."
+}

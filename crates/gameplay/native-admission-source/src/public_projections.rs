@@ -710,6 +710,7 @@ impl PublicSink for MtlsPublicSink {
                 Operation::PublishCharacterDeathsV2
                     | Operation::PublishGuildV2
                     | Operation::PublishHouseV2
+                    | Operation::PublishWorldDailyV2
                     | Operation::PublishPublicProjectionWatermarkV2
             ) {
                 v2::decode_response(&raw)
@@ -1071,6 +1072,7 @@ pub struct Publisher<C, S, K, F> {
     /// Maximum Character transaction duration (§5.1); it also bounds each
     /// store call, since every store call is one such transaction.
     pub max_transaction: Duration,
+    pub v2_activation: v2::Activation,
     /// §6 operator alarm: definite refusals (`400`, `401`, `409`, unencodable).
     pub alarms: AtomicU64,
     pub last_cut: Mutex<Option<GoodCut>>,
@@ -1114,6 +1116,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
             fence: Mutex::new(fence),
             source_authority,
             max_transaction,
+            v2_activation: v2::Activation::default(),
             alarms: AtomicU64::new(0),
             last_cut: Mutex::new(None),
             last_online_watermark: Mutex::new(None),

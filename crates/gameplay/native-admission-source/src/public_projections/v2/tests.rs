@@ -200,3 +200,20 @@ fn v2_family_collection_limits_are_inclusive_and_never_truncated() {
     rows[0].ranks.pop();
     assert!(encode(AUTHORITY, &guild).is_ok());
 }
+
+#[test]
+fn extension_publication_flags_default_off_independently() {
+    for family in Family::ALL {
+        let expected = matches!(
+            family,
+            Family::CharacterDeaths | Family::Guild | Family::House
+        );
+        assert_eq!(family.enabled(Activation::default()), expected);
+    }
+    let enabled = Activation {
+        world_daily: true,
+        ..Activation::default()
+    };
+    assert!(Family::WorldDaily.enabled(enabled));
+    assert!(!enabled.character_online_sessions && !enabled.world_daily_kills);
+}

@@ -234,6 +234,12 @@ const fn bazaar_enabled() -> bool {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct PublicProjectionsConfig {
+    #[serde(default)]
+    pub world_daily_enabled: bool,
+    #[serde(default)]
+    pub character_online_sessions_enabled: bool,
+    #[serde(default)]
+    pub world_daily_kills_enabled: bool,
     /// Off unless set: the section may be installed before Platform accepts.
     #[serde(default)]
     pub enabled: bool,
@@ -807,6 +813,9 @@ impl NodeConfig {
                 platform,
                 &PublicProjectionsConfig {
                     enabled: league.enabled,
+                    world_daily_enabled: false,
+                    character_online_sessions_enabled: false,
+                    world_daily_kills_enabled: false,
                     client_certificate_file: league.client_certificate_file.clone(),
                     client_key_file: league.client_key_file.clone(),
                     source_authority: league.source_authority.clone(),
@@ -1454,6 +1463,32 @@ source_authority = "oteryn:game:primary"
 epoch_fence_file = "/var/lib/oteryn/public-projection/epoch-fence"
 
 [launch]"#;
+
+    #[test]
+    fn public_projection_extensions_are_disabled_separately_and_typed() {
+        let base = NODE.replace("\n[launch]", PUBLIC);
+        let config = NodeConfig::parse(base.as_bytes()).expect("valid disabled publisher");
+        let flags = config.platform.public_projections.expect("section");
+        assert!(!flags.enabled && !flags.world_daily_enabled);
+        assert!(!flags.character_online_sessions_enabled && !flags.world_daily_kills_enabled);
+        for flag in [
+            "world_daily_enabled",
+            "character_online_sessions_enabled",
+            "world_daily_kills_enabled",
+        ] {
+            let on = base.replace(
+                "[platform.public_projections]",
+                &format!("[platform.public_projections]\n{flag}=true"),
+            );
+            let config = NodeConfig::parse(on.as_bytes()).expect("separate opt-in");
+            assert!(!config.platform.public_projections.expect("section").enabled);
+            let bad = base.replace(
+                "[platform.public_projections]",
+                &format!("[platform.public_projections]\n{flag}=\"true\""),
+            );
+            assert!(NodeConfig::parse(bad.as_bytes()).is_err());
+        }
+    }
 
     #[test]
     fn public_projections_missing_and_invalid_configuration_exit_ten() {

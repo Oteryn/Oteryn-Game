@@ -118,3 +118,13 @@ after the actual source window changes; it cannot invent old PvE classification.
 Known/hidden subjects clear their pending deadline. Resource10093 is allocated.
 The production house metadata parser now has a995-record source-shape test.
 The combined server check passed (2m54s); the new expiry PG proof remains pending.
+
+### C compiling checkpoint
+
+World daily source capture, V2 wire, default-off publication flag and operator
+family are implemented under migration1353. Reset intervals derive from the
+persisted Europe/Berlin06:00 calendar, including23h/25h DST days; historical
+coverage and committed fixed-slot classification remain explicit. Resources
+10077–10082 are allocated. Server compilation and native golden tests pass;
+C PostgreSQL execution is pending after fixing test-only facade type imports.
+No activation or completed C qualification is claimed.
