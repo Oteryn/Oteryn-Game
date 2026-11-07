@@ -1646,9 +1646,9 @@
     }
   },
   "current_batch": {
-    "id": "corpse-authoring-tools-2026-11-07",
-    "record": "BATCH-corpse-authoring-tools-2026-11-07.json",
+    "id": "corpse-materializer-2026-11-07",
+    "record": "BATCH-corpse-materializer-2026-11-07.json",
     "whole_quest_qualifications": 0,
-    "next": "Continue native provider regeneration and source corpse PG qualification immediately; do not stop or defer missing mechanisms."
+    "next": "Finish local empty reward-boss corpse/strict-private-loot separation and PG proof, then push active canonical data immediately."
   }
 }

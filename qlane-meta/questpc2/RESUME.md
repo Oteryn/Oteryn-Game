@@ -6,37 +6,31 @@ requires local commits as blakinio with the supplied Claude trailers and a
 fast-forward push after every green batch. Older no-commit/no-push instructions
 and `/home/mole` paths are superseded. Never read credentials or force-push.
 
-Latest green publication: corpse-authoring tools only, recorded in
-BATCH-corpse-authoring-tools-2026-11-07.json. Four Primal, three encounter-corpse
-and seven Grizzly refresh tests pass. No active Item/data/runtime grant is in
-that tooling commit. The last runtime green is1ee1efc2a (native Primal corpse
-MINT plus exact visible projection;72.18s actual PG, six pure units).
+Latest authoring publication: BATCH-corpse-materializer-2026-11-07.json.
+Materializer and retained-source validator now both apply the pinned seven-stage
+encounter corpse overlay.17 authoring tests and governance pass. The old Item
+round-trip refusal is fixed; full generated validation remains in active batch.
 
-Active Item-admission batch is LOCAL AND UNCOMMITTED: seven canonical Spite/
-Bakragore decay stages, materializer hook, positive-capacity Content loader,
-and new Soul/Rotten native corpse assertions. Keep this work. Spite RED is
-73.07s on PG18.6 with native roots=0. Finish generation and PG GREEN, then push.
-The standalone encounter_corpse_items.py is delivered and source-pinned; do not
-redo the already admitted Primal definitions.
+ACTIVE LOCAL RUNTIME/DATA BATCH: seven canonical source corpse stages, positive
+u16 capacity admission (actual30/16 count quotas unchanged), separate empty
+reward-boss corpse rows, strict unchanged personal loot admission, source-native
+Spite/Bakragore PG assertions. First regenerated PG run:3 pass/2 fail180.61s;
+both roots=0 due loot_item_inadmissible. Implemented generic separate corpse row
+with no fabricated personal chest. New Content source fixture unit passes1/1
+33.57s, ordinary/unknown rows refuse; full Spite/Bakragore private loot stays
+refused. Current PG/check/clippy chain session44860; source model+registration
+session10971. Logs /tmp/questpc2-corpse-separated-*.log. Continue to green/push.
+Source generation must follow final Rust formatting; prey simulation fingerprints
+creature_reward.rs. Re-run roundtrip/content checks after registration is current.
+Previous123 content integration and5 world repository tests pass on preceding
+code, so rerun against final runtime/data. No whole quest qualified yet.
 
-Regeneration hit GRIZZLY_SHOP_CANONICAL_DRIFT because an unrelated corpse shares
-a whole-shard fingerprint with Grizzly. The new --refresh-canonical-inputs
---base-ref HEAD mode verifies unchanged retained source/profile/refusal data and
-selected shop definitions against actual Git base blobs before rehashing only
-canonical descriptors. Do not skip the native admission guard or hand-edit pins.
-Current working packet hashes are already refreshed; source records unchanged.
-Next blocker to FIX, not defer: PREY_MODEL_STALE. Run the existing repository
-prey_difficulty.py --simulate, then regenerate_content.py --native-only, refresh
-loot tables with build_full_spell_artifact.py --refresh-loot-tables, register and
-pin through tooling. Only selected tests; no full workspace or PG suites.
-
-The simulation build filled the32GB overlay. Sandbox commands failed exactly:
-bwrap: Can't create file /workspace/.git: No space left on device. No compiler
-remained active. Archived and verified two obsolete/incomplete incremental states
-in /tmp/questpc2-obsolete-incremental.tgz before removing their originals;
-source, latest cache, completed binaries and PostgreSQL are intact. Overlay now
-has1.9GB free; /tmp7.9GB. If more space is needed, preserve current caches and
-archive only demonstrably obsolete task compiler sessions; no broad clean.
+Disk recovery:32GB overlay repeatedly full. Reclaimed only superseded compiler
+sessions, disposable obsolete archives, and one older test executable; latest
+session per crate/profile, current binaries/source/PG retained. No broad clean,
+profile changes, disabled incremental or extra RUSTFLAGS. Recovery ledgers:
+/tmp/questpc2-obsolete-cache-round3.json and round4.json. Earlier archive paths
+are historical and their disposable compressed caches have been reclaimed.
 
 Last runtime green batch: native combat corpse MINT and actual projection binding.
 BATCH-native-corpse-binding-2026-11-07.json records RED zero native roots
@@ -56,8 +50,8 @@ The native producer no longer refuses Instance placement, and the carrier no
 longer rejects a same-scope Instance projection after the committed MINT.
 
 Whole L3 remains0 qualified /35 unfinished /0 external blockers. Continue now:
-missing Spite33867 and Bakragore44012 Item admission, native corpse composition
-for both, then source-qualified Content rooms and complete boss callbacks.
+finish the local Spite/Bakragore corpse composition, then source-qualified
+Content rooms and complete boss callbacks.
 Primal39530 is ALREADY canonically admitted: do not redo it. The separate native
 spell-provider file is not the authoritative test of its corpse admission.
 The Content template's obsolete blanket corpse refusal remains to be replaced
