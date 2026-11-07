@@ -2,9 +2,10 @@
 import hashlib
 import re
 import questl2_exchange_prayers as prayers
+import questl2_exchange_recipes as recipes
 
 
-NPCS = tuple(sorted({'an_old_dragon_lord', 'dorian', 'gamon', 'hairycles', 'jorge', 'kroox', *prayers.PRIESTS}))
+NPCS = tuple(sorted({'an_old_dragon_lord', 'dorian', 'gamon', 'hairycles', 'jorge', 'kroox', *prayers.PRIESTS, *recipes.NPCS}))
 NPC_FILES = {'oteryn:npc.an_old_dragonlord': 'an_old_dragon_lord'}
 
 def source_path(npc):
@@ -19,6 +20,8 @@ ITEMS = {
     37060, 43510, 43511, 43517,
 }
 
+
+ITEMS |= recipes.ITEMS
 
 def append(callbacks, offers, inputs, pin):
     def state(track, before, after, maximum=None, preserve=False):
@@ -77,6 +80,7 @@ def append(callbacks, offers, inputs, pin):
         offer=(['stake'], "Making a stake from a chair? Are you insane??! I won't waste my chairs on you for free! You will have to pay for it, but since I consider your plan a blasphemy, it will cost 5000 gold pieces. Okay?"))
 
     prayers.append(add, state, callbacks, inputs)
+    recipes.append(add, state, callbacks, offers, inputs)
 
     dragon_npc = 'oteryn:npc.an_old_dragonlord'
     dragon_track = 'oteryn:quest-progress/dragonfetish'

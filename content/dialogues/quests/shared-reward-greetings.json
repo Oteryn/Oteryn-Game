@@ -2,6 +2,17 @@
   "schema": 1,
   "npcs": [
     {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "greet": "Hum Humm! Welcume lil' |PLAYERNAME|.",
+      "farewell": "Good bye lil' one.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:370:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:371:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
       "npc": "oteryn:npc.amanda",
       "greet": "Welcome, young |PLAYERNAME|! If you are heavily wounded or poisoned, I can {heal} you for free.",
       "farewell": "May the gods bless you, |PLAYERNAME|!",
@@ -164,6 +175,17 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/maealil.lua:225:sha256:5513bfbb4b666300a1a51ba229698aac401a68021b1388b7b4170fca74957786",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/maealil.lua:227:sha256:5513bfbb4b666300a1a51ba229698aac401a68021b1388b7b4170fca74957786",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/maealil.lua:226:sha256:5513bfbb4b666300a1a51ba229698aac401a68021b1388b7b4170fca74957786"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.marina",
+      "greet": "Oh, hello |PLAYERNAME|. A visitor, how nice!",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/marina.lua:128:sha256:8574dd5721f258bef8d649657ed428537e3e351e540a990fe72bcc21c89b8682",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
       ]
     },
     {

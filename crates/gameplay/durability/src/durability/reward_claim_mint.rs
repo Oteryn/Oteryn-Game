@@ -124,6 +124,7 @@ mod fluid;
 mod grizzly;
 mod monk;
 pub(crate) mod quest;
+mod quest_decay;
 pub use quest::{QuestRewardAdmission, QuestRewardFeePayment};
 mod soul_war;
 mod viola_book;

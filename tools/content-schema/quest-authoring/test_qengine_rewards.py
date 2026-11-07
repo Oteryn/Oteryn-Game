@@ -112,7 +112,7 @@ class QuestRewards(unittest.TestCase):
         self.assertEqual(original, {'pirate-sabre', 'knight-sword', 'deepling-helmet',
                                    'hallowed-holy-water', 'outfox-helmet', 'sam-backpack'})
         self.assertEqual(sum(c['outfit'] is not None for c in callbacks),11)
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),68)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),79)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 

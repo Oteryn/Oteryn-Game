@@ -165,6 +165,14 @@ fn questl2_paid_stake_full_priest_journey() -> TestResult {
     scenario("qengine-rewards-paid-stake-priests")
 }
 
+#[test]
+fn questl2_exchange_fixed_source_journey() -> TestResult {
+    scenario("qengine-rewards-exchange-fixed")
+}
+
+#[path = "qengine_rewards/exchange_fixed.rs"]
+mod exchange_fixed;
+
 #[path = "qengine_rewards/stake_priests.rs"]
 mod stake_priests;
 
@@ -234,6 +242,16 @@ async fn talk(
 
 fn offer_words(key: &str) -> &'static [&'static str] {
     match key.rsplit('/').next().unwrap_or(key) {
+        "exchange-cyclops-start" => &["uth'lokr", "yes"],
+        "exchange-cyclops-skirts" | "exchange-cyclops-draconian-steel" => &["uth'lokr"],
+        "exchange-cyclops-royal-steel" => &["uth'kean"],
+        "exchange-cyclops-hell-steel" => &["za'ralator"],
+        "exchange-cyclops-crude-iron" => &["uth'prta"],
+        "exchange-cyclops-gold-melt" => &["melt"],
+        "exchange-cyclops-gear-wheel" => &["gear whell"],
+        "exchange-marina-start" => &["silk", "yes"],
+        "exchange-marina-honey" => &["honey"],
+        "exchange-marina-yarn" => &["yarn"],
         "exchange-quentin-start" | "exchange-gamon-stake" => &["stake"],
         key if key.starts_with("exchange-prayer-") => &["stake"],
         "knight-sword" => &["forge"],
@@ -692,6 +710,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-exchange-fixed" {
+        return exchange_fixed::exercise(owner, admitted, h).await;
+    }
     if name == "qengine-rewards-paid-stake-priests" {
         return stake_priests::exercise(owner, admitted, h).await;
     }

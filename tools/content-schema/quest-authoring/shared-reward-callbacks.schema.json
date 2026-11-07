@@ -64,6 +64,9 @@
           "items": {
             "$ref": "#/$defs/item"
           }
+        },
+        "decay": {
+          "$ref": "#/$defs/decay"
         }
       }
     },
@@ -300,6 +303,48 @@
         },
         "include_bank": {
           "type": "boolean"
+        }
+      }
+    },
+    "decay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "duration_millis",
+        "target"
+      ],
+      "properties": {
+        "duration_millis": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "target": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "key",
+                "revision"
+              ],
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
+                  "maxLength": 256
+                },
+                "revision": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 512
+                }
+              }
+            }
+          ]
         }
       }
     }

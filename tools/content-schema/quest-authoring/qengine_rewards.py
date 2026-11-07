@@ -303,6 +303,8 @@ def validate_callbacks(document):
                 and ((not callback['take'] and not callback.get('fee')) or not callback['give']
                      or callback['outfit'] or callback['achievement']))
             or (callback.get('fee') is not None and any(i['item'] in {'oteryn:item.tibia.i3031','oteryn:item.tibia.i3035','oteryn:item.tibia.i3043'} for i in callback['take']))
+            or (callback.get('give') is not None and callback['give'].get('decay') is not None
+                and (callback['give']['count'] != 1 or callback['give'].get('contents')))
             or any(k!=k.lower() or not k.isascii() for k in callback['keywords'])
             or any(len(line.encode('utf-8'))>512 or any(ord(c)<32 or 127<=ord(c)<=159 for c in line) for line in callback['reply'])
             or any(len(source.encode('utf-8'))>1024 for source in callback['sources'])):

@@ -204,6 +204,7 @@ async fn mint(
         )
         .map_err(|_| DurabilityError::InvalidStoredState)
     };
+    let decay = super::quest_decay::resolve(admission.native, reward)?;
     let backpack:Option<String>=sqlx::query_scalar("SELECT i.definition_production_key FROM game_item_container_slots s JOIN game_item_instances i USING(item_instance_id) WHERE s.character_id=encode($1,'hex')::uuid AND i.lifecycle=1 FOR UPDATE OF s,i").bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     let Some(backpack) = backpack else {
         return Ok(None);
@@ -327,5 +328,8 @@ async fn mint(
     )
     .map_err(|_| DurabilityError::InvalidStoredState)?;
     apply_claim(tx, &frozen, &reservation, destination, &envelope, tuple).await?;
+    if let Some(decay) = decay {
+        super::quest_decay::schedule(tx, &frozen, admission.native.source_digest(), decay).await?;
+    }
     Ok(Some(reservation.transaction_id))
 }

@@ -22,6 +22,23 @@ pub struct ItemReward {
     pub count: u16,
     #[serde(default)]
     pub contents: Vec<ItemAmount>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub decay: Option<ItemDecay>,
+}
+
+/// Full source lifetime; initialization uses the existing absolute-deadline owner.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ItemDecay {
+    pub duration_millis: u32,
+    pub target: Option<DecayTarget>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct DecayTarget {
+    pub key: String,
+    pub revision: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -154,6 +171,16 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                 !item(&r.item, r.count)
                     || r.contents.len() > 20
                     || r.contents.iter().any(|s| !item(&s.item, s.count))
+                    || r.decay.as_ref().is_some_and(|decay| {
+                        decay.duration_millis == 0
+                            || r.count != 1
+                            || !r.contents.is_empty()
+                            || decay.target.as_ref().is_some_and(|target| {
+                                !item(&target.key, 1)
+                                    || target.revision.is_empty()
+                                    || target.revision.len() > 512
+                            })
+                    })
             })
             || c.outfit
                 .as_ref()
