@@ -85,7 +85,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             source.position(),
                         )
                         .await
-                        .is_ok_and(|fact| fact.qualified_tile().top_source_ids().contains(&8886))
+                        .is_ok_and(|fact| {
+                            // Crystal data/items/items.xml:23647-23649 defines
+                            // the extraction machine as iron-floor Ground;
+                            // movements_extraction_spot.lua:26-49 still requires
+                            // the exact current machine position and live Golem.
+                            let tile = fact.qualified_tile();
+                            tile.ground_source_id() == Some(8886)
+                                || tile.top_source_ids().contains(&8886)
+                        })
                     } else {
                         false
                     };

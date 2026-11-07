@@ -53,14 +53,11 @@ impl ChatRuntime {
         };
         for (listener, heard) in local_listeners(SpeechMode::Say, at, listeners) {
             if let Some(entry) = sessions.get_mut(&listener) {
-                entry.egress.push(local_line(
-                    speaker,
-                    "Cake Golem",
-                    SpeechMode::Say,
-                    &text,
-                    at,
-                    heard,
-                ));
+                let mut line = local_line(speaker, "Cake Golem", SpeechMode::Say, &text, at, heard);
+                if let ChatLine::Local { mode, .. } = &mut line {
+                    *mode = ChatSpeechMode::MonsterSay;
+                }
+                entry.egress.push(line);
             }
         }
     }

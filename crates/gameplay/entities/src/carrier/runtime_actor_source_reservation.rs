@@ -481,8 +481,12 @@ mod tests {
 #[cfg(test)]
 mod scope_tests {
     #![allow(clippy::unwrap_used)]
+    use super::super::{NativeRaidSpawnSpec, RaidSpawnIdentity, RaidSpawnOutcome};
     use super::*;
-    use crate::{MovementLocalPosition, MovementPositionSnapshot};
+    use crate::{
+        CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags, MovementLocalPosition,
+        MovementPositionSnapshot,
+    };
     use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
     use oteryn_gameplay_foundation::foundation::{
         ChannelId, NodeId, RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
@@ -529,13 +533,72 @@ mod scope_tests {
             ChannelContentPin::test(world),
         )
         .unwrap();
-        let actor = r
-            .admit_test_creature(MovementLocalPosition {
-                x: 1,
-                y: 0,
-                floor: 0,
-            })
+        let policy = CompiledCreaturePolicy {
+            definition_key: "creature:rat".into(),
+            definition_revision: "test-1".into(),
+            display_name: "rat".into(),
+            maximum_health: 20,
+            forge_difficulty: None,
+            base_speed: 220,
+            outfit_look_type: 21,
+            object_look_type: None,
+            summonable: false,
+            convinceable: false,
+            mana_cost: None,
+            is_familiar: false,
+            condition_immunities: Vec::new(),
+            preferred_distance: Some(1),
+            reward_boss: Some(false),
+            blocked_by_nearby_players: false,
+            defense: Some(1),
+            armor: Some(0),
+            mitigation: None,
+            resistances: Vec::new(),
+            damage_immunities: Vec::new(),
+            healing_from_damage: Vec::new(),
+            flags: CreatureFlags {
+                attackable: true,
+                illusionable: false,
+                health_hidden: false,
+            },
+        };
+        r.install_companion_policies(
+            CompiledCreaturePolicies::from_active_artifact(
+                r.content_pin().server_artifact_digest(),
+                vec![policy],
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        let spec = NativeRaidSpawnSpec::qualified(
+            "creature:rat",
+            "test-1",
+            r.content_pin().server_artifact_digest(),
+            false,
+        )
+        .unwrap();
+        let stamp = r.issue_owner_work().unwrap();
+        let placed = r
+            .realize_raid_spawn(
+                stamp,
+                RaidSpawnIdentity {
+                    firing_id: id(7),
+                    wave: 0,
+                    entry: 0,
+                    index: 0,
+                },
+                &spec,
+                Some(MovementLocalPosition {
+                    x: 1,
+                    y: 0,
+                    floor: 0,
+                }),
+                |_, _| Some(true),
+            )
             .unwrap();
+        let RaidSpawnOutcome::Placed(actor) = placed.outcome else {
+            panic!("native raid fixture must place a creature");
+        };
         let p = Proof {
             scope: r.binding().runtime_scope(),
             generation: r.binding().scope_generation(),
@@ -553,8 +616,9 @@ mod scope_tests {
         r.reserve_scope_creatures(&mut prepared, &p).unwrap();
         assert!(r.actor_spell_reserved(actor));
         let health_before = r.companion_snapshot(actor).unwrap().health;
+        assert!(health_before > 0);
         assert!(
-            r.commit_monster_lab_damage(actor, b"scope-pending-lethal", i64::MAX)
+            r.commit_monster_lab_damage(actor, b"scope-pending-lethal", health_before)
                 .is_err()
         );
         assert_eq!(r.companion_snapshot(actor).unwrap().health, health_before);
@@ -599,6 +663,9 @@ mod scope_tests {
                 )
                 .is_ok()
         );
+        r.commit_monster_lab_damage(actor, b"scope-observed-lethal", health_before)
+            .unwrap();
+        assert!(!r.contains_live_creature(actor));
     }
     #[test]
     fn w05d_scope_source_requires_the_actual_current_scope_fence_before_reservation() {

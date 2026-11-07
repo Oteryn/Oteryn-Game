@@ -858,3 +858,19 @@ negotiates25 for source-qualified House containers; no new command/domain.
 Santa delivery audit field66 is next message field6+60, preserving legacy bytes.
 Migration1163 is reserved for exact House auto-carpet occurrences;1166 for Cake
 phases/bonus. Santa delivery extends this lane's1165 rather than taking either.
+
+### Scoped actor reservation regression proof
+
+All253 entities unit tests pass with the required test-support feature (5.90s
+execution,6.076s total). The scoped unknown-outcome fixture uses the actual
+native RaidSpawn creature producer; it proves pending movement/lethal refusal,
+exact identity resumption, and that the same positive-health lethal writer
+succeeds after release. Legacy Player reservation coverage remains green.
+The machine predicate now recognizes the actual qualified Terrain ground8886
+as well as a top Item source, citing Crystal items.xml23647-23649.
+
+Reserved world raid-effects kind65 is next existing kind5+lane60. It is for
+source-qualified Cake notices in the existing outbox, with independent current
+Channel recipient/ACK proofs and immutable lure/phase receipt binding; ordinary
+kinds1-4 cursor and terminal rules remain unchanged. No notice code is marked
+complete by this reservation.
