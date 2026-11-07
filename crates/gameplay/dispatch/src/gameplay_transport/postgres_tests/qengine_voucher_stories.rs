@@ -32,14 +32,14 @@ fn qengine_l9b_crystal_warlord_native_supply_package_story() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-l9-crystal-warlord-package-story")
 }
 
-async fn quantity(h: &Harness, item: u16) -> TestResult<i64> {
+pub(super) async fn quantity(h: &Harness, item: u16) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1")
         .bind(format!("oteryn:item.tibia.i{item}")).fetch_one(&h.pool).await?)
 }
 async fn grants(h: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT count(*) FROM game_account_appearance_unlock_receipts WHERE source_kind='item_action'").fetch_one(&h.pool).await?)
 }
-async fn mint(
+pub(super) async fn mint(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     item: u16,
@@ -70,7 +70,7 @@ async fn mint(
     *ordinal += 1;
     Ok(())
 }
-async fn use_native(
+pub(super) async fn use_native(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     item: u16,
@@ -111,7 +111,7 @@ async fn use_native(
     }
     Ok(())
 }
-async fn mask(
+pub(super) async fn mask(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     key: &str,

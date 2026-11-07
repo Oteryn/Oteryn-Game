@@ -112,6 +112,9 @@ pub struct RewardCallback {
     pub key: String,
     pub quest: String,
     pub npc: String,
+    /// Ordinary carried USE binding; NPC dialogue cannot execute this callback.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub carried_item: Option<String>,
     pub keywords: Vec<String>,
     pub topic: u16,
     pub next_topic: u16,
@@ -126,6 +129,8 @@ pub struct RewardCallback {
     pub requires_premium: bool,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub requires_outfits: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub forbids_outfits: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub requires_actor_conditions: Vec<ActorConditionRequirement>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -350,6 +355,22 @@ fn parse_document(text: &str) -> Result<Document, String> {
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
             || !slug(&c.npc, "oteryn:npc.", b"_", 128)
+            || c.carried_item.as_ref().is_some_and(|item| {
+                c.take
+                    != [ItemAmount {
+                        item: item.clone(),
+                        count: 1,
+                    }]
+                    || c.storage.is_empty()
+                    || c.give.is_some()
+                    || c.fee.is_some()
+                    || !c.requires_actor_conditions.is_empty()
+            })
+            || c.forbids_outfits.len() > 8
+            || c.forbids_outfits.iter().collect::<BTreeSet<_>>().len() != c.forbids_outfits.len()
+            || c.forbids_outfits
+                .iter()
+                .any(|key| !slug(key, "oteryn:outfit.", b"_", 128))
             || (c.storage.is_empty() && c.state_ops.is_empty() && !c.value_only_guarded())
             || c.storage.len() > 8
             || tracks.len() != c.storage.len()
@@ -601,6 +622,37 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn carried_quest_tools_bind_exactly_one_input_and_negative_ownership() -> Result<(), String> {
+        let original = super::load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-reward/l10-brotherhood-use-follower")
+            .ok_or("carried source")?;
+        for edit in 0..5 {
+            let mut row = serde_json::to_value(&original).map_err(|e| e.to_string())?;
+            match edit {
+                0 => row["carried_item"] = "oteryn:item.tibia.i769".into(),
+                1 => row["take"] = serde_json::json!([]),
+                2 => row["take"][0]["count"] = 2.into(),
+                3 => {
+                    row["give"] =
+                        serde_json::json!({"item":"oteryn:item.tibia.i768","count":1,"contents":[]})
+                }
+                _ => {
+                    row["forbids_outfits"] = serde_json::json!([
+                        "oteryn:outfit.brotherhood",
+                        "oteryn:outfit.brotherhood"
+                    ])
+                }
+            }
+            assert!(
+                super::parse(&serde_json::json!({"schema":1,"callbacks":[row]}).to_string())
+                    .is_err(),
+                "invalid carried tool {edit}"
+            );
+        }
+        Ok(())
+    }
     #[test]
     fn paid_value_only_sources_require_cost_mint_and_bounded_progress() -> Result<(), String> {
         let original = load()?

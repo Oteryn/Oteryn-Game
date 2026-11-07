@@ -809,6 +809,8 @@ async fn wardrobe(
         .clone()
         .ok_or("wardrobe outfit")?;
     let seed = RewardCallback {
+        carried_item: None,
+        forbids_outfits: vec![],
         key: callback.key.clone(),
         quest: callback.quest.clone(),
         npc: "oteryn:npc.fixture".into(),

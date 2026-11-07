@@ -411,6 +411,67 @@ pub(super) async fn supply(
     Ok(())
 }
 
+pub(super) async fn earn_level(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    carrying_level: u32,
+) -> TestResult {
+    use crate::durability::character_progression::{
+        ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
+    };
+    let binding = owner
+        .progression_binding(admitted.game_session_id)
+        .ok_or("progression")?;
+    let target = binding
+        .policy
+        .thresholds
+        .iter()
+        .find(|t| t.level == carrying_level)
+        .ok_or("carrying-level threshold")?
+        .minimum_experience
+        .get();
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|_| "fence")?
+        .ok_or("fence")?;
+    let current = owner
+        .root
+        .read_character_progression(authority, fence.character_id)
+        .await
+        .map_err(debug)?
+        .ok_or("progression state")?;
+    let outcome = owner
+        .revision_sequencer
+        .acquire(fence.character_id)
+        .await
+        .commit_experience(
+            owner.root,
+            authority,
+            owner.holder,
+            fence,
+            ExperienceAwardRequest {
+                occurrence: ExperienceRewardOccurrence::from_bytes(super::fixture::id(105))
+                    .map_err(debug)?,
+                amount: oteryn_simulation_determinism::ExactI64::new(
+                    target
+                        .checked_sub(current.total_experience.get())
+                        .ok_or("XP delta")?,
+                ),
+                context: binding.context.clone(),
+                policy_revision: binding.policy_revision.clone(),
+                reward_revision: binding.reward_revision.clone(),
+                policy: binding.policy.clone(),
+            },
+            None,
+        )
+        .await
+        .map_err(debug)?;
+    assert!(matches!(outcome, ExperienceCommitOutcome::Committed(_)));
+    Ok(())
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -1219,58 +1280,7 @@ pub(super) async fn exercise(
         "battle-mage" | "royal-costume" | "pirate" | "oriental" | "knight" | "hunter" | "mage"
     ) {
         let carrying_level = if family == "royal-costume" { 200 } else { 50 };
-        use crate::durability::character_progression::{
-            ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
-        };
-        let binding = owner
-            .progression_binding(admitted.game_session_id)
-            .ok_or("progression")?;
-        let target = binding
-            .policy
-            .thresholds
-            .iter()
-            .find(|t| t.level == carrying_level)
-            .ok_or("carrying-level threshold")?
-            .minimum_experience
-            .get();
-        let fence = owner
-            .current_quest_fence(admitted.game_session_id)
-            .await
-            .map_err(|_| "fence")?
-            .ok_or("fence")?;
-        let current = owner
-            .root
-            .read_character_progression(authority, fence.character_id)
-            .await
-            .map_err(debug)?
-            .ok_or("progression state")?;
-        let outcome = owner
-            .revision_sequencer
-            .acquire(fence.character_id)
-            .await
-            .commit_experience(
-                owner.root,
-                authority,
-                owner.holder,
-                fence,
-                ExperienceAwardRequest {
-                    occurrence: ExperienceRewardOccurrence::from_bytes(super::fixture::id(105))
-                        .map_err(debug)?,
-                    amount: oteryn_simulation_determinism::ExactI64::new(
-                        target
-                            .checked_sub(current.total_experience.get())
-                            .ok_or("XP delta")?,
-                    ),
-                    context: binding.context.clone(),
-                    policy_revision: binding.policy_revision.clone(),
-                    reward_revision: binding.reward_revision.clone(),
-                    policy: binding.policy.clone(),
-                },
-                None,
-            )
-            .await
-            .map_err(debug)?;
-        assert!(matches!(outcome, ExperienceCommitOutcome::Committed(_)));
+        earn_level(owner, admitted, authority, carrying_level).await?;
     }
     if family == "oriental" {
         let fence = owner
@@ -1305,6 +1315,7 @@ pub(super) async fn exercise(
                     weights: &weights,
                     fee_payment: None,
                     actor_conditions: None,
+                    carried_use: None,
                 },
                 &owner.premium_coordinator,
             )
@@ -1681,6 +1692,7 @@ pub(super) async fn exercise(
                         weights: &weights,
                         fee_payment: None,
                         actor_conditions: None,
+                        carried_use: None,
                     },
                     &owner.premium_coordinator,
                 )

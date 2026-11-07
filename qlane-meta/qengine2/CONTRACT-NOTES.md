@@ -129,3 +129,30 @@ helmet, existing GoldenOutfit storage, and carried-or-bank monetary semantics.
 The donor-only decoration kit is outside the selected outfit programme and is
 not an authored reward. Existing fee owner accepts equivalent coin denominations;
 no synthetic inventory grant or duplicate monetary owner is introduced.
+
+L1-10B Brotherhood/Nightmare: reuse the existing account appearance and Quest
+transaction owners for ordinary carried USE; never select the branch from item
+number alone. Crystal 9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d source:
+- data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:1-69,
+  SHA256 1e3d15bb73efa6f3b26bdd1d0882a579279c0cff39c2fb166d98d03b3ed6be16:
+  follower768/base, officer769/addon1, leader770/addon2; rank1/2/3;
+  Brotherhood rank greater than Nightmare selects Brotherhood. Joining remains
+  mutually exclusive, making that comparison unambiguous. Owned grants retain
+  the document; addon use requires the base.
+- data-global/npc/the_bone_master.lua:61-119, SHA256
+  65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1.
+- data-global/npc/the_dream_master.lua:61-121, SHA256
+  eac3bc09ddfe9b4fb83bb9751fc684f1687cc2f940365892cac5755ab50fe6f7.
+  Join/yes/yes creates follower; subsequent advancement consumes500 then1000
+  demonic essences6499 and creates officer then leader. No fixture-created
+  documents count as the selected acquisition programme. Donor-only shield and
+  rank4 advancement are outside these selected three outfit milestones.
+The named Dreamer's Challenge prerequisite is the completed puzzle route, chosen
+stage s4 (Tic Tac Toe). Its chosen stages s5-s7 already include joining Nightmare
+and a document reward, so requiring s7 before joining would create a circular
+condition and break the source's actual initiation. Read s4 through the original
+Dreamer owner, without writing it or its Knightwatch/world effects here. PG only
+arranges that separate parent's qualifying fact. Both order ranks and account
+ownership are rechecked before costs. New per-character document claim facts
+record the successful one-shot USE; immutable account ownership still prevents
+another character paying for an already owned outfit or addon.

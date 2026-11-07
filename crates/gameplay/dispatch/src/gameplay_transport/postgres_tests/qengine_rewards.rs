@@ -191,6 +191,8 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l7-assassin-yellow" => &["50 yellow cloth"],
         "l7-assassin-white" => &["50 white cloth"],
         "l7-assassin-yarn" => &["10 spools of yarn"],
+        "l10-brotherhood-join" | "l10-nightmare-join" => &["join", "yes"],
+        "l10-brotherhood-officer" | "l10-nightmare-officer" | "l10-brotherhood-leader" | "l10-nightmare-leader" => &["advancement"],
         "l10-golden-base" => &["outfit", "yes", "armor"],
         "l10-golden-boots" => &["outfit", "yes", "boots"],
         "l10-golden-helmet" => &["outfit", "yes", "helmet"],
@@ -708,6 +710,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name.starts_with("qengine-rewards-l10-documents-") {
+        return super::qengine_document_stories::exercise(owner,admitted,h,authority,name).await;
+    }
     if name.starts_with("qengine-rewards-l9-") {
         return super::qengine_voucher_stories::exercise(owner,admitted,h,name).await;
     }

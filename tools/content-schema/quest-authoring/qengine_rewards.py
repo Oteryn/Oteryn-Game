@@ -32,8 +32,8 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus')]
-    paths += ['data-global/scripts/actions/valuables/random_items.lua',
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master')]
+    paths += ['data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
               'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua']
@@ -763,6 +763,41 @@ def build():
     for words,before,after in [(['outfit','addon'],0,1),(['yes'],1,2)]:
         offers.append({'npc':'oteryn:npc.king_tibianus','keywords':words,'topic':before,'next_topic':after,
             'storage':[],'reply':['Choose armor, boots or helmet for your golden commission.']})
+    # Distinct order ranks choose the shared three documents' actual USE branch.
+    parent='oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4'
+    declarations.append({'key':parent,'quest':'oteryn:quest.dreamer_s_challenge_quest','initial':0,
+        'min':0,'max':1,'writable':False,'sources':['owner:chosen-Dreamers-Challenge-terminal-puzzle-s4:read-only']})
+    for family,npc,opposite,join_achievement,final_achievement in [
+            ('brotherhood','the_bone_master','nightmare','bone_brother','skull_and_bones'),
+            ('nightmare','the_dream_master','brotherhood','nightmare_knight','nightmare_walker')]:
+        quest=family+'_outfits_quest'
+        rank=prefix+'u7_9/'+family+'_outfits/outfits'
+        other=prefix+'u7_9/'+opposite+'_outfits/outfits'
+        requirements=[requirement(parent,1),requirement(other,0)]
+        for stage,before,after,item,count,topic,achievement in [
+                ('join',0,1,768,0,2,join_achievement),('officer',1,2,769,500,3,None),('leader',2,3,770,1000,4,final_achievement)]:
+            guard=[storage(rank,before,after)]
+            add('l10-'+family+'-'+stage,quest,npc,['yes'],guard,take=[] if count==0 else [(6499,count)],
+                give=(item,1),topic=topic,requires=requirements,achievement='oteryn:achievement/'+achievement if achievement else None)
+            callbacks[-1]['requires_premium']=True
+            source_offer(npc,['join'] if stage=='join' else ['advancement','demonic','essence'],0,1 if stage=='join' else topic,
+                [storage(rank,before,before,preserve=True)])
+            offers[-1]['requires']=requirements
+        source_offer(npc,['yes'],1,2,[storage(rank,0,0,preserve=True)])
+        offers[-1]['requires']=requirements
+        for stage,item,threshold,bit in [('follower',768,1,0),('officer',769,2,1),('leader',770,3,2)]:
+            claim=prefix+'u7_9/'+family+'_outfits/document_claim_'+str(bit)
+            declarations.append({'key':claim,'quest':'oteryn:quest.'+quest,'initial':0,'min':0,'max':1,'writable':True,
+                'sources':[f'crystal:{PIN}:data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:27-59:durable-one-shot-owned-guard']})
+            add('l10-'+family+'-use-'+stage,quest,npc,['document '+stage],
+                [storage(rank,threshold,threshold,4,preserve=True),storage(claim,0,1)],take=[(item,1)],outfit=(family,bit),requires=requirements)
+            callback=callbacks[-1];callback['carried_item']=f'oteryn:item.tibia.i{item}';callback['requires_premium']=True
+            if bit==0:callback['forbids_outfits']=['oteryn:outfit.'+family]
+            else:
+                callback['requires_outfits']=['oteryn:outfit.'+family]
+                callback['forbids_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':bit}]
+            document_path='data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua'
+            callback['sources'].append(f'crystal:{PIN}:{document_path}:1-69:sha256:{sha(inputs[document_path])}')
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
@@ -861,6 +896,11 @@ def validate_callbacks(document):
     keys=set()
     for callback in document['callbacks']:
         storage=callback['storage']
+        if callback.get('carried_item') is not None and (
+                callback['take']!=[{'item':callback['carried_item'],'count':1}] or not storage
+                or callback.get('give') is not None or callback.get('fee') is not None
+                or callback.get('requires_actor_conditions')):
+            raise ValueError('invalid carried quest tool '+callback['key'])
         targets=([callback['outfit']] if callback.get('outfit') is not None else callback.get('outfits',[]))
         value_guard=any(t['outfit']==g['outfit'] and t['addons'] & g['addons']
             and (t.get('sex') is None or t.get('sex')==(g.get('sex') or callback.get('creation_sex')))

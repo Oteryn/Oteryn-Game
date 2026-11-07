@@ -120,6 +120,83 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/eruaran.lua:153-199:sha256:6da2bd991078e0b7ac9cf96f855f4e931800e5609ba82280ea19bd749ae49936"
       ]
+    },
+    {
+      "key": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": false,
+      "sources": [
+        "owner:chosen-Dreamers-Challenge-terminal-puzzle-s4:read-only"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/document_claim_0",
+      "quest": "oteryn:quest.brotherhood_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:27-59:durable-one-shot-owned-guard"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/document_claim_1",
+      "quest": "oteryn:quest.brotherhood_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:27-59:durable-one-shot-owned-guard"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/document_claim_2",
+      "quest": "oteryn:quest.brotherhood_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:27-59:durable-one-shot-owned-guard"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/document_claim_0",
+      "quest": "oteryn:quest.nightmare_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:27-59:durable-one-shot-owned-guard"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/document_claim_1",
+      "quest": "oteryn:quest.nightmare_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:27-59:durable-one-shot-owned-guard"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/document_claim_2",
+      "quest": "oteryn:quest.nightmare_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:27-59:durable-one-shot-owned-guard"
+      ]
     }
   ],
   "callbacks": [
@@ -572,6 +649,346 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l10-brotherhood-join",
+      "quest": "oteryn:quest.brotherhood_outfits_quest",
+      "npc": "oteryn:npc.the_bone_master",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i768",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": "oteryn:achievement/bone_brother",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_bone_master.lua:sha256:65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/l10-brotherhood-leader",
+      "quest": "oteryn:quest.brotherhood_outfits_quest",
+      "npc": "oteryn:npc.the_bone_master",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6499",
+          "count": 1000
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i770",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": "oteryn:achievement/skull_and_bones",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_bone_master.lua:sha256:65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/l10-brotherhood-officer",
+      "quest": "oteryn:quest.brotherhood_outfits_quest",
+      "npc": "oteryn:npc.the_bone_master",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6499",
+          "count": 500
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i769",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_bone_master.lua:sha256:65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/l10-brotherhood-use-follower",
+      "quest": "oteryn:quest.brotherhood_outfits_quest",
+      "npc": "oteryn:npc.the_bone_master",
+      "keywords": [
+        "document follower"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 1,
+          "maximum": 4,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/document_claim_0",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i768",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.brotherhood",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_bone_master.lua:sha256:65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:1-69:sha256:1e3d15bb73efa6f3b26bdd1d0882a579279c0cff39c2fb166d98d03b3ed6be16"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "carried_item": "oteryn:item.tibia.i768",
+      "requires_premium": true,
+      "forbids_outfits": [
+        "oteryn:outfit.brotherhood"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l10-brotherhood-use-leader",
+      "quest": "oteryn:quest.brotherhood_outfits_quest",
+      "npc": "oteryn:npc.the_bone_master",
+      "keywords": [
+        "document leader"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 3,
+          "maximum": 4,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/document_claim_2",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i770",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.brotherhood",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_bone_master.lua:sha256:65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:1-69:sha256:1e3d15bb73efa6f3b26bdd1d0882a579279c0cff39c2fb166d98d03b3ed6be16"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "carried_item": "oteryn:item.tibia.i770",
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.brotherhood"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.brotherhood",
+          "addons": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l10-brotherhood-use-officer",
+      "quest": "oteryn:quest.brotherhood_outfits_quest",
+      "npc": "oteryn:npc.the_bone_master",
+      "keywords": [
+        "document officer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 2,
+          "maximum": 4,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/document_claim_1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i769",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.brotherhood",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_bone_master.lua:sha256:65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:1-69:sha256:1e3d15bb73efa6f3b26bdd1d0882a579279c0cff39c2fb166d98d03b3ed6be16"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "carried_item": "oteryn:item.tibia.i769",
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.brotherhood"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.brotherhood",
+          "addons": 1
+        }
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/l10-golden-base",
       "quest": "oteryn:quest.golden_outfits_quest",
       "npc": "oteryn:npc.king_tibianus",
@@ -678,6 +1095,346 @@
         "gold": 50000,
         "include_bank": true
       }
+    },
+    {
+      "key": "oteryn:quest-reward/l10-nightmare-join",
+      "quest": "oteryn:quest.nightmare_outfits_quest",
+      "npc": "oteryn:npc.the_dream_master",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i768",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": "oteryn:achievement/nightmare_knight",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_dream_master.lua:sha256:eac3bc09ddfe9b4fb83bb9751fc684f1687cc2f940365892cac5755ab50fe6f7"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/l10-nightmare-leader",
+      "quest": "oteryn:quest.nightmare_outfits_quest",
+      "npc": "oteryn:npc.the_dream_master",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6499",
+          "count": 1000
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i770",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": "oteryn:achievement/nightmare_walker",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_dream_master.lua:sha256:eac3bc09ddfe9b4fb83bb9751fc684f1687cc2f940365892cac5755ab50fe6f7"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/l10-nightmare-officer",
+      "quest": "oteryn:quest.nightmare_outfits_quest",
+      "npc": "oteryn:npc.the_dream_master",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6499",
+          "count": 500
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i769",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_dream_master.lua:sha256:eac3bc09ddfe9b4fb83bb9751fc684f1687cc2f940365892cac5755ab50fe6f7"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/l10-nightmare-use-follower",
+      "quest": "oteryn:quest.nightmare_outfits_quest",
+      "npc": "oteryn:npc.the_dream_master",
+      "keywords": [
+        "document follower"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 1,
+          "maximum": 4,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/document_claim_0",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i768",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.nightmare",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_dream_master.lua:sha256:eac3bc09ddfe9b4fb83bb9751fc684f1687cc2f940365892cac5755ab50fe6f7",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:1-69:sha256:1e3d15bb73efa6f3b26bdd1d0882a579279c0cff39c2fb166d98d03b3ed6be16"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "carried_item": "oteryn:item.tibia.i768",
+      "requires_premium": true,
+      "forbids_outfits": [
+        "oteryn:outfit.nightmare"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l10-nightmare-use-leader",
+      "quest": "oteryn:quest.nightmare_outfits_quest",
+      "npc": "oteryn:npc.the_dream_master",
+      "keywords": [
+        "document leader"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 3,
+          "maximum": 4,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/document_claim_2",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i770",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.nightmare",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_dream_master.lua:sha256:eac3bc09ddfe9b4fb83bb9751fc684f1687cc2f940365892cac5755ab50fe6f7",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:1-69:sha256:1e3d15bb73efa6f3b26bdd1d0882a579279c0cff39c2fb166d98d03b3ed6be16"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "carried_item": "oteryn:item.tibia.i770",
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.nightmare"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.nightmare",
+          "addons": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l10-nightmare-use-officer",
+      "quest": "oteryn:quest.nightmare_outfits_quest",
+      "npc": "oteryn:npc.the_dream_master",
+      "keywords": [
+        "document officer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 2,
+          "maximum": 4,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/document_claim_1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i769",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.nightmare",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_dream_master.lua:sha256:eac3bc09ddfe9b4fb83bb9751fc684f1687cc2f940365892cac5755ab50fe6f7",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:1-69:sha256:1e3d15bb73efa6f3b26bdd1d0882a579279c0cff39c2fb166d98d03b3ed6be16"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "carried_item": "oteryn:item.tibia.i769",
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.nightmare"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.nightmare",
+          "addons": 1
+        }
+      ]
     },
     {
       "key": "oteryn:quest-reward/l2-battle-mage-base",

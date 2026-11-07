@@ -430,6 +430,21 @@
               }
             }
           }
+        },
+        "carried_item": {
+          "type": "string",
+          "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
+          "maxLength": 256
+        },
+        "forbids_outfits": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "maxLength": 128,
+            "pattern": "^oteryn:outfit\\.[a-z0-9_]+$"
+          }
         }
       }
     },

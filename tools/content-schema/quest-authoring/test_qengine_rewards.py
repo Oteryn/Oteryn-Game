@@ -14,6 +14,26 @@ class QuestRewards(unittest.TestCase):
         cls.author=json.loads(cls.outputs['content/cosmetics/outfits/authoring.json'])
         cls.schema=json.loads((q.ROOT/'tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json').read_text())
 
+    def test_l10_distinct_order_documents_and_exact_carried_binding(self):
+        rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
+        for family in ['brotherhood','nightmare']:
+            for stage,item,price in [('join',768,0),('officer',769,500),('leader',770,1000)]:
+                row=rows[f'l10-{family}-{stage}']
+                self.assertEqual(row['give']['item'],f'oteryn:item.tibia.i{item}')
+                self.assertEqual(row['take'],[] if price==0 else [{'item':'oteryn:item.tibia.i6499','count':price}])
+                self.assertEqual(row['storage'][0]['set'],{'join':1,'officer':2,'leader':3}[stage])
+            for stage,item,bit in [('follower',768,0),('officer',769,1),('leader',770,2)]:
+                row=rows[f'l10-{family}-use-{stage}']
+                self.assertEqual(row['carried_item'],f'oteryn:item.tibia.i{item}')
+                self.assertEqual(row['take'],[{'item':row['carried_item'],'count':1}])
+                self.assertEqual(row['outfit'],{'outfit':'oteryn:outfit.'+family,'addons':bit})
+                self.assertTrue(row['requires_premium'])
+                self.assertEqual(row['forbids_outfits'] if bit==0 else row['requires_outfits'],['oteryn:outfit.'+family])
+        for field,value in [('carried_item','oteryn:item.tibia.i769'),('take',[]),('give',{'item':'oteryn:item.tibia.i768','count':1,'contents':[]})]:
+            bad=copy.deepcopy(self.callbacks)
+            next(c for c in bad['callbacks'] if c['key']=='oteryn:quest-reward/l10-brotherhood-use-follower')[field]=value
+            with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(bad)
+
     def test_l10_golden_chosen_prices_and_order(self):
         rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
         for suffix,before,after,bit,gold in [('base',0,1,0,100000),('boots',1,2,1,50000),('helmet',2,3,2,50000)]:
@@ -255,8 +275,8 @@ class QuestRewards(unittest.TestCase):
         callbacks=self.callbacks['callbacks']
         self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),59)
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),104)
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),65)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),110)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 

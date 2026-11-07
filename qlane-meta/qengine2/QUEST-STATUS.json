@@ -3,8 +3,8 @@
   "lifecycle": "AUTHORING; owner-authorized local commits and fast-forward pushes to claude/happy-davinci-ijz3wy-qengine2 after each green batch",
   "qualification_boundary": "Whole L1 entry, not an isolated seeded reward stage. No entry is promoted before all of its required stages and relevant PG cases pass.",
   "counts": {
-    "qualified": 28,
-    "unfinished": 38,
+    "qualified": 30,
+    "unfinished": 36,
     "blocked": 0
   },
   "quests": [
@@ -188,7 +188,7 @@
     {
       "canonical": "oteryn:quest.brotherhood_outfits_quest",
       "title": "Brotherhood Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc",
@@ -203,7 +203,30 @@
           "matched_statuses": []
         }
       ],
-      "remaining_work": "Native source composition, generic carried-USE support and SQL selected-instance guard implemented. Complete filtered PostgreSQL stories and ordinary-USE regression are running; qualify only after full GREEN, with no shared-feature dependency deferral."
+      "remaining_work": null,
+      "qualification": {
+        "runtime_canonical": "oteryn:quest.brotherhood_outfits_quest",
+        "scope": "Whole selected order programme: actual NPC join/rank advancement creates follower/officer/leader documents; ordinary carried USE earns base/both addons and native appearance mask3",
+        "postgres_red": "/tmp/qengine2-batch10-golden-green2-documents-red.log; missing actual source joins; Brotherhood45.067103873s/Nightmare44.766404813s",
+        "postgres_green": "/tmp/qengine2-batch10-documents-green7.log; POSTGRES_CASE_COMPLETED duration=80.376486164s success=true;2passed80.38s",
+        "proofs": [
+          "500/1000 exact essence costs with supplied surplus retained",
+          "native NPC document MINT, original command replay, actual selected-instance carried USE and replay",
+          "base/Premium prerequisites retain documents; both orders remain distinct",
+          "immutable account grants, ordinary catalogue mask3, duplicate sources retained",
+          "exact historical ingress vs conflicting bytes",
+          "SQL1005 rejects forged selected UUID before other deferred guards; no guard disabled"
+        ],
+        "assumptions": [
+          "Dreamer named prerequisite means completed puzzle stage4; stages5-7 include this joining/document work and would otherwise form a circular prerequisite. Read-only parent owner retained; CONTRACT-NOTES.md cites source."
+        ],
+        "source_files": [
+          "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:1-69:sha256:1e3d15bb73efa6f3b26bdd1d0882a579279c0cff39c2fb166d98d03b3ed6be16",
+          "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_bone_master.lua:61-119:sha256:65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1",
+          "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_dream_master.lua:61-121:sha256:eac3bc09ddfe9b4fb83bb9751fc684f1687cc2f940365892cac5755ab50fe6f7"
+        ],
+        "checks": "9Rust1.34s;26Python10.105s;3crates check2m49/clippy2m58;finaldispatchclippy1m22;fmt/repro/pinrefresh+pincheck24ab unchanged;123content2.73s/5world61.34s;Afflicted regression78.797755512s GREEN"
+      }
     },
     {
       "canonical": "oteryn:quest.cave_explorer_outfits_quest",
@@ -1130,7 +1153,7 @@
     {
       "canonical": "unresolved:questpc2:nightmare_outfits_quest",
       "title": "Nightmare Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc2",
@@ -1141,7 +1164,30 @@
           "matched_path": "prior_rounds/N-Q-before-L3/quests"
         }
       ],
-      "remaining_work": "Native source composition, generic carried-USE support and SQL selected-instance guard implemented. Complete filtered PostgreSQL stories and ordinary-USE regression are running; qualify only after full GREEN, with no shared-feature dependency deferral."
+      "remaining_work": null,
+      "qualification": {
+        "runtime_canonical": "oteryn:quest.nightmare_outfits_quest",
+        "scope": "Whole selected order programme: actual NPC join/rank advancement creates follower/officer/leader documents; ordinary carried USE earns base/both addons and native appearance mask3",
+        "postgres_red": "/tmp/qengine2-batch10-golden-green2-documents-red.log; missing actual source joins; Brotherhood45.067103873s/Nightmare44.766404813s",
+        "postgres_green": "/tmp/qengine2-batch10-documents-green7.log; POSTGRES_CASE_COMPLETED duration=80.372139896s success=true;2passed80.38s",
+        "proofs": [
+          "500/1000 exact essence costs with supplied surplus retained",
+          "native NPC document MINT, original command replay, actual selected-instance carried USE and replay",
+          "base/Premium prerequisites retain documents; both orders remain distinct",
+          "immutable account grants, ordinary catalogue mask3, duplicate sources retained",
+          "exact historical ingress vs conflicting bytes",
+          "SQL1005 rejects forged selected UUID before other deferred guards; no guard disabled"
+        ],
+        "assumptions": [
+          "Dreamer named prerequisite means completed puzzle stage4; stages5-7 include this joining/document work and would otherwise form a circular prerequisite. Read-only parent owner retained; CONTRACT-NOTES.md cites source."
+        ],
+        "source_files": [
+          "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:1-69:sha256:1e3d15bb73efa6f3b26bdd1d0882a579279c0cff39c2fb166d98d03b3ed6be16",
+          "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_bone_master.lua:61-119:sha256:65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1",
+          "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_dream_master.lua:61-121:sha256:eac3bc09ddfe9b4fb83bb9751fc684f1687cc2f940365892cac5755ab50fe6f7"
+        ],
+        "checks": "9Rust1.34s;26Python10.105s;3crates check2m49/clippy2m58;finaldispatchclippy1m22;fmt/repro/pinrefresh+pincheck24ab unchanged;123content2.73s/5world61.34s;Afflicted regression78.797755512s GREEN"
+      }
     },
     {
       "canonical": "unresolved:questpc2:no_rest_for_the_wicked_quest",
@@ -2442,6 +2488,8 @@
       "generated": "reproducers and fmt pass; pin-refresh/pin-check24ab unchanged",
       "repository": "123content2.73s;5world61.34s"
     },
-    "pending": "Complete PG stories running after native level50 carrying-capacity fixture correction; Afflicted ordinary-USE regression queued. Counts remain28/38; no partial entry qualified."
+    "pending": null,
+    "status": "QUALIFIED",
+    "postgres_green": "/tmp/qengine2-batch10-documents-green7.log;2passed80.38s"
   }
 }
