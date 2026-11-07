@@ -518,7 +518,7 @@
       "title": "Rotten Blood Quest",
       "mechanism": "encounter_party_admission_settlement",
       "status": "UNFINISHED",
-      "blocker": "Source-native room/map/template, source boss mechanics and Instance physical corpse/reward composition remain active implementation work. Native death progression and timed refusal are PG verified.",
+      "blocker": "Source-native room/map/template, source-specific corpse/item closure and source boss mechanics remain active implementation work. Generic scoped physical corpse, runtime binding and independent private rewards are PG verified; native death/Quest progression was already verified.",
       "source_lane_checks": [
         {
           "lane": "questpc3",
@@ -554,7 +554,7 @@
       "title": "Soul War Quest",
       "mechanism": "encounter_party_admission_settlement",
       "status": "UNFINISHED",
-      "blocker": "Source-native room/map/template, source boss mechanics and Instance physical corpse/reward composition remain active implementation work. Native death progression and timed refusal are PG verified.",
+      "blocker": "Source-native room/map/template, source-specific corpse/item closure and source boss mechanics remain active implementation work. Generic scoped physical corpse, runtime binding and independent private rewards are PG verified; native death/Quest progression was already verified.",
       "source_lane_checks": [
         {
           "lane": "questpc3",
@@ -590,7 +590,7 @@
       "title": "The Annihilator Quest",
       "mechanism": "encounter_party_admission_settlement",
       "status": "UNFINISHED",
-      "blocker": "Four-player lever admission, room occupancy, six demons, escape timing and earned reward entitlement are not composed.",
+      "blocker": "Source four-player lever admission, placement, six native demon spawns and replay/refusal are PG verified through the reused engine. Escape/encounter completion and earned reward integration remain active work.",
       "source_lane_checks": [
         {
           "lane": "questpc4",
@@ -1619,10 +1619,20 @@
     }
   },
   "current_batch": {
-    "id": "native-death-2026-11-06",
-    "record": "BATCH-native-death-2026-11-06.json",
-    "whole_quest_qualifications": 0,
-    "entries_with_verified_shared_slice": 3,
-    "next": "Implement generic scope-fenced Instance corpse MINT/custody/audit bridge, then source-native encounter templates and remaining quest mechanisms. Respect cross-lane and world-change ownership; no deferral."
+    "state": "GREEN",
+    "kind": "generic mechanism and engine reuse",
+    "record": "qlane-meta/questpc2/BATCH-scoped-corpse-2026-11-07.json",
+    "whole_quests_newly_qualified": 0,
+    "scope": "Native Instance physical corpse MINT, audit/custody/runtime binding and independent W03 rewards; source engine entry/NPC regression reuse.",
+    "external_dependencies_to_wait_for": []
+  },
+  "completed_batch_records": [
+    "BATCH-scoped-corpse-2026-11-07.json"
+  ],
+  "next_batch": {
+    "work_owner": "questpc2",
+    "state": "AUTHORING",
+    "task": "Prove ordinary Instance corpse-container loot and source-native template admission, then compose owned quest encounters and finish whole quests in3-6 entry batches.",
+    "external_dependencies_to_wait_for": []
   }
 }

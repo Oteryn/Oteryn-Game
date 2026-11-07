@@ -320,15 +320,24 @@ pub(super) async fn settle(
         // Primal already has an admitted W03 personal reward source. It must
         // remain bound to this victory and contributor through both drains;
         // unavailable ordinary corpse admission cannot duplicate or erase it.
-        assert_eq!(loot.1, 1, "one admitted Primal personal reward after replay");
+        assert_eq!(
+            loot.1, 1,
+            "one admitted Primal personal reward after replay"
+        );
         let earned: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_boss_reward_chests c JOIN game_boss_reward_deaths d USING(world_id,death_id) JOIN game_boss_reward_contributors m USING(character_id,world_id,death_id) JOIN game_boss_room_activities a ON a.world_id=d.world_id AND a.instance_id=d.instance_id AND a.defeat_id=d.death_id WHERE d.scope_kind=2 AND d.instance_id=encode($1,'hex')::uuid AND d.boss_key=$2 AND c.character_id=encode($3,'hex')::uuid AND m.source_game_session_id=encode($4,'hex')::uuid AND m.eligible AND m.damage_dealt>0 AND d.settlement_outcome=1 AND d.participant_count=1 AND d.eligible_count=1 AND a.state=2 AND a.terminal_at=d.minted_at AND m.item_count=(SELECT count(*) FROM game_boss_reward_items i WHERE i.character_id=m.character_id AND i.world_id=m.world_id AND i.death_id=m.death_id))")
             .bind(instance_id.as_slice()).bind(&policy.definition_key)
             .bind(fence.character_id.as_bytes().as_slice())
             .bind(admitted.game_session_id.as_bytes().as_slice())
             .fetch_one(&h.pool).await?;
-        assert!(earned, "personal reward retains the exact native victory census");
+        assert!(
+            earned,
+            "personal reward retains the exact native victory census"
+        );
     } else {
-        assert_eq!(loot.1, 0, "quest XP cannot fabricate personal loot admission");
+        assert_eq!(
+            loot.1, 0,
+            "quest XP cannot fabricate personal loot admission"
+        );
     }
     let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_party_kill_xp_receipts")
         .fetch_one(&h.pool)

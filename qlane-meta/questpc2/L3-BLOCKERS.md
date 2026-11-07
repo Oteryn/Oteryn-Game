@@ -26,9 +26,9 @@ These are remaining implementation gaps owned by L3, not external-owner deferral
 | Make Believe Quest | Mimar Haffar charge/shield windows, Maior Domus vocation charge windows and Phosphorus simultaneous adds/hazards lack encounter lifecycle ownership. |
 | Ravenous Madness Quest | Quest-bound corpse custody/progress and Trollwut encounter admission/completion are not composed. |
 | Rise of Devovorga | Seasonal stages/reset, coordinated incarnation encounters and participant rewards are not composed. |
-| Rotten Blood Quest | Source-native room/map/template, source boss mechanics and Instance physical corpse/reward composition remain. Native death -> atomic XP/Quest progression, timed refusal and replay are PG verified in BATCH-native-death-2026-11-06.json. |
-| Soul War Quest | Source-native room/map/template, source boss mechanics and Instance physical corpse/reward composition remain. Native death -> atomic XP/Quest progression, timed refusal and replay are PG verified in BATCH-native-death-2026-11-06.json. |
-| The Annihilator Quest | Four-player lever admission, room occupancy, six demons, escape timing and earned reward entitlement are not composed. |
+| Rotten Blood Quest | Source-native room/map/template, source-specific corpse/item closure and source boss mechanics remain active implementation work. Generic scoped physical corpse, runtime binding and independent private rewards are PG verified; native death/Quest progression was already verified. |
+| Soul War Quest | Source-native room/map/template, source-specific corpse/item closure and source boss mechanics remain active implementation work. Generic scoped physical corpse, runtime binding and independent private rewards are PG verified; native death/Quest progression was already verified. |
+| The Annihilator Quest | Source four-player lever admission, placement, six native demon spawns and replay/refusal are PG verified through the reused engine. Escape/encounter completion and earned reward integration remain active work. |
 | The Demon Oak Quest | Hallowed Axe use on all four Oak parts, defender waves and final reward entitlement are not composed. |
 | The Desert Dungeon Quest | Multi-vocation offering stations and the central lever lack one atomic party/item/access occurrence and bound native targets. |
 | The Dream Courts Quest | Ice/Sun Ward Stones, dream access and Nightmare Beast completion lack the composed source-native storyline. |

@@ -430,17 +430,11 @@ fn ground_placement(
     corpse: MovementLocalPosition,
     ground: &DeathGroundContext,
 ) -> Result<GroundPlacement, ItemMintError> {
-    let channel_id = death.channel_id().ok_or(ItemMintError::AuthorityRejected)?;
     let mut spatial_position = Vec::with_capacity(10);
     spatial_position.extend_from_slice(&corpse.x.to_be_bytes());
     spatial_position.extend_from_slice(&corpse.y.to_be_bytes());
     spatial_position.extend_from_slice(&corpse.floor.to_be_bytes());
-    let mut corpse_ref = Vec::with_capacity(52);
-    corpse_ref.extend_from_slice(death.world_id().as_bytes());
-    corpse_ref.extend_from_slice(channel_id.as_bytes());
-    corpse_ref.extend_from_slice(&death.scope_ownership_generation().get().to_be_bytes());
-    corpse_ref.extend_from_slice(&death.actor_local_id().to_be_bytes());
-    corpse_ref.extend_from_slice(&death.actor_local_generation().to_be_bytes());
+    let corpse_ref = crate::durability::party_kill_xp::encode_death_key(death);
     Ok(GroundPlacement {
         spatial_position,
         corpse_ref,
@@ -473,13 +467,6 @@ async fn settle_loot(
     inflight_before_this_death: usize,
     committed_loot: &mut Vec<(CommittedItemMint, LootDefinitionRef, u32)>,
 ) -> Result<CommittedCorpseLoot, CombatDeathRewardLootError> {
-    // Ground custody has no Instance placement contract. This typed refusal does
-    // not suppress the independent XP path or W03's personal reward entitlements.
-    if death.channel_id().is_none() {
-        return Err(CombatDeathRewardLootError::Corpse(
-            ItemMintError::AuthorityRejected,
-        ));
-    }
     let plan: LootPlan = plan_creature_loot(loot_plan_seed(death), loot_table_ref, loot_table)
         .map_err(CombatDeathRewardLootError::Plan)?;
     // W22a: a fluid subtype mints with its fluid state; only one beyond the fluid range is refused.

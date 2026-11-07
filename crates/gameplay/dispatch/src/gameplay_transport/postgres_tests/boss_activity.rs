@@ -36,6 +36,8 @@ const TEMPLATE: &str = "oteryn:room.native_activity_fixture";
 
 #[path = "boss_activity/endgame.rs"]
 mod endgame;
+#[path = "boss_activity/instance_corpse.rs"]
+mod instance_corpse;
 #[path = "boss_activity/nonreward.rs"]
 mod nonreward;
 #[path = "boss_activity/offline_death.rs"]
@@ -54,6 +56,7 @@ enum Case {
     Entry,
     AwardContinuity,
     Rewards,
+    InstanceCorpse,
     LateRewards,
     NonRewardDefeat,
     Recovery,
@@ -85,6 +88,21 @@ fn boss_activity_postgres_native_award_effects_follow_return_and_apply_once() ->
 #[test]
 fn boss_activity_postgres_real_instance_native_boss_death_and_reward_custody() -> TestResult {
     run_scenario(Case::Rewards)
+}
+
+#[test]
+fn instance_corpse_postgres_native_scope_mint_audit_and_replay() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Err("Instance corpse qualification requires canonical PostgreSQL".into());
+    }
+    let started = std::time::Instant::now();
+    let result = run_scenario(Case::InstanceCorpse);
+    eprintln!(
+        "INSTANCE_CORPSE POSTGRES_CASE_DURATION elapsed_ms={} success={}",
+        started.elapsed().as_millis(),
+        result.is_ok()
+    );
+    result
 }
 
 #[test]
@@ -186,7 +204,7 @@ fn scenario(case: Case) -> TestResult {
         let started = std::time::Instant::now();
         let with_rewards = matches!(
             case,
-            Case::Rewards | Case::LateRewards | Case::AwardContinuity
+            Case::Rewards | Case::InstanceCorpse | Case::LateRewards | Case::AwardContinuity
         );
         let endgame_death = matches!(
             case,
@@ -804,8 +822,20 @@ fn scenario(case: Case) -> TestResult {
             crate::foundation::ScopeOwnershipGeneration::new(assignment.ownership_generation + 1)
                 .map_err(debug)?;
         assert!(owner.resolve_runtime_view(forged).await.is_err());
-        if matches!(case, Case::Rewards | Case::LateRewards) {
-            rewards::settle_and_collect(&h, &owner, &destination, admitted, &policy, late).await?;
+        if matches!(
+            case,
+            Case::Rewards | Case::InstanceCorpse | Case::LateRewards
+        ) {
+            rewards::settle_and_collect(
+                &h,
+                &owner,
+                &destination,
+                admitted,
+                &policy,
+                late,
+                case == Case::InstanceCorpse,
+            )
+            .await?;
             if late {
                 eprintln!("BOSS_ACTIVITY_LATE_REWARD_TIMEOUT POSTGRES_CASE_COMPLETED");
             } else {

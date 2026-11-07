@@ -1,9 +1,54 @@
 //! Transport owner application of native creature condition descriptors.
 use super::*;
 use crate::foundation::{ApplicationFacts, ConditionSourceKind};
+use crate::gameplay_transport::world_spatial;
 use crate::monster_combat_lane::native_invisibility::*;
 
 impl ChannelSpellStates {
+    /// SRV6 owner difference from Crystal player.cpp:1383-1396: other players
+    /// cannot observe or target an invisible player. The player's own view stays intact.
+    pub(in crate::gameplay_transport) fn player_hidden_from(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        observer: ExactActorRef,
+        target: ExactActorRef,
+        now: SemanticTimeMicros,
+    ) -> bool {
+        if observer == target {
+            return false;
+        }
+        let Some((_, session, state)) = self.actors.iter().find(|(actor, _, _)| *actor == target)
+        else {
+            return false;
+        };
+        if runtime.house_actor_state(target, *session).is_ok() {
+            return state.owned_invisible_at(now.get()).unwrap_or(true)
+                || runtime
+                    .house_actor_conditions_at(target, *session, now.get())
+                    .map_or(true, |conditions| conditions.invisible_at(now.get()));
+        }
+        self.get(runtime, target, *session).is_some_and(|state| {
+            state.owned_invisible_at(now.get()).unwrap_or(true)
+                || runtime
+                    .actor_conditions_at(target, Some(*session), now.get())
+                    .map_or(true, |conditions| conditions.invisible_at(now.get()))
+        })
+    }
+
+    pub(in crate::gameplay_transport) fn player_ref_hidden_from(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        observer: ExactActorRef,
+        target: world_spatial::EntityRef,
+        now: SemanticTimeMicros,
+    ) -> bool {
+        self.actors.iter().any(|(actor, _, _)| {
+            actor.placement_identity() == target.identity
+                && actor.actor_local_generation() == target.generation
+                && self.player_hidden_from(runtime, observer, *actor, now)
+        })
+    }
+
     /// The source cast remains scheduled/chance-qualified by the owning Defense dispatcher.
     /// This function stages canonical slot state only; caller retains the plan for replay.
     // Keep prepare_native_self_invisible ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.

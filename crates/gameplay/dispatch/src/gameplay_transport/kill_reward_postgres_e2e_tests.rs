@@ -52,7 +52,16 @@ use summer_settlement::qualify_summer_settlement;
 
 #[test]
 fn auto_attack_kill_settles_xp_and_a_linked_corpse_with_loot_on_postgres() -> TestResult {
-    scenario_thread::run("kill-reward-e2e", scenario)
+    let started = std::time::Instant::now();
+    let result = scenario_thread::run("kill-reward-e2e", scenario);
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_some() {
+        eprintln!(
+            "CHANNEL_NATIVE_CORPSE POSTGRES_CASE_COMPLETED elapsed_ms={} success={}",
+            started.elapsed().as_millis(),
+            result.is_ok()
+        );
+    }
+    result
 }
 
 pub(super) fn scenario() -> TestResult {

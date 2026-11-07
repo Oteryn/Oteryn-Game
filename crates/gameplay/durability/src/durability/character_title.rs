@@ -25,21 +25,28 @@ mod completion;
 mod cosmetics;
 #[path = "character_title/enhancements.rs"]
 mod enhancements;
+#[path = "character_title/exploration.rs"]
+mod exploration;
 
 struct Sources {
     charm: Option<&'static charm::Source>,
     completion: Option<&'static completion::Source>,
     cosmetics: Option<cosmetics::Source>,
     enhancements: Option<&'static enhancements::Source>,
+    exploration: Option<exploration::Source>,
 }
 
 impl Sources {
-    fn new(cosmetics: Option<NativeCosmeticsView>) -> Self {
+    fn new(
+        cosmetics: Option<NativeCosmeticsView>,
+        discovery: Option<&oteryn_world_bundle::subarea::Table>,
+    ) -> Self {
         Self {
             charm: charm::source(),
             completion: completion::source(),
             cosmetics: cosmetics.map(cosmetics::Source::new),
             enhancements: enhancements::source(),
+            exploration: discovery.and_then(exploration::Source::new),
         }
     }
 }
@@ -134,17 +141,39 @@ async fn read_title_facts(
         Some(source) => source.read(tx, character).await?,
         None => enhancements::Facts::default(),
     };
+    let explored_map_percent = match &sources.exploration {
+        Some(source) => source.read(tx, character).await?,
+        None => 0,
+    };
     let rotation = now_unix_ms / 1000 / i64::from(super::tibiadrome::ROTATION_SECONDS);
-    super::tibiadrome::publish(tx,character,u32::try_from(rotation).map_err(|_|super::DurabilityError::InvalidStoredState)?).await?;
+    super::tibiadrome::publish(
+        tx,
+        character,
+        u32::try_from(rotation).map_err(|_| super::DurabilityError::InvalidStoredState)?,
+    )
+    .await?;
     let drome_champion: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_tibiadrome_awards WHERE character_id=encode($1,'hex')::uuid AND rotation=$2 AND rank<=5)")
         .bind(character.as_bytes().as_slice()).bind(rotation-1).fetch_one(&mut **tx).await?;
     Ok(TitleFacts {
+        task_board_points: u64::try_from(row.try_get::<i64, _>("task_board_points")?.max(0))
+            .unwrap_or(u64::MAX),
+        hot_cuisine_menu: row.try_get("hot_cuisine_menu")?,
+        hero_of_bounac_finale: row.try_get("hero_of_bounac_finale")?,
+        planegazer_finale: row.try_get("planegazer_finale")?,
+        schrodinger_visit: row.try_get("schrodinger_visit")?,
+        formal_dress_quest: cosmetics.formal_dress_quest,
+        explored_map_percent,
         drome_rota_top_five: drome_champion,
-        next_rotation_unix_ms: drome_champion.then_some((rotation+1)*i64::from(super::tibiadrome::ROTATION_SECONDS)*1000),
+        next_rotation_unix_ms: drome_champion
+            .then_some((rotation + 1) * i64::from(super::tibiadrome::ROTATION_SECONDS) * 1000),
         monk_pilgrimage: row.try_get("monk_pilgrimage")?,
         weapon_mastery: enhancements.weapon_mastery,
         all_grade_three_mods: enhancements.all_grade_three_mods,
-        all_map_areas_discovered: row.try_get("map_discovered")?,
+        all_map_areas_discovered: if sources.exploration.is_some() {
+            explored_map_percent == 100
+        } else {
+            row.try_get("map_discovered")?
+        },
         bank_balance: row.try_get("bank_balance")?,
         level: count(row.try_get("level")?),
         world_leads: leads
@@ -172,6 +201,11 @@ async fn read_title_facts(
 // rescanned receipts without a (Character, boss) index and exhausted the semantic pass.
 const TITLE_FACTS_SQL: &str = "WITH me AS (SELECT character_id,account_id,world_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid), \
  boss_categories AS MATERIALIZED (SELECT DISTINCT ON (boss_key) boss_key,category FROM game_character_bosstiary_kill_receipts WHERE character_id=encode($1,'hex')::uuid) SELECT \
+ COALESCE((SELECT value FROM game_character_quest_tracks q WHERE q.character_id=me.character_id AND q.track_key='oteryn:taskboard/weekly/points'),0)::bigint AS task_board_points, \
+ (SELECT count(*)=15 FROM game_character_quest_tracks q WHERE q.character_id=me.character_id AND q.track_key=ANY(ARRAY(SELECT 'oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/cookcount-'||n::text FROM generate_series(2,16) n)) AND q.value>=1) AS hot_cuisine_menu, \
+ EXISTS(SELECT 1 FROM game_character_quest_tracks q WHERE q.character_id=me.character_id AND q.track_key='oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/augustin_door' AND q.value=1) AS hero_of_bounac_finale, \
+ EXISTS(SELECT 1 FROM game_character_quest_states q WHERE q.character_id=me.character_id AND q.quest_key='oteryn:quest.opticording_sphere_quest' AND q.completed_character_revision IS NOT NULL) AS planegazer_finale, \
+ EXISTS(SELECT 1 FROM game_character_quest_tracks q WHERE q.character_id=me.character_id AND q.track_key='oteryn:quest-progress/schrodingers_island/visited' AND q.value=1) AS schrodinger_visit, \
  COALESCE((SELECT (progress->>'discovered')::boolean FROM game_character_cyclopedia c WHERE c.character_id=me.character_id),false) AS map_discovered, \
  EXISTS(SELECT 1 FROM game_character_quest_tracks q WHERE q.character_id=me.character_id AND q.track_key=$4 AND q.value=1) AS monk_pilgrimage, \
  COALESCE((SELECT balance FROM game_account_bank_balances b WHERE b.account_id=me.account_id AND b.world_id=me.world_id),0)::bigint AS bank_balance, \
@@ -200,11 +234,12 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         now_unix_ms: i64,
         cosmetics: Option<NativeCosmeticsView>,
+        discovery: Option<&oteryn_world_bundle::subarea::Table>,
     ) -> Result<Vec<CharacterTitle>, CharacterAuthorityError> {
         let recovery = authority.record_for(self)?;
         let node = node.clone();
         let character = fence.character_id;
-        let sources = Sources::new(cosmetics);
+        let sources = Sources::new(cosmetics, discovery);
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
@@ -316,6 +351,8 @@ impl DurabilityRoot {
     /// Reads native qualification and earned state in the same fenced transaction,
     /// then clears a selection and conditional award which no longer qualify.
     /// A page read cannot revoke a newer grant using an earlier facts snapshot.
+    // Keep current authority, character/time and independently admitted world/cosmetic facts explicit.
+    #[allow(clippy::too_many_arguments)]
     pub async fn read_and_requalify_character_titles(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -324,10 +361,11 @@ impl DurabilityRoot {
         character: CharacterId,
         now_unix_ms: i64,
         cosmetics: Option<NativeCosmeticsView>,
+        discovery: Option<&oteryn_world_bundle::subarea::Table>,
     ) -> Result<CharacterTitleState, CharacterAuthorityError> {
         let recovery = authority.record_for(self)?;
         let node = node.clone();
-        let sources = Sources::new(cosmetics);
+        let sources = Sources::new(cosmetics, discovery);
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
@@ -377,6 +415,8 @@ impl DurabilityRoot {
     /// Live command seam: qualification and its durable grant share the current session fence
     /// and transaction. In particular, Charm Points cannot be spent between a separate
     /// qualification read and this write. Content is prepared before entering the transaction.
+    // Keep current authority, character/time and independently admitted world/cosmetic facts explicit.
+    #[allow(clippy::too_many_arguments)]
     pub async fn qualify_and_unlock_character_title(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -385,13 +425,14 @@ impl DurabilityRoot {
         title: CharacterTitle,
         now_unix_ms: i64,
         cosmetics: Option<NativeCosmeticsView>,
+        discovery: Option<&oteryn_world_bundle::subarea::Table>,
     ) -> Result<bool, CharacterAuthorityError> {
         if now_unix_ms < 0 {
             return Err(CharacterAuthorityError::Rejected);
         }
         let recovery = authority.record_for(self)?;
         let node = node.clone();
-        let sources = Sources::new(cosmetics);
+        let sources = Sources::new(cosmetics, discovery);
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
@@ -580,8 +621,10 @@ mod tests {
             2, 3, 7, 19, 20, 21, 23, 24, 25, 26, 27, 29, 30, 31, 32, 33, 34, 35, 36, 38, 39, 41, 42,
         ];
         revoked.extend(59..=84);
+        revoked.push(89);
         assert_eq!(revoked_conditional_titles(TitleFacts::default()), revoked);
         let all = TitleFacts {
+            explored_map_percent: 100,
             monk_pilgrimage: true,
             weapon_mastery: true,
             all_grade_three_mods: true,

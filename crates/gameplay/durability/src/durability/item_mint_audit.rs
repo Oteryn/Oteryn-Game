@@ -266,29 +266,11 @@ pub struct OneItemGroundV1 {
 
 impl OneItemGroundV1 {
     pub fn runtime_scope(&self) -> Result<crate::foundation::RuntimeScopeRefV1, AuditError> {
-        use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
-        check_uuid_v7(&self.world_id)?;
-        let world = WorldId::decode(&self.world_id).map_err(|_| AuditError::InvalidInput)?;
-        match &self.instance_id {
-            None => {
-                check_uuid_v7(&self.channel_id)?;
-                let channel =
-                    ChannelId::decode(&self.channel_id).map_err(|_| AuditError::InvalidInput)?;
-                Ok(RuntimeScopeRefV1::channel(world, channel))
-            }
-            Some(instance) if self.channel_id.is_empty() => {
-                check_uuid_v7(instance)?;
-                RuntimeScopeRefV1::instance(
-                    world,
-                    instance
-                        .as_slice()
-                        .try_into()
-                        .map_err(|_| AuditError::InvalidInput)?,
-                )
-                .map_err(|_| AuditError::InvalidInput)
-            }
-            Some(_) => Err(AuditError::InvalidInput),
-        }
+        decode_runtime_scope(
+            &self.world_id,
+            &self.channel_id,
+            self.instance_id.as_deref(),
+        )
     }
 
     #[must_use]
@@ -321,6 +303,44 @@ pub struct CreatureDeathOccurrenceRefV1 {
     pub actor_local_id: u32,
     #[prost(uint64, tag = "5")]
     pub actor_local_generation: u64,
+    #[prost(bytes = "vec", optional, tag = "6")]
+    pub instance_id: Option<Vec<u8>>,
+}
+
+impl CreatureDeathOccurrenceRefV1 {
+    pub fn runtime_scope(&self) -> Result<crate::foundation::RuntimeScopeRefV1, AuditError> {
+        decode_runtime_scope(
+            &self.world_id,
+            &self.channel_id,
+            self.instance_id.as_deref(),
+        )
+    }
+}
+
+fn decode_runtime_scope(
+    world_id: &[u8],
+    channel_id: &[u8],
+    instance_id: Option<&[u8]>,
+) -> Result<crate::foundation::RuntimeScopeRefV1, AuditError> {
+    use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
+    check_uuid_v7(world_id)?;
+    let world = WorldId::decode(world_id).map_err(|_| AuditError::InvalidInput)?;
+    match instance_id {
+        None => {
+            check_uuid_v7(channel_id)?;
+            let channel = ChannelId::decode(channel_id).map_err(|_| AuditError::InvalidInput)?;
+            Ok(RuntimeScopeRefV1::channel(world, channel))
+        }
+        Some(instance) if channel_id.is_empty() => {
+            check_uuid_v7(instance)?;
+            RuntimeScopeRefV1::instance(
+                world,
+                instance.try_into().map_err(|_| AuditError::InvalidInput)?,
+            )
+            .map_err(|_| AuditError::InvalidInput)
+        }
+        Some(_) => Err(AuditError::InvalidInput),
+    }
 }
 
 /// MINT provenance. Field 9 (`command_ref`, TRANSFER only) is absent: a
@@ -630,7 +650,7 @@ pub fn check_mint(value: &OneItemMintV1) -> Result<(), AuditError> {
     check_definition(after.definition.as_ref())?;
     check_technical_text(&source.typed_cause)?;
     check_uuid_v7(&death.world_id)?;
-    check_uuid_v7(&death.channel_id)?;
+    let death_scope = death.runtime_scope()?;
     check_definition(source.loot_table.as_ref())?;
     check_content_key(&source.loot_purpose_key)?;
     check_content_key(&source.content_revision)?;
@@ -642,12 +662,6 @@ pub fn check_mint(value: &OneItemMintV1) -> Result<(), AuditError> {
     match (&value.destination, &value.corpse_container_entry) {
         (Some(ground), None) => {
             check_uuid_v7(&ground.world_id)?;
-            if !matches!(
-                ground.runtime_scope()?,
-                crate::foundation::RuntimeScopeRefV1::Channel { .. }
-            ) {
-                return Err(AuditError::InvalidInput);
-            }
             check_technical_bytes(&ground.spatial_position)?;
             check_technical_bytes(&ground.corpse_ref)?;
             check_content_key(&ground.map_revision)?;
@@ -655,7 +669,7 @@ pub fn check_mint(value: &OneItemMintV1) -> Result<(), AuditError> {
             check_technical_bytes(&ground.native_room_placement_context)?;
             if after.world_id != ground.world_id
                 || death.world_id != ground.world_id
-                || death.channel_id != ground.channel_id
+                || death_scope != ground.runtime_scope()?
                 || ground.runtime_scope_ownership_generation != death.scope_ownership_generation
             {
                 return Err(AuditError::InvalidInput);
@@ -777,9 +791,10 @@ pub fn decode_payload(wire: &[u8]) -> Result<OneItemMintV1, AuditError> {
 pub fn decode_envelope(wire: &[u8]) -> Result<(EventEnvelopeV1, OneItemMintV1), AuditError> {
     let value = decode_common_envelope(wire)?;
     let mint = decode_payload(&value.payload)?;
-    let (world_id, channel_id) = mint_scope(&mint)?;
-    if value.world_id.as_deref() != Some(world_id.as_slice())
-        || value.channel_id.as_deref() != Some(channel_id.as_slice())
+    let scope = mint_scope(&mint)?;
+    if value.world_id.as_deref() != Some(scope.world_id.as_slice())
+        || value.channel_id != scope.channel_id
+        || value.instance_id != scope.instance_id
         || value.game_session_id.is_some()
         || value.command_id.is_some()
         || value.causation.is_some()
@@ -789,16 +804,26 @@ pub fn decode_envelope(wire: &[u8]) -> Result<(EventEnvelopeV1, OneItemMintV1), 
     Ok((value, mint))
 }
 
-/// The event's World and Channel: the death's own scope, which a Ground
-/// destination repeats exactly ([`check_mint`]) and a corpse-container
-/// destination leaves implicit.
-fn mint_scope(mint: &OneItemMintV1) -> Result<(Vec<u8>, Vec<u8>), AuditError> {
+/// Exact wire namespace of a validated death; a Ground destination repeats it
+/// and a corpse-container destination leaves it implicit.
+struct MintEventScope {
+    world_id: Vec<u8>,
+    channel_id: Option<Vec<u8>>,
+    instance_id: Option<Vec<u8>>,
+}
+
+fn mint_scope(mint: &OneItemMintV1) -> Result<MintEventScope, AuditError> {
     let death = mint
         .source
         .as_ref()
         .and_then(|source| source.death_occurrence.as_ref())
         .ok_or(AuditError::InvalidInput)?;
-    Ok((death.world_id.clone(), death.channel_id.clone()))
+    death.runtime_scope()?;
+    Ok(MintEventScope {
+        world_id: death.world_id.clone(),
+        channel_id: (!death.channel_id.is_empty()).then(|| death.channel_id.clone()),
+        instance_id: death.instance_id.clone(),
+    })
 }
 
 /// Operation-independent RL-07 envelope gate shared by MINT and TRANSFER:
@@ -872,7 +897,7 @@ pub fn encode_mint_event(
         return Err(AuditError::InvalidInput);
     }
     check_mint(&mint)?;
-    let (world_id, channel_id) = mint_scope(&mint)?;
+    let scope = mint_scope(&mint)?;
     let payload = encode_bounded(
         &OneItemTransactionV1 {
             interpretation_revision: INTERPRETATION_REVISION,
@@ -889,8 +914,9 @@ pub fn encode_mint_event(
         privacy_class: RESTRICTED_PLAYER_LINKED,
         retention_profile_id: tuple.retention_profile_id().into(),
         occurred_at_unix_ms: identity.occurred_at_unix_ms,
-        world_id: Some(world_id),
-        channel_id: Some(channel_id),
+        world_id: Some(scope.world_id),
+        channel_id: scope.channel_id,
+        instance_id: scope.instance_id,
         transaction_event: Some(TransactionEventRefV1 {
             transaction_id: identity.transaction_id.to_vec(),
             ordinal: 1,
@@ -1292,6 +1318,7 @@ pub(super) mod tests {
             source: Some(OneItemProvenanceV1 {
                 typed_cause: LOOT_MINT_TYPED_CAUSE.into(),
                 death_occurrence: Some(CreatureDeathOccurrenceRefV1 {
+                    instance_id: None,
                     world_id: uuid(1),
                     channel_id: uuid(2),
                     scope_ownership_generation: 1,
@@ -1356,6 +1383,7 @@ pub(super) mod tests {
                 source: Some(OneItemProvenanceV1 {
                     typed_cause: technical,
                     death_occurrence: Some(CreatureDeathOccurrenceRefV1 {
+                        instance_id: None,
                         world_id: uuid(0xee),
                         channel_id: uuid(0xee),
                         scope_ownership_generation: u64::MAX,
@@ -1504,6 +1532,55 @@ pub(super) mod tests {
             encode_mint_event(identity(), mint(), Type2EventTuple::V1).unwrap(),
             wire
         );
+    }
+
+    #[test]
+    fn instance_mint_scope_is_closed_and_matches_both_destinations() {
+        for container in [false, true] {
+            let mut value = if container { corpse_mint(1) } else { mint() };
+            let death = value
+                .source
+                .as_mut()
+                .unwrap()
+                .death_occurrence
+                .as_mut()
+                .unwrap();
+            death.channel_id.clear();
+            death.instance_id = Some(uuid(9));
+            if let Some(ground) = value.destination.as_mut() {
+                ground.channel_id.clear();
+                ground.instance_id = Some(uuid(9));
+            }
+            let wire = encode_mint_event(identity(), value.clone(), Type2EventTuple::V1).unwrap();
+            let (envelope, decoded) = decode_envelope(&wire).unwrap();
+            assert_eq!(decoded, value);
+            assert_eq!(envelope.channel_id, None);
+            assert_eq!(envelope.instance_id, Some(uuid(9)));
+            let mut mixed = value.clone();
+            mixed
+                .source
+                .as_mut()
+                .unwrap()
+                .death_occurrence
+                .as_mut()
+                .unwrap()
+                .channel_id = uuid(2);
+            assert_eq!(check_mint(&mixed), Err(AuditError::InvalidInput));
+            let mut absent = value.clone();
+            absent
+                .source
+                .as_mut()
+                .unwrap()
+                .death_occurrence
+                .as_mut()
+                .unwrap()
+                .instance_id = None;
+            assert_eq!(check_mint(&absent), Err(AuditError::InvalidInput));
+            if let Some(ground) = value.destination.as_mut() {
+                ground.instance_id = Some(uuid(8));
+                assert_eq!(check_mint(&value), Err(AuditError::InvalidInput));
+            }
+        }
     }
 
     #[test]

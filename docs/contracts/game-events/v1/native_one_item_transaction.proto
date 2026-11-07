@@ -243,6 +243,8 @@ message CreatureDeathOccurrenceRefV1 {
   uint64 scope_ownership_generation = 3;
   uint32 actor_local_id = 4;
   uint64 actor_local_generation = 5;
+  // Instance deaths leave channel_id empty; Channel deaths omit instance_id.
+  optional bytes instance_id = 6; // exactly 16-byte non-nil UUIDv7
 }
 
 // The loot output cause (death key, LootTableDefinitionRef, purpose key,

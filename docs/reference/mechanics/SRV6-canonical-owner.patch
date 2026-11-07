@@ -1,0 +1,91 @@
+--- a/crates/gameplay/durability/src/durability/character_cyclopedia/storage.rs
++++ b/crates/gameplay/durability/src/durability/character_cyclopedia/storage.rs
+@@ -30,9 +30,9 @@
+             .map_err(|_| DurabilityError::InvalidStoredState)
+     }
+     fn convert(&mut self, request: &MapRequest) {
+-        for (_, id) in &request.subareas {
++        for (main, id) in &request.subareas {
+             self.subareas.entry(*id).or_insert_with(|| {
+-                if self.legacy.discovered {
++                if self.legacy.discovered && *main == request.legacy_area {
+                     MapProgress {
+                         discovered: true,
+                         exploration: None,
+@@ -252,3 +252,27 @@
+         assert!(second_improved);
+     }
+ }
++
++#[cfg(test)]
++mod srv6_conversion_tests {
++    use super::*;
++    #[test]
++    #[allow(clippy::unwrap_used, reason="literal source-owner fixture identities")]
++    fn srv6_legacy_discovery_is_only_its_mapped_main_area() {
++        let mut progress=CanonicalProgress {legacy:MapProgress {discovered:true,exploration:None},subareas:BTreeMap::new()};
++        let mut request=MapRequest {
++            command:crate::foundation::CommandRef::new(crate::foundation::GameSessionId::decode(&[1,1,1,1,1,1,0x71,1,0x81,1,1,1,1,1,1,1]).unwrap(),crate::foundation::CommandId::new(1).unwrap()),
++            action:MapAction::Query,binding:[0;32],occurrence:[0;16],bundle:[0;32],epoch:0,
++            area:2,legacy_area:1,subarea:Some(21),subareas:vec![(1,11),(1,12),(2,21),(2,22)],
++            pool:Vec::new(),at:Point{x:0,y:0,floor:0},fee:None,transaction:[0;16],event:[0;16],now:1
++        };
++        progress.convert(&request);
++        assert!(progress.subareas[&11].discovered);
++        assert!(progress.subareas[&12].discovered);
++        assert!(!progress.subareas[&21].discovered);
++        assert!(!progress.subareas[&22].discovered);
++        request.area=1; request.subarea=Some(11);
++        progress.convert(&request);
++        assert!(!progress.subareas[&21].discovered,"visiting another area must not import discovery");
++    }
++}
+--- a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cyclopedia/fixture.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cyclopedia/fixture.rs
+@@ -149,20 +149,20 @@
+         parsed.manifest.subareas = Table {
+             client_version: "15.30".into(),
+             candidate_sha256: hash.clone(),
+-            areas: [1, 2, 3]
++            areas: [1, 2, 3, 4, 5]
+                 .into_iter()
+                 .map(|id| Area {
+                     id,
+                     key: format!("oteryn:content.area.fixture{id}"),
+                     name: format!("Area {id}"),
+-                    parent: (id != 1).then_some(1),
++                    parent: match id { 1 | 4 => None, 5 => Some(4), _ => Some(1) },
+                     source_record_sha256: hash.clone(),
+                     town_id: None,
+                     hometown: false,
+                     temple: None,
+                 })
+                 .collect(),
+-            masks: [2, 3]
++            masks: [2, 3, 5]
+                 .into_iter()
+                 .map(|subarea| Mask {
+                     subarea,
+@@ -171,7 +171,7 @@
+                     bmp_sha256: hash.clone(),
+                     source_record_sha256: hash.clone(),
+                     source_tiles: 256,
+-                    admitted_tiles: if subarea == 2 { 256 } else { 7 },
++                    admitted_tiles: match subarea { 2 => 256, 3 => 7, _ => 0 },
+                 })
+                 .collect(),
+             runs: (0..8)
+--- a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cyclopedia.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cyclopedia.rs
+@@ -226,8 +226,9 @@
+             assert_eq!(progress["subareas"]["2"]["discovered"], true);
+             assert_eq!(
+                 progress["subareas"]["3"]["discovered"], true,
+-                "all canonical subareas retain old completion"
+-            );
++                "mapped canonical main area retains old completion"
++            );
++            assert_eq!(progress["subareas"]["5"]["discovered"], false, "legacy discovery cannot complete another canonical main area");
+             assert_eq!(pool(&donated), 25_000_001);
+             let retained: i64 =
+                 sqlx::query_scalar("SELECT pool FROM game_world_cyclopedia WHERE area_id=0")

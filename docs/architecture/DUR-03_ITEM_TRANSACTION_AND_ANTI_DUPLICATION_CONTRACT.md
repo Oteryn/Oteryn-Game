@@ -1147,8 +1147,14 @@ the structurally non-reused key means none can. Receipt schema and retention
 duration remain owner and registry gates.
 
 **Actual native Ground context.** MINT establishes the item in the actual typed
-Ground for the same `WorldId` and `ChannelId` that own the native runtime
-placement. The binding includes the accepted map and content revisions, native
+Ground for the same `WorldId` and closed `RuntimeScopeRefV1` that own the
+native runtime placement: either Channel or Activity Instance. An Instance
+never substitutes its origin Channel. The complete creature-death cause includes
+the scope discriminator and actual scope identity; its reservation, receipt,
+current assignment fence, corpse-parent equality and capacity lock use that same
+namespace. Channel cause keys and protobuf bytes retain their prior encoding;
+Instance death provenance omits Channel and carries the optional Instance UUID.
+The event envelope and Ground destination repeat that exact namespace. The binding includes the accepted map and content revisions, native
 room/placement context, and typed spatial position under their owning Content,
 FND and runtime contracts. Corpse association is provenance/projection only,
 never a competing item location. A fixture coordinate, caller-selected room,
