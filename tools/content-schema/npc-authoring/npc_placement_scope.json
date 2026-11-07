@@ -1,6 +1,6 @@
 {
   "schema": "OTERYN_NPC_PLACEMENT_SCOPE/v1",
-  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QUESTPC: Viola Lost Wisdom at the reviewed Newhaven Magic Shop source cell (current Wiki anchor one tile south is within her source walk radius); QUESTPC Hidden Threats: ten Corym NPCs at the existing reviewed promotion-candidate cells; canonical names and pinned Canary source custody agree; QUESTPC Draconia: old Dragonlord at the reviewed agreeing promotion-candidate cell",
+  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QUESTPC: Viola Lost Wisdom at the reviewed Newhaven Magic Shop source cell (current Wiki anchor one tile south is within her source walk radius); QUESTPC Hidden Threats: ten Corym NPCs at the existing reviewed promotion-candidate cells; canonical names and pinned Canary source custody agree; QUESTPC Draconia: old Dragonlord at the reviewed agreeing promotion-candidate cell; QUESTPC Draconia: Elathriel at the reviewed agreeing source cell for exact paid Hellgate key3012",
   "npcs": [
     "oteryn:npc.a_seagull",
     "oteryn:npc.al_dee",
@@ -27,6 +27,7 @@
     "oteryn:npc.corym_worker_5",
     "oteryn:npc.dallheim",
     "oteryn:npc.dixi",
+    "oteryn:npc.elathriel",
     "oteryn:npc.emael",
     "oteryn:npc.enpa_deia_pema",
     "oteryn:npc.hyacinth",

@@ -3553,7 +3553,7 @@
         ]
       },
       "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
-      "active_batch": "Level25 native gate now PG/strict GREEN at24/25/26 with key-bypass/replay/close proof. Dragonlord, pressure/portal, stock3003-3007, ten key doors and lever/exit anchors already GREEN. Implement Elathriel exact paid3012 and shared skeletonstock3001, then compose complete source route."
+      "active_batch": "Elathriel exact5000 cash/bank ->copper3012 now PG/strict GREEN with repurchase, replay, exact-match refusal and rollback. Dragonlord, level25, party gates/portals, stock3003-3007 and ten key doors already GREEN. Implement shared skeleton5972 containerstock key3001, then final complete source route composition."
     },
     {
       "title": "Dragon Corpse Quest",
@@ -8629,14 +8629,10 @@
   },
   "owner_execution_override": "Shared quest-engine, reward/binding, NPC, Item and callback features are owned here when needed. Check and reuse origin/claude/happy-davinci-ijz3wy-qengine2 first; historical outside-lane blockers are active implementation obligations, not final dispositions.",
   "latest_cloud_batch": {
-    "scope": [
-      "WorksDoor01 action45974 retained-key unlock",
-      "WorksDoor02 action45975 retained-key unlock",
-      "WorksDoor03 action45976 retained-key unlock"
-    ],
+    "scope": "Elathriel paid copper key3012 and generic stateless paid-sale owner",
     "status": "GREEN",
-    "evidence": "qlane-meta/questpc/cloud-hidden-doors-validation.json",
-    "qualification_boundary": "Three unlock components and exact saved-pin regression qualified; no whole-title promotion yet."
+    "validation": "qlane-meta/questpc/cloud-elathriel-validation.json",
+    "whole_title_promoted": false
   },
   "continuation": {
     "base": "9bf74b42d",
@@ -10360,8 +10356,11 @@
     "evidence": "qlane-meta/questpc/cloud-hidden-level-integration-validation.json"
   },
   "cloud_elathriel_progress": {
-    "phase": "actual zero-effect SQL proof and first purchase/replay verified; per-command repurchase fix awaiting final PG",
-    "validation": "qlane-meta/questpc/cloud-elathriel-stateless-progress.json",
+    "phase": "GREEN source-native sale, repeatable per-command claims, exact charge/refusal/replay and rollback",
+    "validation": "qlane-meta/questpc/cloud-elathriel-validation.json",
+    "postgres": "18.6",
+    "cases": 3,
+    "duration_seconds": 267.43,
     "whole_title_promoted": false
   }
 }

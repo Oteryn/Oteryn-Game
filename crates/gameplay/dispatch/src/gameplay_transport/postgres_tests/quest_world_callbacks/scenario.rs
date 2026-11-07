@@ -42,8 +42,10 @@ fn scenario_case(
     let object_mutation = name.starts_with("object-mutation-");
     let mintwallin = name == "mintwallin-source";
     let monk = name.starts_with("monk-guidance");
+    let elathriel = name.starts_with("draconia-elathriel-");
     let dragonlord = name.starts_with("draconia-dragonlord-");
-    let classic_npc = dragonlord
+    let classic_npc = elathriel
+        || dragonlord
         || matches!(
             name,
             "catalogue-npc"
@@ -686,6 +688,8 @@ fn scenario_case(
         } else if name == "marlin-trophy-exchange" {
             super::super::marlin_trophy::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
+        } else if elathriel {
+            super::super::draconia_elathriel::exercise(&mut owner, &mut admitted, &h, name).await?;
         } else if dragonlord {
             super::super::draconia_dragonlord::exercise(
                 &mut owner,

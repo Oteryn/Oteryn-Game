@@ -1,4 +1,5 @@
 use super::super::db::begin_type2_transaction;
+use super::super::reward_claim_mint::quest::QuestRewardAdmission;
 use super::*;
 
 impl DurabilityRoot {
@@ -31,6 +32,7 @@ impl DurabilityRoot {
             &grizzly::NoGrizzlyPremium,
             None,
             None,
+            None,
         )
         .await
     }
@@ -58,6 +60,7 @@ impl DurabilityRoot {
             None,
             None,
             &grizzly::NoGrizzlyPremium,
+            None,
             None,
             None,
         )
@@ -88,6 +91,39 @@ impl DurabilityRoot {
             &grizzly::NoGrizzlyPremium,
             None,
             Some(payment),
+            None,
+        )
+        .await
+    }
+
+    /// NPC reward effects participate in the same fenced QuestState transaction.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "binds the existing authority and Quest transition to admitted reward participants"
+    )]
+    pub(crate) async fn commit_character_quest_reward(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        admission: QuestRewardAdmission<'_>,
+    ) -> Result<QuestTransitionOutcome> {
+        self.commit_quest_inner::<_, 0>(
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            None,
+            None,
+            None,
+            None,
+            &grizzly::NoGrizzlyPremium,
+            None,
+            None,
+            Some(admission),
         )
         .await
     }
@@ -113,7 +149,20 @@ impl DurabilityRoot {
         grizzly_gate: &G,
         grizzly_policy: Option<&FiniteProgressionPolicy<String, N>>,
         payment: Option<super::rotten_blood_access::RottenBloodAccessPayment>,
+        reward_admission: Option<QuestRewardAdmission<'_>>,
     ) -> Result<QuestTransitionOutcome> {
+        let reward_callback = oteryn_gameplay_quests::quest::reward_callbacks::load()
+            .map_err(|_| CharacterProgressionError::InvalidInput)?
+            .into_iter()
+            .find(|c| c.key == request.transition_key);
+        if reward_callback.is_some() != reward_admission.is_some()
+            || (reward_callback.is_some() && !matches!(request.cause, QuestCause::Command(_)))
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        let reward_achievement =
+            super::super::reward_claim_mint::quest::prepare_achievement(reward_callback.as_ref())
+                .map_err(|_| CharacterProgressionError::InvalidInput)?;
         if request.transition_key.starts_with("oteryn:quest-npc/") {
             return Err(CharacterProgressionError::InvalidInput);
         }
@@ -245,12 +294,23 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
-        let mut context = (context, grizzly_gate, grizzly_boss, grizzly_policy);
+        let mut context = (
+            context,
+            grizzly_gate,
+            grizzly_boss,
+            grizzly_policy,
+            reward_admission,
+        );
         self.try_issue_semantic_pass()?
-            .run_with_context(&mut context, move |holder, deadline, (context, grizzly_gate, grizzly_boss, grizzly_policy)| {
+            .run_with_context(&mut context, move |holder, deadline, (context, grizzly_gate, grizzly_boss, grizzly_policy, reward_admission)| {
                 Box::pin(async move {
                     let character = fence.character_id;
-                    let mut tx = if let Some(payment)=&payment {
+                    let mut reward_tuple=None;
+                    let mut tx = if reward_admission.is_some() {
+                        let typed=begin_type2_transaction(holder,deadline).await?;
+                        reward_tuple=Some(typed.tuple());
+                        typed.into_inner()
+                    } else if let Some(payment)=&payment {
                         // The fee owner's activation fence is the first database
                         // read, before even recovery or admission statements.
                         let mut tx = begin_type2_transaction(holder, deadline).await?;
@@ -278,6 +338,11 @@ impl DurabilityRoot {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     lock_receipt_key(&mut tx, character, &request).await?;
+                    // The MINT cause precedes the Character root, matching the item owner.
+                    if reward_callback.as_ref().is_some_and(|c|c.give.is_some())
+                        && let QuestCause::Command(command)=request.cause {
+                        super::super::reward_claim_mint::lock_cause(&mut tx,command).await?;
+                    }
                     if let Some(row) = load_receipt(&mut tx, character, &request).await? {
                         if row.try_get::<Vec<u8>, _>("request_binding")? != binding {
                             return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
@@ -585,6 +650,9 @@ impl DurabilityRoot {
                     if let (Some(callback), Some((permit, context))) = (&callback, &context)
                         && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, context).await?
                     { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
+                    if let (Some(callback),Some(admission),Some(tuple))=(&reward_callback,*reward_admission,reward_tuple)
+                        && !super::super::reward_claim_mint::quest::apply(&mut tx,tuple,&node,fence,&request,callback,admission,reward_achievement.as_ref()).await?
+                    { tx.rollback().await?;return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     let committed_revision = root
                         .revision
                         .checked_add(1)

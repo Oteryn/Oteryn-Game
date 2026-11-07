@@ -1,0 +1,11 @@
+   Compiling oteryn-gameplay-quests v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/quests)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 9.60s
+     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_quests-83ac356503a3a145)
+
+running 3 tests
+test quest::reward_callbacks::tests::stateless_paid_source_is_exact_and_preserves_predecessor_defaults ... ok
+test quest::reward_callbacks::tests::paid_repeatable_key_sales_require_price_preserved_guards_and_one_key ... ok
+test quest::reward_callbacks::tests::qengine_reward_callbacks_are_bounded_and_never_repeatable_value_grants ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 277 filtered out; finished in 1.40s
+

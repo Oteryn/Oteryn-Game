@@ -206,6 +206,33 @@ fn finish(admission: &ComposedFreshAdmission<'_, '_, '_>, session: GameSessionId
     }
 }
 
+fn reward_refusal(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+    context: &Context,
+    intent: &NpcTalkIntent,
+    callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
+) -> NpcTalkOutcome {
+    finish(admission, session, false);
+    if let Some(next) = callback.failure_next_topic
+        && let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
+        && let Some(state) = sessions.get_mut(&session)
+    {
+        state
+            .quest_dialogue
+            .apply_topic(context.clone(), Some(Topic::from(next)));
+    }
+    let mut outcome = reply(
+        &admission.states.chat,
+        session,
+        context,
+        intent,
+        callback.failure_reply.clone(),
+    );
+    outcome.disposition = NpcIntentDisposition::Rejected;
+    outcome
+}
+
 pub(super) async fn apply(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -220,13 +247,20 @@ pub(super) async fn apply(
     };
     // Resolve the admitted customer and existing wire bounds before a topic or
     // durable transition can change. A missing fact never publishes a token.
-    let rendered = reply(
+    let mut rendered = reply(
         &admission.states.chat,
         command.game_session_id,
         &step.context,
         &intent,
         step.reply.clone(),
     );
+    if step
+        .transition
+        .as_ref()
+        .is_some_and(|k| k.starts_with("oteryn:quest-reward/"))
+    {
+        rendered.inventory_changed = true;
+    }
     if rendered.disposition != NpcIntentDisposition::Ok {
         return rendered;
     }
@@ -280,6 +314,11 @@ pub(super) async fn apply(
         let states = admission.states.spell_states.lock().await;
         if states.is_dead(actor)
             || !states.spell_idle(&runtime, actor, command.game_session_id)
+            || (transition.starts_with("oteryn:quest-reward/")
+                && admission.active_generation.is_none_or(|generation| {
+                    runtime.content_pin().server_artifact_digest()
+                        != generation.identity().server_artifact_digest()
+                }))
             || admission.states.npc_conversations.current_npc(
                 &admission.states.chat,
                 &runtime,
@@ -325,8 +364,58 @@ pub(super) async fn apply(
             reply: step.reply.clone(),
         });
     }
-    let outcome = slot
-        .commit_quest_transition(
+    let reward_callback = oteryn_gameplay_quests::quest::reward_callbacks::load()
+        .ok()
+        .and_then(|rows| rows.into_iter().find(|c| c.key == request.transition_key));
+    let value_callback = reward_callback.is_some();
+    let fee_payment = if reward_callback.as_ref().is_some_and(|c| c.fee.is_some()) {
+        match super::endgame::prepare_reward_fee(admission, command, fence).await {
+            Ok(payment) => Some(payment),
+            Err(outcome) => {
+                if !outcome.unknown
+                    && let Some(callback) = &reward_callback
+                {
+                    return reward_refusal(
+                        admission,
+                        command.game_session_id,
+                        &step.context,
+                        &intent,
+                        callback,
+                    );
+                }
+                finish(admission, command.game_session_id, false);
+                return *outcome;
+            }
+        }
+    } else {
+        None
+    };
+    let outcome = if value_callback {
+        let Some(native) = admission
+            .active_generation
+            .and_then(|g| g.native_gameplay())
+        else {
+            finish(admission, command.game_session_id, false);
+            return rejected();
+        };
+        let weights = super::super::item_ref_admission::NativeItemWeights(native)
+            .with_wheel(admission.premium_coordinator);
+        slot.commit_quest_reward(
+            admission.root,
+            admission.character,
+            admission.holder,
+            fence,
+            request,
+            std::sync::Arc::clone(catalogue),
+            crate::durability::reward_claim_mint::QuestRewardAdmission {
+                native,
+                weights: &weights,
+                fee_payment: fee_payment.as_ref(),
+            },
+        )
+        .await
+    } else {
+        slot.commit_quest_transition(
             admission.root,
             admission.character,
             admission.holder,
@@ -334,8 +423,13 @@ pub(super) async fn apply(
             request,
             std::sync::Arc::clone(catalogue),
         )
-        .await;
+        .await
+    };
     drop(slot);
+    #[cfg(test)]
+    if value_callback && let Err(error) = &outcome {
+        eprintln!("quest reward commit: {error:?}");
+    }
     match outcome {
         Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => {
             #[cfg(test)]
@@ -372,6 +466,15 @@ pub(super) async fn apply(
             _,
         )) => unknown(),
         _ => {
+            if let Some(callback) = &reward_callback {
+                return reward_refusal(
+                    admission,
+                    command.game_session_id,
+                    &step.context,
+                    &intent,
+                    callback,
+                );
+            }
             finish(admission, command.game_session_id, false);
             rejected()
         }
@@ -398,6 +501,10 @@ pub(in crate::gameplay_transport) async fn resume(
     if pending.request.cause != QuestCause::Command(CommandRef::new(command.game_session_id, id)) {
         return None;
     }
+    let value_callback = pending
+        .request
+        .transition_key
+        .starts_with("oteryn:quest-reward/");
     match admission
         .root
         .reconcile_character_quest_transition(
@@ -416,13 +523,14 @@ pub(in crate::gameplay_transport) async fn resume(
                 admission
                     .refresh_level_up_vitals(pending.actor, command.game_session_id)
                     .await;
-                let rendered = reply(
+                let mut rendered = reply(
                     &admission.states.chat,
                     command.game_session_id,
                     &pending.context,
                     &pending.intent,
                     pending.reply,
                 );
+                rendered.inventory_changed = value_callback;
                 let runtime = admission.runtime.lock().await;
                 Some(publish_committed_reply(
                     admission.states.npc_conversations.current_npc(

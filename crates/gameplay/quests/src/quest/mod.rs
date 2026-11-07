@@ -37,6 +37,7 @@ pub mod native_rules;
 pub mod npc_rules;
 mod quests_2_focus;
 pub mod raid_tokens;
+pub mod reward_callbacks;
 pub mod rotten_blood;
 pub mod soul_war;
 pub mod soul_war_dialogue;
@@ -330,7 +331,10 @@ impl QuestStateCatalogue {
             if transition.effects.len() > QUESTSTATE0_RL_02 {
                 return Err(E::TooManyEffects(transition.key));
             }
-            if transition.effects.is_empty() && !transition.completes {
+            if transition.effects.is_empty()
+                && !transition.completes
+                && !reward_callbacks::stateless_sale(&transition.key, &transition.quest)
+            {
                 return Err(E::InvalidEffect(transition.key));
             }
             if transition

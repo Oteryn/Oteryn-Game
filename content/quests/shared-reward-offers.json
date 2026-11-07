@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.elathriel",
+      "keywords": [
+        "key",
+        "keys"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "If you are that curious, do you want to buy a key for 5000 gold? Don't blame me if you get sucked in."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.elathriel",
+      "keywords": [
+        "key",
+        "keys"
+      ],
+      "topic": 1,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "If you are that curious, do you want to buy a key for 5000 gold? Don't blame me if you get sucked in."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.elathriel",
+      "keywords": [
+        "no"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Believe me, it's better for you that way."
+      ]
+    }
+  ]
+}

@@ -1,3 +1,33 @@
+## Elathriel exact paid-key slice GREEN — 2026-11-07
+Final actualPostgreSQL18.6 GREEN3=267.43s: bank88.380181574s,coins90.700002496s,
+full88.347256761s. Two5000 sales ->two copper2970 keys with immutable3012, replay,
+no/wrongtopic/nonexact affirmative nocharge, fullbackpack bank/key rollback.
+Each case asserts migrations1097+1098 and rejects runtime-role orphan zero receipt23514.
+No fake quest flag. Existing once-only MINT guard retained; paid CommandRefs use
+qengine's stable claim hash; SQL source proof validates the identical hash.
+Generic paid engine reusedqpc6e30938891; currentqengine2e7867e061+incoming9ff history.
+Copper2970 source refinement preserves identity/known facts; all other profiles unchanged.
+ReviewedNPC32684,31671,z9;46placements. Pins174f5942b036a38769872612f292957daa670bfb2a3a96f3b6a2aec395d32a62.
+StrictClippy6m38s/check1m23s/fmt, migration identity, reward3/NPC25/history3/profile3,
+generation40/pins and retained affectedPG regressions PASS. Full proof cloud-elathriel-validation.json.
+All intermediate PG failures retained honestly. Counts60QUALIFIED/117UNFINISHED/
+1excludedDawnportBLOCKED; no whole-title promotion.
+
+NEXT shared skeleton containerstock key3001 at32794,31572,z7, parent5972.
+Source container_misc.lua startup fills only empty container, then door_key.lua
+assigns silver2969 number3001. Never personal once-only claim or invented loosekey.
+Own generic feature. Check current other lane refs explicitly (namedfetch trackingmaystale).
+Actual existing APIs: container_view Domain14; loop_move::observe_container currently
+onlyInstance roots (MapBase returnsNone); Ground-container ancestry/view/transfer exist.
+MapItemMint already persists shared placement+reset_epoch pickup, but inventory-only.
+Investigate bounded virtual source MapBase-container entries or reuse genuine source
+materialization; no fake creature-death MINT. Ground instance containers already work.
+No production stock feature authored yet. Prior plan/tmp/questpc-level-door-next-plan.md
+completed. After stock, compose all source route pieces and promote Draconia onlythen.
+
+Before EVERYpush fetch exacttarget and merge FETCH_HEAD, not stale trackingref;
+neverforce/rebase/main/PR. Stash0 alreadyapplied; can drop after featurepush.
+
 ## Elathriel guarded-receipt/repurchase checkpoint — 2026-11-07
 Current-schema actualPG3=254.10s,1pass/2fail. Schema1097 asserted and runtime-role
 unpaired zero receipt rejected23514 in all3. Initial purchase and literal replay

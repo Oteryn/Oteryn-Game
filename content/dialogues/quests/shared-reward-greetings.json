@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "npcs": [
+    {
+      "npc": "oteryn:npc.elathriel",
+      "greet": "Be greeted |PLAYERNAME|. What is your {business} near the {hellgate}?",
+      "farewell": "Asha Thrazi, stranger!",
+      "walkaway": "Asha Thrazi, stranger!",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elathriel.lua:236:sha256:24dbbbe1ee2bcb74f74462ce131dd10cdf45801d53ecb586bd63993e1450cd7d",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elathriel.lua:237:sha256:24dbbbe1ee2bcb74f74462ce131dd10cdf45801d53ecb586bd63993e1450cd7d",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elathriel.lua:238:sha256:24dbbbe1ee2bcb74f74462ce131dd10cdf45801d53ecb586bd63993e1450cd7d"
+      ]
+    }
+  ]
+}

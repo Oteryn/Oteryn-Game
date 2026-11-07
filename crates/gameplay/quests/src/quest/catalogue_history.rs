@@ -180,11 +180,13 @@ mod tests {
             assert!(!defaults.contains_key(&key));
             assert_eq!(catalogue.track(&key).ok_or("new flag")?.initial, -1);
         }
-        assert!(
+        assert_eq!(
             catalogue
                 .predecessors
                 .keys()
-                .all(|q| q == "oteryn:quest.tibia_tales")
+                .map(String::as_str)
+                .collect::<BTreeSet<_>>(),
+            BTreeSet::from(["oteryn:quest.tibia_tales", "oteryn:quest.draconia_quest"])
         );
         assert_ne!(
             catalogue.definition_hash("oteryn:quest.tibia_tales"),

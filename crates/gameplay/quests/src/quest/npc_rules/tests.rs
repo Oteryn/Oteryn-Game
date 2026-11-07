@@ -580,8 +580,17 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     }
     let active = extend(old.catalogue().clone(), &bindings)?;
     let runtime = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
-    // Corym adds one independently scoped programme to the same canonical aggregate.
-    assert_eq!(runtime.programs().len(), 9);
+    // Corym and Dragonlord add independently source-bound programmes.
+    assert_eq!(runtime.programs().len(), 10);
+    assert_eq!(
+        runtime
+            .program("oteryn:quest.draconia_quest")
+            .ok_or("Dragonlord programme")?
+            .document
+            .program_key
+            .as_deref(),
+        Some("oteryn:quest-npc-program.draconia")
+    );
     assert!(
         runtime
             .program("oteryn:quest.marlin_trophy_quest")
@@ -601,7 +610,13 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
             .iter()
             .all(|rule| rule.npc.starts_with("oteryn:npc.corym_"))
     );
+    // The historical frozen catalogue has no Draconia definition to alias.
     assert_eq!(active.npc_legacy.len(), 8);
+    assert!(
+        !active
+            .npc_legacy
+            .contains_key("oteryn:quest.draconia_quest")
+    );
     let mut defaults = BTreeMap::new();
     for track in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
@@ -667,7 +682,13 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         .map_err(|e| e.to_string())?;
     let loaded = super::super::loader::load_embedded_quest_state("npc-legacy")
         .map_err(|e| format!("{e:?}"))?;
-    assert_eq!(loaded.catalogue().npc_legacy.len(), 8);
+    assert_eq!(loaded.catalogue().npc_legacy.len(), 9);
+    assert!(
+        loaded
+            .catalogue()
+            .npc_legacy
+            .contains_key("oteryn:quest.draconia_quest")
+    );
     Ok(())
 }
 

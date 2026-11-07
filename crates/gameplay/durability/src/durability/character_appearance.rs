@@ -156,8 +156,8 @@ mod earned_unlocks;
 mod grant_lock;
 pub(crate) use grant_lock::{item_action_sex, lock_account_grants};
 mod quest_grants;
-pub(crate) use quest_grants::{QuestOutfitGrant, grant_quest_outfit};
 pub use current_appearance::CurrentCharacterAppearance;
+pub(crate) use quest_grants::{QuestOutfitGrant, grant_callback_outfit, grant_quest_outfit};
 
 impl DurabilityRoot {
     /// Commit the selection under the native Character fence. The owner supplies its current
@@ -337,7 +337,10 @@ pub(super) async fn podium_cosmetic_owned<C: AppearanceContent<String>>(
     let facts = earned_unlocks::read(connection, character, &content.earned_grant_keys())
         .await
         .map_err(read_storage_error)?;
-    let unlocks = EarnedCosmetics { content, facts: &facts };
+    let unlocks = EarnedCosmetics {
+        content,
+        facts: &facts,
+    };
     Ok(match target {
         EarnedCosmetic::Outfit(key) => {
             let key = key.to_owned();

@@ -1,0 +1,113 @@
+{
+  "scope": "Elathriel exact paid Hellgate copper key3012, source-native greeting/placement and reusable transactional paid-item engine",
+  "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/elathriel.lua#L193-L238",
+  "source_sha256": "24dbbbe1ee2bcb74f74462ce131dd10cdf45801d53ecb586bd63993e1450cd7d",
+  "reuse": [
+    "questpc6 e30938891 / imported engine2123b7871",
+    "qengine2 e7867e061: bounded zero-effect receipts and 1004 per-command MINT hashing",
+    "incoming qualified9ff93aede additive catalogue history"
+  ],
+  "green": [
+    {
+      "case": "draconia-elathriel-bank",
+      "postgres": "18.6",
+      "duration_seconds": 88.380181574,
+      "result": "GREEN"
+    },
+    {
+      "case": "draconia-elathriel-coins",
+      "postgres": "18.6",
+      "duration_seconds": 90.700002496,
+      "result": "GREEN"
+    },
+    {
+      "case": "draconia-elathriel-full",
+      "postgres": "18.6",
+      "duration_seconds": 88.347256761,
+      "result": "GREEN"
+    }
+  ],
+  "green_harness_seconds": 267.43,
+  "initial_red": "cloud-elathriel-red-validation.json",
+  "retained_intermediate": [
+    "cloud-elathriel-profile-progress.json",
+    "cloud-elathriel-stateless-progress.json",
+    "cloud-elathriel-final-typed-key-green.log",
+    "cloud-elathriel-final-stateless-green.log"
+  ],
+  "intermediate_boundary": "Materializable copper initially lacked KEY classification; then the legacy receipt rejected zero effects. A SQL-only migration initially missed the embedded migrator; directory watcher and schema assertions fixed that. The next run passed first purchase/replay but exposed repeatable sales using a once-only claim. No failure is counted as final GREEN.",
+  "behavior": [
+    "exact normalized yes/topic1 only charges5000",
+    "wallet and bank each buy two copper2970 keys with immutable3012",
+    "no/unknown phrase/wrong topic write no fee or key",
+    "literal command replay repeats no charge/MINT",
+    "full backpack rolls back bank fee and key",
+    "runtime-role unpaired zero receipt rejected23514 in all3 cases",
+    "no source quest flag invented; zero-delta receipt requires same-transaction source+fee+MINT",
+    "existing once-only MINT guards retained; paid CommandRefs use stable distinct claims"
+  ],
+  "native_placement": {
+    "x": 32684,
+    "y": 31671,
+    "legacy_z": 9,
+    "cohort_size": 46
+  },
+  "profile_refinement": "only2970 changed; admitted identity/known facts preserved; UNKNOWN source facts refined, conflicts rejected; all other profiles unchanged",
+  "checks": {
+    "strict_clippy_all_targets_all_features_D_warnings": "PASS 6m38s including lock wait",
+    "cargo_check": "PASS 1m23s",
+    "fmt": "PASS",
+    "migration_identity_unit": "PASS (non-PG)",
+    "reward_units": "PASS 3/3 1.40s",
+    "npc_units": "PASS 25/25 1.58s",
+    "history_units": "PASS 3/3 2.55s",
+    "profile_units": "PASS 3/3 0.133s",
+    "generation": "PASS source programme, NPC placements, pinned profile producer,40 spell registration outputs",
+    "pins": "PASS174f5942b036a38769872612f292957daa670bfb2a3a96f3b6a2aec395d32a62"
+  },
+  "regressions": "cloud-elathriel-profile-progress.json: actual PG Dragonlord87.26s, Corym50.41s, Father87.26s all PASS; retained guards unchanged",
+  "logs": [
+    {
+      "path": "qlane-meta/questpc/cloud-elathriel-final-repeat-green.log",
+      "sha256": "2e3e358ebc921a782b768048c9239e0758a6b87e5f54c38c71b8f07c187430b2"
+    },
+    {
+      "path": "qlane-meta/questpc/cloud-elathriel-final-repeat-clippy.log",
+      "sha256": "e41e04f138063fcc89d3e1729750f85dcdabfcfe9ed41b02d2585d08ae879f97"
+    },
+    {
+      "path": "qlane-meta/questpc/cloud-elathriel-final-repeat-check.log",
+      "sha256": "7eb612c74c45f0dd3c15b179e7d3e2b055a5d45113894a4d3ea1f3d234a2d325"
+    },
+    {
+      "path": "qlane-meta/questpc/cloud-elathriel-final-repeat-migrations-unit.log",
+      "sha256": "1625b1dccbf2127e88822511d5c332578cef278f404aba49bddf84732f5d5b7e"
+    },
+    {
+      "path": "qlane-meta/questpc/cloud-elathriel-final-npc-unit-qualified.log",
+      "sha256": "4af5071f62fd457009486810222ef90f0c6c9d396df059e3f5a2745b1292f16d"
+    },
+    {
+      "path": "qlane-meta/questpc/cloud-elathriel-final-history-unit-fixed.log",
+      "sha256": "ed066e4f5e77c0476101e34aa491fdab987966d437fb6c957dd254e246f398fb"
+    },
+    {
+      "path": "qlane-meta/questpc/cloud-elathriel-final-integration-unit.log",
+      "sha256": "9bc12cdf6061457d85ed1f668981401d4bd2bd5b3c850ac47cc901ce2284360e"
+    },
+    {
+      "path": "qlane-meta/questpc/cloud-elathriel-final-key-pins.log",
+      "sha256": "73410b4f7e5848a842554c3342e68853344388a91b3a4bb9b7ea4064b0efd9ad"
+    },
+    {
+      "path": "qlane-meta/questpc/cloud-elathriel-final-typed-key-green.log",
+      "sha256": "f3a9de4f045786f24cfd2ee30f4bd97151ea037f89bf0d7d368d59eeeb334c36"
+    },
+    {
+      "path": "qlane-meta/questpc/cloud-elathriel-final-stateless-green.log",
+      "sha256": "aad39af45b644d19c608ab03156594bfec7dbbf94d329f1596374c770a66ae46"
+    }
+  ],
+  "whole_title_promoted": false,
+  "review": "PASS; no remaining findings for this slice"
+}
