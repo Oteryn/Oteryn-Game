@@ -31,10 +31,19 @@ fn scenario_case(
     let spirit = name == "qengine-rewards-questpc4-spirit";
     let native_tower = name.starts_with("qengine-rewards-questpc4-native-tower-");
     let native_switch = name.starts_with("l6-tomb-switch-native-");
+    let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
-    let native_crop =
-        small_ruby || mead || spirit || tomb_native || native_tower || native_switch || native_gate;
-    let start = if native_gate {
+    let native_crop = small_ruby
+        || mead
+        || spirit
+        || tomb_native
+        || native_tower
+        || native_switch
+        || native_gate
+        || native_altar;
+    let start = if native_altar {
+        super::super::l6_floor_native::start()
+    } else if native_gate {
         super::super::l6_shared_gate_native::start(name)?
     } else if native_tower {
         super::super::l6_paradox_native::start(name)
@@ -266,7 +275,13 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if native_gate {
+        let world = if native_altar {
+            super::super::l6_floor_native::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("native altar policies")?,
+            )?
+        } else if native_gate {
             super::super::l6_shared_gate_native::world(
                 generation.native_gameplay().ok_or("native gate policies")?,
                 name,
@@ -604,6 +619,9 @@ fn scenario_case(
             super::super::l6_ruby_profile::exercise(&owner, &h).await?;
         } else if floor_profiles {
             super::super::l6_floor_profiles::exercise(&mut owner, &mut admitted, &h, fence).await?;
+        } else if native_altar {
+            super::super::l6_floor_native::exercise(&mut owner, &mut admitted, &h, fence, name)
+                .await?;
         } else if floor_assembly {
             super::super::l6_floor_assembly::exercise(&mut owner, &mut admitted, &h, fence, name)
                 .await?;

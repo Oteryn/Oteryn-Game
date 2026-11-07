@@ -1,4 +1,26 @@
 //! Source-bound AddItem assemblies of complete physical floor operands.
+/// An authored native counterpart for an otherwise absent source action selector.
+#[derive(Clone, Copy, Debug)]
+pub struct NativeFloorBinding {
+    pub action: u16,
+    pub x: u16,
+    pub y: u16,
+    pub floor: i8,
+    pub ordinal: u8,
+    pub appearance: u16,
+}
+
+// Authored counterpart, not a recovered donor registration. Retain the bare B3
+// ground beside the source Morguthis endpoint; provenance is in the lane contract.
+pub const NATIVE_BINDINGS: &[NativeFloorBinding] = &[NativeFloorBinding {
+    action: 40040,
+    x: 33162,
+    y: 32694,
+    floor: -14,
+    ordinal: 0,
+    appearance: 417,
+}];
+
 #[derive(Debug)]
 pub struct FloorRecipe {
     pub key: &'static str,

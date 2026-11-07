@@ -95,7 +95,11 @@ fn run_case(name: &'static str) -> TestResult {
     Ok(())
 }
 
-fn assert_fire_effect(owner: &ComposedFreshAdmission<'_, '_, '_>, expected: bool) -> TestResult {
+fn assert_fire_effect_at(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    expected: bool,
+    altar: Position,
+) -> TestResult {
     let effects = owner
         .bundle_map()
         .ok_or("altar map")?
@@ -105,9 +109,9 @@ fn assert_fire_effect(owner: &ComposedFreshAdmission<'_, '_, '_>, expected: bool
         vec![(
             1,
             crate::map::overlay::TilePos {
-                x: 7,
-                y: 1,
-                floor: -7,
+                x: altar.x,
+                y: altar.y,
+                floor: altar.floor,
             },
             7,
         )]
@@ -340,6 +344,17 @@ pub(super) async fn exercise(
     fence: CurrentCharacterGameplayFence,
     name: &str,
 ) -> TestResult {
+    exercise_at(owner, admitted, harness, fence, name, ALTAR).await
+}
+
+pub(super) async fn exercise_at(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    harness: &Harness,
+    fence: CurrentCharacterGameplayFence,
+    name: &str,
+    altar: Position,
+) -> TestResult {
     eprintln!("POSTGRES_DATABASE_READY l6_floor_assembly");
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(
@@ -357,7 +372,7 @@ pub(super) async fn exercise(
         )
         .ok_or("floor drop capabilities")?;
     if name.contains("-ruby") {
-        return ruby_exercise(owner, admitted, harness, fence, name).await;
+        return ruby_exercise(owner, admitted, harness, fence, name, altar).await;
     }
     for id in 3222_u64..=3228 {
         if name.ends_with("-missing") && id == 3223 {
@@ -367,7 +382,7 @@ pub(super) async fn exercise(
             owner,
             fence.item_fence(),
             &Offering {
-                position: ALTAR,
+                position: altar,
                 item: format!("oteryn:item.tibia.i{id}"),
                 count: 1,
             },
@@ -399,9 +414,9 @@ pub(super) async fn exercise(
         1,
         false,
         oteryn_protocol_oteryn::item_view::WorldTilePosition {
-            x: 7,
-            y: 1,
-            floor: -7,
+            x: i32::from(altar.x),
+            y: i32::from(altar.y),
+            floor: i16::from(altar.floor),
         },
     )
     .await?;
@@ -430,8 +445,11 @@ pub(super) async fn exercise(
         sqlx::query_scalar("SELECT count(*) FROM game_floor_assembly_receipts")
             .fetch_one(&harness.pool)
             .await?;
-    assert_eq!(receipt_count, i64::from(name == "l6-floor-assembly"));
-    assert_fire_effect(owner, receipt_count == 1)?;
+    assert_eq!(
+        receipt_count,
+        i64::from(!name.ends_with("-missing") && !name.ends_with("-unbound"))
+    );
+    assert_fire_effect_at(owner, receipt_count == 1, altar)?;
     let (next, replay, _) = super::map_seed_planting::drop_exchange_at(
         owner,
         *admitted,
@@ -441,15 +459,15 @@ pub(super) async fn exercise(
         1,
         false,
         oteryn_protocol_oteryn::item_view::WorldTilePosition {
-            x: 7,
-            y: 1,
-            floor: -7,
+            x: i32::from(altar.x),
+            y: i32::from(altar.y),
+            floor: i16::from(altar.floor),
         },
     )
     .await?;
     *admitted = next;
     assert_eq!(replay, result);
-    assert_fire_effect(owner, receipt_count == 1)?;
+    assert_fire_effect_at(owner, receipt_count == 1, altar)?;
     Ok(())
 }
 
@@ -459,6 +477,7 @@ async fn ruby_exercise(
     harness: &Harness,
     fence: CurrentCharacterGameplayFence,
     name: &str,
+    altar: Position,
 ) -> TestResult {
     if name.contains("-cycle") {
         return expiry_exercise(owner, harness, fence, name).await;
@@ -474,7 +493,7 @@ async fn ruby_exercise(
             owner,
             fence.item_fence(),
             &Offering {
-                position: ALTAR,
+                position: altar,
                 item: format!("oteryn:item.tibia.i{id}"),
                 count: if id == 3030 { ruby_count } else { 1 },
             },
@@ -494,9 +513,9 @@ async fn ruby_exercise(
         .and_then(|i| i.definition_ref("Item", "oteryn:item.tibia.i3030", "definition-r1"))
         .ok_or("ruby reference")?;
     let destination = oteryn_protocol_oteryn::item_view::WorldTilePosition {
-        x: 7,
-        y: 1,
-        floor: -7,
+        x: i32::from(altar.x),
+        y: i32::from(altar.y),
+        floor: i16::from(altar.floor),
     };
     let (next, result, payload) = super::map_seed_planting::drop_exchange_at(
         owner,
@@ -574,7 +593,7 @@ async fn ruby_exercise(
         );
         assert_eq!(proof["output_key"], "oteryn:item.tibia.i3230");
     }
-    assert_fire_effect(owner, receipt_count == 1)?;
+    assert_fire_effect_at(owner, receipt_count == 1, altar)?;
     let (next, replay, _) = super::map_seed_planting::drop_exchange_at(
         owner,
         *admitted,
@@ -593,7 +612,7 @@ async fn ruby_exercise(
             .fetch_one(&harness.pool)
             .await?;
     assert_eq!(replay_count, receipt_count);
-    assert_fire_effect(owner, receipt_count == 1)?;
+    assert_fire_effect_at(owner, receipt_count == 1, altar)?;
     Ok(())
 }
 

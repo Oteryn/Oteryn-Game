@@ -29,6 +29,7 @@ pub(super) fn target(
             if map
                 .facts
                 .quest_callback_matches(key, None, Some(action), None)
+                || matches_native(map, key, action, entry.facts.appearance_id)
             {
                 if selected.is_some() {
                     return None;
@@ -49,4 +50,38 @@ pub(super) fn target(
             reset_epoch: epoch.try_into().ok()?,
         },
     ))
+}
+
+fn matches_native(map: &BundleMap, key: u64, action: u16, appearance: u16) -> bool {
+    let Some((pos, ordinal)) = view::placement_of(key) else {
+        return false;
+    };
+    let Some(binding) = oteryn_gameplay_items::floor_assembly::NATIVE_BINDINGS
+        .iter()
+        .find(|binding| {
+            binding.action == action
+                && binding.x == pos.x
+                && binding.y == pos.y
+                && binding.floor == pos.floor
+                && binding.ordinal == ordinal
+                && binding.appearance == appearance
+        })
+    else {
+        return false;
+    };
+    map.overlay
+        .base()
+        .tile(pos.x, pos.y, pos.floor)
+        .and_then(|base| {
+            base.ids()
+                .iter()
+                .zip(base.depths())
+                .filter(|(_, depth)| **depth == 0)
+                .nth(usize::from(ordinal))
+                .map(|(id, _)| *id)
+        })
+        .is_some_and(|id| {
+            map.facts
+                .quest_callback_native_object(key, id, binding.appearance)
+        })
 }

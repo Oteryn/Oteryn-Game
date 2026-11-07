@@ -6070,7 +6070,7 @@
       }
     },
     "native_gate_batch_17": {
-      "status": "GREEN_MERGED_READY_TO_FF_PUSH",
+      "status": "GREEN_PUSHED",
       "stage": "All merged checks GREEN. Commit merge, exactfreshfetch/inspect ancestry and FFpush immediately, then nativealtar batch18. Whole17 entries remain.",
       "log": "/tmp/questpc4-native-gate-red.log",
       "classification": "OTERYN_AUTHORED_COUNTERPART / SELECTED_RECIPE_ONLY; not recovered legacyUID registrations",
@@ -6247,7 +6247,120 @@
         "clippy": "PASS fivechangedcrates alltargets/allfeatures -Dwarnings3m03s",
         "fmt_unit_duplicates_diff": "PASS fmt; pure native binding ownership1/0 in0.00s(notPG); duplicates/diff",
         "content": "Byte-identical incoming778f85b1e content/generated data,3647nativeprofiles, owningpin f970b97d1976c5b587f04448aac5828729c0819dd76b113a66a5bc196101dbd7/31101924bytes; incoming producer freshness/pin proof retained exact"
-      }
+      },
+      "pushed_head": "864b66a511beb9a9a2ba28249d478459d11cbdf0",
+      "remote_verified": true
+    },
+    "native_altar_batch_18": {
+      "status": "COMPILED_PG_GREEN_WIP_PUBLICATION",
+      "previous_pushed_head": "864b66a511beb9a9a2ba28249d478459d11cbdf0",
+      "scope": [
+        "seven physical parts actualnativefloor atomic assembly/replay/FIREAREA",
+        "missingpartpreserves6",
+        "nearbyunboundplainfloorpreserves7",
+        "2rubyphysicaldropconsumes1samehelmetUUIDoriginal30mdeadline",
+        "unboundrubyrefusalpreservessnapshot"
+      ],
+      "native_altar": [
+        33162,
+        32694,
+        14,
+        0,
+        417
+      ],
+      "native_control": [
+        33163,
+        32695,
+        14,
+        0,
+        417
+      ],
+      "classification": "OTERYN_AUTHORED_COUNTERPART / SELECTED_RECIPE_ONLY, no originalregistration/fullmaze claim",
+      "source": "Crystal201189f movements_craft_helmet.lua:1-44 SHA1c7ea8ca397cb6bff7b0ac59a6b0d2514820cc2556cfe0de677527f83182da84; original items3230 duration1800000ms preserved",
+      "implementation": "Typed exact NativeFloorBinding catalogue and generic current-composed target admission. Exactaction/position/ordinal/currentappearance plus existing plainbaseobject/attrs/House/hidden proof. Legacyselectors retained. Reuse entire existing SQLatomic assembly/ruby/sameUUID/deadline/replay/effect owners.",
+      "red_log": "/tmp/questpc4-native-altar-red.log",
+      "red_session": 20916,
+      "whole_entries_remaining": 17,
+      "reuse_check": {
+        "qengine2": "9c581fd104aa9c6cbdd8404618e65bc112b73f88",
+        "questpc3": "0ae6b6f58e19f43d0582bab00f857d178405f30a",
+        "questpc8": "daa882d91f058ee593214b017283708e40f5b09c",
+        "result": "No native altar binding matches in refreshed branches; reuse own existing generic floor crafting and nativeobject proof. No unrelated merge needed."
+      },
+      "red_compile_retry": {
+        "first_log": "/tmp/questpc4-native-altar-red.log",
+        "error": "E0308 test helper Position u16/i8 into wireWorldTile i32/i16; no PG ran",
+        "repair": "Lossless i32::from/i16::from conversions in three wire destinations, existing TilePos types unchanged; no assertions changed",
+        "stopped": "Owned obsolete Cargo127512+descendants SIGTERM143, notgreen",
+        "log": "/tmp/questpc4-native-altar-red2.log",
+        "session": 14950
+      },
+      "fixture_retry": {
+        "log": "/tmp/questpc4-native-altar-red2.log",
+        "seconds": 56.12,
+        "error": "native_scene checks source crop before exercise: checked1tile vs4 expected, bounds are half-open",
+        "repair": "Upper bounds33164,32696 include all4originaltiles; every original source assertion retained, originaldecor2190 remains. Delete unused assert_fire_effect wrapper only; full parameterized assertions unchanged.",
+        "behavior_red_claim": false,
+        "latest_log": "/tmp/questpc4-native-altar-red3.log",
+        "latest_session": 62217
+      },
+      "red": {
+        "log": "/tmp/questpc4-native-altar-red3.log",
+        "version": "18.6 (Debian18.6-1.pgdg13+2)",
+        "seconds": 57.58,
+        "marker": "POSTGRES_DATABASE_READY l6_native_altar",
+        "observed": "Real finalwire dropMoved leaves7liveparts/0helmets",
+        "expected": "0liveparts/1fresh3229helmet",
+        "assertion": "seven floor pieces must become one fresh helmet atomically"
+      },
+      "green_log": "/tmp/questpc4-native-altar-green.log",
+      "green_session": 82697,
+      "gates": "/tmp/questpc4-native-altar-gates.sh",
+      "postgres": {
+        "status": "GREEN",
+        "version": "18.6",
+        "passed": 7,
+        "failed": 0,
+        "ignored": 0,
+        "native_seconds": 135.92,
+        "cases": {
+          "l6-floor-assembly-native-ruby-stack": {
+            "seconds": 76.719809693,
+            "log": "/tmp/questpc4-native-altar-green.log"
+          },
+          "l6-floor-assembly-native-ruby-unbound": {
+            "seconds": 76.747938967,
+            "log": "/tmp/questpc4-native-altar-green.log"
+          },
+          "l6-floor-assembly-native-missing": {
+            "seconds": 76.755363378,
+            "log": "/tmp/questpc4-native-altar-green.log"
+          },
+          "l6-floor-assembly-native": {
+            "seconds": 76.781711832,
+            "log": "/tmp/questpc4-native-altar-green.log"
+          },
+          "l6-floor-assembly-native-unbound": {
+            "seconds": 59.193219454,
+            "log": "/tmp/questpc4-native-altar-green.log"
+          },
+          "l6-floor-assembly": {
+            "seconds": 55.364655501,
+            "log": "/tmp/questpc4-native-altar-legacy-assembly.log"
+          },
+          "l6-floor-assembly-ruby-stack": {
+            "seconds": 54.616179165,
+            "log": "/tmp/questpc4-native-altar-legacy-ruby.log"
+          }
+        }
+      },
+      "checks": {
+        "fmt": "PASS",
+        "check": "PASS items/dispatch alltargets/allfeatures7m32s includes buildlock wait",
+        "clippy": "RUNNING"
+      },
+      "generated": "No content/native/world/pin/tool inputs changed; retain3647nativeprofiles/f970pin exact.",
+      "publication_note": "Owner immediatepush/15min rule: cargo checkPASS and7actualPGGREEN; publish compiled WIP now while finalclippy is pending. No remaining PGRED. Exact priorRED7parts/0helmets fixed; gatepending not called greenbatch."
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",
