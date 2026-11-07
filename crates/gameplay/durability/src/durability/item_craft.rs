@@ -14,8 +14,11 @@ use crate::foundation::CommandRef;
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use oteryn_gameplay_items::item_craft::{
     carried_cooking_conversion_with_sub_type, cooking_conversion, fishing_conversion,
+    retained_carried_tool_conversion,
 };
-use oteryn_gameplay_items::reward_bag::{is_reward_bag_output, reward_bag_conversion, reward_bag_draw};
+use oteryn_gameplay_items::reward_bag::{
+    is_reward_bag_output, reward_bag_conversion, reward_bag_draw,
+};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use serde_json::{Value, json};
 use sqlx::Row;
@@ -152,8 +155,12 @@ async fn write<C: ItemLoopContent>(
         .bind(request.source.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
     let source = match source {
         Some(source) => Some(source),
-        None if request.station.is_none() && request.tool.is_none() && request.gathering.is_none() =>
-            event_containers::nested_source(tx, fence, request.source, *world.as_bytes()).await?,
+        None if request.station.is_none()
+            && request.tool.is_none()
+            && request.gathering.is_none() =>
+        {
+            event_containers::nested_source(tx, fence, request.source, *world.as_bytes()).await?
+        }
         None => None,
     };
     let Some(source) = source else {
@@ -166,7 +173,10 @@ async fn write<C: ItemLoopContent>(
         revision_ref: source.try_get("definition_revision_ref")?,
     };
     if nested_source.is_some()
-        && oteryn_gameplay_items::reward_bag::event_containers::event_container_rule(&definition.production_key).is_none()
+        && oteryn_gameplay_items::reward_bag::event_containers::event_container_rule(
+            &definition.production_key,
+        )
+        .is_none()
     {
         return Ok(UseDisposition::NothingToUse);
     }
@@ -186,14 +196,28 @@ async fn write<C: ItemLoopContent>(
         let tool_id = request.tool.unwrap_or(request.source);
         let tool: Option<(String, String)> = sqlx::query_as("SELECT i.definition_production_key,i.definition_revision_ref FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND e.world_id=i.world_id AND b.world_id=i.world_id AND i.lifecycle=1 AND i.quantity>0 FOR UPDATE OF i")
             .bind(tool_id.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
-        let planting = definition.production_key.strip_prefix("oteryn:item.tibia.i")
+        let planting = definition
+            .production_key
+            .strip_prefix("oteryn:item.tibia.i")
             .and_then(|id| id.parse::<u16>().ok())
-            .and_then(|seed| u16::try_from(gathering.mutation.before).ok()
-                .and_then(|target| oteryn_gameplay_items::event_planting::planting_attempt(seed, target)));
-        let seed_is_qualified = planting.is_some_and(|plan| plan == gathering.attempt
-            && gathering.mutation.after == plan.after.map_or(0, u32::from)
-            && gathering.mutation.decay == plan.after.map(oteryn_gameplay_items::event_planting::planting_decays).unwrap_or_default()
-            && request.tool.is_none() && tool_id == request.source);
+            .and_then(|seed| {
+                u16::try_from(gathering.mutation.before)
+                    .ok()
+                    .and_then(|target| {
+                        oteryn_gameplay_items::event_planting::planting_attempt(seed, target)
+                    })
+            });
+        let seed_is_qualified = planting.is_some_and(|plan| {
+            plan == gathering.attempt
+                && gathering.mutation.after == plan.after.map_or(0, u32::from)
+                && gathering.mutation.decay
+                    == plan
+                        .after
+                        .map(oteryn_gameplay_items::event_planting::planting_decays)
+                        .unwrap_or_default()
+                && request.tool.is_none()
+                && tool_id == request.source
+        });
         if tool
             .as_ref()
             .map(|(key, revision)| (key.as_str(), revision.as_str()))
@@ -225,7 +249,12 @@ async fn write<C: ItemLoopContent>(
             .collect::<Option<Vec<_>>>();
         outputs.map(
             |outputs| oteryn_gameplay_items::item_craft::CookingConversion {
-                recipe: if seed_is_qualified { "oteryn:planting.crystal" } else { "oteryn:gathering.crystal" }.into(),
+                recipe: if seed_is_qualified {
+                    "oteryn:planting.crystal"
+                } else {
+                    "oteryn:gathering.crystal"
+                }
+                .into(),
                 outputs,
             },
         )
@@ -235,16 +264,19 @@ async fn write<C: ItemLoopContent>(
                 let tool = sqlx::query("SELECT definition_family,definition_production_key,definition_revision_ref FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 FOR UPDATE OF i")
                 .bind(tool_id.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
                 tool.and_then(|tool| {
-                    fishing_conversion(
-                        native,
-                        &TypedDefinitionRef {
-                            family: tool.try_get("definition_family").ok()?,
-                            production_key: tool.try_get("definition_production_key").ok()?,
-                            revision_ref: tool.try_get("definition_revision_ref").ok()?,
-                        },
-                        &definition,
-                        station,
-                    )
+                    let tool = TypedDefinitionRef {
+                        family: tool.try_get("definition_family").ok()?,
+                        production_key: tool.try_get("definition_production_key").ok()?,
+                        revision_ref: tool.try_get("definition_revision_ref").ok()?,
+                    };
+                    if station == &tool {
+                        if tool_id == request.source || request.ingredient.is_some() {
+                            return None;
+                        }
+                        retained_carried_tool_conversion(native, &tool, &definition)
+                    } else {
+                        fishing_conversion(native, &tool, &definition, station)
+                    }
                 })
             }
             (Some(station), None) => {
@@ -290,7 +322,9 @@ async fn write<C: ItemLoopContent>(
     let quantity: i64 = source.try_get("quantity")?;
     let consumed_quantity = if !consumes_source {
         0
-    } else if oteryn_gameplay_items::reward_bag::event_containers::consumes_whole_stack(&conversion.recipe) {
+    } else if oteryn_gameplay_items::reward_bag::event_containers::consumes_whole_stack(
+        &conversion.recipe,
+    ) {
         quantity
     } else {
         1
@@ -374,7 +408,8 @@ async fn write<C: ItemLoopContent>(
     if carried
         .checked_sub(if consumes_source {
             u64::from(used_weight)
-                * u64::try_from(consumed_quantity).map_err(|_| DurabilityError::InvalidStoredState)?
+                * u64::try_from(consumed_quantity)
+                    .map_err(|_| DurabilityError::InvalidStoredState)?
         } else {
             0
         })
@@ -452,7 +487,10 @@ async fn write<C: ItemLoopContent>(
         } else {
             "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid"
         };
-        sqlx::query(deletion).bind(request.source.as_slice()).execute(&mut ***tx).await?;
+        sqlx::query(deletion)
+            .bind(request.source.as_slice())
+            .execute(&mut ***tx)
+            .await?;
     }
     for output in outputs {
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,'Item',$1->>'key',$1->>'revision',($1->>'count')::bigint,1,$3::uuid)")
@@ -461,10 +499,19 @@ async fn write<C: ItemLoopContent>(
             .bind(&output).bind(world.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(&parent).bind(&transaction).execute(&mut ***tx).await?;
     }
     if conversion.recipe == "oteryn:planting.crystal"
-        && request.gathering.as_ref().is_some_and(|g| g.mutation.before == 14029) {
-        super::account_achievement::grant_missing(tx, fence.character_id,
-            &["oteryn:achievement/preservationist"], "map_seed_planting",
-            &super::item_mint::uuid_text(&event)?).await?;
+        && request
+            .gathering
+            .as_ref()
+            .is_some_and(|g| g.mutation.before == 14029)
+    {
+        super::account_achievement::grant_missing(
+            tx,
+            fence.character_id,
+            &["oteryn:achievement/preservationist"],
+            "map_seed_planting",
+            &super::item_mint::uuid_text(&event)?,
+        )
+        .await?;
     }
     sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES($1::uuid,$2::uuid,1,1,2,$3,$4,encode($5,'hex')::uuid,$6,$6+$7,$8,sha256($8),1)")
         .bind(&event).bind(&transaction).bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id()).bind(request.source.as_slice()).bind(occurred).bind(super::item_mint_audit::AUDIT_RETENTION_P90D_MS).bind(&envelope).execute(&mut ***tx).await?;

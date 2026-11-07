@@ -289,3 +289,40 @@ both exact NPC hashes and the source handler's greeting/tag defaults; the older
 All ten controlled-fixture actors are installed once in a separate walkable row;
 subsequent dialogue moves the character to each actor. Runtime NPC placement
 immutability is preserved, including the earlier failed fixture evidence.
+
+Hidden Threats forging keeps the original CRAFT-1 source snapshot frozen and
+adds only two exact Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b witnesses:
+https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/hidden_threats/action-key_forge.lua
+https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/actions/tools/metal_file.lua
+The normalized capsule is craft-authoring/samples/hidden-threats-forge.json;
+its digest is pinned before emission. The original129 recipe rows retain their
+exact canonical SHA2564929f6b9c229b2c5099d17e16f04eca94c39af12ade0ea4c0dbd751791a12c1f.
+Sixteen new fixed recipes cover two filing operations, eight heating operations,
+four source-allowed hot-half pairs, hammering and quenching. Equal-kind hot halves
+are source-allowed; the native owner requires distinct plain carried instances.
+
+The unchanged file uses the existing craft tool participant. The consumed source
+is the target material; its replacement uses the existing BURN/MINT proof and
+freed backpack slot. File identity and state remain intact. This uses the existing
+main-backpack craft authority; unsupported custody fails without mutation. No
+new SQL bypass or approximate consumption rule is introduced. An explicit fixed
+water-station recipe precedes the fishing fallback; rods retain the fishing owner.
+
+New Item policies reuse the canonical pinned importer and binding table:
+https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/data/items/items.xml
+https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/data/items/appearances.dat
+Both originals were freshly fetched into temporary storage and matched existing
+canary-ground-proof.json hashes. Only normalized required policies are retained.
+The four lava targets, heated halves and file have no canonical temporal/charge
+state. The source lava decay call has no authored transition; native behavior
+therefore invents neither cooling nor charge state. Target10113 is water.
+
+The post-write failure case identified a generic craft result-classification
+bug: converting Result with ok() discarded explicit PostgreSQL CommitRejected
+as an unavailable outcome. Craft dispatch now returns a settled Rejected only
+for that known rollback. CommitOutcomeUnknown and unavailable results retain
+fail-closed reconciliation. The fault test requires an explicit rejection,
+executed deferred failure trigger, complete item/receipt rollback and successful
+same-owner retry; no transport or ownership guard is relaxed.
+
+Latest reuse audit before Corym door support: qengine2 `a0100244c6f7a72573630aebd19acaff21a383fa` has25QUALIFIED,17 overlap here (exact list in QUEST-STATUS). Its new reward exchanges/target sets do not provide retained world-item tools or additive world-callback catalogue compatibility; no such implementation to merge. Existing local fenced callback/item owners remain the reuse base.

@@ -1,5 +1,6 @@
 """Reference parity and reproducibility; Rust integration tests own compiler admission."""
 import copy
+import hashlib
 from fractions import Fraction
 import unittest
 from unittest import mock
@@ -14,7 +15,13 @@ class CraftAuthoringTests(unittest.TestCase):
         first = craft.outputs()
         self.assertEqual(craft.canonical_bytes(first), craft.canonical_bytes(craft.outputs()))
         self.assertEqual(craft.content_command(check=True), 0)
-        self.assertEqual(len(first[craft.CATALOGUE]["records"]), 129)
+        rows = first[craft.CATALOGUE]["records"]
+        legacy = [row for row in rows if not row["identity"]["key"].startswith("oteryn:item-conversion.hidden-threats-")]
+        self.assertEqual(len(legacy), 129)
+        self.assertEqual(hashlib.sha256(craft.canonical_bytes(legacy)).hexdigest(),
+                         "4929f6b9c229b2c5099d17e16f04eca94c39af12ade0ea4c0dbd751791a12c1f")
+        self.assertEqual(len(rows) - len(legacy), 16)
+        self.assertEqual(len(rows), 145)
 
     def test_source_snapshot_substitution_is_rejected(self):
         with mock.patch.object(craft, "SNAPSHOT_SHA256", "0" * 64):

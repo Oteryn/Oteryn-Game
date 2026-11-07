@@ -1,3 +1,39 @@
+## Hidden Threats crafting GREEN — 2026-11-07
+
+Three source components qualify: full-backpack filing with exact file retention,
+post-write failure/rollback/recovery; all four lava stations and all four source
+hot-half pairs; anvil/water finishing and exact replay. Actual PostgreSQL18.6
+markers/durations, source hashes and all checks: cloud-hidden-craft-validation.json.
+No whole-title promotion yet. Counts60QUALIFIED/117UNFINISHED/1excluded unchanged.
+
+Reuses existing tool/material BURN/MINT owner. Sixteen source recipes and16 native
+policies are additive; original129 recipes retain exact canonical hash, all25 old
+policies unchanged. Four-crate strict checks, final fixture checks,13 authoring
+tests, two fluid and one fishing PG regressions, closed source gate, generation
+and pin refresh/check pass. Failed development candidates remain in evidence.
+No source originals, binaries or approximate charge/binding support committed.
+
+Continue five Corym doors: native entries and action-to-track bindings already
+exist. Reuse generic door owner for Ratter/Servant flags; add retained key27269
+on exactWorksDoor01/02/03. Check qengine2 again before new generic support. Adding
+three new tracks to TibiaTales must retain exact prior NPC13 definition read
+compatibility; implement strict append-only catalogue layers if still absent.
+Then Cave Spider room and actual source ending, never a shared-feature handoff.
+
+Detailed next plan and fresh source custody: /tmp/questpc-hidden-next-plan.md,
+/tmp/questpc-hidden-source, /tmp/questpc-hidden-item-source. Fresh room helper
+functions.lua SHA0aa8c642...dd6bbe: occupancy includes ANY creature (onlyPlayers=false),
+clear removes monsters, timer kicks only original player UID and clears monsters.
+Second registered tile is inside room and cannot ignore entrant occupancy.
+
+Ownership: qengine2@a0100244c now25QUALIFIED;17 overlap and must be skipped here.
+Exact list/sha in QUEST-STATUS.cross_lane_qualified_elsewhere, not a claim those
+implementations are merged. Latest additions include Afflicted, Assassin, Dream Warden, Druid, Hunter, Knight and Mage outfits.
+Commit as prescribed with both trailers; fetch explicit pc2 ref, merge any movement,
+push fast-forward after green, read back remote. Never force/main/PR or end active work.
+
+---
+
 ## Concurrent native door integration — 2026-11-07
 
 NPC/native-stock merge is GREEN (cloud-hidden-merge-validation.json). Remote
