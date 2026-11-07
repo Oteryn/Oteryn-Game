@@ -484,3 +484,207 @@ fn qready1_circle_room_quest_exact_reward_once() -> TestResult {
     );
     result
 }
+
+#[test]
+fn qready1_combat_knife_quest_exact_reward_once() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result: TestResult = std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            claim_case(
+                "oteryn:reward-claim.kv.combatknife",
+                (32102, 32235, -8),
+                &[(32102, 5025)],
+                2473,
+                "oteryn:item.tibia.i3292",
+                1,
+            )
+            .map_err(|e| e.to_string())?;
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "qready1 dispatch panicked")?
+        .map_err(Into::into);
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED qready1_combat_knife_quest duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
+#[test]
+fn qready1_crusader_helmet_quest_exact_reward_once() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result: TestResult = std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            claim_case(
+                "oteryn:reward-claim.kv.crusaderhelmet",
+                (32427, 31943, -14),
+                &[(32427, 6164)],
+                3990,
+                "oteryn:item.tibia.i3391",
+                1,
+            )
+            .map_err(|e| e.to_string())?;
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "qready1 dispatch panicked")?
+        .map_err(Into::into);
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED qready1_crusader_helmet_quest duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
+#[test]
+fn qready1_crystal_wand_quest_exact_reward_once() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result: TestResult = std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            claim_case(
+                "oteryn:reward-claim.kv.crystalwand1",
+                (32479, 31611, -15),
+                &[(32479, 6124)],
+                2472,
+                "oteryn:item.tibia.i3068",
+                1,
+            )
+            .map_err(|e| e.to_string())?;
+            claim_case(
+                "oteryn:reward-claim.kv.crystalwand2",
+                (32481, 31611, -15),
+                &[(32481, 6125)],
+                2472,
+                "oteryn:item.tibia.i11609",
+                1,
+            )
+            .map_err(|e| e.to_string())?;
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "qready1 dispatch panicked")?
+        .map_err(Into::into);
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED qready1_crystal_wand_quest duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
+#[test]
+fn qready1_darashia_dragon_quest_exact_reward_once() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result: TestResult = std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            claim_case(
+                "oteryn:reward-claim.quest.u8_5.darashia_dragon",
+                (33233, 32280, -12),
+                &[(33233, 6285)],
+                4286,
+                "oteryn:item.tibia.i3052",
+                1,
+            )
+            .map_err(|e| e.to_string())?;
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "qready1 dispatch panicked")?
+        .map_err(Into::into);
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED qready1_darashia_dragon_quest duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
+#[test]
+fn qready1_dark_armor_quest_exact_reward_once() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result: TestResult = std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            claim_case(
+                "oteryn:reward-claim.kv.darkarmor",
+                (33178, 31870, -12),
+                &[(33178, 6028)],
+                4311,
+                "oteryn:item.tibia.i3383",
+                1,
+            )
+            .map_err(|e| e.to_string())?;
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "qready1 dispatch panicked")?
+        .map_err(Into::into);
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED qready1_dark_armor_quest duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
+#[test]
+fn qready1_demona_ring_quest_exact_reward_once() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result: TestResult = std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            claim_case(
+                "oteryn:reward-claim.kv.demonaring1",
+                (32504, 31596, -14),
+                &[(32504, 6126)],
+                2472,
+                "oteryn:item.tibia.i3049",
+                1,
+            )
+            .map_err(|e| e.to_string())?;
+            claim_case(
+                "oteryn:reward-claim.kv.demonaring2",
+                (32515, 31596, -14),
+                &[(32515, 6127)],
+                2472,
+                "oteryn:item.tibia.i3051",
+                1,
+            )
+            .map_err(|e| e.to_string())?;
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "qready1 dispatch panicked")?
+        .map_err(Into::into);
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED qready1_demona_ring_quest duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
