@@ -1,7 +1,0 @@
-{
-  "mechanic": "0199-cyclopedia-character",
-  "kind": "panels",
-  "id": "0199-cyclopedia-character-panel",
-  "status": "supported",
-  "entry": "view.rs::panel_text"
-}

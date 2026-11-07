@@ -1,4 +1,0 @@
-name=achievements
-commands=10
-[route]
-routing::achievements::route(authority, &session.admitted, command).await

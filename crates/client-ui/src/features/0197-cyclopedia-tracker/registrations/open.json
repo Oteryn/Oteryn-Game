@@ -1,9 +1,0 @@
-{
-  "mechanic": "0197-cyclopedia-tracker",
-  "kind": "keybindings",
-  "id": "0197-cyclopedia-tracker-open",
-  "status": "supported",
-  "context": "gameplay",
-  "chord": "CTRL+R",
-  "entry": "input.rs::open_key"
-}

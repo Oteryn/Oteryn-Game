@@ -1,7 +1,0 @@
-{
-  "mechanic": "0165-hireling",
-  "kind": "panels",
-  "id": "0165-hireling-panel",
-  "status": "supported",
-  "entry": "view.rs::panel_text"
-}

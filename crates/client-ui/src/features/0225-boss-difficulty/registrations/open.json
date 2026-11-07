@@ -1,9 +1,0 @@
-{
-  "mechanic": "0225-boss-difficulty",
-  "kind": "keybindings",
-  "id": "0225-boss-difficulty-open",
-  "status": "supported",
-  "context": "gameplay",
-  "chord": "CTRL+Y",
-  "entry": "input.rs::open_key"
-}

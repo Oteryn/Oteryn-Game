@@ -1,4 +1,0 @@
-name=daily_reward
-commands=32,33
-[route]
-routing::Dispatch::Reply(crate::foundation::CommandStatus::Rejected, Vec::new())

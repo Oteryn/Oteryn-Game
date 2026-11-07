@@ -1,7 +1,0 @@
-name=chat
-commands=13
-[route]
-match routing::chat::route(authority, session.actor, &session.admitted, command).await {
-    Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
-}

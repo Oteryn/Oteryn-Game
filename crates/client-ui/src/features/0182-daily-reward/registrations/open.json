@@ -1,1 +1,0 @@
-{"mechanic":"0182-daily-reward","kind":"keybindings","id":"0182-daily-reward-open","status":"supported","context":"gameplay","chord":"CTRL+D","entry":"input.rs::open_key"}

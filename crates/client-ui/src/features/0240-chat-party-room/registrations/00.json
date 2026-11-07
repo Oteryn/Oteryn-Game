@@ -1,7 +1,0 @@
-{
-  "mechanic": "0240-chat-party-room",
-  "kind": "panels",
-  "id": "0240-chat-party-room-panel",
-  "status": "supported",
-  "entry": "view.rs::panel_text"
-}

@@ -1947,6 +1947,13 @@
           "ad00240bb",
           "fdfef6b4e"
         ]
+      },
+      "threatened_inventory_diagnosis_checkpoint": {
+        "status": "ACTIVE_IMPLEMENTATION",
+        "actual_red": "108.08s; all three physical exchanges false and zero reward receipts",
+        "failed_first_green": "194.76s Unavailable(InvalidStoredState); not GREEN",
+        "verified_cause": "Native provider lacks25731/25733/25779. Shared profile importer omitted NPC rewards. Preserve already qualified native input policies such as7882; import missing inputs and all outputs through strict canonical checks.",
+        "scope": "Pilgrimage stays QUALIFIED; four quests active. Runtime slice remains uncommitted until PG GREEN."
       }
     },
     "source_corrections": [

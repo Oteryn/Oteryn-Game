@@ -1,7 +1,0 @@
-{
-  "mechanic": "0179-hotkey-equip",
-  "kind": "panels",
-  "id": "0179-hotkey-equip-panel",
-  "status": "supported",
-  "entry": "view.rs::panel_text"
-}

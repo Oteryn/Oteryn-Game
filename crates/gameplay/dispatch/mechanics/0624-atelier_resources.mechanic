@@ -1,7 +1,0 @@
-name=atelier_resources
-commands=484
-[route]
-match routing::atelier::route(authority, &session.admitted, command).await {
-    Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
-}

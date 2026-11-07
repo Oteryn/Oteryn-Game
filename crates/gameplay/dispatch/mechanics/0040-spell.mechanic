@@ -1,7 +1,0 @@
-name=spell
-commands=3
-[route]
-match routing::spell::route(authority, session.actor, &session.admitted, command).await {
-    Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
-}

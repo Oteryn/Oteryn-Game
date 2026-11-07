@@ -1,5 +1,0 @@
-{
-  "crates/foundation/src/lib.rs": {
-    "tokio::sync::watch": 1
-  }
-}

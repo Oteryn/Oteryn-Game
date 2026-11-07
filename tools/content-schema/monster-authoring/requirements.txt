@@ -1,4 +1,0 @@
-jsonschema==4.26.0
-referencing==0.37.0
-# Quest authoring's W15c Grizzly room proof uses the existing world-region codec.
-zstandard==0.25.0

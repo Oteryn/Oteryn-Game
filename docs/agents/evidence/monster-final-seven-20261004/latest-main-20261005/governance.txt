@@ -1,2 +1,0 @@
-Governance validation passed for Oteryn/Oteryn-Game.
-Validated 22 required policy documents and 9 project lanes.

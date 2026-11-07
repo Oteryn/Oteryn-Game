@@ -1,7 +1,0 @@
-name=bosstiary_slots
-commands=491
-[route]
-match routing::boss_encounter::route(authority, &session.admitted, command).await {
-    Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::Disconnected),
-}

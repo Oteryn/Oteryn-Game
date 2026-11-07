@@ -1,9 +1,0 @@
-{
-  "mechanic": "local-spell-action-bar",
-  "kind": "keybindings",
-  "id": "local-spell-action-bar-open",
-  "status": "supported",
-  "entry": "input.rs::open_key",
-  "context": "gameplay",
-  "chord": "CTRL+SHIFT+I"
-}

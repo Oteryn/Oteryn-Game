@@ -1,7 +1,0 @@
-{
-  "concerns": [
-    "input",
-    "protocol"
-  ],
-  "events": {}
-}

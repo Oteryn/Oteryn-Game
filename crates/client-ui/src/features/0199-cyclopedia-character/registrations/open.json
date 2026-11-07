@@ -1,9 +1,0 @@
-{
-  "mechanic": "0199-cyclopedia-character",
-  "kind": "keybindings",
-  "id": "0199-cyclopedia-character-open",
-  "status": "supported",
-  "context": "gameplay",
-  "chord": "CTRL+U",
-  "entry": "input.rs::open_key"
-}

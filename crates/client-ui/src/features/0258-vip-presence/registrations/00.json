@@ -1,7 +1,0 @@
-{
-  "mechanic": "0258-vip-presence",
-  "kind": "panels",
-  "id": "0258-vip-presence-panel",
-  "status": "supported",
-  "entry": "view.rs::panel_text"
-}

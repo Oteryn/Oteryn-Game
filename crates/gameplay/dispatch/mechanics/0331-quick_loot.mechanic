@@ -1,7 +1,0 @@
-name=quick_loot
-commands=114
-transport=quick_loot
-composed=quick_loot
-authority=quick_loot
-[route]
-match routing::quick_loot::route(authority, &session.admitted, command).await { Some(dispatch) => dispatch, None => return Err(ServeEnd::Disconnected) }

@@ -1,3 +1,0 @@
-# Verbatim donor dependency fixtures: byte-preserved, never normalised or whitespace-checked.
-canary-* -text -diff
-crystalserver-* -text -diff

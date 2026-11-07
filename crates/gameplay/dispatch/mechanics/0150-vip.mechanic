@@ -1,7 +1,0 @@
-name=vip
-commands=48,49,50
-transport=vip
-composed=vip
-authority=vip
-[route]
-routing::vip::route(authority, &session.admitted, command).await

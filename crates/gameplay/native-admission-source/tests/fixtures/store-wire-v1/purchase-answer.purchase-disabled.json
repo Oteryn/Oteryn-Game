@@ -1,7 +1,0 @@
-{
-  "contract_version": 1,
-  "purchase_request_id": "0192b6a0-4c00-7000-8000-000000000401",
-  "request_digest": "6e01402822c3e0344dacd18eaf46161cd8bf9611f0627988367d375e057d971c",
-  "result": "PURCHASE_DISABLED",
-  "decided_at": "1792756800"
-}
