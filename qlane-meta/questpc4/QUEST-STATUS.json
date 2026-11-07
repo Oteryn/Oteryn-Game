@@ -3193,7 +3193,7 @@
     },
     "scope_note": "All LANE-L6 input source blockers remain obligations. Differences from selected recipe approximations are not authority to drop a blocker. Historical qengine ownership language is not treated as a reason to defer work now owned by L6.",
     "publication_branch": "claude/happy-davinci-ijz3wy-questpc4",
-    "latest_batch": "cloud-floor-cycle-expiry-07",
+    "latest_batch": "cloud-floor-fire-presentation-08",
     "mechanisms": {
       "reusable_tools_and_atomic_counters": {
         "status": "QUALIFIED",
@@ -3512,6 +3512,10 @@
         "status": "QUALIFIED",
         "scope": "Exact original deadline, same UID/mint, Ground/direct/nested/equipped repeated cycles through existing fenced owner; no whole Ancient Tombs claim",
         "migration": "1063_floor_transform_expiry.sql"
+      },
+      "floor_source_presentation": {
+        "status": "QUALIFIED",
+        "scope": "Source FIREAREA7 after fresh complete physical assembly/transform; no effect for missing/unbound operands or replay; synthetic composed room, no native/full-quest qualification"
       }
     },
     "active_counts": {
@@ -3522,242 +3526,198 @@
       "qualified_here": 1
     },
     "latest_batch_checks": {
-      "name": "cloud-floor-cycle-expiry-07",
-      "state": "AUTHORING",
-      "published": false,
-      "base_sha": "4b18ea3e1dcb65edf30dbf9262f574fe58dc2ee6",
-      "whole_entries_newly_qualified": 0,
+      "id": "cloud-floor-fire-presentation-08",
+      "status": "GREEN",
+      "decision": "Use existing bounded movement occurrence stream; only fresh committed complete floor consequence emits source FIREAREA7, never missing/unbound operands or historical replay. Carry consequence metadata from original commit rather than infer success from input/drop alone.",
+      "red_log": "/tmp/questpc4-floor-fire-red.log",
       "red": {
-        "test": "l6_floor_ruby_due_cycle_expires_same_physical_helmet",
-        "marker": "POSTGRES_DATABASE_READY l6_floor_assembly",
-        "duration_seconds": 53.27,
         "result": "0 passed / 1 failed",
-        "actual_due_changes": 0,
-        "required": 1,
-        "log": "/tmp/questpc4-floor-expiry-real-red.log"
+        "duration_seconds": 52.0,
+        "marker": "POSTGRES_DATABASE_READY l6_floor_assembly",
+        "actual": "[]",
+        "expected": "one TilePos7,1,-7 fire effect7",
+        "log": "/tmp/questpc4-floor-fire-red.log"
       },
-      "test_infrastructure": "FloorAssemblyTarget constructor hides test-only occurrence field; production constructor uses DB clock. No production SQL clock/fence checks weakened. Full helper Rust leaves explicitly rustfmt formatted.",
-      "next_action": "Commit and push immediately; continue source fire presentation/native altar/full Ancient Tombs composition.19 whole entries remain active.",
-      "implementation": [
-        "1063 immutable expiry receipts and JSON audit per original source transaction, preserving all historical cycles",
-        "Current Ground/carried/nested/equipped custody and active session/scope constraints; actual DB clock rejects future occurrences",
-        "Original500-item fenced owner budget includes floor deadlines; SKIP LOCKED defers busy Items to next pass without changing deadline",
-        "New cycle requires old immutable expiry; pending view excludes completed cycles",
-        "Equipment owner admits an absolute timed item only with exact ItemInstance pending source proof and qualified native absolute policy; unhosted profile stays refused"
-      ],
-      "validation": "9 focused real PostgreSQL cases passed; check all targets/features2m39s; clippy-D warnings2m47s; cargo fmt and explicit owned leaves, migration duplicates and diff check PASS",
-      "last_remote_fetch": "unchanged4b18ea3e1 at03:16",
-      "expiry_pg_in_progress": {
-        "log": "/tmp/questpc4-floor-expiry-custody-green.log",
-        "completed": [
-          {
-            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-equipped",
-            "duration_seconds": 55.053473553
-          },
-          {
-            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-carried",
-            "duration_seconds": 55.174383849
-          },
-          {
-            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle",
-            "duration_seconds": 54.001498251
-          },
-          {
-            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-future",
-            "duration_seconds": 54.47376421
-          }
-        ],
-        "pending": [
-          "nested custody",
-          "unhosted equipment remains refused"
-        ]
-      },
-      "expiry_postgres": {
-        "result": "6 passed / 0 failed",
-        "total_seconds": 163.33,
-        "log": "/tmp/questpc4-floor-expiry-custody-green.log",
+      "stage": "All13 focused PG plus changed-crate check/clippy/fmt/diff GREEN; commit and push immediately",
+      "native_census": "Decoded every native placement B3 with repository codec; no source action40040 found. Continue exact native altar/source binding after presentation; do not claim synthetic room is native.",
+      "ruby_green": {
+        "result": "10 passed / 0 failed",
+        "duration_seconds": 527.29,
+        "log": "/tmp/questpc4-floor-fire-ruby-green.log",
         "cases": [
           {
-            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-equipped",
-            "duration_seconds": 55.053473553
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-carried",
+            "duration_seconds": 52.865199982
           },
           {
-            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-carried",
-            "duration_seconds": 55.174383849
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-equipped",
+            "duration_seconds": 52.339798946
           },
           {
             "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle",
-            "duration_seconds": 54.001498251
+            "duration_seconds": 52.758712977
           },
           {
             "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-future",
-            "duration_seconds": 54.47376421
+            "duration_seconds": 52.094411737
           },
           {
             "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-nested",
-            "duration_seconds": 54.037606786
+            "duration_seconds": 53.373714952
           },
           {
             "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-unhosted",
-            "duration_seconds": 53.67646054
+            "duration_seconds": 52.103640681
+          },
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-missing-target",
+            "duration_seconds": 52.426147131
+          },
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby",
+            "duration_seconds": 53.495716889
+          },
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-stack",
+            "duration_seconds": 52.984787418
+          },
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-unbound",
+            "duration_seconds": 52.842235317
           }
-        ],
-        "proofs": [
-          "Ground/direct/nested/equipped each2 cycles, same UID and original mint",
-          "Original deadline unchanged across pickup/equip/movement",
-          "Exact equipment epoch increment",
-          "Per-cycle immutable history2 source+2 expiry+2 audits",
-          "Expiry idempotence and original source replay after2 expirations",
-          "Future owner changed0",
-          "Unhosted full helmet remains TimedNotHosted"
         ]
       },
-      "ruby_regression": {
-        "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby",
-        "duration_seconds": 52.740459727,
-        "result": "1 passed / 0 failed",
-        "log": "/tmp/questpc4-floor-expiry-ruby-regression.log"
+      "reuse_check": {
+        "qengine2": "0cf799d197e3d09cab984c5d68ad6633f7f96e66",
+        "worldchg": "318ab59d200ad2030ca7c829566b88175cb7e2dc",
+        "wvar": "2518e9dba3d10992d8f172c4838372af474a54a0",
+        "wcontrib": "c8a8d97cf0eb82228177b192f138afd8ca1757f3",
+        "wevents": "99ed6fd73e42d47f220b92b5172fe150b635367d",
+        "finding": "qengine adds source player counters/timers; worldchg exposes scoped contribution/tally helpers with real PG proof. Inspect/reuse for next shared switch mechanism, preserve other-lane ownership."
       },
-      "regressions": {
-        "assembly": {
-          "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly",
-          "duration_seconds": 54.43230703,
-          "result": "1 passed / 0 failed"
-        },
-        "fluid": {
-          "marker": "POSTGRES_CASE_COMPLETED l6_reward_fluids",
-          "duration_seconds": 53.22160666,
-          "result": "1 passed / 0 failed",
-          "version": "18.6 (Debian 18.6-1.pgdg13+2)",
-          "success": true
-        },
-        "ruby": {
-          "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby",
-          "duration_seconds": 52.740459727,
-          "result": "1 passed / 0 failed",
-          "log": "/tmp/questpc4-floor-expiry-ruby-regression.log"
-        }
+      "assembly_green": {
+        "result": "3 passed / 0 failed",
+        "duration_seconds": 159.51,
+        "log": "/tmp/questpc4-floor-fire-assembly-green.log",
+        "cases": [
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly",
+            "duration_seconds": 54.32765963
+          },
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-missing",
+            "duration_seconds": 52.907490379
+          },
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-unbound",
+            "duration_seconds": 52.270436198
+          }
+        ]
       },
-      "status": "GREEN"
+      "checks": {
+        "postgres": "13 passed / 0 failed; actual PG markers and52..54s case durations",
+        "check": "items+durability+dispatch all targets/features2m39s",
+        "clippy": "same all targets/features -D warnings2m47s",
+        "fmt_diff": "PASS all and explicit owned leaves",
+        "generated_content_pins": "Unchanged; no regeneration needed"
+      }
     },
     "current_attempt": {
-      "name": "cloud-floor-cycle-expiry-07",
-      "state": "AUTHORING",
-      "published": false,
-      "base_sha": "4b18ea3e1dcb65edf30dbf9262f574fe58dc2ee6",
-      "whole_entries_newly_qualified": 0,
+      "id": "cloud-floor-fire-presentation-08",
+      "status": "GREEN",
+      "decision": "Use existing bounded movement occurrence stream; only fresh committed complete floor consequence emits source FIREAREA7, never missing/unbound operands or historical replay. Carry consequence metadata from original commit rather than infer success from input/drop alone.",
+      "red_log": "/tmp/questpc4-floor-fire-red.log",
       "red": {
-        "test": "l6_floor_ruby_due_cycle_expires_same_physical_helmet",
-        "marker": "POSTGRES_DATABASE_READY l6_floor_assembly",
-        "duration_seconds": 53.27,
         "result": "0 passed / 1 failed",
-        "actual_due_changes": 0,
-        "required": 1,
-        "log": "/tmp/questpc4-floor-expiry-real-red.log"
+        "duration_seconds": 52.0,
+        "marker": "POSTGRES_DATABASE_READY l6_floor_assembly",
+        "actual": "[]",
+        "expected": "one TilePos7,1,-7 fire effect7",
+        "log": "/tmp/questpc4-floor-fire-red.log"
       },
-      "test_infrastructure": "FloorAssemblyTarget constructor hides test-only occurrence field; production constructor uses DB clock. No production SQL clock/fence checks weakened. Full helper Rust leaves explicitly rustfmt formatted.",
-      "next_action": "Commit and push immediately; continue source fire presentation/native altar/full Ancient Tombs composition.19 whole entries remain active.",
-      "implementation": [
-        "1063 immutable expiry receipts and JSON audit per original source transaction, preserving all historical cycles",
-        "Current Ground/carried/nested/equipped custody and active session/scope constraints; actual DB clock rejects future occurrences",
-        "Original500-item fenced owner budget includes floor deadlines; SKIP LOCKED defers busy Items to next pass without changing deadline",
-        "New cycle requires old immutable expiry; pending view excludes completed cycles",
-        "Equipment owner admits an absolute timed item only with exact ItemInstance pending source proof and qualified native absolute policy; unhosted profile stays refused"
-      ],
-      "validation": "9 focused real PostgreSQL cases passed; check all targets/features2m39s; clippy-D warnings2m47s; cargo fmt and explicit owned leaves, migration duplicates and diff check PASS",
-      "last_remote_fetch": "unchanged4b18ea3e1 at03:16",
-      "expiry_pg_in_progress": {
-        "log": "/tmp/questpc4-floor-expiry-custody-green.log",
-        "completed": [
-          {
-            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-equipped",
-            "duration_seconds": 55.053473553
-          },
-          {
-            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-carried",
-            "duration_seconds": 55.174383849
-          },
-          {
-            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle",
-            "duration_seconds": 54.001498251
-          },
-          {
-            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-future",
-            "duration_seconds": 54.47376421
-          }
-        ],
-        "pending": [
-          "nested custody",
-          "unhosted equipment remains refused"
-        ]
-      },
-      "expiry_postgres": {
-        "result": "6 passed / 0 failed",
-        "total_seconds": 163.33,
-        "log": "/tmp/questpc4-floor-expiry-custody-green.log",
+      "stage": "All13 focused PG plus changed-crate check/clippy/fmt/diff GREEN; commit and push immediately",
+      "native_census": "Decoded every native placement B3 with repository codec; no source action40040 found. Continue exact native altar/source binding after presentation; do not claim synthetic room is native.",
+      "ruby_green": {
+        "result": "10 passed / 0 failed",
+        "duration_seconds": 527.29,
+        "log": "/tmp/questpc4-floor-fire-ruby-green.log",
         "cases": [
           {
-            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-equipped",
-            "duration_seconds": 55.053473553
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-carried",
+            "duration_seconds": 52.865199982
           },
           {
-            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-carried",
-            "duration_seconds": 55.174383849
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-equipped",
+            "duration_seconds": 52.339798946
           },
           {
             "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle",
-            "duration_seconds": 54.001498251
+            "duration_seconds": 52.758712977
           },
           {
             "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-future",
-            "duration_seconds": 54.47376421
+            "duration_seconds": 52.094411737
           },
           {
             "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-nested",
-            "duration_seconds": 54.037606786
+            "duration_seconds": 53.373714952
           },
           {
             "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-unhosted",
-            "duration_seconds": 53.67646054
+            "duration_seconds": 52.103640681
+          },
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-missing-target",
+            "duration_seconds": 52.426147131
+          },
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby",
+            "duration_seconds": 53.495716889
+          },
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-stack",
+            "duration_seconds": 52.984787418
+          },
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-unbound",
+            "duration_seconds": 52.842235317
           }
-        ],
-        "proofs": [
-          "Ground/direct/nested/equipped each2 cycles, same UID and original mint",
-          "Original deadline unchanged across pickup/equip/movement",
-          "Exact equipment epoch increment",
-          "Per-cycle immutable history2 source+2 expiry+2 audits",
-          "Expiry idempotence and original source replay after2 expirations",
-          "Future owner changed0",
-          "Unhosted full helmet remains TimedNotHosted"
         ]
       },
-      "ruby_regression": {
-        "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby",
-        "duration_seconds": 52.740459727,
-        "result": "1 passed / 0 failed",
-        "log": "/tmp/questpc4-floor-expiry-ruby-regression.log"
+      "reuse_check": {
+        "qengine2": "0cf799d197e3d09cab984c5d68ad6633f7f96e66",
+        "worldchg": "318ab59d200ad2030ca7c829566b88175cb7e2dc",
+        "wvar": "2518e9dba3d10992d8f172c4838372af474a54a0",
+        "wcontrib": "c8a8d97cf0eb82228177b192f138afd8ca1757f3",
+        "wevents": "99ed6fd73e42d47f220b92b5172fe150b635367d",
+        "finding": "qengine adds source player counters/timers; worldchg exposes scoped contribution/tally helpers with real PG proof. Inspect/reuse for next shared switch mechanism, preserve other-lane ownership."
       },
-      "regressions": {
-        "assembly": {
-          "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly",
-          "duration_seconds": 54.43230703,
-          "result": "1 passed / 0 failed"
-        },
-        "fluid": {
-          "marker": "POSTGRES_CASE_COMPLETED l6_reward_fluids",
-          "duration_seconds": 53.22160666,
-          "result": "1 passed / 0 failed",
-          "version": "18.6 (Debian 18.6-1.pgdg13+2)",
-          "success": true
-        },
-        "ruby": {
-          "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby",
-          "duration_seconds": 52.740459727,
-          "result": "1 passed / 0 failed",
-          "log": "/tmp/questpc4-floor-expiry-ruby-regression.log"
-        }
+      "assembly_green": {
+        "result": "3 passed / 0 failed",
+        "duration_seconds": 159.51,
+        "log": "/tmp/questpc4-floor-fire-assembly-green.log",
+        "cases": [
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly",
+            "duration_seconds": 54.32765963
+          },
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-missing",
+            "duration_seconds": 52.907490379
+          },
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-unbound",
+            "duration_seconds": 52.270436198
+          }
+        ]
       },
-      "status": "GREEN"
+      "checks": {
+        "postgres": "13 passed / 0 failed; actual PG markers and52..54s case durations",
+        "check": "items+durability+dispatch all targets/features2m39s",
+        "clippy": "same all targets/features -D warnings2m47s",
+        "fmt_diff": "PASS all and explicit owned leaves",
+        "generated_content_pins": "Unchanged; no regeneration needed"
+      }
     },
     "authoring_state": "AUTHORING",
     "attempt_history": [
@@ -3901,14 +3861,132 @@
         },
         "environment_recovery": "Sandbox failed No space left on device after all checks had exited0. Deleted only25GB disposable Rust incremental compiler cache via approved escalation; source and PostgreSQL untouched;25GB now free. No test weakened or skipped.",
         "next_action": "After immediate profile push, implement same-instance floor transform and repeatable per-cycle deadlines through existing fenced timer owner; no deferral to another lane."
+      },
+      {
+        "name": "cloud-floor-cycle-expiry-07",
+        "state": "AUTHORING",
+        "published": false,
+        "base_sha": "4b18ea3e1dcb65edf30dbf9262f574fe58dc2ee6",
+        "whole_entries_newly_qualified": 0,
+        "red": {
+          "test": "l6_floor_ruby_due_cycle_expires_same_physical_helmet",
+          "marker": "POSTGRES_DATABASE_READY l6_floor_assembly",
+          "duration_seconds": 53.27,
+          "result": "0 passed / 1 failed",
+          "actual_due_changes": 0,
+          "required": 1,
+          "log": "/tmp/questpc4-floor-expiry-real-red.log"
+        },
+        "test_infrastructure": "FloorAssemblyTarget constructor hides test-only occurrence field; production constructor uses DB clock. No production SQL clock/fence checks weakened. Full helper Rust leaves explicitly rustfmt formatted.",
+        "next_action": "Commit and push immediately; continue source fire presentation/native altar/full Ancient Tombs composition.19 whole entries remain active.",
+        "implementation": [
+          "1063 immutable expiry receipts and JSON audit per original source transaction, preserving all historical cycles",
+          "Current Ground/carried/nested/equipped custody and active session/scope constraints; actual DB clock rejects future occurrences",
+          "Original500-item fenced owner budget includes floor deadlines; SKIP LOCKED defers busy Items to next pass without changing deadline",
+          "New cycle requires old immutable expiry; pending view excludes completed cycles",
+          "Equipment owner admits an absolute timed item only with exact ItemInstance pending source proof and qualified native absolute policy; unhosted profile stays refused"
+        ],
+        "validation": "9 focused real PostgreSQL cases passed; check all targets/features2m39s; clippy-D warnings2m47s; cargo fmt and explicit owned leaves, migration duplicates and diff check PASS",
+        "last_remote_fetch": "unchanged4b18ea3e1 at03:16",
+        "expiry_pg_in_progress": {
+          "log": "/tmp/questpc4-floor-expiry-custody-green.log",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-equipped",
+              "duration_seconds": 55.053473553
+            },
+            {
+              "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-carried",
+              "duration_seconds": 55.174383849
+            },
+            {
+              "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle",
+              "duration_seconds": 54.001498251
+            },
+            {
+              "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-future",
+              "duration_seconds": 54.47376421
+            }
+          ],
+          "pending": [
+            "nested custody",
+            "unhosted equipment remains refused"
+          ]
+        },
+        "expiry_postgres": {
+          "result": "6 passed / 0 failed",
+          "total_seconds": 163.33,
+          "log": "/tmp/questpc4-floor-expiry-custody-green.log",
+          "cases": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-equipped",
+              "duration_seconds": 55.053473553
+            },
+            {
+              "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-carried",
+              "duration_seconds": 55.174383849
+            },
+            {
+              "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle",
+              "duration_seconds": 54.001498251
+            },
+            {
+              "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-future",
+              "duration_seconds": 54.47376421
+            },
+            {
+              "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-nested",
+              "duration_seconds": 54.037606786
+            },
+            {
+              "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-cycle-unhosted",
+              "duration_seconds": 53.67646054
+            }
+          ],
+          "proofs": [
+            "Ground/direct/nested/equipped each2 cycles, same UID and original mint",
+            "Original deadline unchanged across pickup/equip/movement",
+            "Exact equipment epoch increment",
+            "Per-cycle immutable history2 source+2 expiry+2 audits",
+            "Expiry idempotence and original source replay after2 expirations",
+            "Future owner changed0",
+            "Unhosted full helmet remains TimedNotHosted"
+          ]
+        },
+        "ruby_regression": {
+          "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby",
+          "duration_seconds": 52.740459727,
+          "result": "1 passed / 0 failed",
+          "log": "/tmp/questpc4-floor-expiry-ruby-regression.log"
+        },
+        "regressions": {
+          "assembly": {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly",
+            "duration_seconds": 54.43230703,
+            "result": "1 passed / 0 failed"
+          },
+          "fluid": {
+            "marker": "POSTGRES_CASE_COMPLETED l6_reward_fluids",
+            "duration_seconds": 53.22160666,
+            "result": "1 passed / 0 failed",
+            "version": "18.6 (Debian 18.6-1.pgdg13+2)",
+            "success": true
+          },
+          "ruby": {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby",
+            "duration_seconds": 52.740459727,
+            "result": "1 passed / 0 failed",
+            "log": "/tmp/questpc4-floor-expiry-ruby-regression.log"
+          }
+        },
+        "status": "GREEN"
       }
     ],
     "last_pushed_batch": {
-      "name": "cloud-floor-transform-fluid-reconciliation-06",
-      "sha": "4b18ea3e1dcb65edf30dbf9262f574fe58dc2ee6",
+      "name": "cloud-floor-cycle-expiry-07",
+      "sha": "83b747db65a5852d8aaa990e31299b6491f2d7dd",
       "published": true,
-      "branch": "claude/happy-davinci-ijz3wy-questpc4",
-      "checks": "Combined real PG6/0; check2m46s; clippy2m53s; fmt/diff/duplicates pass; fluid1061 unchanged and floor1062"
+      "checks": "9 focused PG passed; check2m39; clippy2m47; fmt/diff/duplicates PASS"
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",

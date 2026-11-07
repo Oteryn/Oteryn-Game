@@ -6,6 +6,7 @@ pub struct FloorRecipe {
     pub inputs: &'static [(&'static str, u16)],
     pub output: &'static str,
     pub output_count: u16,
+    pub effect: Option<u16>,
 }
 
 // Crystal 201189f: data-global/scripts/quests/the_ancient_tombs/movements_craft_helmet.lua:1-39.
@@ -23,6 +24,7 @@ pub const RECIPES: &[FloorRecipe] = &[FloorRecipe {
     ],
     output: "oteryn:item.tibia.i3229",
     output_count: 1,
+    effect: Some(7),
 }];
 
 pub fn recipe(action: u16) -> Option<&'static FloorRecipe> {
@@ -38,6 +40,7 @@ pub struct FloorTransformRecipe {
     pub target: &'static str,
     pub output: &'static str,
     pub duration_millis: u32,
+    pub effect: Option<u16>,
     pub decay_target: &'static str,
 }
 
@@ -51,6 +54,7 @@ pub const TRANSFORMS: &[FloorTransformRecipe] = &[FloorTransformRecipe {
     output: "oteryn:item.tibia.i3230",
     duration_millis: 1_800_000,
     decay_target: "oteryn:item.tibia.i3229",
+    effect: Some(7),
 }];
 
 pub fn transform(action: u16, input: &str) -> Option<&'static FloorTransformRecipe> {

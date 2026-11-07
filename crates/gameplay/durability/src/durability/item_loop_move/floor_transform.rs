@@ -16,7 +16,7 @@ pub(super) async fn apply(
     target: &super::floor_assembly::FloorAssemblyTarget,
     ground: &LoopGround,
     recipe: &FloorTransformRecipe,
-) -> LoopResult<()> {
+) -> LoopResult<bool> {
     let (world, channel) =
         scope_of(fence).map_err(|_| LoopError::Refused(LoopMoveRefusal::Rejected))?;
     let before: Option<serde_json::Value> = sqlx::query_scalar("SELECT jsonb_build_object('item',to_jsonb(i),'ground',to_jsonb(g)) FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.spatial_position=$3 AND g.map_revision=$4 AND g.content_revision=$5 AND g.native_room_placement_context=$6 AND g.runtime_scope_ownership_generation=$7::text::numeric AND game_item_loop_drop_ref(g.corpse_ref) AND g.stack_ordinal IS NOT NULL AND i.lifecycle=1 AND i.definition_family='Item' AND i.definition_revision_ref='definition-r1' AND i.definition_production_key=$8 AND i.quantity=1 ORDER BY g.stack_ordinal,i.item_instance_id LIMIT 1 FOR UPDATE OF i NOWAIT")
@@ -24,7 +24,7 @@ pub(super) async fn apply(
         .bind(&ground.map_revision).bind(&ground.content_revision).bind(&ground.placement_context)
         .bind(fence.scope_ownership_generation.get().to_string()).bind(recipe.target).fetch_optional(&mut ***tx).await?;
     let Some(before) = before else {
-        return Ok(());
+        return Ok(false);
     };
     let input: serde_json::Value = sqlx::query_scalar("SELECT jsonb_build_object('item',to_jsonb(i),'ground',to_jsonb(g)) FROM game_item_loop_move_lines l JOIN game_item_instances i USING(item_instance_id) JOIN game_item_ground_locations g USING(item_instance_id) WHERE l.transaction_id=encode($1,'hex')::uuid AND l.to_kind=3 AND l.definition_family='Item' AND l.definition_production_key=$2 AND i.lifecycle=1 AND i.definition_production_key=l.definition_production_key AND i.quantity >= $3 AND g.spatial_position=$4 ORDER BY l.line_ordinal LIMIT 1 FOR UPDATE OF i NOWAIT")
         .bind(moved.transaction_id.as_slice()).bind(recipe.input).bind(i64::from(recipe.input_count)).bind(&ground.spatial_position).fetch_one(&mut ***tx).await?;
@@ -94,5 +94,5 @@ pub(super) async fn apply(
     sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES($1::uuid,$2::uuid,1,1,2,$3,$4,$5::uuid,$6,$6+$7,$8,sha256($8),1)")
         .bind(&event).bind(&transaction).bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id()).bind(item).bind(occurred)
         .bind(crate::durability::item_mint_audit::AUDIT_RETENTION_P90D_MS).bind(&envelope).execute(&mut ***tx).await?;
-    Ok(())
+    Ok(true)
 }
