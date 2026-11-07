@@ -3356,80 +3356,193 @@
             "legacy source bear bag USE/once/replay remains green"
           ]
         }
+      },
+      "floor_assembly_plain_physical": {
+        "status": "QUALIFIED",
+        "scope": "Bounded current Channel non-House AddItem assembly of up to7 whole plain physical floor operands into1 fresh plain output; qualified source recipe7 helmet parts3222..3228->3229. Synthetic composed PG room with exact source AID40040; no whole Ancient Tombs or native altar traversal qualification.",
+        "source": {
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/the_ancient_tombs/movements_craft_helmet.lua",
+          "lines": "1-39",
+          "sha256": "1c7ea8ca397cb6bff7b0ac59a6b0d2514820cc2556cfe0de677527f83182da84"
+        },
+        "red": {
+          "marker": "POSTGRES_DATABASE_READY l6_floor_assembly",
+          "duration_seconds": 48.07,
+          "result": "0 passed / 1 failed",
+          "actual": [
+            7,
+            0
+          ],
+          "expected": [
+            0,
+            1
+          ]
+        },
+        "green": {
+          "result": "3 passed / 0 failed",
+          "total_seconds": 109.81,
+          "log": "/tmp/questpc4-floor-assembly-final-all.log",
+          "cases": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly",
+              "duration_seconds": 55.929983408
+            },
+            {
+              "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-missing",
+              "duration_seconds": 55.980734694
+            },
+            {
+              "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-unbound",
+              "duration_seconds": 53.871434084
+            }
+          ],
+          "probes": [
+            "busy Ground owner rejects without consequence",
+            "locked destination Item rejects without consequence",
+            "injected receipt trigger witness executes; entire original drop and assembly roll back",
+            "audit7 balance summaries + SHA256 of exact full immutable snapshots",
+            "fresh output instance and append ordinal; same physical xid as triggering move",
+            "original wire command replay writes no duplicate assembly"
+          ]
+        },
+        "remaining_composition": [
+          "Ruby transform preserves existing helmet identity and starts1800000ms deadline",
+          "Source fire-area presentation",
+          "Native altar and all remaining whole-quest access/reward composition"
+        ]
       }
     },
     "active_counts": {
       "qualified_elsewhere": 1,
       "excluded_external_world_changes": 2,
-      "in_progress": 20,
-      "new_whole_entries_qualified_in_this_batch": 0
+      "in_progress": 19,
+      "new_whole_entries_qualified_in_this_batch": 0,
+      "qualified_here": 1
     },
     "latest_batch_checks": {
       "result": "PASS",
-      "cargo_fmt": true,
-      "cargo_check": "content + dispatch, exit0,11.41s",
-      "clippy": "content + dispatch, all targets/features, -D warnings, exit0,2m12s",
-      "focused_postgres": "1 passed / 0 failed,48.790537128s, completion marker after cleanup",
-      "provider_check": "PASS registered spell import files=41",
-      "profile_capture_check": "PASS exact pinned XML + client bank",
-      "pin_refresh_and_check": "PASS; unchanged World bundle ec1fc25ee29632c23012be0191f7a3fdcd609ccdd23214286238c953e8a6caab",
-      "existing_native_delta": "Exactly eight additions; every prior native profile unchanged; no charges or timed state granted",
-      "merged_remote_head": "d9a95616349345c5fc565fedf07ab926652b6b4f",
-      "merged_cargo_check": "PASS,content+dispatch,1m28s",
-      "merged_clippy": "PASS,content+dispatch,all targets/features,-D warnings,3m28s",
-      "merged_postgres": {
-        "test": "l6_floor_profiles_eight_exact_items_survive_custody_drop_and_replay",
-        "result": "1 passed / 0 failed",
-        "marker": "POSTGRES_CASE_COMPLETED l6_floor_profiles",
-        "duration_seconds": 54.983420048
+      "focused_postgres": {
+        "result": "3 passed / 0 failed",
+        "total_seconds": 109.81,
+        "log": "/tmp/questpc4-floor-assembly-final-all.log",
+        "cases": [
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly",
+            "duration_seconds": 55.929983408
+          },
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-missing",
+            "duration_seconds": 55.980734694
+          },
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-unbound",
+            "duration_seconds": 53.871434084
+          }
+        ],
+        "probes": [
+          "busy Ground owner rejects without consequence",
+          "locked destination Item rejects without consequence",
+          "injected receipt trigger witness executes; entire original drop and assembly roll back",
+          "audit7 balance summaries + SHA256 of exact full immutable snapshots",
+          "fresh output instance and append ordinal; same physical xid as triggering move",
+          "original wire command replay writes no duplicate assembly"
+        ]
       },
-      "merged_provider_regeneration": "PASS --native-only including freshness checks;42 import files",
-      "merged_pin_check": "PASS cb078e3d34c1440b2c7c9f35206ae3158d5341e507a87424f4959ccb66da7298"
+      "cargo_check": "PASS items+durability+dispatch --all-targets --all-features,3m20s",
+      "clippy": "PASS items+durability+dispatch --all-targets --all-features -- -D warnings; see /tmp/questpc4-floor-assembly-clippy.log",
+      "cargo_fmt": "PASS all workspace and explicit mounted leaves",
+      "git_diff_check": "PASS",
+      "migration_numbers": "1060 unclaimed on main/open PRs; lane reservation1060..1079; duplicate check PASS",
+      "generated_inputs": "Unchanged in this runtime slice; no pin/source regeneration required."
     },
     "current_attempt": {
-      "name": "cloud-floor-assembly-prerequisites-03",
-      "state": "IN_PROGRESS",
-      "base_sha": "db95b72d3d8659a9f0a884f8169ea9da3a39c9fe",
-      "whole_entries_newly_qualified": 0,
-      "published": false,
-      "baseline_check": "cargo check --locked -p oteryn-gameplay-dispatch: exit0, 2m19s",
-      "baseline_postgres": {
-        "test": "l6_reusable_tool_preserves_instance_and_refuses_missing_tool",
-        "marker": "POSTGRES_CASE_COMPLETED l6-reusable-tool",
-        "duration_seconds": 48.028804504,
-        "result": "1 passed / 0 failed"
-      },
-      "floor_assembly_red": {
-        "marker": "POSTGRES_DATABASE_READY l6_floor_assembly",
-        "duration_seconds": 48.01,
-        "result": "0 passed / 1 failed",
-        "error": "DefinitionNotFound"
-      },
-      "worktree_changes": [
-        "Eight source-derived native profiles for Items3222..3229, generated through a new bounded provider composer; profile source SHA8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509; exact XML lines in overlay.",
-        "Real drop regression retains the seven-to-one assertion. Native profile admission alone does not implement assembly.",
-        "Shared PG input fixture now uses actual content/frame pins so several real dropped inputs can coexist on one tile."
-      ],
-      "validation": "Profile capture --check, provider generation, pin-refresh, cargo fmt --all --check and git diff --check passed. Later PG fixture probes remain RED; no green feature batch or full-quest qualification.",
-      "next_action": "Publish cloud-floor-profiles-03, then immediately restore /tmp/questpc4-floor-runtime-draft and implement/test the generic atomic floor assembly; the original seven-to-one RED remains strict and uncommitted.",
-      "floor_assembly_red_after_admission": {
-        "test": "l6_floor_assembly_final_drop_consumes_seven_and_creates_one_helmet",
-        "marker": "POSTGRES_DATABASE_READY l6_floor_assembly",
-        "duration_seconds": 48.07,
-        "result": "0 passed / 1 failed",
-        "actual_live_pieces_and_helmets": [
-          7,
-          0
-        ],
-        "expected_live_pieces_and_helmets": [
-          0,
-          1
-        ],
-        "log": "/tmp/questpc4-floor-assembly-capabilities-red.log",
-        "wire_drop_result": "Moved; real connection next_command_id=2"
-      }
+      "name": "cloud-reward-fluids-05",
+      "state": "VALIDATING_COMBINED_TREE",
+      "local_green_commit": "39937583a",
+      "incoming_floor_commit": "516de7b0d",
+      "next_action": "Pass combined focused PG/check/clippy, commit merge and push fast-forward. Continue actual Mead lowering/mission9/native barrel binding;19 active entries. Do not redo qualified Small Ruby or plain floor assembly."
     },
-    "authoring_state": "AUTHORING"
+    "authoring_state": "AUTHORING",
+    "attempt_history": [
+      {
+        "name": "cloud-floor-assembly-04",
+        "state": "GREEN",
+        "base_sha": "4fd80eac6bc9aa2bb55bca8adb2f7c10876f386f",
+        "whole_entries_newly_qualified": 0,
+        "published": false,
+        "red": {
+          "marker": "POSTGRES_DATABASE_READY l6_floor_assembly",
+          "duration_seconds": 48.07,
+          "result": "0 passed / 1 failed",
+          "actual": [
+            7,
+            0
+          ],
+          "expected": [
+            0,
+            1
+          ]
+        },
+        "intermediate_green": {
+          "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly",
+          "duration_seconds": 54.892081078,
+          "result": "1 passed / 0 failed",
+          "log": "/tmp/questpc4-floor-assembly-compact-green.log"
+        },
+        "current_validation": "PASS final3-case PostgreSQL109.81s; check3m20s; all-target/all-feature clippy-D warnings; fmt/diff and migration allocation/duplicate checks. Publication follows immediately.",
+        "next_action": "Commit and fetch/merge/push cloud-floor-assembly-04 immediately, then implement ruby3030 consuming transform of existing helmet3229 to timed3230; preserve19 active entries and incoming Small Ruby qualification.",
+        "contention_fix": "Existing Ground census locks all tile Items before assembly; prelock bounded destination set NOWAIT after incoming Item, before Ground owner. SQLSTATE55P03 rejects and rolls back entire request; no timeout or original proof relaxed.",
+        "negative_pg": [
+          {
+            "case": "missing operand",
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-missing",
+            "duration_seconds": 55.443260088
+          },
+          {
+            "case": "unbound altar",
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-unbound",
+            "duration_seconds": 53.767192511
+          }
+        ],
+        "strict_main_pg_after_prelock": {
+          "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly",
+          "duration_seconds": 55.053883034,
+          "result": "1 passed / 0 failed",
+          "contention": "Err(Rejected); whole transaction unchanged",
+          "rollback": "injected trigger reached(sequence witness) and no consequence survived",
+          "audit": "bounded Craft proof; all7 exact snapshots committed by checked SHA256; same physical xid; fresh append output; original command replay",
+          "log": "/tmp/questpc4-floor-assembly-prelock-green.log"
+        },
+        "final_postgres": {
+          "result": "3 passed / 0 failed",
+          "total_seconds": 109.81,
+          "log": "/tmp/questpc4-floor-assembly-final-all.log",
+          "cases": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly",
+              "duration_seconds": 55.929983408
+            },
+            {
+              "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-missing",
+              "duration_seconds": 55.980734694
+            },
+            {
+              "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-unbound",
+              "duration_seconds": 53.871434084
+            }
+          ],
+          "probes": [
+            "busy Ground owner rejects without consequence",
+            "locked destination Item rejects without consequence",
+            "injected receipt trigger witness executes; entire original drop and assembly roll back",
+            "audit7 balance summaries + SHA256 of exact full immutable snapshots",
+            "fresh output instance and append ordinal; same physical xid as triggering move",
+            "original wire command replay writes no duplicate assembly"
+          ]
+        }
+      }
+    ]
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",
   "shared_engine_integration": {
@@ -3574,7 +3687,7 @@
     "contract": "qlane-meta/questpc4/REWARD-FLUID-CONTRACT.md",
     "red_test": "l6_reward_container_preserves_mead_and_exact_replay",
     "red_log": "/tmp/questpc4-reward-fluid-red.log",
-    "stage": "Local green mechanism candidate; remote advanced to516de7b0d with independent floor assembly. Commit local green slice, merge/reuse remote, validate combined tree, then push fast-forward. Continue19 whole entries.",
+    "stage": "Fluid+floor combined tree green. Remote advanced again to a18dba296 native3230 policy; merge it before fast-forward push, preserving green mechanisms and current19 active whole entries.",
     "remaining_whole_entries": 19,
     "red": {
       "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)",
@@ -3629,6 +3742,20 @@
     "reuse_check": {
       "qengine2_head": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
       "finding": "Freshly fetched shared engine adds native payments and source outfit stories; no filled-child fluid MINT implementation. Reuse its source flows when needed for subsequent NPC entries."
+    },
+    "remote_merge": {
+      "head": "516de7b0d",
+      "status": "QUALIFIED",
+      "scope": "Reuse independent floor assembly1060. Both floor and fluid scenario routes retained; floor and fluid mechanism proofs retained.",
+      "validation": {
+        "pg": "3 passed / 0 failed,73.72s",
+        "fluid_duration_seconds": 73.721469651,
+        "floor_duration_seconds": 73.685043373,
+        "log": "/tmp/questpc4-fluid-floor-merge-pg.log",
+        "check": "items+durability+dispatch,all targets/features,2m51s",
+        "clippy": "same crates/all targets/features,-D warnings,8m42s",
+        "fmt": "PASS all and explicit fluid PG leaf"
+      }
     }
   }
 }

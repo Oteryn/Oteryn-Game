@@ -18,6 +18,9 @@
 //! (immediate line admission, deferred line and receipt proofs) decide the same facts again.
 //! A refusal writes nothing; an unknown outcome is answered by [`DurabilityRoot::read_item_loop_move_receipt`].
 
+mod floor_assembly;
+pub use floor_assembly::FloorAssemblyTarget;
+
 mod seed_drop;
 pub use seed_drop::{SeedDropProbe, SeedDropTarget};
 
