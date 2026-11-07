@@ -538,7 +538,7 @@ async fn seed_imbuement(harness: &Harness) -> TestResult {
     Ok(())
 }
 
-async fn exchange(
+pub(super) async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     sword_ref: NonZeroU32,
     admitted: AdmittedSession,

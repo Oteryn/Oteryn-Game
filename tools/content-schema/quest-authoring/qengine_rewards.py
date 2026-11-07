@@ -313,6 +313,10 @@ def build():
     grimvale_worlds, grimvale_objectives, grimvale_callbacks = grimvale.build(ROOT)
     formal_worlds.extend(grimvale_worlds)
     callbacks.extend(grimvale_callbacks)
+    heart = load_module('questpc7_heart_programme','tools/content-schema/quest-authoring/questpc7_heart_programme.py')
+    heart_worlds, heart_objectives, heart_callbacks = heart.build(ROOT, inputs, PIN)
+    formal_worlds.extend(heart_worlds)
+    callbacks.extend(heart_callbacks)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'callbacks':callbacks})
@@ -325,7 +329,7 @@ def build():
             'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'callbacks':callbacks}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
     generated['content/quests/questpc7-world-callbacks.json'] = encoded({'schema':1,'callbacks':formal_worlds})
-    generated['content/quests/questpc7-death-objectives.json'] = encoded({'schema':1,'objectives':encounters.objectives(ROOT)+hydra_objectives+hero_objectives+ferumbras_objectives+grave_objectives+grimvale_objectives})
+    generated['content/quests/questpc7-death-objectives.json'] = encoded({'schema':1,'objectives':encounters.objectives(ROOT)+hydra_objectives+hero_objectives+ferumbras_objectives+grave_objectives+grimvale_objectives+heart_objectives})
     generated['content/quests/native-world-callback-bindings.json'] = encoded({'schema':1,'bindings':hoist_bindings})
     knowledge = load_module('questpc7_knowledge','tools/content-schema/quest-authoring/questpc7_knowledge.py')
     generated['content/quests/imbuement-knowledge.json'] = encoded(knowledge.build(ROOT, inputs, PIN))

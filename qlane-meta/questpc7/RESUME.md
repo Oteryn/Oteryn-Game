@@ -1,3 +1,31 @@
+# Whole Heart PG GREEN with actual Powerful Strike — 2026-11-07
+
+Actual PG18.6 RED42.197816668s→GREEN81.696754812s. All6 native bosses,
+actual8911→8912 lever,5 physical Gold Tokens, Ender of the End, Yana report,
+completion and repeat safety pass. Valid native sword/materials/gold/shrine
+are refused before learning with no burns. After actual completion, the
+real native writer applies Powerful Strike for250000 gold, all source recipe
+materials and72000000ms. Fresh Premium refusal remains tested. No subject
+state/tool/reward seed.29 author tests and shared mechanism units pass.
+Push source immediately; keep Heart ACTIVE until focused basic-imbuing and
+Grimvale regressions, units, repo generators, check/clippy/pins/content/world/
+fmt all pass. Then qualify/push and continue remaining five. No new migration.
+
+# Heart whole route integrated; actual powerful PG compiling — 2026-11-07
+
+Shared mechanisms compile with2 catalogue and2 knowledge unit tests PASS.
+Actual PG18.6 RED42.197816668s before route implementation. Source generator
+now emits8 world interactions,6 death objectives(total37), one Yana report
+and data-backed powerful learning.29 authoring tests pass. Source-owned
+Yana placement is published;22721 physical facts are repo-generated.
+Full PG case23203 (/tmp/questpc7-heart-green1.log) compiles six bosses,
+min150/Premium, exact5 tokens/achievement/completion, powerful denial with
+all normal materials/fee before earning, and actual250000-gold native
+Powerful Strike after earning. Real imbuement exchange helper is reused.
+No subject state/reward seeds. World callback cohort79; all old negatives
+remain. Update proof/status after runtime fixes, push compiling/green slices
+within15 minutes of eaaccf9d0 (~13:35), and finish all strict/pin gates.
+
 # Heart generic mechanisms compiling checkpoint — 2026-11-07
 
 Grimvale QUALIFIED/pushed7826860ff; six ACTIVE remain. Heart actual PG18.6

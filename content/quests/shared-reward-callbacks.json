@@ -2273,6 +2273,52 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/questpc7-heart-yana",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "npc": "oteryn:npc.yana",
+      "keywords": [
+        "worth"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/programme",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/passages",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i22721",
+        "count": 5,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": "oteryn:achievement/ender_of_the_end",
+      "completes": true,
+      "reply": [
+        "You disrupted the Heart of Destruction and defeated the World Devourer. You have proven your worth. You receive five Gold Tokens and learn Powerful Strike, Void and Vampirism."
+      ],
+      "requirements": {
+        "min_level": 150,
+        "premium": true,
+        "completed_quests": []
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yana.lua:185-187:sha256:3101fdaea3ef33df501762a2e85417ad8b6ae06e685f9c7caf2aa8b41da4b324"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/questpc7-hunter-intro",
       "quest": "oteryn:quest.hunter_outfits_quest",
       "npc": "oteryn:npc.elane",

@@ -5,7 +5,7 @@
   "red_seconds": 42.197816668,
   "red_log": "/tmp/questpc7-heart-red2.log",
   "red_point": "Missing native Heart entry after actual PG initialization",
-  "green": "not yet; generic mechanisms compile and unit tests pass",
+  "green": "PASS; complete selected programme and actual native powerful apply",
   "mechanisms": {
     "objective_descriptions": 128,
     "maximum_live_guardians": 32,
@@ -24,5 +24,46 @@
       "filled-scroll/etcher use",
       "all spatial, source, duplicate, required-count and respawn guards"
     ]
-  }
+  },
+  "current_run": {
+    "state": "PASS",
+    "log": "/tmp/questpc7-heart-green1.log"
+  },
+  "authoring_tests": 29,
+  "physical_bindings": {
+    "entry": [
+      33026,
+      31367,
+      -8,
+      10228
+    ],
+    "destabilizer": [
+      32245,
+      31244,
+      -14,
+      8911
+    ],
+    "lever_after": 8912,
+    "yana": [
+      32200,
+      32304,
+      -6
+    ],
+    "native_arenas": "/tmp/questpc7-heart-native-sites.json"
+  },
+  "service_fixture_boundary": "Normal sword/coins/materials and two source shrines are independent native-service preconditions; no subject progress/reward seeds",
+  "green_seconds": 81.696754812,
+  "green_log": "/tmp/questpc7-heart-green1.log",
+  "scope_proved": [
+    "source Zao/Farmine entry; fresh Current Premium refusal",
+    "actual8911\u21928912 destabilizer USE and bound travel",
+    "all6 distinct native bosses in retained arenas with duplicate-death safeguards",
+    "typed progress and once-only native Yana report",
+    "exact5 carried Gold Tokens, Ender of the End, durable completion; repeat unchanged",
+    "actual native Powerful Strike refused with valid gear/materials/gold/shrine before completion; no burns",
+    "fresh Premium still required after learning",
+    "real native Powerful Strike after learning:250000 gold and all source materials burned, slot0/category0,72000000ms",
+    "no subject quest/tool/reward seeds"
+  ],
+  "pending": "focused regression/unit/generation/strict/pin gates"
 }

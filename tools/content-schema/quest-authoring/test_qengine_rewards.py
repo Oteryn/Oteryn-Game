@@ -428,5 +428,30 @@ class GrimvaleProgramme(unittest.TestCase):
         self.assertEqual(len(travel),2)
         self.assertTrue(all(c['storage']==[{'track':grim.ACCESS,'minimum':1,'maximum':1,'set':1,'preserve':True}] and c['teleport'] and c['requirements']['premium'] for c in travel))
 
+class HeartProgramme(unittest.TestCase):
+    def test_six_independent_source_arenas_and_exact_yana_reward(self):
+        import questpc7_heart_programme as heart
+        worlds, objectives, rewards=heart.build(q.ROOT,q.donor_inputs(),q.PIN)
+        self.assertEqual([o['creature'] for o in objectives],['oteryn:creature.'+n for n in ['anomaly','rupture','realityquake','eradicator','outburst','world_devourer']])
+        self.assertEqual(len({o['counter'] for o in objectives}),6)
+        self.assertTrue(all(o['required']==1 and o['guardian']['respawn_ms']==60000 for o in objectives))
+        lever=next(c for c in worlds if c['key'].endswith('/questpc7-heart-destabilizer'))
+        self.assertEqual(lever['selector']['position'],{'x':32245,'y':31244,'floor':-14})
+        self.assertEqual(lever['lever'],[8911,8912])
+        self.assertEqual(rewards[0]['npc'],'oteryn:npc.yana')
+        self.assertEqual(rewards[0]['give'],{'item':'oteryn:item.tibia.i22721','count':5,'contents':[]})
+        self.assertTrue(rewards[0]['completes'])
+        self.assertEqual(rewards[0]['achievement'],'oteryn:achievement/ender_of_the_end')
+        self.assertEqual(rewards[0]['requirements'],{'min_level':150,'premium':True,'completed_quests':[]})
+
+    def test_powerful_learning_binds_only_the_source_named_families_to_native_completion(self):
+        import questpc7_knowledge
+        rules=questpc7_knowledge.build(q.ROOT,q.donor_inputs(),q.PIN)['rules']
+        self.assertEqual([(r['family'],r['tier']) for r in rules],[(1,3),(11,3),(12,3)])
+        for rule in rules:
+            self.assertEqual(rule['any_completed_quests'],['oteryn:quest.heart_of_destruction_quest'])
+            self.assertTrue(any('data-global/npc/yana.lua:185-187:sha256:' in src for src in rule['sources']))
+            self.assertTrue(any(src.startswith('canonical:') for src in rule['sources']))
+
 if __name__=='__main__':
     unittest.main()

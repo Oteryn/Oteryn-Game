@@ -975,6 +975,198 @@
         "content/world/placements/region-z08-x129-y126.b3:1:sha256:e73385a52c60b93692c715a21e8a7fd1f80bfb7ca6c468a8e43e4cfaccb95e0d",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-heart-anomaly",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "creature": "oteryn:creature.anomaly",
+      "stage": "oteryn:quest-progress/questpc7/heart/passages",
+      "stage_value": 0,
+      "counter": "oteryn:quest-progress/questpc7/heart/boss_0",
+      "required": 1,
+      "minimum": {
+        "x": 32263,
+        "y": 31241,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 32279,
+        "y": 31257,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 32271,
+          "y": 31249,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z14-x126-y122.b3:1:sha256:3df7f463fc58299f2b4cd53aba79344414f4d72e6e2d0c56a0f5d4631718e494",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-heart-rupture",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "creature": "oteryn:creature.rupture",
+      "stage": "oteryn:quest-progress/questpc7/heart/passages",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/heart/boss_1",
+      "required": 1,
+      "minimum": {
+        "x": 32324,
+        "y": 31242,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 32340,
+        "y": 31258,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 32332,
+          "y": 31250,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z14-x126-y122.b3:1:sha256:3df7f463fc58299f2b4cd53aba79344414f4d72e6e2d0c56a0f5d4631718e494",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-heart-realityquake",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "creature": "oteryn:creature.realityquake",
+      "stage": "oteryn:quest-progress/questpc7/heart/passages",
+      "stage_value": 2,
+      "counter": "oteryn:quest-progress/questpc7/heart/boss_2",
+      "required": 1,
+      "minimum": {
+        "x": 32200,
+        "y": 31240,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 32216,
+        "y": 31256,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 32208,
+          "y": 31248,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z14-x125-y122.b3:1:sha256:7428566700a7797e6b7192751f44a0964e148c53844be8480f32ab8242314367",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-heart-eradicator",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "creature": "oteryn:creature.eradicator",
+      "stage": "oteryn:quest-progress/questpc7/heart/passages",
+      "stage_value": 3,
+      "counter": "oteryn:quest-progress/questpc7/heart/boss_3",
+      "required": 1,
+      "minimum": {
+        "x": 32301,
+        "y": 31275,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 32317,
+        "y": 31291,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 32309,
+          "y": 31283,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z14-x126-y122.b3:1:sha256:3df7f463fc58299f2b4cd53aba79344414f4d72e6e2d0c56a0f5d4631718e494",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-heart-outburst",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "creature": "oteryn:creature.outburst",
+      "stage": "oteryn:quest-progress/questpc7/heart/passages",
+      "stage_value": 4,
+      "counter": "oteryn:quest-progress/questpc7/heart/boss_4",
+      "required": 1,
+      "minimum": {
+        "x": 32226,
+        "y": 31276,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 32242,
+        "y": 31292,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 32234,
+          "y": 31284,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z14-x125-y122.b3:1:sha256:7428566700a7797e6b7192751f44a0964e148c53844be8480f32ab8242314367",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-heart-world_devourer",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "creature": "oteryn:creature.world_devourer",
+      "stage": "oteryn:quest-progress/questpc7/heart/passages",
+      "stage_value": 5,
+      "counter": "oteryn:quest-progress/questpc7/heart/boss_5",
+      "required": 1,
+      "minimum": {
+        "x": 32263,
+        "y": 31339,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 32279,
+        "y": 31355,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 32271,
+          "y": 31347,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z14-x126-y122.b3:1:sha256:3df7f463fc58299f2b4cd53aba79344414f4d72e6e2d0c56a0f5d4631718e494",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
+      ]
     }
   ]
 }

@@ -4373,6 +4373,526 @@
         "content/world/placements/region-z08-x128-y128.b3:1:sha256:7a978007d1735d8cf8143f9ade1f641f96d50c78549175f4fc29f84bec6107dc",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-heart-entry",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33026,
+          "y": 31367,
+          "floor": -8
+        },
+        "appearance": 10228,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32244,
+        "y": 31244,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/programme",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 150,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You enter the Otherworld expedition through the Zao breach.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z08-x129-y122.b3:1:sha256:9532e85c1307dca1f61cb21293635e380ae9a535e3a5f351592db5762ab0f80f",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-heart-destabilizer",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32245,
+          "y": 31244,
+          "floor": -14
+        },
+        "appearance": 8911,
+        "unique": null,
+        "action": null
+      },
+      "lever": [
+        8911,
+        8912
+      ],
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32271,
+        "y": 31252,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/passages",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/boss_0",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 150,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The Destruction Destabilizer secures the expedition route.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z14-x125-y122.b3:1:sha256:7428566700a7797e6b7192751f44a0964e148c53844be8480f32ab8242314367",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-heart-passage-0",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32270,
+          "y": 31252,
+          "floor": -14
+        },
+        "appearance": 22893,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32332,
+        "y": 31253,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/passages",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/boss_0",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/boss_1",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 150,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The breach boss is defeated. The expedition continues.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z14-x126-y122.b3:1:sha256:3df7f463fc58299f2b4cd53aba79344414f4d72e6e2d0c56a0f5d4631718e494",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-heart-passage-1",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32331,
+          "y": 31253,
+          "floor": -14
+        },
+        "appearance": 22893,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32208,
+        "y": 31251,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/passages",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/boss_1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/boss_2",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 150,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The breach boss is defeated. The expedition continues.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z14-x126-y122.b3:1:sha256:3df7f463fc58299f2b4cd53aba79344414f4d72e6e2d0c56a0f5d4631718e494",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-heart-passage-2",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32207,
+          "y": 31251,
+          "floor": -14
+        },
+        "appearance": 22893,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32309,
+        "y": 31286,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/passages",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/boss_2",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/boss_3",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 150,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The breach boss is defeated. The expedition continues.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z14-x125-y122.b3:1:sha256:7428566700a7797e6b7192751f44a0964e148c53844be8480f32ab8242314367",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-heart-passage-3",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32308,
+          "y": 31286,
+          "floor": -14
+        },
+        "appearance": 22893,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32234,
+        "y": 31287,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/passages",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/boss_3",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/boss_4",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 150,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The breach boss is defeated. The expedition continues.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z14-x126-y122.b3:1:sha256:3df7f463fc58299f2b4cd53aba79344414f4d72e6e2d0c56a0f5d4631718e494",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-heart-passage-4",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32234,
+          "y": 31286,
+          "floor": -14
+        },
+        "appearance": 22893,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32271,
+        "y": 31350,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/passages",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/boss_4",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/boss_5",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 150,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The breach boss is defeated. The expedition continues.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z14-x125-y122.b3:1:sha256:7428566700a7797e6b7192751f44a0964e148c53844be8480f32ab8242314367",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-heart-passage-5",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32270,
+          "y": 31350,
+          "floor": -14
+        },
+        "appearance": 23098,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32201,
+        "y": 32304,
+        "floor": -6
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/passages",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/heart/boss_5",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 150,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The breach boss is defeated. The expedition continues.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z14-x126-y122.b3:1:sha256:3df7f463fc58299f2b4cd53aba79344414f4d72e6e2d0c56a0f5d4631718e494",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
+      ]
     }
   ]
 }

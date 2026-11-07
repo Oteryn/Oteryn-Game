@@ -535,3 +535,31 @@ apply fence. Basic/intricate, other unconfigured families and ordinary filled
 scroll/etcher use retain their existing policies. Whole native PG proof of
 refusal before learning and actual paid powerful apply is required before
 qualification; parser units alone do not qualify the feature or quest.
+
+## Heart fixed expedition bindings — 2026-11-07
+
+The selected Destruction Destabilizer is the retained Anomaly control lever
+8911 at32245,31244,-14 (actions_anomaly_lever.lua:38, SHA256
+b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831).
+It transforms to8912, with route admission and the first boss counter in one
+fenced USE. This is an explicit selected role for an existing native device,
+not an invented original item ID. The retained Farmine/Zao breach arrival
+33026,31367,-8 (movements_teleport.lua:10) supplies the selected Zao regional
+entry; the exact original Zao Steppe portal name is not asserted. All six
+source arenas retain literal centres, with adjacent clear native passages.
+The recipe explicitly replaces party levers, timing and daily locks with a
+fixed once-only sequence; original boss form/phase fidelity and optional
+backpack decorations are outside that selected programme.
+
+Yana's retained agreeing source cell32200,32304,-6 is published without
+re-authoring her existing identity. Her final report atomically completes
+the programme, grants five actual22721 Gold Tokens and Ender of the End.
+Native immutable completion is consumed by the powerful-imbuing adapter,
+not just a displayed flag. The whole PG case must demonstrate no powerful
+apply with sword/materials/fee before learning and a real250000-gold,
+20-hour Powerful Strike after learning, including actual material burns.
+
+Two ordinary source imbuing shrines in the PG map are independent service
+fixtures, not new production World placements. Generic native service inputs
+(sword, normal coins, three recipe materials) use fenced MINT and transfer;
+no Heart reward, tool, stage or completion is inserted by the fixture.
