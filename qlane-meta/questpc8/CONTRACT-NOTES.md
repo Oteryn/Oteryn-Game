@@ -57,3 +57,16 @@ same occurrence and transaction, exact output plan, aggregate weight/entry
 capacity, stable derived output identities, and deferred complete-plan proof.
 Existing nested filled-container output remains the default. This permits
 selected rewards without adding an unselected bag or manufacturing commands.
+
+Giant Smithhammer chosen cache: preserve the source four-state lever separately.
+The selected one-use recovery consolidates hammer3208, talon3034 and100gold3031
+into the actual central chest at32776,32253,z8, appearance2472, ordinal1 (no UID).
+Its southern walkable approach32776,32254,z8 arms one present-principal Giant
+Spider victory in the bounded chamber. Free-account programme, once-only.
+Source positions/contents: https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L1170
+Chosen journey: https://tibia.fandom.com/index.php?curid=4377&oldid=748685
+Native hammer custody uses the retained official client bank2dfa943b... and
+pinned Canary04b83b51 XML1cf2992c...; exact binding and accepted physical facts
+must agree, accepted holds refuse. The existing canonical record remains intact;
+this core admission does not infer equipment, weapon or use behavior.
+XML: https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/items/items.xml

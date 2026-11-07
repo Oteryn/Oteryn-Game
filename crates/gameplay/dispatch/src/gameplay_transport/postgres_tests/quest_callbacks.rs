@@ -29,6 +29,15 @@ pub(super) fn source_world_choices(
     choices: &[(u16, u16)],
     appearance: u16,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_rectangle(chest, choices, appearance, 1)
+}
+
+pub(super) fn source_world_rectangle(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16)],
+    appearance: u16,
+    height: u16,
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
@@ -66,46 +75,54 @@ pub(super) fn source_world_choices(
         min_x,
         min_y: chest.1,
         max_x: max_x + 1,
-        max_y: chest.1 + 1,
+        max_y: chest.1 + height,
         floors: vec![chest.2],
     };
-    let tiles = (min_x..=max_x)
-        .map(|x| sector::Tile {
-            x,
-            y: chest.1,
-            flags: 0,
-            house: 0,
-            zones: Vec::new(),
-            items: if let Some((_, unique)) = choices.iter().find(|(placed, _)| *placed == x) {
-                vec![
-                    ground(),
-                    sector::Item {
-                        palette: 1,
-                        depth: 0,
-                        attrs: sector::Attrs {
-                            unique: (*unique != 0).then_some(*unique),
-                            ..Default::default()
+    let tiles = (chest.1..chest.1 + height)
+        .flat_map(|y| {
+            (min_x..=max_x).map(move |x| sector::Tile {
+                x,
+                y,
+                flags: 0,
+                house: 0,
+                zones: Vec::new(),
+                items: if let Some((_, unique)) = choices
+                    .iter()
+                    .find(|(placed, _)| *placed == x && y == chest.1)
+                {
+                    vec![
+                        ground(),
+                        sector::Item {
+                            palette: 1,
+                            depth: 0,
+                            attrs: sector::Attrs {
+                                unique: (*unique != 0).then_some(*unique),
+                                ..Default::default()
+                            },
                         },
-                    },
-                ]
-            } else {
-                vec![ground()]
-            },
+                    ]
+                } else {
+                    vec![ground()]
+                },
+            })
         })
         .collect::<Vec<_>>();
     // The Demon Helmet source chest is one tile from a sector boundary; its
     // approach tiles belong to the neighbouring sector. Preserve every tile's
     // actual sector rather than assigning the whole fixture to the chest sector.
-    let mut grouped = std::collections::BTreeMap::<u16, Vec<sector::Tile>>::new();
+    let mut grouped = std::collections::BTreeMap::<(u16, u16), Vec<sector::Tile>>::new();
     for tile in tiles {
-        grouped.entry(tile.x / 32).or_default().push(tile);
+        grouped
+            .entry((tile.x / 32, tile.y / 32))
+            .or_default()
+            .push(tile);
     }
     let sectors = grouped
         .into_iter()
-        .map(|(sx, tiles)| bundle::Sector {
+        .map(|((sx, sy), tiles)| bundle::Sector {
             floor: chest.2,
             sx,
-            sy: chest.1 / 32,
+            sy,
             tiles,
         })
         .collect::<Vec<_>>();

@@ -78,6 +78,13 @@ fn scenario_case(
         }
         let world = if name == "authored-braindeath" {
             super::super::quest_callbacks::source_world((32546, 31522, -11), 0, 1983, 0)?
+        } else if name == "authored-smith-cache" {
+            super::super::quest_callbacks::source_world_rectangle(
+                (32776, 32253, -8),
+                &[(32776, 0)],
+                2472,
+                2,
+            )?
         } else if name == "authored-tinder-box" {
             super::super::quest_callbacks::source_world((32085, 31025, -1), 0, 4285, 0)?
         } else if name == "mintwallin-cyclops-scene" {
@@ -245,6 +252,8 @@ fn scenario_case(
                 &h,
             )
             .await?;
+        } else if name == "authored-smith-cache" {
+            super::super::questpc8_smith_cache::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "authored-tinder-box" {
             super::super::questpc8_authored_programmes::exercise_tinder_box(
                 &mut owner,

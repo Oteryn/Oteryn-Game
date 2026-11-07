@@ -26,7 +26,9 @@ class QuestCallbackProfiles(unittest.TestCase):
         (self.root / 'content/quests').mkdir(parents=True)
         (self.root / 'content/interactions').symlink_to(ROOT / 'content/interactions', target_is_directory=True)
         (self.root / 'content/items').symlink_to(ROOT / 'content/items', target_is_directory=True)
+        (self.root / 'content/assets').symlink_to(ROOT / 'content/assets', target_is_directory=True)
         (self.root / 'imports').symlink_to(ROOT / 'imports', target_is_directory=True)
+        (self.root / 'docs').symlink_to(ROOT / 'docs', target_is_directory=True)
         (self.root / 'tools').symlink_to(ROOT / 'tools', target_is_directory=True)
         self.callbacks = json.loads((ROOT / 'content/quests/world-callbacks.json').read_bytes())
         (self.root / 'content/quests/killing-in-the-name-of.json').write_bytes(
@@ -54,6 +56,22 @@ class QuestCallbackProfiles(unittest.TestCase):
                 for r in json.loads(self.generated[PROFILE])['records']}
         self.assertIn(reward['item'], rows)
         self.assertIn('CharacterInventory', rows[reward['item']]['admission']['legal_destinations'])
+
+    def test_authored_unknown_stack_reward_gets_custody_without_canonical_mutation(self):
+        key = 'oteryn:item.tibia.i3208'
+        path = ROOT / 'content/items/definitions/items-19000-19499.json'
+        canonical = path.read_bytes()
+        definition = next(r['definition'] for r in json.loads(canonical)['records']
+                          if r['definition']['identity']['key'] == key)
+        (self.root / 'content/quests/authored-world-callbacks.json').write_text(json.dumps(
+            {'schema': 1, 'callbacks': [{'effects': {'item_reward': {'item': key, 'count': 1}}}]}))
+        self.admit()
+        row = next(r for r in json.loads(self.generated[PROFILE])['records']
+                   if r['production_definition']['production_key'] == key)
+        self.assertEqual(row['admission']['stack_class'], 'NonStackable')
+        self.assertIn('CharacterInventory', row['admission']['legal_destinations'])
+        self.assertEqual(row['semantics']['weapon'], definition['semantics']['weapon'])
+        self.assertEqual(path.read_bytes(), canonical)
 
     def test_fish_key_is_rebuilt_with_portable_admission_and_manifest_digest(self):
         self.admit()

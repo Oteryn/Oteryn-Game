@@ -540,6 +540,7 @@ fn scenario_case(
             };
             for (index, (item, quantity)) in burdens.into_iter().enumerate() {
                 let request = RewardClaimMintRequest {
+            backpack_outputs: false,
                     command: CommandRef::new(
                         admitted.game_session_id,
                         CommandId::new(100 + u64::try_from(index)?).map_err(debug)?,

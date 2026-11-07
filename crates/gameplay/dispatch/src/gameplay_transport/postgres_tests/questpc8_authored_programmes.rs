@@ -117,7 +117,7 @@ pub(super) async fn exercise_braindeath(
     assert_eq!(progress(h, "kills").await?, 1);
     let reward_target = coffin_target(owner)?;
     assert_eq!(
-        use_coffin(owner, admitted, 5, &reward_target).await?,
+        use_target(owner, admitted, 5, &reward_target).await?,
         UseDisposition::Committed
     );
     assert_eq!(progress(h, "stage").await?, 3);
@@ -131,7 +131,7 @@ pub(super) async fn exercise_braindeath(
         .fetch_one(&h.pool)
         .await?;
     assert_eq!(
-        use_coffin(owner, admitted, 5, &reward_target).await?,
+        use_target(owner, admitted, 5, &reward_target).await?,
         UseDisposition::Committed
     );
     let after: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances")
@@ -151,7 +151,7 @@ async fn coffin(
     command: u64,
 ) -> TestResult<UseDisposition> {
     let target = coffin_target(owner)?;
-    use_coffin(owner, admitted, command, &target).await
+    use_target(owner, admitted, command, &target).await
 }
 
 fn coffin_target(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult<WorldObjectTarget> {
@@ -173,7 +173,7 @@ fn coffin_target(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult<World
     })
 }
 
-async fn use_coffin(
+pub(super) async fn use_target(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     command: u64,
@@ -194,7 +194,7 @@ async fn use_coffin(
     decode_use_result(&result).map_err(debug)
 }
 
-async fn step(
+pub(super) async fn step(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     command: u64,
@@ -236,7 +236,7 @@ pub(super) async fn exercise_tinder_box(
     let premium = owner.premium_coordinator.take();
     step(owner, admitted, 1, StepDirection::East).await?;
     assert_eq!(
-        use_coffin(owner, admitted, 2, &target).await?,
+        use_target(owner, admitted, 2, &target).await?,
         UseDisposition::Rejected
     );
     owner.premium_coordinator = premium;
@@ -246,11 +246,11 @@ pub(super) async fn exercise_tinder_box(
     step(owner, admitted, 3, StepDirection::West).await?;
     step(owner, admitted, 4, StepDirection::East).await?;
     assert_eq!(
-        use_coffin(owner, admitted, 5, &target).await?,
+        use_target(owner, admitted, 5, &target).await?,
         UseDisposition::Committed
     );
     assert_eq!(
-        use_coffin(owner, admitted, 5, &target).await?,
+        use_target(owner, admitted, 5, &target).await?,
         UseDisposition::Committed
     );
     let target = object_target(
@@ -263,7 +263,7 @@ pub(super) async fn exercise_tinder_box(
         1,
     )?;
     assert_eq!(
-        use_coffin(owner, admitted, 6, &target).await?,
+        use_target(owner, admitted, 6, &target).await?,
         UseDisposition::Rejected
     );
     let quantity: i64 = sqlx::query_scalar("SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i20357' AND lifecycle=1").fetch_one(&h.pool).await?;
@@ -272,7 +272,7 @@ pub(super) async fn exercise_tinder_box(
     assert!(complete);
     Ok(())
 }
-fn object_target(
+pub(super) fn object_target(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     pos: TilePos,
     ordinal: u8,
