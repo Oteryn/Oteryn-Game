@@ -5,7 +5,6 @@ producer promotes the requested quest catalogue; it never contacts a donor host.
 """
 from __future__ import annotations
 import argparse
-import copy
 import hashlib
 import importlib.util
 import json
@@ -33,8 +32,9 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar')]
-    paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander')]
+    paths += ['data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
+              'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua']
     result = {}
@@ -57,67 +57,6 @@ def load_module(name, path):
     return module
 
 
-def preserve_maintained_cosmetics(generated, cosmetics):
-    """Extend tree-first authoring without replacing accepted Item grants or Mounts."""
-    path = ROOT / 'content/cosmetics/outfits/authoring.json'
-    if not path.exists():
-        return generated
-    maintained = json.loads(path.read_bytes())
-    cosmetics.validate(maintained)
-    merged = copy.deepcopy(maintained)
-    document = merged['document']
-    document['content_revision'] = generated['document']['content_revision']
-    existing = {row['key']: row for row in document['outfits']}
-    origins = {}
-    for index, row in enumerate(generated['document']['outfits']):
-        key = row['key']
-        if key in existing:
-            if existing[key] != row:
-                raise ValueError('conflicting maintained quest Outfit: ' + key)
-            continue
-        target = len(document['outfits'])
-        document['outfits'].append(copy.deepcopy(row))
-        existing[key] = row
-        origins[target] = index
-    mappings = {row['grant_key']: row for row in document['grant_mappings']}
-    def appearance(target):
-        row = existing[target['outfit_key']]
-        return target['kind'], row['female']['id'], row['male']['id'], target.get('addon')
-    for row in generated['document']['grant_mappings']:
-        previous = mappings.get(row['grant_key'])
-        if previous is not None:
-            if (appearance(previous['target']) != appearance(row['target'])
-                    or previous['compatible_provenance'] != row['compatible_provenance']):
-                raise ValueError('conflicting maintained quest grant: ' + row['grant_key'])
-        else:
-            document['grant_mappings'].append(copy.deepcopy(row))
-            mappings[row['grant_key']] = row
-    retained = {row['path']: row for row in maintained['promotions']}
-    authored = {row['path']: row for row in generated['promotions']}
-    promotions = []
-    for pointer in sorted(cosmetics.promotion_paths(document)):
-        value = cosmetics.pointer(document, pointer)
-        previous = retained.get(pointer)
-        if previous is not None and previous['value'] == value:
-            promotions.append(copy.deepcopy(previous))
-            continue
-        source_pointer = pointer
-        if pointer.startswith('/outfits/'):
-            _, family, index, field = pointer.split('/')
-            source_pointer = f'/{family}/{origins[int(index)]}/{field}'
-        promotion = copy.deepcopy(authored[source_pointer])
-        promotion.update(path=pointer, value=value)
-        if pointer == '/grant_mappings':
-            note = 'content/quests/authoring/shared-cosmetics.md'
-            promotion.update(decision='owner:questpc4:preserve-published-cosmetics:2026-11-07',
-                source={'reference': note, 'revision': '2026-11-07',
-                        'sha256': sha((ROOT / note).read_bytes())})
-        promotions.append(promotion)
-    merged['promotions'] = promotions
-    cosmetics.validate(merged)
-    return merged
-
-
 def build():
     inputs = donor_inputs()
     gameplay=json.loads((ROOT/'content/spells.manifest.json').read_bytes())
@@ -129,8 +68,8 @@ def build():
     groups = {}
     for row in xml:
         name = aliases.get(row.get('name'), row.get('name'))
-        # Owner-selected Royal Costume quest has a source NPC grant despite its XML store tag.
-        if row.get('enabled') == 'yes' and (row.get('from') != 'store' or name == 'Royal Costume'):
+        # Explicit owner-selected quest rewards may use admitted looks labelled store by the donor.
+        if row.get('enabled') == 'yes' and (row.get('from') != 'store' or name in ('Royal Costume', 'Dragon Slayer')):
             groups.setdefault(name, {})[row.get('type')] = row.attrib
     appearance = ROOT / 'imports/cipsoft-appearances/outfits'
     manifest_raw = (appearance / 'manifest.json').read_bytes()
@@ -166,6 +105,18 @@ def build():
                 'kind': 'Addon', 'outfit_key': key, 'addon': addon}
             mappings.append({'grant_key': f'{key}/quest-grant/{addon}', 'target': target,
                              'compatible_provenance': [PROVENANCE]})
+    # Reuse the existing source item-action owner. Matching both source look
+    # identities is required; a source label alone never admits a grant.
+    item_packet=json.loads((ROOT/'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes())
+    scoped={'oteryn:outfit.afflicted','oteryn:outfit.soil_guardian','oteryn:outfit.crystal_warlord'}
+    for outfit in outfits:
+        if outfit['key'] not in scoped:continue
+        looks=sorted([outfit['female']['id'],outfit['male']['id']])
+        for grant in item_packet['grants']:
+            if grant['kind'] not in ('outfit','addon') or grant.get('look_types')!=looks:continue
+            target={'kind':'Outfit','outfit_key':outfit['key']} if grant['kind']=='outfit' else {
+                'kind':'Addon','outfit_key':outfit['key'],'addon':grant['addon']}
+            mappings.append({'grant_key':grant['key'],'target':target,'compatible_provenance':[item_packet['provenance']]})
     mappings.append({'grant_key': 'oteryn:appearance-grant/quest/soul-war/revenant-base',
         'target': {'kind': 'Outfit', 'outfit_key': 'oteryn:outfit.revenant'},
         'compatible_provenance': ['crystal-201189f-soul-war-revenant-v1']})
@@ -174,6 +125,13 @@ def build():
     mappings.append({'grant_key': 'oteryn:appearance-grant/quest/rotten-blood/decaying-defender-base',
         'target': {'kind': 'Outfit', 'outfit_key': 'oteryn:outfit.decaying_defender'},
         'compatible_provenance': ['owner-pr2784-decaying-defender-base-v1']})
+    for row in outfits:
+        if row['key'] in ('oteryn:outfit.hunter','oteryn:outfit.mage','oteryn:outfit.summoner'):
+            for sex in ('female','male'):
+                for addon in range(row['addon_count']+1):
+                    mappings.append({'grant_key':row['key']+f'/quest-grant/{sex}/{addon}',
+                        'target':{'kind':'Outfit','outfit_key':row['key']} if addon==0 else {'kind':'Addon','outfit_key':row['key'],'addon':addon},
+                        'sex':sex,'compatible_provenance':[PROVENANCE]})
     atlas = load_module('qengine_atlas_palette', 'tools/game-atlas-appearances/export.py')
     palette_path = 'tools/game-atlas-appearances/export.py'
     palette_source = {'reference': palette_path + '#outfit_color', 'revision': 'rounded-hsi-133-v1',
@@ -191,7 +149,30 @@ def build():
     author = {'schema': 'OTERYN_CHARACTER_COSMETICS_AUTHORING/v1',
         'profile': {'kind': 'reference', 'revision': 'quest-cosmetics-r1', 'mount_speed_bonus': 10},
         'client_version': manifest['client_version'], 'document': doc, 'promotions': []}
+    # NX-5's promoted item grants and mounts remain admitted alongside quest rewards.
+    nx5 = json.loads((ROOT / 'tools/content-schema/cosmetics-authoring/nx5-authoring.json').read_bytes())
+    cosmetics.validate(nx5)
+    nx5_doc = nx5['document']
+    doc['outfits'].extend(nx5_doc['outfits'])
+    doc['mounts'] = nx5_doc['mounts']
+    grant_keys = {row['grant_key'] for row in mappings}
+    for row in nx5_doc['grant_mappings']:
+        if row['grant_key'] not in grant_keys:
+            mappings.append(row)
+        else:
+            existing = next(m for m in mappings if m['grant_key'] == row['grant_key'])
+            if existing['target'] != row['target']:
+                existing['outfit_aliases'] = [row['target']['outfit_key']]
+    nx5_promotions = {row['path']: row for row in nx5['promotions']}
+    quest_outfits = len(outfits) - len(nx5_doc['outfits'])
     for path in sorted(cosmetics.promotion_paths(doc)):
+        parts = path.split('/')
+        nx5_path = path if parts[1] == 'mounts' else None
+        if parts[1] == 'outfits' and int(parts[2]) >= quest_outfits:
+            nx5_path = '/outfits/' + str(int(parts[2]) - quest_outfits) + '/' + parts[3]
+        if nx5_path is not None:
+            author['promotions'].append({**nx5_promotions[nx5_path], 'path': path})
+            continue
         citation=palette_source if path == '/palette' else source
         if path in ('/source_manifest_sha256','/source_appearances_sha256'):
             citation={'reference': 'imports/cipsoft-appearances/outfits/manifest.json',
@@ -200,7 +181,6 @@ def build():
             'state': 'PROMOTED', 'decision': DECISION,
             'source_kind': 'OWNER_DECISION' if path.startswith('/fallbacks/') or path=='/grant_mappings' else 'STRUCTURED_REFERENCE_DATA',
             'source': citation})
-    author = preserve_maintained_cosmetics(author, cosmetics)
     callbacks = []
     def storage(track, before, after, maximum=None, preserve=False):
         return {'track': track, 'minimum': before, 'maximum': before if maximum is None else maximum,
@@ -584,12 +564,338 @@ def build():
         if callback['key'].startswith('oteryn:quest-reward/l6-beggar-'):
             npc=callback['npc'].split('.')[-1]
             callback['sources']=[beggar_source(npc,'55-199' if npc=='hugo' else '84-222')]
+    def source_offer(npc,words,topic,next_topic,states):
+        offers.append({'npc':'oteryn:npc.'+npc,'keywords':words,'topic':topic,'next_topic':next_topic,
+            'storage':states,'reply':['Will you help me with this task?']})
+    knight=prefix+'u7_8/knight_outfits/'
+    ape=prefix+'u7_6/the_ape_city/questline'
+    knight_helmet=knight+'addon_helmet'
+    knight_mission=knight+'mission_helmet'
+    for key,maximum,npc,lines in [(knight_helmet,7,'gregor','63-211'),
+            (knight+'ramsays_helmet_door',1,'gregor','149-160'),
+            (prefix+'u7_8/druid_outfits/druid_amulet_door',1,'ceiron','174-180'),
+            ('oteryn:quest-progress/atrad',2,'atrad','75-104')]:
+        path='data-global/npc/'+npc+'.lua'
+        declarations.append({'key':key,'quest':'oteryn:quest.'+general,'initial':0,'min':-1,
+            'max':maximum,'writable':True,'sources':[f'crystal:{PIN}:{path}:{lines}:sha256:{sha(inputs[path])}']})
+    def stamp(track):
+        return {'track':track,'from':{'kind':'any'},'effect':{'kind':'set_now'}}
+    def elapsed(track,seconds):
+        return {'track':track,'from':{'kind':'elapsed_at_least','seconds':seconds},'effect':{'kind':'add','value':0}}
+    add('l7-knight-sword-start',general,'morgan',["knight's sword"],[storage(knight+'addon_sword',-1,1,0)])
+    callbacks[-1]['forbids_addons']=[{'outfit':'oteryn:outfit.knight','addons':1}]
+    next(c for c in callbacks if c['key']=='oteryn:quest-reward/knight-sword')['forbids_addons']=[{'outfit':'oteryn:outfit.knight','addons':1}]
+    states=[storage(knight_helmet,-1,1,0),storage(knight_mission,0,1,6)]
+    add('l7-knight-helmet-start',general,'gregor',['yes'],states,topic=2,
+        requires=[{'track':ape,'minimum':16,'maximum':18}])
+    callbacks[-1]['requires_premium']=True
+    callbacks[-1]['state_ops']=[{'track':rook_ref,'from':{'kind':'between','minimum':0,'maximum':2147483646},'effect':{'kind':'add','value':1}}]
+    source_offer('gregor',['task'],0,1,states)
+    source_offer('gregor',['yes'],1,2,states)
+    for name,word,item,count,before,topic in [('fangs','behemoth fang',5893,100,1,3),
+            ('helmet','ramsay the reckless helmet',5924,1,2,4),('sweat','sweat',5885,1,3,5),('steel','royal steel',5887,1,4,6)]:
+        states=[storage(knight_helmet,before,before+1),storage(knight_mission,-1,before+1,6)]
+        if name=='fangs':states.append(storage(knight+'ramsays_helmet_door',-1,1,1))
+        add('l7-knight-'+name,general,'gregor',['yes'],states,take=[(item,count)],topic=topic,
+            requires=[{'track':ape,'minimum':16,'maximum':18}])
+        source_offer('gregor',[word],0,topic,states)
+    add('l7-knight-helmet-work',general,'sam',['adorn','outfit','addon'],
+        [storage(knight_helmet,5,6),storage(knight_mission,-1,6,6)])
+    callbacks[-1]['state_ops']=[stamp(knight+'addon_helmet_timer')]
+    add('l7-knight-helmet-reward',general,'sam',['adorn','outfit','addon'],
+        [storage(knight_helmet,6,7),storage(knight_mission,-1,0,6),storage(rook_ref,0,0,2147483647)],outfit=('knight',2))
+    callbacks[-1]['state_ops']=[elapsed(knight+'addon_helmet_timer',7201)]
+    druid=prefix+'u7_8/druid_outfits/'
+    body=druid+'druid_body_addon'
+    hat=druid+'druid_hat_addon'
+    add('l7-druid-body-start',general,'ustan',['addon'],[storage(body,-1,1,0)])
+    states=[storage(body,1,2)]
+    add('l7-druid-body',general,'ustan',['yes'],states,take=[(5896,50),(5897,50)],outfit=('druid',1),topic=1)
+    source_offer('ustan',['paws','bear paws'],0,1,states)
+    states=[storage(hat,-1,1,0),storage(druid+'default_start',0,1,1)]
+    add('l7-druid-hat-start',general,'ceiron',['yes'],states,give=(4867,1),topic=4)
+    for words,topic,next_topic in [(['addon','outfit'],0,2),(['faolan'],2,3),(['yes'],3,4)]:
+        source_offer('ceiron',words,topic,next_topic,states)
+    states=[storage(hat,1,2)]
+    add('l7-druid-griffinclaw',general,'ceiron',['yes'],states,take=[(5937,1)],topic=5)
+    source_offer('ceiron',['griffinclaw','container'],0,5,states)
+    for name,before,topic,give in [('water-start',2,6,(5938,1)),('dust-start',4,8,None),('chain-start',6,10,None)]:
+        states=[storage(hat,before,before+1)]
+        if name=='chain-start':states.append(storage(druid+'druid_amulet_door',-1,1,1))
+        add('l7-druid-'+name,general,'ceiron',['yes'],states,give=give,topic=topic)
+        source_offer('ceiron',['task'],0,topic,states)
+    for name,words,item,count,before,topic in [('water',['waterskin','water skin'],5939,1,3,7),
+            ('dust',['dust','demon dust'],5906,100,5,9),('chain',['chain','wolf tooth chain'],5940,1,7,11)]:
+        states=[storage(hat,before,before+1)]
+        add('l7-druid-'+name,general,'ceiron',['yes'],states,take=[(item,count)],topic=topic)
+        source_offer('ceiron',words,0,topic,states)
+    add('l7-druid-language',general,'ceiron',['faolan'],[storage(hat,8,9)])
+    states=[storage(hat,9,10)]
+    add('l7-druid-hat',general,'a_majestic_warwolf',['yes'],states,outfit=('druid',2),topic=1)
+    source_offer('a_majestic_warwolf',['addon','outfit'],0,1,states)
+    assassin=prefix+'u7_8/assassin_outfits/'
+    base=assassin+'assassin_base_outfit'
+    first=assassin+'assassin_first_addon'
+    second=assassin+'assassin_second_addon'
+    states=[storage(base,-1,1,0),storage('oteryn:quest-progress/outfit_quest/default_start',0,1,1)]
+    add('l7-assassin-base-start',general,'vescu',['yes'],states,topic=3)
+    callbacks[-1]['requires_actor_conditions']=['drunk']
+    for words,topic,next_topic in [(['sober'],0,1),(['potion'],1,2),(['yes'],2,3)]:
+        source_offer('vescu',words,topic,next_topic,states)
+    for name,word,item,count,before in [('eyes','30 bonelord eyes',5898,30,1),('scales','10 red dragon scales',5882,10,2),
+            ('lizard','30 lizard scales',5881,30,3),('fins','20 fish fins',5895,20,4),('vampire','20 vampire dust',5905,20,5),
+            ('demon','10 demon dust',5906,10,6),('sweat',"warrior's sweat",5885,1,7)]:
+        states=[storage(base,before,before+1)]
+        add('l7-assassin-'+name,general,'vescu',['yes'],states,take=[(item,count)],topic=4)
+        source_offer('vescu',[word],0,4,states)
+    add('l7-assassin-base',general,'vescu',['secret'],[storage(base,8,9)],outfit=('assassin',0))
+    states=[storage(first,-1,1,0),storage('oteryn:quest-progress/outfit_quest/default_start',0,1,1)]
+    add('l7-assassin-first-start',general,'erayo',['yes'],states,topic=2,
+        requires=[{'track':prefix+'u7_8/the_shattered_isles/shipwrecked','minimum':2,'maximum':2}])
+    callbacks[-1]['requires_outfits']=['oteryn:outfit.assassin']
+    source_offer('erayo',['addon'],0,1,states)
+    source_offer('erayo',['yes'],1,2,states)
+    for index,(name,item) in enumerate([('blue',5912),('green',5910),('red',5911),('brown',5913),('yellow',5914),('white',5909),('yarn',5886)],1):
+        count=10 if name=='yarn' else 50
+        word='10 spools of yarn' if name=='yarn' else f'50 {name} cloth'
+        states=[storage(first,index,index+1)]
+        add('l7-assassin-'+name,general,'erayo',['yes'],states,take=[(item,count)],
+            outfit=('assassin',1) if name=='yarn' else None,topic=3)
+        source_offer('erayo',[word],0,3,states)
+    atrad='oteryn:quest-progress/atrad'
+    states=[storage(atrad,-1,1,0),storage(second,0,1)]
+    add('l7-assassin-second-start',general,'atrad',['yes'],states,topic=3)
+    callbacks[-1]['requires_actor_conditions']=['fire']
+    source_offer('atrad',['addon','outfit'],0,2,states)
+    source_offer('atrad',['yes'],2,3,states)
+    add('l7-assassin-second',general,'atrad',['nose ring','ring'],[storage(atrad,1,2),storage(second,1,2)],
+        take=[(5804,1),(5930,1)],outfit=('assassin',2))
+    callbacks[-1]['requires_actor_conditions']=['fire']
+    for callback in callbacks:
+        if callback['key'].startswith('oteryn:quest-reward/l7-'):
+            npc=callback['npc'].split('.')[-1];path='data-global/npc/'+npc+'.lua'
+            lines={'morgan':'115-148','gregor':'63-211','sam':'67-88','ustan':'63-85','ceiron':'60-187','a_majestic_warwolf':'64-75','vescu':'56-189','erayo':'57-114','atrad':'60-105'}[npc]
+            callback['sources']=[f'crystal:{PIN}:{path}:{lines}:sha256:{sha(inputs[path])}']
+    # L8: source looktypes are explicit sex-qualified grants, including cross-family rewards.
+    for key,maximum,npc in [(prefix+'u7_8/hunter_outfits/hunter/addon_glove',1,'legola'),
+            (prefix+'u7_8/mage_and_summoner_outfits/addon_hat_cloak',11,'myra')]:
+        path='data-global/npc/'+npc+'.lua'
+        declarations.append({'key':key,'quest':'oteryn:quest.'+general,'initial':0,'min':-1,'max':maximum,
+            'writable':True,'sources':[f'crystal:{PIN}:{path}:sha256:{sha(inputs[path])}']})
+    def targets(*values):
+        callbacks[-1]['outfits']=[{'outfit':'oteryn:outfit.'+family,'addons':bit,'sex':sex} for family,bit,sex in values]
+    hunter=prefix+'u7_8/hunter_outfits/'
+    hat=hunter+'hunter_hat_addon'
+    states=[storage(hat,-1,1,0),storage('oteryn:quest-progress/outfit_quest/default_start',0,1,1)]
+    add('l8-hunter-start',general,'elane',['yes'],states,topic=3)
+    for words,a,b in [(['addon','outfit'],0,1),(['task'],1,2),(['yes'],2,3)]:source_offer('elane',words,a,b,states)
+    for name,words,before,topic,items in [('crossbow',['crossbow'],1,4,[(5947,1)]),
+            ('leather',['leather'],2,5,[(5876,100),(5948,100)]),('wings',['chicken wing'],3,6,[(5891,5)]),
+            ('hat',['steel'],4,7,[(5887,1),(5888,1),(5889,1)])]:
+        states=[storage(hat,before,before+1)]
+        add('l8-hunter-'+name,general,'elane',['yes'],states,take=items,topic=topic)
+        source_offer('elane',words,0,topic,states)
+        if name=='hat':targets(('hunter',1,'male'),('hunter',2,'female'))
+    glove=hunter+'hunter/addon_glove'
+    states=[storage(glove,-1,1,0)]
+    add('l8-hunter-gloves',general,'legola',['yes'],states,take=[(5875,1)],topic=1)
+    callbacks[-1]['requires_premium']=True
+    targets(('hunter',2,'male'),('hunter',1,'female'))
+    source_offer('legola',['sniper gloves'],0,1,states)
+    mage=prefix+'u7_8/mage_and_summoner_outfits/'
+    wand=mage+'addon_wand'
+    states=[storage(wand,-1,1,0),storage('oteryn:quest-progress/outfit_quest/default_start',0,1,1)]
+    add('l8-mage-male-start',general,'angelina',['yes'],states)
+    states=[storage(wand,1,2)]
+    add('l8-mage-male-wand-start',general,'lynda',['yes'],states,topic=2)
+    source_offer('lynda',['angelina'],0,1,states);source_offer('lynda',['yes'],1,2,states)
+    for name,words,before,topic,items in [('wands',['wand','rod'],2,3,[(i,1) for i in (3065,3066,3067,3069,3070,3071,3072,3073,3074,3075)]),
+            ('sulphur',['sulphur'],3,4,[(5904,10)]),('soul',['soul stone'],4,5,[(5809,1)]),('ankhs',['ankh'],5,6,[(3077,20)])]:
+        states=[storage(wand,before,before+1)]
+        add('l8-mage-male-'+name,general,'lynda',['yes'],states,take=items,topic=topic)
+        source_offer('lynda',words,0,topic,states)
+        if name=='ankhs':callbacks[-1]['state_ops']=[stamp(mage+'addon_wand_timer')]
+    add('l8-mage-male-ritual',general,'lynda',['ritual'],[storage(wand,6,7)])
+    callbacks[-1]['state_ops']=[elapsed(mage+'addon_wand_timer',10801)]
+    targets(('mage',1,'male'),('summoner',1,'female'))
+    add('l8-mage-male-hat',general,'zoltan',['yes'],[],take=[(5903,1)],topic=1)
+    callbacks[-1].update(creation_sex='male',exact_take=True,forbids_addons=[{'outfit':'oteryn:outfit.mage','addons':2,'sex':'male'}])
+    targets(('mage',2,'male'),('summoner',2,'female'))
+    source_offer('zoltan',['proof'],0,1,[])
+    belt=mage+'addon_belt'
+    states=[storage(belt,-1,1,0),storage('oteryn:quest-progress/outfit_quest/default_start',0,1,1)]
+    add('l8-mage-female-belt-start',general,'sandra',['yes'],states,topic=2)
+    source_offer('sandra',['vial','ticket','bonus','deposit'],0,1,states);source_offer('sandra',['yes'],1,2,states)
+    states=[storage(belt,1,2)]
+    add('l8-mage-female-belt',general,'sandra',['yes'],states,take=[(5958,1)],topic=4)
+    targets(('mage',1,'female'),('summoner',1,'male'))
+    source_offer('sandra',['prize'],0,4,states)
+    hat=mage+'addon_hat_cloak';mission=mage+'mission_hat_cloak'
+    states=[storage(hat,-1,1,0),storage(mission,0,1,11)]
+    add('l8-mage-female-hat-start',general,'myra',['yes'],states,topic=2)
+    for words,a,b in [(['outfit'],0,100),(['tiara'],100,1),(['yes'],1,2)]:source_offer('myra',words,a,b,states)
+    for before,(name,item,count,word) in enumerate([('wings',5894,70,'bat wings'),('cloth',5911,20,'red cloth'),
+            ('fur',5883,40,'ape fur'),('orchids',5922,35,'holy orchids'),('yarn',5886,10,'yarn'),
+            ('lizard',5881,60,'lizard scales'),('scales',5882,40,'red dragon scales'),('sulphur',5904,15,'sulphur'),('vampire',5905,30,'vampire dust')],1):
+        states=[storage(hat,before,before+1),storage(mission,0,before+1,11)]
+        add('l8-mage-female-'+name,general,'myra',['yes'],states,take=[(item,count)],topic=before+2)
+        source_offer('myra',[word],0,before+2,states)
+    add('l8-mage-female-hat',general,'zoltan',['myra'],[storage(hat,10,11),storage(mission,0,0,11)])
+    callbacks[-1]['creation_sex']='female'
+    targets(('mage',2,'female'),('summoner',2,'female'))
+    for name,bit,item,track,words in [('mask',1,20276,'dream_outfit_1',['dream warden mask']),('claw',2,20275,'dream_outfit',['dream warden claw'])]:
+        key='oteryn:quest-progress/'+track
+        path='data-global/npc/eruaran.lua'
+        declarations.append({'key':key,'quest':'oteryn:quest.'+general,'initial':0,'min':-1,'max':1,'writable':True,
+            'sources':[f'crystal:{PIN}:{path}:153-199:sha256:{sha(inputs[path])}']})
+        states=[storage(key,-1,1,0)]
+        add('l8-dream-warden-'+name,general,'eruaran',['yes'],states,take=[(item,1)],outfit=('dream_warden',bit),topic=bit)
+        callbacks[-1]['requires_premium']=True
+        source_offer('eruaran',words,0,bit,states)
+    # Gnomally's private config selector is lowered to distinct conversation
+    # topics. Source trades are repeatable, with no quest storage side effect.
+    for family,base,first,start,base_word,first_word in [
+            ('soil-guardian',16252,16253,101,'basic soil guardian outfit','addition to the soil guardian outfit'),
+            ('crystal-warlord',16255,16256,103,'basic crystal warlord outfit','addition to the crystal warlord armor outfit')]:
+        quest=family.replace('-','_')+'_outfits_quest'
+        for suffix,token,count,gift,topic,word in [('base',16129,20,base,start,base_word),('first',16128,70,first,start+1,first_word)]:
+            add('l9-'+family+'-'+suffix,quest,'gnomally',['yes'],[],take=[(token,count)],give=(gift,1),topic=topic)
+            source_offer('gnomally',[word],0,topic,[])
+    add('l9-gnomish-supply','bigfoot_s_burden_quest','gnomally',['yes'],[],take=[(16128,2)],give=(15698,1),topic=105)
+    source_offer('gnomally',['supply'],0,105,[])
+    add('l9-afflicted-pouch','afflicted_outfits_quest','ottokar',['yes'],[],take=[(12517,1)],give=(12413,1),topic=1)
+    callbacks[-1]['achievement_progress']=[{'key':'oteryn:achievement/doctor_doctor','target':100}]
+    source_offer('ottokar',['medicine','medicine pouch','belongings of deceasead'],0,1,[])
+    for callback in callbacks:
+        if callback['key'].startswith('oteryn:quest-reward/l9-'):
+            npc=callback['npc'].split('.')[-1];path='data-global/npc/'+npc+'.lua'
+            lines='75-169' if npc=='gnomally' else '61-78'
+            callback['sources']=[f'crystal:{PIN}:{path}:{lines}:sha256:{sha(inputs[path])}']
+    # Chosen Golden programme retains its authored prices and boots-first order.
+    golden='oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit'
+    for suffix,before,after,bit,gold,topic,word in [
+            ('base',0,1,0,100000,3,'armor'),
+            ('boots',1,2,1,50000,5,'boots'),
+            ('helmet',2,3,2,50000,4,'helmet')]:
+        guard=[storage(golden,before,after)]
+        add('l10-golden-'+suffix,'golden_outfits_quest','king_tibianus',['yes'],guard,
+            outfit=('golden',bit),topic=topic,next_topic=2,fee={'gold':gold,'include_bank':True})
+        callbacks[-1]['sources'].append('owner:chosen-golden:100000-50000-50000:boots-before-helmet')
+        offers.append({'npc':'oteryn:npc.king_tibianus','keywords':[word],'topic':2,'next_topic':topic,
+            'storage':guard,'reply':[f'The chosen commission costs {gold} gold. Do you agree?']})
+    for words,before,after in [(['outfit','addon'],0,1),(['yes'],1,2)]:
+        offers.append({'npc':'oteryn:npc.king_tibianus','keywords':words,'topic':before,'next_topic':after,
+            'storage':[],'reply':['Choose armor, boots or helmet for your golden commission.']})
+    # Distinct order ranks choose the shared three documents' actual USE branch.
+    parent='oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4'
+    declarations.append({'key':parent,'quest':'oteryn:quest.dreamer_s_challenge_quest','initial':0,
+        'min':0,'max':1,'writable':False,'sources':['owner:chosen-Dreamers-Challenge-terminal-puzzle-s4:read-only']})
+    for family,npc,opposite,join_achievement,final_achievement in [
+            ('brotherhood','the_bone_master','nightmare','bone_brother','skull_and_bones'),
+            ('nightmare','the_dream_master','brotherhood','nightmare_knight','nightmare_walker')]:
+        quest=family+'_outfits_quest'
+        rank=prefix+'u7_9/'+family+'_outfits/outfits'
+        other=prefix+'u7_9/'+opposite+'_outfits/outfits'
+        requirements=[requirement(parent,1),requirement(other,0)]
+        for stage,before,after,item,count,topic,achievement in [
+                ('join',0,1,768,0,2,join_achievement),('officer',1,2,769,500,3,None),('leader',2,3,770,1000,4,final_achievement)]:
+            guard=[storage(rank,before,after)]
+            add('l10-'+family+'-'+stage,quest,npc,['yes'],guard,take=[] if count==0 else [(6499,count)],
+                give=(item,1),topic=topic,requires=requirements,achievement='oteryn:achievement/'+achievement if achievement else None)
+            callbacks[-1]['requires_premium']=True
+            source_offer(npc,['join'] if stage=='join' else ['advancement','demonic','essence'],0,1 if stage=='join' else topic,
+                [storage(rank,before,before,preserve=True)])
+            offers[-1]['requires']=requirements
+        source_offer(npc,['yes'],1,2,[storage(rank,0,0,preserve=True)])
+        offers[-1]['requires']=requirements
+        for stage,item,threshold,bit in [('follower',768,1,0),('officer',769,2,1),('leader',770,3,2)]:
+            claim=prefix+'u7_9/'+family+'_outfits/document_claim_'+str(bit)
+            declarations.append({'key':claim,'quest':'oteryn:quest.'+quest,'initial':0,'min':0,'max':1,'writable':True,
+                'sources':[f'crystal:{PIN}:data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:27-59:durable-one-shot-owned-guard']})
+            add('l10-'+family+'-use-'+stage,quest,npc,['document '+stage],
+                [storage(rank,threshold,threshold,4,preserve=True),storage(claim,0,1)],take=[(item,1)],outfit=(family,bit),requires=requirements)
+            callback=callbacks[-1];callback['carried_item']=f'oteryn:item.tibia.i{item}';callback['requires_premium']=True
+            if bit==0:callback['forbids_outfits']=['oteryn:outfit.'+family]
+            else:
+                callback['requires_outfits']=['oteryn:outfit.'+family]
+                callback['forbids_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':bit}]
+            document_path='data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua'
+            callback['sources'].append(f'crystal:{PIN}:{document_path}:1-69:sha256:{sha(inputs[document_path])}')
+    # L11: source task rewards plus explicitly selected Oteryn qualification desks.
+    dream_ready=[requirement(prefix+'u12_00/the_dream_courts/ward_stones/questline',3),
+        requirement(prefix+'u12_00/the_dream_courts/main/the_summer_court',1)]
+    wanted='oteryn:quest-progress/chosen-source/kilmaresh_quest/s21'
+    declarations.append({'key':wanted,'quest':'oteryn:quest.kilmaresh_quest','initial':0,'min':0,'max':1,
+        'sources':['owner:chosen-Kilmaresh-s21:report-three-Wanted-outlaws:read-only']})
+    desks=[('dream-warrior','dream_warrior_outfits_quest','vanys','dream_warrior',250,dream_ready,'dream warrior outfit'),
+        ('issavi','authored.citizen_of_issavi_outfits_quest','eshaya','citizen_of_issavi',250,[requirement(wanted,1)],'issavi attire')]
+    for label,quest,npc,family,level,ready,word in desks:
+        add('l11-'+label+'-base',quest,npc,[word],[],outfit=(family,0),requires=ready)
+        callbacks[-1].update(minimum_level=level,requires_premium=True,forbids_outfits=['oteryn:outfit.'+family])
+        if label=='issavi':callbacks[-1]['sources'].append('owner:chosen-Issavi-attire-keeper-role:Eshaya:Wanted-report-s21')
+    for label,quest,npc,family,level,ready,tokens,carried in [
+            ('dream-warrior','dream_warrior_outfits_quest','vanys','dream_warrior',250,dream_ready,[(30169,5),(30168,1)],False),
+            ('issavi','authored.citizen_of_issavi_outfits_quest','eshaya','citizen_of_issavi',250,[requirement(wanted,1)],[(37003,1),(37002,1)],True),
+            ('makeshift','makeshift_warrior_outfits_quest','gnomadness','makeshift_warrior',100,[],[(27657,1),(27656,1)],True)]:
+        for bit,(item,count) in enumerate(tokens,1):
+            add('l11-'+label+'-'+('first' if bit==1 else 'second'),quest,npc,
+                ['document'] if carried else ['pomegranates' if bit==1 else 'ice shield'],[],
+                take=[(item,count)],outfit=(family,bit),topic=0 if carried else 8,requires=ready,
+                achievement='oteryn:achievement/cobbled_and_patched' if label=='makeshift' and bit==2 else None)
+            callback=callbacks[-1];callback.update(minimum_level=level,requires_premium=True,
+                requires_outfits=['oteryn:outfit.'+family],forbids_addons=[{'outfit':'oteryn:outfit.'+family,'addons':bit}])
+            if bit==2:callback['requires_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':1}]
+            if carried:callback['carried_item']=f'oteryn:item.tibia.i{item}'
+            if label=='issavi':callback['sources'].append('owner:chosen-Issavi-veil-addon1-scabbard-addon2:one-token-each')
+        if not carried:
+            for words,before,after in [(['addon'],0,6),(['yes'],6,7),(['yes'],7,8)]:
+                source_offer(npc,words,before,after,[]);offers[-1]['requires']=ready
+    qualification=prefix+'makeshift_warrior/qualification'
+    declarations.append({'key':qualification,'quest':'oteryn:quest.makeshift_warrior_outfits_quest','initial':0,'min':0,'max':2,
+        'writable':True,'sources':['owner:chosen-Gnome-Deep-Hub-salvage-apprenticeship:s1-s2:gnomadness-role']})
+    add('l11-makeshift-start','makeshift_warrior_outfits_quest','gnomadness',['salvage'],[storage(qualification,0,1)],next_topic=11)
+    callbacks[-1].update(minimum_level=100,requires_premium=True)
+    callbacks[-1]['sources'].append('owner:chosen-Gnome-Deep-Hub-apprenticeship:meeting-admitted-Gnomadness-witnesses-exploration')
+    add('l11-makeshift-base','makeshift_warrior_outfits_quest','gnomadness',['yes'],[storage(qualification,1,2)],outfit=('makeshift_warrior',0),topic=11)
+    callbacks[-1].update(minimum_level=100,requires_premium=True,forbids_outfits=['oteryn:outfit.makeshift_warrior'])
+    callbacks[-1]['sources'].append('owner:chosen-Gnome-Deep-Hub-salvage-apprenticeship:base-qualification')
+    source_offer('gnomadness',['salvage'],0,11,[storage(qualification,1,1,preserve=True)])
+    # L12: owner-selected fixed hunting trials; native deaths are the only counter writer.
+    for label,family,quest,npc,level,counts,materials in [
+        ('dragon-slayer','dragon_slayer','authored.dragon_slayer_outfits_quest','a_sweaty_cyclops',0,[('dragons',20),('dragon_lords',20)],[(5920,10),(5882,10)]),
+        ('cave-explorer','cave_explorer','cave_explorer_outfits_quest','gnommander',80,[('kills',20)],[]),
+        ('fire-fighter','fire_fighter','fire_fighter_outfits_quest','gnomadness',250,[('kills',10)],[])]:
+        root='oteryn:quest-progress/chosen-trial/'+family+'/'
+        provenance='owner:chosen-trial:'+family+':fixed-native-creature-deaths:questpc3-engine-5e72a3f0b'
+        for track,maximum in [('phase',2)]+counts:
+            declarations.append({'key':root+track,'quest':'oteryn:quest.'+quest,'initial':0,'min':0,'max':maximum,'writable':True,'sources':[provenance]})
+        add('l12-'+label+'-start',quest,npc,[family.replace('_',' ')+' trial'],
+            [storage(root+'phase',0,1)]+[storage(root+track,0,0,preserve=True) for track,_ in counts])
+        callbacks[-1].update(requires_premium=True)
+        if level:callbacks[-1]['minimum_level']=level
+        callbacks[-1]['sources'].append(provenance)
+        add('l12-'+label+'-base',quest,npc,[family.replace('_',' ')+' report'],
+            [storage(root+'phase',1,2)]+[storage(root+track,maximum,maximum,preserve=True) for track,maximum in counts],
+            take=materials,outfit=(family,0),fee={'gold':1000,'include_bank':False} if label=='cave-explorer' else None)
+        callbacks[-1].update(requires_premium=True,forbids_outfits=['oteryn:outfit.'+family])
+        if level:callbacks[-1]['minimum_level']=level
+        callbacks[-1]['sources'].append(provenance)
+        if label=='dragon-slayer':continue
+        for bit in (1,2):
+            add('l12-'+label+'-'+('first' if bit==1 else 'second'),quest,npc,[family.replace('_',' ')+' addon '+str(bit)],[],
+                take=[(39544 if bit==1 else 39545,1)] if label=='fire-fighter' else [],outfit=(family,bit),
+                fee={'gold':2000 if bit==1 else 3000,'include_bank':False} if label=='cave-explorer' else None,
+                achievement='oteryn:achievement/friendly_fire' if label=='fire-fighter' and bit==2 else None)
+            callbacks[-1].update(minimum_level=level,requires_premium=True,requires_outfits=['oteryn:outfit.'+family],
+                forbids_addons=[{'outfit':'oteryn:outfit.'+family,'addons':bit}])
+            if bit==2:callbacks[-1]['requires_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':1}]
+            callbacks[-1]['sources'].append(provenance)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
-    native_cosmetics=cosmetics.provisioning_input(
-        ROOT/'content/cosmetics/outfits/authoring.json', appearance/'manifest.json',
-        ROOT/'content/cosmetics/outfits/native-cosmetics.json', authoring_bytes=encoded(author))
+    native_cosmetics = cosmetics.provisioning_input(
+        ROOT / cosmetics.AUTHORING, appearance / 'manifest.json', ROOT / cosmetics.OUTPUT,
+        authoring_bytes=encoded(author))
     gameplay['schema']='OTERYN_NATIVE_GAMEPLAY_MANIFEST/v6'
     gameplay['cosmetics']={'path':'cosmetics/outfits/native-cosmetics.json','sha256':sha(native_cosmetics)}
     generated = {'content/cosmetics/outfits/authoring.json': encoded(author),
@@ -597,6 +903,23 @@ def build():
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),
             'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
+    # Preserve the source's complete contiguous 1..10001 supply-package table.
+    random_path='data-global/scripts/actions/valuables/random_items.lua'
+    parser=load_module('qengine_literal_item_tables','tools/content-migration/event_item_actions.py')
+    config,_=parser.table(inputs[random_path].decode(),'config')
+    chances=config[15698]['chances'];rewards=[];last=0
+    if list(chances)!=list(range(1,26)):raise ValueError('GNOMISH_SOURCE_OUTCOME_COUNT')
+    for row in chances.values():
+        if row['from']!=last+1 or row['to']<row['from']:raise ValueError('GNOMISH_SOURCE_RANGE_GAP')
+        count=row.get('count',1)
+        rewards.append({'item':f"oteryn:item.tibia.i{row['itemId']}",'name':'','weight':row['to']-row['from']+1,'minimum':count,'maximum':count})
+        last=row['to']
+    if last!=10001:raise ValueError('GNOMISH_SOURCE_ROLL_BOUND')
+    generated['tools/content-schema/native-gameplay/qengine-reward-bag-profiles.json']=encoded({
+        'schema':'OTERYN_QENGINE_REWARD_BAG_PROFILES/v1','sources':[{'path':random_path,'revision':PIN,'sha256':sha(inputs[random_path])}],
+        'bags':[{'constant':'QENGINE_GNOMISH_SUPPLY','bag':'oteryn:item.tibia.i15698','playable':True,
+            'selection':'weighted','picks':1,'roll_max':10001,'donor':f'crystal:{PIN}:{random_path}:49-80:sha256:{sha(inputs[random_path])}',
+            'rewards':rewards}]})
     greetings=[]
     for npc in sorted({c['npc'] for c in callbacks}):
         path='data-global/npc/'+npc.removeprefix('oteryn:npc.')+'.lua'
@@ -642,7 +965,7 @@ def build():
     import qengine_reward_item_profiles as reward_items
     import register_spell_families as native
     generated[reward_items.PROFILE]=(ROOT/reward_items.PROFILE).read_bytes()
-    reward_items.admit(ROOT,generated,reward_items.PROFILE,'content/spells.manifest.json',native.provider_order,native.spell_import.canonical_bytes)
+    reward_items.admit(ROOT,generated,reward_items.PROFILE,'content/spells.manifest.json',native.provider_order,cosmetics.canonical)
     return generated
 
 
@@ -667,6 +990,19 @@ def validate_callbacks(document):
     keys=set()
     for callback in document['callbacks']:
         storage=callback['storage']
+        if callback.get('carried_item') is not None and (
+                callback['take']!=[{'item':callback['carried_item'],'count':1}]
+                or callback.get('give') is not None or callback.get('fee') is not None
+                or callback.get('requires_actor_conditions')):
+            raise ValueError('invalid carried quest tool '+callback['key'])
+        targets=([callback['outfit']] if callback.get('outfit') is not None else callback.get('outfits',[]))
+        value_guard=any(t['outfit']==g['outfit'] and t['addons'] & g['addons']
+            and (t.get('sex') is None or t.get('sex')==(g.get('sex') or callback.get('creation_sex')))
+            for t in targets for g in callback.get('forbids_addons',[]))
+        value_guard = value_guard or any(t['addons']==0 and t.get('sex') is None and t['outfit'] in callback.get('forbids_outfits',[]) for t in targets)
+        value_guard = value_guard or (bool(callback['take']) and callback.get('give') is not None)
+        if callback.get('outfits') and callback.get('outfit') is not None:
+            raise ValueError('mixed legacy and target-set grants '+callback['key'])
         participants=callback.get('participants',[])
         participant_storage=[s for p in participants for s in p['storage']]
         participant_ops=[s for p in participants for s in p.get('state_ops',[])]
@@ -682,6 +1018,7 @@ def validate_callbacks(document):
         requires=callback.get('requires',[])
         if (callback['key'] in keys
             or len({s['track'] for s in storage})!=len(storage)
+            or len({p['key'] for p in callback.get('achievement_progress',[])})!=len(callback.get('achievement_progress',[]))
             or len({i['item'] for i in callback['take']})!=len(callback['take'])
             or len({i['item'] for i in callback.get('present',[])})!=len(callback.get('present',[]))
             or (callback.get('fee') and any(i['item'] in ('oteryn:item.tibia.i3031','oteryn:item.tibia.i3035','oteryn:item.tibia.i3043') for i in callback['take']))
@@ -689,7 +1026,7 @@ def validate_callbacks(document):
             or {r['track'] for r in requires}&{s['track'] for s in storage}
             or any(r['minimum']>r['maximum'] for r in requires)
             or any(s['minimum']>s['maximum'] for s in storage)
-            or all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage)
+            or (not value_guard and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
             or any(k!=k.lower() or not k.isascii() for k in callback['keywords'])
             or any(len(line.encode('utf-8'))>512 or any(ord(c)<32 or 127<=ord(c)<=159 for c in line) for line in callback['reply'])
             or any(len(source.encode('utf-8'))>1024 for source in callback['sources'])):

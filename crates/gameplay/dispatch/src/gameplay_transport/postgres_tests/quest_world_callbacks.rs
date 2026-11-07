@@ -247,6 +247,35 @@ pub(super) fn world(
             .entry((position.floor, position.x, position.y))
             .or_default();
     }
+    for passage in &callback.passages {
+        if passage.replacement == Some(7767) {
+            let p = passage.position;
+            cells.entry((p.floor, p.x, p.y - 1)).or_default();
+            cells.entry((p.floor - 1, p.x, p.y)).or_default();
+        }
+    }
+    let mut effect_positions = Vec::new();
+    if let Some(pair) = &callback.effects.portals {
+        for portal in &pair.portals {
+            effect_positions.extend([portal.position, portal.destination]);
+        }
+    }
+    if let Some(cycle) = &callback.effects.item_cycle {
+        effect_positions.push(cycle.position);
+    }
+    if let Some(encounter) = &callback.effects.encounter {
+        for player in &encounter.players {
+            effect_positions.extend([player.from, player.to]);
+        }
+        effect_positions.extend(encounter.monsters.iter().map(|m| m.position));
+    }
+    for p in effect_positions {
+        for x in p.x - 1..=p.x + 1 {
+            for y in p.y - 1..=p.y + 1 {
+                cells.entry((p.floor, x, y)).or_default();
+            }
+        }
+    }
     if callback.key == "oteryn:quest-callback/l6-carried-step-fixture"
         && let Some(recipe) = oteryn_gameplay_quests::quest::carried_step::RECIPES
             .iter()
@@ -555,7 +584,7 @@ pub(super) fn world(
                 attrs: Default::default(),
             });
     }
-    if callback.key == "oteryn:quest-callback/triangle-tower-wall" {
+    if callback.key == "oteryn:quest-callback/triangle-tower-lever" {
         // Preserve the native basement exit rather than authoring a second callback.
         let region = oteryn_world_bundle_compiler::b3::decode_region(
             include_bytes!(concat!(

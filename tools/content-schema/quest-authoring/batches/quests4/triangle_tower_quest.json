@@ -46,7 +46,13 @@
       ]
     }
   ],
-  "runtime_exclusions": [],
+  "runtime_exclusions": [
+    {
+      "key": "oteryn:quest-callback/triangle-tower-wall",
+      "reason": "Superseded by main PR3020 canonical shared-access callback; source capture retained for audit only.",
+      "question": "Resolved: use content/quests/shared-access-callbacks.json as the sole runtime owner."
+    }
+  ],
   "npc_source": {
     "quest": "triangle_tower_quest",
     "runtime_admission": false,

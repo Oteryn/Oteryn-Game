@@ -596,6 +596,14 @@ async fn migration_reapplication(h: &Harness) -> TestResult {
     )))
     .execute(&mut *tx)
     .await?;
+    // Reapply the later Quest coin-payment extension in migration order too.
+    // Expected definitions still come from the fully migrated live catalogue.
+    sqlx::raw_sql(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../apps/game-server/migrations/1007_quest_carried_payment_reapplication.sql"
+    )))
+    .execute(&mut *tx)
+    .await?;
     tx.commit().await?;
     assert_eq!(definitions(h.pool.clone()).await?, before);
     assert_eq!(stored(h).await?, state);

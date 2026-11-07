@@ -63,9 +63,16 @@ def affected(index, document):
             tuple(map(int, Path(row['path']).stem.replace('region-z', '').replace('-x', ' ').replace('-y', ' ').split())) in positions]
 
 
-def overlay_outputs(outputs, *, require_all=False):
+def overlay_outputs(outputs, *, require_all=False, supplied_by=None):
     document = json.loads((ROOT / CAPTURE).read_bytes())
     index = json.loads(outputs[doors.INDEX.as_posix()])
+    if supplied_by is None:
+        owner = index['source'].get('quest_access')
+        supplied_by = json.loads((ROOT / owner['path']).read_bytes())['bindings'] if owner else ()
+    supplied = {(tuple(row['position']), row['item'], row['attribute'], row['value'])
+                for row in supplied_by}
+    owned = [row for row in document['bindings']
+             if (tuple(row['position']), row['item'], row['attribute'], row['action']) not in supplied]
     imported = []
     byte_delta = 0
     for region in affected(index, document):
@@ -85,7 +92,7 @@ def overlay_outputs(outputs, *, require_all=False):
     if any(count > expected[key] for key, count in actual.items()) or (require_all and actual != expected):
         raise ValueError('missing or ambiguous startup placement')
     previous = index['source'].get('quest_startup', {}).get('attributes', {})
-    counts = dict(Counter(r['attribute'] for r in document['bindings']))
+    counts = dict(Counter(r['attribute'] for r in owned))
     index['source']['quest_startup'] = {'path': CAPTURE.as_posix(),
         'sha256': hashlib.sha256((ROOT / CAPTURE).read_bytes()).hexdigest(), 'attributes': counts}
     outputs[doors.INDEX.as_posix()] = doors.canonical(index)
@@ -103,7 +110,13 @@ def apply(check):
     document = json.loads((ROOT / CAPTURE).read_bytes())
     paths = [doors.INDEX.as_posix(), SUMMARY, *(r['path'] for r in affected(index, document))]
     outputs = {p: (ROOT / p).read_bytes() for p in paths}
-    rows = overlay_outputs(outputs, require_all=True)
+    access = json.loads((ROOT / 'tools/content-schema/world-authoring/samples/quest-access-bindings.json').read_bytes())
+    rows = overlay_outputs(outputs, require_all=True, supplied_by=access['bindings'])
+    summary = json.loads(outputs[SUMMARY])
+    summary['bytes_on_disk'] = sum(
+        len(outputs[region['path']]) if region['path'] in outputs
+        else (ROOT / region['path']).stat().st_size for region in index['regions'])
+    outputs[SUMMARY] = doors.canonical(summary)
     changed = [p for p, data in outputs.items() if (ROOT / p).read_bytes() != data]
     if check and changed:
         raise ValueError('stale startup bindings: ' + ', '.join(changed))

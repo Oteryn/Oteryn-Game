@@ -124,7 +124,9 @@ fn scenario_case(
     } else if native_room {
         super::super::l6_native_rooms::callback(name)?
     } else {
-        callback(if ancient_instruments {
+        callback(if name == "triangle-tower-wall" {
+            "triangle-tower-lever"
+        } else if ancient_instruments {
             "ancient-tombs-diprath-sign-1"
         } else if classic_npc || small_ruby || reward_fluids {
             "behemoth"
@@ -274,14 +276,14 @@ fn scenario_case(
             Harness::create_quest_reward(
                 admin,
                 "quest_rewards",
-                !name.ends_with("pirate") && !name.contains("beggar-male"),
+                !name.ends_with("pirate") && !name.contains("-male-"),
             )
             .await
         } else {
             Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false).await
         }
         .map_err(|e| format!("callback harness: {e}"))?;
-        if small_ruby || carried_step || native_tower {
+        if small_ruby || carried_step || native_tower || name == "triangle-tower-wall" {
             let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
                 .fetch_one(&h.pool)
                 .await?;
@@ -289,6 +291,8 @@ fn scenario_case(
                 eprintln!("POSTGRES_DATABASE_READY {name} native_scene_pending version={version}");
             } else if carried_step {
                 eprintln!("POSTGRES_DATABASE_READY l6_carried_step version={version}");
+            } else if name == "triangle-tower-wall" {
+                eprintln!("POSTGRES_DATABASE_READY triangle_tower_wall version={version}");
             } else {
                 eprintln!("POSTGRES_DATABASE_READY l6_small_ruby_native_pickup version={version}");
             }
@@ -440,7 +444,9 @@ fn scenario_case(
             1,
             1,
             "runtime-scope-assignment:1",
-            if native_story || (native_upper && name.ends_with("-complete")) {
+            if name.starts_with("qengine-rewards-l12-") {
+                128
+            } else if native_story || (native_upper && name.ends_with("-complete")) {
                 6
             } else if classic_npc {
                 5
@@ -464,6 +470,12 @@ fn scenario_case(
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let premium = if name.contains("l6-beggar-")
+            || name.contains("l7-knight-")
+            || name.contains("l8-")
+            || name.contains("l9-")
+            || name.contains("l10-documents-")
+            || name.contains("l11-")
+            || name.contains("l12-")
             || spirit
             || name.starts_with("qengine-rewards-questpc4-paradox")
         {
@@ -827,7 +839,7 @@ fn scenario_case(
                 name,
             )
             .await?;
-        } else if callback.effects.has_shared_effects()
+        } else if callback.effects != Default::default()
             || callback.quest == "oteryn:quest.waterfall_quest" && stateless_destination.is_none()
         {
             super::super::qengine_access::exercise(

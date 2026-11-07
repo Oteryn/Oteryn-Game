@@ -65,8 +65,27 @@ pub(super) async fn exercise(
         .ok_or("wall id")?;
     let original = world.facts().base_entry(wall, 1, wall_id).ok_or("wall")?;
     assert_eq!(original.appearance_id, 1270);
+    assert_eq!(
+        world
+            .base()
+            .tile(wall.x, wall.y, wall.floor)
+            .ok_or("wall tile")?
+            .ids()
+            .len(),
+        2,
+        "one ground and one source wall"
+    );
     assert!(!world.enterable(wall));
-    assert_eq!(callback.passages.len(), 1);
+    let cycle = callback
+        .effects
+        .item_cycle
+        .as_ref()
+        .ok_or("canonical wall cycle")?;
+    assert_eq!((cycle.remove, cycle.create), (1270, 1025));
+    assert_eq!(
+        (cycle.position.x, cycle.position.y, cycle.position.floor),
+        (wall.x, wall.y, wall.floor)
+    );
     for (command, revision) in [(1, 0), (1, 0), (2, 1), (3, 2), (4, 3)] {
         owner.clock_origin -= std::time::Duration::from_secs(1);
         let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&WorldObjectTarget {
@@ -85,16 +104,14 @@ pub(super) async fn exercise(
             assert!(world.facts().base_hidden(wall_key));
             assert!(world.enterable(wall));
         } else {
-            assert!(!world.facts().base_hidden(wall_key));
+            assert!(
+                world.facts().base_hidden(wall_key),
+                "1270 is never restored"
+            );
             assert!(!world.enterable(wall));
-            let restored = world
-                .facts()
-                .base_entry(wall, 1, wall_id)
-                .ok_or("created wall")?;
-            assert_eq!(restored.appearance_id, 1025);
         }
         let extra = world.facts().movement_items(wall);
-        assert_eq!(extra.len(), usize::try_from(command.saturating_sub(2))?);
+        assert_eq!(extra.len(), usize::try_from(command.saturating_sub(1))?);
         assert!(extra.iter().all(|entry| entry.facts.appearance_id == 1025));
     }
     let lever = world

@@ -33,6 +33,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
+            None,
         )
         .await
     }
@@ -61,6 +62,7 @@ impl DurabilityRoot {
             None,
             None,
             &grizzly::NoGrizzlyPremium,
+            None,
             None,
             None,
             None,
@@ -96,6 +98,7 @@ impl DurabilityRoot {
             None,
             None,
             admission,
+            None,
         )
         .await
     }
@@ -124,6 +127,7 @@ impl DurabilityRoot {
             &grizzly::NoGrizzlyPremium,
             None,
             Some(payment),
+            None,
             None,
         )
         .await
@@ -158,6 +162,7 @@ impl DurabilityRoot {
             None,
             None,
             Some(admission),
+            None,
         )
         .await
     }
@@ -185,9 +190,18 @@ impl DurabilityRoot {
         grizzly_policy: Option<&FiniteProgressionPolicy<String, N>>,
         payment: Option<super::rotten_blood_access::RottenBloodAccessPayment>,
         reward_admission: Option<QuestRewardAdmission<'_>>,
+        native: Option<super::native_kills::NativeQuestDeath>,
     ) -> Result<QuestTransitionOutcome> {
         let timer_recipe = oteryn_gameplay_quests::quest::timers::recipe(&request.transition_key);
         if timer_recipe.is_some() != matches!(request.cause, QuestCause::ServerTimer(_)) {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        let native_key = request
+            .transition_key
+            .starts_with(oteryn_gameplay_quests::quest::native_kills::PREFIX);
+        if native_key != native.is_some()
+            || native.as_ref().is_some_and(|death| !death.valid(&request))
+        {
             return Err(CharacterProgressionError::InvalidInput);
         }
         let reward_callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()
@@ -210,6 +224,13 @@ impl DurabilityRoot {
                 context.is_some(),
             )
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        }
+        if reward_callback.is_none()
+            && catalogue
+                .transition(&request.transition_key)
+                .is_some_and(|t| t.effects.is_empty() && !t.completes)
+        {
+            return Err(CharacterProgressionError::InvalidInput);
         }
         let reward_achievement =
             super::super::reward_claim_mint::quest::prepare_achievement(reward_callback.as_ref())
@@ -338,6 +359,9 @@ impl DurabilityRoot {
             {
                 return Err(CharacterProgressionError::InvalidInput);
             }
+        }
+        if let Some(death) = &native {
+            death.bind(&mut binding)?;
         }
         if let Some(source) = &grizzly_party {
             grizzly::bind_party(&mut binding, source)?;
@@ -608,6 +632,9 @@ impl DurabilityRoot {
                         (!final_flags.is_empty() && oteryn_gameplay_quests::quest::monk_shrines::completed_count(&stored) != 10)
                             .then_some(QuestRefusal::StageMismatch)
                     });
+                    let refusal=if refusal.is_none() {
+                        if let Some(death)=&native {(!death.admit(&mut tx,character).await?).then_some(QuestRefusal::StageMismatch)} else {None}
+                    } else {refusal};
                     let mut grizzly_plan = None;
                     let refusal = if let (None, Some(action)) = (refusal, &grizzly_action) {
                         match grizzly::evaluate(&mut tx, character, &stored, &state, action,
@@ -617,7 +644,7 @@ impl DurabilityRoot {
                         }
                     } else { refusal };
                     let refusal = if refusal.is_none() {
-                        if let Some(source) = &grizzly_party {
+                        if let Some(source) = grizzly_party.as_ref().or_else(||native.as_ref().map(|death|death.source.as_ref())) {
                             match super::super::world_party::frozen_kill_membership(&mut tx, &fence, source).await {
                                 Ok(true) => None,
                                 Ok(false) => Some(QuestRefusal::StageMismatch),
@@ -677,7 +704,7 @@ impl DurabilityRoot {
                         sqlx::query_scalar("SELECT floor(extract(epoch FROM now()))::bigint")
                             .fetch_one(&mut *tx)
                             .await?;
-                    let changes = match refusal
+                    let mut changes = match refusal
                         .map_or_else(|| grizzly_plan.as_ref().map_or_else(
                             || catalogue.evaluate(transition, &stored, now),
                             |plan| Ok(plan.changes.clone())), Err)
@@ -738,6 +765,8 @@ impl DurabilityRoot {
                         }
                     };
 
+                    // A native death reads its mission gate; it must not move that mission epoch.
+                    if native.is_some() {changes.retain(|change|change.before!=change.after);}
                     if !super::rotten_blood_access::validate_access_changes(
                         &request.transition_key,&changes,state.try_get("level")?,
                     )? {
@@ -769,7 +798,7 @@ impl DurabilityRoot {
                             .map(|byte| format!("{byte:02x}")).collect::<String>());
                         if context.as_ref().is_none_or(|(_, world, _)| world.content_revision != revision)
                             || admission.weights.generation_digest() != admission.native.source_digest()
-                            || super::super::reward_claim_mint::quest::mint(&mut tx,tuple,&node,fence,command,&world.key,reward,admission).await?.is_none()
+                            || super::super::reward_claim_mint::quest::mint(&mut tx,tuple,&node,fence,command,&world.key,false,reward,admission).await?.is_none()
                         { tx.rollback().await?; return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     }
                     if let Some(world) = &callback

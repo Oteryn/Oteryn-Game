@@ -121,8 +121,10 @@ mod fluid;
 mod grizzly;
 mod monk;
 pub(crate) mod quest;
+mod quest_actor_conditions;
 mod quest_participants;
-pub use quest::{QuestRewardAdmission, QuestRewardFeePayment};
+pub use quest::{QuestCarriedUse, QuestRewardAdmission, QuestRewardFeePayment};
+pub use quest_actor_conditions::QuestActorConditionProof;
 mod soul_war;
 mod tibiadrome;
 
@@ -1598,7 +1600,11 @@ fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -
             }
         }
     }
-    if request.contents.iter().any(|child| child.fluid_subtype.is_some()) {
+    if request
+        .contents
+        .iter()
+        .any(|child| child.fluid_subtype.is_some())
+    {
         canonical.push(0x46);
         for (index, child) in request.contents.iter().enumerate() {
             if let Some(fluid) = child.fluid_subtype {

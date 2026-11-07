@@ -70,7 +70,8 @@ pub(super) fn prepare(
                 })
             };
             let mut selected = callbacks.iter().filter(|c| {
-                c.npc == context.2
+                c.carried_item.is_none()
+                    && c.npc == context.2
                     && c.topic == topic.number
                     && c.keywords.contains(&text)
                     && eligible(&c.storage)
@@ -108,12 +109,19 @@ pub(super) fn prepare(
                     reply: offer.reply.clone(),
                 });
             }
-            // A recognized quest keyword must not silently succeed as ordinary chat
-            // when every authored progress guard fails. The owning writer rechecks
-            // the complete bounded transition and returns its ordinary refusal.
-            let callback = callbacks.iter().find(|c| {
-                c.npc == context.2 && c.topic == topic.number && c.keywords.contains(&text)
-            })?;
+            // A unique exchange owns its exact keyword even before eligibility.
+            // Let the locked writer return the stage refusal, rather than falling
+            // through to an unrelated legacy dialogue with the same text.
+            let mut matching = callbacks.iter().filter(|c| {
+                c.carried_item.is_none()
+                    && c.npc == context.2
+                    && c.topic == topic.number
+                    && c.keywords.contains(&text)
+            });
+            let callback = matching.next()?;
+            if matching.next().is_some() {
+                return None;
+            }
             Some(Choice {
                 transition: Some(callback.key.clone()),
                 next_topic: Some(Topic::from(callback.next_topic)),

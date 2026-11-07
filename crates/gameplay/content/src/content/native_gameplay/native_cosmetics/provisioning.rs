@@ -6,6 +6,11 @@ use crate::content::ContentError;
 use serde::Deserialize;
 use std::path::Path;
 
+// QENGINE2's source-backed catalogue and per-field promotions exceed the old
+// 200 kB NX-5 sample budget (~805 kB). Match the authoring tool's 8 MiB document
+// limit; the descriptor and materialized section keep their separate bounds.
+const MAX_AUTHORING_BYTES: usize = 8 * 1024 * 1024;
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Input {
@@ -45,7 +50,7 @@ pub(in crate::content::native_gameplay) fn materialize(
         qualify(&pinned, max)?;
         Ok::<_, ContentError>(pinned.bytes)
     };
-    let authoring = load(directory, &input.authoring, 200_000)?;
+    let authoring = load(directory, &input.authoring, MAX_AUTHORING_BYTES)?;
     let authoring: StrictValue =
         serde_json::from_slice(&authoring).map_err(|_| invalid("cosmetics authoring JSON"))?;
     let source = load(directory, &input.source_manifest, 16 * 1024)?;

@@ -632,7 +632,15 @@ mod tests {
             .service_model_for_project()
             .map_err(|e| format!("{e:?}"))?;
         let book = NpcTalkBook::from_model(&model);
-        for name in ["morgan", "navigator", "costello", "budrik", "sam"] {
+        for name in [
+            "morgan",
+            "navigator",
+            "costello",
+            "budrik",
+            "sam",
+            "oldrak",
+            "zoltan",
+        ] {
             let key = format!("oteryn:npc.{name}");
             let entry = book
                 .get(&key)
@@ -643,6 +651,12 @@ mod tests {
                 "no scripted reward branch opens through talk rules"
             );
         }
+        assert!(
+            book.get("oteryn:npc.zoltan")
+                .ok_or("Zoltan")?
+                .greeting_reply
+                .contains("student of the arcane arts")
+        );
         assert!(!reward_callback_npc("oteryn:npc.unqualified"));
         Ok(())
     }

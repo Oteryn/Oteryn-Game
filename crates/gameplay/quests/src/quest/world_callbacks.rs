@@ -239,6 +239,10 @@ pub fn load() -> Result<Vec<Callback>, String> {
     }
     callbacks.push(super::rotten_blood::altar_callback());
     callbacks.push(super::schrodinger_island::callback());
+    let keys: BTreeSet<_> = callbacks.iter().map(|c| &c.key).collect();
+    if keys.len() != callbacks.len() {
+        return Err("duplicate callback across registries".into());
+    }
     counterparts::apply(&mut callbacks)?;
     validate_registry(&callbacks)?;
     callbacks.sort_by(|left, right| left.key.cmp(&right.key));
@@ -286,6 +290,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 .as_ref()
                 .is_some_and(|n| !valid_pos(n.position) || n.appearance == 0)
             || callback.teleport.is_some_and(|p| !valid_pos(p))
+            || !effects::valid(callback)
             || callback
                 .effects
                 .teleport_effect
@@ -590,6 +595,57 @@ mod tests {
     use super::*;
 
     #[test]
+    fn qengine_shared_access_rejects_ambiguous_or_unbounded_effects() -> Result<(), String> {
+        let source: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/shared-access-callbacks.json"
+        ))
+        .map_err(|e| e.to_string())?;
+        parse(&source.to_string())?;
+        let callbacks = source["callbacks"].as_array().ok_or("callbacks")?;
+        let index = |name: &str| {
+            callbacks
+                .iter()
+                .position(|c| c["key"].as_str().is_some_and(|k| k.ends_with(name)))
+                .ok_or(name.to_owned())
+        };
+        let portals = index("thais-lighthouse-portals")?;
+        let encounter = index("annihilator-entry")?;
+        let cycle = index("triangle-tower-lever")?;
+        for case in 0..8 {
+            let mut bad = source.clone();
+            match case {
+                0 => {
+                    bad["callbacks"][portals]["effects"]["portals"]["portals"][1]["position"] = bad
+                        ["callbacks"][portals]["effects"]["portals"]["portals"][0]["position"]
+                        .clone()
+                }
+                1 => bad["callbacks"][portals]["effects"]["portals"]["lifetime_us"] = 0.into(),
+                2 => {
+                    bad["callbacks"][encounter]["effects"]["encounter"]["players"] =
+                        serde_json::json!([])
+                }
+                3 => {
+                    bad["callbacks"][encounter]["effects"]["encounter"]["players"][1]["to"] =
+                        bad["callbacks"][encounter]["effects"]["encounter"]["players"][0]["to"]
+                            .clone()
+                }
+                4 => {
+                    bad["callbacks"][encounter]["effects"]["encounter"]["monsters"][0]["position"]
+                        ["floor"] = 1.into()
+                }
+                5 => bad["callbacks"][cycle]["effects"]["item_cycle"]["create"] = 0.into(),
+                6 => bad["callbacks"][cycle]["effects"]["facing"] = "north".into(),
+                _ => bad["callbacks"][cycle]["effects"]["unknown"] = true.into(),
+            }
+            assert!(
+                parse(&bad.to_string()).is_err(),
+                "invalid effect case {case}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn native_counterparts_and_teleport_cues_fail_closed() -> Result<(), String> {
         let callback = load()?
             .into_iter()
@@ -765,7 +821,8 @@ mod tests {
     }
 
     #[test]
-    fn qengine_shared_access_rejects_ambiguous_or_unbounded_effects() -> Result<(), String> {
+    fn qengine_shared_access_rejects_ambiguous_or_unbounded_effects_questpc4() -> Result<(), String>
+    {
         let mut source: serde_json::Value = serde_json::from_str(include_str!(
             "../../../../../content/quests/shared-access-callbacks.json"
         ))

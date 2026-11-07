@@ -10284,10 +10284,11 @@
     "native_whole_red_wrapper": "Untracked l6_paradox_whole.rs intentionally excluded from component commit; retain for r2 whole-route work",
     "green_component_commit": "12f4b03095e3057c7b5aa9a0381b106c34a23ff3",
     "incoming_head": "dbf0eca7081bd724687b24a5591d82c891bedc58",
-    "merge_validation": "Resolved two scenario fixture overlaps by retaining both native tower and native Tomb switch branches; formatting and diff checks only. Combined PG/check/clippy not rerun because owner requires immediate push and stop; r2 owns subsequent validation."
+    "merge_validation": "Resolved two scenario fixture overlaps by retaining both native tower and native Tomb switch branches; formatting and diff checks only. Combined PG/check/clippy not rerun because owner requires immediate push and stop; r2 owns subsequent validation.",
+    "superseded_by_restart_owner": true
   },
   "full_dependent_validation": {
-    "status": "FULL_RUN_COMPILE_REPAIR_RERUN_ENTIRE_SET",
+    "status": "AUTHORING_CANONICAL_QENGINE_MAIN_MERGE",
     "owner_rule_at": "2026-11-07 15:47 UTC",
     "direct_packages": [
       "oteryn-game-server",
@@ -10325,10 +10326,10 @@
     "rule": "Before every push: nextest all touched crates plus reverse normal workspace dependencies with PG. Collect all failures, group/fix all, rerun full set, then one push. Merge main every few hours.",
     "source": "Owner standing instruction supersedes earlier focused-only/no-full-suite/push-before-full-green exceptions.",
     "pending_slice": "paradox_upper_batch_27 provenance fix compiled run stopped in favor of full merged-head validation; no new PG result claimed.",
-    "main_merge_target": "bbb3e06d04875fc1e63f024b853194f7580cc875",
+    "main_merge_target": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
     "nextest_command_script": "/tmp/questpc4-full-dependent-nextest.sh",
     "regeneration_log": "/tmp/questpc4-main-regen.log",
-    "push_gate": "All 20 packages must complete full nextest with PostgreSQL; collect every failure, repair by cause, rerun entire package set before one push.",
+    "push_gate": "SUPERSEDED by current_validation_rule: owner requires focused own PG/mechanic tests, workspace all-target check, changed-crate clippy, fmt, migration check and repository regeneration only.",
     "merged_closure_verification": {
       "packages": 20,
       "direct_packages_unchanged": true,
@@ -10376,6 +10377,163 @@
       "runtime_tests_started": false,
       "error": "error[E0063]: missing field `items` in initializer of `DailyMap`, crates/gameplay/world/src/map/boot.rs:1555:29",
       "repair": "Supply empty native Item placements in existing fungus-only fixture; all three other DailyMap declarations/initializers audited, no assertions changed."
-    }
+    },
+    "superseded_full_run": {
+      "log": "/tmp/questpc4-dependent-nextest-main-2.log",
+      "reason": "Owner explicitly required immediate merge of newly published PR3020 main; old-tree validation cancelled before changing inputs.",
+      "passed": 1090,
+      "actual_failures": 18,
+      "interrupted_cases": 4,
+      "not_run": 6944,
+      "runtime_seconds": 1491.972,
+      "total_seconds": 2086,
+      "qualification_claim": false
+    },
+    "previous_tree_content_checks": {
+      "candidate": "b9dcc5d3f",
+      "commands": 28,
+      "failures": 0,
+      "seconds": 1820.404,
+      "log": "/tmp/questpc4-main-content-checks.log"
+    },
+    "canonical_migrations": {
+      "versions": "0999-1008",
+      "byte_identical_to_main": true,
+      "no_1200_1205_copies": true,
+      "corrected_owner_registry": "QBASE folded into main1006-1008; lane1250-1269 unchanged."
+    },
+    "canonical_cosmetics": {
+      "outfits": 78,
+      "mounts": 8,
+      "grants": 253,
+      "authoring_bound_bytes": 8388608,
+      "implementation": "Main canonical code; retired lane additive catalogue/provisioning variant and obsolete77-outfit note."
+    },
+    "current_compile_log": "/tmp/questpc4-qengine-merge-check-3.log",
+    "superseded_by_owner_speed_rule": true
+  },
+  "current_validation_rule": {
+    "owner_decision": "speed first; CI runs full suites",
+    "required": [
+      "own mechanic RED/GREEN with real PostgreSQL proof",
+      "cargo check --workspace --all-targets",
+      "clippy changed crates -D warnings",
+      "cargo fmt",
+      "repository regeneration and duplicate migration check"
+    ],
+    "supersedes": "full reverse-dependency nextest before push",
+    "main_merge": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+    "workspace_check": {
+      "command": "cargo check --workspace --all-targets --keep-going",
+      "result": "PASS",
+      "duration": "7m03s including build-lock wait",
+      "log": "/tmp/questpc4-qengine-workspace-check-after-grouped-fixes.log"
+    },
+    "duplicate_migrations": "PASS merged staged tree",
+    "world_binding_tests": {
+      "result": "PASS",
+      "tests": 9,
+      "duration_seconds": 3.043,
+      "log": "/tmp/questpc4-qengine-world-bindings-tests-3.log"
+    },
+    "regeneration": {
+      "result": "PASS",
+      "tool": "tools/merge-driver/regen.sh --skip-checks",
+      "log": "/tmp/questpc4-qengine-full-regen.log",
+      "world_pin": "b2400c60f3a08b751ce3edee7a1ea7979c0fcc94a9cb2fefcab9d6a558d125e6"
+    },
+    "focused_units": {
+      "tests": 5,
+      "result": "PASS",
+      "duration_seconds": 1.611,
+      "log": "/tmp/questpc4-qengine-focused-units-5.log"
+    },
+    "native_generated_freshness": {
+      "files": 43,
+      "result": "PASS",
+      "log": "/tmp/questpc4-qengine-native-final-check.log"
+    },
+    "focused_postgres": {
+      "tests": 13,
+      "status": "PASS",
+      "red_log": "/tmp/questpc4-qengine-focused-pg-final.log",
+      "red_summary": {
+        "tests": 12,
+        "passed": 6,
+        "failed": 6,
+        "duration_seconds": 356.185,
+        "postgres_version": "18.6"
+      },
+      "root_causes": [
+        "Duplicate authored Zoltan greeting conflicts with canonical main owner; five failures",
+        "Duplicate additive-merge fixture effects block places two1270 walls; strict guard rejects Triangle"
+      ],
+      "green_log": "/tmp/questpc4-qengine-focused-pg-green-2.log",
+      "unchanged_main_triangle_control_red": "/tmp/questpc4-qengine-triangle-control-red.log",
+      "duration_seconds": 377.283,
+      "postgres_version": "18.6"
+    },
+    "changed_crates": [
+      "oteryn-client-assets",
+      "oteryn-game-server",
+      "oteryn-gameplay-content",
+      "oteryn-gameplay-dispatch",
+      "oteryn-gameplay-durability",
+      "oteryn-gameplay-entities",
+      "oteryn-gameplay-items",
+      "oteryn-gameplay-npc",
+      "oteryn-gameplay-quests",
+      "oteryn-gameplay-world"
+    ],
+    "npc_greeting_regression": {
+      "red_log": "/tmp/questpc4-qengine-greetings-unit-red.log",
+      "red_duration_seconds": 38.298,
+      "green_log": "/tmp/questpc4-qengine-greetings-unit-green.log",
+      "repair": "Reuse main source-literal Zoltan; strengthen existing NPC test with Oldrak/Zoltan and canonical greeting text",
+      "result": "PASS",
+      "green_duration_seconds": 37.715
+    },
+    "fmt_after_grouped_repairs": "PASS",
+    "clippy": {
+      "result": "PASS",
+      "crates": 10,
+      "all_targets": true,
+      "all_features": true,
+      "deny_warnings": true,
+      "duration": "3m01s",
+      "log": "/tmp/questpc4-qengine-clippy-after-grouped-fixes.log"
+    },
+    "status": "GREEN_READY_FOR_FAST_FORWARD_PUBLICATION"
+  },
+  "paradox_upper_batch27": {
+    "status": "QUALIFIED_COMPONENT",
+    "whole_quest": "IN_PROGRESS",
+    "red": {
+      "log": "/tmp/questpc4-paradox-upper-red.log",
+      "duration_seconds": 103.017036696,
+      "postgres_version": "18.6",
+      "failure": "climb-complete -1 instead of1"
+    },
+    "green": {
+      "log": "/tmp/questpc4-qengine-focused-pg-green-2.log",
+      "tests": [
+        "l6_paradox_upper_native_four_foods",
+        "l6_paradox_upper_native_five_foods",
+        "l6_paradox_upper_native_complete_checkpoint"
+      ],
+      "durations_seconds": [
+        66.191,
+        64.595,
+        120.068
+      ],
+      "postgres_version": "18.6"
+    },
+    "remaining_selected_recipe": [
+      "continuous native bottom-to-top route",
+      "Riddler exact fixed answer sequence and native success teleport",
+      "existing canonical32-talon claim and whole-quest completion"
+    ],
+    "main_merge": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+    "own_migrations": "1250-1258; next1259"
   }
 }

@@ -154,7 +154,28 @@
       ]
     }
   ],
-  "runtime_exclusions": [],
+  "runtime_exclusions": [
+    {
+      "key": "oteryn:quest-callback/waterfall-cliff",
+      "reason": "Superseded by main PR3020 canonical shared-access callback; source capture retained for audit only.",
+      "question": "Resolved: use content/quests/shared-access-callbacks.json as the sole runtime owner."
+    },
+    {
+      "key": "oteryn:quest-callback/waterfall-cave-entry",
+      "reason": "Superseded by main PR3020 canonical shared-access callback; source capture retained for audit only.",
+      "question": "Resolved: use content/quests/shared-access-callbacks.json as the sole runtime owner."
+    },
+    {
+      "key": "oteryn:quest-callback/waterfall-cave-exit",
+      "reason": "Superseded by main PR3020 canonical shared-access callback; source capture retained for audit only.",
+      "question": "Resolved: use content/quests/shared-access-callbacks.json as the sole runtime owner."
+    },
+    {
+      "key": "oteryn:quest-callback/waterfall-splash",
+      "reason": "Superseded by main PR3020 canonical shared-access callback; source capture retained for audit only.",
+      "question": "Resolved: use content/quests/shared-access-callbacks.json as the sole runtime owner."
+    }
+  ],
   "npc_source": {
     "quest": "waterfall",
     "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",

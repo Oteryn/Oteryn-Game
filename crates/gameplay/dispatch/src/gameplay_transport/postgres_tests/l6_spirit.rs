@@ -294,6 +294,9 @@ pub(super) async fn exercise(
             },
             owner.quest_catalogue.as_ref().ok_or("catalogue")?.clone(),
             crate::durability::reward_claim_mint::QuestRewardAdmission {
+                actor_conditions: None,
+                carried_use: None,
+
                 native,
                 weights: &weights,
                 fee_payment: None,

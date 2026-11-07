@@ -1,12 +1,10 @@
 """Exact pinned source bindings for the QENGINE-1 shared access operations."""
 import argparse
-import copy
 import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = ROOT / 'content/quests/shared-access-callbacks.json'
-FIXTURES = ROOT / 'tools/content-schema/quest-authoring/samples/qengine-access-test-fixtures.json'
 PIN = 'crystal:201189f871d23597b82caf88fd611454a2ddefb8:'
 
 
@@ -76,79 +74,16 @@ def document():
     return dict(schema=1, callbacks=sorted(rows, key=lambda row: row['key']))
 
 
-def semantic_callback(row):
-    """Compare source-equivalent legacy and structured effects without erasing facts."""
-    row = copy.deepcopy(row)
-    row.pop('key')
-    row['sources'] = sorted({source.rsplit(':', 1)[0] for source in row['sources']})
-    row.setdefault('item_on_target', None)
-    effects = row.pop('effects', {})
-    if isinstance(effects, list):
-        if len(effects) > 1:
-            raise ValueError('cannot normalize multiple legacy effects')
-        effects = {'magic': effects[0]} if effects else {}
-    effects = {key: value for key, value in effects.items() if value is not None}
-    facing = row.pop('facing', None)
-    if facing is not None:
-        if 'facing' in effects:
-            raise ValueError('duplicate facing')
-        effects['facing'] = ['north', 'east', 'south', 'west'][facing]
-    passages = row.get('passages', [])
-    if (len(passages) == 1 and passages[0].get('create_on_close') is not None
-            and passages[0].get('replacement') is None and row.get('lever')
-            and row['reversible'] and 'item_cycle' not in effects):
-        passage = passages[0]
-        if set(passage) != {'position', 'appearance', 'replacement', 'create_on_close'}:
-            raise ValueError('unrecognized asymmetric passage')
-        effects['item_cycle'] = dict(position=passage['position'], remove=passage['appearance'],
-                                     create=passage['create_on_close'])
-        row['passages'] = []
-    row['effects'] = effects
-    return row
-
-
-def compose(document, existing):
-    """Retain an existing owner only when its complete behavior and pin agree."""
-    by_key = {row['key']: row for row in existing['callbacks']}
-    identity = lambda row: (row['trigger'], json.dumps(row['selector'], sort_keys=True))
-    by_selector = {}
-    for row in existing['callbacks']:
-        selector = identity(row)
-        if selector in by_selector:
-            raise ValueError('ambiguous existing callback selector')
-        by_selector[selector] = row
-    rows = []
-    for row in document['callbacks']:
-        owner = by_key.get(row['key'], by_selector.get(identity(row)))
-        if owner is not None:
-            proposed, established = semantic_callback(row), semantic_callback(owner)
-            proposed_sources = set(proposed.pop('sources'))
-            established_sources = set(established.pop('sources'))
-            if proposed != established or not proposed_sources <= established_sources:
-                raise ValueError('conflicting shared callback:' + row['key'])
-        else:
-            rows.append(row)
-    return dict(schema=document['schema'], callbacks=rows)
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
-    candidates = document()
-    existing = json.loads((ROOT / 'content/quests/world-callbacks.json').read_bytes())
-    production = compose(candidates, existing)
-    admitted_keys = {row['key'] for row in production['callbacks'] + existing['callbacks']}
-    fixtures = dict(schema=1, callbacks=[row for row in candidates['callbacks']
-                                         if row['key'] not in admitted_keys])
-    for path, value in [(OUTPUT, production), (FIXTURES, fixtures)]:
-        text = json.dumps(value, ensure_ascii=False, indent=2) + '\n'
-        if args.check:
-            if path.read_text() != text:
-                raise ValueError('stale shared access callbacks:' + str(path))
-        else:
-            path.write_text(text)
-
+    text = json.dumps(document(), ensure_ascii=False, indent=2) + '\n'
+    if args.check:
+        if OUTPUT.read_text() != text:
+            raise ValueError('stale shared access callbacks')
+    else:
+        OUTPUT.write_text(text)
 
 
 if __name__ == '__main__':

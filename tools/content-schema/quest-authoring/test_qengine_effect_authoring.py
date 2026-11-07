@@ -6,46 +6,6 @@ import quest_batch4
 
 
 class SharedEffectAuthoring(unittest.TestCase):
-    def test_existing_callback_requires_equivalent_behavior_and_source_pin(self):
-        incoming = qengine_access.document()
-        row = next(row for row in incoming['callbacks'] if row['key'].endswith('waterfall-cave-entry'))
-        existing = copy.deepcopy(row)
-        existing['facing'] = 2
-        existing['effects']['facing'] = None
-        self.assertNotIn(row['key'], [r['key'] for r in qengine_access.compose(incoming, {'callbacks': [existing]})['callbacks']])
-        for mutation in ('teleport', 'source', 'facing'):
-            bad = copy.deepcopy(existing)
-            if mutation == 'teleport':
-                bad['teleport']['x'] += 1
-            elif mutation == 'source':
-                bad['sources'] = [bad['sources'][0].replace('201189f', '0000000')]
-            else:
-                bad['facing'] = 1
-            with self.assertRaises(ValueError, msg=mutation):
-                qengine_access.compose(incoming, {'callbacks': [bad]})
-
-    def test_selector_alias_requires_identical_asymmetric_cycle_and_source(self):
-        candidate = next(row for row in qengine_access.document()['callbacks']
-                         if row['key'].endswith('triangle-tower-lever'))
-        established = copy.deepcopy(candidate)
-        established['key'] = 'oteryn:quest-callback/triangle-tower-wall'
-        cycle = established['effects'].pop('item_cycle')
-        established['passages'] = [dict(position=cycle['position'], appearance=cycle['remove'],
-                                         replacement=None, create_on_close=cycle['create'])]
-        existing = {'callbacks': [established]}
-        incoming = {'schema': 1, 'callbacks': [candidate]}
-        self.assertEqual(qengine_access.compose(incoming, existing)['callbacks'], [])
-        for mutation in ('create', 'source', 'owner'):
-            bad = copy.deepcopy(candidate)
-            if mutation == 'create':
-                bad['effects']['item_cycle']['create'] = 1270
-            elif mutation == 'source':
-                bad['sources'] = [bad['sources'][0].replace('201189f', '0000000')]
-            else:
-                bad['quest'] = 'oteryn:quest.another_quest'
-            with self.assertRaises(ValueError, msg=mutation):
-                qengine_access.compose({'schema': 1, 'callbacks': [bad]}, existing)
-
     def test_source_plate_stepout_and_paired_portals_are_authorable(self):
         for row in qengine_access.document()['callbacks']:
             if row['quest'] == 'oteryn:quest.thais_lighthouse_quest':

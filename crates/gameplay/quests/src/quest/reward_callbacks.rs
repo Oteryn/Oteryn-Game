@@ -43,6 +43,8 @@ pub struct OutfitReward {
     pub outfit: String,
     /// Base entitlement is always included. Bits 1 and 2 earn the respective addons.
     pub addons: u8,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sex: Option<CreationSex>,
 }
 
 /// Exact source price; only the durable fee owner may consume the funds.
@@ -54,7 +56,7 @@ pub struct MonetaryFee {
 }
 
 /// Immutable creation-sex eligibility, independent of selected appearance.
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "snake_case")]
 pub enum CreationSex {
     Female,
@@ -98,12 +100,31 @@ impl TrackRequirement {
     }
 }
 
+/// Current native actor conditions admitted for one source command.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "snake_case")]
+pub enum ActorConditionRequirement {
+    Fire,
+    Drunk,
+}
+
+/// One paid source occurrence advances the existing Character achievement owner.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct AchievementProgress {
+    pub key: String,
+    pub target: u32,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct RewardCallback {
     pub key: String,
     pub quest: String,
     pub npc: String,
+    /// Ordinary carried USE binding; NPC dialogue cannot execute this callback.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub carried_item: Option<String>,
     pub keywords: Vec<String>,
     pub topic: u16,
     pub next_topic: u16,
@@ -119,11 +140,18 @@ pub struct RewardCallback {
     pub creation_sex: Option<CreationSex>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub requires_premium: bool,
-    /// Current locked progression must satisfy this source requirement (PC3 add7faf92).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub minimum_level: Option<u32>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub requires_outfits: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub requires_addons: Vec<OutfitReward>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub forbids_outfits: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub requires_actor_conditions: Vec<ActorConditionRequirement>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub forbids_addons: Vec<OutfitReward>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub requires: Vec<TrackRequirement>,
     pub take: Vec<ItemAmount>,
@@ -134,9 +162,60 @@ pub struct RewardCallback {
     pub present: Vec<ItemAmount>,
     pub give: Option<ItemReward>,
     pub outfit: Option<OutfitReward>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub outfits: Vec<OutfitReward>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub exact_take: bool,
     pub achievement: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub achievement_progress: Vec<AchievementProgress>,
     pub reply: Vec<String>,
     pub sources: Vec<String>,
+}
+
+impl OutfitReward {
+    pub fn grant_key(&self, addon: u8) -> String {
+        match self.sex {
+            None => format!("{}/quest-grant/{addon}", self.outfit),
+            Some(sex) => format!(
+                "{}/quest-grant/{}/{addon}",
+                self.outfit,
+                match sex {
+                    CreationSex::Female => "female",
+                    CreationSex::Male => "male",
+                }
+            ),
+        }
+    }
+}
+impl RewardCallback {
+    pub fn cosmetic_targets(&self) -> impl Iterator<Item = &OutfitReward> {
+        self.outfit.iter().chain(&self.outfits)
+    }
+    /// Storage-free paid exchanges can repeat under distinct CommandRefs.
+    pub fn is_paid_exchange(&self) -> bool {
+        self.storage.is_empty()
+            && self.state_ops.is_empty()
+            && self.participants.is_empty()
+            && !self.take.is_empty()
+            && self.give.is_some()
+    }
+    fn value_only_guarded(&self) -> bool {
+        // Repeatable source trades spend exact admitted inputs and produce a
+        // native backpack MINT in the same fenced transaction.
+        (!self.take.is_empty() && self.give.is_some())
+            || self.cosmetic_targets().any(|target| {
+                (target.addons == 0
+                    && target.sex.is_none()
+                    && self.forbids_outfits.contains(&target.outfit))
+                    || self.forbids_addons.iter().any(|guard| {
+                        target.outfit == guard.outfit
+                            && target.addons & guard.addons != 0
+                            && (target.sex.is_none()
+                                || target.sex == guard.sex.or(self.creation_sex))
+                    })
+            })
+    }
 }
 
 /// Source-bound track metadata; writable declarations name the exact existing owner.
@@ -317,10 +396,53 @@ fn validate_document(document: Document) -> Result<Document, String> {
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
             || !slug(&c.npc, "oteryn:npc.", b"_", 128)
-            || c.storage.is_empty()
+            || c.carried_item.as_ref().is_some_and(|item| {
+                c.take
+                    != [ItemAmount {
+                        item: item.clone(),
+                        count: 1,
+                        fluid_subtype: None,
+                    }]
+                    || c.give.is_some()
+                    || c.fee.is_some()
+                    || !c.requires_actor_conditions.is_empty()
+            })
+            || c.forbids_outfits.len() > 8
+            || c.forbids_outfits.iter().collect::<BTreeSet<_>>().len() != c.forbids_outfits.len()
+            || c.forbids_outfits
+                .iter()
+                .any(|key| !slug(key, "oteryn:outfit.", b"_", 128))
+            || (c.storage.is_empty() && c.state_ops.is_empty() && !c.value_only_guarded())
             || c.storage.len() > 8
             || c.minimum_level == Some(0)
             || tracks.len() != c.storage.len()
+            || c.requires_actor_conditions.len() > 8
+            || c.requires_actor_conditions
+                .iter()
+                .collect::<BTreeSet<_>>()
+                .len()
+                != c.requires_actor_conditions.len()
+            || c.forbids_addons.len() > 8
+            || c.forbids_addons
+                .iter()
+                .map(|r| (&r.outfit, r.addons, r.sex))
+                .collect::<BTreeSet<_>>()
+                .len()
+                != c.forbids_addons.len()
+            || c.forbids_addons.iter().any(|r| {
+                !slug(&r.outfit, "oteryn:outfit.", b"_", 128) || !(1..=3).contains(&r.addons)
+            })
+            || c.minimum_level == Some(0)
+            || c.requires_addons.len() > 8
+            || c.requires_addons
+                .iter()
+                .map(|r| (&r.outfit, r.addons, r.sex))
+                .collect::<BTreeSet<_>>()
+                .len()
+                != c.requires_addons.len()
+            || c.requires_addons.iter().any(|r| {
+                !slug(&r.outfit, "oteryn:outfit.", b"_", 128) || !(1..=3).contains(&r.addons)
+            })
             || c.requires_outfits.len() > 8
             || c.requires_outfits.iter().collect::<BTreeSet<_>>().len() != c.requires_outfits.len()
             || c.requires_outfits
@@ -335,15 +457,15 @@ fn validate_document(document: Document) -> Result<Document, String> {
             || c.storage
                 .iter()
                 .any(|s| !slug(&s.track, "oteryn:", b"._/:-", 128) || s.minimum > s.maximum)
-            || c.storage
-                .iter()
-                .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+            || (!c.value_only_guarded()
+                && c.storage
+                    .iter()
+                    .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
             || c.present.len() > 8
             || evidence.len() != c.present.len()
-            || c.present.iter().any(|s| {
-                !slug(&s.item, "oteryn:item.", b"._/:-", 256)
-                    || (s.count == 0 || s.fluid_subtype.is_some())
-            })
+            || c.present
+                .iter()
+                .any(|s| !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0)
             || c.fee.as_ref().is_some_and(|fee| {
                 fee.gold == 0
                     || fee.gold > 1_000_000_000_000
@@ -356,7 +478,8 @@ fn validate_document(document: Document) -> Result<Document, String> {
                         )
                     })
             })
-            || c.take.len() > 8
+            || c.present.iter().any(|item| item.fluid_subtype.is_some())
+            || c.take.len() > 16
             || inputs.len() != c.take.len()
             || c.take.iter().any(|s| {
                 !slug(&s.item, "oteryn:item.", b"._/:-", 256)
@@ -371,9 +494,15 @@ fn validate_document(document: Document) -> Result<Document, String> {
                                 .is_some_and(|fluid| fluid == 0 || s.count != 1)
                     })
             })
-            || c.outfit
-                .as_ref()
-                .is_some_and(|r| !slug(&r.outfit, "oteryn:outfit.", b"_", 160) || r.addons > 3)
+            || (!c.outfits.is_empty() && c.outfit.is_some())
+            || c.outfits.len() > 4
+            || c.cosmetic_targets()
+                .map(|r| (&r.outfit, r.addons, r.sex))
+                .collect::<BTreeSet<_>>()
+                .len()
+                != c.cosmetic_targets().count()
+            || c.cosmetic_targets()
+                .any(|r| !slug(&r.outfit, "oteryn:outfit.", b"_", 160) || r.addons > 3)
             || c.keywords.is_empty()
             || c.keywords.len() > 8
             || c.keywords.iter().collect::<BTreeSet<_>>().len() != c.keywords.len()
@@ -381,6 +510,16 @@ fn validate_document(document: Document) -> Result<Document, String> {
                 s.is_empty() || s.len() > 64 || !s.is_ascii() || s != &s.to_ascii_lowercase()
             })
             || c.reply.is_empty()
+            || c.achievement_progress.len() > 8
+            || c.achievement_progress
+                .iter()
+                .map(|p| &p.key)
+                .collect::<BTreeSet<_>>()
+                .len()
+                != c.achievement_progress.len()
+            || c.achievement_progress
+                .iter()
+                .any(|p| !slug(&p.key, "oteryn:achievement/", b"_", 160) || p.target == 0)
             || c.reply.len() > 8
             || c.reply
                 .iter()
@@ -539,11 +678,7 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 /// Exact primary state operation shared by lowering and bound admission validation.
 pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, String> {
     let binding = gated_binding(callback)?;
-    let bound_effect = callback
-        .storage
-        .iter()
-        .position(|state| !state.preserve)
-        .ok_or("reward needs a changed state")?;
+    let bound_effect = callback.storage.iter().position(|state| !state.preserve);
     Ok(QuestTransition {
         key: callback.key.clone(),
         quest: callback.quest.clone(),
@@ -556,7 +691,7 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
                 from: QuestComparison::Between(state.minimum, state.maximum),
                 effect: if state.preserve {
                     QuestEffectKind::Add(0)
-                } else if let Some(binding) = binding.filter(|_| index == bound_effect) {
+                } else if let Some(binding) = binding.filter(|_| Some(index) == bound_effect) {
                     QuestEffectKind::SetWithBinding {
                         value: state.set,
                         binding,
@@ -574,106 +709,94 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     #[test]
-    fn gated_terms_bind_level_and_value_but_not_display_text() -> Result<(), String> {
+    fn level_and_positive_addon_guards_preserve_one_shot_bases() -> Result<(), String> {
+        let original = super::load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-reward/l11-dream-warrior-base")
+            .ok_or("level base")?;
+        assert!(original.storage.is_empty());
+        for edit in 0..5 {
+            let mut row = serde_json::to_value(&original).map_err(|e| e.to_string())?;
+            match edit {
+                0 => row["minimum_level"] = 0.into(),
+                1 => row["forbids_outfits"] = serde_json::json!([]),
+                2 => row["forbids_outfits"] = serde_json::json!(["oteryn:outfit.knight"]),
+                3 => {
+                    row["requires_addons"] =
+                        serde_json::json!([{"outfit":"oteryn:outfit.knight","addons":0}])
+                }
+                _ => row["outfit"]["sex"] = "male".into(),
+            }
+            assert!(
+                super::parse(&serde_json::json!({"schema":1,"callbacks":[row]}).to_string())
+                    .is_err(),
+                "invalid level/base guard {edit}"
+            );
+        }
+        Ok(())
+    }
+    #[test]
+    fn carried_quest_tools_bind_exactly_one_input_and_negative_ownership() -> Result<(), String> {
+        let original = super::load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-reward/l10-brotherhood-use-follower")
+            .ok_or("carried source")?;
+        for edit in 0..5 {
+            let mut row = serde_json::to_value(&original).map_err(|e| e.to_string())?;
+            match edit {
+                0 => row["carried_item"] = "oteryn:item.tibia.i769".into(),
+                1 => row["take"] = serde_json::json!([]),
+                2 => row["take"][0]["count"] = 2.into(),
+                3 => {
+                    row["give"] =
+                        serde_json::json!({"item":"oteryn:item.tibia.i768","count":1,"contents":[]})
+                }
+                _ => {
+                    row["forbids_outfits"] = serde_json::json!([
+                        "oteryn:outfit.brotherhood",
+                        "oteryn:outfit.brotherhood"
+                    ])
+                }
+            }
+            assert!(
+                super::parse(&serde_json::json!({"schema":1,"callbacks":[row]}).to_string())
+                    .is_err(),
+                "invalid carried tool {edit}"
+            );
+        }
+        Ok(())
+    }
+    #[test]
+    fn paid_value_only_sources_require_cost_mint_and_bounded_progress() -> Result<(), String> {
         let original = load()?
             .into_iter()
-            .find(|c| c.minimum_level == Some(30))
-            .ok_or("gated callback")?;
-        let binding = gated_binding(&original)?.ok_or("binding")?;
-        let mut changed = original.clone();
-        changed.minimum_level = Some(31);
-        assert_ne!(gated_binding(&changed)?, Some(binding));
-        let mut changed = original.clone();
-        changed.requires_premium = !changed.requires_premium;
-        assert_ne!(gated_binding(&changed)?, Some(binding));
-        let mut changed = original.clone();
-        changed.reply = vec!["Different wording".into()];
-        changed.sources = vec!["Different citation".into()];
-        assert_eq!(gated_binding(&changed)?, Some(binding));
-        let mut changed = original;
-        changed.minimum_level = None;
-        assert_eq!(gated_binding(&changed)?, None);
-        let mut invalid = serde_json::to_value(changed).map_err(|e| e.to_string())?;
-        invalid["minimum_level"] = 0.into();
-        assert!(parse(&serde_json::json!({"schema":1,"callbacks":[invalid]}).to_string()).is_err());
-        Ok(())
-    }
-
-    #[test]
-    fn published_ungated_quest_hash_baseline() -> Result<(), String> {
-        let lowered = super::super::loader::load_embedded_quest_state("content-1")
-            .map_err(|e| format!("{e:?}"))?;
-        for (key, expected) in [
-            (
-                "oteryn:quest.outfit_and_addon_quests",
-                "baea9b94d5d8f6ce007b7ab007a4eb81b7ccdc3114d6c752b37dcc85aee9f6fb",
-            ),
-            (
-                "oteryn:quest.the_ice_islands_quest",
-                "4d8180299446394b3a47bad282c4fd8d3faf51871aa4f335aad8ff252f3c686d",
-            ),
-            (
-                "oteryn:quest.the_spirit_will_get_you_quest",
-                "0df1f07a25989a00e27d16a890e8598556f37bcb08deb2a3b2feab8958747414",
-            ),
-        ] {
-            let hash = lowered
-                .catalogue()
-                .definition_hash(key)
-                .ok_or("published quest")?;
-            assert_eq!(
-                hash.iter().map(|b| format!("{b:02x}")).collect::<String>(),
-                expected,
-                "published ungated quest {key}"
-            );
-        }
-        Ok(())
-    }
-
-    #[test]
-    fn authored_shards_complete_only_the_selected_quest_and_preserve_old_plans()
-    -> Result<(), String> {
-        let legacy = parse(DOCUMENTS[0])?;
-        for callback in &legacy {
-            assert!(!callback.completes);
+            .find(|c| c.key == "oteryn:quest-reward/l9-afflicted-pouch")
+            .ok_or("paid source")?;
+        assert!(original.storage.is_empty());
+        assert!(original.is_paid_exchange());
+        for edit in 0..4 {
+            let mut callback = serde_json::to_value(&original).map_err(|e| e.to_string())?;
+            match edit {
+                0 => callback["take"] = serde_json::json!([]),
+                1 => callback["give"] = serde_json::Value::Null,
+                2 => callback["achievement_progress"][0]["target"] = 0.into(),
+                _ => {
+                    let progress = callback["achievement_progress"][0].clone();
+                    callback["achievement_progress"]
+                        .as_array_mut()
+                        .ok_or("progress")?
+                        .push(progress);
+                }
+            }
             assert!(
-                serde_json::to_value(callback)
-                    .map_err(|e| e.to_string())?
-                    .get("completes")
-                    .is_none()
+                parse(&serde_json::json!({"schema":1,"callbacks":[callback]}).to_string()).is_err(),
+                "invalid paid source case {edit}"
             );
         }
-        let callbacks = load()?;
-        let completion = callbacks
-            .iter()
-            .find(|c| c.key == "oteryn:quest-reward/l6-spirit-confession")
-            .ok_or("authored completion")?;
-        assert!(completion.completes);
-        assert_eq!(
-            completion.quest,
-            "oteryn:quest.the_spirit_will_get_you_quest"
-        );
-        assert!(completion.take.is_empty());
-        assert_eq!(completion.present[0].count, 3);
-        let catalogue = super::super::loader::load_embedded_quest_state("content-1")
-            .map_err(|e| format!("{e:?}"))?;
-        assert!(
-            catalogue
-                .catalogue()
-                .transition(&completion.key)
-                .ok_or("completion transition")?
-                .completes
-        );
-        assert!(parse_documents(&[DOCUMENTS[0], DOCUMENTS[0]]).is_err());
-        let mut malformed: serde_json::Value =
-            serde_json::from_str(DOCUMENTS[1]).map_err(|e| e.to_string())?;
-        malformed["callbacks"][0]["completes"] = "yes".into();
-        assert!(parse(&malformed.to_string()).is_err());
         Ok(())
     }
-
+    use super::*;
     #[test]
     fn participant_authoring_rejects_owner_confusion_duplicates_and_invalid_sex()
     -> Result<(), String> {
@@ -720,6 +843,34 @@ mod tests {
         let encoded = serde_json::to_value(legacy).map_err(|e| e.to_string())?;
         assert!(encoded.get("participants").is_none());
         assert!(encoded.get("creation_sex").is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn actor_and_unowned_addon_guards_fail_closed() -> Result<(), String> {
+        let original: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/shared-reward-callbacks.json"
+        ))
+        .map_err(|e| e.to_string())?;
+        for guard in [
+            serde_json::json!({"requires_actor_conditions":["fire","fire"]}),
+            serde_json::json!({"requires_actor_conditions":["invented"]}),
+            serde_json::json!({"forbids_addons":[{"outfit":"oteryn:outfit.knight","addons":0}]}),
+            serde_json::json!({"forbids_addons":[{"outfit":"oteryn:outfit.knight","addons":1},{"outfit":"oteryn:outfit.knight","addons":1}]}),
+        ] {
+            let mut doc = original.clone();
+            for (key, value) in guard.as_object().ok_or("guard")? {
+                doc["callbacks"][0][key] = value.clone();
+            }
+            assert!(parse(&doc.to_string()).is_err());
+        }
+        let legacy = load()?
+            .into_iter()
+            .find(|c| c.requires_actor_conditions.is_empty() && c.forbids_addons.is_empty())
+            .ok_or("legacy")?;
+        let value = serde_json::to_value(legacy).map_err(|e| e.to_string())?;
+        assert!(value.get("requires_actor_conditions").is_none());
+        assert!(value.get("forbids_addons").is_none());
         Ok(())
     }
 
@@ -928,6 +1079,104 @@ mod tests {
         }
         super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|e| format!("{e:?}"))?;
+        Ok(())
+    }
+    #[test]
+    fn gated_terms_bind_level_and_value_but_not_display_text() -> Result<(), String> {
+        let original = load()?
+            .into_iter()
+            .find(|c| c.minimum_level == Some(30))
+            .ok_or("gated callback")?;
+        let binding = gated_binding(&original)?.ok_or("binding")?;
+        let mut changed = original.clone();
+        changed.minimum_level = Some(31);
+        assert_ne!(gated_binding(&changed)?, Some(binding));
+        let mut changed = original.clone();
+        changed.requires_premium = !changed.requires_premium;
+        assert_ne!(gated_binding(&changed)?, Some(binding));
+        let mut changed = original.clone();
+        changed.reply = vec!["Different wording".into()];
+        changed.sources = vec!["Different citation".into()];
+        assert_eq!(gated_binding(&changed)?, Some(binding));
+        let mut changed = original;
+        changed.minimum_level = None;
+        assert_eq!(gated_binding(&changed)?, None);
+        let mut invalid = serde_json::to_value(changed).map_err(|e| e.to_string())?;
+        invalid["minimum_level"] = 0.into();
+        assert!(parse(&serde_json::json!({"schema":1,"callbacks":[invalid]}).to_string()).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn published_ungated_quest_hash_baseline() -> Result<(), String> {
+        let lowered = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|e| format!("{e:?}"))?;
+        for (key, expected) in [
+            (
+                "oteryn:quest.outfit_and_addon_quests",
+                "87f6476714ed0ad9ea3a2eb7c54e0a2d34f263f536be9d6c143153629d2f328d",
+            ),
+            (
+                "oteryn:quest.the_ice_islands_quest",
+                "4d8180299446394b3a47bad282c4fd8d3faf51871aa4f335aad8ff252f3c686d",
+            ),
+            (
+                "oteryn:quest.the_spirit_will_get_you_quest",
+                "0df1f07a25989a00e27d16a890e8598556f37bcb08deb2a3b2feab8958747414",
+            ),
+        ] {
+            let hash = lowered
+                .catalogue()
+                .definition_hash(key)
+                .ok_or("published quest")?;
+            assert_eq!(
+                hash.iter().map(|b| format!("{b:02x}")).collect::<String>(),
+                expected,
+                "published ungated quest {key}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn authored_shards_complete_only_the_selected_quest_and_preserve_old_plans()
+    -> Result<(), String> {
+        let legacy = parse(DOCUMENTS[0])?;
+        for callback in &legacy {
+            assert!(!callback.completes);
+            assert!(
+                serde_json::to_value(callback)
+                    .map_err(|e| e.to_string())?
+                    .get("completes")
+                    .is_none()
+            );
+        }
+        let callbacks = load()?;
+        let completion = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-reward/l6-spirit-confession")
+            .ok_or("authored completion")?;
+        assert!(completion.completes);
+        assert_eq!(
+            completion.quest,
+            "oteryn:quest.the_spirit_will_get_you_quest"
+        );
+        assert!(completion.take.is_empty());
+        assert_eq!(completion.present[0].count, 3);
+        let catalogue = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|e| format!("{e:?}"))?;
+        assert!(
+            catalogue
+                .catalogue()
+                .transition(&completion.key)
+                .ok_or("completion transition")?
+                .completes
+        );
+        assert!(parse_documents(&[DOCUMENTS[0], DOCUMENTS[0]]).is_err());
+        let mut malformed: serde_json::Value =
+            serde_json::from_str(DOCUMENTS[1]).map_err(|e| e.to_string())?;
+        malformed["callbacks"][0]["completes"] = "yes".into();
+        assert!(parse(&malformed.to_string()).is_err());
         Ok(())
     }
 }

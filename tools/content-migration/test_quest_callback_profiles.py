@@ -176,12 +176,15 @@ class QuestCallbackProfiles(unittest.TestCase):
                 for placement in record['definition'].get('native_contents', {}).get('placements', []):
                     expected.add(placement['root']['key'])
                     expected.update(child['item']['key'] for child in placement['contents'])
+        # ITEMHOLD-Q admits the Ornamented Shield bag (2859, 2949, 3053,
+        # 3083), with 3083 also used by Triangle Tower: 130 + 4 identities.
+        self.assertEqual(len(expected), 137)
+        self.assertTrue({f'oteryn:item.tibia.i{item}' for item in (2859, 2949, 3053, 3083)} <= expected)
         # Full-charge bags add Triangle Tower's Garlic Necklace and Desert's
         # Protection Amulet, Ring of Healing and Magic Light Wand.
         self.assertIn('oteryn:item.tibia.i3083', expected)
         self.assertTrue({'oteryn:item.tibia.i3084', 'oteryn:item.tibia.i3098',
                          'oteryn:item.tibia.i3077'} <= expected)
-        self.assertEqual(len(expected), 134)
         for key in expected:
             row = rows[key]
             self.assertTrue(row['admission']['materializable'], key)
