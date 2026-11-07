@@ -27,7 +27,7 @@ fn repository_import_preserves_all_data_and_approximation_flags() {
     assert_eq!(catalogue.project_revision(), "npcfix-retail-20261106-r1");
     assert_eq!(
         catalogue.source_tree_digest(),
-        "8b3f1dc789446d1955c0fb038ac9d6da51d233095c9efe5db3224626eda35e89"
+        "e1698c02b19fa21bd2b764de784b5984cbbeaf3e6785d81ae841b36e8fb03a2c"
     );
     assert_eq!(catalogue.npc_count(), 1290);
     assert_eq!(catalogue.dialogue_count(), 839);

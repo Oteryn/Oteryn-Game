@@ -8439,7 +8439,7 @@
     "cumulative_npcs": 232
   },
   "active_name_work": {
-    "state": "COMPILES; UPDATED_MATERIALIZER_EXECUTING; CANONICAL_NAME_GREEN_PENDING",
+    "state": "COMPILES; LEGACY11_AND_CANONICAL_NAMES_MATERIALIZED; GATES_RUNNING",
     "entries": [
       "Guardian of the Deep Seas",
       "Hemor, the guard",
@@ -8467,6 +8467,8 @@
       "original54_preserved": true,
       "sha256": "0ba41960fed44d4535c0b494e2b6fb158c7481f4da08d0f18e7bd99caf629a66"
     },
-    "compile_proof": "Current cargo-run materializer executable is running against predecessor and output temporary roots after packet60/digest refresh. No Rust behavior change beyond repo-generated packet digest/count; canonical name RED162.13s retained; authoring tests and full generation active."
+    "compile_proof": "Current cargo-run materializer executable is running against predecessor and output temporary roots after packet60/digest refresh. No Rust behavior change beyond repo-generated packet digest/count; canonical name RED162.13s retained; authoring tests and full generation active.",
+    "authoring_tests": "4 exact-before/atomicity tests PASS0.22s",
+    "materialization": "All protected predecessor stages and eleven legacy documents completed; inventory pins refreshed through repository tooling. Six canonical names emitted; prey-model build and remaining generation/check/Clippy gates running."
   }
 }
