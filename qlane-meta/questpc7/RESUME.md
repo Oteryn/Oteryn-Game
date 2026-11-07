@@ -1,3 +1,33 @@
+# Grimvale QUALIFIED — 2026-11-07
+
+Whole selected personal programme PG18.6 RED42.299587316s→GREEN93.008242622s:
+all13 stages,35 native deaths,5 physical blossoms, exact closed silvered trap,
+both native contacts, Oskayaat surveys, atomic amulet/two achievements/complete/
+access, exact replay and real earned two-way travel with fresh Premium.
+GRIMVALE-PG-PROOF.json holds all16 PASS gates, actual unit counts and retained
+Ferumbras PG marker/duration. Source item/quest/placement generators, Cargo
+check, strict Clippy, repository pin refresh/check, content/world tests and fmt
+all pass. All original negative guards and32 active-guardian budget remain.
+Native objective catalogue has31 entries, still below its32-document bound.
+
+Commit/push this qualification now. Six ACTIVE remain:
+- Feaster of Souls Quest
+- Forgotten Knowledge Quest
+- Goblin Merchant Quest
+- Heart of Destruction Quest
+- Hot Cuisine Quest
+- Illuminated Warrior Outfits Quest
+
+Continue Heart of Destruction next. First reuse/check refreshed qengine2 and
+peer implementations. Its six bosses will exceed the32-entry static objective
+catalogue; implement a bounded reusable catalogue expansion while retaining
+the independent32 live guardian budget and all validation/kill guards. Use
+source data/area anchors, existing native item/NPC/fenced transport/value owners,
+then PG RED/GREEN for all selected stages. Do not change the accepted Global
+imbuing contract or claim a new gate without checking its declared differences.
+No question or ownership deferral is needed. Push each compiling/green slice
+within15 minutes; do not end while ACTIVE entries remain.
+
 # Grimvale strict checks and pins GREEN — 2026-11-07
 
 Complete PG93.008s, post-witness PG92.470203109s, retained Ferumbras

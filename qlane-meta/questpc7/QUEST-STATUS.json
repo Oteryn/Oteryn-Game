@@ -1038,42 +1038,37 @@
     "title": "Grimvale Quest",
     "canonical": "oteryn:quest.grimvale_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/55/definition",
-    "status": "ACTIVE",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
-    "queued_stage_binding": {
-      "stage": "s1",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
-    },
-    "first_unqualified_stage": {
-      "key": "s1",
-      "kind": "collect",
-      "objective": "Gather five Purple Nightshade Blossoms for the curse investigation.",
-      "targets": [
-        "Purple Nightshade Blossom"
-      ]
-    },
     "owner": "questpc7",
-    "remaining_work": {
-      "kind": "lane_implementation_work",
-      "missing_piece": "Compose the selected route through the shared encounter/party admission and frozen-participant death settlement owner; earn access and rewards only from real encounter settlement, then prove repeat/reset/recovery behavior.",
-      "evidence": [
-        "content/quests/definitions/quests-00100-00199.json:1#/records/55/definition",
-        "crates/gameplay/quests/src/quest/world_callbacks.rs:98",
-        "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:92"
-      ],
-      "attempts": [
-        "Checked the Liquid Silver Trap, Feroxa, four named bosses and ritual stages against the current fixed teleport and frozen kill-entry interfaces."
-      ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
-    },
-    "current_batch": {
-      "kind": "complete selected13-stage native Grimvale programme",
-      "state": "PG, units, generation, Cargo check, strict Clippy and refreshed/checked pins PASS; focused content/world/fmt finishing",
+    "qualification": {
+      "kind": "complete selected personal Grimvale programme",
       "proof": "qlane-meta/questpc7/GRIMVALE-PG-PROOF.json",
-      "scope_unchanged": true,
-      "assumptions": "Five personal collection plots, selected cave/island inspection cells, physical closed silvered trap, and personal native Feroxa are documented in CONTRACT-NOTES.md."
+      "test": "questpc7_grimvale_whole_native_investigation_and_rewards",
+      "postgres": "18.6",
+      "red_seconds": 42.299587316,
+      "green_seconds": 92.470203109,
+      "scope": [
+        "fresh Current Premium at entry, harvesting, trap, final rewards and earned travel",
+        "five actual carried22082 blossoms from once-only native sites",
+        "exact10 afflicted kills and four distinct native leaders",
+        "closed silvered trap22074 MINT, exact consumption and command replay",
+        "native Feroxa and20 Werehyaena deaths;35 total",
+        "Rhargu and Domizian conversations with distinct retained real actors",
+        "both Oskayaat native investigation sites",
+        "atomic27565 amulet, two achievements, completion and typed access",
+        "exact final command replay without duplicate grants",
+        "actual earned native exit/reentry without changing final grants/completion"
+      ],
+      "bindings": [
+        "content/quests/questpc7-world-callbacks.json",
+        "content/quests/questpc7-death-objectives.json",
+        "content/quests/shared-reward-callbacks.json",
+        "content/dialogues/quests/shared-reward-greetings.json",
+        "content/world/npc-placements/index.json"
+      ],
+      "assumptions": "Personal botanical collection plots, selected inspection cells and native Feroxa objective are explicit conservative adaptations; see CONTRACT-NOTES.md. Original global full-moon, source form-chain and optional raid/corpse-loot fidelity are outside the pinned chosen programme."
     }
   },
   {
