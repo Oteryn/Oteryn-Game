@@ -1,0 +1,101 @@
+{
+  "quest": "oteryn:quest.serpentine_tower_quest",
+  "scope": "Source binding component only; not whole quest qualification",
+  "postgres": {
+    "version": "18.6",
+    "red": {
+      "seconds": 40.05,
+      "failure": "torch action None instead of5632"
+    },
+    "green": {
+      "seconds": 39.422032699,
+      "marker": "POSTGRES_CASE_COMPLETED real_world_startup_selectors"
+    }
+  },
+  "bindings": [
+    [
+      33151,
+      32861,
+      7,
+      2928,
+      "action",
+      5632
+    ],
+    [
+      33152,
+      32866,
+      8,
+      2772,
+      "action",
+      5633
+    ],
+    [
+      33148,
+      32864,
+      7,
+      1949,
+      "action",
+      5630
+    ],
+    [
+      33150,
+      32864,
+      7,
+      1949,
+      "action",
+      5631
+    ],
+    [
+      33150,
+      32862,
+      7,
+      2472,
+      "unique",
+      6184
+    ]
+  ],
+  "world_digest": "44b07980866858994e8316bbdf14a1f9a83fc31928964cfc115ea20a4bfdd17a",
+  "checks": {
+    "python_tests": 5,
+    "fmt": "PASS",
+    "cargo_check_all_targets_all_features": "PASS",
+    "clippy_all_targets_all_features_deny_warnings": "PASS",
+    "pin_refresh": "PASS",
+    "pin_check": "PASS"
+  },
+  "logs": {
+    "red": {
+      "path": "/tmp/questpc5-serpentine-startup-red.log",
+      "sha256": "05bef0a132336ec5ba32b26bebdb61424fde57f243378f8a1dfb080664e9cea8"
+    },
+    "green": {
+      "path": "/tmp/questpc5-serpentine-startup-green.log",
+      "sha256": "b396af415e787643b334303c7f96d0e3cf49472f14dd6ae3d5d74ea7786218e2"
+    },
+    "pin-refresh": {
+      "path": "/tmp/questpc5-serpentine-startup-pin-refresh.log",
+      "sha256": "378752e97f6edea1130e613dc55ec67ebf527e889fc2c7df6a1d0ef66aff52e5"
+    },
+    "pin-check": {
+      "path": "/tmp/questpc5-serpentine-startup-pin-check.log",
+      "sha256": "3cf759992643204d4b29d1f0a068dc30a6fc206b6445a43809ef31e127a228cb"
+    },
+    "fmt": {
+      "path": "/tmp/questpc5-serpentine-startup-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "check": {
+      "path": "/tmp/questpc5-serpentine-startup-check.log",
+      "sha256": "cd10e8de118e76e64051df1db6ddbebc0405b530dadaf9ee13df116b0b1c522e"
+    },
+    "clippy": {
+      "path": "/tmp/questpc5-serpentine-startup-clippy.log",
+      "sha256": "55e650992e92f6c58d96ef4e91da7597d7e5177d4e9c3f789904376793759dd2"
+    },
+    "python-all": {
+      "path": "/tmp/questpc5-serpentine-startup-python-all.log",
+      "sha256": "2f6f10f63bbb4c8a046fc443907e7afa5fde1bf3fa0c2d0da501b882dd2ead30"
+    }
+  },
+  "remaining": "Whole source pot-conditioned route and selected finite personal trial; never a parallel pearl MINT."
+}

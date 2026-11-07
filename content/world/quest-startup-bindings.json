@@ -10,6 +10,11 @@
       "git_blob_sha1": "31643d019244bd228c0355c9aed8522bce45aaf0"
     },
     {
+      "path": "data-global/startup/tables/item.lua",
+      "sha256": "677bffd2482d16a5c73633e3f7324c4dc16cf1e00fbb5368e56ce4b6d60402fd",
+      "git_blob_sha1": "2fc7af8495a2fd5166ef2fb6ebfa9d04b8c27654"
+    },
+    {
       "path": "data-global/startup/tables/tile.lua",
       "sha256": "f6e1d120063105d19303c9e9c8a57b40a6419cc51c4998be58984c42dc67a2a7",
       "git_blob_sha1": "e8780ad80e10d09eba2db1138e1cac4ba1d4b67b"
@@ -342,6 +347,66 @@
       "value": 6076,
       "source": "data-global/startup/tables/chest.lua",
       "line": 1161
+    },
+    {
+      "position": [
+        33148,
+        32864,
+        7
+      ],
+      "item": 1949,
+      "attribute": "action",
+      "value": 5630,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 45
+    },
+    {
+      "position": [
+        33150,
+        32862,
+        7
+      ],
+      "item": 2472,
+      "attribute": "unique",
+      "value": 6184,
+      "source": "data-global/startup/tables/chest.lua",
+      "line": 2026
+    },
+    {
+      "position": [
+        33150,
+        32864,
+        7
+      ],
+      "item": 1949,
+      "attribute": "action",
+      "value": 5631,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 50
+    },
+    {
+      "position": [
+        33151,
+        32861,
+        7
+      ],
+      "item": 2928,
+      "attribute": "action",
+      "value": 5632,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 1422
+    },
+    {
+      "position": [
+        33152,
+        32866,
+        8
+      ],
+      "item": 2772,
+      "attribute": "action",
+      "value": 5633,
+      "source": "data-global/startup/tables/lever.lua",
+      "line": 80
     },
     {
       "position": [

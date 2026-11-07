@@ -1,3 +1,7 @@
+## Serpentine source binding component GREEN — 2026-11-07
+
+Five exact retained startup selectors restored via generator, B3 bytes unchanged. ActualPG18.6 RED40.05s missingtorch5632→GREEN39.422032699s compiledsource selectors. Python5, fmt, dispatchalltargets/featurescheck+strictClippy, Worldpinrefresh/checkPASS. Digest44b07980866858994e8316bbdf14a1f9a83fc31928964cfc115ea20a4bfdd17a. Proofcloud-serpentine-startup-proof.json. Wholequest remains active/unqualified; no title promoted. Nextimplement droppedGroundoverlay remote predicates and nativepot3465 via existingfluidprovider; then selectedfourstage trial using existingonce-onlyclaimUID6184, no parallelpearlgrant. Preparedregression /tmp/questpc5-add-dropped-remote-test.py and /tmp/questpc5-serpentine-pot-test.rs.
+
 ## Serpentine binding regression — 2026-11-07 15:31 UTC
 
 Noodles qualification b98b02eeb is confirmed pushed. Serpentine Python regression RED on missing torch2928/AID5632; dispatch test compiled successfully4m31s and reproduced missing torch AID5632 on PG18.6 in40.05s (server marker in log). Exact five bindings and source hashes recorded in CONTRACT-NOTES.md. No product fix applied yet. Pearl has existing once-only claim UID6184; use it rather than parallel reward MINT. Selected finite personal trial and source pot-conditioned forcefields remain active work. Count11QUALIFIED/12remaining.
