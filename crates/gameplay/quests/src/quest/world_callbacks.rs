@@ -35,11 +35,22 @@ pub use effects::{
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
+pub struct NativeSelector {
+    pub position: Position,
+    pub ordinal: u8,
+    pub appearance: u16,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct Selector {
     pub position: Option<Position>,
     pub unique: Option<u16>,
     pub action: Option<u16>,
     pub appearance: Option<u16>,
+    /// Exact plain-base counterpart; legacy selectors remain an alternative.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub native: Option<NativeSelector>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -265,9 +276,18 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || !keys.insert(&callback.key)
             || (selector.position.is_none()
                 && selector.unique.is_none()
-                && selector.action.is_none())
+                && selector.action.is_none()
+                && selector.native.is_none())
             || selector.position.is_some_and(|p| !valid_pos(p))
+            || selector
+                .native
+                .as_ref()
+                .is_some_and(|n| !valid_pos(n.position) || n.appearance == 0)
             || callback.teleport.is_some_and(|p| !valid_pos(p))
+            || callback
+                .effects
+                .teleport_effect
+                .is_some_and(|effect| effect == 0 || effect > 255 || callback.teleport.is_none())
             || (callback.actor_kind == ActorKind::Monster
                 && (callback.selector.position.is_none()
                     || callback.trigger == Trigger::Use
@@ -566,6 +586,65 @@ mod batch4_tests;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn native_counterparts_and_teleport_cues_fail_closed() -> Result<(), String> {
+        let callback = load()?
+            .into_iter()
+            .find(|c| c.key.ends_with("/ancient-tombs-morguthis-entry"))
+            .ok_or("native room")?;
+        let wire = |c: &Callback| serde_json::json!({"schema":1,"callbacks":[c]}).to_string();
+        parse(&wire(&callback))?;
+        let mut invalid = callback.clone();
+        invalid
+            .selector
+            .native
+            .as_mut()
+            .ok_or("native binding")?
+            .position
+            .floor = 1;
+        assert!(parse(&wire(&invalid)).is_err());
+        let mut invalid = callback.clone();
+        invalid
+            .selector
+            .native
+            .as_mut()
+            .ok_or("native binding")?
+            .appearance = 0;
+        assert!(parse(&wire(&invalid)).is_err());
+        for effect in [0, 256] {
+            let mut invalid = callback.clone();
+            invalid.effects.teleport_effect = Some(effect);
+            assert!(parse(&wire(&invalid)).is_err());
+        }
+        let mut invalid = callback.clone();
+        invalid.teleport = None;
+        assert!(parse(&wire(&invalid)).is_err());
+        let mut native_only = callback;
+        native_only.selector.unique = None;
+        parse(&wire(&native_only))?;
+        native_only.selector.native = None;
+        assert!(parse(&wire(&native_only)).is_err(), "no wildcard selector");
+        let mut closed_rule = load()?
+            .into_iter()
+            .find(|c| c.native_rule.is_some())
+            .ok_or("closed source rule")?;
+        parse(&wire(&closed_rule))?;
+        closed_rule.selector.native = Some(NativeSelector {
+            position: Position {
+                x: 7,
+                y: 1,
+                floor: -7,
+            },
+            ordinal: 0,
+            appearance: 415,
+        });
+        assert!(
+            parse(&wire(&closed_rule)).is_err(),
+            "closed source rule cannot acquire an unrelated alias"
+        );
+        Ok(())
+    }
 
     #[test]
     fn monster_puzzles_and_world_predicates_reject_value_participants() -> Result<(), String> {

@@ -423,6 +423,7 @@ fn scenario_in_world(
                 quest: "fixture:underwater".into(),
                 trigger: Trigger::StepIn,
                 selector: Selector {
+                    native: None,
                     position: Some(position(trigger)),
                     unique: None,
                     action: None,

@@ -146,7 +146,7 @@ pub(super) fn callbacks() -> impl Iterator<Item = Callback> {
         world_requirements: Vec::new(),
         key: recipe.key.into(), quest: "oteryn:quest.the_ancient_tombs_quest".into(),
         trigger: Trigger::StepIn,
-        selector: Selector { position: None, unique: Some(recipe.unique), action: None, appearance: None },
+        selector: Selector { native: None, position: None, unique: Some(recipe.unique), action: None, appearance: None },
         lever: None, reversible: false, passages: Vec::new(),
         teleport: Some(recipe.missing), facing: None, effects: Default::default(),
         storage: Vec::new(), minimum_level: None, experience: None, monk_reward: None,

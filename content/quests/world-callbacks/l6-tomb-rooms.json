@@ -9,7 +9,16 @@
         "position": null,
         "unique": 40085,
         "action": null,
-        "appearance": null
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33258,
+            "y": 32707,
+            "floor": -13
+          },
+          "ordinal": 0,
+          "appearance": 415
+        }
       },
       "lever": null,
       "reversible": false,
@@ -41,7 +50,10 @@
       "failure_message": null,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_morguthis_room.lua:9"
-      ]
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
     },
     {
       "key": "oteryn:quest-callback/ancient-tombs-omruc-specific",
@@ -51,7 +63,16 @@
         "position": null,
         "unique": 40086,
         "action": null,
-        "appearance": null
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33205,
+            "y": 32956,
+            "floor": -14
+          },
+          "ordinal": 0,
+          "appearance": 415
+        }
       },
       "lever": null,
       "reversible": false,
@@ -83,7 +104,10 @@
       "failure_message": null,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_omruc_specific.lua:9"
-      ]
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
     },
     {
       "key": "oteryn:quest-callback/ancient-tombs-omruc-room",
@@ -93,7 +117,16 @@
         "position": null,
         "unique": 40087,
         "action": null,
-        "appearance": null
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33206,
+            "y": 33002,
+            "floor": -14
+          },
+          "ordinal": 0,
+          "appearance": 1236
+        }
       },
       "lever": null,
       "reversible": false,
@@ -125,7 +158,10 @@
       "failure_message": null,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_omruc_room.lua:9"
-      ]
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
     },
     {
       "key": "oteryn:quest-callback/ancient-tombs-rahemos-levers",
@@ -135,7 +171,16 @@
         "position": null,
         "unique": 40088,
         "action": null,
-        "appearance": null
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33122,
+            "y": 32760,
+            "floor": -14
+          },
+          "ordinal": 0,
+          "appearance": 415
+        }
       },
       "lever": null,
       "reversible": false,
@@ -167,7 +212,10 @@
       "failure_message": null,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_rahemos_levers.lua:9"
-      ]
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
     },
     {
       "key": "oteryn:quest-callback/ancient-tombs-rahemos-room",
@@ -177,7 +225,16 @@
         "position": null,
         "unique": 40089,
         "action": null,
-        "appearance": null
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33085,
+            "y": 32781,
+            "floor": -14
+          },
+          "ordinal": 0,
+          "appearance": 423
+        }
       },
       "lever": null,
       "reversible": false,
@@ -209,7 +266,10 @@
       "failure_message": null,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_rahemos_room.lua:9"
-      ]
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
     }
   ]
 }

@@ -101,6 +101,28 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
         return false;
     };
+    if let Some(binding) = &callback.selector.native
+        && tile(binding.position) == pos
+        && ordinal == binding.ordinal
+        && map
+            .overlay
+            .base()
+            .tile(pos.x, pos.y, pos.floor)
+            .and_then(|base| {
+                base.ids()
+                    .iter()
+                    .zip(base.depths())
+                    .filter(|(_, depth)| **depth == 0)
+                    .nth(usize::from(ordinal))
+                    .map(|(id, _)| *id)
+            })
+            .is_some_and(|id| {
+                map.facts
+                    .quest_callback_native_object(key, id, binding.appearance)
+            })
+    {
+        return true;
+    }
     if oteryn_gameplay_quests::quest::shared_switches::native::bindings(&callback.key)
         .iter()
         .any(|binding| {
@@ -749,10 +771,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, entered.position()),
                 underwater(map, snapshot.position()),
             );
-            if let Some(gate) = oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key)
-                && let Some(at) = native(snapshot.position())
+            if let Some(effect) = callback.effects.teleport_effect.or_else(|| {
+                oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key)
+                    .map(|gate| gate.effect)
+            }) && let Some(at) = native(snapshot.position())
             {
-                let _ = map.facts.emit_movement_effect(at, gate.effect);
+                let _ = map.facts.emit_movement_effect(at, effect);
             }
         }
         if let Some(message) = &callback.failure_message {

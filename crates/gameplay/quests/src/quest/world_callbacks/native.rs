@@ -36,6 +36,7 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
         }
     };
     callback.quest == rule.quest()
+        && callback.selector.native.is_none()
         && callback.trigger == trigger
         && callback.selector.position
             == Some(Position {

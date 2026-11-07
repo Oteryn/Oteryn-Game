@@ -20,6 +20,9 @@ pub struct CallbackEffects {
     pub transform: Option<u16>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
+    /// One cue at a committed landing, or at the restored STEP origin on refusal.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub teleport_effect: Option<u16>,
     pub portals: Option<PortalPair>,
     pub item_cycle: Option<ItemCycle>,
     #[serde(default, skip_serializing_if = "Option::is_none")]

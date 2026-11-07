@@ -6607,7 +6607,7 @@
       "remote_verified": true
     },
     "native_room_batch_21": {
-      "status": "COMPILED_RED_WIP_CHECKPOINT",
+      "status": "GREEN_READY_TO_FF_PUSH",
       "previous_pushed_head": "455366efaa353d9cd42038d9d713142859d1065f",
       "scope": "5exactnativeRoomSTEP counterpart cases:missingDefaultStart/refusal+11cue, legitimateRooteligibilitysetup, literallanding/monotoneprogress, exactreceipt/noopguard/replay; notfullmaze",
       "facts": [
@@ -6781,7 +6781,69 @@
         "expected": "missingDefaultStartrestores33257,32707,z13",
         "log": "/tmp/questpc4-native-room-red2.log",
         "compiled": "4m49s"
-      }
+      },
+      "compiled_red_checkpoint_pushed_head": "400f0b6dc64c2bdec4677bab457c4c619c91e32b",
+      "checkpoint_remote_verified": true,
+      "implementation": [
+        "GenericoptionalSelector.native exactposition/ordinal/originalappearance with existingplainbaseobjectproof; legacyselectors retained",
+        "Noneomitted keepsoldselectorbindingbytes;closedNativeRulecannotgainalias",
+        "ExplicitoptionalCallbackEffects.teleport_effect: onecueaftercommittedlanding/restoredorigin, reuse existingmovement-effectowner andsinglefallbacksharedgatecue",
+        "5authoredexactnativecounterparts andteleport11data, originalB3tiles/attrs/literalgoals/legalprogressbounds unchanged"
+      ],
+      "postgres": {
+        "status": "GREEN",
+        "version": "18.6",
+        "passed": 6,
+        "failed": 0,
+        "ignored": 0,
+        "native_seconds": 118.32,
+        "cases": {
+          "l6-native-room-morguthis-entry": {
+            "seconds": 61.616126288,
+            "log": "/tmp/questpc4-native-room-green.log"
+          },
+          "l6-native-room-omruc-specific": {
+            "seconds": 61.634754961,
+            "log": "/tmp/questpc4-native-room-green.log"
+          },
+          "l6-native-room-omruc-room": {
+            "seconds": 61.640634425,
+            "log": "/tmp/questpc4-native-room-green.log"
+          },
+          "l6-native-room-rahemos-levers": {
+            "seconds": 61.658169261,
+            "log": "/tmp/questpc4-native-room-green.log"
+          },
+          "l6-native-room-rahemos-room": {
+            "seconds": 56.701108611,
+            "log": "/tmp/questpc4-native-room-green.log"
+          },
+          "l6-tomb-gate-closed-50135": {
+            "seconds": 73.855879155,
+            "log": "/tmp/questpc4-native-room-legacy-gate-verified.log"
+          }
+        }
+      },
+      "diagnostic_not_counted": "Original regression command used nonmatching filter l6_shared_gate_50135_closed and ran0tests; actualcorrectly named l6_shared_gate_closed_50135_uses_exact_threshold reran withPG18.6/73.855879155s PASS inlegacy-gate-verified.log. Zero-run is not evidence and no intended test was omitted.",
+      "gates": {
+        "session": 90177,
+        "script": "/tmp/questpc4-native-room-gates.sh",
+        "scope": "quests/dispatchalltargets/featuresfmt/check/clippy; malformednative/cueunit, frozenhash, admission3, unchangedAncient5+RoomSource1,duplicates/diff"
+      },
+      "fixture_churn": "Restored unrelated SoulWar formatting afterPGexecutable build; kept only requirednativeNoneinitializer. Added cfgtest-only parserprobes. Runtime/PG assertions unchanged. Finalchecksuseminimal source.",
+      "generated": "NoWorld/native/profile/pininputs orSQLchanged; keep3647profiles/f970pin andassigned1250..1258range, next1259.",
+      "checks": {
+        "fmt": "PASS cargo fmt all check + explicitchangedleaves except preservedlegacySoulWarformat beyondoneinitializer",
+        "check": "PASS quests/dispatch alltargets/features2m46s",
+        "clippy": "PASS quests/dispatch alltargets/features -Dwarnings2m55s",
+        "malformed_native_cue": "1passed0failed0.02s",
+        "frozen_hash": "1passed0failed1.33s",
+        "admission_security": "3passed0failed",
+        "unchanged_ancient": "5passed0failed2.72s",
+        "room_source": "1passed0failed1.34s",
+        "duplicates_diff": "PASS"
+      },
+      "next": "CommitallGREEN/freshlane fetch/inspect/FFpush immediately, continue remainingTombsnative/source/NPCcomposition. Whole17 remain active, nextSQL1259."
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",

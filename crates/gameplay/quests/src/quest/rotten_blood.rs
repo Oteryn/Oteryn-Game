@@ -33,7 +33,7 @@ pub(crate) fn altar_callback() -> super::world_callbacks::Callback {
     Callback {
         actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
         key: SACRIFICE.into(), quest: QUEST.into(), trigger: Trigger::Use,
-        selector: Selector { position: None, unique: None, action: None,
+        selector: Selector { native: None, position: None, unique: None, action: None,
             appearance: Some(SACRIFICIAL_PLATE_APPEARANCE) },
         lever: None, reversible: false, passages: Vec::new(), teleport: None, facing: None, effects: Default::default(),
         world_requirements: Vec::new(),

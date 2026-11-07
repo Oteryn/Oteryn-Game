@@ -684,6 +684,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             map.facts
                 .emit_movement_effect(tile(magic.position), magic.effect);
         }
+        if let Some(effect) = callback.effects.teleport_effect
+            && let Some(destination) = callback.teleport
+        {
+            map.facts.emit_movement_effect(tile(destination), effect);
+        }
         if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
             pending.remove(&session);
         }
