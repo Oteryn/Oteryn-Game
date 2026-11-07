@@ -1334,6 +1334,11 @@
         "duration_seconds": 38.512744657,
         "red_duration_seconds": 37.85,
         "proof": "static-constructor-validation.json"
+      },
+      {
+        "scope": "Regression coverage for existing first-party constructor reuse only; no new gameplay qualification",
+        "proof": "constructor-reuse-validation.json",
+        "python_tests": 3
       }
     ]
   },

@@ -1,3 +1,13 @@
+# Exact constructor reuse regression coverage published
+
+Three Python tests pass in3.360s, including unchanged-profile reuse for all four
+first-party constructors and rejection of altered source revisions. This is a
+test-only slice; it makes no new gameplay or PostgreSQL qualification claim.
+See constructor-reuse-validation.json.14of23active entries remain QUALIFIED,
+9remain. Atomic carried-input assembly is active authoring and its corrected
+PostgreSQL test is compiling. Keep that pending runtime work and continue with
+shrine collection/exploration after its green push. Do not end the session.
+
 # Mystery static constructors — qualified reusable component
 
 Four existing canonical identities50335..50338 now have explicit first-party

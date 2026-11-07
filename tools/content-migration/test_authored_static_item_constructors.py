@@ -30,6 +30,21 @@ class StaticConstructors(unittest.TestCase):
             changed['production_binding']['source_key'] = 'oteryn:source.crystalserver'
             self.assertFalse(producer.matches_admission(changed, admissions))
 
+    def test_callback_reuse_keeps_exact_first_party_constructor(self):
+        import authored_quest_item_custody
+        intent = json.loads((ROOT / producer.INTENT).read_bytes())
+        profiles, admissions = producer.prepare(ROOT, intent)
+        bindings = [row['binding'] for row in admissions['records']]
+        for profile in profiles:
+            definition = producer.definitions(ROOT)[profile['production_definition']['production_key']]
+            before = copy.deepcopy(profile)
+            authored_quest_item_custody.reuse_existing(definition, profile, bindings)
+            self.assertEqual(profile, before)
+            changed = copy.deepcopy(profile)
+            changed['production_binding']['source_revision'] = '0' * 64
+            with self.assertRaises(ValueError):
+                authored_quest_item_custody.reuse_existing(definition, changed, bindings)
+
     def test_rejects_unpinned_unrelated_duplicate_and_invalid_policies(self):
         original = json.loads((ROOT / producer.INTENT).read_bytes())
         for case in range(8):
