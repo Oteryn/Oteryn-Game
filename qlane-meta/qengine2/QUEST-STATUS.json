@@ -3006,15 +3006,25 @@
           "postgres_red_seconds": 65.354410807
         },
         "native_acquisition_step": {
-          "status": "COMPILES",
+          "status": "PG_GREEN",
           "outfits": 131,
           "mounts": 250,
           "native_grants": 201,
           "authoring_tests": 31,
           "authoring_seconds": 93.254,
-          "current_pg_point": "Provenance query corrected and exact selected source facts/provenance now pass; 5 acquisition cases stop at a Malformed transport codec result. Contextual replay/appearance diagnostics running. Three stock taming regressions GREEN again.",
+          "current_pg_point": "All five selected stock source acquisition cases GREEN, including provenance, exact starter-aware facts, source consumption, literal replay and ordinary protocol25 selection.",
           "log": "/tmp/qengine2-s06-native-items-green1.log",
-          "regression_log": "/tmp/qengine2-s06-native-items-green2.log"
+          "regression_log": "/tmp/qengine2-s06-native-items-green2.log",
+          "green_log": "/tmp/qengine2-s06-native-items-green3.log",
+          "green_seconds": 171.08,
+          "green_markers": [
+            "POSTGRES_CASE_COMPLETED S06_SOURCE_OUTFIT Wedding duration=91.603901186s success=true",
+            "POSTGRES_CASE_COMPLETED S06_SOURCE_OUTFIT Jungle Explorer duration=91.643989139s success=true",
+            "POSTGRES_CASE_COMPLETED S06_SOURCE_OUTFIT Glooth Engineer duration=107.836135828s success=true",
+            "POSTGRES_CASE_COMPLETED S06_SOURCE_OUTFIT Dream Warden duration=108.720900445s success=true",
+            "POSTGRES_CASE_COMPLETED S06_STOCK_RANDOM_OUTFIT duration=79.47545189s success=true"
+          ],
+          "remaining_gates": "Final items+dispatch check/clippy/fmt running; full S06 construction coverage continues."
         }
       },
       {

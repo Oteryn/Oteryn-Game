@@ -828,3 +828,15 @@ Code compiles. Five source acquisition cases now reach exact selected facts
 and source provenance, then fail a transport codec with Malformed. Contextual
 replay/appearance diagnostics are running; no production admission was relaxed.
 Three retained stock taming cases pass again against131outfits/201nativegrants.
+
+S06 stock source acquisition PG GREEN: five cases171.08s in
+/tmp/qengine2-s06-native-items-green3.log, exact markers copied into status.
+Normal negotiated protocol25 selects every earned outcome, including addonless
+Wedding/Jungle Explorer and corrected Dream Warden/Glooth Engineer. Exact
+selected source facts, immutable receipt provenance, source consumption and
+literal replay pass. Missing cap25 was a fixture negotiation error: use the
+existing composed appearance offer and assert selection before the story.
+Retained stock taming3casesGREEN againstcurrent131outfits/250mounts/201grants.
+Authoring31GREEN93.254s; final changed-crate check/clippy/fmt executing. Top-level
+S06 remainsAUTHORING for four construction rules; W15b actual multi-root PG RED
+retained. Generic additional-root MINT/SQL plan prepared under /tmp for next step.

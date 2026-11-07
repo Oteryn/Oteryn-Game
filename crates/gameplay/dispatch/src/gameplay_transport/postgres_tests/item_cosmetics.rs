@@ -292,15 +292,26 @@ fn scenario(
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
+        let offered = if stock {
+            crate::gameplay_transport::appearance_change::offer::offered(
+                owner.offered_capabilities(),
+                owner.appearance_available(),
+            )
+        } else {
+            owner.offered_capabilities().to_vec()
+        };
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(
-            owner.offered_capabilities(),
+            &offered,
             if stock {
-                &[4, 6, 11, 15, 18, 25]
+                &[3, 4, 6, 11, 15, 18, 25]
             } else {
                 &[4, 6, 11, 15, 18]
             },
         )
         .ok_or("offers")?;
+        if stock {
+            assert!(admitted.continuity.selected_capabilities.contains(25));
+        }
         let source = id(71);
         if ground {
             let target = {
