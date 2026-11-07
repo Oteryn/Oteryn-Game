@@ -9,6 +9,30 @@ use oteryn_gameplay_encounters::bosses::endgame_entry::{
 };
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
+/// Crystal 201189f the_primal_manace.lua:2-4 binds the lever boss to its
+/// captured creature. Template and creature aliases must share entry policy.
+pub(super) fn canonical_boss_key(key: &str) -> Option<String> {
+    let candidates = crate::content::bosses::activity_template::captured_boss_levers().ok()?;
+    candidates
+        .iter()
+        .find(|candidate| {
+            candidate.creature_key.as_deref() == Some(key)
+                || candidate.boss_key().as_deref() == Some(key)
+        })?
+        .boss_key()
+}
+
+pub(super) fn encounter_for_boss_key(key: &str) -> Option<Encounter> {
+    if let Some(encounter) = Encounter::from_boss_key(key) {
+        return Some(encounter);
+    }
+    let candidates = crate::content::bosses::activity_template::captured_boss_levers().ok()?;
+    let candidate = candidates
+        .iter()
+        .find(|candidate| candidate.boss_key().as_deref() == Some(key))?;
+    Encounter::from_boss_key(candidate.creature_key.as_deref()?)
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn endgame_boss_entry(
         &self,
@@ -19,7 +43,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(request) => request,
             Err(_) => return Ok(Err(EntryRefusal::InvalidInput)),
         };
-        let Some(encounter) = Encounter::from_boss_key(&request.boss_key) else {
+        let Some(encounter) = encounter_for_boss_key(&request.boss_key) else {
             return Ok(Err(EntryRefusal::ContentUnavailable));
         };
         let Some(fence) =

@@ -785,3 +785,16 @@ the_primal_menace.lua:66-69` requires `ThePrimalMenaceDeath` and
 `ThePrimeOrdealBossDeath`; `:339-347` invokes custom `onThink` behavior. Those
 callbacks must be composed before the room can be published. No callback is
 marked available solely to get a row into the catalogue.
+
+### Canonical boss identity reaches entry gates
+
+The real-dispatch PostgreSQL entry scenario now checks canonical Primal and
+Bakragore template keys as well as creature aliases. Before the fix it failed in
+4.88s (`ContentUnavailable` instead of the required level refusal). Both identity
+forms now resolve through captured source data before catalogue lookup, retained
+handoff retry and endgame policy selection. The unchanged assertions passed in
+4.59s; dispatch check (5.27s), clippy (7.36s) and fmt passed. This closes an entry
+policy routing gap without admitting an unqualified template.
+
+Production map checkpoint pin-check passed in 2m31.825s. The dependent server
+crate passed check (1m39s) and clippy with warnings denied (24.12s).

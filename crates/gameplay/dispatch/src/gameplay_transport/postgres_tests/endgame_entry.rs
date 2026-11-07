@@ -109,6 +109,19 @@ fn scenario() -> TestResult {
             );
         }
         assert_eq!(counters(&h).await?, before);
+        // Canonical template keys must reach the same gates as captured creature
+        // aliases; otherwise a qualified template could bypass endgame access.
+        for (number, key) in [(8, "oteryn:boss.the_primal_menace"), (9, "oteryn:boss.bakragore")] {
+            let payload = encode_boss_key(key).map_err(debug)?;
+            assert_eq!(
+                super::boss_encounter::exchange_kind(&owner, &mut admitted, number,
+                    COMMAND_TYPE_BOSS_LEVER, &payload).await?,
+                (CommandStatus::Rejected, encode_boss_activity_reply(&BossActivityReply::Refused(
+                    BossActivityRefusal::Level,
+                )).map_err(debug)?)
+            );
+        }
+        assert_eq!(counters(&h).await?, before);
         println!("ENDGAME_ENTRY POSTGRES_CASE_COMPLETED");
         Ok(())
     })
