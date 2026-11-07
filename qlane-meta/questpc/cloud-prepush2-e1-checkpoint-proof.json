@@ -1,0 +1,41 @@
+{
+  "main": "e1ca3e0033013c35b10d9b5b2be7f103f813fd14",
+  "workspace_all_targets": {
+    "result": "PASS",
+    "duration_seconds": 495,
+    "log": "/tmp/questpc-prepush2-final-check.log"
+  },
+  "fmt": "PASS",
+  "generators": [
+    "regenerate_content.py --skip-checks",
+    "regenerate_content.py --native-only --skip-checks",
+    "quest_binding_authoring.py",
+    "quest_completion_matrix.py",
+    "convert_placements.py",
+    "convert_world_metadata.py --crystal-root /tmp/questpc-world-metadata-source",
+    "update_item_audit_tags.py",
+    "update_client_registration_golden.py 0289-cast-view 0290-cast-control 0291-cast-chat"
+  ],
+  "duplicate_migrations": "PASS",
+  "world_pin": "9764e52f4d0f6276a3ca31360dbc3d430360d6bbe4b163ff36a11959df32e988",
+  "independent_pin_check": "PASS",
+  "unit_run": {
+    "crate": "oteryn-gameplay-quests",
+    "passed": 308,
+    "failed": 2,
+    "registry_fix_focused_rerun": "PASS",
+    "remaining": "actual NPC13 predecessor hash (also reproduced before main merge)",
+    "#no_skips_added": true
+  },
+  "own_pg": {
+    "result": "RED",
+    "postgres": "18.6",
+    "seconds": [
+      85.425144606,
+      86.554984242
+    ],
+    "post_fixture_rerun": "pending",
+    "qualification_credit": false
+  },
+  "latest_main_pending": "f641d8d6c1b7b800db28103f9a5f4e48972d051d"
+}

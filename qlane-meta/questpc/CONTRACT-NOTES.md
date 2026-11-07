@@ -592,3 +592,9 @@ store the opaque start stamp and require elapsed>=7201seconds in the SQL owner.
 Lubo acceptance closes immediately through existing EndConversation0. Hanna
 partial recipes retain the shared material-refusal reply; verbatim per-item failure
 text is not claimed by the planned state/value proof. Own PG qualification pending.
+
+Citizen dialogue composition: source flag0 offers and acceptance share the NPC
+programme's topic store. Source flag1 material offers use reward-callback topics.
+This source-stage split requires no new engine schema or persistent latch and
+retains topic2 Lubo/topic1 Hanna acceptance guards. The two PG stories are the
+qualification gate; unit planner success alone earns no quest qualification.

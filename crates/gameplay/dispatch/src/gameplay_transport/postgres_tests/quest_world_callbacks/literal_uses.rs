@@ -3,16 +3,60 @@ use super::*;
 
 #[test]
 fn quest_world_callbacks_literal_use_accepts_clicked_nonzero_ordinal() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
     super::super::kill_reward_e2e::scenario_thread::run("literal-callback-use", || {
         for (name, appearance, ordinal, source, destination) in [
-            ("blue-valley-2", 49948, 3, (33605,31468,-7), (32456,32291,-7)),
-            ("blue-valley-3", 49948, 3, (33601,31468,-7), (32456,32291,-7)),
-            ("blue-valley-4", 49948, 1, (32456,32290,-7), (33614,31494,-7)),
-            ("blue-valley-5", 50310, 2, (32203,32303,-6), (33614,31494,-7)),
-            ("pirates-tail-cheesy-exit", 1760, 1, (33925,31355,-7), (33799,31321,-7)),
-            ("order-of-the-stag-boat-return", 6391, 2, (33874,32250,-7), (32395,32511,-7)),
-            ("order-of-the-stag-crypt-exit", 52656, 1, (32402,32472,-5), (32402,32473,-4)),
+            (
+                "blue-valley-2",
+                49948,
+                3,
+                (33605, 31468, -7),
+                (32456, 32291, -7),
+            ),
+            (
+                "blue-valley-3",
+                49948,
+                3,
+                (33601, 31468, -7),
+                (32456, 32291, -7),
+            ),
+            (
+                "blue-valley-4",
+                49948,
+                1,
+                (32456, 32290, -7),
+                (33614, 31494, -7),
+            ),
+            (
+                "blue-valley-5",
+                50310,
+                2,
+                (32203, 32303, -6),
+                (33614, 31494, -7),
+            ),
+            (
+                "pirates-tail-cheesy-exit",
+                1760,
+                1,
+                (33925, 31355, -7),
+                (33799, 31321, -7),
+            ),
+            (
+                "order-of-the-stag-boat-return",
+                6391,
+                2,
+                (33874, 32250, -7),
+                (32395, 32511, -7),
+            ),
+            (
+                "order-of-the-stag-crypt-exit",
+                52656,
+                1,
+                (32402, 32472, -5),
+                (32402, 32473, -4),
+            ),
         ] {
             let callback = callback(name)?;
             assert_eq!(callback.selector.position, Some(position(source)));
@@ -25,11 +69,27 @@ fn quest_world_callbacks_literal_use_accepts_clicked_nonzero_ordinal() -> TestRe
 
 #[test]
 fn quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
     super::super::kill_reward_e2e::scenario_thread::run("read-only-stag-use", || {
         for (name, appearance, ordinal, minimum, source, destination) in [
-            ("order-of-the-stag-boat-to-ada", 6391, 4, 3, (32393,32513,-7), (33875,32249,-7)),
-            ("order-of-the-stag-mark-wall", 52735, 1, 11, (33834,32139,-4), (33833,32138,-4)),
+            (
+                "order-of-the-stag-boat-to-ada",
+                6391,
+                4,
+                3,
+                (32393, 32513, -7),
+                (33875, 32249, -7),
+            ),
+            (
+                "order-of-the-stag-mark-wall",
+                52735,
+                1,
+                11,
+                (33834, 32139, -4),
+                (33833, 32138, -4),
+            ),
         ] {
             let callback = callback(name)?;
             assert_eq!(callback.selector.position, Some(position(source)));
@@ -47,7 +107,9 @@ fn quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes() -> Test
     })
 }
 
-fn position((x,y,floor): (u16,u16,i8)) -> Position { Position { x,y,floor } }
+fn position((x, y, floor): (u16, u16, i8)) -> Position {
+    Position { x, y, floor }
+}
 
 fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>) -> TestResult {
     let started = std::time::Instant::now();
@@ -176,51 +238,157 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
 
-        owner.states.chat.admit(admitted.game_session_id, "Traveller", owner.owner_now());
+        owner
+            .states
+            .chat
+            .admit(admitted.game_session_id, "Traveller", owner.owner_now());
         if let Some(stage) = stage {
-            use oteryn_gameplay_quests::quest::{QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition};
+            use oteryn_gameplay_quests::quest::{
+                QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
+                QuestTransition,
+            };
             let storage = callback.storage.first().ok_or("guard storage")?;
             let seed = "oteryn:quest-transition/fixture/stag-stage";
-            let catalogue = std::sync::Arc::new(QuestStateCatalogue::new("content-1", vec![QuestTrack {
-                key: storage.track.clone(), quest: callback.quest.clone(), initial: -1, min: -1, max: 13,
-            }], vec![QuestTransition {
-                key: seed.into(), quest: callback.quest.clone(), effects: vec![QuestEffect {
-                    track: storage.track.clone(), from: QuestComparison::Between(-1, 13), effect: QuestEffectKind::Set(stage),
-                }], completes: false, experience: None,
-            }]).map_err(debug)?);
+            let catalogue = std::sync::Arc::new(
+                QuestStateCatalogue::new(
+                    "content-1",
+                    vec![QuestTrack {
+                        key: storage.track.clone(),
+                        quest: callback.quest.clone(),
+                        initial: -1,
+                        min: -1,
+                        max: 13,
+                    }],
+                    vec![QuestTransition {
+                        world_change: None,
+                        key: seed.into(),
+                        quest: callback.quest.clone(),
+                        effects: vec![QuestEffect {
+                            track: storage.track.clone(),
+                            from: QuestComparison::Between(-1, 13),
+                            effect: QuestEffectKind::Set(stage),
+                        }],
+                        completes: false,
+                        experience: None,
+                    }],
+                )
+                .map_err(debug)?,
+            );
             let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-            let seeded = slot.commit_quest_transition(owner.root, owner.character, owner.holder, fence,
-                crate::durability::quest_state::QuestTransitionRequest {
-                    transition_key: seed.into(), cause: crate::durability::quest_state::QuestCause::Command(
-                        crate::foundation::CommandRef::new(admitted.game_session_id, crate::foundation::CommandId::new(900).map_err(debug)?)),
-                }, catalogue.clone()).await.map_err(debug)?;
-            assert!(matches!(seeded, crate::durability::quest_state::QuestTransitionOutcome::Committed(_)));
+            let seeded = slot
+                .commit_quest_transition(
+                    owner.root,
+                    owner.character,
+                    owner.holder,
+                    fence,
+                    crate::durability::quest_state::QuestTransitionRequest {
+                        transition_key: seed.into(),
+                        cause: crate::durability::quest_state::QuestCause::Command(
+                            crate::foundation::CommandRef::new(
+                                admitted.game_session_id,
+                                crate::foundation::CommandId::new(900).map_err(debug)?,
+                            ),
+                        ),
+                    },
+                    catalogue.clone(),
+                )
+                .await
+                .map_err(debug)?;
+            assert!(matches!(
+                seeded,
+                crate::durability::quest_state::QuestTransitionOutcome::Committed(_)
+            ));
             drop(slot);
             owner.quest_catalogue = Some(catalogue);
         }
-        let key = oteryn_world_bundle::bundle::placement_key(trigger.floor, trigger.x, trigger.y, ordinal).ok_or("key")?;
-        let mut placement = owner.bundle_map().ok_or("map")?.overlay.base().digest().to_vec();
+        let key = oteryn_world_bundle::bundle::placement_key(
+            trigger.floor,
+            trigger.x,
+            trigger.y,
+            ordinal,
+        )
+        .ok_or("key")?;
+        let mut placement = owner
+            .bundle_map()
+            .ok_or("map")?
+            .overlay
+            .base()
+            .digest()
+            .to_vec();
         placement.extend_from_slice(&key.to_be_bytes());
-        let target = WorldObjectTarget { placement, expected_revision: 0 };
-        let before = owner.root.read_character_quest_state(&authority, fence.character_id).await.map_err(debug)?;
-        let receipts_before: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts").fetch_one(&h.pool).await?;
-        let allowed = callback.storage.first().is_none_or(|storage| stage.is_some_and(|stage| stage >= storage.minimum));
-        let reply = wire(&owner, &mut admitted, 1, 2,
-            oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?).await?;
-        assert_eq!(oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?, if allowed { UseDisposition::Committed } else { UseDisposition::Rejected });
-        assert_eq!(owner.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position(),
-            if allowed { local(callback.teleport.ok_or("destination")?) } else { origin });
+        let target = WorldObjectTarget {
+            placement,
+            expected_revision: 0,
+        };
+        let before = owner
+            .root
+            .read_character_quest_state(&authority, fence.character_id)
+            .await
+            .map_err(debug)?;
+        let receipts_before: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
+                .fetch_one(&h.pool)
+                .await?;
+        let allowed = callback
+            .storage
+            .first()
+            .is_none_or(|storage| stage.is_some_and(|stage| stage >= storage.minimum));
+        let reply = wire(
+            &owner,
+            &mut admitted,
+            1,
+            2,
+            oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?,
+        )
+        .await?;
+        assert_eq!(
+            oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
+            if allowed {
+                UseDisposition::Committed
+            } else {
+                UseDisposition::Rejected
+            }
+        );
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(deps.actor)
+                .map_err(debug)?
+                .position(),
+            if allowed {
+                local(callback.teleport.ok_or("destination")?)
+            } else {
+                origin
+            }
+        );
         let messages = owner.states.chat.drain(admitted.game_session_id);
-        let expected_message = if allowed { &callback.success_message } else { &callback.failure_message };
+        let expected_message = if allowed {
+            &callback.success_message
+        } else {
+            &callback.failure_message
+        };
         if let Some(expected_message) = expected_message {
             assert_eq!(messages.iter().filter(|line| matches!(line,
                 oteryn_protocol_oteryn::chat::ChatLine::Private {text, ..} if text == expected_message)).count(), 1);
         }
-        let after = owner.root.read_character_quest_state(&authority, fence.character_id).await.map_err(debug)?;
+        let after = owner
+            .root
+            .read_character_quest_state(&authority, fence.character_id)
+            .await
+            .map_err(debug)?;
         assert_eq!(before, after, "literal USE changed durable quest state");
-        let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts").fetch_one(&h.pool).await?;
+        let receipts: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
+                .fetch_one(&h.pool)
+                .await?;
         assert_eq!(receipts, receipts_before);
-        eprintln!("QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED {} stage={stage:?} allowed={allowed} tracks_unchanged receipts_unchanged revision_unchanged duration={:?}", callback.key, started.elapsed());
+        eprintln!(
+            "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED {} stage={stage:?} allowed={allowed} tracks_unchanged receipts_unchanged revision_unchanged duration={:?}",
+            callback.key,
+            started.elapsed()
+        );
         drop(owner);
         drop(authority);
         drop(seal);

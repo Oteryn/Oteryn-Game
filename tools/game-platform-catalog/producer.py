@@ -121,6 +121,10 @@ def _validate_json_value(value: Any, path: str, depth: int = 0) -> None:
             raise CatalogValidationError(f"{path} exceeds object member limit")
         for key, item in value.items():
             _require_string(key, f"{path} object key")
+            # Owner/Platform CATALOG rule: even nested record data is public-only.
+            # G-2 hidden records must be omitted by the source view, never repaired here.
+            if key == "visibility" and item != "public":
+                raise CatalogValidationError(f"{path}.visibility must be public")
             _validate_json_value(item, f"{path}.{key}", depth + 1)
         return
     raise CatalogValidationError(f"{path} contains unsupported JSON value type")

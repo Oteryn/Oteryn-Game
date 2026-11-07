@@ -38,6 +38,7 @@ pub(super) async fn serve<S: AsyncRead + AsyncWrite + Unpin + Send + 'static>(
         .consume(&ticket, &|| node.service.clock())
         .await?;
     let reservation = proof.reservation_id();
+    let chat_selected = proof.chat_selected();
     if proof.chat_selected()
         && !super::capabilities::PRODUCTION_OFFERED_CAPABILITIES
             .iter()
@@ -53,7 +54,7 @@ pub(super) async fn serve<S: AsyncRead + AsyncWrite + Unpin + Send + 'static>(
             return Err(Error::Unavailable);
         }
     };
-    let result = serve_joined(stream, &node, id, reservation, shutdown).await;
+    let result = serve_joined(stream, &node, id, reservation, shutdown, chat_selected).await;
     let _ = node.service.apply(Operation::Leave(id)).await;
     let _ = node.access.release(reservation).await;
     result
@@ -65,6 +66,7 @@ async fn serve_joined<S: AsyncRead + AsyncWrite + Unpin + Send + 'static>(
     id: oteryn_gameplay_social::cast::ObserverId,
     reservation: [u8; 16],
     shutdown: &super::CancellationToken,
+    chat_selected: bool,
 ) -> Result<(), Error> {
     let generation =
         u64::from_be_bytes(SecureIdentifiers::random::<8>().ok_or(Error::Unavailable)?).max(1);
@@ -73,7 +75,11 @@ async fn serve_joined<S: AsyncRead + AsyncWrite + Unpin + Send + 'static>(
     };
     let clear = Envelope {
         generation,
-        message: Message::Clear { epoch: state.epoch },
+        message: Message::Ready {
+            epoch: state.epoch,
+            chat: chat_selected && state.chat_enabled,
+            delay: state.delay_seconds,
+        },
     }
     .encode()
     .map_err(|_| Error::Invalid)?;
@@ -129,7 +135,7 @@ async fn serve_joined<S: AsyncRead + AsyncWrite + Unpin + Send + 'static>(
                 *sequence=value;
                 let message=match content {
                     Content::Metadata{viewers,delay_seconds}=>Message::State{revision:state.revision,epoch:state.epoch,delay:*delay_seconds,count:*viewers},
-                    Content::Clear=>Message::Clear{epoch:state.epoch},
+                    Content::Clear=>Message::Ready{epoch:state.epoch,chat:chat_selected&&state.chat_enabled,delay:state.delay_seconds},
                     Content::Slate=>Message::Slate{epoch:state.epoch,sequence:value},
                     Content::Chat(line)=>Message::ChatLine{epoch:state.epoch,sequence:value,handle:line.handle,text:format!("{}: {}",line.name,line.text)},
                     Content::Media(media)=>Message::Media{epoch:state.epoch,sequence:value,media:(**media).clone()},

@@ -102,6 +102,7 @@ mod tests {
             effect: StateMutation::Add { value: 0 },
         };
         let transition = |key: &str, effects| QuestTransition {
+            world_change: None,
             key: key.into(),
             quest: owner.into(),
             effects,

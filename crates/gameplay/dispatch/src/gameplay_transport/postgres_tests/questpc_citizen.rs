@@ -148,13 +148,18 @@ pub(super) async fn exercise(
                     h,
                     &ItemAmount {
                         item: format!("oteryn:item.tibia.i{item}"),
-                        count,
+                        // The shared outfit helper deliberately mints one surplus
+                        // for multi-item recipes; arrange the exact source amount.
+                        count: if count > 2 { count - 1 } else { count },
                     },
                     &mut bags,
                     &mut occurrence,
                 )
                 .await?;
             }
+            assert_eq!(quantity(h, "oteryn:item.tibia.i3374").await?, 1);
+            assert_eq!(quantity(h, "oteryn:item.tibia.i5890").await?, 100);
+            assert_eq!(quantity(h, "oteryn:item.tibia.i5902").await?, 49);
             let (result, _, _) =
                 super::qengine_rewards::wire_reward(owner, admitted, npc, &hat, false).await?;
             assert_eq!(result, NpcIntentDisposition::Rejected);
@@ -190,7 +195,8 @@ pub(super) async fn exercise(
                 h,
                 &ItemAmount {
                     item: "oteryn:item.tibia.i5878".into(),
-                    count: 100,
+                    // Shared helper adds one surplus to multi-item requests.
+                    count: 99,
                 },
                 &mut bags,
                 &mut occurrence,

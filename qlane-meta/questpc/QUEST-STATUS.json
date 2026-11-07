@@ -8,7 +8,7 @@
     "BLOCKED": 1
   },
   "owner_excluded_with_blocked_status": 1,
-  "qualification_boundary": "QUALIFIED is explicitly scoped per row. Standalone source contracts prove every original reward claim and native source placement through production USE, replay and refusal. Additional authored programme routes are retained separately and are not certified by claim tests. Historical source readiness holds remain unchanged. BLOCKED is reserved for owner exclusions. Historical engine ownership restrictions are archived and superseded; all remaining source implementation belongs to this lane.",
+  "qualification_boundary": "QUALIFIED is explicitly scoped per row. Standalone source contracts prove every original reward claim and native source placement through production USE, replay and refusal. Additional authored programme routes are retained separately and are not certified by claim tests. Historical source readiness holds remain unchanged. BLOCKED is reserved for owner exclusions. Current owner rule: only this packet's owned quests belong to this lane; large generic engine features belong to qengine2 and require an ENGINE-REQUEST.",
   "binding_queue_boundary": "Historical binding queues are not exhaustive runtime registries. Their null fields identify outstanding composition/evidence, not proof that no bespoke adapter exists.",
   "inputs": {
     "tools/content-schema/quest-authoring/samples/completion-matrix/all373.json": "6de3467edfd66bafc99b591007b932a2b76a2ad2a637c021d65b14dc8e7c7717",
@@ -16,9 +16,9 @@
     "content/quests/missions/source-lowered-binding-plan.json": "7d114019d6a30b203341776efdb747363cd2d30e8f2caef3f6e0c40a276d111e",
     "docs/repository/QUEST_CALLBACK_COVERAGE.json": "a79a16f57ee52ee8927d79fe2768e9899717ecf56284de84912de8c96cecdd55",
     "tools/content-schema/quest-authoring/samples/authored68/recipes.json": "7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc",
-    "content/quests/definitions/quests-00000-00099.json": "0e9bf2893b18eb6bfc7914f1862f740daf775e6627d68d6a001ce637c7687f71",
-    "content/quests/definitions/quests-00100-00199.json": "8adc06e96c97143394423549564850f198c7cbc8aef6ece979499c1bf203d324",
-    "content/quests/definitions/quests-00200-00299.json": "a6dbb079c0682cdc3e2de9ef034de8759a817b71279799945bb3e045b19601a8",
+    "content/quests/definitions/quests-00000-00099.json": "21b89ca0c70e084167878dad85a1aa948d938d0b601e63bfe65241ef3cb0c9b0",
+    "content/quests/definitions/quests-00100-00199.json": "b371bf031ca52390e837c92ba2e2b65d76218ec37fc46f454aebab18eeb9107c",
+    "content/quests/definitions/quests-00200-00299.json": "8de026361aae0bbad44c0bba51fea2316e86379946b8b9af4cd6d5a602de263e",
     "content/quests/definitions/quests-00300-00351.json": "4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a"
   },
   "fresh_pg": {
@@ -10768,7 +10768,7 @@
     }
   ],
   "citizen_mainland_batch": {
-    "status": "WIP native story tests implemented; fixture source pin and normal capability negotiation corrected; focused PG rerun pending",
+    "status": "WIP: introduction topics bound; PG routing request sent to qengine2; exact supply fixture corrected",
     "sources": [
       "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/lubo.lua",
       "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/hanna.lua"
@@ -10794,13 +10794,44 @@
           84.611
         ],
         "failure": "framed fixture omitted ordinary offered NPC/appearance capabilities; corrected using QENGINE story setup"
+      },
+      {
+        "cases": 2,
+        "duration_seconds": [
+          85.425144606,
+          86.554984242
+        ],
+        "postgres_version": "18.6",
+        "failure": "Lubo ineligible reward-keyword fallback intercepts intro; Hanna fixture shared supply helper minted one surplus (corrected; rerun pending)"
       }
-    ]
+    ],
+    "intro_topic_unit": {
+      "red": "missing Citizen introduction; 0.126 seconds",
+      "green": "0.133 seconds",
+      "proof": "cloud-citizen-intro-topic-proof.json"
+    },
+    "engine_request": "Eligible native NPC programme must precede ineligible reward-keyword fallback, preserving topic guards",
+    "engine_checked_ref": "5c01deabb33b448fe7de795a3f9271477af05ea6"
   },
   "current_citizen_fixture": {
-    "state": "compiling WIP; PG rerun pending",
+    "state": "fixed; own PostgreSQL rerun compiling",
     "root_cause": "subset catalogue omitted other active NPC programme tracks",
     "fix": "test-support Citizen clock helper preserves full catalogue and additive history",
     "qualified": false
+  },
+  "prepush2": {
+    "main": "e1ca3e003",
+    "state": "e1ca3e003 merge compiled, formatted, fully regenerated and independently pin-checked; next main f641d8d6c integration required",
+    "unit_crates": [
+      "oteryn-gameplay-quests",
+      "oteryn-gameplay-dispatch",
+      "oteryn-gameplay-durability"
+    ],
+    "unit_status": "Full quest crate 308 passed/2 failed; source-shard/native callback registry expectation fixed and focused rerun green5.28s. NPC13 historical hash failure reproduced on pre-main binary; unchanged. Dispatch/durability full units and Citizen post-fixture PG rerun pending.",
+    "new_local_helper": "33-line carried-inventory NPC input helper; forbids ground and replacement; main SpellLanePermit ground path retained",
+    "workspace_check": "PASS 8m15s post-regeneration",
+    "fmt": "PASS cargo fmt --all --check plus mounted touched files",
+    "world_pin": "9764e52f4d0f6276a3ca31360dbc3d430360d6bbe4b163ff36a11959df32e988",
+    "pin_check": "PASS independent compiler pin-check"
   }
 }

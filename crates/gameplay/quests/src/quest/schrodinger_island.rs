@@ -12,6 +12,7 @@ pub const ENTER: &str = "oteryn:quest-callback/srv6-schrodinger-island";
 pub(crate) fn callback() -> Callback {
     Callback {
         catalogue_layer: 0,
+        world_change: None,
         eject_occupants: None,
         object_conditions: Vec::new(),
         objects: None,

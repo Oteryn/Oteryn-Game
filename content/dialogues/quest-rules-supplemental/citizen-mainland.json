@@ -56,6 +56,72 @@
   ],
   "rules": [
     {
+      "key": "oteryn:quest-npc/citizen/lubo/intro-1",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lubo",
+      "trigger": "say",
+      "keywords": [
+        "addon",
+        "outfit"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Sorry, the backpack I wear is not for sale. It's handmade from rare minotaur leather."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:101",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:68"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/citizen/lubo/intro-2",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lubo",
+      "trigger": "say",
+      "keywords": [
+        "backpack",
+        "minotaur",
+        "leather"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Well, if you really like this backpack, I could make one for you, but minotaur leather is hard to come by these days. Are you willing to put some work into this?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:101",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:68"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
       "key": "oteryn:quest-npc/citizen/lubo/start",
       "quest": "oteryn:quest.outfit_and_addon_quests",
       "npc": "oteryn:npc.lubo",
@@ -103,6 +169,73 @@
       ]
     },
     {
+      "key": "oteryn:quest-npc/citizen/lubo/intro-3",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lubo",
+      "trigger": "say",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Sorry, but I don't run a welfare office, you know... no pain, no gain."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:101",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:68"
+      ],
+      "any_message": true,
+      "exclude_keywords": [
+        "yes"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/citizen/hanna/intro-1",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.hanna",
+      "trigger": "say",
+      "keywords": [
+        "addon",
+        "outfit",
+        "hat"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Pretty, isn't it? My friend Amber taught me how to make it, but I could help you with one if you like. What do you say?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hanna.lua:85",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hanna.lua:68"
+      ]
+    },
+    {
       "key": "oteryn:quest-npc/citizen/hanna/start",
       "quest": "oteryn:quest.outfit_and_addon_quests",
       "npc": "oteryn:npc.hanna",
@@ -143,6 +276,41 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hanna.lua:85",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hanna.lua:68"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/citizen/hanna/intro-2",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.hanna",
+      "trigger": "say",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Aw, I guess you don't like feather hats. No big deal."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hanna.lua:85",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hanna.lua:68"
+      ],
+      "any_message": true,
+      "exclude_keywords": [
+        "yes"
+      ],
+      "topics": [
+        1
       ]
     }
   ],

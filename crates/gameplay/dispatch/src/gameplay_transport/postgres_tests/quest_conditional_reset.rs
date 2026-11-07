@@ -60,6 +60,7 @@ fn scenario(initial: i64, name: &'static str) -> TestResult {
                             max: 2,
                         }],
                         vec![QuestTransition {
+                            world_change: None,
                             key: TRANSITION.into(),
                             quest: QUEST.into(),
                             completes: false,

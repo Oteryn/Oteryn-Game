@@ -61,6 +61,7 @@ mod tests {
                 max: 10,
             }],
             vec![QuestTransition {
+                world_change: None,
                 key: "oteryn:quest-transition/history-test/old".into(),
                 quest: QUEST.into(),
                 effects: vec![QuestEffect {

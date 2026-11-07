@@ -89,7 +89,16 @@ pub(super) async fn prepare_channel(
     let unix_ms = crate::world_clock::now_utc_ms()
         .and_then(|now| i64::try_from(now).ok())
         .unwrap_or(0);
-    let daily = daily_world_changes::roll(material.world, reset_epoch, unix_ms);
+    let daily = if reset_epoch == 0 {
+        daily_world_changes::roll(material.world, reset_epoch, unix_ms)
+    } else {
+        root.world_change_calendar(material.world, reset_epoch)
+            .await
+            .map_err(|_| BootError::Readiness("world change calendar"))?;
+        root.world_change_snapshot(material.world, reset_epoch)
+            .await
+            .map_err(|_| BootError::Readiness("world change snapshot"))?
+    };
     let bundle = bundle
         .map(|checked| {
             let checked = daily_world_changes::bind_layers(checked, &daily)

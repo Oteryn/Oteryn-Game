@@ -95,6 +95,7 @@ pub(super) fn catalogue(callback: &Callback, name: &str) -> TestResult<Arc<Quest
             }],
             vec![
                 QuestTransition {
+                    world_change: None,
                     key: KEY.into(),
                     quest: callback.quest.clone(),
                     completes: false,
@@ -109,6 +110,7 @@ pub(super) fn catalogue(callback: &Callback, name: &str) -> TestResult<Arc<Quest
                     }],
                 },
                 QuestTransition {
+                    world_change: None,
                     key: SEED.into(),
                     quest: callback.quest.clone(),
                     completes: false,

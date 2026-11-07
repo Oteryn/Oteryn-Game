@@ -8,6 +8,6 @@
     505
   ],
   "state_domains": [],
-  "offered": false,
-  "offer_gate": "Disabled pending Platform observer profile, production worker composition, durable audit and measured qualification."
+  "offered": true,
+  "offer_gate": "Native caster consumer; execution additionally requires explicit OTERYN_CAST_ENABLED, configured mTLS preferences service, and current durable session/consent/audit authority."
 }

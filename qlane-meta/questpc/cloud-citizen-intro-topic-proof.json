@@ -1,0 +1,21 @@
+{
+  "scope": "mainland Citizen source introductory topic plans; NOT PostgreSQL credit",
+  "red": {
+    "log": "/tmp/questpc-citizen-intro-red.log",
+    "error": "Invalid(\"missing Citizen introduction\")",
+    "duration_seconds": 0.126
+  },
+  "green": {
+    "log": "/tmp/questpc-citizen-intro-green.log",
+    "tests": 3,
+    "intro_duration_seconds": 0.133
+  },
+  "assertions": [
+    "yes at topic0 cannot accept",
+    "Lubo yes at topic1 cannot bypass leather question",
+    "literal introduction changes only topic",
+    "acceptance writes exactly two source flags",
+    "decline changes topic without progress"
+  ],
+  "pg_credit": false
+}

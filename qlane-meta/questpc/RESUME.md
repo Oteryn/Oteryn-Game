@@ -1,3 +1,41 @@
+## Compiling checkpoint before latest QNPCFX integration
+Main e1ca3e003 merge: full generator +native-only, final binding evidence/matrix,
+world metadata from pinned53MB source, placements, audit/client registration
+goldens, duplicate check PASS. Post-generation workspace check PASS8m15s;
+fmt PASS; world pin9764e52f4d0f6276a3ca31360dbc3d430360d6bbe4b163ff36a11959df32e988
+and independent pin-check PASS. Quest units308/310; registry expectation fixed
+and focused GREEN5.28s. Historical8c649465 NPC13 pin remains RED even with
+retained19:46 pre-main executable; never replace the pinned hash to hide it.
+Latest fetched main f641d8d6c adds QNPCFX1310–1315, NPC XP/handins/delayed end.
+Next merge/reuse it and remove overlapping lane schema/runtime implementations.
+Keep this checkpoint for owner-authorized15min merge fallback. No quest promoted.
+
+## PREPUSH-2 / main integration in progress
+Fetched main e1ca3e003 (four commits after1ae); source conflicts composed and
+all generated evidence conflicts selected incoming for repository regeneration.
+QWORLD optional world_change fields composed into existing lane constructors.
+MAINRED1107B SpellLanePermit ground path retained; old NPC inventory-only call
+uses a new33-line helper under NpcItemPermit that rejects ground/replacement.
+Latest own PG run executed on PostgreSQL18.6: male85.425s and female86.555s RED.
+Lubo: reward fallback owns addon before eligible NPC intro. Narrow ENGINE-REQUEST
+sent; qengine2 refreshed and has same behavior. Hanna: shared supply helper mints
+one surplus; corrected counts and added exact pre-hand-in assertions; rerun pending.
+Citizen not qualified. Do not investigate this routing issue again: qengine2 owns it.
+After push continue another owned supported quest; keep both story tests intact.
+PREPUSH-2: merge fetched main, tooling regeneration/pins, changed-crate units +own
+PG, workspace all-targets/fmt. At30min cadence unit runs may remain pending if
+merge+generation+compile+fmt pass; state exact pending/red cases honestly.
+
+## Citizen source introduction phase binding
+Flag-zero introductory offers now live in the existing NPC programme alongside
+acceptance. Flag-one material offers remain in reward callbacks. This avoids
+crossing separate conversation topic stores and keeps source topic guards.
+New topic behavior test RED missing introduction (0.126s), GREEN (0.133s).
+Source costs/clock and exact activation compatibility also GREEN (3focused tests).
+Lubo/Hanna captured Global cells authored and placement converter/check passed;
+duplicate migrations check passed. Both own PG stories rebuilding/rerun pending.
+No qualification promotion; no new generic engine capability added.
+
 ## Citizen fixture catalogue preservation
 Third PG run executed both cases (83.927/84.091 seconds), failed greeting because
 its five-track subset omitted tracks required by all active NPC programmes.

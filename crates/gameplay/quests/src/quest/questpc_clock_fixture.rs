@@ -7,6 +7,7 @@ pub fn with_citizen_clock(
 ) -> Result<QuestStateCatalogue, String> {
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
     transitions.push(QuestTransition {
+        world_change: None,
         key: "oteryn:quest-transition/test/questpc-citizen-clock".into(),
         quest: "oteryn:quest.outfit_and_addon_quests".into(),
         effects: vec![QuestEffect {

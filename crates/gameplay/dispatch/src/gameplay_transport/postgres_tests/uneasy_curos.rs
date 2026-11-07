@@ -110,6 +110,7 @@ pub(super) async fn prerequisite(
                 })
                 .collect(),
             vec![QuestTransition {
+                world_change: None,
                 key: key.into(),
                 quest: quest.into(),
                 effects: values

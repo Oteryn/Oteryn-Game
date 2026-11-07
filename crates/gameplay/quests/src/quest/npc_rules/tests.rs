@@ -736,3 +736,41 @@ fn storage_owner_commits_exact_father_acceptance_without_raising_general_cap()
     assert!(facts.tracks.is_empty());
     Ok(())
 }
+
+#[test]
+fn citizen_mainland_intro_topics_require_source_questions_before_acceptance()
+-> Result<(), NpcRuleError> {
+    let catalogue = NpcRuleCatalog::runtime()?;
+    let facts = Facts::empty();
+    for (npc, question, accepted_topic) in [
+        ("oteryn:npc.lubo", Some("leather"), 2),
+        ("oteryn:npc.hanna", None, 1),
+    ] {
+        assert!(catalogue.plan(&facts.input(npc, "yes", 0))?.is_none());
+        let intro = catalogue
+            .plan(&facts.input(npc, "addon", 0))?
+            .ok_or_else(|| NpcRuleError::Invalid("missing Citizen introduction".into()))?;
+        assert_eq!(intro.next_topic, 1);
+        assert!(intro.track_changes.is_empty());
+        if let Some(word) = question {
+            assert!(catalogue.plan(&facts.input(npc, "yes", 1))?.is_none());
+            let question = catalogue
+                .plan(&facts.input(npc, word, 1))?
+                .ok_or_else(|| NpcRuleError::Invalid("missing backpack question".into()))?;
+            assert_eq!(question.next_topic, accepted_topic);
+            assert!(question.track_changes.is_empty());
+        }
+        let accept = catalogue
+            .plan(&facts.input(npc, "yes", accepted_topic))?
+            .ok_or_else(|| NpcRuleError::Invalid("missing Citizen acceptance".into()))?;
+        assert_eq!(accept.next_topic, 0);
+        assert_eq!(accept.track_changes.len(), 2);
+        assert!(accept.track_changes.iter().all(|change| change.after == 1));
+        let decline = catalogue
+            .plan(&facts.input(npc, "no", accepted_topic))?
+            .ok_or_else(|| NpcRuleError::Invalid("missing Citizen decline".into()))?;
+        assert_eq!(decline.next_topic, 0);
+        assert!(decline.track_changes.is_empty());
+    }
+    Ok(())
+}
