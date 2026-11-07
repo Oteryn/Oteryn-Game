@@ -726,8 +726,7 @@ and use its revision; unknown consent cannot be optimistically enabled. This is
 the accepted S17 consent-default-off difference from Canary
 `src/creatures/players/livestream/livestream.cpp:486`, recorded in
 `docs/architecture/design/S17-CAST-DESIGN.md` section 6. No Platform write or
-migration is added. These controls are needed because the caster's own public
-actor is also covered by the consent-filtered projection.
+migration is added. These controls let bystanders opt in independently; the caster's explicit Start already supplies the caster's own consent in the existing projection rule.
 
 ## CLCAST S17c — native live room and moderation
 
