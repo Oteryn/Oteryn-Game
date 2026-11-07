@@ -1,3 +1,28 @@
+# Feaster six-stage compiling prefix checkpoint — 2026-11-07 15:40 UTC
+
+Source first6 stages are authored: actual Norbert/Bell,3 source sites, exact
+skull+ground grave-flower distillation/potion, actual scalpel, bounded20 sample/
+20 raw soul/20 purification USEs, exact sample/soul hand-ins. Runtime tools
+come from NPC, only ordinary skull/flower are fixture inputs. No subject state
+or unique tool/reward seeds. Prefix compiles; PG18.6 RED44.959359639s at
+NPC scan233>232 before first dialogue. Existing production budget already
+tracks measured directory additions; add only1 for world/authored-props.
+
+Push KNOWN-COMPILED prefix now for15minute cadence. Budget+1 and fixture
+corrections remain unstaged/in working tree while rerun89918 compiles. The
+head intentionally retains the proven red point; no claim of settlement.
+New fixture must stand beside apparatus32628,32077 (not on it), step off the
+sample exit before returning, and remove unused guardian import. Those fixes
+are in the working tree already. Add exact sample command replay and missing
+tool drop/pickup before final prefix proof. Four ACTIVE remain.
+
+Full producer tools/content-schema/quest-authoring/questpc7_feaster_programme.py
+currently returns13 world callbacks/4 NPC callbacks/0 death objectives; it
+ends at phase6 and does NOT complete quest. Extend remaining17 stages and
+Thaian after reusable prefix is GREEN. New NPC at source-Wiki32628,32076,-7
+is admitted via existing pinned-recipe helper. Real prop compilation40.79s
+alreadyproved. Final pins/gates remain pending until native settlement.
+
 # Feaster fixed source props published — 2026-11-07 15:25 UTC
 
 Generic3 compiler tests/check/strict Clippy passed previously. Real retained

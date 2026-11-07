@@ -5531,6 +5531,856 @@
         "content/world/placements/region-z09-x130-y121.b3:1:sha256:207afee64040ad35fef81382d73667ae3b3307d2f3bd8f0b370aa2ecc961d1e8",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-feaster-entry",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32627,
+          "y": 32076,
+          "floor": -7
+        },
+        "appearance": 231,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32407,
+        "y": 31788,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/entry",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "Ring the Death Knell at the three marked grave sites.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
+        "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-feaster-bell-0",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32408,
+          "y": 31788,
+          "floor": -7
+        },
+        "appearance": 436,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32176,
+        "y": 31836,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/bells",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": [],
+        "owned_items": [
+          {
+            "item": "oteryn:item.tibia.i32582",
+            "count": 1
+          }
+        ]
+      },
+      "success_message": "The silver Death Knell rings over the grave site.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
+        "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/feaster/bells",
+        "minimum": 0,
+        "maximum": 0
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-feaster-bell-1",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32177,
+          "y": 31836,
+          "floor": -8
+        },
+        "appearance": 3114,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32628,
+        "y": 32417,
+        "floor": -9
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/bells",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": [],
+        "owned_items": [
+          {
+            "item": "oteryn:item.tibia.i32582",
+            "count": 1
+          }
+        ]
+      },
+      "success_message": "The silver Death Knell rings over the grave site.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
+        "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/feaster/bells",
+        "minimum": 1,
+        "maximum": 1
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-feaster-bell-2",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32629,
+          "y": 32417,
+          "floor": -9
+        },
+        "appearance": 409,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32630,
+        "y": 32074,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/bells",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": [],
+        "owned_items": [
+          {
+            "item": "oteryn:item.tibia.i32582",
+            "count": 1
+          }
+        ]
+      },
+      "success_message": "The silver Death Knell rings over the grave site.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
+        "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/feaster/bells",
+        "minimum": 2,
+        "maximum": 2
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-feaster-grinder",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32630,
+          "y": 32075,
+          "floor": -7
+        },
+        "appearance": 21573,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i3114",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You grind the skull into bone meal. Place a grave flower beside the apparatus and distil it.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
+        "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
+      ],
+      "item_reward": {
+        "item": "oteryn:item.tibia.i32602",
+        "count": 1,
+        "contents": []
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-feaster-apparatus",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32629,
+          "y": 32077,
+          "floor": -7
+        },
+        "appearance": 8995,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/programme",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [
+        {
+          "position": {
+            "x": 32628,
+            "y": 32077,
+            "floor": -7
+          },
+          "item": "oteryn:item.tibia.i3661",
+          "count": 1
+        }
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i32602",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The bone meal and grave flower become a potion with a skull cork. Ask Norbert for the scalpel.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
+        "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
+      ],
+      "item_reward": {
+        "item": "oteryn:item.tibia.i32584",
+        "count": 1,
+        "contents": []
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-feaster-potion",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32625,
+          "y": 32076,
+          "floor": -7
+        },
+        "appearance": 231,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31915,
+        "y": 32354,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/programme",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/scalpel_given",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/samples",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i32584",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": [],
+        "owned_items": [
+          {
+            "item": "oteryn:item.tibia.i32225",
+            "count": 1
+          }
+        ]
+      },
+      "success_message": "You drink the potion and enter the Brain Grounds. Use the scalpel on the ulcer twenty times.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
+        "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-feaster-sample",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 31916,
+          "y": 32354,
+          "floor": -8
+        },
+        "appearance": 32173,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/programme",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/samples",
+          "minimum": 0,
+          "maximum": 19,
+          "set": 20,
+          "add": 1
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": [],
+        "owned_items": [
+          {
+            "item": "oteryn:item.tibia.i32225",
+            "count": 1
+          }
+        ]
+      },
+      "success_message": "You take one personal ulcer probe.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
+        "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/feaster/samples",
+        "minimum": 0,
+        "maximum": 19
+      },
+      "item_reward": {
+        "item": "oteryn:item.tibia.i32197",
+        "count": 1,
+        "contents": []
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-feaster-samples-return",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 31915,
+          "y": 32354,
+          "floor": -8
+        },
+        "appearance": 1020,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32627,
+        "y": 32076,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/programme",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/samples",
+          "minimum": 20,
+          "maximum": 20,
+          "set": 20,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/samples_return",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "Return the twenty personal samples to Para Norbert.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
+        "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-feaster-purification-entry",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32627,
+          "y": 32076,
+          "floor": -7
+        },
+        "appearance": 231,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31917,
+        "y": 32354,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/programme",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/purification_entry",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "Collect souls at the fixed rift and purify them at the nearby apparatus.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
+        "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-feaster-gather-soul",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 31918,
+          "y": 32354,
+          "floor": -8
+        },
+        "appearance": 23163,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/programme",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/raw_souls",
+          "minimum": 0,
+          "maximum": 19,
+          "set": 20,
+          "add": 1
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": [],
+        "owned_items": [
+          {
+            "item": "oteryn:item.tibia.i32226",
+            "count": 1
+          }
+        ]
+      },
+      "success_message": "You collect a personal lost soul.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
+        "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/feaster/raw_souls",
+        "minimum": 0,
+        "maximum": 19
+      },
+      "item_reward": {
+        "item": "oteryn:item.tibia.i32227",
+        "count": 1,
+        "contents": []
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-feaster-purify",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 31919,
+          "y": 32353,
+          "floor": -8
+        },
+        "appearance": 8996,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/programme",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/purified",
+          "minimum": 0,
+          "maximum": 19,
+          "set": 20,
+          "add": 1
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i32227",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": [],
+        "owned_items": [
+          {
+            "item": "oteryn:item.tibia.i32226",
+            "count": 1
+          }
+        ]
+      },
+      "success_message": "You purify one lost soul.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
+        "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/feaster/purified",
+        "minimum": 0,
+        "maximum": 19
+      },
+      "item_reward": {
+        "item": "oteryn:item.tibia.i32228",
+        "count": 1,
+        "contents": []
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-feaster-souls-return",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 31917,
+          "y": 32354,
+          "floor": -8
+        },
+        "appearance": 1020,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32627,
+        "y": 32076,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/programme",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/raw_souls",
+          "minimum": 20,
+          "maximum": 20,
+          "set": 20,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/purified",
+          "minimum": 20,
+          "maximum": 20,
+          "set": 20,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/souls_return",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "Return the twenty purified souls to Norbert.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
+        "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
+      ]
     }
   ]
 }

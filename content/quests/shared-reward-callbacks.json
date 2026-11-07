@@ -1039,6 +1039,207 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/questpc7-feaster-mission",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "npc": "oteryn:npc.para_norbert",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/programme",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/bells",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i32582",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ring this Death Knell at Carlin graveyard, Ghostlands and Dark Cathedral; grind one skull and distil it with a grave flower."
+      ],
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
+        "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-feaster-probes",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "npc": "oteryn:npc.para_norbert",
+      "keywords": [
+        "probes"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/programme",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/samples",
+          "minimum": 20,
+          "maximum": 20,
+          "set": 20,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/raw_souls",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/purified",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i32197",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i32226",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The twenty personal probes are accepted. Use this purifier for twenty lost souls."
+      ],
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
+        "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-feaster-scalpel",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "npc": "oteryn:npc.para_norbert",
+      "keywords": [
+        "scalpel"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/programme",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/scalpel_given",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i32225",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Use this scalpel on the ulcer after drinking the potion at the Brain Grounds entrance."
+      ],
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
+        "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-feaster-souls",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "npc": "oteryn:npc.para_norbert",
+      "keywords": [
+        "souls"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/programme",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/purified",
+          "minimum": 20,
+          "maximum": 20,
+          "set": 20,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i32228",
+          "count": 20
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your twenty purified souls are accepted. The Brain Head investigation may continue."
+      ],
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
+        "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/questpc7-fiend-commission",
       "quest": "oteryn:quest.fiend_slayer_outfits_quest",
       "npc": "oteryn:npc.the_forgemaster",

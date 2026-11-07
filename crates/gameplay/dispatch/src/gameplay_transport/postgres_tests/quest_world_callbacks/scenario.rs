@@ -44,7 +44,7 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if name == "qengine-rewards-forgotten-story" { "questpc7-forgotten-energy-entry" } else if name == "qengine-rewards-heart-story" { "questpc7-heart-entry" } else if name == "qengine-rewards-grimvale-story" { "questpc7-grimvale-entry" } else if name == "questpc7-grave" { "questpc7-grave-entry" } else if name == "questpc7-ferumbras" { "questpc7-ferumbras-entry" } else if name == "questpc7-hero" { "questpc7-hero-entry" } else if name == "questpc7-hydra" { "questpc7-hydra-entry" } else if name == "questpc7-hoist-story" { "questpc7-hoist-entry" } else if name.starts_with("questpc7-hidden-") { "questpc7-hidden-entry" } else if name == "questpc7-outfits-formal" { "questpc7-formal-display" } else if name == "l1-warmaster-wardrobe" { name } else if classic_npc {
+    let mut callback = callback(if name == "qengine-rewards-feaster-prefix" { "questpc7-feaster-entry" } else if name == "qengine-rewards-forgotten-story" { "questpc7-forgotten-energy-entry" } else if name == "qengine-rewards-heart-story" { "questpc7-heart-entry" } else if name == "qengine-rewards-grimvale-story" { "questpc7-grimvale-entry" } else if name == "questpc7-grave" { "questpc7-grave-entry" } else if name == "questpc7-ferumbras" { "questpc7-ferumbras-entry" } else if name == "questpc7-hero" { "questpc7-hero-entry" } else if name == "questpc7-hydra" { "questpc7-hydra-entry" } else if name == "questpc7-hoist-story" { "questpc7-hoist-entry" } else if name.starts_with("questpc7-hidden-") { "questpc7-hidden-entry" } else if name == "questpc7-outfits-formal" { "questpc7-formal-display" } else if name == "l1-warmaster-wardrobe" { name } else if classic_npc {
         "behemoth"
     } else if rotten_purchase {
         "rotten-blood/sacrifice"
@@ -71,7 +71,9 @@ fn scenario_case(
     if stateless_destination.is_some() {
         assert_eq!(callback.selector.position, Some(trigger));
     }
-    let world = if name == "qengine-rewards-forgotten-story" {
+    let world = if name == "qengine-rewards-feaster-prefix" {
+        world_with_objects(&callback,trigger,&super::super::questpc7_feaster::objects()?,&[])?
+    } else if name == "qengine-rewards-forgotten-story" {
         world_with_objects(&callback,trigger,&super::super::questpc7_forgotten_story::objects()?,&[])?
     } else if name == "qengine-rewards-heart-story" {
         world_with_objects(&callback,trigger,&super::super::questpc7_heart_story::objects()?,&[])?
@@ -130,7 +132,9 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if name == "qengine-rewards-forgotten-story" {
+        let world = if name == "qengine-rewards-feaster-prefix" {
+            world_with_native_items(&callback,trigger,&super::super::questpc7_feaster::objects()?,generation.native_gameplay().ok_or("native")?,&super::super::questpc7_feaster::native_items()?)?
+        } else if name == "qengine-rewards-forgotten-story" {
             world_with_native_items(&callback,trigger,&super::super::questpc7_forgotten_story::objects()?,generation.native_gameplay().ok_or("native")?,&super::super::questpc7_forgotten_story::native_items())?
         } else if name == "qengine-rewards-heart-story" {
             world_with_native_items(&callback,trigger,&super::super::questpc7_heart_story::objects()?,
@@ -142,6 +146,7 @@ fn scenario_case(
 
         let initial_level: Option<u32> = match name {
             "questpc7-eligibility-high" => Some(1000),
+            "qengine-rewards-feaster-prefix" => Some(250),
             "questpc7-ferumbras" | "qengine-rewards-heart-story" => Some(150),
             "questpc7-grave" => Some(250),
             "questpc7-outfits-formal" => Some(20),
@@ -229,7 +234,7 @@ fn scenario_case(
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let eligibility_premium =
-            if name == "qengine-rewards-forgotten-story" || name == "qengine-rewards-heart-story" || name == "qengine-rewards-grimvale-story" || name == "questpc7-grave" || name == "questpc7-ferumbras" || name == "questpc7-hero" || name == "questpc7-hydra" || name == "questpc7-hoist-story" || (name.starts_with("questpc7-eligibility-") && !name.ends_with("no-premium")) || name.starts_with("questpc7-outfits-") {
+            if name == "qengine-rewards-feaster-prefix" || name == "qengine-rewards-forgotten-story" || name == "qengine-rewards-heart-story" || name == "qengine-rewards-grimvale-story" || name == "questpc7-grave" || name == "questpc7-ferumbras" || name == "questpc7-hero" || name == "questpc7-hydra" || name == "questpc7-hoist-story" || (name.starts_with("questpc7-eligibility-") && !name.ends_with("no-premium")) || name.starts_with("questpc7-outfits-") {
                 use crate::gameplay_transport::spell_premium_coordinator::{
                     SpellPremiumCoordinator, purchase_fixture,
                 };

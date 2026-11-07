@@ -112,7 +112,7 @@
       "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
       "scope": "Generic owner only; not this quest's route qualification"
     },
-    "current_batch": "Source-backed fixed props published:6 exact native map placements compile and equivalence PASS40.79s. Full source item regeneration PASS;5 item tests PASS. Portable guards retained; Ground-only source constructors for fixed props. Actual native sampling/purification settlement and whole23-stage quest remain ACTIVE; pins pending.",
+    "current_batch": "First6 selected stages fully authored and native PG prefix compiles. PG18.6 RED44.959359639s: NPC scan233 exceeds measured232 after new directory. +1 exact measured budget and fixture corrections are in working tree/rerun, not this known-compiling checkpoint. No source quest/tool/reward state seeds; whole23-stage quest ACTIVE.",
     "assumptions": "Feaster contact/quest/Thaian facts closed using Wiki revisions419674,368970,421868,445240; exact XML items retained. See RESUME and forthcoming source/prop contracts."
   },
   {
