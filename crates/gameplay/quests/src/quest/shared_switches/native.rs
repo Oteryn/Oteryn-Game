@@ -1,5 +1,5 @@
-//! Authored exact counterparts for native tomb levers whose legacy action ids were omitted.
-use super::recipe;
+//! Authored exact counterparts for native tomb switches and threshold transports.
+use super::{gate, recipe};
 use crate::quest::world_callbacks::Position;
 #[derive(Clone, Copy, Debug)]
 pub struct NativeSwitchBinding {
@@ -45,12 +45,44 @@ const BINDINGS_12123: &[NativeSwitchBinding] = &[
     at(33176, 32889, -11, 2),
     at(33181, 32889, -11, 2),
 ];
+const GATE_50135: &[NativeSwitchBinding] = &[NativeSwitchBinding {
+    position: Position {
+        x: 33381,
+        y: 32786,
+        floor: -14,
+    },
+    ordinal: 0,
+    appearance: 415,
+}];
+const GATE_50137: &[NativeSwitchBinding] = &[NativeSwitchBinding {
+    position: Position {
+        x: 33088,
+        y: 32514,
+        floor: -13,
+    },
+    ordinal: 0,
+    appearance: 415,
+}];
+const GATE_50138: &[NativeSwitchBinding] = &[NativeSwitchBinding {
+    position: Position {
+        x: 33182,
+        y: 32884,
+        floor: -11,
+    },
+    ordinal: 0,
+    appearance: 417,
+}];
 pub fn bindings(key: &str) -> &'static [NativeSwitchBinding] {
     match recipe(key).map(|r| r.action) {
         Some(12121) => BINDINGS_12121,
         Some(12122) => BINDINGS_12122,
         Some(12123) => BINDINGS_12123,
-        _ => &[],
+        _ => match gate(key).map(|g| g.unique) {
+            Some(50135) => GATE_50135,
+            Some(50137) => GATE_50137,
+            Some(50138) => GATE_50138,
+            _ => &[],
+        },
     }
 }
 #[cfg(test)]
@@ -59,8 +91,12 @@ mod tests {
     #[test]
     fn native_counterparts_do_not_share_a_placement_between_recipe_owners() {
         let mut seen = std::collections::BTreeSet::new();
-        for recipe in super::super::RECIPES {
-            for b in bindings(recipe.key) {
+        for key in super::super::RECIPES
+            .iter()
+            .map(|r| r.key)
+            .chain(super::super::GATES.iter().map(|g| g.key))
+        {
+            for b in bindings(key) {
                 assert!(
                     seen.insert((b.position.floor, b.position.x, b.position.y, b.ordinal)),
                     "native counter ownership is unambiguous"

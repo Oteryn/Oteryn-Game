@@ -30,8 +30,11 @@ fn scenario_case(
     let mead = name == "l6/waterskin-of-mead";
     let spirit = name == "qengine-rewards-questpc4-spirit";
     let native_switch = name.starts_with("l6-tomb-switch-native-");
-    let native_crop = small_ruby || mead || spirit || tomb_native || native_switch;
-    let start = if native_switch {
+    let native_gate = name.starts_with("l6-tomb-gate-native-");
+    let native_crop = small_ruby || mead || spirit || tomb_native || native_switch || native_gate;
+    let start = if native_gate {
+        super::super::l6_shared_gate_native::start(name)?
+    } else if native_switch {
         super::super::l6_shared_switch_native::start(name)?
     } else if tomb_native {
         Position {
@@ -257,7 +260,12 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if native_switch {
+        let world = if native_gate {
+            super::super::l6_shared_gate_native::world(
+                generation.native_gameplay().ok_or("native gate policies")?,
+                name,
+            )?
+        } else if native_switch {
             super::super::l6_shared_switch_native::world(
                 generation
                     .native_gameplay()
@@ -585,6 +593,9 @@ fn scenario_case(
             super::super::l6_floor_profiles::exercise(&mut owner, &mut admitted, &h, fence).await?;
         } else if floor_assembly {
             super::super::l6_floor_assembly::exercise(&mut owner, &mut admitted, &h, fence, name)
+                .await?;
+        } else if native_gate {
+            super::super::l6_shared_gate_native::exercise(&mut owner, &mut admitted, &h, name)
                 .await?;
         } else if shared_gate {
             super::super::l6_shared_gates::exercise(

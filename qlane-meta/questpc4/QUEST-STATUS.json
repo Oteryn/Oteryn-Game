@@ -3452,7 +3452,7 @@
     },
     "scope_note": "All LANE-L6 input source blockers remain obligations. Differences from selected recipe approximations are not authority to drop a blocker. Historical qengine ownership language is not treated as a reason to defer work now owned by L6.",
     "publication_branch": "claude/happy-davinci-ijz3wy-questpc4",
-    "latest_batch": "cloud-native-shared-switches-16",
+    "latest_batch": "cloud-native-threshold-transports-17",
     "mechanisms": {
       "reusable_tools_and_atomic_counters": {
         "status": "QUALIFIED",
@@ -5545,9 +5545,9 @@
       }
     ],
     "last_pushed_batch": {
-      "head": "3617e5ad74e7cd9f5d4af2e34d45e3a30693e704",
+      "head": "dbf0eca7081bd724687b24a5591d82c891bedc58",
       "status": "PUSHED",
-      "scope": "Original-actor personal timer consequences; PG8/unit5/fmt/check/clippy/1072 green"
+      "scope": "Exact native shared-switch USE counterparts,25tile witnesses, PG8/unit1/finalfmtcheckclippy green"
     },
     "native_portal_batch_10": {
       "status": "GREEN",
@@ -6067,6 +6067,122 @@
         "diff_duplicates": "PASS staged/unstaged diffs and migration versions",
         "generated": "No world/native/content generated inputs changed; existing a36 pin unchanged",
         "scope_of_final_repairs": "Only invalid fixture error propagation and named tuple types; production, valid native coordinates and allPGassertions unchanged"
+      }
+    },
+    "native_gate_batch_17": {
+      "status": "GREEN_LOCAL_READY_TO_MERGE",
+      "stage": "8 actualPG cases GREEN; final focused clippy/unit gates running; incoming778f85b1e must be merged and overlap validated before publication",
+      "log": "/tmp/questpc4-native-gate-red.log",
+      "classification": "OTERYN_AUTHORED_COUNTERPART / SELECTED_RECIPE_ONLY; not recovered legacyUID registrations",
+      "native_triggers": [
+        [
+          33381,
+          32786,
+          14
+        ],
+        [
+          33088,
+          32514,
+          13
+        ],
+        [
+          33182,
+          32884,
+          11
+        ]
+      ],
+      "source_destinations": [
+        [
+          33367,
+          32805,
+          14
+        ],
+        [
+          33083,
+          32568,
+          14
+        ],
+        [
+          33198,
+          32885,
+          11
+        ]
+      ],
+      "thresholds": [
+        8,
+        7,
+        5
+      ],
+      "qualification_scope": "Exact native interaction bindings and conditional transports, not intervening native maze traversal or full quest",
+      "activation": "N-1/N actual native USE contributions. Sealed fixture-only relocation between disconnected interaction pockets; transport under test is real STEP. No directSQLcounts or syntheticIDs.",
+      "red": {
+        "version": "18.6",
+        "duration_seconds": 55.76,
+        "marker": "POSTGRES_DATABASE_READY l6_native_gate",
+        "observed": "Seven real native contributions committed; STEP stays33381,32786,z14 instead of restoring33380,32786,z14",
+        "log": "/tmp/questpc4-native-gate-red.log"
+      },
+      "green_log": "/tmp/questpc4-native-gate-green.log",
+      "implementation": "Three exact native ground bindings, alllegacyUIDselectors retained; same8/7/5read/destinations/refusal/11/replay owners; combined switch+gate native placement uniqueness unit",
+      "generated": "No map/geometry/attrs/pins/generated data changes",
+      "intermediate": {
+        "log": "/tmp/questpc4-native-gate-green.log",
+        "result": "4passed/2failed139.52s, allactual18.6",
+        "failure": "Ash fixture relocation for third native lever picked33174,32884,z11, a bare wall838; source movement owner correctly refusedBlocked before transport assertion",
+        "repair": "Use retained east neighbour33176,32884,z11, floor417. Keep allnativeUSE/STEP/threshold/destination/cue/replay/progress assertions and movement proof. No bypass/skip.",
+        "obsolete_gate": "Stopped owned old gate script122846/compiler descendants143, not green evidence"
+      },
+      "ash_pair_logs": [
+        "/tmp/questpc4-native-gate-ash-closed-green.log",
+        "/tmp/questpc4-native-gate-ash-open-green.log"
+      ],
+      "postgres": {
+        "status": "GREEN",
+        "version": "18.6",
+        "passed": 8,
+        "cases": {
+          "l6-tomb-gate-native-closed-50137": {
+            "seconds": 78.709264342,
+            "log": "/tmp/questpc4-native-gate-green.log"
+          },
+          "l6-tomb-gate-native-open-50135": {
+            "seconds": 80.055200818,
+            "log": "/tmp/questpc4-native-gate-green.log"
+          },
+          "l6-tomb-gate-native-closed-50135": {
+            "seconds": 80.107236852,
+            "log": "/tmp/questpc4-native-gate-green.log"
+          },
+          "l6-tomb-gate-native-open-50137": {
+            "seconds": 62.968689897,
+            "log": "/tmp/questpc4-native-gate-green.log"
+          },
+          "l6-tomb-gate-native-closed-50138": {
+            "seconds": 58.845287568,
+            "log": "/tmp/questpc4-native-gate-ash-closed-green.log"
+          },
+          "l6-tomb-gate-native-open-50138": {
+            "seconds": 58.124780786,
+            "log": "/tmp/questpc4-native-gate-ash-open-green.log"
+          },
+          "l6-tomb-gate-open-50135": {
+            "seconds": 110.375843282,
+            "log": "/tmp/questpc4-native-gate-legacy-regression.log"
+          },
+          "l6-tomb-switch-native-present-12123": {
+            "seconds": 57.112063397,
+            "log": "/tmp/questpc4-native-gate-lever-regression.log"
+          }
+        },
+        "retained_evidence": "Four unaffected initial native cases plus corrected exact Ash pair and two regressions; original six-case run remains recorded as4green/2fixture failures."
+      },
+      "remote_advancement": "778f85b1e native Paradox tower/timed encounters, includes dbf0eca70. Preserve and integrate after local green commit.",
+      "checks": {
+        "fmt": "PASS",
+        "check": "PASS quests/dispatch all-targets/all-features5m12s",
+        "clippy": "PASS quests/dispatch all-targets/all-features -Dwarnings1m59s",
+        "binding_unit": "1passed0failed0.00s PURE UNIT, notPG",
+        "duplicates_diff": "PASS"
       }
     }
   },
