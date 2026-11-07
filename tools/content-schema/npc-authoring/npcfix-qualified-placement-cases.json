@@ -2066,6 +2066,73 @@
           }
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-32",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a; tools/content-schema/npc-authoring/samples/npcfix-retail-placements.json:sha256:3aba747ac833bce3801b0f2a266eb56376590bcd746e7304848e74cb99eebdcd. Frozen packet supplies audited rows absent from the donor capture; all name/admission assertions remain exact.",
+      "cases": [
+        {
+          "npc": "oteryn:npc.fitzgerald",
+          "name": "Fitzgerald",
+          "expected": {
+            "x": 33382,
+            "y": 32676,
+            "floor": -3
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.gunther",
+          "name": "Gunther",
+          "expected": {
+            "x": 33172,
+            "y": 31777,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.ztiss",
+          "name": "Ztiss",
+          "expected": {
+            "x": 33169,
+            "y": 31230,
+            "floor": -11
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.taya",
+          "name": "Taya",
+          "expected": {
+            "x": 33815,
+            "y": 31464,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.candra",
+          "name": "Candra",
+          "expected": {
+            "x": 33729,
+            "y": 32828,
+            "floor": -4
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.dhira",
+          "name": "Dhira",
+          "expected": {
+            "x": 33729,
+            "y": 32858,
+            "floor": -7
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }

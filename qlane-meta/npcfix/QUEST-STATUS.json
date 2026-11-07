@@ -175,7 +175,7 @@
       "log_sha256": "bb1cf3cbbfe2212db5b479c842d792a063562dfa2e4a31fd5b93006e0e5fbc9c",
       "binary_source": "9fd5ca426",
       "scope": "Native command/ordinary chat, shop windows, durable trades, quest/rank restrictions, default charge/state purchases, healing and exact replay as asserted by the existing thirteen-case fixture. Physical cell qualification remains separate.",
-      "source_reuse": "Relevant fixture/service/trade implementation and migrations byte-identical to current HEAD; unrelated smithing offer restart does not alter these paths.",
+      "source_reuse": "Original13 keys and every assertion retained; only suite parameterization and three exact item+Buy-side selector strengthenings. Core NPC trade/service paths unchanged. New5 postal cases PASS456.20s verifies the shared strengthened postal branch. New quest-only1146/1147 validated independently upstream; no original migrations rewritten.",
       "additional_travel_component": {
         "state": "QUALIFIED_COMPONENTS",
         "source": "e2615554b; production source identical through current data-only slices",
@@ -205,6 +205,25 @@
         "log": "/tmp/npcfix-evidence/npcfix-existing-travel-proof.log",
         "log_sha256": "134394de26bd32fd1daaa24345b7fad0294d26f4af5b1ce66f9089dd3941e507",
         "scope": "Existing generic travel real-command coverage, durable fare/arrival/replay and refusal assertions. No extra availability, destination or physical source-cell qualification inferred."
+      },
+      "source_comparison": {
+        "source_commit": "0fd218694172109f2e2fb90835c6efd78029f468",
+        "source_path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_postage.rs",
+        "original_case_count": 13,
+        "original_keys_preserved": true,
+        "all_original_assertions_preserved": true,
+        "normalized_body_identical": true,
+        "normalization": "Only remove the new parcel/letter reference lookup and reverse three strict identity+Buy-side predicate additions. Every other original scenario byte retained.",
+        "selector_strengthening": "Nelly has other merchandise at postal prices; both parcel price lookups and discounted letter assertion now also require the exact item reference and Buy side.",
+        "compiled_fixture_sha256": "80f76d0edc15c3addf86bba5ecff73b069d985c689a3a45196f0aefe3a39d83b",
+        "scenario_body_sha256": "ae300b429fae797bd98e4084785b02853908564494c80d93f22fa07119c656ae",
+        "new_case_keys": [
+          "olrik",
+          "chemar",
+          "chrystal",
+          "fyodor",
+          "nelly"
+        ]
       }
     },
     "physical_merged_smithing": {
@@ -214,6 +233,26 @@
       "cumulative_cases": 54,
       "log": "/tmp/npcfix-evidence/retail-09-smithing-merged-green.log",
       "scope": "Freshly compiled exact merged source; all54 physical/native assertions passed."
+    },
+    "latest_checked_source": {
+      "source_commit": "c918fc759804e081dbf1c0174247e5598e7426ef",
+      "parity_report": "/tmp/npcfix-evidence/post-passive-four-parity.json",
+      "check": "Own multi-anchor fixture89db51927 dispatch alltargets/allfeatures check PASS18m26s including lock wait; incoming BookWorld compiler/content check and dispatch/entities checks PASS as preserved in199f309b0 continuation_merge. No Rust source changed in provider slice.",
+      "clippy": "Own multi-anchor fixture strict dispatch alltargets/allfeatures Clippy -D warnings PASS7m17s; incoming BookWorld compiler/content and merged dispatch/entities strict checks preserved in199f309b0 continuation_merge. No changed Rust crates in provider slice.",
+      "postgres": "Actual PG marker/durations and all178 native source-cell/name assertions; passive-four-red.log/passive-four-green.log. All other quest/service/travel proofs retained.",
+      "physical_fixture": "Fresh merged199f309b0 dispatch test binary compiled13m34s before provider edit. Actual default current-source PG RED71.02s BlockSolid -> GREEN133.67s tests177 NPCs/178 actors including both Emiliana anchors and all BookWorld cases. Provider-only changes afterward; all Rust byte-identical to compiled merged source.",
+      "physical_latest_green": "Actual PG177 NPCs/178 actors GREEN133.67s; passive-four-green.log",
+      "native_provider": "Native42 generation/reproduction PASS;9 custody/conflict tests PASS39.914s; all3616 prior native records exactly identical;4 pinned passives added.",
+      "world_pin": {
+        "inputs_digest": "2d85b3e389793cdc5d2c1d842142489a629a054146311598bb50a8fbd5071fb8",
+        "pins": [
+          {
+            "bytes": 32007254,
+            "digest": "685a297ae8db4510fb3ee529c84a4854f984d9762112ee368677142889a2dee3",
+            "world": "oteryn"
+          }
+        ]
+      }
     }
   },
   "incoming_cooldown_delivery": {},
@@ -317,10 +356,10 @@
     "final_pg_log": "/tmp/npcfix-evidence/refusal-final-paid-clock-pg.log"
   },
   "counts": {
-    "QUALIFIED": 190,
+    "QUALIFIED": 196,
     "PENDING": 8,
     "EXCLUDED": 24,
-    "AUTHORED; QUALIFICATION PENDING": 95,
+    "AUTHORED; QUALIFICATION PENDING": 89,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
   },
@@ -447,8 +486,14 @@
       "audit_status": "MISSING",
       "work": "Retail placement authored. Add exact displayed identity.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/120; content/npcs/definitions/npcs-00000-00499.json:1#/records/440",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-32",
+        "postgres_red_seconds": 59.83,
+        "postgres_green_seconds": 139.85,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Hercule",
@@ -1036,8 +1081,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/157",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-32",
+        "postgres_red_seconds": 59.83,
+        "postgres_green_seconds": 139.85,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Hawkhurst",
@@ -1671,8 +1722,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/342",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-32",
+        "postgres_red_seconds": 59.83,
+        "postgres_green_seconds": 139.85,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Zumtah",
@@ -1805,8 +1862,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/306",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-32",
+        "postgres_red_seconds": 59.83,
+        "postgres_green_seconds": 139.85,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Yonan",
@@ -2322,8 +2385,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/46",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-32",
+        "postgres_red_seconds": 59.83,
+        "postgres_green_seconds": 139.85,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Captain Corsarah",
@@ -2346,8 +2415,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/77",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-32",
+        "postgres_red_seconds": 59.83,
+        "postgres_green_seconds": 139.85,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "G Ezkho",
@@ -6483,6 +6558,34 @@
       },
       "source_proof": "imports/canary/items-xml/items.xml:5314,5320,5326 sha2561cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2; appearances2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2. Frozen retail-placement packet SHA recorded in case manifest.",
       "checks": "fmt PASS. No changed Rust crates in this slice. Freshly compiled merged-source physical fixture runs before/after the provider change. Reuse scoped green Rust checks: own fixture89db51927 dispatch alltargets/allfeatures check18m26 including lock wait/strict Clippy7m17; incoming BookWorld compiler/content alltargets/allfeatures checks and Clippy, preserved in199f309b0 continuation_merge. Rebuilt merged release compiler PASS1m04; independent merged baseline pin-check628fa42e PASS before profile edit."
+    },
+    {
+      "name": "retail-population-qualification-32",
+      "state": "QUALIFIED",
+      "entries": [
+        "Fitzgerald",
+        "Gunther",
+        "Ztiss",
+        "Taya",
+        "Candra",
+        "Dhira"
+      ],
+      "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed.",
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 59.83,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-32-red.log",
+        "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
+      },
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 139.85,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-32-green.log",
+        "cumulative_cases": 183
+      },
+      "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at c918fc759804e081dbf1c0174247e5598e7426ef; details in verification_components.latest_checked_source. Source identity checked before each slice",
+      "test_code_commit": "c918fc759804e081dbf1c0174247e5598e7426ef",
+      "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
     }
   ],
   "shared_engine_lookup": {
@@ -6909,64 +7012,34 @@
       "normal_profile": "This checkout retained normal unoptimized+debuginfo profiles and existing env.sh. Only stopped-build incremental caches were removed."
     }
   },
-  "next_batch": "Push immediately, refresh parity/source certificate, continue all remaining owned NPCs in small green batches. Preserve concurrent Ahmet fluid work and all existing actor/quest proofs.",
+  "next_batch": "Continue remaining owned entries immediately; preserve all cumulative PG cases. No final turn until all owned scope qualified and pushed.",
   "active_batch": {
-    "name": "reviewed-passive-cells-31",
+    "name": "retail-population-qualification-32",
     "state": "QUALIFIED",
     "entries": [
-      "Lai",
-      "Maeryn",
-      "Owin",
-      "Pino",
-      "Riddler",
-      "The Orc King"
+      "Fitzgerald",
+      "Gunther",
+      "Ztiss",
+      "Taya",
+      "Candra",
+      "Dhira"
     ],
-    "scope": "Retain all six frozen retail cells/floors and exact native display names. Add only four pinned carpet/fur profiles through the existing source importer; all previous native records exactly identical. Strict collision, custody and canonical conflict guards unchanged.",
+    "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed.",
     "red": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 71.02,
-      "log": "/tmp/npcfix-evidence/passive-four-red.log",
-      "sha256": "b129b20bfee9d70c4ecda2f6723e73de347d69dde3cd31b1701c3fba70300bb3"
+      "seconds": 59.83,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-32-red.log",
+      "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
     },
     "green": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 133.67,
-      "log": "/tmp/npcfix-evidence/passive-four-green.log",
-      "sha256": "0f9f37434c5fba5115ef71d814ec044f73d2b3baddefd96e398fbbf7a36828bd",
-      "cumulative_npcs": 177,
-      "cumulative_actors": 178
+      "seconds": 139.85,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-32-green.log",
+      "cumulative_cases": 183
     },
-    "native_provider": {
-      "profiles": {
-        "source_commit": "199f309b0ab0d61722d539de2745fff3ef2186fe",
-        "existing_records": 3616,
-        "preserved_exactly": true,
-        "added_keys": [
-          "oteryn:item.tibia.i2576",
-          "oteryn:item.tibia.i2587",
-          "oteryn:item.tibia.i2588",
-          "oteryn:item.tibia.i2595"
-        ],
-        "xml_source": "imports/canary/items-xml/items.xml:5314-5326",
-        "xml_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
-        "compiler_source_equivalence": "World compiler/content/world-bundle Rust unchanged from retained release compiler."
-      },
-      "native_reproduction": "42 files generated and independently reproduced",
-      "tests": "9 profile/canonical-conflict tests PASS",
-      "log": "/tmp/npcfix-evidence/passive-four-profile-units.log"
-    },
-    "world_pin": {
-      "inputs_digest": "2d85b3e389793cdc5d2c1d842142489a629a054146311598bb50a8fbd5071fb8",
-      "pins": [
-        {
-          "bytes": 32007254,
-          "digest": "685a297ae8db4510fb3ee529c84a4854f984d9762112ee368677142889a2dee3",
-          "world": "oteryn"
-        }
-      ]
-    },
-    "source_proof": "imports/canary/items-xml/items.xml:5314,5320,5326 sha2561cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2; appearances2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2. Frozen retail-placement packet SHA recorded in case manifest.",
-    "checks": "fmt PASS. No changed Rust crates in this slice. Freshly compiled merged-source physical fixture runs before/after the provider change. Reuse scoped green Rust checks: own fixture89db51927 dispatch alltargets/allfeatures check18m26 including lock wait/strict Clippy7m17; incoming BookWorld compiler/content alltargets/allfeatures checks and Clippy, preserved in199f309b0 continuation_merge. Rebuilt merged release compiler PASS1m04; independent merged baseline pin-check628fa42e PASS before profile edit."
+    "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at c918fc759804e081dbf1c0174247e5598e7426ef; details in verification_components.latest_checked_source. Source identity checked before each slice",
+    "test_code_commit": "c918fc759804e081dbf1c0174247e5598e7426ef",
+    "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
   },
   "owner_constraints": {
     "excluded": [
