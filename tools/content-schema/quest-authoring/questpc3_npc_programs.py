@@ -75,13 +75,15 @@ def main():
         target = ROOT / relative
         # This shared registry may receive independently authored lane records.
         # Replace only our NPC programs and retain all foreign entries.
+        field = "callbacks" if "callbacks" in document else "offers" if "offers" in document else "npcs"
         if target.exists():
             existing = json.loads(target.read_text())
-            field = "callbacks" if "callbacks" in document else "offers" if "offers" in document else "npcs"
             foreign = [record for record in existing[field]
-                       if (not record["key"].startswith("oteryn:quest-reward/questpc3/")
+                       if (not record["key"].startswith("oteryn:quest-reward/questpc3/beginning/")
                            if field == "callbacks" else record["npc"] != "oteryn:npc.santiago")]
             document[field].extend(foreign)
+        if field == "callbacks":
+            document[field].sort(key=lambda record: record["key"])
         text = json.dumps(document, indent=2) + "\n"
         target.parent.mkdir(parents=True, exist_ok=True)
         if not target.exists() or target.read_text() != text:

@@ -84,7 +84,7 @@
     },
     "Service.Blessing": {
       "index": "content/services/blessings/index.json",
-      "records": 4
+      "records": 8
     },
     "Service.Promotion": {
       "index": "content/services/promotion/index.json",
@@ -730,7 +730,7 @@
       "path": "content/services/bank/index.json"
     },
     {
-      "path": "content/services/blessings/blessing-00000-00003.json"
+      "path": "content/services/blessings/blessing-00000-00007.json"
     },
     {
       "path": "content/services/blessings/index.json"

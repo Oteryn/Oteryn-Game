@@ -250,6 +250,20 @@
           "items": {
             "$ref": "#/$defs/input"
           }
+        },
+        "blessing": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^oteryn:service\\.blessing\\.[a-z0-9_]+$",
+          "maxLength": 128
+        },
+        "premium": {
+          "type": "boolean"
+        },
+        "completes": {
+          "type": "boolean"
         }
       }
     },

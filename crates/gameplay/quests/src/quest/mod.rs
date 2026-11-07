@@ -162,6 +162,11 @@ impl QuestComparison {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QuestEffectKind {
     Set(i64),
+    /// Set a value while pinning the admitted cross-owner reward terms.
+    SetWithBinding {
+        value: i64,
+        binding: [u8; 32],
+    },
     /// Checked `i64` addition.
     Add(i64),
     /// The database transaction time, in Unix seconds.
@@ -186,6 +191,11 @@ impl QuestEffectKind {
             Self::Set(value) => {
                 out.push(1);
                 out.extend_from_slice(&value.to_be_bytes());
+            }
+            Self::SetWithBinding { value, binding } => {
+                out.push(7);
+                out.extend_from_slice(&value.to_be_bytes());
+                out.extend_from_slice(&binding);
             }
             Self::Add(value) => {
                 out.push(2);
@@ -360,7 +370,9 @@ impl QuestStateCatalogue {
                     _ => true,
                 };
                 let effect_ok = match effect.effect {
-                    QuestEffectKind::Set(value) => (track.min..=track.max).contains(&value),
+                    QuestEffectKind::Set(value) | QuestEffectKind::SetWithBinding { value, .. } => {
+                        (track.min..=track.max).contains(&value)
+                    }
                     QuestEffectKind::RequireSumAtLeast { other_effect, .. } => {
                         usize::from(other_effect) < transition.effects.len()
                             && usize::from(other_effect) != index
@@ -518,7 +530,9 @@ impl QuestStateCatalogue {
             .zip(current)
             .map(|(effect, (track, before))| {
                 let after = match effect.effect {
-                    QuestEffectKind::Set(value) => Some(value),
+                    QuestEffectKind::Set(value) | QuestEffectKind::SetWithBinding { value, .. } => {
+                        Some(value)
+                    }
                     QuestEffectKind::Add(delta) => before.checked_add(delta),
                     QuestEffectKind::SetNow => Some(now),
                     QuestEffectKind::Computed => None,

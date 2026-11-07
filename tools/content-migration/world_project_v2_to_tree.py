@@ -537,6 +537,16 @@ def main() -> int:
     if len(service_records) != 389:
         raise RuntimeError(f"SERVICE_SOURCE_COUNT_MISMATCH:{len(service_records)}")
 
+    # Regular quest blessings use the same canonical Service family as sales.
+    blessing_book = load(ROOT / "rulesets/character/blessings/catalogue.json")
+    regular = {"the_spiritual_shielding", "the_embrace_of_tibia", "the_fire_of_the_suns", "the_spark_of_the_phoenix", "the_wisdom_of_solitude"}
+    known_services = {row["identity"]["key"] for row in service_records}
+    for blessing in blessing_book["blessings"]:
+        key = blessing["service"]
+        if key.removeprefix("oteryn:service.blessing.") in regular and key not in known_services:
+            service_records.append({"kind": "Service", "identity": {"key": key, "revision": "definition-r1"}, "fields": []})
+            known_services.add(key)
+
     service_shards: dict[str, list[str]] = {}
     service_counts: dict[str, int] = {}
     for family, (node, stem, field) in SERVICE_FAMILIES.items():
@@ -544,6 +554,8 @@ def main() -> int:
         # existing trade identities and Service declarations even with no offers.
         records = [row for row in service_records
                    if field in row or row["identity"]["key"].startswith(f"oteryn:service.{stem}.")]
+        if family == "Service.Blessing":
+            records.sort(key=lambda row: row["identity"]["key"])
         service_counts[family] = len(records)
         service_shards[family] = []
         for start in range(0, len(records), ITEM_SHARD_SIZE):

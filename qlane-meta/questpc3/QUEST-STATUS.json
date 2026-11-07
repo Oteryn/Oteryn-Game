@@ -1384,10 +1384,34 @@
             "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2553 filtered out; finished in 81.71s"
           ]
         },
-        "clippy": {
-          "status": "RUNNING",
-          "log": "/tmp/questpc3-merged-greet-clippy.log",
-          "sha256": null
+        "clippy": "PASS: /tmp/questpc3-merged-greet-clippy.log, 5m56s"
+      },
+      "pilgrimage_blessing_01": {
+        "status": "GREEN",
+        "red": {
+          "log": "/tmp/questpc3-pilgrimage-red.log",
+          "postgres_marker": "QUEST_L4_PILGRIMAGE POSTGRES_ASSERTION_REACHED greeting=NoConversation",
+          "duration_seconds": 151.21
+        },
+        "check": "PASS 44.00s /tmp/questpc3-pilgrimage-check.log",
+        "unit": "PASS 2 reward binding/model tests; PASS 2 authoring tests",
+        "green": {
+          "log": "/tmp/questpc3-pilgrimage-green.log",
+          "duration_seconds": 327.03,
+          "marker": "QUEST_L4_PILGRIMAGE POSTGRES_CASE_COMPLETED duration_ms=327026 success=true",
+          "passed": 1
+        },
+        "clippy": "PASS all features/targets 13m56s /tmp/questpc3-pilgrimage-clippy.log",
+        "migration_claim": "1096 rechecked origin/main 91afbe0ba1; no open PR collision",
+        "scope": "First free regular blessing slice; whole quest remains IN_PROGRESS. Complete route/MINT/journal/native placement proof follows.",
+        "service_unit": "PASS 1 canonical/curated boundary test /tmp/questpc3-pilgrimage-service-unit.log",
+        "service_roundtrip": "PASS (1282 NPC,2747 bindings,393 Services), strict original389 plus4; /tmp/questpc3-pilgrimage-service-validation-green.log",
+        "regeneration": "PASS targeted world_project_v2_to_tree.py; /tmp/questpc3-pilgrimage-tree-regenerate.log",
+        "pin_refresh": {
+          "status": "PASS",
+          "log": "/tmp/questpc3-pilgrimage-pin-refresh.log",
+          "inputs_digest": "e8b3c1e823b5aa1df054ba86f7659cf9895c830d3b5f1717da103ac06efbad36",
+          "world_digest": "1aaf5e3b5400be0098e441e20a92ef55e1a222d210f87f640743ef3f4af4b2aa"
         }
       }
     },

@@ -94,6 +94,33 @@ pub(crate) async fn apply(
     {
         return Ok(false);
     }
+    if let Some(service) = &callback.blessing {
+        let catalogue =
+            oteryn_gameplay_content::content::blessing_catalogue::BlessingCatalogue::load()
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+        if !catalogue.canonical_service(service) {
+            return Ok(false);
+        }
+        let Some(blessing) = catalogue
+            .blessings
+            .iter()
+            .find(|blessing| blessing.service == *service && blessing.npcs.contains(&callback.npc))
+        else {
+            return Ok(false);
+        };
+        // All blessing/death writers serialize this held set under the Character
+        // root already locked by the quest writer. Existing provenance is immutable.
+        let held: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_blessings WHERE character_id=encode($1,'hex')::uuid AND blessing_key=$2)")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(&blessing.storage_key)
+            .fetch_one(&mut **tx).await?;
+        if !held {
+            sqlx::query("INSERT INTO game_character_blessings(character_id,blessing_key,provenance) VALUES(encode($1,'hex')::uuid,$2,'quest:' || (encode($3,'hex')::uuid)::text || ':' || $4::text || ':' || encode(sha256(convert_to($5,'UTF8')),'hex'))")
+                .bind(fence.character_id.as_bytes().as_slice()).bind(&blessing.storage_key)
+                .bind(command.game_session_id().as_bytes().as_slice())
+                .bind(command.command_id().get().to_string()).bind(&callback.key)
+                .execute(&mut **tx).await?;
+        }
+    }
     if !super::super::quest_world_callback::consume_reward_inputs(tx, fence, request, callback)
         .await?
     {

@@ -2,6 +2,44 @@
   "schema": 1,
   "callbacks": [
     {
+      "key": "oteryn:quest-reward/questpc3/beginning/food-explained",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "keywords": [
+        "yes",
+        "right",
+        "ok"
+      ],
+      "topic": 8,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 12,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You can find food on creatures in the forest. Have you seen Zirella nearby?"
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L210"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/questpc3/beginning/greet",
       "quest": "oteryn:quest.the_beginning_quest",
       "npc": "oteryn:npc.santiago",
@@ -78,44 +116,6 @@
       ]
     },
     {
-      "key": "oteryn:quest-reward/questpc3/beginning/level-explained",
-      "quest": "oteryn:quest.the_beginning_quest",
-      "npc": "oteryn:npc.santiago",
-      "keywords": [
-        "yes",
-        "right",
-        "ok"
-      ],
-      "topic": 4,
-      "next_topic": 5,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
-          "minimum": 7,
-          "maximum": 7,
-          "set": 8,
-          "preserve": false
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
-          "minimum": 5,
-          "maximum": 5,
-          "set": 6,
-          "preserve": false
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Advancing improves your health, carrying capacity and speed. Did the cockroaches hurt you?"
-      ],
-      "sources": [
-        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L177"
-      ]
-    },
-    {
       "key": "oteryn:quest-reward/questpc3/beginning/hurt-explained",
       "quest": "oteryn:quest.the_beginning_quest",
       "npc": "oteryn:npc.santiago",
@@ -154,7 +154,7 @@
       ]
     },
     {
-      "key": "oteryn:quest-reward/questpc3/beginning/food-explained",
+      "key": "oteryn:quest-reward/questpc3/beginning/level-explained",
       "quest": "oteryn:quest.the_beginning_quest",
       "npc": "oteryn:npc.santiago",
       "keywords": [
@@ -162,21 +162,21 @@
         "right",
         "ok"
       ],
-      "topic": 8,
-      "next_topic": 9,
+      "topic": 4,
+      "next_topic": 5,
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
-          "minimum": 11,
-          "maximum": 11,
-          "set": 12,
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8,
           "preserve": false
         },
         {
           "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
-          "minimum": 9,
-          "maximum": 9,
-          "set": 10,
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6,
           "preserve": false
         }
       ],
@@ -185,10 +185,10 @@
       "outfit": null,
       "achievement": null,
       "reply": [
-        "You can find food on creatures in the forest. Have you seen Zirella nearby?"
+        "Advancing improves your health, carrying capacity and speed. Did the cockroaches hurt you?"
       ],
       "sources": [
-        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L210"
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L177"
       ]
     },
     {
@@ -227,6 +227,1092 @@
       ],
       "sources": [
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L216"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/edala",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.edala",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "blessing": "oteryn:service.blessing.the_fire_of_the_suns",
+      "premium": true,
+      "completes": false,
+      "reply": [
+        "Your visit is recorded. Continue your pilgrimage."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/eremo",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.eremo",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "blessing": "oteryn:service.blessing.the_wisdom_of_solitude",
+      "premium": true,
+      "completes": false,
+      "reply": [
+        "Your visit is recorded. Continue your pilgrimage."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/guide_alexena-finish",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.guide_alexena",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 20
+      },
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": true,
+      "reply": [
+        "Your pilgrimage is complete. Here are twenty platinum coins."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/guide_alexena-start",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.guide_alexena",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": false,
+      "reply": [
+        "Your visit is recorded. Continue your pilgrimage."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/guide_behil-finish",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.guide_behil",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 20
+      },
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": true,
+      "reply": [
+        "Your pilgrimage is complete. Here are twenty platinum coins."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/guide_behil-start",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.guide_behil",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": false,
+      "reply": [
+        "Your visit is recorded. Continue your pilgrimage."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/guide_davina-finish",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.guide_davina",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 20
+      },
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": true,
+      "reply": [
+        "Your pilgrimage is complete. Here are twenty platinum coins."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/guide_davina-start",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.guide_davina",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": false,
+      "reply": [
+        "Your visit is recorded. Continue your pilgrimage."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/guide_edna-finish",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.guide_edna",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 20
+      },
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": true,
+      "reply": [
+        "Your pilgrimage is complete. Here are twenty platinum coins."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/guide_edna-start",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.guide_edna",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": false,
+      "reply": [
+        "Your visit is recorded. Continue your pilgrimage."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/guide_elena-finish",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.guide_elena",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 20
+      },
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": true,
+      "reply": [
+        "Your pilgrimage is complete. Here are twenty platinum coins."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/guide_elena-start",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.guide_elena",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": false,
+      "reply": [
+        "Your visit is recorded. Continue your pilgrimage."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/guide_jonathan-finish",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.guide_jonathan",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 20
+      },
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": true,
+      "reply": [
+        "Your pilgrimage is complete. Here are twenty platinum coins."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/guide_jonathan-start",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.guide_jonathan",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": false,
+      "reply": [
+        "Your visit is recorded. Continue your pilgrimage."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/guide_kunibert-finish",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.guide_kunibert",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 20
+      },
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": true,
+      "reply": [
+        "Your pilgrimage is complete. Here are twenty platinum coins."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/guide_kunibert-start",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.guide_kunibert",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": false,
+      "reply": [
+        "Your visit is recorded. Continue your pilgrimage."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/guide_luke-finish",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.guide_luke",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 20
+      },
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": true,
+      "reply": [
+        "Your pilgrimage is complete. Here are twenty platinum coins."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/guide_luke-start",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.guide_luke",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": false,
+      "reply": [
+        "Your visit is recorded. Continue your pilgrimage."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/guide_meruka-finish",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.guide_meruka",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 20
+      },
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": true,
+      "reply": [
+        "Your pilgrimage is complete. Here are twenty platinum coins."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/guide_meruka-start",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.guide_meruka",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": false,
+      "reply": [
+        "Your visit is recorded. Continue your pilgrimage."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/guide_rahlkora-finish",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.guide_rahlkora",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 20
+      },
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": true,
+      "reply": [
+        "Your pilgrimage is complete. Here are twenty platinum coins."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/guide_rahlkora-start",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.guide_rahlkora",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": false,
+      "reply": [
+        "Your visit is recorded. Continue your pilgrimage."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/guide_thelandil-finish",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.guide_thelandil",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 20
+      },
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": true,
+      "reply": [
+        "Your pilgrimage is complete. Here are twenty platinum coins."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/guide_thelandil-start",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.guide_thelandil",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": false,
+      "reply": [
+        "Your visit is recorded. Continue your pilgrimage."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/guide_tiko-finish",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.guide_tiko",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 20
+      },
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": true,
+      "reply": [
+        "Your pilgrimage is complete. Here are twenty platinum coins."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/guide_tiko-start",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.guide_tiko",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": false,
+      "reply": [
+        "Your visit is recorded. Continue your pilgrimage."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/humphrey",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.humphrey",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "blessing": "oteryn:service.blessing.the_embrace_of_tibia",
+      "premium": true,
+      "completes": false,
+      "reply": [
+        "Your visit is recorded. Continue your pilgrimage."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/kawill",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.kawill",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "blessing": null,
+      "premium": true,
+      "completes": false,
+      "reply": [
+        "Your visit is recorded. Continue your pilgrimage."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/norf",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.norf",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "blessing": "oteryn:service.blessing.the_spiritual_shielding",
+      "premium": true,
+      "completes": false,
+      "reply": [
+        "Your visit is recorded. Continue your pilgrimage."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/pilgrimage/pydar",
+      "quest": "oteryn:quest.pilgrimage_of_ashes",
+      "npc": "oteryn:npc.pydar",
+      "keywords": [
+        "pilgrimage",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc3/pilgrimage_of_ashes/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "blessing": "oteryn:service.blessing.the_spark_of_the_phoenix",
+      "premium": true,
+      "completes": false,
+      "reply": [
+        "Your visit is recorded. Continue your pilgrimage."
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe@5e72a3f0b",
+        "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
+        "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
       ]
     }
   ]
