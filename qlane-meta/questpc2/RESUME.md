@@ -755,3 +755,40 @@ Next: compile fixes, registration/source-input/pin tooling as needed, actual
 same-transaction PG GREEN, guard+completeAnnihilator regressions, fmt/check/
 clippy3changedcrates; publish runtime then continuous Elvenbane route/rewards.
 Counts2/33; no whole Elvenbane qualification. Keep working; no owner question.
+
+2026-11-07 09:25 UTC source/proof checkpoint only. Follow-up PG actually ran
+73.92s against180006 but corpse still refused: native loot section was stale,
+not the now-generated canonical corpse data. Refreshed via
+python3 tools/content-schema/native-gameplay/build_full_spell_artifact.py --refresh-loot-tables.
+Read its exact admission map before another PG: Dragon had10 inadmissible
+loot Items (listed CONTRACT-NOTES). Extended existing generic loot custody
+admission scope to21 Items including previously qualified Demon11. All10
+new Items have known physical/movement/weight facts; only stack/container/
+materializable custody changes. Trophy44158 lacks XML but pinned client
+object/name/exact binding independently proves nonstack/noncontainer portable
+custody. source.profile already supports None; guard forbids guessing XML
+stack/container limits.3loot tests PASS22.665s,3corpse tests PASS1.599s.
+
+Verified grizzly/condition-potion/task-board overlay inputs against HEAD/source
+with --qualify-custody-inputs, preserving all other selected facts and captures.
+Final prey simulation currently session15674, log
+/tmp/questpc2-dragon-final-prey-simulation.log. The earlier simulation was
+intentionally discarded when its snapshot became obsolete after discovering
+the10missing Items; no test skip/green claim. Once final sim finishes, run
+register_spell_families.py write/check (previous attempt PREY_MODEL_STALE).
+Then cached exact atomic PG case; data-only changes may avoid native rebuild.
+Three-crate compiler current-check PASS13.43s. Runtime/data remain local.
+
+Current positive standalone dispatch library was rebuilt by the generator;
+never overwrite it with old archives. Four unused old dispatch .rlib files
+were losslessly gzip retained (/tmp/questpc2-unused-dispatch-library-retention.json),
+restore only if original missing and needed by that build mode. Four inactive
+durability caches are archived and originals empty, ledger
+/tmp/questpc2-atomicity-inactive-durability-retention.json. Current native PG
+exe is actual RED; newest READY live. Clippy archive in atomicity-retention
+ledger remains available. No full suites/profile changes/broad clean.
+Next: final derived registration, atomic PG (native queue, phase3, XP/Quest same
+xmin, replay), shared-fixture Annihilator and generic guard regressions, pins
+refresh/check via release compiler after staging inputs; fmt/check/clippy,
+publish runtime. Then complete actual Elvenbane traversal/combat/rewards.
+Counts2/33; keep working, no owner question and no final external deferral.

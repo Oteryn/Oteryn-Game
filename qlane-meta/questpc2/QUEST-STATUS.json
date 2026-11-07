@@ -1889,6 +1889,13 @@
       4027
     ],
     "source_tests": "3 tests PASS1.599s; /tmp/questpc2-dragon-corpse-python.log",
-    "next": "Finish common Quest persistence extraction and native XP-transaction objective consumer; same-xmin/replay PG proof; positive source traversal and physical rewards afterward."
+    "next": "Finish common Quest persistence extraction and native XP-transaction objective consumer; same-xmin/replay PG proof; positive source traversal and physical rewards afterward.",
+    "latest_red": {
+      "postgres_version": 180006,
+      "duration_seconds": 73.92,
+      "log": "/tmp/questpc2-native-objective-atomic-recovered-green-pg.log",
+      "finding": "Canonical corpse admission alone did not refresh native loot section; section has now been regenerated. Ten additional Dragon loot custody Items qualified through source tooling."
+    },
+    "custody_tests": "3 corpse tests PASS1.599s;3 loot custody tests PASS22.665s; no whole quest qualification."
   }
 }

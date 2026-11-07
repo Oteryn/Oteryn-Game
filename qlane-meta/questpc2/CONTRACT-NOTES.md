@@ -263,3 +263,24 @@ qualification. Continue owned missing mechanisms; no external engine deferral.
   Reuse generic encounter_corpse_items.py and exact independent WorldObject
   Item pointers (objects-00500-00999 and01500-01999). Generator's3tests pass.
   This is source custody admission work, not whole Elvenbane qualification.
+
+- Follow-up actual PG RED73.92s/180006 still refused corpse: derived native
+  loot-tables.json carried materializable=false/capacity=null for5973 despite
+  canonical admission. Regenerate with build_full_spell_artifact.py
+  --refresh-loot-tables; never hand-edit eligibility. Native Dragon's accepted
+  22-entry loot table additionally selected ten unqualified custody Items:
+  3061,3071,3275,3322,3416,5877,5920,7430,11457,44158. Existing known physical
+  and combat/charge facts remain unchanged; source flags qualify only custody.
+- Trophy44158 has no pinned XML row, but exact binding in
+  imports/crystalserver/bindings/items.json:1 and pinned client object44158
+  establish the portable Dragon Trophy. Client asset SHA256
+  2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2,
+  content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat:
+  name dragon trophy, take=true, cumulative=false, container=false. Existing
+  canonical physical weight500/movable/pickupable are preserved. Generic
+  importer already accepts absent XML; require portable nonstack/noncontainer
+  flags so no absent XML capacity or stack limit is invented. Its3tests pass.
+  Donor data-otservbr-global/monster/dragons/dragon.lua:90-112, SHA256
+  44b7a3aa02085be56a94af2d837219d8828de3ddf8dad96aa11b5e1e8d6216c8,
+  names the ordinary Dragon loot; preserve existing accepted canonical loot
+  probabilities/identities (including trophy) rather than rewriting its source.
