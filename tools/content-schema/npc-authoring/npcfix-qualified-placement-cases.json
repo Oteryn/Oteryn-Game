@@ -623,6 +623,73 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-10",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.yonan",
+          "name": "Yonan",
+          "expected": {
+            "x": 33922,
+            "y": 31513,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.etzel",
+          "name": "Etzel",
+          "expected": {
+            "x": 32626,
+            "y": 31917,
+            "floor": -5
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.lukosch",
+          "name": "Lukosch",
+          "expected": {
+            "x": 32618,
+            "y": 31947,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.maryza",
+          "name": "Maryza",
+          "expected": {
+            "x": 32634,
+            "y": 31889,
+            "floor": -9
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.melfar",
+          "name": "Melfar",
+          "expected": {
+            "x": 32523,
+            "y": 31966,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.nezil",
+          "name": "Nezil",
+          "expected": {
+            "x": 32661,
+            "y": 31912,
+            "floor": -9
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }
