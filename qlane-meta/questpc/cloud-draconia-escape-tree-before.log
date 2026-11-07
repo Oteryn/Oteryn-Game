@@ -1,0 +1,23 @@
+Traceback (most recent call last):
+  File "/workspace/Oteryn-Game/tools/content-schema/quest-authoring/quest_tree_authoring.py", line 574, in <module>
+    main()
+  File "/workspace/Oteryn-Game/tools/content-schema/quest-authoring/quest_tree_authoring.py", line 540, in main
+    files = expected_files(args.root, include_registration=True)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/Oteryn-Game/tools/content-schema/quest-authoring/quest_tree_authoring.py", line 312, in expected_files
+    records = attach(root, records)
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/Oteryn-Game/tools/content-schema/quest-authoring/quest_completion_authoring.py", line 138, in attach
+    completed = completion_records(root, source_records)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/Oteryn-Game/tools/content-schema/quest-authoring/quest_completion_authoring.py", line 59, in completion_records
+    expected, source_change = effective_digests(root, baseline, source)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/Oteryn-Game/tools/content-schema/quest-authoring/source_fix_guard.py", line 215, in effective_digests
+    receipt, approval = verified_receipt(root)
+                        ^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/Oteryn-Game/tools/content-schema/quest-authoring/source_fix_guard.py", line 84, in verified_receipt
+    verify_file(root, descriptor)
+  File "/workspace/Oteryn-Game/tools/content-schema/quest-authoring/source_fix_guard.py", line 50, in verify_file
+    raise ValueError('input/proof/compiler SHA mismatch: ' + str(relative))
+ValueError: input/proof/compiler SHA mismatch: content/quests/world-callbacks.json

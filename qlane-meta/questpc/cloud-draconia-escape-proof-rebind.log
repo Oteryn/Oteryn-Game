@@ -1,0 +1,9 @@
+{
+  "result": "PASS",
+  "changed_proof_input": "content/quests/world-callbacks.json",
+  "sha256": "d6f1bdb6625f140b5526b59086f8daddaafb321e6aacbbbe927f6aaf64f1de8c",
+  "approved_graphs": "unchanged",
+  "approved_core_digests": "unchanged",
+  "immutable_and_compiler_inputs": "unchanged",
+  "native_runtime_admission": false
+}

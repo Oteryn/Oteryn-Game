@@ -1,3 +1,33 @@
+## Draconia escape/offering green — 2026-11-07
+Reused questpc6@3bfd85606 callback35012, native Item3206 profile/producer and four
+source PG cases. Runtime callback is compared with its authored source packet.
+Only Item3206 and the escape callback were added; all old Native records/callbacks
+remain unchanged. Canonical profile-input hashes match this branch exactly.
+
+Four final-artifact PostgreSQL cases PASS180.43s: exact1->0 flag reset, later2 and
+absent-1 preservation, one offering burned with one receipt, missing offering
+returns to32818,31599,z9 with no state/receipt, and replay. First candidate also
+passed184.07s; reran after transitive metadata regeneration. RED4 missing production
+callback cases14.26s after database creation. Source XML confirms weight490;
+NonStackable; no invented container/charges/lifetime. Fixture flag seeds do not
+qualify NPC acquisition or a physical deployed UID location.
+
+ChecksPASS: dispatch/content/quests alltarget/allfeature check33.03s; strict clippy
+47.82s;9profile tests7.358s;40Native files and callback generation checks clean;
+4Quest shards regenerated/check clean; pin refresh world digest unchanged2cabea56... .
+Source-fix proof hash was rebound to the reviewed callback registry; approved
+source graphs/core values and immutable/compiler inputs remain unchanged. All28
+Quest leaf changes are source_change_provenance.sha256 only. Logs/hashes/reuse:
+cloud-draconia-escape-validation.json. Counts59QUALIFIED/118UNFINISHED/1excluded
+DawnportBLOCKED; no whole Draconia promotion yet.
+
+NEXT: Draconia four-lever exit UID35011. Read retainedsource-engine-gaps/
+draconia-movement-exit_teleport.lua and check qengine2/questpc6 first; implement or
+reuse a generic current-placement condition/read-set with PG source proof. Then
+compose shared resettable keys, party floor switches and all four original rewards.
+Do not substitute personal ordered approximations. Ten-minute missing-fact cap;
+document conservative behavior, keep each finished tested slice small and push it.
+
 ## Draconia engine support green — 2026-11-07
 Reused questpc6c651c87d5 failure_teleport andbe812420e exact SET_IF support,
 retaining this branch's newer objects/StepOut and23 authored inputs. Five realPG

@@ -1,0 +1,90 @@
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32
+    |
+208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+    |                                ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
+    |
+
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)
+warning: `tokio` (lib) generated 2 warnings (2 duplicates)
+warning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14
+    |
+260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |              ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |
+
+warning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)
+   Compiling oteryn-error-codes v0.1.0 (/workspace/Oteryn-Game/crates/error-codes)
+warning: `sqlx-core` (lib) generated 1 warning (1 duplicate)
+   Compiling oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)
+   Compiling oteryn-gameplay-native-admission-source v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/native-admission-source)
+   Compiling oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)
+   Compiling oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)
+   Compiling oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)
+   Compiling oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)
+   Compiling oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)
+   Compiling oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)
+   Compiling oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)
+   Compiling oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)
+warning: function `authored_callback` is never used
+  --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/draconia_escape.rs:69:15
+   |
+69 | pub(super) fn authored_callback() -> TestResult<Callback> {
+   |               ^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `oteryn-gameplay-dispatch` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 30s
+     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-b07c00d46acdf173)
+
+running 4 tests
+test gameplay_transport::monk_save::postgres_tests::draconia_escape::draconia_escape_consumes_offering_and_resets_exact_flag_atomically ... POSTGRES_CASE_STARTED draconia_escape database_created=true
+Error: "callback"
+FAILED
+test gameplay_transport::monk_save::postgres_tests::draconia_escape::draconia_escape_consumes_offering_without_rewinding_later_flag ... POSTGRES_CASE_STARTED draconia_escape database_created=true
+Error: "callback"
+FAILED
+test gameplay_transport::monk_save::postgres_tests::draconia_escape::draconia_escape_consumes_one_offering_and_retains_absent_flag ... POSTGRES_CASE_STARTED draconia_escape database_created=true
+Error: "callback"
+FAILED
+test gameplay_transport::monk_save::postgres_tests::draconia_escape::draconia_escape_missing_offering_recovers_without_progress_or_receipt ... POSTGRES_CASE_STARTED draconia_escape database_created=true
+Error: "callback"
+FAILED
+
+failures:
+
+failures:
+    gameplay_transport::monk_save::postgres_tests::draconia_escape::draconia_escape_consumes_offering_and_resets_exact_flag_atomically
+    gameplay_transport::monk_save::postgres_tests::draconia_escape::draconia_escape_consumes_offering_without_rewinding_later_flag
+    gameplay_transport::monk_save::postgres_tests::draconia_escape::draconia_escape_consumes_one_offering_and_retains_absent_flag
+    gameplay_transport::monk_save::postgres_tests::draconia_escape::draconia_escape_missing_offering_recovers_without_progress_or_receipt
+
+test result: FAILED. 0 passed; 4 failed; 0 ignored; 0 measured; 2551 filtered out; finished in 14.26s
+
+error: test failed, to rerun pass `-p oteryn-gameplay-dispatch --lib`

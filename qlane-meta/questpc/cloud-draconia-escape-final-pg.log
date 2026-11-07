@@ -1,0 +1,73 @@
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32
+    |
+208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+    |                                ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
+    |
+
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)
+warning: `tokio` (lib) generated 2 warnings (2 duplicates)
+warning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14
+    |
+260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |              ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |
+
+warning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)
+warning: `sqlx-core` (lib) generated 1 warning (1 duplicate)
+   Compiling oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 30.27s
+     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-b07c00d46acdf173)
+
+running 4 tests
+test gameplay_transport::monk_save::postgres_tests::draconia_escape::draconia_escape_consumes_offering_and_resets_exact_flag_atomically ... POSTGRES_CASE_STARTED draconia_escape database_created=true
+POSTGRES_CASE_STARTED draconia-escape-exact server_version=18.6 (Debian 18.6-1.pgdg13+2)
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=2
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=3
+POSTGRES_CASE_COMPLETED draconia-escape-exact duration=45.795934834s
+ok
+test gameplay_transport::monk_save::postgres_tests::draconia_escape::draconia_escape_consumes_offering_without_rewinding_later_flag ... POSTGRES_CASE_STARTED draconia_escape database_created=true
+POSTGRES_CASE_STARTED draconia-escape-later server_version=18.6 (Debian 18.6-1.pgdg13+2)
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=2
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=3
+POSTGRES_CASE_COMPLETED draconia-escape-later duration=44.666095601s
+ok
+test gameplay_transport::monk_save::postgres_tests::draconia_escape::draconia_escape_consumes_one_offering_and_retains_absent_flag ... POSTGRES_CASE_STARTED draconia_escape database_created=true
+POSTGRES_CASE_STARTED draconia-escape-absent server_version=18.6 (Debian 18.6-1.pgdg13+2)
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=2
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=3
+POSTGRES_CASE_COMPLETED draconia-escape-absent duration=45.11168542s
+ok
+test gameplay_transport::monk_save::postgres_tests::draconia_escape::draconia_escape_missing_offering_recovers_without_progress_or_receipt ... POSTGRES_CASE_STARTED draconia_escape database_created=true
+POSTGRES_CASE_STARTED draconia-escape-missing server_version=18.6 (Debian 18.6-1.pgdg13+2)
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=2
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=3
+POSTGRES_CASE_COMPLETED draconia-escape-missing duration=44.85661544s
+ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 2551 filtered out; finished in 180.43s

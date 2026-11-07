@@ -116,3 +116,21 @@ Draconia escape sourceDragonfetish1->0 while preserving absent-1 and later2:
 https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/draconia/movement-escape.lua
 Five focused PG cases102.11s prove safe/blocked landings, replay, exact reset, absent
 and later preservation. The final source escape/offering composition follows next.
+
+Draconia escape35012 now reuses questpc6@3bfd85606's reviewed native Item3206
+profile and authored callback. Existing canonical-input hashes match exactly;
+pinned items.xml confirms dragonfetish weight490. Only3206 is newly admitted,
+NonStackable with no container, charges or lifetime. Existing Native records and
+callbacks remain byte-for-byte equal as parsed objects, apart from the new escape.
+
+Missing offering teleports to32818,31599,z9 without progress/receipt. One3206
+at32816,31601,z9 is consumed atomically with the exact1->0 flag reset (other
+values retained), then teleport to32701,31639,z6. Fixture flag acquisition uses
+the fenced Quest writer, never an NPC qualification claim; the approach tile is
+controlled test geometry, never a production UID coordinate alias.
+
+The callback registry's changed proof hash required a transcription receipt
+refresh and dependent Quest-tree regeneration. Approved graphs/core digests and
+immutable/compiler inputs remain unchanged. All28 Quest changes are provenance
+sha256 leaves; no quest values/rules changed. Native admission is separate from
+this transcription receipt, whose native_runtime_admission remainsfalse.
