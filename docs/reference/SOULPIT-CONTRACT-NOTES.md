@@ -776,5 +776,15 @@ before successor admission, exactly like production; content loading must not
 consume the existing five-second freshness window. Failure probes use durable
 sequence observations to prove execution reached the debit or Animus insertion;
 all rollback and replay assertions remain active. The 1,510 frontend tests and
-seven runtime orchestration tests also pass. Final all-target clippy and remaining
-focused crate validation are separate gates, not implied by this SQL proof.
+seven runtime orchestration tests also pass. Separate focused validation passes:
+21 backend tests (292.201 seconds including compilation), 14 bundle/asset tests,
+six terrain compiler/codec tests, four architecture registration tests, five
+repository-content tests (158.48 seconds execution), and 123 server content tests
+(8.26 seconds execution). All-target clippy for all 15 changed crates passes
+with `-D warnings` (166.078 seconds); formatting (14.934 seconds), architecture
+(3.942 seconds), and pin-check (32.071 seconds) also pass.
+
+The final parity sweep identified a remaining production capture to repair before
+closing W07: the donor GM level exemption must use the existing current Game staff
+projection rather than a hardcoded false flag. The staff producer remains outside
+this lane; the Soulpit consumer must prove the current group at its locked entry.
