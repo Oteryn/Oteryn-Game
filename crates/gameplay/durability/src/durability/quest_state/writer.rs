@@ -68,6 +68,38 @@ impl DurabilityRoot {
         .await
     }
 
+    /// A content-bound world callback uses the same fenced quest writer and receipt.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_character_world_callback_with_items(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
+        context: super::super::quest_world_callback::QuestWorldContext,
+        native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
+        admission: Option<QuestRewardAdmission<'_>>,
+    ) -> Result<QuestTransitionOutcome> {
+        self.commit_quest_inner::<_, 0>(
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            Some((permit, context, native)),
+            None,
+            None,
+            None,
+            &grizzly::NoGrizzlyPremium,
+            None,
+            None,
+            admission,
+        )
+        .await
+    }
+
     /// Bloodshade's fixed access purchase uses the existing fee owner and then
     /// this same Quest writer in one physical transaction.
     pub async fn commit_rotten_blood_access_purchase(
@@ -157,11 +189,6 @@ impl DurabilityRoot {
             .map_err(|_| CharacterProgressionError::InvalidInput)?
             .into_iter()
             .find(|c| c.key == request.transition_key);
-        if reward_callback.is_some() != reward_admission.is_some()
-            || (reward_callback.is_some() && !matches!(request.cause, QuestCause::Command(_)))
-        {
-            return Err(CharacterProgressionError::InvalidInput);
-        }
         let reward_achievement =
             super::super::reward_claim_mint::quest::prepare_achievement(reward_callback.as_ref())
                 .map_err(|_| CharacterProgressionError::InvalidInput)?;
@@ -207,6 +234,11 @@ impl DurabilityRoot {
         } else {
             None
         };
+        let world_reward = callback.as_ref().and_then(|c| c.effects.item_reward.as_ref());
+        if (reward_callback.is_some() || world_reward.is_some()) != reward_admission.is_some()
+            || (reward_callback.is_some() && !matches!(request.cause, QuestCause::Command(_)))
+            || (world_reward.is_some() && !matches!(request.cause, QuestCause::Use(_)))
+        { return Err(CharacterProgressionError::InvalidInput); }
         let lionheart = super::hero_of_bounac::prepare(&request)
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let wayfarer = super::wrath_sleeping_dragon::prepare(&request)
@@ -241,7 +273,8 @@ impl DurabilityRoot {
                                 || c.minimum_level.is_some()
                                 || c.experience.is_some()
                                 || c.monk_reward.is_some()
-                                || c.native_rule.is_some())
+                                || c.native_rule.is_some()
+                                || c.effects.item_reward.is_some())
                     }))
         {
             return Err(CharacterProgressionError::InvalidInput);
@@ -654,6 +687,20 @@ impl DurabilityRoot {
                     if let (Some(callback),Some(admission),Some(tuple))=(&reward_callback,*reward_admission,reward_tuple)
                         && !super::super::reward_claim_mint::quest::apply(&mut tx,tuple,&node,fence,&request,callback,admission,reward_achievement.as_ref()).await?
                     { tx.rollback().await?;return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
+                    if let Some(world) = &callback
+                        && let Some(reward) = &world.effects.item_reward
+                    {
+                        let (Some(admission), Some(tuple)) = (*reward_admission, reward_tuple) else { return Err(DurabilityError::InvalidStoredState); };
+                        let QuestCause::Use(command) = request.cause else { return Err(DurabilityError::InvalidStoredState); };
+                        // Fresh value must use the generation proved by the physical
+                        // occurrence. Historical receipts returned before this check.
+                        let revision = format!("sha256:{}", admission.native.source_digest().iter()
+                            .map(|byte| format!("{byte:02x}")).collect::<String>());
+                        if context.as_ref().is_none_or(|(_, world, _)| world.content_revision != revision)
+                            || admission.weights.generation_digest() != admission.native.source_digest()
+                            || super::super::reward_claim_mint::quest::mint(&mut tx,tuple,&node,fence,command,&world.key,reward,admission).await?.is_none()
+                        { tx.rollback().await?; return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
+                    }
                     if let Some(world) = &callback
                         && let Some(reward) = &world.effects.outfit_reward
                     {

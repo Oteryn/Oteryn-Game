@@ -273,8 +273,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 return UseDisposition::Rejected;
             };
+            let reward_weights = self
+                .active_generation
+                .and_then(|g| g.native_gameplay())
+                .map(|native| {
+                    crate::gameplay_transport::item_ref_admission::NativeItemWeights(native)
+                        .with_wheel(self.premium_coordinator)
+                });
+            let reward_admission = if callback.effects.item_reward.is_some() {
+                self.active_generation
+                    .and_then(|g| g.native_gameplay())
+                    .zip(reward_weights.as_ref())
+                    .map(|(native, weights)| {
+                        crate::durability::reward_claim_mint::QuestRewardAdmission {
+                            native,
+                            weights,
+                        }
+                    })
+            } else {
+                None
+            };
             let outcome = slot
-                .commit_world_callback(
+                .commit_world_callback_with_items(
                     self.root,
                     self.character,
                     self.holder,
@@ -288,6 +308,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     context,
                     self.active_generation
                         .and_then(|generation| generation.native_gameplay()),
+                    reward_admission,
                 )
                 .await;
             let fresh = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));

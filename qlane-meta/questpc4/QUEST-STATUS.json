@@ -2692,29 +2692,71 @@
     },
     {
       "title": "Waterskin of Mead Quest",
-      "status": "ACTIONABLE",
+      "status": "QUALIFIED",
       "canonical": [
         "oteryn:quest.authored.waterskin_of_mead_quest"
       ],
       "wiki_main": ".questpc4/evidence/wiki/Waterskin of Mead Quest.wiki",
       "wiki_spoiler": ".questpc4/evidence/wiki/Waterskin of Mead Quest_Spoiler.wiki",
       "phase": "A",
-      "blocker": {
-        "missing_piece": "The mission9-gated Furry Bag/fluid-container reward and barrel's exact native selector are not bound; the authored recipe alone cannot mint source mead.",
-        "source": ".questpc4/evidence/wiki/Waterskin of Mead Quest_Spoiler.wiki:4",
-        "canonical_location": "content/quests/definitions/quests-00300-00351.json:1",
-        "canonical_json_pointer": "/records/51/definition",
-        "native_evidence": [],
-        "tried": [
-          "Read retained source at .questpc4/evidence/wiki/Waterskin of Mead Quest_Spoiler.wiki:4; checked the selected canonical definition at content/quests/definitions/quests-00300-00351.json:1 (/records/51/definition).",
-          "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
-          "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
-        ],
-        "native_callbacks_present": [],
-        "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only."
-      },
+      "blocker": null,
       "owner": "questpc4",
-      "mechanism": "item_assembly_and_tool_transformations"
+      "mechanism": "item_assembly_and_tool_transformations",
+      "whole_qualification": {
+        "status": "QUALIFIED",
+        "scope": "Whole selected Oteryn Waterskin of Mead recipe; native source barrel, accepted mission prerequisites, complete filled gift and once/replay behavior. This does not claim implementation of the parent Ice Islands quest or global rollout readiness.",
+        "classification": "OTERYN_AUTHORED_APPROXIMATION / CHOSEN_OTERYN_RECIPE_ONLY",
+        "callback": "oteryn:quest-callback/l6/waterskin-of-mead",
+        "source_rule": "content/quests/authoring/waterskin-of-mead.md",
+        "assumption": "Public route map identifies the room but not which adjacent barrel. Conservatively author only the eastern barrel; preserve native source tiles and leave the west barrel without a reward. See content/quests/authoring/waterskin-of-mead.md.",
+        "red": {
+          "log": "/tmp/questpc4-mead-red-gift.log",
+          "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+          "duration_seconds": 56.409715514,
+          "marker": "POSTGRES_CASE_COMPLETED l6/waterskin-of-mead success=false",
+          "error": "valid native barrel must atomically mint the complete reward: actual bags0, expected1; valid paced USE committed the quest flag without the reward"
+        },
+        "green": {
+          "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+          "test_result": "4 passed / 0 failed / 0 ignored",
+          "total_duration_seconds": 155.64,
+          "mead_duration_seconds": 61.352504893,
+          "fluid_duration_seconds": 57.164713034,
+          "small_ruby_duration_seconds": 59.954061391,
+          "npc_exchange_duration_seconds": 94.286130978,
+          "assertions": [
+            "actual unchanged native B3 room, both source barrel tiles and production palette",
+            "missing mission and wrong western barrel refuse",
+            "full backpack rollback leaves durable value, quest state and revision unchanged",
+            "generic transition escape and stale fence refuse without writes",
+            "unavailable Premium participant refuses; actual delivery settled before production channel locks",
+            "one fur bag7343 with waterskin2901/mead16, berserk potion7439, gold3031 quantity82",
+            "ordinary native container observation projects capacity8, three entries and waterskin subtype16",
+            "four instances, fluid and quest/MINT receipts share one PostgreSQL xmin",
+            "real carried fluid writer empties nested vessel",
+            "same wire CommandRef and durable Quest receipt replay do not refill or change durable counts",
+            "old physical revision gives StaleState; new current-revision USE refuses once claim",
+            "all three external mission tracks preserved at later progress; only the authored once flag advances"
+          ]
+        },
+        "green_log": "/tmp/questpc4-mead-qualified-pg.log",
+        "checks": {
+          "check_before_lint_repairs": "PASS alltargets/allfeatures dispatch+durability+quests3m27",
+          "check_log": "/tmp/questpc4-mead-qualified-check.log",
+          "world_pin_check": {
+            "result": "PASS",
+            "log": "/tmp/questpc4-mead-pin-check.log",
+            "world_digest": "cb078e3d34c1440b2c7c9f35206ae3158d5341e507a87424f4959ccb66da7298",
+            "bytes": 31101956
+          },
+          "clippy_log": "/tmp/questpc4-mead-clippy-complete.log",
+          "clippy_status": "PASS alltargets/allfeatures-Dwarnings2m02",
+          "check": "PASS alltargets/allfeatures dispatch+durability+quests2m53",
+          "callback_units": "PASS20/0 in3.86s",
+          "callback_unit_log": "/tmp/questpc4-mead-callback-units.log",
+          "fmt": "PASS cargo fmt all check and explicit mounted test/crop leaves"
+        }
+      }
     },
     {
       "title": "Wayfarer Outfits Quest",
@@ -2934,7 +2976,7 @@
   ],
   "round_L6": {
     "task_id": "questpc4-L6",
-    "state": "AUTHORING",
+    "state": "IN_PROGRESS",
     "entries": [
       {
         "canonical": "oteryn:quest.the_hidden_city_of_beregar_quest",
@@ -3070,8 +3112,8 @@
       },
       {
         "canonical": "oteryn:quest.authored.waterskin_of_mead_quest",
-        "status": "IN_PROGRESS",
-        "blocker": "Generic complete-plan fluid16 reward MINT now qualified, including no refill after consumption/replay. Continue production USE lowering, mission9 checks and exact native barrel binding; no whole quest qualification yet.",
+        "status": "QUALIFIED",
+        "blocker": null,
         "partial_qualification": {
           "status": "QUALIFIED",
           "scope": "Generic complete-plan reward child fluid MINT only. Source barrel/mission9/wire lowering and whole Waterskin entry are not qualified by this fixture.",
@@ -3099,6 +3141,61 @@
               "real carried-tree fluid writer empties vessel; historical MINT replay does not refill",
               "legacy source bear bag USE/once/replay remains green"
             ]
+          }
+        },
+        "whole_qualification": {
+          "status": "QUALIFIED",
+          "scope": "Whole selected Oteryn Waterskin of Mead recipe; native source barrel, accepted mission prerequisites, complete filled gift and once/replay behavior. This does not claim implementation of the parent Ice Islands quest or global rollout readiness.",
+          "classification": "OTERYN_AUTHORED_APPROXIMATION / CHOSEN_OTERYN_RECIPE_ONLY",
+          "callback": "oteryn:quest-callback/l6/waterskin-of-mead",
+          "source_rule": "content/quests/authoring/waterskin-of-mead.md",
+          "assumption": "Public route map identifies the room but not which adjacent barrel. Conservatively author only the eastern barrel; preserve native source tiles and leave the west barrel without a reward. See content/quests/authoring/waterskin-of-mead.md.",
+          "red": {
+            "log": "/tmp/questpc4-mead-red-gift.log",
+            "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+            "duration_seconds": 56.409715514,
+            "marker": "POSTGRES_CASE_COMPLETED l6/waterskin-of-mead success=false",
+            "error": "valid native barrel must atomically mint the complete reward: actual bags0, expected1; valid paced USE committed the quest flag without the reward"
+          },
+          "green": {
+            "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+            "test_result": "4 passed / 0 failed / 0 ignored",
+            "total_duration_seconds": 155.64,
+            "mead_duration_seconds": 61.352504893,
+            "fluid_duration_seconds": 57.164713034,
+            "small_ruby_duration_seconds": 59.954061391,
+            "npc_exchange_duration_seconds": 94.286130978,
+            "assertions": [
+              "actual unchanged native B3 room, both source barrel tiles and production palette",
+              "missing mission and wrong western barrel refuse",
+              "full backpack rollback leaves durable value, quest state and revision unchanged",
+              "generic transition escape and stale fence refuse without writes",
+              "unavailable Premium participant refuses; actual delivery settled before production channel locks",
+              "one fur bag7343 with waterskin2901/mead16, berserk potion7439, gold3031 quantity82",
+              "ordinary native container observation projects capacity8, three entries and waterskin subtype16",
+              "four instances, fluid and quest/MINT receipts share one PostgreSQL xmin",
+              "real carried fluid writer empties nested vessel",
+              "same wire CommandRef and durable Quest receipt replay do not refill or change durable counts",
+              "old physical revision gives StaleState; new current-revision USE refuses once claim",
+              "all three external mission tracks preserved at later progress; only the authored once flag advances"
+            ]
+          },
+          "green_log": "/tmp/questpc4-mead-qualified-pg.log",
+          "checks": {
+            "check_before_lint_repairs": "PASS alltargets/allfeatures dispatch+durability+quests3m27",
+            "check_log": "/tmp/questpc4-mead-qualified-check.log",
+            "world_pin_check": {
+              "result": "PASS",
+              "log": "/tmp/questpc4-mead-pin-check.log",
+              "world_digest": "cb078e3d34c1440b2c7c9f35206ae3158d5341e507a87424f4959ccb66da7298",
+              "bytes": 31101956
+            },
+            "clippy_log": "/tmp/questpc4-mead-clippy-complete.log",
+            "clippy_status": "PASS alltargets/allfeatures-Dwarnings2m02",
+            "check": "PASS alltargets/allfeatures dispatch+durability+quests2m53",
+            "callback_units": "PASS20/0 in3.86s",
+            "callback_unit_log": "/tmp/questpc4-mead-callback-units.log",
+            "fmt": "PASS cargo fmt all check and explicit mounted test/crop leaves"
           }
         }
       },
@@ -3186,14 +3283,14 @@
       }
     ],
     "counts": {
-      "qualified": 2,
-      "unfinished": 19,
+      "qualified": 3,
+      "unfinished": 18,
       "blocked": 0,
       "skipped_external_owner": 2
     },
     "scope_note": "All LANE-L6 input source blockers remain obligations. Differences from selected recipe approximations are not authority to drop a blocker. Historical qengine ownership language is not treated as a reason to defer work now owned by L6.",
     "publication_branch": "claude/happy-davinci-ijz3wy-questpc4",
-    "latest_batch": "cloud-reward-fluids-05",
+    "latest_batch": "cloud-world-item-rewards-06",
     "mechanisms": {
       "reusable_tools_and_atomic_counters": {
         "status": "QUALIFIED",
@@ -3451,39 +3548,97 @@
           "removed": [],
           "provider": "PASS write and --check,42 import files; native-only regeneration includes freshness checks"
         }
+      },
+      "world_item_rewards": {
+        "status": "QUALIFIED",
+        "scope": "generic world callback complete item MINT, exact fresh vessel fluid contents and live Premium admission; first native consumer Mead",
+        "contract": "WORLD-ITEM-REWARD-CONTRACT.md"
       }
     },
     "active_counts": {
       "qualified_elsewhere": 1,
       "excluded_external_world_changes": 2,
-      "in_progress": 19,
-      "new_whole_entries_qualified_in_this_batch": 0,
-      "qualified_here": 1
+      "in_progress": 18,
+      "new_whole_entries_qualified_in_this_batch": 1,
+      "qualified_here": 2
     },
     "latest_batch_checks": {
-      "result": "PASS",
-      "profile_postgres": {
-        "test": "l6_ruby_profile_admits_exact_helmet_absolute_policy",
-        "marker": "POSTGRES_CASE_COMPLETED l6-ruby-profile",
-        "result": "1 passed / 0 failed",
-        "duration_seconds": 53.116194692,
-        "log": "/tmp/questpc4-ruby-profile-green.log",
-        "scope": "Native policy only, exact identity3230,1800000ms absolute deadline to3229, no charges and actual active PostgreSQL content digest"
+      "check_before_lint_repairs": "PASS alltargets/allfeatures dispatch+durability+quests3m27",
+      "check_log": "/tmp/questpc4-mead-qualified-check.log",
+      "world_pin_check": {
+        "result": "PASS",
+        "log": "/tmp/questpc4-mead-pin-check.log",
+        "world_digest": "cb078e3d34c1440b2c7c9f35206ae3158d5341e507a87424f4959ccb66da7298",
+        "bytes": 31101956
       },
-      "provider_and_capture": "PASS source capture check and native provider write/check42 files",
-      "cargo_check": "PASS content+dispatch all targets/features32.07s",
-      "clippy": "PASS content+dispatch all targets/features-D warnings45.91s",
-      "fmt": "PASS all and explicit mounted leaves",
-      "pin_refresh": "PASS unchanged World cb078e3d34c1440b2c7c9f35206ae3158d5341e507a87424f4959ccb66da7298; inputs12ba3d59676cac791a83eb85559de28fbab079275bf15dc987412f75aab83616",
-      "pin_check": "PASS exit0; unchanged World cb078e3d34c1440b2c7c9f35206ae3158d5341e507a87424f4959ccb66da7298"
+      "clippy_log": "/tmp/questpc4-mead-clippy-complete.log",
+      "clippy_status": "PASS alltargets/allfeatures-Dwarnings2m02",
+      "check": "PASS alltargets/allfeatures dispatch+durability+quests2m53",
+      "callback_units": "PASS20/0 in3.86s",
+      "callback_unit_log": "/tmp/questpc4-mead-callback-units.log",
+      "fmt": "PASS cargo fmt all check and explicit mounted test/crop leaves"
     },
     "current_attempt": {
-      "name": "cloud-reward-fluids-05",
-      "state": "GREEN_PENDING_PUSH",
-      "local_green_commit": "39937583a",
-      "incoming_floor_commit": "516de7b0d",
-      "next_action": "Pass combined focused PG/check/clippy, commit merge and push fast-forward. Continue actual Mead lowering/mission9/native barrel binding;19 active entries. Do not redo qualified Small Ruby or plain floor assembly.",
-      "incoming_profile_commit": "a18dba296"
+      "id": "cloud-world-item-rewards-06",
+      "stage": "QUALIFIED_GREEN_PENDING_PUSH",
+      "entries": [
+        "oteryn:quest.authored.waterskin_of_mead_quest"
+      ],
+      "proof": {
+        "status": "QUALIFIED",
+        "scope": "Whole selected Oteryn Waterskin of Mead recipe; native source barrel, accepted mission prerequisites, complete filled gift and once/replay behavior. This does not claim implementation of the parent Ice Islands quest or global rollout readiness.",
+        "classification": "OTERYN_AUTHORED_APPROXIMATION / CHOSEN_OTERYN_RECIPE_ONLY",
+        "callback": "oteryn:quest-callback/l6/waterskin-of-mead",
+        "source_rule": "content/quests/authoring/waterskin-of-mead.md",
+        "assumption": "Public route map identifies the room but not which adjacent barrel. Conservatively author only the eastern barrel; preserve native source tiles and leave the west barrel without a reward. See content/quests/authoring/waterskin-of-mead.md.",
+        "red": {
+          "log": "/tmp/questpc4-mead-red-gift.log",
+          "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+          "duration_seconds": 56.409715514,
+          "marker": "POSTGRES_CASE_COMPLETED l6/waterskin-of-mead success=false",
+          "error": "valid native barrel must atomically mint the complete reward: actual bags0, expected1; valid paced USE committed the quest flag without the reward"
+        },
+        "green": {
+          "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+          "test_result": "4 passed / 0 failed / 0 ignored",
+          "total_duration_seconds": 155.64,
+          "mead_duration_seconds": 61.352504893,
+          "fluid_duration_seconds": 57.164713034,
+          "small_ruby_duration_seconds": 59.954061391,
+          "npc_exchange_duration_seconds": 94.286130978,
+          "assertions": [
+            "actual unchanged native B3 room, both source barrel tiles and production palette",
+            "missing mission and wrong western barrel refuse",
+            "full backpack rollback leaves durable value, quest state and revision unchanged",
+            "generic transition escape and stale fence refuse without writes",
+            "unavailable Premium participant refuses; actual delivery settled before production channel locks",
+            "one fur bag7343 with waterskin2901/mead16, berserk potion7439, gold3031 quantity82",
+            "ordinary native container observation projects capacity8, three entries and waterskin subtype16",
+            "four instances, fluid and quest/MINT receipts share one PostgreSQL xmin",
+            "real carried fluid writer empties nested vessel",
+            "same wire CommandRef and durable Quest receipt replay do not refill or change durable counts",
+            "old physical revision gives StaleState; new current-revision USE refuses once claim",
+            "all three external mission tracks preserved at later progress; only the authored once flag advances"
+          ]
+        },
+        "green_log": "/tmp/questpc4-mead-qualified-pg.log",
+        "checks": {
+          "check_before_lint_repairs": "PASS alltargets/allfeatures dispatch+durability+quests3m27",
+          "check_log": "/tmp/questpc4-mead-qualified-check.log",
+          "world_pin_check": {
+            "result": "PASS",
+            "log": "/tmp/questpc4-mead-pin-check.log",
+            "world_digest": "cb078e3d34c1440b2c7c9f35206ae3158d5341e507a87424f4959ccb66da7298",
+            "bytes": 31101956
+          },
+          "clippy_log": "/tmp/questpc4-mead-clippy-complete.log",
+          "clippy_status": "PASS alltargets/allfeatures-Dwarnings2m02",
+          "check": "PASS alltargets/allfeatures dispatch+durability+quests2m53",
+          "callback_units": "PASS20/0 in3.86s",
+          "callback_unit_log": "/tmp/questpc4-mead-callback-units.log",
+          "fmt": "PASS cargo fmt all check and explicit mounted test/crop leaves"
+        }
+      }
     },
     "authoring_state": "AUTHORING",
     "attempt_history": [
@@ -3627,14 +3782,20 @@
         },
         "environment_recovery": "Sandbox failed No space left on device after all checks had exited0. Deleted only25GB disposable Rust incremental compiler cache via approved escalation; source and PostgreSQL untouched;25GB now free. No test weakened or skipped.",
         "next_action": "After immediate profile push, implement same-instance floor transform and repeatable per-cycle deadlines through existing fenced timer owner; no deferral to another lane."
+      },
+      {
+        "name": "cloud-reward-fluids-05",
+        "state": "GREEN_PENDING_PUSH",
+        "local_green_commit": "39937583a",
+        "incoming_floor_commit": "516de7b0d",
+        "next_action": "Pass combined focused PG/check/clippy, commit merge and push fast-forward. Continue actual Mead lowering/mission9/native barrel binding;19 active entries. Do not redo qualified Small Ruby or plain floor assembly.",
+        "incoming_profile_commit": "a18dba296"
       }
     ],
     "last_pushed_batch": {
-      "name": "cloud-floor-assembly-04",
-      "sha": "516de7b0d",
-      "branch": "claude/happy-davinci-ijz3wy-questpc4",
-      "published": true,
-      "checks": "PG3/0; check3m20s; clippy3m02s all targets/features; fmt/diff; migration allocation and duplicates"
+      "head": "04234e0958546244f03297d6337f860327bc8cca",
+      "status": "PUSHED",
+      "scope": "complete child-fluid MINT plus reconciled floor assembly/native3230 policy"
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",
@@ -3872,6 +4033,127 @@
       "source_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/lurik.lua",
       "source_line": 119,
       "source_sha256": "4c26f87476f1b358e82c06814ad0c6d6f2b1413066dcd198769ca5c6fbd4d274"
+    }
+  },
+  "world_item_reward_attempt": {
+    "stage": "QUALIFIED_GREEN_PENDING_PUSH",
+    "base_head": "04234e0958546244f03297d6337f860327bc8cca",
+    "prior_batch_pushed": true,
+    "entry": "Waterskin of Mead Quest",
+    "contract": "WORLD-ITEM-REWARD-CONTRACT.md",
+    "red_log": "/tmp/questpc4-mead-red.log",
+    "source_room": {
+      "region": "content/world/placements/region-z10-x125-y121.b3",
+      "sha256": "3eee23ab13970525b08cca863894db89460f451f79ed3a6dc004a49a5529628e",
+      "east_barrel": [
+        32215,
+        31060,
+        10
+      ],
+      "west_barrel": [
+        32214,
+        31060,
+        10
+      ]
+    },
+    "assumption": "Public route map identifies the room but not which adjacent barrel. Conservatively author only the eastern barrel; preserve native source tiles and leave the west barrel without a reward. See content/quests/authoring/waterskin-of-mead.md.",
+    "qualification": "IN_PROGRESS: actual native room PG proof is compiling; no whole-entry qualification claimed.",
+    "red": {
+      "log": "/tmp/questpc4-mead-red-gift.log",
+      "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "duration_seconds": 56.409715514,
+      "marker": "POSTGRES_CASE_COMPLETED l6/waterskin-of-mead success=false",
+      "error": "valid native barrel must atomically mint the complete reward: actual bags0, expected1; valid paced USE committed the quest flag without the reward"
+    },
+    "setup_repairs": [
+      "Added existing pinned Crystal source citation required by unchanged content validator; initial0.009s run never reached PostgreSQL and is not RED proof.",
+      "Advanced test owner clock between USE commands; do not weaken production cooldown.",
+      "Assert western unbound barrel precisely NothingToUse."
+    ],
+    "check": {
+      "result": "PASS initial all-target all-feature three-crate check3m07; one late generation-binding guard added afterwards, final recheck pending",
+      "log": "/tmp/questpc4-mead-check.log"
+    },
+    "green_log": "/tmp/questpc4-mead-qualified-pg.log",
+    "native_generator_check": {
+      "result": "PASS",
+      "command": "python3 tools/content-migration/register_spell_families.py --check",
+      "exit_code": 0
+    },
+    "intermediate_pg": {
+      "log": "/tmp/questpc4-mead-green-pg.log",
+      "fluid": {
+        "postgres": "18.6",
+        "duration_seconds": 54.428115322,
+        "success": true
+      },
+      "small_ruby": {
+        "postgres": "18.6",
+        "duration_seconds": 56.02234459,
+        "success": true
+      },
+      "overall": "Stopped with SIGTERM after proving Mead fixture retained SpellLanePermit across wire USE; not an overall green invocation. No production guard or assertion weakened.",
+      "repair": "Release the test lane permit before returning to wire ingress, reacquire it before the final direct receipt replay in lane-before-revision-slot order."
+    },
+    "premium_delivery_repair": {
+      "observed_log": "/tmp/questpc4-mead-green-released-lane-final.log",
+      "mead_duration_seconds": 58.011750339,
+      "observed": "valid USE refused while the new MINT read used an unsettled read-only Premium view",
+      "source": "spell_premium_coordinator.rs:322-330 states callers settle delivery before view(); admit_premium only registers interest",
+      "change": "ordinary premium reward USE and pending USE receipt recovery settle delivery before channel locks; ignore a closed current gate at this stage so historical receipt replay remains possible; fresh MINT checks the current live view in the existing transaction",
+      "npc_regression": {
+        "duration_seconds": 93.461091968,
+        "success": true
+      }
+    },
+    "incoming_reuse": {
+      "remote_head": "4b18ea3e1",
+      "mechanism": "source-preserving floor transform with exact input debit and repeatable absolute deadline",
+      "action": "merge after current local green batch commit, then validate combined head; do not reimplement"
+    },
+    "green": {
+      "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "test_result": "4 passed / 0 failed / 0 ignored",
+      "total_duration_seconds": 155.64,
+      "mead_duration_seconds": 61.352504893,
+      "fluid_duration_seconds": 57.164713034,
+      "small_ruby_duration_seconds": 59.954061391,
+      "npc_exchange_duration_seconds": 94.286130978,
+      "assertions": [
+        "actual unchanged native B3 room, both source barrel tiles and production palette",
+        "missing mission and wrong western barrel refuse",
+        "full backpack rollback leaves durable value, quest state and revision unchanged",
+        "generic transition escape and stale fence refuse without writes",
+        "unavailable Premium participant refuses; actual delivery settled before production channel locks",
+        "one fur bag7343 with waterskin2901/mead16, berserk potion7439, gold3031 quantity82",
+        "ordinary native container observation projects capacity8, three entries and waterskin subtype16",
+        "four instances, fluid and quest/MINT receipts share one PostgreSQL xmin",
+        "real carried fluid writer empties nested vessel",
+        "same wire CommandRef and durable Quest receipt replay do not refill or change durable counts",
+        "old physical revision gives StaleState; new current-revision USE refuses once claim",
+        "all three external mission tracks preserved at later progress; only the authored once flag advances"
+      ]
+    },
+    "latest_refusal_fixture_fix": "Keep exact StaleState assertion for old barrel revision0 after successful USE, then issue a fresh revision1 command to prove once refusal. Added ordinary container projection proof.",
+    "post_green_lint_repairs": [
+      "Box only the temporary untagged Shared deserialization variant and unbox into the unchanged CallbackEffects; serialized JSON/receipt form remains unchanged.",
+      "Remove four identity u16 conversions in the test-only NativeCrop extent."
+    ],
+    "final_gates": {
+      "check_before_lint_repairs": "PASS alltargets/allfeatures dispatch+durability+quests3m27",
+      "check_log": "/tmp/questpc4-mead-qualified-check.log",
+      "world_pin_check": {
+        "result": "PASS",
+        "log": "/tmp/questpc4-mead-pin-check.log",
+        "world_digest": "cb078e3d34c1440b2c7c9f35206ae3158d5341e507a87424f4959ccb66da7298",
+        "bytes": 31101956
+      },
+      "clippy_log": "/tmp/questpc4-mead-clippy-complete.log",
+      "clippy_status": "PASS alltargets/allfeatures-Dwarnings2m02",
+      "check": "PASS alltargets/allfeatures dispatch+durability+quests2m53",
+      "callback_units": "PASS20/0 in3.86s",
+      "callback_unit_log": "/tmp/questpc4-mead-callback-units.log",
+      "fmt": "PASS cargo fmt all check and explicit mounted test/crop leaves"
     }
   }
 }

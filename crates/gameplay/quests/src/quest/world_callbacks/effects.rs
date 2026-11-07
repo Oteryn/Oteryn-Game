@@ -14,6 +14,8 @@ pub enum Facing {
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub item_reward: Option<super::super::reward_callbacks::ItemReward>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outfit_reward: Option<super::super::reward_callbacks::OutfitReward>,
     pub transform: Option<u16>,
     pub facing: Option<Facing>,
@@ -82,7 +84,7 @@ impl<'de> Deserialize<'de> for CallbackEffectSet {
         #[serde(untagged)]
         enum Wire {
             Legacy(Vec<CallbackEffect>),
-            Shared(CallbackEffects),
+            Shared(Box<CallbackEffects>),
         }
         Ok(match Wire::deserialize(deserializer)? {
             Wire::Legacy(legacy) => Self {
@@ -90,7 +92,7 @@ impl<'de> Deserialize<'de> for CallbackEffectSet {
                 ..Self::default()
             },
             Wire::Shared(shared) => Self {
-                shared,
+                shared: *shared,
                 ..Self::default()
             },
         })
@@ -170,7 +172,29 @@ pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
     let pos = |p: Position| (-15..=0).contains(&p.floor);
     let lever = callback.trigger == Trigger::Use && callback.lever.is_some();
-    if (callback.facing.is_some() && effects.facing.is_some())
+    if effects.item_reward.as_ref().is_some_and(|reward| {
+        let item = |key: &str, count: u16| {
+            key.len() <= 256
+                && key.strip_prefix("oteryn:item.").is_some_and(|tail| {
+                    !tail.is_empty()
+                        && tail.bytes().all(|b| {
+                            b.is_ascii_lowercase() || b.is_ascii_digit() || b"._/:-".contains(&b)
+                        })
+                })
+                && (1..=100).contains(&count)
+        };
+        callback.trigger != Trigger::Use
+            || callback.storage.is_empty()
+            || callback
+                .storage
+                .iter()
+                .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+            || !item(&reward.item, reward.count)
+            || reward.contents.len() > 20
+            || reward.contents.iter().any(|c| {
+                !item(&c.item, c.count) || c.fluid_subtype.is_some_and(|f| f == 0 || c.count != 1)
+            })
+    }) || (callback.facing.is_some() && effects.facing.is_some())
         || effects.outfit_reward.as_ref().is_some_and(|r| {
             callback.trigger != Trigger::Use
                 || callback.storage.is_empty()

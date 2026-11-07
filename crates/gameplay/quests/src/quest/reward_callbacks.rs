@@ -6,6 +6,10 @@ use super::{
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
+fn is_false(value: &bool) -> bool {
+    !*value
+}
+
 pub const PROVENANCE: &str = "crystal-9f5a72c-quest-rewards-v1";
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -13,11 +17,17 @@ pub const PROVENANCE: &str = "crystal-9f5a72c-quest-rewards-v1";
 pub struct ItemAmount {
     pub item: String,
     pub count: u16,
+    /// A freshly minted variable-fluid vessel; never an intake matching shortcut.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fluid_subtype: Option<u8>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct ItemReward {
+    /// Recheck the live account gate before a fresh value grant.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub premium: bool,
     pub item: String,
     pub count: u16,
     #[serde(default)]
@@ -102,18 +112,24 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                 .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
             || c.present.len() > 8
             || evidence.len() != c.present.len()
-            || c.present
-                .iter()
-                .any(|s| !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0)
+            || c.present.iter().any(|s| {
+                !slug(&s.item, "oteryn:item.", b"._/:-", 256)
+                    || (s.count == 0 || s.fluid_subtype.is_some())
+            })
             || c.take.len() > 8
             || inputs.len() != c.take.len()
-            || c.take
-                .iter()
-                .any(|s| !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0)
+            || c.take.iter().any(|s| {
+                !slug(&s.item, "oteryn:item.", b"._/:-", 256)
+                    || (s.count == 0 || s.fluid_subtype.is_some())
+            })
             || c.give.as_ref().is_some_and(|r| {
                 !item(&r.item, r.count)
                     || r.contents.len() > 20
-                    || r.contents.iter().any(|s| !item(&s.item, s.count))
+                    || r.contents.iter().any(|s| {
+                        !item(&s.item, s.count)
+                            || s.fluid_subtype
+                                .is_some_and(|fluid| fluid == 0 || s.count != 1)
+                    })
             })
             || c.outfit
                 .as_ref()

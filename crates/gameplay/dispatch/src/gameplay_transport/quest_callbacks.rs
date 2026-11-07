@@ -159,6 +159,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if pending.is_empty() {
             return true;
         }
+        if pending.iter().any(|pending| {
+            callbacks().iter().any(|callback| {
+                callback.key == pending.callback
+                    && callback
+                        .effects
+                        .item_reward
+                        .as_ref()
+                        .is_some_and(|reward| reward.premium)
+            })
+        }) {
+            // Settle delivery before channel locks. A historical receipt still
+            // replays when the current account gate is closed.
+            let _ = self.session_premium_gate(session).await;
+        }
         let Some(permit) = self.spell_lane_permit().await else {
             return false;
         };
@@ -174,10 +188,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return false;
             };
             let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
-            let disposition = match slot.commit_world_callback(self.root, self.character, self.holder, fence,
+            let native = self.active_generation.and_then(|g| g.native_gameplay());
+            let weights = native.map(|n| {
+                crate::gameplay_transport::item_ref_admission::NativeItemWeights(n)
+                    .with_wheel(self.premium_coordinator)
+            });
+            let admission = callbacks()
+                .iter()
+                .find(|c| c.key == pending.callback)
+                .filter(|c| c.effects.item_reward.is_some())
+                .and_then(|_| native.zip(weights.as_ref()))
+                .map(|(native, weights)| {
+                    crate::durability::reward_claim_mint::QuestRewardAdmission { native, weights }
+                });
+            let disposition = match slot.commit_world_callback_with_items(self.root, self.character, self.holder, fence,
                 QuestTransitionRequest { transition_key: pending.callback, cause: pending.cause },
                 std::sync::Arc::clone(catalogue), &permit, context,
                 self.active_generation.and_then(|generation| generation.native_gameplay()),
+                admission,
             ).await {
                 Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => UseDisposition::Committed,
                 Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => return false,
@@ -337,6 +365,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let [callback] = selected.as_slice() else {
             return None;
         };
+        if callback
+            .effects
+            .item_reward
+            .as_ref()
+            .is_some_and(|reward| reward.premium)
+        {
+            // The synchronous live view used by MINT needs delivery settled;
+            // await that read before taking the spell lane and Channel guards.
+            // Do not refuse here: exact historical receipts remain replayable.
+            let _ = self.session_premium_gate(command.game_session_id).await;
+        }
         let result = tokio::time::timeout(std::time::Duration::from_secs(10), async {
             let Some(permit) = self.spell_lane_permit().await else {
                 return UseDisposition::Rejected;

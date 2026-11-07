@@ -1,3 +1,11 @@
+## Green Mead batch / incoming reconciliation (2026-11-07)
+
+Mead is QUALIFIED for the complete selected Oteryn recipe, with the explicit east-only native barrel assumption in content/quests/authoring/waterskin-of-mead.md. Source room and both barrels are preserved. PG18.6 RED /tmp/questpc4-mead-red-gift.log56.409715514s: source USE advanced flag, bags0 vs1. Final GREEN /tmp/questpc4-mead-qualified-pg.log4/0 in155.64s: Mead61.352504893s, fluid57.164713034s, SmallRuby59.954061391s, NPC backpack94.286130978s. Proof covers source USE/mission/Premium, no-room rollback, same-xmin complete gift, ordinary container subtype16, actual fluid empty, stale/current physical revisions, once refusal and durable no-refill replay.
+
+Gates PASS:20 callback units3.86s; three-crate alltarget/allfeature check2m53; clippy-Dwarnings2m02; fmt all check plus mounted leaves; native generator check; world pin-check unchanged cb078e3d34c1440b2c7c9f35206ae3158d5341e507a87424f4959ccb66da7298. Temporary deserialization Wire variant boxed transparently for lint, no wire/receipt change. Required Premium delivery settlement happens before channel locks and never blocks historical receipt replay merely for a closed current gate. Contract WORLD-ITEM-REWARD-CONTRACT.md.
+
+Counts3 qualified(inclHydra elsewhere),18 active,2 external world changes excluded. Small Ruby and Mead are whole-entry qualified here; do not redo them. Commit this green batch with required identity/trailers, fetch and merge incoming remote4b18ea3e1 (3902abd05 physical floor transform1062 plus reconciliation), verify combined floor-transform and filled reward cases plus affected-crate checks, then push FF. Reuse incoming mechanism; do not reimplement. Continue all18 active entries after pushing. No main/force/PR. Use CARGO_INCREMENTAL=0. Independent review service previously401; no clean-review/final-readiness claim. Historical checkpoints below are context only.
+
 ## Current checkpoint (2026-11-07)
 
 Branch claude/happy-davinci-ijz3wy-questpc4. Small Ruby is QUALIFIED/pushed at4fd80eac6; do not redo it. Counts:2 qualified(including Hydra elsewhere),19 active,2 excluded external world changes. Plain floor assembly, native3230 policy and complete reward-child fluid MINT are qualified mechanisms; whole Ancient Tombs and Waterskin remain in progress.

@@ -8,7 +8,7 @@ use oteryn_gameplay_quests::quest::world_callbacks::Position;
 mod wire;
 #[path = "l6_world_pickups/world.rs"]
 mod world;
-pub(super) use world::small_ruby;
+pub(super) use world::{small_ruby, native_crop, NativeCrop, ExpectedTile};
 #[path = "l6_world_pickups/reset.rs"]
 mod reset;
 pub(super) use reset::cycle;

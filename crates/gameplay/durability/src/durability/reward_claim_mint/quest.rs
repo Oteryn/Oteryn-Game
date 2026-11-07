@@ -106,7 +106,7 @@ pub(crate) async fn apply(
     }
     let minted = if let Some(reward) = &callback.give {
         let Some(transaction) =
-            mint(tx, tuple, node, fence, command, callback, reward, admission).await?
+            mint(tx, tuple, node, fence, command, &callback.key, reward, admission).await?
         else {
             return Ok(false);
         };
@@ -135,16 +135,22 @@ pub(crate) async fn apply(
     clippy::too_many_arguments,
     reason = "the existing MINT owner requires the same Quest, authority, content and request tuple"
 )]
-async fn mint(
+pub(crate) async fn mint(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     tuple: SelectedType2Tuple,
     node: &NodeIncarnationProof,
     fence: CurrentCharacterGameplayFence,
     command: CommandRef,
-    callback: &RewardCallback,
+    callback_key: &str,
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::ItemReward,
     admission: QuestRewardAdmission<'_>,
 ) -> std::result::Result<Option<[u8; 16]>, DurabilityError> {
+    if reward.premium {
+        let account: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(account_id) FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE")
+            .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        let account = account.try_into().map_err(|_| DurabilityError::InvalidStoredState)?;
+        if !admission.weights.wheel_premium_current(account) { return Ok(None); }
+    }
     let resolve = |key: &str| {
         let id = key
             .strip_prefix("oteryn:item.tibia.i")
@@ -183,18 +189,25 @@ async fn mint(
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),
-            production_key: callback.key.clone(),
+            production_key: callback_key.into(),
             revision_ref: content_revision.clone(),
         },
-        source_placement: callback.key.clone(),
+        source_placement: callback_key.into(),
         item: resolve(&reward.item)?,
         quantity: u32::from(reward.count),
         contents: reward
             .contents
             .iter()
             .map(|i| {
+                if i.fluid_subtype.is_some() {
+                    use oteryn_gameplay_content::content::{ReferenceItemField, ReferenceItemFluid};
+                    let policy = admission.native.item_policy(&i.item, "definition-r1").ok_or(DurabilityError::InvalidStoredState)?;
+                    if !matches!(&policy.record().semantics.fluid, ReferenceItemField::Known(ReferenceItemFluid { fluid_type: ReferenceItemField::NotApplicable })) {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                }
                 Ok(RewardClaimMintContent {
-                    fluid_subtype: None,
+                    fluid_subtype: i.fluid_subtype,
                     item: resolve(&i.item)?,
                     quantity: u32::from(i.count),
                     key_number: None,
