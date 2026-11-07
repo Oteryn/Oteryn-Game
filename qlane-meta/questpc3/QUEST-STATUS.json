@@ -4022,7 +4022,7 @@
     },
     "current_batch": {
       "batch": "threatened_treasure_14",
-      "phase": "Compiling WIP: all six callbacks and repeat occurrence support authored; 16 focused domain/boundary tests PASS, check PASS 40.48s, strict Clippy PASS 3m28s, Native generation 41 PASS, pin-refresh PASS unchanged world digest. Focused six-entry PostgreSQL journey building; prior real RED remains 0/6 until runtime proof.",
+      "phase": "PostgreSQL18.6 native journey RED62710ms: agaric and four selected variants succeed; first treasure all three assets succeeds; second selected24943 composition/earned treasure cycle fails. Evidence entries5/maps4/repeated_mapfalse/ring1/quartz5/coins5/stage5. Investigate repeat path now; never qualify whole batch yet.",
       "previous_published": "6146ee945",
       "entries": [
         "agaric25385 -> fourth map24946",
@@ -4089,6 +4089,27 @@
         "native": "repo tooling PASS 41 import files; 3596 existing profiles unchanged, 2 added",
         "pins": "repo tooling PASS, unchanged world digest 1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f",
         "postgres": "Focused native six-entry journey compiling; no GREEN claimed yet"
+      },
+      "fixture_compile_corrections": [
+        "soul_war.rs Callback literal repeatable_reward=false",
+        "underwater_drowning.rs Callback literal repeatable_reward=false"
+      ],
+      "profile_tool_verification": {
+        "initial": "16/17 passed; Rapier fixture lacked earlier qualified25295/3452",
+        "retest": "Rapier fixture complete, same equality and drift guards PASS0.979s",
+        "new_case": "Three peer reward profiles rebuilt EXACT with canonical weights PASS6.774s",
+        "logs": [
+          "/tmp/questpc3-treasure-profile-test.log",
+          "/tmp/questpc3-treasure-profile-retest.log"
+        ]
+      },
+      "latest_postgresql": {
+        "result": "RED 5/6, repeat cycle missing",
+        "duration_ms": 62710,
+        "log": "/tmp/questpc3-treasure-green-retry.log",
+        "sha256": "60461c59434082b1f51f0aadfa80dbaff08cce7a243333ffab76d4fa9f077ea1",
+        "evidence": "entries5 agarictrue maps4 repeated_mapfalse ring1 quartz5 coins5 stage5",
+        "compile": "dispatch test binary PASS8m01s after two explicit false fixture defaults"
       }
     },
     "diagnosis": {

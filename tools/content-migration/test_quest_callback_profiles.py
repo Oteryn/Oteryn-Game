@@ -65,6 +65,25 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.assertEqual(json.loads(self.generated[MANIFEST])['item_profiles']['sha256'],
                          hashlib.sha256(self.generated[PROFILE]).hexdigest())
 
+    def test_peer_backpack_outputs_rebuild_every_native_reward_profile(self):
+        wanted = {f'oteryn:item.tibia.i{ident}' for ident in (25698, 25737, 24390)}
+        self.document['records'] = [row for row in self.document['records']
+                                   if row['production_definition']['production_key'] not in wanted]
+        self.generated[PROFILE] = json.dumps(self.document).encode()
+        self.callbacks['callbacks'].append({'offerings': [], 'effects': {'item_reward': {
+            'item': 'oteryn:item.tibia.i25698', 'count': 1, 'contents': [],
+            'backpack_outputs': [{'item': 'oteryn:item.tibia.i25737', 'count': 5},
+                                 {'item': 'oteryn:item.tibia.i24390', 'count': 5}]}}})
+        self.admit()
+        rows = {row['production_definition']['production_key']: row
+                for row in json.loads(self.generated[PROFILE])['records']}
+        for key in wanted:
+            self.assertTrue(rows[key]['admission']['materializable'])
+            self.assertEqual(rows[key]['production_binding']['disposition'], 'EXACT')
+        for ident, weight in ((25737, 100), (24390, 30)):
+            self.assertEqual(rows[f'oteryn:item.tibia.i{ident}']['semantics']['physical']['value']['weight'],
+                             {'state': 'KNOWN', 'value': weight})
+
     def test_npc_reward_input_evidence_and_child_closure_is_native(self):
         wanted = {f'oteryn:item.tibia.i{i}' for i in (25731, 25733, 25779, 675, 676)}
         self.document['records'] = [r for r in self.document['records']
@@ -159,7 +178,7 @@ class QuestCallbackProfiles(unittest.TestCase):
     def test_rapier_admission_preserves_facts_and_rejects_physical_drift(self):
         from questpc3_item_admission import apply_admissions
         key = 'oteryn:item.tibia.i3272'
-        selected = {f'oteryn:item.tibia.i{ident}' for ident in (3272, 3362, 3426, 3054, 3084, 637, 25731, 25733, 25779, 3270, 3562, 10196, 10275, 22052, 22649, 5893, 25730, 25732, 25734, 25780, 25782, 5953, 25975, 25976, 25977)}
+        selected = {f'oteryn:item.tibia.i{ident}' for ident in (3272, 3362, 3426, 3054, 3084, 637, 25731, 25733, 25779, 3270, 3562, 10196, 10275, 22052, 22649, 5893, 25730, 25732, 25734, 25780, 25782, 5953, 25975, 25976, 25977, 25295, 3452)}
         canonical_items = [row['definition']
                            for path in sorted((ROOT / 'content/items/definitions').glob('items-*.json'))
                            for row in json.loads(path.read_bytes())['records']
