@@ -10575,5 +10575,31 @@
     "regeneration": "Native43filesPASS; current release compiler pin-refreshPASS, semantic pin b2400c60f3a08b751ce3edee7a1ea7979c0fcc94a9cb2fefcab9d6a558d125e6 unchanged",
     "initial_workspace_check": "PASS3m32s; final check running after Dragon logic correction",
     "python_freshness": "Full donor capture and strict metadata replay completed; full Python/donor verification was stopped when main advanced to avoid claims against a moving tree. Resume after this publication."
+  },
+  "emergency_publication_2119": {
+    "owner_override": "Abort unfinished main merge and publish last compiling state within10minutes; PREPUSH-2 steps2-3 exempt for this push only.",
+    "state": "COMPILE_AND_FMT_PASS_READY_TO_PUSH",
+    "preserved_patch": "/tmp/questpc4-e1ca-interrupted-integration.patch",
+    "main_ancestor": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+    "pending": [
+      "Re-merge current origin/main(e1ca3e00) and reuse its Royal implementation.",
+      "Remove unpublished1259 helper when main Royal fix is restored.",
+      "Pass current permit/fence to carried_step apply_input after main changes its signature.",
+      "Complete PREPUSH-2 all-unit tests for dispatch,quests,durability with PG unset plus own real PG cases; no full PG suite.",
+      "Rerun final workspace/fmt after that integration."
+    ],
+    "completed_before_override": [
+      "Dragon actualPG18.6 GREEN88.701780234s, later rerun126.98072192s",
+      "Royal exact full story GREEN215.847955501s on1138720b with current historical helper",
+      "Speed3719-profile assertion and all raw/unknown-speed checksGREEN",
+      "Type2audit exact mint-site inventoryGREEN0.31s",
+      "Full authoring1099tests/98modules PASS",
+      "Worldmetadata full16-command batch PASS, Ruff all33filesPASS",
+      "Clippy changed3cratesPASS6m21s; previous all-target workspacecheckPASS3m39s",
+      "Full donor-source replay PASS /tmp/questpc4-final-donor-green.log after strict child and parent witness regeneration"
+    ],
+    "note": "Do not claim e1ca present in this exception publication; finish within next30minute cycle.",
+    "workspace_check": "PASS3m14s /tmp/questpc4-emergency-workspace-check.log",
+    "fmt": "PASS /tmp/questpc4-emergency-fmt.log"
   }
 }
