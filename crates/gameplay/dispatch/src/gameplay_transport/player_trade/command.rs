@@ -99,12 +99,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let Some(ItemKey::Instance(item)) = item else {
                     return Some(ResultCode::NotTradeable);
                 };
-                let code = self
-                    .trade_offer(
-                        &permit, &runtime, admitted, command, partner, item, record, now,
-                    )
-                    .await
-                    .unwrap_or_else(|r| r);
+                let code = super::preflight::read_retry(self.root, async || {
+                    self.trade_offer(
+                        &permit, &runtime, admitted, command, partner, item, record.clone(), now,
+                    ).await
+                }).await.unwrap_or_else(|r| r);
                 if code == ResultCode::TooFar {
                     let mut book = self.states.player_trades.0.lock().ok()?;
                     let name = book
@@ -208,7 +207,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         item: [u8; 16],
         prior: Option<Record>,
         now: u64,
-    ) -> Result<ResultCode, ResultCode> {
+    ) -> Result<ResultCode, CheckError> {
         let lives = {
             let book = self
                 .states
@@ -239,29 +238,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })?
                 .clone();
             if own.actor == other.actor {
-                return Err(ResultCode::Rejected);
+                return Err(ResultCode::Rejected.into());
             }
             if book.index.contains_key(&other.admitted.game_session_id)
                 && prior
                     .as_ref()
                     .is_none_or(|r| !r.sessions.contains(&other.admitted.game_session_id))
             {
-                return Err(ResultCode::PartnerBusy);
+                return Err(ResultCode::PartnerBusy.into());
             }
             if !has_capacity(book.records.len(), prior.is_some()) {
-                return Err(ResultCode::PartnerBusy);
+                return Err(ResultCode::PartnerBusy.into());
             }
             [own, other]
         };
         self.trade_pair(permit, runtime, &lives, command)
             .await
-            .map_err(ResultCode::from)?;
-        let fences = self.trade_fences(&lives).await.map_err(ResultCode::from)?;
+            ?;
+        let fences = self.trade_fences(&lives).await?;
         // A new offer after READY retires the old pair and both accepts. Its id can
         // never authorize a later exchange (PLAYER-TRADE0 changes-cancel rule).
         if let Some(old) = &prior {
             if old.request.is_some() {
-                return Err(ResultCode::PartnerBusy);
+                return Err(ResultCode::PartnerBusy.into());
             }
             if old.lifecycle.phase() != Phase::Offered
                 || old.sessions[0] == admitted.game_session_id
@@ -273,7 +272,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .map_err(|_| ResultCode::Rejected)?
                     .close(old, ResultCode::Stale)
                     .ok_or(ResultCode::Rejected)?;
-                return Err(ResultCode::Stale);
+                return Err(ResultCode::Stale.into());
             }
             if old.sessions
                 != [
@@ -281,7 +280,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     lives[0].admitted.game_session_id,
                 ]
             {
-                return Err(ResultCode::PartnerBusy);
+                return Err(ResultCode::PartnerBusy.into());
             }
         }
         let digest = runtime.content_pin().server_artifact_digest();
@@ -296,7 +295,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 digest,
             )
             .await
-            .map_err(|_| ResultCode::Rejected)?
+            .map_err(CheckError::from)?
             .map_err(result)?;
         let projection = self.trade_projection(runtime, &leaf)?;
         let mut backpacks = Vec::new();
@@ -305,14 +304,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .root
                 .read_character_backpack(self.character, fence.character_id)
                 .await
-                .map_err(|_| ResultCode::Rejected)?
+                .map_err(|error| match error {
+                    crate::durability::item_transfer::ItemTransferError::Unavailable(error) => CheckError::from(error),
+                    _ => ResultCode::Rejected.into(),
+                })?
                 .ok_or(ResultCode::NoBackpack)?;
             backpacks.push(Some(backpack));
         }
         let record = if let Some(mut old) = prior {
             self.trade_unchanged(&old, [fences[1], fences[0]])
                 .await
-                .map_err(ResultCode::from)?;
+                ?;
             old.lifecycle
                 .counter_offer(command, command, now)
                 .map_err(result)?;
