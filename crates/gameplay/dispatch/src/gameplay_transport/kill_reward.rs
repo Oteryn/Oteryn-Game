@@ -123,6 +123,7 @@ pub struct PendingKillSettlement {
     /// Nonreward Instance death metadata captured before releasing the lethal turn.
     pub(super) activity_death: Option<CapturedActivityDeath>,
     pub(super) grizzly: Option<Arc<super::grizzly_kills::FrozenGrizzlyDeath>>,
+    pub(super) objectives: Option<Arc<Vec<super::quest_kill_objectives::CapturedObjective>>>,
     /// §1.5: `no_progression_binding` is logged once per death.
     no_progression_logged: bool,
 }
@@ -213,6 +214,7 @@ impl PendingKillSettlement {
             boss_reward: None,
             activity_death: None,
             grizzly: None,
+            objectives: None,
             no_progression_logged: false,
         }
     }
@@ -381,6 +383,7 @@ pub enum TakeOutcome {
 pub struct KillSettlementQueue(
     Arc<Mutex<KillQueueState>>,
     pub(super) Arc<Mutex<super::grizzly_kills::GrizzlyCaptureCache>>,
+    pub(super) Arc<Mutex<super::quest_kill_objectives::ObjectiveCaptureCache>>,
 );
 
 #[derive(Debug, Clone)]
@@ -1451,6 +1454,7 @@ pub fn record_creature_kill(
                             boss_reward: None,
                             activity_death: None,
                             grizzly: None,
+                            objectives: None,
                             no_progression_logged: false,
                         },
                     );
@@ -1807,6 +1811,7 @@ pub fn record_creature_kill(
         task_board_recipients: Arc::default(),
         talisman: Arc::default(),
         grizzly: None,
+        objectives: None,
         activity_observed_at: observed_at.filter(|at| at.get() / 1000 == facts.death_at_ms),
         activity_at_death,
         damage_shares,
@@ -1834,6 +1839,7 @@ fn accept_kill(
     mut entry: PendingKillSettlement,
 ) -> AppendOutcome {
     super::grizzly_kills::capture(runtime, queue, &mut entry);
+    super::quest_kill_objectives::capture(runtime, queue, &mut entry);
     let target = entry.target;
     let creature = entry.creature.clone();
     let outcome = queue.append(entry);
@@ -3060,6 +3066,12 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             && !admission
                 .credit_frozen_task_board_recipients(&entry, race.key())
                 .await
+        {
+            report.verdict = SettleVerdict::Retry;
+        }
+        if report.verdict == SettleVerdict::Final
+            && outcome.is_ok()
+            && !admission.credit_native_objectives(&entry).await
         {
             report.verdict = SettleVerdict::Retry;
         }

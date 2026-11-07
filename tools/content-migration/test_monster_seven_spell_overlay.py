@@ -36,7 +36,9 @@ class AcceptedOverlayTests(unittest.TestCase):
         # PREY-DIFF registers the generated tier and slot-value tables below;
         # C1 registers the Newhaven starting-loadout item profiles.
         # Shared quest rewards also register their source-pinned Item proof.
-        self.assertEqual(len(actual),42)
+        # Source gates register their closed donor/client Item proof as well.
+        self.assertEqual(len(actual),43)
+        self.assertIn('tools/content-schema/native-gameplay/source-gate-item-profiles.json',actual)
         self.assertIn('tools/content-schema/native-gameplay/qengine-reward-item-profiles.json',actual)
         self.assertIn('content/items/definitions/starting-loadout-profiles.json',actual)
         self.assertIn('content/creatures/prey-tiers.json',actual)

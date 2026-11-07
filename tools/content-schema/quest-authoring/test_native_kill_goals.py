@@ -28,7 +28,7 @@ class NativeSourceGoalProof(unittest.TestCase):
                                    ('creature', 'x', 'y', 'floor')) for g in goals}), 6)
         for goal in goals:
             expected = [] if goal['counter'].endswith('/dragon') else [
-                {'counter': 'oteryn:quest-progress/elvenbane/dragon', 'count': 1}]
+                {'counter': 'oteryn:quest-progress/elvenbane/native-defenders/dragon', 'count': 1}]
             self.assertEqual(goal['requires'], expected)
 
     def test_source_drift_foreign_path_and_neighbor_species_or_cell_refuse(self):

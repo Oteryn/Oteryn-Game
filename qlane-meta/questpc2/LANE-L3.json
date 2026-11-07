@@ -2315,7 +2315,7 @@
    "canonical": "oteryn:quest.the_annihilator_quest",
    "title": "The Annihilator Quest",
    "from_lane": "questpc4",
-   "status": "ACTIONABLE",
+   "status": "QUALIFIED",
    "mechanism": "encounter_party_admission_settlement",
    "titles": [
     "The Annihilator Quest"
@@ -2323,22 +2323,6 @@
    "from_lanes": [
     "questpc4"
    ],
-   "blocker": {
-    "missing_piece": "The four-player lever needs party admission, encounter occupancy, demons and timed escape; the four reward choices have separate PG evidence only.",
-    "source": ".questpc4/evidence/wiki/The Annihilator Quest_Spoiler.wiki:4",
-    "canonical_location": "content/quests/definitions/quests-00000-00099.json:1",
-    "canonical_json_pointer": "/records/88/definition",
-    "native_evidence": [],
-    "tried": [
-     "Read retained source at .questpc4/evidence/wiki/The Annihilator Quest_Spoiler.wiki:4; checked the selected canonical definition at content/quests/definitions/quests-00000-00099.json:1 (/records/88/definition).",
-     "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
-     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
-    ],
-    "native_callbacks_present": [],
-    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
-    "kind": null,
-    "dependency": null
-   },
    "sources": [
     {
      "title": "The Annihilator Quest",
@@ -2373,7 +2357,29 @@
    "additional_mechanism_dependencies": [],
    "classification_evidence_sources": [
     "in/questpc4.json#/quests/6"
-   ]
+   ],
+   "resolved_blocker": {
+    "missing_piece": "The four-player lever needs party admission, encounter occupancy, demons and timed escape; the four reward choices have separate PG evidence only.",
+    "source": ".questpc4/evidence/wiki/The Annihilator Quest_Spoiler.wiki:4",
+    "canonical_location": "content/quests/definitions/quests-00000-00099.json:1",
+    "canonical_json_pointer": "/records/88/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/The Annihilator Quest_Spoiler.wiki:4; checked the selected canonical definition at content/quests/definitions/quests-00000-00099.json:1 (/records/88/definition).",
+     "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "qualification": {
+    "record": "BATCH-annihilator-complete-source-route-2026-11-07.json",
+    "postgres_version": 180006,
+    "duration_seconds": 108.32,
+    "note": "Actual retained donor route has no invented timed escape or six-kill completion predicate. Historical imported blockers remain provenance only."
+   }
   },
   {
    "canonical": "oteryn:quest.demon_oak",

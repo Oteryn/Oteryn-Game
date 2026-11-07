@@ -206,3 +206,60 @@ qualification. Continue owned missing mechanisms; no external engine deferral.
   canonical fact, allocate no identity, and keep source geometry/action ids.
   Fresh qengine2 a0100244c and questpc4 5ea9e52be retain the generic predicate
   but provide no5111/5112 admission to reuse.
+
+- Confirmed source startup gate (no assumption): retained corpus
+  data-global/startup/tables/door_level.lua:173-178, SHA256
+  d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc,
+  declares1100 at33214,31671,13. Raw captured B3 has no action. Independent
+  level-access recapture preserves the already finished chest source capture.
+  Source map diff adds only that action; all geometry/other items unchanged.
+- Actual PG100.04s passes gates, entry, native kills/drains and reward doorway.
+  Source statues2113 block26,58 and34,58; display2012 occupies30,57. Route
+  around these captured obstacles with real WALK; never remove collision.
+
+- 2026-11-07 full Annihilator PG108.32s confirms actual source route through
+  physical armor3388, replay/shared-choice protection, exit33213,31671,13 and
+  claimed-door refusal. Imported canonical assessment holds and historical
+  timed-escape language are provenance, not instructions to invent mechanics.
+  Reuse existing generic level predicates and source startup action1100.
+  Desert merge retains single-dictionary and list-shaped source table groups.
+
+- Elvenbane continuation: fresh qengine2@97cb9db79 and questpc4@6d7cd8cc0
+  provide no Elvenbane route/objective implementation. questpc6@53d5648b8
+  explicitly SKIPPED_OTHER_LANE to questpc2. Reuse existing native XP/death
+  receipts and fenced Quest writer; objective bindings must reject command
+  causes, foreign principal/creature/scope and unearned death occurrences.
+- Exact native tower identities found without guessed coordinates:
+  content/world/spawns/spawns-02000-03999.json:1, SHA256
+  00f3f314eb78e7eff2dd1ec1b199b74a329d46aac6703c8258b22737f262b04a,
+  /records/1440/declaration Dragon32590,31645,z5;
+  /records/26 MinotaurMage32592,31643,z4; /records/28 OrcShaman32590,31647,z4.
+  content/world/spawns/spawns-00000-01999.json:1, SHA256
+  624bdaf1c5b8ebbcf7e98c2410ffbf8c8a25a81fc851e3952d48c5573d962d66,
+  /records/1175/declaration ElfArcanist32590,31643,z3 and two
+  DemonSkeletons32592,31644,z3 and32589,31646,z3. These match the accepted
+  authored recipe's mandatory Dragon plus five defenders exactly. Keep its
+  personal completion/reward choice; ordinary shared loot is not that recipe.
+- Elvenbane authored implementation choice: the kill-credit footprint is the
+  bounded tower rectangle x32580..32600/y31635..31655 on each exact native
+  defender floor. This boundary is an Oteryn choice, not an invented donor
+  script. Carrier positions use positive floors (5/4/3); callback/map storage
+  uses negative floors. Personal completion is Character-owned progress and
+  rewards through the native tower; no NPC bypass supplies terminal loot.
+- Elvenbane Spellbook resolution: choose normal equipped spellbook3059 from
+  pinned items.xml:6988-7003 (SHA2561cf2992c...022f2) and its existing exact
+  native binding. Same-named3101 lacks the normal weaponType/script declaration
+  at7484-7489. This resolves an authored approximation; historical ambiguous
+  import provenance remains unchanged. All seven chosen reward identities
+  already have native item profiles; no new guessed identity is needed.
+
+- 2026-11-07 source-map native objective kernel PG RED79.95s, PostgreSQL180006,
+  /tmp/questpc2-native-objective-atomic-link-retry-pg.log. Source map collision
+  and prior-route fixture setup passed; actual source Dragon death was refused
+  corpse_item_inadmissible before queue capture. Existing native profile points
+  to corpse5973. Pinned items.xml:12095-12108,16191-16195, SHA256
+  1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2,
+  gives5973(12slots,10s)->4025(10slots,300s)->4026(10slots,300s)->4027(60s,end).
+  Reuse generic encounter_corpse_items.py and exact independent WorldObject
+  Item pointers (objects-00500-00999 and01500-01999). Generator's3tests pass.
+  This is source custody admission work, not whole Elvenbane qualification.

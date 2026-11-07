@@ -20,7 +20,7 @@ fn elvenbane_source_defender_goal_catalogue_is_closed() -> TestResult {
         assert!(
             lowered
                 .catalogue()
-                .track("oteryn:quest-progress/elvenbane/dragon")
+                .track("oteryn:quest-progress/elvenbane/native-defenders/dragon")
                 .is_some(),
             "Elvenbane requires a bounded native defender goal, not a client-written completion flag"
         );
@@ -77,7 +77,7 @@ async fn value(owner: &ComposedFreshAdmission<'_, '_, '_>, name: &str) -> TestRe
         .map_err(debug)?;
     Ok(copy
         .tracks()
-        .get(&format!("oteryn:quest-progress/elvenbane/{name}"))
+        .get(&format!("oteryn:quest-progress/elvenbane/native-defenders/{name}"))
         .copied()
         .unwrap_or(if name == "phase" { -1 } else { 0 }))
 }

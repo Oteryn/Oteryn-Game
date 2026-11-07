@@ -2,6 +2,7 @@ import copy
 import json
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 import native_goal_loot_items as native
 
@@ -24,6 +25,21 @@ class NativeGoalLootProof(unittest.TestCase):
         amulet = items['oteryn:item.tibia.i3082']
         self.assertEqual(amulet['semantics']['charges']['value']['count'], {'state': 'KNOWN', 'value': 50})
         self.assertEqual(amulet['stack_class'], 'NonStackable')
+
+    def test_existing_admitted_native_physical_facts_are_preserved(self):
+        key = 'oteryn:item.tibia.i3031'
+        profile = native.profiles(native.ROOT, {3031})[key]
+        profile['admission']['materializable'] = True
+        profile['semantics']['physical']['value']['weight']['value'] = 10
+        before = copy.deepcopy(profile['semantics']['physical'])
+        canonical = lambda value: json.dumps(value, sort_keys=True).encode()
+        generated = {'profiles': canonical({'records': [profile]}),
+                     'manifest': canonical({'item_profiles': {'sha256': '0' * 64}})}
+        with patch.object(native, 'selected', return_value={3031}):
+            native.admit_native(native.ROOT, generated, 'profiles', 'manifest',
+                                lambda row: row['production_definition']['production_key'], canonical)
+        actual = json.loads(generated['profiles'])['records'][0]['semantics']['physical']
+        self.assertEqual(actual, before)
 
     def test_trophy_alternate_source_is_exact_and_not_a_general_pin_bypass(self):
         source = native.importer(native.ROOT)

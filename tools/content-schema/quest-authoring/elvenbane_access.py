@@ -3,7 +3,7 @@
 The recipe deliberately makes the Dragon and all five native upper defenders
 mandatory. These phase callbacks are Oteryn choices, not donor storage claims.
 """
-PHASE = 'oteryn:quest-progress/elvenbane/phase'
+PHASE = 'oteryn:quest-progress/elvenbane/native-defenders/phase'
 NAMES = ('dragon', 'elf-arcanist', 'demon-skeleton-east', 'demon-skeleton-west',
          'minotaur-mage', 'orc-shaman')
 
@@ -25,7 +25,7 @@ def callbacks(factory, position):
         row['sources'] = sources
         row['storage'] = [dict(track=PHASE, minimum=before, maximum=before, set=after)]
         if after == 1:
-            row['storage'] += [dict(track='oteryn:quest-progress/elvenbane/' + name,
+            row['storage'] += [dict(track='oteryn:quest-progress/elvenbane/native-defenders/' + name,
                                     minimum=1, maximum=1, set=1, preserve=True)
                                for name in NAMES]
         rows.append(row)

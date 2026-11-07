@@ -1,6 +1,6 @@
 # L3 unfinished quest paths
 
-Whole-quest counts: **0 qualified / 35 unfinished / 0 externally blocked**.
+Whole-quest counts: **2 qualified / 33 unfinished / 0 externally blocked**.
 These are remaining implementation gaps owned by L3, not external-owner deferrals.
 
 | Quest | Exact remaining gap |
@@ -9,26 +9,19 @@ These are remaining implementation gaps owned by L3, not external-owner deferral
 | Asura Palace Quest | Participant-bound Destroyer/Greater Elemental and Flaming Orchid admission, eligible-kill completion and door opening are not implemented. |
 | Barbarian Arena Quest | Thirty arena fights need participant-bound room occupancy, kill completion, exits and reward eligibility across all three tiers. |
 | Bewitched | Cauldron contribution, Bane Bringer spawn/reset and eligible-kill completion must precede the daily experience award. |
-| Chakoya Iceberg Mini World Change | Personal iceberg route admission, Chakoya spawn lifecycle and credited encounter occurrences are absent. |
 | Child of Destiny Quest | Party Skeleton combat, spear-target and spell-target hit events do not close their required training encounters. |
 | Cults of Tibia Quest | Cult room participants, boss summons, cleanup and Essence of Malice completion lack a composed encounter path. |
 | Dangerous Depths Quest | Warzone IV/V/VI group admission, boss summon/cleanup and successful-room completion lack encounter ownership. |
-| Deeplings World Change | Fiehonja world-stage progression, boss encounters and stage reset are absent; the existing stage-13 teleports only read access. |
-| Demon Wars World Change | Shaburak Demon/Lord/Prince faction combat progression and faction-war encounter reset are absent. |
-| Devovorga's Essence Mini World Change | Incarnation offering, Anmothra summon, Vengoth participants and terminal encounter cleanup are absent. |
-| Down the Drain Mini World Change | Personal flooded-island entry, Water Elemental encounter completion and dungeon reset are absent. |
 | Elemental Spheres Quest | Four sphere participants and machines are not composed with Lord of the Elements summoning, admission and cleanup. |
-| Elvenbane Quest | The required Dragon and five upper-floor defenders are not bound to personal encounter completion before terminal loot. |
+| Elvenbane Quest | Native six-origin proof, Dragon prerequisite, independent defender caps and ordinary corpse/loot closure pass real PostgreSQL. Incoming narrative objective writer retained; integrate actual source traversal, wire combat, physical terminal treasure and exit/replay next. |
 | Forgotten Knowledge Quest | Lloyd, Lady Tenebris, Dragon King, Time Guardian and Last Lore Keeper admissions and frozen-participant death settlement do not earn imbuing access. |
 | Grimvale Quest | Feroxa and named were-creature encounters lack participant capture and repeat/reset-safe death settlement. |
 | Heart of Destruction Quest | Six room-death/vortex rules remain runtime-disabled; participant capture, source encounter admission and settlement are absent. |
 | Hero of Rathleton Quest | Jaccus Maxxen encounter admission and settlement are not composed with the blueprint, bag and access rewards. |
 | Make Believe Quest | Mimar Haffar charge/shield windows, Maior Domus vocation charge windows and Phosphorus simultaneous adds/hazards lack encounter lifecycle ownership. |
 | Ravenous Madness Quest | Quest-bound corpse custody/progress and Trollwut encounter admission/completion are not composed. |
-| Rise of Devovorga | Seasonal stages/reset, coordinated incarnation encounters and participant rewards are not composed. |
 | Rotten Blood Quest | Source-native room/map/template, source-specific corpse/item closure and source boss mechanics remain active implementation work. Generic scoped physical corpse, runtime binding and independent private rewards are PG verified; native death/Quest progression was already verified. |
 | Soul War Quest | Source-native room/map/template, source-specific corpse/item closure and source boss mechanics remain active implementation work. Generic scoped physical corpse, runtime binding and independent private rewards are PG verified; native death/Quest progression was already verified. |
-| The Annihilator Quest | Source entry/reward owners reused; reward-door movement/sealing and all4captured startup chest UIDs are PG verified. Continuous native source-room entry/combat/earned-reward route remains active work; no invented escape timer or kill-storage gate. |
 | The Demon Oak Quest | Hallowed Axe use on all four Oak parts, defender waves and final reward entitlement are not composed. |
 | The Dream Courts Quest | Ice/Sun Ward Stones, dream access and Nightmare Beast completion lack the composed source-native storyline. |
 | The Inquisition Quest | Interrogation, holy-water use and Shadow Nexus boss completion lack native event-to-quest composition. |
@@ -39,3 +32,7 @@ These are remaining implementation gaps owned by L3, not external-owner deferral
 | Twenty Miles Beneath the Sea Quest | Seaman-skull use, Nacre Altar and cursed-gold finale lack native item/encounter/reward bindings. |
 | Within the Tides Quest | Tarun's Refiner of Magic and Giant Beaver/trapped-water missions lack exact native item/boss/access composition. |
 | Goblin Merchant Quest | Guardcatcher/Adventurer tool consumption, exact live-creature removal and captured-item custody are not atomic; related Rafzan world-object tasks are also uncomposed. |
+
+Six World changes are excluded from this lane by the owner allocation. See
+`WORLD-OWNERSHIP-SKIPS.json` for current branch SHAs, document lines and observed
+qualification/ownership. These rows require no local implementation or waiting.

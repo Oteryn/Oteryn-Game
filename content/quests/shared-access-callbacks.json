@@ -364,7 +364,7 @@
       "teleport": null,
       "storage": [
         {
-          "track": "oteryn:quest-progress/elvenbane/phase",
+          "track": "oteryn:quest-progress/elvenbane/native-defenders/phase",
           "minimum": -1,
           "maximum": -1,
           "set": 0
@@ -407,48 +407,48 @@
       "teleport": null,
       "storage": [
         {
-          "track": "oteryn:quest-progress/elvenbane/phase",
+          "track": "oteryn:quest-progress/elvenbane/native-defenders/phase",
           "minimum": 0,
           "maximum": 0,
           "set": 1
         },
         {
-          "track": "oteryn:quest-progress/elvenbane/dragon",
+          "track": "oteryn:quest-progress/elvenbane/native-defenders/dragon",
           "minimum": 1,
           "maximum": 1,
           "set": 1,
           "preserve": true
         },
         {
-          "track": "oteryn:quest-progress/elvenbane/elf-arcanist",
+          "track": "oteryn:quest-progress/elvenbane/native-defenders/elf-arcanist",
           "minimum": 1,
           "maximum": 1,
           "set": 1,
           "preserve": true
         },
         {
-          "track": "oteryn:quest-progress/elvenbane/demon-skeleton-east",
+          "track": "oteryn:quest-progress/elvenbane/native-defenders/demon-skeleton-east",
           "minimum": 1,
           "maximum": 1,
           "set": 1,
           "preserve": true
         },
         {
-          "track": "oteryn:quest-progress/elvenbane/demon-skeleton-west",
+          "track": "oteryn:quest-progress/elvenbane/native-defenders/demon-skeleton-west",
           "minimum": 1,
           "maximum": 1,
           "set": 1,
           "preserve": true
         },
         {
-          "track": "oteryn:quest-progress/elvenbane/minotaur-mage",
+          "track": "oteryn:quest-progress/elvenbane/native-defenders/minotaur-mage",
           "minimum": 1,
           "maximum": 1,
           "set": 1,
           "preserve": true
         },
         {
-          "track": "oteryn:quest-progress/elvenbane/orc-shaman",
+          "track": "oteryn:quest-progress/elvenbane/native-defenders/orc-shaman",
           "minimum": 1,
           "maximum": 1,
           "set": 1,

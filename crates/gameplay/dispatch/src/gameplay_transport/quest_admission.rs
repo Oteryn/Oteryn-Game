@@ -100,6 +100,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             operator_event("quest_experience_deferred reason=no_progression_binding");
         }
         self.refresh_grizzly_kill_snapshot(session).await;
+        self.refresh_native_objective_snapshot(session).await;
     }
 
     /// [`Self::current_quest_fence`] for an admission step: a failed read (such as a busy

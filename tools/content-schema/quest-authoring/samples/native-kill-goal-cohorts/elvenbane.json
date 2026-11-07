@@ -4,8 +4,8 @@
     {
       "key": "oteryn:quest-transition/native-kill/elvenbane-demon-skeleton-east",
       "quest": "oteryn:quest.authored.elvenbane_quest",
-      "phase": "oteryn:quest-progress/elvenbane/phase",
-      "counter": "oteryn:quest-progress/elvenbane/demon-skeleton-east",
+      "phase": "oteryn:quest-progress/elvenbane/native-defenders/phase",
+      "counter": "oteryn:quest-progress/elvenbane/native-defenders/demon-skeleton-east",
       "activation": "oteryn:quest-callback/elvenbane-basement-entry",
       "count": 1,
       "origins": [
@@ -19,7 +19,7 @@
       ],
       "requires": [
         {
-          "counter": "oteryn:quest-progress/elvenbane/dragon",
+          "counter": "oteryn:quest-progress/elvenbane/native-defenders/dragon",
           "count": 1
         }
       ],
@@ -38,8 +38,8 @@
     {
       "key": "oteryn:quest-transition/native-kill/elvenbane-demon-skeleton-west",
       "quest": "oteryn:quest.authored.elvenbane_quest",
-      "phase": "oteryn:quest-progress/elvenbane/phase",
-      "counter": "oteryn:quest-progress/elvenbane/demon-skeleton-west",
+      "phase": "oteryn:quest-progress/elvenbane/native-defenders/phase",
+      "counter": "oteryn:quest-progress/elvenbane/native-defenders/demon-skeleton-west",
       "activation": "oteryn:quest-callback/elvenbane-basement-entry",
       "count": 1,
       "origins": [
@@ -53,7 +53,7 @@
       ],
       "requires": [
         {
-          "counter": "oteryn:quest-progress/elvenbane/dragon",
+          "counter": "oteryn:quest-progress/elvenbane/native-defenders/dragon",
           "count": 1
         }
       ],
@@ -72,8 +72,8 @@
     {
       "key": "oteryn:quest-transition/native-kill/elvenbane-dragon",
       "quest": "oteryn:quest.authored.elvenbane_quest",
-      "phase": "oteryn:quest-progress/elvenbane/phase",
-      "counter": "oteryn:quest-progress/elvenbane/dragon",
+      "phase": "oteryn:quest-progress/elvenbane/native-defenders/phase",
+      "counter": "oteryn:quest-progress/elvenbane/native-defenders/dragon",
       "activation": "oteryn:quest-callback/elvenbane-basement-entry",
       "count": 1,
       "origins": [
@@ -101,8 +101,8 @@
     {
       "key": "oteryn:quest-transition/native-kill/elvenbane-elf-arcanist",
       "quest": "oteryn:quest.authored.elvenbane_quest",
-      "phase": "oteryn:quest-progress/elvenbane/phase",
-      "counter": "oteryn:quest-progress/elvenbane/elf-arcanist",
+      "phase": "oteryn:quest-progress/elvenbane/native-defenders/phase",
+      "counter": "oteryn:quest-progress/elvenbane/native-defenders/elf-arcanist",
       "activation": "oteryn:quest-callback/elvenbane-basement-entry",
       "count": 1,
       "origins": [
@@ -116,7 +116,7 @@
       ],
       "requires": [
         {
-          "counter": "oteryn:quest-progress/elvenbane/dragon",
+          "counter": "oteryn:quest-progress/elvenbane/native-defenders/dragon",
           "count": 1
         }
       ],
@@ -135,8 +135,8 @@
     {
       "key": "oteryn:quest-transition/native-kill/elvenbane-minotaur-mage",
       "quest": "oteryn:quest.authored.elvenbane_quest",
-      "phase": "oteryn:quest-progress/elvenbane/phase",
-      "counter": "oteryn:quest-progress/elvenbane/minotaur-mage",
+      "phase": "oteryn:quest-progress/elvenbane/native-defenders/phase",
+      "counter": "oteryn:quest-progress/elvenbane/native-defenders/minotaur-mage",
       "activation": "oteryn:quest-callback/elvenbane-basement-entry",
       "count": 1,
       "origins": [
@@ -150,7 +150,7 @@
       ],
       "requires": [
         {
-          "counter": "oteryn:quest-progress/elvenbane/dragon",
+          "counter": "oteryn:quest-progress/elvenbane/native-defenders/dragon",
           "count": 1
         }
       ],
@@ -169,8 +169,8 @@
     {
       "key": "oteryn:quest-transition/native-kill/elvenbane-orc-shaman",
       "quest": "oteryn:quest.authored.elvenbane_quest",
-      "phase": "oteryn:quest-progress/elvenbane/phase",
-      "counter": "oteryn:quest-progress/elvenbane/orc-shaman",
+      "phase": "oteryn:quest-progress/elvenbane/native-defenders/phase",
+      "counter": "oteryn:quest-progress/elvenbane/native-defenders/orc-shaman",
       "activation": "oteryn:quest-callback/elvenbane-basement-entry",
       "count": 1,
       "origins": [
@@ -184,7 +184,7 @@
       ],
       "requires": [
         {
-          "counter": "oteryn:quest-progress/elvenbane/dragon",
+          "counter": "oteryn:quest-progress/elvenbane/native-defenders/dragon",
           "count": 1
         }
       ],

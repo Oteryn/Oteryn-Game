@@ -287,7 +287,7 @@ mod tests {
     fn exact_origins_and_one_shot_counter_bounds() -> Result<(), String> {
         let goal = load()?
             .iter()
-            .find(|g| g.counter == "oteryn:quest-progress/elvenbane/dragon")
+            .find(|g| g.counter == "oteryn:quest-progress/elvenbane/native-defenders/dragon")
             .ok_or("goal")?;
         assert!(goal.matches("oteryn:creature.dragon", 32590, 31645, 5));
         for (creature, x, y, floor) in [
@@ -315,7 +315,7 @@ mod tests {
             .map_err(|e| format!("{e:?}"))?;
         let goal = load()?
             .iter()
-            .find(|g| g.counter == "oteryn:quest-progress/elvenbane/dragon")
+            .find(|g| g.counter == "oteryn:quest-progress/elvenbane/native-defenders/dragon")
             .ok_or("goal")?;
         validate_closed(lowered.catalogue())?;
         for (track, from, effect) in [

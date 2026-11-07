@@ -119,6 +119,7 @@ def admit_native(root, generated, profile_path, manifest_path, order, canonical)
         else:
             record = copy.deepcopy(observed)
             document['records'].append(record)
+        existing_admitted = bool(present) and record['admission']['materializable']
         charge_fields = [d.get('charges', {'state': 'UNKNOWN'}) for d in
                          (definition['semantics'], record['semantics'], observed['semantics'])]
         if any(field.get('state') == 'KNOWN' for field in charge_fields) and not (
@@ -128,8 +129,12 @@ def admit_native(root, generated, profile_path, manifest_path, order, canonical)
             if group in ('charges', 'temporal') and source.accepted.known_conflict(
                     definition['semantics'][group], record['semantics'][group]):
                 raise ValueError('NATIVE_GOAL_LOOT_EXACT_CHARGE_OR_TIME_REQUIRED')
-            record['semantics'][group] = source.accepted.accepted_first(
-                definition['semantics'][group], record['semantics'][group])
+            # Existing admitted physical facts belong to their original owner.
+            # Canonical facts fill unknowns; this loot closure cannot retune them.
+            primary, fallback = (record['semantics'][group], definition['semantics'][group]) \
+                if group == 'physical' and existing_admitted else \
+                (definition['semantics'][group], record['semantics'][group])
+            record['semantics'][group] = source.accepted.accepted_first(primary, fallback)
         record['admission'] = dict(materializable=True, stack_class=definition['stack_class'],
                                   legal_destinations=['CharacterInventory', 'Ground'])
     document['records'].sort(key=order)
