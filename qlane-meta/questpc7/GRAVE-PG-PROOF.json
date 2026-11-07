@@ -30,7 +30,7 @@
     "passed": 1,
     "failed": 0
   },
-  "state": "Full story GREEN; required14 focused gates pending, qualification remains ACTIVE.",
+  "state": "QUALIFIED",
   "assertions": [
     "fresh native level250/Premium subject; no quest progress seeds",
     "12 distinct retained physical grave sites, exact native journey destinations",
@@ -44,8 +44,8 @@
   ],
   "boundary": "Whole selected finite programme. Seven literal upstream grave coordinates; five documented conservative native grave bindings in named regions. Original raid/global/cooldown/party logic and optional corpse loot remain outside proof.",
   "validation": {
-    "state": "9 focused gates GREEN; pins/integration/fmt running",
-    "completed_gates": [
+    "state": "GREEN",
+    "gates": [
       {
         "check": "ferumbras-pg",
         "command": [
@@ -182,8 +182,95 @@
         "seconds": 181.614,
         "exit_code": 0,
         "log": "/tmp/questpc7-grave-clippy.log"
+      },
+      {
+        "check": "pin-refresh",
+        "command": [
+          "cargo",
+          "run",
+          "--locked",
+          "-p",
+          "oteryn-world-bundle-compiler",
+          "--",
+          "pin-refresh",
+          "."
+        ],
+        "seconds": 115.178,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-pin-refresh.log"
+      },
+      {
+        "check": "pin-check",
+        "command": [
+          "cargo",
+          "run",
+          "--locked",
+          "-p",
+          "oteryn-world-bundle-compiler",
+          "--",
+          "pin-check",
+          ".",
+          "/tmp/questpc7-grave-pin-check"
+        ],
+        "seconds": 139.952,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-pin-check.log"
+      },
+      {
+        "check": "content",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-game-server",
+          "--test",
+          "integration_rest",
+          "content_"
+        ],
+        "seconds": 135.846,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-content.log"
+      },
+      {
+        "check": "world",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-game-server",
+          "--test",
+          "content_world_project_repository"
+        ],
+        "seconds": 48.497,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-world.log"
+      },
+      {
+        "check": "fmt",
+        "command": [
+          "cargo",
+          "fmt",
+          "--all",
+          "--",
+          "--check"
+        ],
+        "seconds": 10.953,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-fmt.log"
       }
     ],
+    "test_counts": {
+      "retained_ferumbras_pg": 1,
+      "loader": 9,
+      "world_callbacks": 22,
+      "quest_authoring": 25,
+      "item_authoring": 3,
+      "content": 123,
+      "world": 5
+    },
     "retained_ferumbras_postgres_seconds": 52.552991663
-  }
+  },
+  "review": "Reviewed complete programme and source bindings: twelve distinct physical sites, five documented conservative bindings, eight actual native deaths with both Sirs, native original Cobra step preserved, only USE phase activation, typed native access and existing fenced world grants. Exact repeat outcome and unchanged value/completion asserted; short teleport detection is precise. No new migration or relaxed bounds; no blocking findings."
 }

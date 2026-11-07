@@ -966,64 +966,36 @@
     "title": "Grave Danger Quest",
     "canonical": "oteryn:quest.grave_danger_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/53/definition",
-    "status": "ACTIVE",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
-    "queued_stage_binding": {
-      "stage": "s1",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
-    },
-    "first_unqualified_stage": {
-      "key": "s1",
-      "kind": "explore",
-      "objective": "Visit the haunted grave in each of the twelve recorded regions.",
-      "targets": [
-        "Edron north",
-        "Dark Cathedral",
-        "Ghostlands",
-        "Cormaya",
-        "Femor Hills",
-        "isle northeast of Ankrahmun",
-        "Kilmaresh",
-        "Vengoth",
-        "Darashia",
-        "old Thais temple",
-        "Orclands entrance",
-        "southern Ice Islands"
-      ]
-    },
     "owner": "questpc7",
-    "remaining_work": {
-      "kind": "lane_implementation_work",
-      "missing_piece": "Hand of the Inquisition Outfits: the reusable fenced NPC outfit/addon and account appearance mapping owner is implemented. Compose the full pinned route and exact owned NPC/physical/encounter bindings; implement remaining guard or currency mechanisms here and qualify the whole route with real PostgreSQL proof.",
-      "evidence": [
-        "content/quests/definitions/quests-00100-00199.json:1#/records/53/definition",
-        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
-        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
-      ],
-      "attempts": [
-        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
-      ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
-    },
     "shared_reward_mechanism": {
       "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
       "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
       "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
       "scope": "Generic owner only; not this quest's route qualification"
     },
-    "current_batch": {
-      "state": "Full PG GREEN and9 focused gates GREEN including strict clippy; pins/integration/fmt running",
+    "qualification": {
+      "kind": "whole selected native Grave Danger journey",
+      "test": "questpc7_grave_whole_native_journey_and_reward",
+      "proof": "qlane-meta/questpc7/GRAVE-PG-PROOF.json",
+      "postgres": "18.6",
       "red_seconds": 40.799342316,
-      "red_log": "/tmp/questpc7-grave-red.log",
-      "route": "12 physical grave visits; five Lich Knight encounters (both Sirs), Zelos, real Cobra access, Scarlett, base Hand of Inquisition plus achievement",
-      "assumptions": "Seven literal upstream grave coordinates pinned to Canary666a60f; other five selected native graves within the named regions, not asserted as exact donor haunted-grave coordinates. Native personal solo route; original raid logic untouched.",
-      "engine": "Reuses published native death objectives, earned world callbacks and fenced outfit/achievement owners; no new migration or effect-bound increase.",
-      "compilation": "cargo test built dispatch successfully in1m13s before real PostgreSQL runtime assertion; no compile errors",
-      "expanded_red_seconds": 54.06573,
       "green_seconds": 56.924504294,
-      "proof": "qlane-meta/questpc7/GRAVE-PG-PROOF.json"
+      "scope": [
+        "fresh native level250/Premium subject; no quest progress seeds",
+        "12 distinct retained physical grave sites, exact native journey destinations",
+        "current Premium refusal at first grave and final reward",
+        "five Lich Knight encounters with both Sirs mandatory",
+        "King Zelos and typed native Zelos-door entitlement earned",
+        "retained Cobra access STEP and flag, selected investigation USE, native Scarlett death",
+        "base Hand of Inquisition, Inquisition's Hand and canonical completion in one transaction",
+        "exact command replay; inactive new-command use preserves native armour behavior with unchanged grants and completion revision",
+        "ordinary appearance command selects earned base outfit"
+      ],
+      "boundary": "Whole selected finite programme. Seven literal upstream grave coordinates; five documented conservative native grave bindings in named regions. Original raid/global/cooldown/party logic and optional corpse loot remain outside proof.",
+      "validation": "14 focused gates GREEN; retained Ferumbras PG52.553s, check/strict clippy, repository generators/pins, content123/world5, fmt"
     }
   },
   {

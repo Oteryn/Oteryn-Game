@@ -1121,3 +1121,29 @@ check and content/world/fmt still run in validation session92603. Keep ACTIVE;
 push this tested step immediately, then finish remaining5 gates, qualification
 metadata and push. Test passage selection was simplified equivalently for
 clarity; all native story/destination/value checks retained.8 ACTIVE.
+
+
+## Grave Danger whole selected programme QUALIFIED
+
+Actual PG18.6 RED40.799342316s → fullGREEN56.924504294s; no subject quest
+seeds.12 actual physical grave visits; all5 Lich Knight encounters (both Sirs),
+Zelos and actual door entitlement; preserved Cobra STEP/access then selected
+USE investigation; Scarlett; atomic base Hand outfit/Inquisition's Hand/
+completion; exact command replay; inactive native armour NothingToUse with
+unchanged completion revision and grant/addon counts; actual appearance
+command selects earned outfit. All14 focused gates GREEN, including retained
+Ferumbras PG52.552991663s, loader9/world-callback22/author25/item3, both
+repository generators, check/strict clippy, pins, content123/world5 and fmt.
+Seven exact upstream grave positions and five documented conservative native
+regional bindings; no fabricated donor coordinates, original raid/global/
+party/cooldown/corpse-loot fidelity claim, migration or effect-bound increase.
+Native-clear source positions and actual appearances are checked by authoring
+unit. Original Source NPC/raid holds remain outside the finite selected route.
+Commit/push qualification immediately;7 ACTIVE remain. Owner requires push
+after each green step and at most15minutes; compiling WIP is authorized with
+exact red point. Continue next selected route now; no ownership questions.
+Remaining: Feaster, Forgotten Knowledge, Goblin Merchant, Grimvale, Heart of
+Destruction, Hot Cuisine, Illuminated Warrior. World rewards/achievements and
+native death/passages now exist generically; implement any remaining missing
+mechanisms directly. Native imbue implementation already exists; inspect its
+accepted Global quest-unlock difference before inventing a conflicting gate.
