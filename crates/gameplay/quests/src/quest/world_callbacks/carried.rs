@@ -114,6 +114,46 @@ mod tests {
         Ok(())
     }
     #[test]
+    fn target_only_appearance_and_burn_terms_are_bounded_and_content_bound() -> Result<(), String> {
+        let callback = super::super::load()?
+            .into_iter()
+            .find(|row| row.key.contains("/threatened-burn/"))
+            .ok_or("burn callback")?;
+        let accepted = |row: &super::super::Callback| {
+            super::super::parse(&serde_json::json!({"schema":1,"callbacks":[row]}).to_string())
+                .is_ok()
+        };
+        assert!(accepted(&callback));
+        let burn = definition(callback.clone())?;
+        let mut retained = callback.clone();
+        let item = retained.item_on_target.as_mut().ok_or("source")?;
+        item.replacement = Some(item.item.clone());
+        assert!(accepted(&retained));
+        assert_ne!(definition(retained)?, burn);
+        let mut invalid = callback.clone();
+        invalid.selector.appearance = Some(0);
+        assert!(!accepted(&invalid));
+        let mut invalid = callback.clone();
+        invalid.item_on_target.as_mut().ok_or("source")?.count = 2;
+        assert!(!accepted(&invalid));
+        let mut invalid = callback.clone();
+        invalid
+            .item_on_target
+            .as_mut()
+            .ok_or("source")?
+            .target_replacement = Some(100);
+        assert!(!accepted(&invalid));
+        let mut ordinary = callback.clone();
+        ordinary.trigger = super::super::Trigger::Use;
+        ordinary.carried_use = None;
+        assert!(!accepted(&ordinary));
+        let mut self_use = callback;
+        self_use.trigger = super::super::Trigger::UseCarried;
+        self_use.selector.appearance = None;
+        assert!(!accepted(&self_use));
+        Ok(())
+    }
+    #[test]
     fn all_day_and_end_of_day_windows_are_half_open_and_bounded() {
         let all_day = TimeWindow {
             from_minute: 0,

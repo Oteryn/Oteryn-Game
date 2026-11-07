@@ -102,6 +102,7 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
             .facts
             .quest_callback_matches(key, None, None, selector.appearance)
             || ((selector.position.is_some()
+                || callback.trigger == Trigger::UseCarriedOnTarget
                 || callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE)
                 && selector.appearance.is_some_and(|appearance| {
                     // The Crystal plate callback is registered by item appearance. Plain

@@ -177,9 +177,11 @@ fn valid_carried(callback: &Callback) -> bool {
         && callback.item_on_target.as_ref().is_some_and(|item| {
             item.count == 1
                 && item.target_replacement.is_none()
-                && item.replacement.as_ref().is_some_and(|replacement| {
-                    callback.trigger == Trigger::UseCarriedOnTarget || replacement != &item.item
-                })
+                && (callback.trigger == Trigger::UseCarriedOnTarget
+                    || item
+                        .replacement
+                        .as_ref()
+                        .is_some_and(|replacement| replacement != &item.item))
         })
 }
 
@@ -201,7 +203,9 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || (callback.trigger != Trigger::UseCarried
                 && selector.position.is_none()
                 && selector.unique.is_none()
-                && selector.action.is_none())
+                && selector.action.is_none()
+                && (callback.trigger != Trigger::UseCarriedOnTarget
+                    || selector.appearance.is_none_or(|appearance| appearance == 0)))
             || !valid_carried(callback)
             || selector.position.is_some_and(|p| !valid_pos(p))
             || callback.teleport.is_some_and(|p| !valid_pos(p))
