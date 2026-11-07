@@ -2267,6 +2267,43 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "npcfix-filled-fluid-shop-and-retained-actors",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "Retained authored TibiaWiki placement facts: Ahmet revision1114085, Zebron and Oliver pinned provenance in content/world/npc-placements. Historical positions checked directly against ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb; actor scope only for Zebron/Oliver.",
+      "cases": [
+        {
+          "npc": "oteryn:npc.ahmet",
+          "name": "Ahmet",
+          "expected": {
+            "x": 33126,
+            "y": 32810,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.zebron",
+          "name": "Zebron",
+          "expected": {
+            "x": 32931,
+            "y": 32071,
+            "floor": -9
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.oliver",
+          "name": "Oliver",
+          "expected": {
+            "x": 32895,
+            "y": 31229,
+            "floor": -7
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }
