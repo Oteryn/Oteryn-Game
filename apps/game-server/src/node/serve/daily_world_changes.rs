@@ -9,30 +9,21 @@ use super::event;
 use crate::foundation::{ChannelRuntimeV1, MovementFacing, NpcPlacement, WorldId};
 use crate::map::overlay::TilePos;
 use oteryn_gameplay_world_change::daily::DailyWorldChanges;
-use oteryn_simulation_determinism::{
-    DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
-};
 use sha2::{Digest, Sha256};
 
 /// The day after the reset `reset_epoch` of `world`, on the UTC calendar at `unix_ms`.
 pub(super) fn roll(world: WorldId, reset_epoch: u64, unix_ms: i64) -> DailyWorldChanges {
-    let mut hash = Sha256::new();
-    hash.update(b"oteryn.world_change.daily.v1\0");
-    hash.update(world.as_bytes());
-    let root = GameplayDecisionRoot::from_bytes(hash.finalize().into());
-    let mut occurrence = [0; 16];
-    occurrence[8..].copy_from_slice(&reset_epoch.to_be_bytes());
     let (month, day) = utc_month_day(unix_ms);
-    DailyWorldChanges::roll(reset_epoch, month, day, |purpose| {
-        // A purpose is never empty, so the draw cannot fail; a failure would read as "no".
-        deterministic_decision_u64(
-            &root,
-            DecisionOccurrenceId::from_bytes(occurrence),
-            purpose,
-            0,
-        )
-        .unwrap_or(u64::MAX)
-    })
+    roll_calendar(world, reset_epoch, month, day)
+}
+
+pub(super) fn roll_calendar(
+    world: WorldId,
+    reset_epoch: u64,
+    month: u8,
+    day: u8,
+) -> DailyWorldChanges {
+    oteryn_gameplay_world_change::daily::roll_calendar(world.as_bytes(), reset_epoch, month, day)
 }
 
 /// Qualify the boot's optional composition against its resolved reset epoch.
@@ -143,7 +134,7 @@ pub(super) fn apply_items(
 }
 
 /// The UTC (month, day) of `unix_ms` (days-from-civil inverted).
-fn utc_month_day(unix_ms: i64) -> (u8, u8) {
+pub(super) fn utc_month_day(unix_ms: i64) -> (u8, u8) {
     let days = unix_ms.div_euclid(86_400_000) + 719_468;
     let era = days.div_euclid(146_097);
     let day_of_era = days - era * 146_097;
@@ -500,8 +491,12 @@ mod tests {
     }
 
     fn exercise_fungus(epoch: u64) {
+        exercise_fungus_snapshot(DailyWorldChanges::roll(epoch, 1, 1, |_| 0));
+    }
+
+    fn exercise_fungus_snapshot(day: DailyWorldChanges) {
         use crate::map::view::MapFacts;
-        let day = DailyWorldChanges::roll(epoch, 1, 1, |_| 0);
+        let epoch = day.reset_epoch;
         let world = boot_physical(&day);
         let restarted = boot_physical(&day);
         let mut changed = 0;
@@ -527,7 +522,11 @@ mod tests {
                 changed += usize::from(fact.appearance_id != 12065);
             }
         }
-        assert!((1200..=1600).contains(&changed), "changed {changed}");
+        if day.their_masters_voice {
+            assert!((1200..=1600).contains(&changed), "changed {changed}");
+        } else {
+            assert_eq!(changed, 0);
+        }
         assert_eq!(world, restarted);
         for (x, y, floor) in [(33305, 31847, -9), (33370, 31847, -9), (33306, 31847, -8)] {
             assert_eq!(
@@ -638,6 +637,12 @@ mod tests {
     }
 
     fn exercise_grimvale_inner(epoch: u64) {
+        for day in [12, 13, 14] {
+            exercise_grimvale_snapshot(DailyWorldChanges::roll(epoch, 1, day, |_| u64::MAX));
+        }
+    }
+
+    fn exercise_grimvale_snapshot(changes: DailyWorldChanges) {
         use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
         let (controller, pin) =
             crate::content::native_gameplay::test_support::activated_with_loot_tables(
@@ -650,86 +655,82 @@ mod tests {
             .enable_time()
             .build()
             .expect("executor");
-        for day in [12, 13, 14] {
-            let changes = DailyWorldChanges::roll(epoch, 1, day, |_| u64::MAX);
-            let map = boot_physical(&changes);
-            let sources = map
-                .activation_spawns(|_| Some((100, false)))
-                .expect("activation sources");
-            let points: Vec<_> = sources.iter().flat_map(|(points, _)| points).collect();
-            assert!(!points.is_empty(), "Grimvale sources");
-            assert!(points.len() <= 21);
-            let allowed = if day == 13 {
-                &["oteryn:creature.wereboar", "oteryn:creature.werebadger"][..]
-            } else {
-                &[
-                    "oteryn:creature.bandit",
-                    "oteryn:creature.badger",
-                    "oteryn:creature.blue_butterfly",
-                    "oteryn:creature.yellow_butterfly",
-                ][..]
-            };
-            let count = points.len();
-            for (position, delay, creature, health, _) in points {
-                assert!((33330..=33350).contains(&position.0));
-                assert!((31670..=31690).contains(&position.1));
-                assert_eq!(position.2, 7);
-                assert!(allowed.contains(&creature.as_str()));
-                assert_eq!(*health, 100);
-                assert_eq!(*delay, 90_000);
-            }
-            let channel_pin = oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::from_activation(
+        let map = boot_physical(&changes);
+        let sources = map
+            .activation_spawns(|_| Some((100, false)))
+            .expect("activation sources");
+        let points: Vec<_> = sources.iter().flat_map(|(points, _)| points).collect();
+        assert!(!points.is_empty(), "Grimvale sources");
+        assert!(points.len() <= 21);
+        let allowed = if changes.grimvale_full_moon {
+            &["oteryn:creature.wereboar", "oteryn:creature.werebadger"][..]
+        } else {
+            &[
+                "oteryn:creature.bandit",
+                "oteryn:creature.badger",
+                "oteryn:creature.blue_butterfly",
+                "oteryn:creature.yellow_butterfly",
+            ][..]
+        };
+        let count = points.len();
+        for (position, delay, creature, health, _) in points {
+            assert!((33330..=33350).contains(&position.0));
+            assert!((31670..=31690).contains(&position.1));
+            assert_eq!(position.2, 7);
+            assert!(allowed.contains(&creature.as_str()));
+            assert_eq!(*health, 100);
+            assert_eq!(*delay, 90_000);
+        }
+        let channel_pin = oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::from_activation(
                 world(),pin.activation_sequence(),pin.identity().server_artifact_digest(),
                 pin.identity().client_artifact_digest(),map.frame_binding_digest(world()),
                 map.map_revision_digest(),(33330,31670,7));
-            let mut runtime = ChannelRuntimeV1::from_committed_assignment(
-                world(),
-                ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
-                    .expect("channel"),
-                NodeId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3])
-                    .expect("node"),
-                1,
-                1,
-                1,
-                "runtime-scope-assignment:1",
-                64,
-                channel_pin,
-            )
-            .expect("runtime");
-            native
-                .install_companion_policies(&mut runtime)
-                .expect("served policies");
-            let realized = executor
-                .block_on(super::super::realize_bundle_spawns(
-                    &mut runtime,
-                    &map,
-                    &oteryn_foundation::CancellationToken::new(),
-                ))
-                .expect("activation");
-            assert_eq!(realized, Some((count, 1)));
-            for (_, _, actor) in runtime.spawn_point_creatures() {
-                let actor = actor.expect("live Grimvale creature");
-                let snapshot = runtime.companion_snapshot(actor).expect("served creature");
-                assert!(snapshot.health > 0);
-                assert_eq!(snapshot.health, snapshot.maximum_health);
-            }
-            let (point, _, actor) = runtime.spawn_point_creatures()[0];
-            let actor = actor.expect("first creature");
-            let health = runtime.companion_snapshot(actor).expect("health").health;
-            runtime
-                .commit_monster_lab_damage(actor, b"sp02-lethal-hit", health)
-                .expect("lethal hit");
-            crate::gameplay_transport::drive_owner_spawns(&mut runtime, 0);
-            let due = runtime
-                .pending_respawn(point)
-                .expect("pending respawn")
-                .due_micros;
-            assert_eq!(due, 90_000_000);
-            crate::gameplay_transport::drive_owner_spawns(&mut runtime, due);
-            crate::gameplay_transport::drive_owner_spawns(&mut runtime, due + 4_200_000);
-            assert!(runtime.spawn_point_creatures()[0].2.is_some());
-            assert_ne!(runtime.spawn_point_creatures()[0].2, Some(actor));
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world(),
+            ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+                .expect("channel"),
+            NodeId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3]).expect("node"),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            64,
+            channel_pin,
+        )
+        .expect("runtime");
+        native
+            .install_companion_policies(&mut runtime)
+            .expect("served policies");
+        let realized = executor
+            .block_on(super::super::realize_bundle_spawns(
+                &mut runtime,
+                &map,
+                &oteryn_foundation::CancellationToken::new(),
+            ))
+            .expect("activation");
+        assert_eq!(realized, Some((count, 1)));
+        for (_, _, actor) in runtime.spawn_point_creatures() {
+            let actor = actor.expect("live Grimvale creature");
+            let snapshot = runtime.companion_snapshot(actor).expect("served creature");
+            assert!(snapshot.health > 0);
+            assert_eq!(snapshot.health, snapshot.maximum_health);
         }
+        let (point, _, actor) = runtime.spawn_point_creatures()[0];
+        let actor = actor.expect("first creature");
+        let health = runtime.companion_snapshot(actor).expect("health").health;
+        runtime
+            .commit_monster_lab_damage(actor, b"sp02-lethal-hit", health)
+            .expect("lethal hit");
+        crate::gameplay_transport::drive_owner_spawns(&mut runtime, 0);
+        let due = runtime
+            .pending_respawn(point)
+            .expect("pending respawn")
+            .due_micros;
+        assert_eq!(due, 90_000_000);
+        crate::gameplay_transport::drive_owner_spawns(&mut runtime, due);
+        crate::gameplay_transport::drive_owner_spawns(&mut runtime, due + 4_200_000);
+        assert!(runtime.spawn_point_creatures()[0].2.is_some());
+        assert_ne!(runtime.spawn_point_creatures()[0].2, Some(actor));
     }
 
     fn pg_physical(

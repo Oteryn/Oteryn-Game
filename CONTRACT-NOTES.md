@@ -680,3 +680,13 @@ Read-only donor evidence fetched successfully:
 - https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/lua/creature/raids.cpp
 
 Fury Gates selects/realizes at startup; donor content is not an accepted Game realization receipt or an advance prediction window. Wiki checks: **wiki-pending**. NEED-FETCH: none.
+
+## QWORLD source facts (2026-11-07)
+The existing production daily roll and physical projections cover Fury Gates,
+Grimvale full-moon spawn substitution, and Their Master's Voice fungus. Calendar
+selection must remain bound to the committed reset occurrence across restarts.
+The inspected lane branches do not supply a reusable durable world-state owner.
+Source kill thresholds, schedules, and exact quest action gates for the other
+listed world changes have not yet been established; no threshold or dialogue
+text is inferred from a title alone. These require source evidence before title
+qualification, while the reusable engine implementation proceeds here.

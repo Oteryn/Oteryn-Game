@@ -57,6 +57,7 @@ fn catalogue_with(step: i64, content: &str) -> TestResult<Arc<QuestStateCatalogu
     use QuestComparison as From;
     use QuestEffectKind as Effect;
     let rats = |name: &str, effects: Vec<QuestEffect>, completes: bool| QuestTransition {
+        world_change: None,
         key: transition_key(name),
         quest: QUEST.into(),
         effects,
@@ -118,6 +119,7 @@ fn catalogue_with(step: i64, content: &str) -> TestResult<Arc<QuestStateCatalogu
                     false,
                 ),
                 QuestTransition {
+                    world_change: None,
                     key: transition_key("other"),
                     quest: OTHER.into(),
                     effects: vec![effect(FLAG, From::Eq(0), Effect::Set(1))],

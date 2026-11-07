@@ -287,3 +287,27 @@ mod tests {
         assert_eq!(day([u64::MAX; 4]).items().count(), 0);
     }
 }
+
+/// Canonical occurrence draws shared by durable decisions and physical projections.
+pub fn roll_calendar(world: &[u8; 16], reset_epoch: u64, month: u8, day: u8) -> DailyWorldChanges {
+    use oteryn_simulation_determinism::{
+        DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+    };
+    use sha2::{Digest, Sha256};
+    let mut hash = Sha256::new();
+    hash.update(b"oteryn.world_change.daily.v1\0");
+    hash.update(world);
+    let root = GameplayDecisionRoot::from_bytes(hash.finalize().into());
+    let mut occurrence = [0; 16];
+    occurrence[8..].copy_from_slice(&reset_epoch.to_be_bytes());
+    DailyWorldChanges::roll(reset_epoch, month, day, |purpose| {
+        // A purpose is never empty, so the draw cannot fail; a failure would read as "no".
+        deterministic_decision_u64(
+            &root,
+            DecisionOccurrenceId::from_bytes(occurrence),
+            purpose,
+            0,
+        )
+        .unwrap_or(u64::MAX)
+    })
+}

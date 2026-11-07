@@ -39,7 +39,7 @@ fn world_event_postgres_real_dispatch_reset_restart_and_fences() -> TestResult {
     Ok(())
 }
 
-fn scenario(epochs: u64) -> TestResult {
+pub(super) fn scenario(epochs: u64) -> TestResult {
     run(async move |admin| {
         reset();
         let h =
@@ -73,6 +73,14 @@ fn scenario(epochs: u64) -> TestResult {
             )
             .await?;
         event_fixture::reset_epochs(&h, &authority, room, world, channel, epochs).await?;
+        // The reset decision owns the calendar across every Channel and restart.
+        let calendar = h.root.world_change_calendar(world, epochs).await?;
+        assert_eq!(h.root.world_change_calendar(world, epochs).await?, calendar);
+        assert!(h.root.world_change_calendar(world, epochs + 1).await.is_err());
+        let changes = oteryn_gameplay_world_change::daily::roll_calendar(world.as_bytes(), epochs, calendar.0, calendar.1);
+        for (key, expected) in [("grimvale", changes.grimvale_full_moon), ("their_masters_voice", changes.their_masters_voice), ("fury_gates", changes.fury_gates.is_some())] {
+            assert_eq!(h.root.world_change_active(world, key).await?, expected);
+        }
         for _ in 0..16 {
             h.root
                 .t94_start_world(
@@ -163,8 +171,12 @@ fn scenario(epochs: u64) -> TestResult {
         assert_eq!(results[1].0, CommandStatus::Accepted);
         let state = wire::decode_world_event_state(&results[1].1).map_err(debug)?;
         assert_eq!(state.reset_epoch, epochs);
-        assert_eq!(state.active, epochs == 1);
-        assert_eq!(state.announcement.is_empty(), epochs == 2);
+        let expected_active = epochs % 2 == 1 || changes.their_masters_voice || changes.grimvale_full_moon || changes.fury_gates.is_some();
+        assert_eq!(state.active, expected_active);
+        assert_eq!(state.announcement.is_empty(), !expected_active);
+        for (name, active) in [("Their Master's Voice", changes.their_masters_voice), ("Grimvale", changes.grimvale_full_moon), ("Fury Gates", changes.fury_gates.is_some())] {
+            assert_eq!(state.announcement.contains(name), active, "wire world-state decision for {name}");
+        }
         let stored: Vec<u8> = sqlx::query_scalar(
             "SELECT result FROM game_world_event_query_receipts WHERE command_id=2",
         )
