@@ -5238,62 +5238,36 @@
       "skipped_world_owner": 17
     },
     "current_batch": {
-      "batch": "first_dragon_lava_19",
-      "phase": "QUALIFIED_MECHANISM: six native bindings real PostgreSQL18.6 GREEN; whole First Dragon remains IN_PROGRESS",
+      "batch": "first_dragon_life_20",
+      "phase": "IN_PROGRESS: three native StepIn callbacks authored after genuine PG RED; post-main GREEN and PREPUSH-2 gates pending",
       "entries": [
-        "sacrifice24939 Scale once",
-        "sacrifice24940 Tooth once",
-        "sacrifice24941 Horn once",
-        "sacrifice24942 Bones once",
-        "outer lava entrance requires AccessCave4",
-        "inner lava return requires AccessCave4"
+        "AID25002 DesertTile once",
+        "AID25003 StoneSculptureTile once",
+        "AID25004 SuntowerTile once"
       ],
       "engine_expansion": false,
-      "reuse_checked": {
-        "qengine2": "e5850715e",
-        "questpc4": "8bf3338ec"
-      },
-      "decisions": [
-        "Reuse canonical AccessCave initial0, equivalent to source unset normalization before+1",
-        "Four source distinct flags start-1; one selected Item BURN, flag write and counter increment are atomic",
-        "Both source positions and lava appearance25160 bind targets; unrelated equal-appearance tile is in range but must reject",
-        "Pinned retained item observations prove all four trophies stackable and exact existing weights; preserve other canonical facts"
-      ],
-      "red_log": "/tmp/questpc3-first-dragon-lava-red.log",
       "red": {
         "postgres": "18.6",
-        "duration_seconds": 61.65,
-        "result": "unearned native lava USE returned NothingToUse, expected source Rejected; source callback absent",
-        "log": "/tmp/questpc3-first-dragon-lava-red.log"
+        "duration_ms": 63798,
+        "completed": 0,
+        "counter": 0,
+        "expected_completed": 3,
+        "log": "/tmp/questpc3-first-dragon-life-red.log",
+        "sha256": "eed21bee9acb018043522ae14cd6cf2cae7a26281d70176b759cdb8d67f7cec8"
       },
+      "decisions": [
+        "Source has no Questline prerequisite",
+        "Reuse canonical SecretsCounter initial0; source flags initial-1",
+        "Keep unbounded source counter within existing signed32-bit width; no artificial cap3",
+        "Source selectors are AIDs only; test coordinates are synthetic geometry, not live placement facts"
+      ],
       "checks": {
-        "workspace_all_targets": "PASS54.69s /tmp/questpc3-first-dragon-lava-paced-final-check.log",
-        "fmt": "PASS /tmp/questpc3-first-dragon-lava-paced-final-fmt.log",
-        "authoring": "PASS --check; Item admissions --check changed0",
-        "native_profiles": "PASS registered spell import files43",
-        "pins": "PASS repository world-bundle-compiler pin-refresh /tmp/questpc3-first-dragon-lava-pins.log",
-        "postgres_green": {
-          "log": "/tmp/questpc3-first-dragon-lava-paced-qualification-pg.log",
-          "sha256": "4c7bd889a9295e84f3c2eb561c60dd239c87b1c04824c9c41564be6ad34e8de9",
-          "postgres": "18.6",
-          "duration_ms": 55729,
-          "sacrifices": 4,
-          "portals": 2,
-          "receipts": 4,
-          "counter": 4,
-          "result": "PASS"
-        }
-      },
-      "partial_pg_proof": {
-        "version": "18.6",
-        "sacrifices": 4,
-        "consumption_receipts": 4,
-        "counter": 4,
-        "positive_entry_destination": "31994,32391,-9",
-        "log": "/tmp/questpc3-first-dragon-lava-green-final.log",
-        "remaining_red": "Immediate return USE hits the existing200ms world-action clock; now fixture advances2s before return"
-      },
-      "qualification": "Four selected-source BURNs, exact consumed-source replay, wrong target and fresh duplicate refusal, unearned/before-four portal refusal, both native destinations, unchanged appearance25160 and one USE revision per portal. No success progress seeded."
+        "world_change_units": "21PASS 0.062s /tmp/questpc3-prepush2-world-change-unit.log",
+        "workspace_all_targets": "RUNNING /tmp/questpc3-prepush2-workspace-check.log",
+        "content_regeneration": "RUNNING repository native/tree route /tmp/questpc3-prepush2-targeted-regenerate.log",
+        "postgres_green": "PENDING after generated files settle",
+        "remaining_changed_crate_units": "PENDING; PREPUSH-2 cadence exception only if30min deadline reached"
+      }
     },
     "diagnosis": {
       "log": "/tmp/questpc3-counter-diagnosis.log",
@@ -5504,7 +5478,7 @@
       "remaining_scope": "Four wholequestsIN_PROGRESS. Bridge/log8, coat replacement, fiveGROUNDwood/cart; otherquest remainingcomponents per status. No further work by this thread."
     },
     "ownership": "L4 per QSPLIT-PLAN; world changes excluded by current owner; original R–S entries assigned to other split lanes are scope evidence only",
-    "phase": "Batch19 six-entry mechanism qualified; next batch20 three life-site StepIn bindings has uncommitted RED test draft",
+    "phase": "Batch19 six lava bindings PG-qualified and pushed; batch20 three life sites active; main merged, PREPUSH-2 regeneration/checks underway",
     "previous_batch": {
       "id": "carlos-report-paid-fur-merge",
       "phase": "Forward1110 guard namespace/ACL hardening applied after actualPG RED; GREEN/regressions and deterministic gates running",
@@ -9876,34 +9850,14 @@
       },
       "review": "Read strict combined admission union, all unchanged conflicting Item weights, retained source observation guards, disjoint NPC producer prefixes, both new physical PG contracts and generated input witnesses. All three PG cases, 4callbackunits,15profiles,9authoring,actual15case/776creatureprey,check/strictClippy3crates,123content,5repository andpinchecks pass; no blocking finding."
     },
-    "updated_at": "2026-11-07T21:15:16.629587+00:00",
-    "standing_validation_rule": {
-      "owner_override": "Latest HARD RULE: push compiling state after cargo check --workspace --all-targets and fmt; CI owns full suites; push at least every30minutes",
-      "before_each_push": [
-        "cargo check --workspace --all-targets",
-        "cargo fmt --all -- --check"
-      ],
-      "full_suites": "CI runs full suites; group all owner-reported failures and push fixes once"
-    },
+    "updated_at": "2026-11-07T21:35:52.620581+00:00",
+    "standing_validation_rule": "PREPUSH-2: fetch+merge main before every push; regenerate generated files/pins/central lists with repo tooling; every changed-crate unit suite plus own real-PG cases; workspace all-targets check and fmt. At30min, may push compiling generated state with step3 tests explicitly pending.",
     "main_merge_validation": {
-      "main": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
-      "state": "GREEN latest owner speed gate; ready for immediate publication",
-      "shared_migrations": "0999-1008 byte-identical to main; no QBASE1200-1205 copies; own1220-1229 retained",
-      "duplicate_migration_check": "staged tree: clear",
-      "quest_unit_suite": {
-        "command": "cargo test --locked -p oteryn-gameplay-quests --lib --no-fail-fast",
-        "passed": 296,
-        "failed": 0,
-        "ignored": 0,
-        "filtered": 0,
-        "duration_seconds": 31.57,
-        "log": "/tmp/questpc3-3020-quests-unit-rerun3.log"
-      },
-      "quest_authoring_suite": "29passed21.392s",
-      "callback_schema": "271merged callbacks; closed512limit; 512accepted/513rejected unittestpassed",
-      "regeneration_log": "/tmp/questpc3-owner-regenerate-pin.log",
-      "full_reverse_dependency_run": "Not run; CI owns heavy suites per owner",
-      "push_policy": "Publish this green batch immediately under latest SPEED instruction"
+      "main": "e1ca3e003",
+      "merge_commit": "0943c20b7",
+      "conflicts": "7 resolved: main visibility/roll integration, combine Callback fields, generated incoming receipt/variant inputs refreshed by repository tooling",
+      "compatibility": "29 lane QuestTransition literals explicitly world_changeNone; Stampede capture/restore retained via main NativeDecision, historical missing flag defaultsfalse;21unitPASS",
+      "regeneration_route": "No content/world inputs changed; five materializer-source diffs only ignore default-public visibility, serialized public field omitted. Full legacy replay stopped; use repo tree/native generators, inventory repin and official final pin-refresh; validate Item/Mount equivalence/world-metadata."
     },
     "standing_engine_rule": {
       "owner": "qengine2",
@@ -10786,7 +10740,7 @@
       "scope_disposition": "Other world-change lanes per current owner; preserve inherited qualification."
     }
   ],
-  "scope": "L4 per LANE-L4.json and QSPLIT-PLAN.md; skip other lanes and world-change owners. All shared features required by the five owned quests are this lane’s implementation responsibility.",
+  "scope": "L4 per LANE-L4.json and QSPLIT-PLAN.md; six retained whole quests, skip sixteen other-lane/world-owner entries. New shared engine features belong to qengine2 under owner override.",
   "task_id": "questpc3-L4",
   "migration_registry_alignment": {
     "range": "1220-1229",
@@ -10800,7 +10754,7 @@
       "1226_quest_carried_exchange_inputs.sql",
       "1227_quest_earned_repeat_occurrences.sql",
       "1228_quest_carried_world_rewards.sql",
-      "1229_quest_movement_world_rewards.sql"
+      "1229_quest_reward_occurrence_guards.sql"
     ],
     "status": "QUALIFIED: lane1220–1229, canonical QENGINE2 shared files unchanged; new StepIn MINT and prior selected USE rewards PostgreSQL18.6 proven",
     "red_point": "Registry and treasure slice complete; whole four-quest scope remains active.",

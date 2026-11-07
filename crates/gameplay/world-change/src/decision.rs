@@ -14,6 +14,8 @@ pub struct NativeDecision {
     oriental_trader: Option<u8>,
     grimvale_full_moon: bool,
     flower_month: bool,
+    #[serde(default)]
+    stampede: bool,
 }
 
 impl NativeDecision {
@@ -32,6 +34,7 @@ impl NativeDecision {
             }),
             grimvale_full_moon: day.grimvale_full_moon,
             flower_month: day.flower_month,
+            stampede: day.stampede,
         }
     }
     pub fn restore(&self) -> Result<DailyWorldChanges, crate::rules::RuleError> {
@@ -71,6 +74,7 @@ impl NativeDecision {
             oriental_trader,
             grimvale_full_moon: self.grimvale_full_moon,
             flower_month: self.flower_month,
+            stampede: self.stampede,
         })
     }
 }
@@ -90,8 +94,29 @@ mod tests {
                     serde_json::from_slice(&bytes).map_err(|error| format!("{error:?}"))?;
                 let restored = decoded.restore().map_err(|error| format!("{error:?}"))?;
                 assert_eq!(NativeDecision::capture(&restored), captured);
+                assert_eq!(restored.stampede, original.stampede);
             }
         }
+        Ok(())
+    }
+
+    #[test]
+    fn previous_native_decisions_without_stampede_remain_inactive() -> Result<(), String> {
+        let original = crate::daily::roll_calendar(&[42; 16], 1, 6, 13);
+        let mut previous = serde_json::to_value(NativeDecision::capture(&original))
+            .map_err(|error| format!("{error:?}"))?;
+        previous
+            .as_object_mut()
+            .ok_or("decision object")?
+            .remove("stampede");
+        let decoded: NativeDecision =
+            serde_json::from_value(previous).map_err(|error| format!("{error:?}"))?;
+        assert!(
+            !decoded
+                .restore()
+                .map_err(|error| format!("{error:?}"))?
+                .stampede
+        );
         Ok(())
     }
 

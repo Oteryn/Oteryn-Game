@@ -9495,6 +9495,132 @@
       }
     },
     {
+      "key": "oteryn:quest-transition/questpc3/first-dragon-life/desert_tile",
+      "quest": "oteryn:quest.the_first_dragon_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 25002,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You enter the beautiful oasis. By visiting this sacred site you're infused with the power of water bringing life to the desert.",
+      "effects": {},
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/desert_tile",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/secrets_counter",
+          "minimum": 0,
+          "maximum": 2147483646,
+          "set": 0,
+          "preserve": false,
+          "increment": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/the_first_dragon/movements_zorvorax_secrets.lua canonical quest-state declaration",
+        "data-global/scripts/quests/the_first_dragon/movements_zorvorax_secrets.lua:1-42 git-blob=36772967418a88dad3de4ca43c7743edff47944b sha256=e7a353f54abc2012643984127a9ce22821f28c21fbdd053a20641eb6d6e68efb"
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/first-dragon-life/stone_sculpture_tile",
+      "quest": "oteryn:quest.the_first_dragon_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 25003,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You enter the circle of trees and flowers. By visiting this sacred site you're infused with the power of nature and plants.",
+      "effects": {},
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/stone_sculpture_tile",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/secrets_counter",
+          "minimum": 0,
+          "maximum": 2147483646,
+          "set": 0,
+          "preserve": false,
+          "increment": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/the_first_dragon/movements_zorvorax_secrets.lua canonical quest-state declaration",
+        "data-global/scripts/quests/the_first_dragon/movements_zorvorax_secrets.lua:1-42 git-blob=36772967418a88dad3de4ca43c7743edff47944b sha256=e7a353f54abc2012643984127a9ce22821f28c21fbdd053a20641eb6d6e68efb"
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/first-dragon-life/suntower_tile",
+      "quest": "oteryn:quest.the_first_dragon_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 25004,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You entered the suntower of Ab'dendriel. By visiting this sacred site you're infused with the power of the life-giving sun.",
+      "effects": {},
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/suntower_tile",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/secrets_counter",
+          "minimum": 0,
+          "maximum": 2147483646,
+          "set": 0,
+          "preserve": false,
+          "increment": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/the_first_dragon/movements_zorvorax_secrets.lua canonical quest-state declaration",
+        "data-global/scripts/quests/the_first_dragon/movements_zorvorax_secrets.lua:1-42 git-blob=36772967418a88dad3de4ca43c7743edff47944b sha256=e7a353f54abc2012643984127a9ce22821f28c21fbdd053a20641eb6d6e68efb"
+      ]
+    },
+    {
       "key": "oteryn:quest-transition/questpc3/threatened-acquisition/poacher-notes",
       "quest": "oteryn:quest.threatened_dreams_quest",
       "trigger": "use",
