@@ -173,7 +173,13 @@ pub(crate) async fn apply(
         )
         .await?;
     }
+    let plan=serde_json::to_value(callback).map_err(|_|DurabilityError::InvalidStoredState)?;
     let minted = if let Some(reward) = &callback.give {
+        let claim_key:String=sqlx::query_scalar("SELECT game_quest_reward_mint_claim_key(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5)")
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(command.game_session_id().as_bytes().as_slice())
+            .bind(command.command_id().get().to_string()).bind(&callback.key).bind(&plan)
+            .fetch_one(&mut **tx).await?;
         let Some(transaction) = mint(
             tx,
             tuple,
@@ -181,6 +187,7 @@ pub(crate) async fn apply(
             fence,
             command,
             &callback.key,
+            &claim_key,
             reward,
             admission,
         )
@@ -205,7 +212,7 @@ pub(crate) async fn apply(
             .map_err(|_| DurabilityError::InvalidStoredState)?;
     }
     sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,CASE WHEN $6::bytea IS NULL THEN NULL ELSE encode($6,'hex')::uuid END,$7)")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(serde_json::to_value(callback).map_err(|_|DurabilityError::InvalidStoredState)?).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
+        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(plan).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
     Ok(true)
 }
 
@@ -237,6 +244,7 @@ pub(crate) async fn give_world(
         node,
         fence,
         command,
+        &callback.key,
         &callback.key,
         reward,
         admission,
@@ -278,6 +286,7 @@ async fn mint(
     fence: CurrentCharacterGameplayFence,
     command: CommandRef,
     key: &str,
+    claim_key: &str,
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::ItemReward,
     admission: QuestRewardAdmission<'_>,
 ) -> std::result::Result<Option<[u8; 16]>, DurabilityError> {
@@ -320,7 +329,7 @@ async fn mint(
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),
-            production_key: key.into(),
+            production_key: claim_key.into(),
             revision_ref: content_revision.clone(),
         },
         source_placement: key.into(),

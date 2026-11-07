@@ -636,3 +636,20 @@ and a same-floor actor. The production callback path applies the declared
 bound before mutation. Unit tests reject missing tool/position/state,0/3 and
 cross-floor reach. The native circuit also requires TooFar from a real
 three-cell landing with no quest/tool effect; no collision fixture is relaxed.
+
+## Recurring portable reward MINT
+
+Use an explicit per_occurrence_mint option for daily report/restart rewards.
+The existing shared hash owner binds Character, GameSession, unsigned decimal
+CommandId and original transition key; preserve original source_placement,
+while using its occurrence hash only as the claim identity. Legacy absent/
+false option serialization and value hashes are unchanged. Portable gift is
+required; outfit/achievement mixes are excluded. Source-state progress must
+change and match a same-transaction command receipt. Migration1303adds these
+proofs without editing shared0999-1006. Existing XP obligations already bind
+command cause/ordinal and need no replacement owner.
+
+After each source20-hour aggregate cooldown, Norman supplies one fresh can,
+kit and grind stone with held rope/shovel. This explicit Oteryn refresh rule
+avoids a permanently lost-can dependency; retained earlier cans have no
+invented charges or expiry and no authored monetary resale value.

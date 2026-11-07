@@ -1,3 +1,22 @@
+# Occurrence-bound recurring MINT compiles; final native test running
+
+Actual PGRED113.401070463s completed all nine machines, both hand-ins, five
+native corym deaths and report, then proved the once-only claim-key bug.
+The explicit per_occurrence_mint option now uses shared
+game_quest_reward_mint_claim_key; original source_placement stays unchanged.
+Migration1303requires a same-transaction command receipt with exact changed
+effects; no-op, malformed option and nonportable entitlement mixes refuse.
+Legacy false/absent option bytes and value hashes are preserved (9reward
+units PASS). Six tool/reach units PASS. Fresh dispatch test compiles and
+PostgreSQL fixture initialization succeeded with1303; full native run is in
+/tmp/questpc8-venore-occurrence-green.log. Strict4-crate checks are queued.
+
+Each daily restart provides fresh three-item supplies after72000seconds with
+rope/shovel held, so a lost can does not permanently prevent later circuits.
+Extra old cans are ordinary retained tools, without invented charges/decay.
+Do not qualify until full PG, strict/generated checks and proof updates pass.
+19of23remain QUALIFIED; four remain. Continue and push every15minutes.
+
 # Bounded tool reach compiles; full native rerun is executing
 
 Generic callback use_range1/2 is implemented and hashed; legacy1 remains

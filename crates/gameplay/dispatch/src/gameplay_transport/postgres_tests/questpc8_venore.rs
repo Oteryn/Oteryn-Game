@@ -334,6 +334,66 @@ pub(super) async fn exercise(
     assert!(completed, "daily report records completion");
     let timers:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_timed_states t JOIN game_item_instances i USING(item_instance_id) WHERE i.definition_production_key IN('oteryn:item.tibia.i17513','oteryn:item.tibia.i17514','oteryn:item.tibia.i17617')").fetch_one(&h.pool).await?;
     assert_eq!(timers, 0, "no fabricated oil charges or supply timers");
+    let accept = oteryn_gameplay_quests::quest::reward_callbacks::load()?
+        .into_iter()
+        .find(|r| r.key.ends_with("/venore-daily/accept"))
+        .ok_or("accept")?;
+    let mut occurrence = serde_json::to_value(accept)?;
+    occurrence["per_occurrence_mint"] = true.into();
+    let effect_keys = vec![format!("{PREFIX}stage"), format!("{PREFIX}kills")];
+    let before = vec![-1_i64, -1];
+    let after = vec![1_i64, 0];
+    let valid: bool =
+        sqlx::query_scalar("SELECT game_quest_reward_occurrence_effects_valid($1,$2,$3,$4)")
+            .bind(&occurrence)
+            .bind(&effect_keys)
+            .bind(&before)
+            .bind(&after)
+            .fetch_one(&h.pool)
+            .await?;
+    assert!(
+        valid,
+        "bounded portable occurrence has exact changed effects"
+    );
+    let mut noop = occurrence.clone();
+    for storage in noop["storage"].as_array_mut().ok_or("storage")? {
+        storage["preserve"] = true.into();
+    }
+    let ordinary: bool = sqlx::query_scalar("SELECT game_quest_reward_effects_valid($1,$2,$3,$3)")
+        .bind(&noop)
+        .bind(&effect_keys)
+        .bind(&before)
+        .fetch_one(&h.pool)
+        .await?;
+    assert!(
+        ordinary,
+        "no-op fixture remains otherwise valid legacy effects"
+    );
+    let repeated_noop: bool =
+        sqlx::query_scalar("SELECT game_quest_reward_occurrence_effects_valid($1,$2,$3,$3)")
+            .bind(&noop)
+            .bind(&effect_keys)
+            .bind(&before)
+            .fetch_one(&h.pool)
+            .await?;
+    assert!(
+        !repeated_noop,
+        "an occurrence cannot mint from unchanged quest state"
+    );
+    for field in ["give", "per_occurrence_mint"] {
+        let mut invalid = occurrence.clone();
+        invalid[field] = serde_json::Value::Null;
+        let valid: bool =
+            sqlx::query_scalar("SELECT game_quest_reward_occurrence_effects_valid($1,$2,$3,$4)")
+                .bind(&invalid)
+                .bind(&effect_keys)
+                .bind(&before)
+                .bind(&after)
+                .fetch_one(&h.pool)
+                .await?;
+        assert!(!valid, "occurrence rejects invalid {field}");
+    }
+    eprintln!("POSTGRES_OCCURRENCE_CHANGED_STATE_AND_SHAPE_GUARDS_PASS");
     let callback = oteryn_gameplay_quests::quest::reward_callbacks::load()?
         .into_iter()
         .find(|r| r.key.ends_with("/venore-daily/restart"))

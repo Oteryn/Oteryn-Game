@@ -717,7 +717,7 @@
       "outfit": null,
       "achievement": null,
       "reply": [
-        "Your construction circuit progress is recorded."
+        "Thank you for the grind stone. Deliver the pathfinder kit to Frank."
       ],
       "sources": [
         "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
@@ -752,7 +752,7 @@
       "outfit": null,
       "achievement": null,
       "reply": [
-        "Your construction circuit progress is recorded."
+        "Thank you. Defeat five little corym charlatans beneath the southern construction site, then report to Norman."
       ],
       "sources": [
         "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
@@ -812,7 +812,8 @@
             "kind": "set_now"
           }
         }
-      ]
+      ],
+      "per_occurrence_mint": true
     },
     {
       "key": "oteryn:quest-reward/chosen/venore-daily/restart",
@@ -839,10 +840,14 @@
       ],
       "take": [],
       "give": {
-        "item": "oteryn:item.tibia.i17617",
+        "item": "oteryn:item.tibia.i17513",
         "count": 1,
         "contents": [],
         "backpack_outputs": [
+          {
+            "item": "oteryn:item.tibia.i17617",
+            "count": 1
+          },
           {
             "item": "oteryn:item.tibia.i17514",
             "count": 1
@@ -852,7 +857,7 @@
       "outfit": null,
       "achievement": null,
       "reply": [
-        "Your construction circuit progress is recorded."
+        "Here are fresh supplies for your next construction circuit."
       ],
       "sources": [
         "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
@@ -866,10 +871,6 @@
         },
         {
           "item": "oteryn:item.tibia.i3457",
-          "count": 1
-        },
-        {
-          "item": "oteryn:item.tibia.i17513",
           "count": 1
         }
       ],
@@ -885,7 +886,8 @@
             "value": 0
           }
         }
-      ]
+      ],
+      "per_occurrence_mint": true
     }
   ]
 }

@@ -1532,7 +1532,7 @@
     "blocker": {
       "kind": "active_implementation",
       "owner": "questpc8",
-      "missing_piece": "Active implementation: bounded same-floor tool range2 is implemented for nine exact machines; default1 byte stability, invalid-shape and geometry units6PASS; full dispatch test compiles6m09s. Native replay is running with three-cell TooFar/no-tool-effect check. Finish all native stages and explicit occurrence-key MINT for daily report/restart before qualification.",
+      "missing_piece": "Active final validation: all native stages/report were reached in PG113.401s, exposing the reused once-claim key. Generic explicit occurrence MINT, shared nonce owner and1303same-transaction changed-state proof now compile;9reward/6tool units pass. Fresh native PG and strict4-crate/generated checks are running before qualification.",
       "evidence": [
         "qlane-meta/questpc8/CONTRACT-NOTES.md",
         "qlane-meta/questpc8/migration-number-registry.json",

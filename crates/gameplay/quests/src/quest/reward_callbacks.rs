@@ -78,6 +78,9 @@ pub struct RewardCallback {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub present: Vec<ItemAmount>,
     pub give: Option<ItemReward>,
+    /// Portable recurring rewards use the original MINT owner with an occurrence key.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub per_occurrence_mint: bool,
     pub outfit: Option<OutfitReward>,
     pub achievement: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -276,6 +279,8 @@ fn parse_document(text: &str) -> Result<Document, String> {
                         )
                     })
             })
+            || (c.per_occurrence_mint
+                && (c.give.is_none() || c.outfit.is_some() || c.achievement.is_some()))
             || c.take.len() > 8
             || inputs.len() != c.take.len()
             || c.take
@@ -332,17 +337,25 @@ fn value_plan(callback: &RewardCallback) -> Result<Vec<u8>, String> {
         callback.experience,
     ))
     .map_err(|e| e.to_string())?;
-    if callback.state_ops.is_empty() && callback.fee.is_none() && !callback.requires_premium {
-        return Ok(legacy);
+    let current =
+        if callback.state_ops.is_empty() && callback.fee.is_none() && !callback.requires_premium {
+            legacy
+        } else {
+            serde_json::to_vec(&(
+                "oteryn:quest-reward-extended-v1",
+                legacy,
+                &callback.state_ops,
+                &callback.fee,
+                callback.requires_premium,
+            ))
+            .map_err(|error| error.to_string())?
+        };
+    if callback.per_occurrence_mint {
+        serde_json::to_vec(&("oteryn:quest-reward-occurrence-mint-v1", current))
+            .map_err(|error| error.to_string())
+    } else {
+        Ok(current)
     }
-    serde_json::to_vec(&(
-        "oteryn:quest-reward-extended-v1",
-        legacy,
-        &callback.state_ops,
-        &callback.fee,
-        callback.requires_premium,
-    ))
-    .map_err(|error| error.to_string())
 }
 
 /// Declare authored bounds before world and death adapters validate their stages.
@@ -848,6 +861,38 @@ mod tests {
             )
             .is_err()
         );
+        Ok(())
+    }
+    #[test]
+    fn occurrence_mint_is_explicit_portable_and_part_of_the_value_hash() -> Result<(), String> {
+        let mut callback = load()?
+            .into_iter()
+            .find(|c| c.key.ends_with("/venore-daily/accept"))
+            .ok_or("accept")?;
+        let legacy = value_plan(&callback)?;
+        let encoded = serde_json::to_value(&callback).map_err(|e| e.to_string())?;
+        assert!(encoded.get("per_occurrence_mint").is_none());
+        callback.per_occurrence_mint = true;
+        assert_ne!(legacy, value_plan(&callback)?);
+        let document = serde_json::json!({"schema":1,"callbacks":[callback]});
+        assert!(parse(&document.to_string()).is_ok());
+        for case in 0..3 {
+            let mut bad = document.clone();
+            match case {
+                0 => bad["callbacks"][0]["give"] = serde_json::Value::Null,
+                1 => {
+                    bad["callbacks"][0]["outfit"] =
+                        serde_json::json!({"outfit":"oteryn:outfit.revenant","addons":0})
+                }
+                _ => bad["callbacks"][0]["per_occurrence_mint"] = "true".into(),
+            }
+            assert!(
+                parse(&bad.to_string()).is_err(),
+                "occurrence option case {case}"
+            );
+        }
+        callback.per_occurrence_mint = false;
+        assert_eq!(legacy, value_plan(&callback)?);
         Ok(())
     }
 }

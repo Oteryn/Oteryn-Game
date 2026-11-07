@@ -1,9 +1,9 @@
 {
-  "state": "Compiling bounded-reach implementation; native replay running",
-  "postgres_duration_seconds": 108.761397422,
+  "state": "Compiling occurrence-bound MINT implementation; final native PostgreSQL running",
+  "postgres_duration_seconds": 113.401070463,
   "postgres_marker": "POSTGRES_CASE_FINISHED questpc8_venore_native_daily_circuit",
-  "log_sha256": "580efcd857185cf34d15e7d3f90190dc74362fb8a061230f6fbfcf1e6f3a7f06",
-  "exact_red_point": "Bounded same-floor tool range1/2 is implemented, with legacy1 omitted from serialization and strict position/tool/mutable-state admission. Full native replay now asserts TooFar at3 and must reach all nine machines. Recurring MINT still needs the explicit occurrence-key owner before qualification.",
+  "log_sha256": "f36874af9ba4d1e9db0b1be6c232f6834b6db2e073faad5e5ad4c78755fa3341",
+  "exact_red_point": "Previous actual native run completed nine machines, both hand-ins, five corym deaths and report, then failed because the report reused the callback-wide once key. Explicit occurrence option, shared claim-key function reuse and same-transaction changed-state proof are now implemented in1303; fresh PG fixture migrated successfully and full native test is running.",
   "native_walkable_chamber_cells": [
     [
       33008,
@@ -51,7 +51,9 @@
   },
   "checks": {
     "reach_units": "6PASS",
-    "compilation": "filtered dispatch test compiled6m09s",
-    "postgres": "running; previous native geometry RED108.761s retained"
+    "reward_units": "9PASS",
+    "compilation": "fresh filtered dispatch target compiled",
+    "postgres": "full native occurrence GREEN running",
+    "strict_checks": "queued/running"
   }
 }
