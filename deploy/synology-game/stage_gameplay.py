@@ -4,12 +4,16 @@
 usage: stage_gameplay.py <manifest> <repository-root> <destination>
 
 Same selection rule as tools/qualification/node_boot/run.sh: only the manifest
-and the inputs it pins by sha256, at their repository-relative paths.
+and its pinned inputs (including the cosmetics descriptor closure), at their
+repository-relative paths.
 """
 import hashlib
 import json
 import pathlib
 import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "tools/qualification/spells"))
+from provisioning_inputs import select_cosmetics_inputs
 
 FIELDS = (
     "catalog", "source_selection", "creature_profiles", "presentation_profiles",
@@ -45,6 +49,7 @@ def main(argv):
         if name in selected and selected[name] != data:
             raise ValueError("conflicting manifest input")
         selected[name] = data
+    select_cosmetics_inputs(document, manifest, repo_root, selected)
     staged.mkdir(mode=0o755, parents=True)
     for name, data in selected.items():
         destination = staged / name

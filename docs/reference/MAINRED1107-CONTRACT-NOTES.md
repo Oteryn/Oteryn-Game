@@ -68,3 +68,26 @@ went from one failing/one passing case to two passing cases (0.00 s;
 17.165 s including Cargo). Full local WP5 runs compiled the server but Docker
 failed extracting its pinned PHP layer with `no space left on device`;
 no full-topology pass is inferred from the unit regression.
+
+## Full-manifest cosmetics dependency closure
+
+The v6 canonical manifest pins `native-cosmetics.json`, which is a descriptor,
+not an inline section. Its authoring, source manifest and source shards must
+also be staged. The production reader consumes that closure in
+`crates/gameplay/content/src/content/native_gameplay/native_cosmetics/provisioning.rs:44-106`.
+The initial top-level pin census missed these transitive files. Node Boot and
+the deployment stager now share the explicit closure selector. It preserves
+repository-relative locators and enforces every dependency digest, the native
+per-file/aggregate bounds, and repository containment before creating output.
+Inline historical cosmetics packets keep their original bytes and behavior.
+
+Red: the canonical staging regression failed for both consumers on missing
+`content/cosmetics/outfits/authoring.json` (0.585 s). Running the existing
+`actual_full_manifest_qualifies_source_world_and_all_owner_profiles` test with
+`OTERYN_FULL_SPELL_TEST_MANIFEST` pointing at the old staged full manifest
+reproduced `InvalidArtifact("native gameplay provisioning file")` (0.00 s;
+13.600 s including Cargo). Green: all 18 provisioning tests pass in 1.020 s,
+including both real stagers and digest, traversal and symlink refusal cases.
+No manifests, content digests, migrations or protocol numbers changed.
+The same production full-manifest qualification test passes against the new
+staged directory in 166.43 s (166.757 s including Cargo).
