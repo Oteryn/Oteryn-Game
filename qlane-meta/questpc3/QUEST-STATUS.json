@@ -5299,6 +5299,48 @@
           "sha256": "3c3e6d9daa589a7e20ebe490de7debc907e85282ca62f0bd5665f51469fd7eee",
           "proof": "Native StepIn per AID25002/25003/25004, source flags, three counter increments, fresh reentry refuses duplicate credit, each source appearance100 unchanged and exactly-one revision advance; no Questline prerequisite/success seed"
         }
+      },
+      "first_dragon_quiz_21": {
+        "batch": "first_dragon_quiz_21",
+        "phase": "QUALIFIED_MECHANISM: ordered source quiz, fenced access once and reviewed NPC placement; actual PG18.6 GREEN158101ms",
+        "entries": [
+          "quiz introduction and first question",
+          "Tahmehe answer",
+          "Ishara answer",
+          "Svir final fenced access once and repeat read-only",
+          "source NPC native placement admission"
+        ],
+        "engine_expansion": false,
+        "red": {
+          "postgres": "18.6",
+          "duration_ms": 112482,
+          "log": "/tmp/questpc3-first-dragon-quiz-red.log",
+          "sha256": "f905633d066a62b52975d2d46db4e24d1ef4d313b792325b3901416988f3ef9a",
+          "failure": "source final reply missing before authoring"
+        },
+        "checks": {
+          "units": "PASS 2353/2353 across ten crates in1017.488s, log /tmp/questpc3-light-units-boundary-fixed.log; 96 PG-named cases excluded from unit-only suite, ownPG separately. Original hash assertions retained and valid-window assertion added. Dispatch/server units pending.",
+          "green": "PASS actual PostgreSQL18.6 158101ms",
+          "workspace": "PASS final post-pin cargo check --workspace --all-targets 24.62s /tmp/questpc3-quiz-final-workspace-check.log",
+          "generated": "Official native43/Grizzly30/blessing8/all authoring families/bindings/all373 matrix/audit tags refreshed. Initial compound invocation used an incorrect audit-tool path; correct tools/contracts/update_item_audit_tags.py then completed, duplicate checkCLEAR, imbue/craft checksPASS.",
+          "pins": "PASS official release pin-refresh /tmp/questpc3-quiz-pin-refresh.log; World400a50034b94222c6e831487654feb3390fbd328c9b51ceb4f6eacae9875e4d5",
+          "pending": [
+            "oteryn-gameplay-dispatch unit suite",
+            "oteryn-game-server unit suite"
+          ],
+          "fmt": "PASS cargo fmt --all --check plus explicit mounted-test rustfmt --check /tmp/questpc3-quiz-final-fmt.log"
+        },
+        "green": {
+          "postgres": "18.6",
+          "duration_ms": 158101,
+          "access": 1,
+          "receipts": 1,
+          "placed": true,
+          "result": "PASS",
+          "log": "/tmp/questpc3-first-dragon-quiz-green.log",
+          "sha256": "21a6120fcacab1a76f052b0928076194d8a6c0f153f1b7631aed4d72e361527e",
+          "proof": "Native NPC hi/wrong-first-Svir/yes/yes/Tahmehe/Ishara/Svir; no earlier access; final1; completed full repeat writes no second receipt; reviewed native placement admitted"
+        }
       }
     },
     "counts": {
@@ -5307,72 +5349,45 @@
       "skipped_world_owner": 17
     },
     "current_batch": {
-      "batch": "first_dragon_life_20",
-      "phase": "QUALIFIED_MECHANISM: three native source life-site visits PG18.6 GREEN73622ms; changed-crate unit suites still running/pending under PREPUSH-2 exception",
+      "batch": "first_dragon_quiz_21",
+      "phase": "QUALIFIED_MECHANISM: ordered source quiz, fenced access once and reviewed NPC placement; actual PG18.6 GREEN158101ms",
       "entries": [
-        "AID25002 DesertTile once",
-        "AID25003 StoneSculptureTile once",
-        "AID25004 SuntowerTile once"
+        "quiz introduction and first question",
+        "Tahmehe answer",
+        "Ishara answer",
+        "Svir final fenced access once and repeat read-only",
+        "source NPC native placement admission"
       ],
       "engine_expansion": false,
       "red": {
         "postgres": "18.6",
-        "duration_ms": 63798,
-        "completed": 0,
-        "counter": 0,
-        "expected_completed": 3,
-        "log": "/tmp/questpc3-first-dragon-life-red.log",
-        "sha256": "eed21bee9acb018043522ae14cd6cf2cae7a26281d70176b759cdb8d67f7cec8"
+        "duration_ms": 112482,
+        "log": "/tmp/questpc3-first-dragon-quiz-red.log",
+        "sha256": "f905633d066a62b52975d2d46db4e24d1ef4d313b792325b3901416988f3ef9a",
+        "failure": "source final reply missing before authoring"
       },
-      "decisions": [
-        "Source has no Questline prerequisite",
-        "Reuse canonical SecretsCounter initial0; source flags initial-1",
-        "Keep unbounded source counter within existing signed32-bit width; no artificial cap3",
-        "Source selectors are AIDs only; test coordinates are synthetic geometry, not live placement facts"
-      ],
       "checks": {
-        "world_change_units": "21PASS 0.062s /tmp/questpc3-prepush2-world-change-unit.log",
-        "workspace_all_targets": "PASS4m40s /tmp/questpc3-batch20-qualified-workspace-check.log",
-        "content_regeneration": "RUNNING repository native/tree route /tmp/questpc3-prepush2-targeted-regenerate.log",
-        "postgres_green": "PENDING after generated files settle",
-        "remaining_changed_crate_units": "PENDING: client-assets, client-ui, game-server, gameplay-content, dispatch, durability, encounter-rules, foundation, npc, quests, social, world; world-change21PASS",
-        "generated": "Refreshed native43, Grizzly30/30, canonical blessing8 and all authoring families, binding evidence, all373 matrix and Item audit tags; duplicate checkCLEAR",
-        "fmt": "PASS /tmp/questpc3-batch20-qualified-fmt.log",
-        "pins": "PASS /tmp/questpc3-batch20-qualified-pins.log; unchanged319a8f2f4eb80c6e591da852e23889ea6a1105e44c2bcaafb96337428c588289",
+        "units": "PASS 2353/2353 across ten crates in1017.488s, log /tmp/questpc3-light-units-boundary-fixed.log; 96 PG-named cases excluded from unit-only suite, ownPG separately. Original hash assertions retained and valid-window assertion added. Dispatch/server units pending.",
+        "green": "PASS actual PostgreSQL18.6 158101ms",
+        "workspace": "PASS final post-pin cargo check --workspace --all-targets 24.62s /tmp/questpc3-quiz-final-workspace-check.log",
+        "generated": "Official native43/Grizzly30/blessing8/all authoring families/bindings/all373 matrix/audit tags refreshed. Initial compound invocation used an incorrect audit-tool path; correct tools/contracts/update_item_audit_tags.py then completed, duplicate checkCLEAR, imbue/craft checksPASS.",
+        "pins": "PASS official release pin-refresh /tmp/questpc3-quiz-pin-refresh.log; World400a50034b94222c6e831487654feb3390fbd328c9b51ceb4f6eacae9875e4d5",
         "pending": [
-          "post-merge First Dragon lava and three-life-site real PG cases",
-          "unit suites for oteryn-client-assets, oteryn-client-ui, oteryn-game-server, oteryn-gameplay-content, oteryn-gameplay-dispatch, oteryn-gameplay-durability, oteryn-gameplay-encounter-rules, oteryn-gameplay-foundation, oteryn-gameplay-npc, oteryn-gameplay-quests, oteryn-gameplay-social, oteryn-gameplay-world"
+          "oteryn-gameplay-dispatch unit suite",
+          "oteryn-game-server unit suite"
         ],
-        "unit_suites": "10crate2353unit tests RUNNING, no failures reported yet; dispatch/server unit suites pending; world-change21PASS"
+        "fmt": "PASS cargo fmt --all --check plus explicit mounted-test rustfmt --check /tmp/questpc3-quiz-final-fmt.log"
       },
-      "post_merge_pg": {
-        "version": "18.6",
-        "lava": {
-          "result": "PASS",
-          "duration_ms": 76982,
-          "sacrifices": 4,
-          "portals": 2,
-          "receipts": 4,
-          "counter": 4
-        },
-        "life": {
-          "result": "fixture assertion failed before qualification",
-          "duration_ms": 66719,
-          "point": "source revision1 versus incorrect expected0; source appearance invariance plus exactly-one revision assertion now retained"
-        },
-        "log": "/tmp/questpc3-prepush2-first-dragon-pg.log"
-      },
-      "retry": "Focused life rerun compiler SIGKILL before execution; cgroup reports OOM kill. Next retry CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_TEST_DEBUG=0, preserving all assertions.",
-      "unit_retry": "Non-heavy10-crate build hit disk full before test execution; stale inactive caches removed, queued retry paused for mandatory publish gate; all12unit suites remain pending. Keep current PG cache1es7p8qb8nel8, not obsolete pre-merge1xzydsvq6pzum.",
       "green": {
         "postgres": "18.6",
-        "duration_ms": 73622,
-        "completed": 3,
-        "counter": 3,
+        "duration_ms": 158101,
+        "access": 1,
+        "receipts": 1,
+        "placed": true,
         "result": "PASS",
-        "log": "/tmp/questpc3-first-dragon-life-low-memory-pg.log",
-        "sha256": "3c3e6d9daa589a7e20ebe490de7debc907e85282ca62f0bd5665f51469fd7eee",
-        "proof": "Native StepIn per AID25002/25003/25004, source flags, three counter increments, fresh reentry refuses duplicate credit, each source appearance100 unchanged and exactly-one revision advance; no Questline prerequisite/success seed"
+        "log": "/tmp/questpc3-first-dragon-quiz-green.log",
+        "sha256": "21a6120fcacab1a76f052b0928076194d8a6c0f153f1b7631aed4d72e361527e",
+        "proof": "Native NPC hi/wrong-first-Svir/yes/yes/Tahmehe/Ishara/Svir; no earlier access; final1; completed full repeat writes no second receipt; reviewed native placement admitted"
       }
     },
     "diagnosis": {
@@ -5548,14 +5563,13 @@
     },
     "metadata_recovery": "Latest head removed qlane-meta; recovered the five handoff records from c5cdcd6ae without reference dumps.",
     "next_batch_preparation": {
-      "batch": "first_dragon_quiz_21",
-      "phase": "drafts only in /tmp; next add mounted PG test and run genuine RED before authoring callbacks/placement",
+      "batch": "first_dragon_exits_22",
+      "phase": "source and test/producer drafts in /tmp only; native PG RED before callbacks",
       "entries": [
-        "quiz introduction and first question",
-        "Tahmehe answer",
-        "Ishara answer",
-        "Svir final access once; repeated completed quiz read-only",
-        "sourceNPC placement admission"
+        "Tazhadur UID35005 exit",
+        "Kalyassa UID35006 exit",
+        "Zorvorax UID35007 exit",
+        "Gelidrazah UID35008 exit"
       ],
       "engine_expansion": false
     },
@@ -9962,7 +9976,7 @@
       },
       "review": "Read strict combined admission union, all unchanged conflicting Item weights, retained source observation guards, disjoint NPC producer prefixes, both new physical PG contracts and generated input witnesses. All three PG cases, 4callbackunits,15profiles,9authoring,actual15case/776creatureprey,check/strictClippy3crates,123content,5repository andpinchecks pass; no blocking finding."
     },
-    "updated_at": "2026-11-07T23:09:39.975187+00:00",
+    "updated_at": "2026-11-07T23:46:42.864077+00:00",
     "standing_validation_rule": "PREPUSH-2: fetch+merge main before every push; regenerate generated files/pins/central lists with repo tooling; every changed-crate unit suite plus own real-PG cases; workspace all-targets check and fmt. At30min, may push compiling generated state with step3 tests explicitly pending.",
     "main_merge_validation": {
       "main": "e1ca3e003",
@@ -10045,7 +10059,7 @@
       "owner": "wpkg",
       "publication": "Push this lane branch; collector pulls green batches; no lane PR; merge main after coordinator announces collector merge"
     },
-    "latest_green_publication": "6a2333cb1d6378217e132e0b8cd8ca51c9e86a89"
+    "latest_green_publication": "45aad7300bab0063bce39fde4c3f77115d2fa52f"
   },
   "counts": {
     "scope_total": 22,
@@ -10611,7 +10625,7 @@
       ],
       "status": "IN_PROGRESS",
       "implementation_owner": "questpc3",
-      "next_actions": "Retain qualified native 200-dragon counter. Compose source season/initialization, treasure gates, full encounter admission and rewards; reuse delivered shared engines and implement any missing mechanisms here."
+      "next_actions": "Retain qualified 200-kill counter, four sacrifices/two lava directions, three life sites and ordered Gelidrazah quiz/placement. Next four unconditional source exits reuse current movement engine; season, treasure conditional achievement, boss admission/cleanup and recurrent rewards await qengine2 requests. Whole quest remains IN_PROGRESS."
     },
     {
       "canonical": "oteryn:quest.the_tainted_soul",

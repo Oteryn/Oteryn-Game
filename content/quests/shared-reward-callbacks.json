@@ -11107,6 +11107,35 @@
         "oteryn:item.tibia.i3562"
       ],
       "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/first-dragon-quiz/access",
+      "quest": "oteryn:quest.the_first_dragon_quest",
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "svir"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "That is correct. You satisfactorily answered all questions. You may pass and enter Gelidrazah's lair."
+      ],
+      "sources": [
+        "data-global/npc/gelidrazahs_thirst.lua:49-85 git-blob=beff8d7c6b9eb11bda431127647792996635f052 sha256=e376c7ae56eaef9dcc7ffb63904dea469ae39fbfe2e821f739cdfb4edbfc5de8"
+      ]
     }
   ],
   "tracks": [

@@ -289,12 +289,15 @@ mod tests {
             .x += 1;
         assert_ne!(hash(area)?, original);
         let mut period = callback.clone();
-        period
-            .carried_use
-            .as_mut()
-            .ok_or("period")?
-            .time_window
-            .from_minute -= 1;
+        let window = &mut period.carried_use.as_mut().ok_or("period")?.time_window;
+        window.from_minute = (window.from_minute + 1) % 1440;
+        if window.from_minute == window.to_minute {
+            window.from_minute = (window.from_minute + 1) % 1440;
+        }
+        assert!(
+            window.valid(),
+            "the changed period remains a valid predicate"
+        );
         assert_ne!(hash(period)?, original);
         let mut wording = callback;
         wording.success_message = Some("Presentation only.".into());

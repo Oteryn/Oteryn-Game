@@ -4805,6 +4805,607 @@
       "reply": [
         "Will you help me with this task?"
       ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "There are three questions. First: What is the name of the princess who fell in love with a Thaian nobleman during the regency of pharaoh Uthemath? Second: Who is the author of the book ,The Language of the Wolves'? ...",
+        "Third: Which ancient Tibian race reportedly travelled the sky in cloud ships? Can you answer these questions?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "So I ask you: What is the name of the princess who fell in love with a Thaian nobleman during the regency of pharaoh Uthemath?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "tahmehe"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "That's right. Listen to the second question: Who is the author of the book ,The Language of the Wolves'?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "ishara"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "That's right. Listen to the third question: Which ancient Tibian race reportedly travelled the sky in cloud ships?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "svir"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "That is correct. You satisfactorily answered all questions. You may pass and enter Gelidrazah's lair."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "tahmehe"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "ishara"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "svir"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "no"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "wrong"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "tahmehe"
+      ],
+      "topic": 1,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "ishara"
+      ],
+      "topic": 1,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "svir"
+      ],
+      "topic": 1,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "no"
+      ],
+      "topic": 1,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "wrong"
+      ],
+      "topic": 1,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "ishara"
+      ],
+      "topic": 2,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "svir"
+      ],
+      "topic": 2,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "no"
+      ],
+      "topic": 2,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "wrong"
+      ],
+      "topic": 2,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "tahmehe"
+      ],
+      "topic": 3,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "svir"
+      ],
+      "topic": 3,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "no"
+      ],
+      "topic": 3,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "wrong"
+      ],
+      "topic": 3,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "tahmehe"
+      ],
+      "topic": 4,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "ishara"
+      ],
+      "topic": 4,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "no"
+      ],
+      "topic": 4,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gelidrazah_s_thirst",
+      "keywords": [
+        "wrong"
+      ],
+      "topic": 4,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I don't know what you are talking about."
+      ]
     }
   ]
 }
