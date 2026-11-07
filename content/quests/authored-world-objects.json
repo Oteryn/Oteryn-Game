@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "basis": "CHOSEN_OTERYN_APPROXIMATION",
+  "objects": [
+    {
+      "quest": "oteryn:quest.authored.nomads_mini_world_change",
+      "position": [
+        33220,
+        32580,
+        7
+      ],
+      "item": 2472,
+      "ground": 231,
+      "description": "A fixed nomad supply cache.",
+      "recipe_path": "content/quests/definitions/quests-00300-00351.json",
+      "recipe_sha256": "4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a",
+      "source_world": "content/world/placements/region-z07-x129-y127.b3",
+      "source_world_sha256": "3d8be37fc38619e95490267428993d658fac808cbd8eb64e82beb3f26d3108de"
+    },
+    {
+      "quest": "oteryn:quest.authored.nomads_mini_world_change",
+      "position": [
+        33264,
+        32818,
+        7
+      ],
+      "item": 2472,
+      "ground": 231,
+      "description": "A fixed nomad supply cache.",
+      "recipe_path": "content/quests/definitions/quests-00300-00351.json",
+      "recipe_sha256": "4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a",
+      "source_world": "content/world/placements/region-z07-x129-y128.b3",
+      "source_world_sha256": "7f335f791c1f5ac47e8f080a22d4428ca1bbacc552c7fd8c2ffdcd039cf17495"
+    },
+    {
+      "quest": "oteryn:quest.authored.nomads_mini_world_change",
+      "position": [
+        33207,
+        32610,
+        7
+      ],
+      "item": 2472,
+      "ground": 231,
+      "description": "A fixed nomad supply cache.",
+      "recipe_path": "content/quests/definitions/quests-00300-00351.json",
+      "recipe_sha256": "4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a",
+      "source_world": "content/world/placements/region-z07-x129-y127.b3",
+      "source_world_sha256": "3d8be37fc38619e95490267428993d658fac808cbd8eb64e82beb3f26d3108de"
+    }
+  ]
+}

@@ -13,6 +13,9 @@ pub enum Facing {
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
+    /// Account achievement committed with a terminal native world reward.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub achievement_reward: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outfit_reward: Option<super::super::reward_callbacks::OutfitReward>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -88,6 +91,16 @@ pub struct Encounter {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects.achievement_reward.as_ref().is_some_and(|key| {
+        callback.trigger != Trigger::Use
+            || !callback.completes
+            || effects.item_reward.is_none()
+            || !key.starts_with("oteryn:achievement/")
+            || key.len() > 128
+            || !super::super::valid_quest_key(key)
+    }) {
+        return false;
+    }
     let pos = |p: Position| (-15..=0).contains(&p.floor);
     let lever = callback.trigger == Trigger::Use && callback.lever.is_some();
     if effects.item_reward.as_ref().is_some_and(|reward| {
@@ -204,4 +217,40 @@ pub(super) fn valid(callback: &Callback) -> bool {
         }
     }
     true
+}
+
+#[cfg(test)]
+mod achievement_tests {
+    use super::*;
+    #[test]
+    fn world_achievement_requires_terminal_literal_use_with_native_reward() -> Result<(), String> {
+        let callback = super::super::load()?
+            .into_iter()
+            .find(|c| c.effects.achievement_reward.is_some())
+            .ok_or("achievement callback")?;
+        assert!(valid(&callback));
+        for edit in 0..5 {
+            let mut invalid = callback.clone();
+            match edit {
+                0 => invalid.trigger = Trigger::StepIn,
+                1 => invalid.completes = false,
+                2 => invalid.effects.item_reward = None,
+                3 => invalid.effects.achievement_reward = Some("unbound:achievement".into()),
+                _ => {
+                    invalid.effects.achievement_reward =
+                        Some(format!("oteryn:achievement/{}", "a".repeat(128)))
+                }
+            }
+            assert!(!valid(&invalid), "edit{edit}");
+        }
+        for legacy in super::super::parse(super::super::EMBEDDED)? {
+            assert!(legacy.effects.achievement_reward.is_none());
+            let value = serde_json::to_value(legacy.effects).map_err(|e| e.to_string())?;
+            assert!(
+                value.get("achievement_reward").is_none(),
+                "legacy plan shape must stay unchanged"
+            );
+        }
+        Ok(())
+    }
 }

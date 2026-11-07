@@ -411,6 +411,305 @@
         "project_on_complete": true
       },
       "premium_required": true
+    },
+    {
+      "key": "oteryn:quest-callback/authored-nomads-fish-cache",
+      "quest": "oteryn:quest.authored.nomads_mini_world_change",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33264,
+          "y": 32818,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/nomads_mini/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null,
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3578",
+          "count": 50,
+          "contents": []
+        }
+      },
+      "sources": [
+        "oteryn-authored:selected-personal-three-cache-route:fish",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00300-00351.json:/records/21/definition:sha256:4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a",
+        "oteryn:source-map:content/world/placements/region-z07-x129-y128.b3:sha256:7f335f791c1f5ac47e8f080a22d4428ca1bbacc552c7fd8c2ffdcd039cf17495"
+      ],
+      "premium_required": true
+    },
+    {
+      "key": "oteryn:quest-callback/authored-nomads-fish-explore",
+      "quest": "oteryn:quest.authored.nomads_mini_world_change",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33264,
+          "y": 32817,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 231
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/nomads_mini/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "oteryn-authored:selected-personal-three-cache-route:fish",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00300-00351.json:/records/21/definition:sha256:4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a",
+        "oteryn:source-map:content/world/placements/region-z07-x129-y128.b3:sha256:7f335f791c1f5ac47e8f080a22d4428ca1bbacc552c7fd8c2ffdcd039cf17495"
+      ],
+      "premium_required": true
+    },
+    {
+      "key": "oteryn:quest-callback/authored-nomads-fur-bag-cache",
+      "quest": "oteryn:quest.authored.nomads_mini_world_change",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33207,
+          "y": 32610,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/nomads_mini/stage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null,
+        "achievement_reward": "oteryn:achievement/chest_robber",
+        "item_reward": {
+          "item": "oteryn:item.tibia.i7343",
+          "count": 1,
+          "contents": [],
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i3032",
+              "count": 3
+            },
+            {
+              "item": "oteryn:item.tibia.i3027",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i9057",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i3054",
+              "count": 1
+            }
+          ]
+        }
+      },
+      "sources": [
+        "oteryn-authored:selected-personal-three-cache-route:fur-bag",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00300-00351.json:/records/21/definition:sha256:4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a",
+        "oteryn:source-map:content/world/placements/region-z07-x129-y127.b3:sha256:3d8be37fc38619e95490267428993d658fac808cbd8eb64e82beb3f26d3108de"
+      ],
+      "premium_required": true,
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-callback/authored-nomads-fur-bag-explore",
+      "quest": "oteryn:quest.authored.nomads_mini_world_change",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33207,
+          "y": 32609,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 231
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/nomads_mini/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "oteryn-authored:selected-personal-three-cache-route:fur-bag",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00300-00351.json:/records/21/definition:sha256:4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a",
+        "oteryn:source-map:content/world/placements/region-z07-x129-y127.b3:sha256:3d8be37fc38619e95490267428993d658fac808cbd8eb64e82beb3f26d3108de"
+      ],
+      "premium_required": true
+    },
+    {
+      "key": "oteryn:quest-callback/authored-nomads-ham-cache",
+      "quest": "oteryn:quest.authored.nomads_mini_world_change",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33220,
+          "y": 32580,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/nomads_mini/stage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null,
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3582",
+          "count": 10,
+          "contents": []
+        }
+      },
+      "sources": [
+        "oteryn-authored:selected-personal-three-cache-route:ham",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00300-00351.json:/records/21/definition:sha256:4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a",
+        "oteryn:source-map:content/world/placements/region-z07-x129-y127.b3:sha256:3d8be37fc38619e95490267428993d658fac808cbd8eb64e82beb3f26d3108de"
+      ],
+      "premium_required": true
+    },
+    {
+      "key": "oteryn:quest-callback/authored-nomads-ham-explore",
+      "quest": "oteryn:quest.authored.nomads_mini_world_change",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33220,
+          "y": 32579,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 231
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/nomads_mini/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "oteryn-authored:selected-personal-three-cache-route:ham",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00300-00351.json:/records/21/definition:sha256:4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a",
+        "oteryn:source-map:content/world/placements/region-z07-x129-y127.b3:sha256:3d8be37fc38619e95490267428993d658fac808cbd8eb64e82beb3f26d3108de"
+      ],
+      "premium_required": true
     }
   ]
 }

@@ -5,11 +5,13 @@ use std::path::Path;
 use serde::Deserialize;
 
 use crate::{Error, b3::Region};
+mod quest_objects;
 
 /// The checked source selector family. An absent file is an empty synthetic family.
 #[derive(Clone, Debug, Default)]
 pub struct Source {
     bindings: Vec<Binding>,
+    objects: quest_objects::Source,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -53,10 +55,13 @@ impl Source {
     /// Load the source-only projection; no source region is rewritten.
     pub fn load(root: &Path) -> Result<Self, Error> {
         let path = root.join("content/world/quest-startup-bindings.json");
-        if !path.is_file() {
-            return Ok(Self::default());
-        }
-        Self::parse(&crate::source::read(&path)?)
+        let mut source = if path.is_file() {
+            Self::parse(&crate::source::read(&path)?)?
+        } else {
+            Self::default()
+        };
+        source.objects = quest_objects::Source::load(root)?;
+        Ok(source)
     }
 
     /// Decode the closed, bounded startup authoring shape.
@@ -110,6 +115,7 @@ impl Source {
         }
         Ok(Self {
             bindings: doc.bindings,
+            objects: quest_objects::Source::default(),
         })
     }
 
@@ -152,6 +158,7 @@ impl Source {
             }
             *value = Some(binding.value);
         }
+        self.objects.apply(region, palette)?;
         Ok(())
     }
 }

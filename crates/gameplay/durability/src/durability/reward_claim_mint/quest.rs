@@ -13,7 +13,13 @@ use oteryn_gameplay_quests::quest::reward_callbacks::{PROVENANCE, RewardCallback
 pub(crate) fn prepare_achievement(
     callback: Option<&RewardCallback>,
 ) -> std::result::Result<Option<AchievementGrantRequest>, DurabilityError> {
-    let Some(key) = callback.and_then(|c| c.achievement.as_ref()) else {
+    prepare_achievement_key(callback.and_then(|c| c.achievement.as_deref()))
+}
+
+fn prepare_achievement_key(
+    key: Option<&str>,
+) -> std::result::Result<Option<AchievementGrantRequest>, DurabilityError> {
+    let Some(key) = key else {
         return Ok(None);
     };
     let catalogue = oteryn_gameplay_progression::achievement_catalogue::parse_shards(
@@ -27,7 +33,7 @@ pub(crate) fn prepare_achievement(
         return Err(DurabilityError::InvalidStoredState);
     }
     Ok(Some(AchievementGrantRequest {
-        achievement_key: key.clone(),
+        achievement_key: key.to_owned(),
         catalogue: AchievementCatalogueLookup::Earnable {
             revision: entry.revision.clone(),
         },
@@ -187,9 +193,25 @@ pub(crate) async fn give_world(
     else {
         return Ok(false);
     };
-    let plan = serde_json::json!({"key": callback.key, "quest": callback.quest,
+    if let Some(mut grant) =
+        prepare_achievement_key(callback.effects.achievement_reward.as_deref())?
+    {
+        grant.source.event_id = Sha256::new()
+            .chain_update(fence.character_id.as_bytes())
+            .chain_update(callback.key.as_bytes())
+            .finalize()
+            .to_vec();
+        let granter = FencedGrantingCharacter::in_transaction(tx, fence.character_id).await?;
+        record_achievement_grant(tx, granter, &grant)
+            .await?
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+    }
+    let mut plan = serde_json::json!({"key": callback.key, "quest": callback.quest,
         "storage": callback.storage, "take": [], "present": [], "give": reward,
         "outfit": null, "world_callback": callback});
+    if let Some(achievement) = &callback.effects.achievement_reward {
+        plan["achievement"] = serde_json::json!(achievement);
+    }
     sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,encode($6,'hex')::uuid,ARRAY[]::text[])")
         .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice())
         .bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(plan)
