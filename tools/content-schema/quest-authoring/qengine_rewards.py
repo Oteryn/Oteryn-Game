@@ -953,12 +953,17 @@ def build():
     legion_helmet.extend(callbacks)
     import serpentine_programme
     serpentine_callbacks, serpentine_gate = serpentine_programme.documents()
+    import banshees_programme
+    banshees_world, banshees_npcs, banshees_gates = banshees_programme.documents()
+    callbacks.extend(banshees_npcs)
     claim_gates = legion_helmet.claim_gates()
     claim_gates['gates'].append(serpentine_gate)
+    claim_gates['gates'].extend(banshees_gates)
     claim_gates['gates'].sort(key=lambda row:row['claim'])
     generated['content/quests/reward-claim-gates.json']=encoded(claim_gates)
     authored_world=legion_helmet.world_callbacks()
     authored_world['callbacks'].extend(serpentine_callbacks)
+    authored_world['callbacks'].extend(banshees_world)
     import nimmersatt_programme
     nimmersatt_programme.extend_rewards(callbacks, greetings)
     nimmersatt_programme.extend_world(authored_world['callbacks'])

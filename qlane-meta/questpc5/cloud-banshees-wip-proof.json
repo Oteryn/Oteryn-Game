@@ -1,0 +1,39 @@
+{
+  "state": "COMPILING_WIP_PG_PENDING",
+  "main": "e1ca3e003",
+  "pg_red": {
+    "server": "PostgreSQL 18.6",
+    "duration_seconds": 116.022293498,
+    "log": "/tmp/questpc5-banshees-red.log",
+    "failure": "first seal stage -1 instead of 0"
+  },
+  "authoring_tests": {
+    "passed": 2,
+    "duration_seconds": 0.899,
+    "log": "/tmp/questpc5-banshees-authoring-green.log"
+  },
+  "workspace_check": {
+    "exit": 0,
+    "duration": "7m 09s including build-lock wait",
+    "log": "/tmp/questpc5-banshees-check.log"
+  },
+  "fmt_all_check": {
+    "exit": 0,
+    "log": "/tmp/questpc5-banshees-fmt-final.log"
+  },
+  "generated": {
+    "source_core": "unchanged",
+    "world_metadata": "wrote 0 of 4 files",
+    "item_mount_equivalence": "PASS items=34111 mounts=252",
+    "quest_binding_evidence": "regenerated with quest_binding_authoring.py",
+    "pins": "repo compiler refresh + pin-check pass",
+    "duplicate_migrations": "Git-tree check pass"
+  },
+  "pending": [
+    "focused Banshees positive and level59 PG cases",
+    "Serpentine PG fixture reuse regression",
+    "quests/dispatch/durability crate unit tests excluding PG cases",
+    "strict changed-crate Clippy"
+  ],
+  "qualification": "No new quest marked QUALIFIED in this WIP."
+}

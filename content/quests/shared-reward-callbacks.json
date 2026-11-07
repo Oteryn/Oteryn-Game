@@ -299,6 +299,37 @@
   ],
   "callbacks": [
     {
+      "key": "oteryn:quest-reward/banshees-pact",
+      "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "npc": "oteryn:npc.the_queen_of_the_banshees",
+      "keywords": [
+        "pact",
+        "seal"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "minimum_level": 60,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/banshees-trial/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You have recorded the six seals. Enter the final chamber, claim your boots and platinum, then leave through the magic portal. This chosen trial takes no soul pact."
+      ],
+      "sources": [
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:d7d1b617d1612d80a55a68473787f4deb547cb77862a199d9d5409aa69211bbe",
+        "oteryn:source-npc:tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:the_queen_of_the_banshees:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/deepling-helmet",
       "quest": "oteryn:quest.outfit_and_addon_quests",
       "npc": "oteryn:npc.navigator",

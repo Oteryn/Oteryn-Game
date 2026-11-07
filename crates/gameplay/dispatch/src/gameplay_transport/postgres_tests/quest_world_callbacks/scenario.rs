@@ -88,6 +88,8 @@ fn scenario_case(
             | "qengine-rewards-nimmersatt-passage"
     ) {
         super::super::questpc5_nimmersatt_world_items::world()?
+    } else if name.starts_with("qengine-rewards-banshees") {
+        super::super::questpc5_banshees::world()?
     } else if name == "qengine-rewards-serpentine" {
         super::super::questpc5_serpentine_route::world()?
     } else if name == "qengine-rewards-noodles" {
@@ -122,6 +124,12 @@ fn scenario_case(
                 .fetch_one(&h.pool)
                 .await?;
             eprintln!("POSTGRES_CASE_STARTED newhaven_rewards server_version={version}");
+        }
+        if name.starts_with("qengine-rewards-banshees") {
+            // Starting character attributes only; no quest, claim or reward is seeded.
+            let (level, xp) = if name.ends_with("low-level") { (59_i64, 3_091_400_i64) } else { (60_i64, 3_256_800_i64) };
+            sqlx::query("UPDATE game_character_progression_state SET level=$1,total_experience=$2 WHERE character_id=encode($3,'hex')::uuid")
+                .bind(level).bind(xp).bind(id(41).as_slice()).execute(&h.pool).await?;
         }
         prepare_current_session(&h)
             .await

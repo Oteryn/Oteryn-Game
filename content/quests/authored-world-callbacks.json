@@ -2,6 +2,391 @@
   "schema": 1,
   "callbacks": [
     {
+      "key": "oteryn:quest-callback/authored-banshees-demonrage",
+      "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32215,
+          "y": 31848,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 410
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/banshees-trial/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "oteryn-authored:selected-seven-recorded-seals:demonrage",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:d7d1b617d1612d80a55a68473787f4deb547cb77862a199d9d5409aa69211bbe",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/teleport.lua:579-614:sha256:462248b3eeed3531d4f6bc14d47b6d7184741845106dc9ee9d9a0bee5856b042",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:source-UID6060-6061:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
+        "oteryn:source-map:content/world/placements/region-z15-x125-y124.b3:sha256:7699c9a2d90054fbae282e32e27204fb193888d7a9456952f9cf7062a1cb0fe5",
+        "oteryn:source-npc:tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:the_queen_of_the_banshees:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a"
+      ],
+      "minimum_level": 60
+    },
+    {
+      "key": "oteryn:quest-callback/authored-banshees-escape",
+      "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32219,
+          "y": 31913,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 1949
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32269,
+        "y": 31853,
+        "floor": -15
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/banshees-trial/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "oteryn-authored:selected-seven-recorded-seals:escape",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:d7d1b617d1612d80a55a68473787f4deb547cb77862a199d9d5409aa69211bbe",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/teleport.lua:579-614:sha256:462248b3eeed3531d4f6bc14d47b6d7184741845106dc9ee9d9a0bee5856b042",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:source-UID6060-6061:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
+        "oteryn:source-map:content/world/placements/region-z15-x125-y124.b3:sha256:7699c9a2d90054fbae282e32e27204fb193888d7a9456952f9cf7062a1cb0fe5",
+        "oteryn:source-npc:tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:the_queen_of_the_banshees:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a"
+      ],
+      "minimum_level": 60,
+      "completes": true,
+      "required_claims": [
+        "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.boots_of_haste",
+        "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.platinum_coin"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-banshees-final-chamber",
+      "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32219,
+          "y": 31911,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 410
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/banshees-trial/stage",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "oteryn-authored:selected-seven-recorded-seals:final-chamber",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:d7d1b617d1612d80a55a68473787f4deb547cb77862a199d9d5409aa69211bbe",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/teleport.lua:579-614:sha256:462248b3eeed3531d4f6bc14d47b6d7184741845106dc9ee9d9a0bee5856b042",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:source-UID6060-6061:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
+        "oteryn:source-map:content/world/placements/region-z15-x125-y124.b3:sha256:7699c9a2d90054fbae282e32e27204fb193888d7a9456952f9cf7062a1cb0fe5",
+        "oteryn:source-npc:tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:the_queen_of_the_banshees:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a"
+      ],
+      "minimum_level": 60
+    },
+    {
+      "key": "oteryn:quest-callback/authored-banshees-hidden",
+      "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32277,
+          "y": 31903,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 410
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/banshees-trial/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "oteryn-authored:selected-seven-recorded-seals:hidden",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:d7d1b617d1612d80a55a68473787f4deb547cb77862a199d9d5409aa69211bbe",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/teleport.lua:579-614:sha256:462248b3eeed3531d4f6bc14d47b6d7184741845106dc9ee9d9a0bee5856b042",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:source-UID6060-6061:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
+        "oteryn:source-map:content/world/placements/region-z13-x126-y124.b3:sha256:1120d7d7c29c9bbd180d1d44339c60e58e6f31ff9be7cae5a03745dd2d44e5b4",
+        "oteryn:source-npc:tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:the_queen_of_the_banshees:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a"
+      ],
+      "minimum_level": 60
+    },
+    {
+      "key": "oteryn:quest-callback/authored-banshees-logic",
+      "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32311,
+          "y": 31978,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 1959
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/banshees-trial/stage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "oteryn-authored:selected-seven-recorded-seals:logic",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:d7d1b617d1612d80a55a68473787f4deb547cb77862a199d9d5409aa69211bbe",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/teleport.lua:579-614:sha256:462248b3eeed3531d4f6bc14d47b6d7184741845106dc9ee9d9a0bee5856b042",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:source-UID6060-6061:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
+        "oteryn:source-map:content/world/placements/region-z13-x126-y124.b3:sha256:1120d7d7c29c9bbd180d1d44339c60e58e6f31ff9be7cae5a03745dd2d44e5b4",
+        "oteryn:source-npc:tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:the_queen_of_the_banshees:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a"
+      ],
+      "minimum_level": 60
+    },
+    {
+      "key": "oteryn:quest-callback/authored-banshees-plague",
+      "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32171,
+          "y": 31854,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 410
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/banshees-trial/stage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "oteryn-authored:selected-seven-recorded-seals:plague",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:d7d1b617d1612d80a55a68473787f4deb547cb77862a199d9d5409aa69211bbe",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/teleport.lua:579-614:sha256:462248b3eeed3531d4f6bc14d47b6d7184741845106dc9ee9d9a0bee5856b042",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:source-UID6060-6061:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
+        "oteryn:source-map:content/world/placements/region-z15-x125-y124.b3:sha256:7699c9a2d90054fbae282e32e27204fb193888d7a9456952f9cf7062a1cb0fe5",
+        "oteryn:source-npc:tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:the_queen_of_the_banshees:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a"
+      ],
+      "minimum_level": 60
+    },
+    {
+      "key": "oteryn:quest-callback/authored-banshees-sacrifice",
+      "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32250,
+          "y": 31892,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 1959
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/banshees-trial/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "oteryn-authored:selected-seven-recorded-seals:sacrifice",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:d7d1b617d1612d80a55a68473787f4deb547cb77862a199d9d5409aa69211bbe",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/teleport.lua:579-614:sha256:462248b3eeed3531d4f6bc14d47b6d7184741845106dc9ee9d9a0bee5856b042",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:source-UID6060-6061:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
+        "oteryn:source-map:content/world/placements/region-z14-x125-y124.b3:sha256:caa4001cda678cb5d5e93a76e46864460c5b1232624ada4a48e124c4907aaea7",
+        "oteryn:source-npc:tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:the_queen_of_the_banshees:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a"
+      ],
+      "minimum_level": 60
+    },
+    {
+      "key": "oteryn:quest-callback/authored-banshees-true-path",
+      "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32192,
+          "y": 31938,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 1959
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/banshees-trial/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "oteryn-authored:selected-seven-recorded-seals:true-path",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:d7d1b617d1612d80a55a68473787f4deb547cb77862a199d9d5409aa69211bbe",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/teleport.lua:579-614:sha256:462248b3eeed3531d4f6bc14d47b6d7184741845106dc9ee9d9a0bee5856b042",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:source-UID6060-6061:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
+        "oteryn:source-map:content/world/placements/region-z14-x125-y124.b3:sha256:caa4001cda678cb5d5e93a76e46864460c5b1232624ada4a48e124c4907aaea7",
+        "oteryn:source-npc:tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:the_queen_of_the_banshees:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a"
+      ],
+      "minimum_level": 60
+    },
+    {
       "key": "oteryn:quest-callback/authored-legion-cave-entry",
       "quest": "oteryn:quest.newhaven_legion_helmet_quest",
       "trigger": "step_in",

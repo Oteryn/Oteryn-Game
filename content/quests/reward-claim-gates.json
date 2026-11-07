@@ -26,6 +26,36 @@
       ]
     },
     {
+      "claim": "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.boots_of_haste",
+      "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "conditions": [
+        {
+          "track": "oteryn:quest-progress/banshees-trial/stage",
+          "minimum": 7,
+          "maximum": 7
+        }
+      ],
+      "sources": [
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:d7d1b617d1612d80a55a68473787f4deb547cb77862a199d9d5409aa69211bbe",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:source-UID6060-6061:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca"
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.platinum_coin",
+      "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "conditions": [
+        {
+          "track": "oteryn:quest-progress/banshees-trial/stage",
+          "minimum": 7,
+          "maximum": 7
+        }
+      ],
+      "sources": [
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/37/definition:sha256:d7d1b617d1612d80a55a68473787f4deb547cb77862a199d9d5409aa69211bbe",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:source-UID6060-6061:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca"
+      ]
+    },
+    {
       "claim": "oteryn:reward-claim.quest.u7_3.serpentine_tower.white_pearl",
       "quest": "oteryn:quest.serpentine_tower_quest",
       "conditions": [

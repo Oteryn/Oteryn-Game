@@ -507,7 +507,7 @@
     "title": "The Queen of the Banshees Quest",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "Remaining complete route: All seals and final encounter composed and exercised through native dispatch.",
+    "blocker": "Selected seven-seal binding implemented; stable-main PG positive/under-level/Serpentine regression and crate checks still pending.",
     "from_lanes": [
       "questpc4"
     ],
@@ -525,6 +525,13 @@
     "canonical_location": {
       "path": "content/quests/definitions/quests-00200-00299.json",
       "pointer": "/records/37/definition"
+    },
+    "active_step": "Selected seven-seal programme and original UID6060/6061 gates authored; PG RED reproduced; GREEN and stable-main compile pending.",
+    "pg_red": {
+      "server": "PostgreSQL 18.6",
+      "duration_seconds": 116.022293498,
+      "failure": "seal exploration obeys level and order: -1 instead of 0",
+      "log": "/tmp/questpc5-banshees-red.log"
     }
   },
   {
@@ -734,6 +741,15 @@
     "canonical_location": {
       "path": "content/quests/definitions/quests-00300-00351.json",
       "pointer": "/records/12/definition"
+    },
+    "engine_request": {
+      "owner": "qengine2",
+      "state": "REQUESTED",
+      "feature": "Observed temporary disguise predicates, matching portal admission and exit cleanup",
+      "reused_evidence": "questpc8 d078ecd29:qlane-meta/questpc8/QUEST-STATUS.json Last Creep Standing; no completed implementation to merge",
+      "where": [
+        "crates/gameplay/quests/src/quest/world_callbacks.rs"
+      ]
     }
   },
   {

@@ -250,11 +250,16 @@ pub(super) async fn exercise(
     Ok(())
 }
 pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
+    source_world(&[(129, 128)], p(33146, 32863, -7))
+}
+
+// The retained source map and production Item facts are shared by whole-route tests.
+pub(super) fn source_world(regions: &[(u16, u16)], start: Position) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle_compiler::{bundle, compile, source};
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
     let (template, mut pins) = crate::map::boot::tests::bundle();
     let identity = bundle::read(&template)?.manifest.identity;
-    let project = source::project_regions(&root, &[(129, 128)])?;
+    let project = source::project_regions(&root, regions)?;
     let (registry, palette) = source::registry(&root, &project)?;
     let compiled = compile::compile(
         &compile::Input {
@@ -301,9 +306,9 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
             map_revision: crate::map::overlay::map_revision(&base),
             bundle: pins,
             start: crate::map::overlay::TilePos {
-                x: 33146,
-                y: 32863,
-                floor: -7,
+                x: start.x,
+                y: start.y,
+                floor: start.floor,
             },
         },
         crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,

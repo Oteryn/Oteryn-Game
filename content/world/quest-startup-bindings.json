@@ -122,6 +122,30 @@
     },
     {
       "position": [
+        32218,
+        31912,
+        15
+      ],
+      "item": 2472,
+      "attribute": "unique",
+      "value": 6060,
+      "source": "data-global/startup/tables/chest.lua",
+      "line": 1028
+    },
+    {
+      "position": [
+        32220,
+        31912,
+        15
+      ],
+      "item": 2472,
+      "attribute": "unique",
+      "value": 6061,
+      "source": "data-global/startup/tables/chest.lua",
+      "line": 1035
+    },
+    {
+      "position": [
         32225,
         32265,
         10

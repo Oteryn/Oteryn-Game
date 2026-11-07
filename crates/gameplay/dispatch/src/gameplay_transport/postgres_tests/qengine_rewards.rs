@@ -35,6 +35,8 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
                     y: 31578,
                     floor: -7,
                 }
+            } else if name.starts_with("qengine-rewards-banshees") {
+                Position { x: 32276, y: 31903, floor: -13 }
             } else if name == "qengine-rewards-serpentine" {
                 Position {
                     x: 33147,
@@ -764,6 +766,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name.starts_with("qengine-rewards-banshees") {
+        return Box::pin(super::questpc5_banshees::exercise(owner, admitted, h, name.ends_with("low-level"))).await;
+    }
     if name == "qengine-rewards-serpentine" {
         return Box::pin(super::questpc5_serpentine_route::exercise(owner, admitted, h)).await;
     }
