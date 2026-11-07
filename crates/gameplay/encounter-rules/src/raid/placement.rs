@@ -161,33 +161,6 @@ impl RaidArea {
         if attempt >= RAID_PLACEMENT_ATTEMPTS {
             return Err(RaidError::InvalidState);
         }
-        self.candidate_at(random, wave, entry, spawn_index, attempt)
-    }
-
-    /// Flower Month shares 250 attempts across its 25 requested creatures.
-    pub fn candidate_in_shared_wave(
-        self,
-        random: &RaidRandom,
-        wave: u16,
-        entry: u16,
-        spawn_index: u16,
-        attempt: u8,
-    ) -> Result<RaidPosition, RaidError> {
-        if attempt >= 250 {
-            return Err(RaidError::InvalidState);
-        }
-        self.candidate_at(random, wave, entry, spawn_index, attempt)
-    }
-
-    fn candidate_at(
-        self,
-        random: &RaidRandom,
-        wave: u16,
-        entry: u16,
-        spawn_index: u16,
-        attempt: u8,
-    ) -> Result<RaidPosition, RaidError> {
-        self.validate()?;
         self.candidate_shared(random, wave, entry, spawn_index, attempt)
     }
 

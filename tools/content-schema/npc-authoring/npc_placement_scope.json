@@ -1,6 +1,6 @@
 {
   "schema": "OTERYN_NPC_PLACEMENT_SCOPE/v1",
-  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QENGINE2-L1: Cael, Cranky Lizard Crone, Palimuth and Yalahari outfit hand-ins at the existing Global source candidate cells; alternate example-map cells are excluded by explicit selection",
+  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells",
   "npcs": [
     "oteryn:npc.a_seagull",
     "oteryn:npc.al_dee",
@@ -11,11 +11,9 @@
     "oteryn:npc.asralius",
     "oteryn:npc.billy",
     "oteryn:npc.blind_orc",
-    "oteryn:npc.cael",
     "oteryn:npc.carlos",
     "oteryn:npc.cipfried",
     "oteryn:npc.cledwyn",
-    "oteryn:npc.cranky_lizard_crone",
     "oteryn:npc.dallheim",
     "oteryn:npc.dixi",
     "oteryn:npc.emael",
@@ -26,7 +24,6 @@
     "oteryn:npc.mayor_pocaro",
     "oteryn:npc.norma",
     "oteryn:npc.obi",
-    "oteryn:npc.palimuth",
     "oteryn:npc.paulie",
     "oteryn:npc.santiago",
     "oteryn:npc.seymour",
@@ -35,25 +32,8 @@
     "oteryn:npc.vascalir",
     "oteryn:npc.wayland_smythers",
     "oteryn:npc.willie",
-    "oteryn:npc.yalahari",
     "oteryn:npc.zethra",
     "oteryn:npc.zirella"
   ],
-  "position_conflicts": [],
-  "placement_cells": {
-    "oteryn:npc.palimuth": [
-      {
-        "x": 32801,
-        "y": 31223,
-        "z": 7
-      }
-    ],
-    "oteryn:npc.yalahari": [
-      {
-        "x": 32801,
-        "y": 31188,
-        "z": 7
-      }
-    ]
-  }
+  "position_conflicts": []
 }

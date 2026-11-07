@@ -1,5 +1,4 @@
 use super::*;
-use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 
 pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> TestResult {
     scenario_case(name, trigger, lever_fixture, None)
@@ -24,17 +23,14 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let monk = name.starts_with("monk-guidance");
-    let qengine_reward = name.starts_with("qengine-rewards-");
-    let outfit_world = name.starts_with("l1-") && name.ends_with("-wardrobe");
-    let classic_npc = qengine_reward
-        || matches!(
-            name,
-            "nx6-wayfarer"
-                | "classic-quests-npc"
-                | "classic-rottin-disrepair"
-                | "threatened-dreams-npc"
-                | "conditional-quest-greetings"
-        );
+    let classic_npc = matches!(
+        name,
+        "nx6-wayfarer"
+            | "classic-quests-npc"
+            | "classic-rottin-disrepair"
+            | "threatened-dreams-npc"
+            | "conditional-quest-greetings"
+    );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
     let mut callback = callback(if classic_npc {
@@ -46,16 +42,8 @@ fn scenario_case(
     } else if target_swap {
         "fish-napping-key"
     } else {
-        name.strip_suffix("-expiry").unwrap_or(name)
+        name
     })?;
-    if name.ends_with("-expiry") {
-        callback
-            .effects
-            .portals
-            .as_mut()
-            .ok_or("portal pair")?
-            .lifetime_us = Some(60_000_000);
-    }
     if target_swap {
         callback
             .item_on_target
@@ -74,21 +62,15 @@ fn scenario_case(
     }
     let world = world(&callback, trigger)?;
     run(async |admin| {
-        let h = if qengine_reward || outfit_world {
-            Harness::create_quest_reward(admin, "quest_rewards", !name.ends_with("pirate")).await
-        } else {
-            Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false).await
-        }
-        .map_err(|e| format!("callback harness: {e}"))?;
-        prepare_current_session(&h)
-            .await
-            .map_err(|e| format!("callback session: {e}"))?;
+        let h = Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false)
+            .await?;
+        prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
             .open_character_authority(&seal)
             .await
-            .map_err(|e| format!("callback authority: {e:?}"))?;
+            .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
             super::super::death_ml_loss_composed::production_generation_with_pin(
@@ -99,11 +81,9 @@ fn scenario_case(
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;
-        let event_epoch =
-            super::super::qengine_rewards::event_fixture_epoch(name, deps.admitted.world_id)?;
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
-            event_epoch,
+            1,
             generation.identity().server_artifact_digest(),
             generation.identity().client_artifact_digest(),
             activated.frame_binding().digest(),
@@ -126,8 +106,6 @@ fn scenario_case(
                 5
             } else if monk {
                 4
-            } else if callback.effects.encounter.is_some() {
-                16
             } else {
                 2
             },
@@ -148,7 +126,6 @@ fn scenario_case(
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
-        owner.reset_epoch = event_epoch;
         owner.movement_cells = &cells;
         owner.quest_catalogue = Some(std::sync::Arc::new(
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
@@ -156,7 +133,7 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
-        if lever_fixture || target_swap || name.ends_with("-expiry") {
+        if lever_fixture || target_swap {
             assert!(
                 owner
                     .states
@@ -189,7 +166,7 @@ fn scenario_case(
                 fresh.operation(),
             )
             .await
-            .map_err(|e| format!("callback admission equipment: {e:?}"))?;
+            .map_err(debug)?;
         let native = generation.native_gameplay().ok_or("native")?;
         let template = crate::durability::starter_grant::StarterTemplate {
             definition: crate::durability::item_mint::TypedDefinitionRef {
@@ -208,92 +185,11 @@ fn scenario_case(
                 &template,
             )
             .await
-            .map_err(|e| format!("callback starter items: {e:?}"))?;
+            .map_err(debug)?;
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if name.starts_with("devovorga-essence-") {
-            let mut supported = admitted
-                .continuity
-                .selected_capabilities
-                .as_slice()
-                .to_vec();
-            supported.extend([4, 6, 11, 15, 18]);
-            supported.sort_unstable();
-            supported.dedup();
-            admitted.continuity.selected_capabilities =
-                crate::gameplay_transport::capabilities::SelectedCapabilities::select(
-                    owner.offered_capabilities(),
-                    &supported,
-                )
-                .ok_or("Devovorga native capabilities")?;
-            owner
-                .runtime
-                .lock()
-                .await
-                .bind_attacker_lease(
-                    deps.actor,
-                    admitted.game_session_id,
-                    crate::foundation::CharacterLease::new(
-                        crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
-                            .map_err(debug)?,
-                        fence.character_lease_generation,
-                    )
-                    .map_err(debug)?,
-                )
-                .map_err(debug)?;
-        }
-        if name == "devovorga-season-reward" {
-            super::super::qengine_access::devovorga_reward(&mut owner, &mut admitted, &h, trigger)
-                .await?;
-        } else if name.starts_with("devovorga-essence-") {
-            super::super::qengine_access::essence_use(
-                &mut owner,
-                &mut admitted,
-                &h,
-                &callback,
-                trigger,
-                deps.actor,
-            )
-            .await?;
-        } else if name.starts_with("insect-restoration") {
-            super::super::qengine_access::insect_use(&mut owner, &mut admitted, &h, trigger)
-                .await?;
-        } else if name.starts_with("spring-nest-") {
-            super::super::qengine_access::spring_use(&mut owner, &mut admitted, &h, trigger)
-                .await?;
-        } else if outfit_world {
-            super::super::qengine_access::exercise(
-                &mut owner,
-                &mut admitted,
-                &h,
-                deps.actor,
-                fence,
-                &callback,
-                trigger,
-            )
-            .await?;
-        } else if qengine_reward {
-            super::super::qengine_rewards::exercise(
-                &mut owner,
-                &mut admitted,
-                &h,
-                &authority,
-                name,
-            )
-            .await?;
-        } else if callback.effects != Default::default() {
-            super::super::qengine_access::exercise(
-                &mut owner,
-                &mut admitted,
-                &h,
-                deps.actor,
-                fence,
-                &callback,
-                trigger,
-            )
-            .await?;
-        } else if let Some(expected_destination) = stateless_destination {
+        if let Some(expected_destination) = stateless_destination {
             super::stateless::exercise(
                 &owner,
                 &mut admitted,
@@ -739,8 +635,7 @@ fn scenario_case(
                         request.clone(),
                         catalogue.clone(),
                         &permit,
-                        context.clone(),
-                        None,
+                        context.clone()
                     )
                     .await
                     .map_err(debug)?,
@@ -760,9 +655,7 @@ fn scenario_case(
                     ..request
                 };
                 assert!(matches!(slot.commit_world_callback(owner.root, owner.character, owner.holder,
-                    stale, fresh_request, catalogue, &permit, context,
-                    None,
-                ).await,
+                    stale, fresh_request, catalogue, &permit, context).await,
                     Err(crate::durability::character_progression::CharacterProgressionError::AuthorityRejected)));
                 drop(slot);
                 drop(permit);

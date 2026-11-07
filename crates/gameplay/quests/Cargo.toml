@@ -12,7 +12,6 @@ category = "gameplay"
 release-role = "production"
 
 [dependencies]
-oteryn-gameplay-world-change = { version = "=0.1.0", path = "../world-change" }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 sha2.workspace = true

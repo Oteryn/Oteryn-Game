@@ -7,37 +7,6 @@ struct MovementDecay {
     restore: EntryFacts,
 }
 
-#[derive(Clone, Debug)]
-struct DynamicPortal {
-    owner: u64,
-    destination: TilePos,
-    entry: EntryId,
-    expires: Option<u64>,
-}
-
-/// Already qualified facts for one atomic, Channel-local callback projection.
-pub enum QuestCallbackProjection {
-    Portals {
-        endpoints: [(TilePos, TilePos, EntryFacts); 2],
-        expires: Option<u64>,
-    },
-    ItemCycle {
-        position: TilePos,
-        remove: Option<u64>,
-        create: Option<EntryFacts>,
-    },
-}
-
-/// A bounded, source-authored visual owned by a synchronized World event.
-/// Interaction authority remains on the native selector and durable World row.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct EventObjectProjection {
-    pub position: TilePos,
-    pub appearance: u16,
-    pub sub_type: u16,
-    pub visible: bool,
-}
-
 #[derive(Clone, Debug, Default)]
 pub(super) struct CallbackStates {
     pub(super) changed: BTreeMap<u64, (u64, EntryFacts)>,
@@ -48,105 +17,9 @@ pub(super) struct CallbackStates {
     pub(super) movement_effects: std::collections::VecDeque<(u64, TilePos, u16)>,
     movement_speech: std::collections::VecDeque<(u64, MovementSpeech)>,
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
-    pub(super) encounter_rooms: BTreeMap<u64, BTreeSet<TilePos>>,
-    event_items: BTreeMap<(TilePos, u16), super::super::overlay::EntryId>,
-    mummy_projection: Option<(u8, bool, bool)>,
-    event_projections: BTreeMap<String, Vec<EventObjectProjection>>,
-    owned_event_items: BTreeMap<(String, TilePos, u16), super::super::overlay::EntryId>,
-    portals: BTreeMap<TilePos, DynamicPortal>,
-    solid_items: BTreeSet<TilePos>,
 }
 
 impl CallbackStates {
-    fn remove_portals(&mut self, owner: u64) {
-        self.portals.retain(|pos, portal| {
-            if portal.owner != owner {
-                return true;
-            }
-            if let Some(entries) = self.movement_items.get_mut(pos) {
-                entries.retain(|entry| entry.source != view::EntrySource::Added(portal.entry));
-                if entries.is_empty() {
-                    self.movement_items.remove(pos);
-                }
-            }
-            false
-        });
-    }
-
-    fn project(&mut self, owner: u64, projection: &QuestCallbackProjection, close: bool) -> bool {
-        match projection {
-            QuestCallbackProjection::Portals { endpoints, expires } => {
-                if close {
-                    if endpoints
-                        .iter()
-                        .any(|(pos, _, _)| self.portals.get(pos).is_some_and(|p| p.owner != owner))
-                    {
-                        return false;
-                    }
-                    self.remove_portals(owner);
-                    return true;
-                }
-                if endpoints
-                    .iter()
-                    .any(|(pos, _, _)| self.portals.contains_key(pos))
-                {
-                    return false;
-                }
-                for &(pos, destination, facts) in endpoints {
-                    let Some(sequence) = self.movement_sequence.checked_add(1) else {
-                        return false;
-                    };
-                    let Some(entry) = EntryId::callback(sequence) else {
-                        return false;
-                    };
-                    self.movement_sequence = sequence;
-                    self.movement_items
-                        .entry(pos)
-                        .or_default()
-                        .push(view::ComposedEntry {
-                            source: view::EntrySource::Added(entry),
-                            facts,
-                        });
-                    self.portals.insert(
-                        pos,
-                        DynamicPortal {
-                            owner,
-                            destination,
-                            entry,
-                            expires: *expires,
-                        },
-                    );
-                }
-            }
-            QuestCallbackProjection::ItemCycle {
-                position,
-                remove,
-                create,
-            } => {
-                if let Some(key) = remove {
-                    self.hidden.insert(*key);
-                }
-                if let Some(facts) = create {
-                    let Some(sequence) = self.movement_sequence.checked_add(1) else {
-                        return false;
-                    };
-                    let Some(entry) = EntryId::callback(sequence) else {
-                        return false;
-                    };
-                    self.movement_sequence = sequence;
-                    self.movement_items
-                        .entry(*position)
-                        .or_default()
-                        .push(view::ComposedEntry {
-                            source: view::EntrySource::Added(entry),
-                            facts: *facts,
-                        });
-                    self.solid_items.insert(*position);
-                }
-            }
-        }
-        true
-    }
     pub(super) fn movement_item(
         &self,
         id: u64,
@@ -158,344 +31,18 @@ impl CallbackStates {
             })
         })
     }
-    pub(super) fn has_capacity(&self, additional: usize) -> bool {
+    fn has_capacity(&self, additional: usize) -> bool {
         let used = self.changed.len()
             + self.hidden.len()
             + self.movement_decays.len()
             + self.movement_effects.len()
             + self.movement_speech.len()
-            + self.portals.len()
-            + self.solid_items.len()
-            + self.movement_items.values().map(Vec::len).sum::<usize>()
-            + self
-                .encounter_rooms
-                .values()
-                .map(BTreeSet::len)
-                .sum::<usize>();
+            + self.movement_items.values().map(Vec::len).sum::<usize>();
         used.saturating_add(additional) < super::super::overlay::OVERLAY_BUDGET_BYTES / 512
     }
 }
 
 impl BundleFacts {
-    /// Install or remove a whole event projection atomically. Repeated reads
-    /// preserve entry identities; reset and victory remove only this owner's items.
-    pub fn project_event_objects(
-        &self,
-        base: &super::super::WorldBase,
-        owner: &str,
-        objects: &[EventObjectProjection],
-    ) -> bool {
-        if owner.is_empty()
-            || owner.len() > 128
-            || objects.len() > 64
-            || objects.iter().any(|object| object.appearance == 0)
-            || objects
-                .iter()
-                .map(|object| (object.position, object.appearance))
-                .collect::<BTreeSet<_>>()
-                .len()
-                != objects.len()
-        {
-            return false;
-        }
-        let Ok(mut guard) = self.callbacks.lock() else {
-            return false;
-        };
-        if guard
-            .event_projections
-            .get(owner)
-            .is_some_and(|old| old == objects)
-        {
-            return true;
-        }
-        if !guard.has_capacity(objects.len().saturating_mul(2)) {
-            return false;
-        }
-        if !guard.event_projections.contains_key(owner) && guard.event_projections.len() >= 32 {
-            return false;
-        }
-        let mut staged = (**guard).clone();
-        let desired: BTreeSet<_> = objects
-            .iter()
-            .filter(|object| object.visible)
-            .map(|object| (owner.to_owned(), object.position, object.appearance))
-            .collect();
-        let removed: Vec<_> = staged
-            .owned_event_items
-            .iter()
-            .filter(|(key, _)| key.0 == owner && !desired.contains(*key))
-            .map(|(key, id)| (key.clone(), *id))
-            .collect();
-        for (key, id) in removed {
-            staged.owned_event_items.remove(&key);
-            if let Some(entries) = staged.movement_items.get_mut(&key.1) {
-                entries.retain(|entry| entry.source != view::EntrySource::Added(id));
-            }
-        }
-        for object in objects {
-            let position = object.position;
-            if self.house_tile(position)
-                || base.tile(position.x, position.y, position.floor).is_none()
-            {
-                return false;
-            }
-            let tag = (owner.to_owned(), position, object.appearance);
-            if !object.visible {
-                if let Some(id) = staged.owned_event_items.remove(&tag)
-                    && let Some(entries) = staged.movement_items.get_mut(&position)
-                {
-                    entries.retain(|entry| entry.source != view::EntrySource::Added(id));
-                }
-                continue;
-            }
-            let Some(mut facts) = self.movement_item_facts(object.appearance) else {
-                return false;
-            };
-            facts.bound = true;
-            facts.pickupable = false;
-            facts.sub_type = u32::from(object.sub_type);
-            if let Some(id) = staged.owned_event_items.get(&tag).copied() {
-                let Some(entry) = staged
-                    .movement_items
-                    .get_mut(&position)
-                    .and_then(|entries| {
-                        entries
-                            .iter_mut()
-                            .find(|entry| entry.source == view::EntrySource::Added(id))
-                    })
-                else {
-                    return false;
-                };
-                entry.facts = facts;
-            } else {
-                let Some(sequence) = staged.movement_sequence.checked_add(1) else {
-                    return false;
-                };
-                let Some(id) = super::super::overlay::EntryId::callback(sequence) else {
-                    return false;
-                };
-                staged.movement_sequence = sequence;
-                staged.owned_event_items.insert(tag, id);
-                staged
-                    .movement_items
-                    .entry(position)
-                    .or_default()
-                    .push(view::ComposedEntry {
-                        source: view::EntrySource::Added(id),
-                        facts,
-                    });
-            }
-        }
-        staged
-            .event_projections
-            .insert(owner.to_owned(), objects.to_vec());
-        *guard = Arc::new(staged);
-        true
-    }
-
-    /// Rebuild the donor tomb projection from committed World state after boot or a retry.
-    /// Dynamic walls are named by source position/item, so periodic projection never duplicates them.
-    pub fn project_mummy_objects(
-        &self,
-        base: &super::super::WorldBase,
-        broken: u8,
-        barrier: bool,
-        wall: bool,
-    ) -> bool {
-        if broken > 5 {
-            return false;
-        }
-        let Ok(mut guard) = self.callbacks.lock() else {
-            return false;
-        };
-        if guard.mummy_projection == Some((broken, barrier, wall)) {
-            return true;
-        }
-        if !guard.has_capacity(24) {
-            return false;
-        }
-        // Stage the whole projection so missing facts never leave a partial wall/jar update.
-        let mut staged = (**guard).clone();
-        let states = &mut staged;
-        for &(aid, key) in &self.event_objects {
-            let appearance = if aid - 50006 < u16::from(broken) {
-                12506
-            } else {
-                12511
-            };
-            let Some((pos, _)) = view::placement_of(key) else {
-                return false;
-            };
-            if self.house_tile(pos) {
-                return false;
-            }
-            let Some(mut after) = self.movement_item_facts(appearance) else {
-                return false;
-            };
-            after.bound = true;
-            let existing = states.changed.get(&key);
-            let baseline = self
-                .placements
-                .binary_search_by_key(&key, |(key, _)| *key)
-                .ok()
-                .and_then(|index| self.palette.get(self.placements[index].1.palette as usize));
-            let current = existing
-                .map(|(_, facts)| facts.appearance_id)
-                .or_else(|| baseline.map(|entry| entry.facts.appearance_id));
-            if current == Some(appearance) {
-                continue;
-            }
-            let Some(revision) = existing.map_or(Some(1), |(revision, _)| revision.checked_add(1))
-            else {
-                return false;
-            };
-            states.changed.insert(key, (revision, after));
-        }
-        for x in 32941..=32944 {
-            let pos = TilePos {
-                x,
-                y: 32754,
-                floor: -12,
-            };
-            if self.house_tile(pos) {
-                return false;
-            }
-            let Some(tile) = base.tile(pos.x, pos.y, pos.floor) else {
-                return false;
-            };
-            let mut ordinal = 0;
-            let mut source_walls = BTreeMap::new();
-            for (&id, &depth) in tile.ids().iter().zip(tile.depths()) {
-                if depth != 0 {
-                    continue;
-                }
-                let Some(key) = placement_key(pos, ordinal) else {
-                    return false;
-                };
-                let palette = self
-                    .placements
-                    .binary_search_by_key(&key, |(key, _)| *key)
-                    .ok()
-                    .map(|index| self.placements[index].1.palette)
-                    .or_else(|| self.unique_index(id));
-                if let Some(appearance @ (3514 | 1603)) = palette
-                    .and_then(|index| self.palette.get(index as usize))
-                    .map(|entry| entry.facts.appearance_id)
-                {
-                    source_walls.insert(appearance, key);
-                }
-                ordinal = match ordinal.checked_add(1) {
-                    Some(next) => next,
-                    None => return false,
-                };
-            }
-            for (appearance, present) in [(3514, barrier), (1603, wall)] {
-                if let Some(key) = source_walls.get(&appearance) {
-                    if present {
-                        states.hidden.remove(key);
-                    } else {
-                        states.hidden.insert(*key);
-                    }
-                }
-            }
-            let Some((ground, _)) = tile.ground() else {
-                return false;
-            };
-            let Some(ground) = placement_key(pos, ground) else {
-                return false;
-            };
-            // The collision mask follows both wall types, including an added 1603.
-            if barrier || wall {
-                states.solid_items.insert(pos);
-            } else {
-                states.solid_items.remove(&pos);
-            }
-            states.passable.remove(&ground);
-            for (appearance, present) in [(3514, barrier), (1603, wall)] {
-                let tag = (pos, appearance);
-                if !present || source_walls.contains_key(&appearance) {
-                    if let Some(id) = states.event_items.remove(&tag)
-                        && let Some(entries) = states.movement_items.get_mut(&pos)
-                    {
-                        entries.retain(|entry| entry.source != view::EntrySource::Added(id));
-                    }
-                    continue;
-                }
-                if states.event_items.contains_key(&tag) {
-                    continue;
-                }
-                let Some(facts) = self.movement_item_facts(appearance) else {
-                    return false;
-                };
-                let Some(sequence) = states.movement_sequence.checked_add(1) else {
-                    return false;
-                };
-                let Some(id) = super::super::overlay::EntryId::callback(sequence) else {
-                    return false;
-                };
-                states.movement_sequence = sequence;
-                states.event_items.insert(tag, id);
-                states
-                    .movement_items
-                    .entry(pos)
-                    .or_default()
-                    .push(view::ComposedEntry {
-                        source: view::EntrySource::Added(id),
-                        facts,
-                    });
-            }
-        }
-        staged.mummy_projection = Some((broken, barrier, wall));
-        *guard = Arc::new(staged);
-        true
-    }
-
-    /// A transformed/removed callback entry changes floor routing with its visible stack.
-    /// Unchanged tiles keep the compact boot-time table and incur no stack scan.
-    pub(crate) fn quest_callback_floor_mask(
-        &self,
-        base: &super::super::WorldBase,
-        pos: TilePos,
-    ) -> Option<u8> {
-        let states = self.callbacks.lock().ok().map(|s| Arc::clone(&s))?;
-        let first = placement_key(pos, 0)?;
-        if states.changed.range(first..=first + 63).next().is_none()
-            && states.hidden.range(first..=first + 63).next().is_none()
-        {
-            return None;
-        }
-        let facts = PinnedFacts {
-            facts: self,
-            callbacks: Some(states),
-            doors: self.doors.snapshot(),
-            rotations: self.rotations.lock().ok().map(|s| Arc::clone(&s)),
-        };
-        let tile = base.tile(pos.x, pos.y, pos.floor)?;
-        let mut mask = 0;
-        for (ordinal, (&id, _)) in tile
-            .ids()
-            .iter()
-            .zip(tile.depths())
-            .filter(|(_, d)| **d == 0)
-            .enumerate()
-        {
-            let ordinal = u8::try_from(ordinal).ok()?;
-            if facts.base_hidden(placement_key(pos, ordinal)?) {
-                continue;
-            }
-            let entry = facts.base_entry(pos, ordinal, id)?;
-            let family = match entry.definition {
-                MapDefinition::Item(_) => Family::Item,
-                MapDefinition::Terrain(_) => Family::Terrain,
-            };
-            mask |= palette_mask(
-                family,
-                &format!("oteryn:terrain.tibia.i{}", entry.appearance_id),
-            );
-        }
-        Some(mask)
-    }
-
     /// Records a committed monster step for the dispatch-owned trap pass.
     pub fn record_monster_step(&self, step: MonsterStep) -> bool {
         let Ok(mut steps) = self.monster_steps.lock() else {
@@ -561,14 +108,12 @@ impl BundleFacts {
     }
 
     pub fn next_movement_decay_time(&self) -> Option<u64> {
-        let states = self.callbacks.lock().ok()?;
-        states
+        self.callbacks
+            .lock()
+            .ok()?
             .movement_decays
             .first_key_value()
             .map(|((due, _), _)| *due)
-            .into_iter()
-            .chain(states.portals.values().filter_map(|p| p.expires))
-            .min()
     }
 
     /// The current Channel owner drains this even while no player is walking.
@@ -579,16 +124,6 @@ impl BundleFacts {
         };
         let states = Arc::make_mut(&mut states);
         let mut changed = 0;
-        let expired: BTreeSet<_> = states
-            .portals
-            .values()
-            .filter(|p| p.expires.is_some_and(|due| due <= now))
-            .map(|p| p.owner)
-            .collect();
-        for owner in expired {
-            states.remove_portals(owner);
-            changed += 1;
-        }
         while states
             .movement_decays
             .first_key_value()
@@ -631,7 +166,7 @@ impl BundleFacts {
         if appearance == 26100 {
             after.pickupable = false;
         }
-        self.apply_quest_callback(key, self.object_revision(key), after, &[], &[], false, None)
+        self.apply_quest_callback(key, self.object_revision(key), after, &[], &[], false)
     }
     /// Crystal yellow_pillow.lua:9: native monster-say, independent of the player's chat limiter.
     pub fn emit_movement_speech(&self, speech: MovementSpeech) -> bool {
@@ -885,16 +420,6 @@ impl BundleFacts {
             })
             .unwrap_or_default()
     }
-
-    /// Only live paired portals resolve; the timer and explicit removal retire both ends.
-    pub fn quest_portal_destination(&self, pos: TilePos, now: u64) -> Option<TilePos> {
-        let states = self.callbacks.lock().ok()?;
-        let portal = states.portals.get(&pos)?;
-        portal
-            .expires
-            .is_none_or(|due| due > now)
-            .then_some(portal.destination)
-    }
     /// Source selector validation against the original bound placement, never a client id.
     pub fn quest_callback_matches(
         &self,
@@ -963,10 +488,6 @@ impl BundleFacts {
     }
 
     /// Apply a prevalidated lever and passage batch under the Channel owner lock.
-    #[allow(
-        clippy::too_many_arguments,
-        reason = "one atomic projection binds the lever revision and its bounded map effects"
-    )]
     pub fn apply_quest_callback(
         &self,
         key: u64,
@@ -975,7 +496,6 @@ impl BundleFacts {
         passages: &[u64],
         replacements: &[(u64, EntryFacts, bool)],
         close: bool,
-        projection: Option<&QuestCallbackProjection>,
     ) -> bool {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
@@ -983,9 +503,7 @@ impl BundleFacts {
         if states.changed.get(&key).map_or(0, |(r, _)| *r) != expected
             || expected == u64::MAX
             || passages.len() + replacements.len() > 8
-            || !states.has_capacity(
-                passages.len() + replacements.len() + usize::from(projection.is_some()) * 8,
-            )
+            || !states.has_capacity(passages.len() + replacements.len())
         {
             return false;
         }
@@ -994,17 +512,6 @@ impl BundleFacts {
             .any(|(k, _, _)| states.changed.get(k).is_some_and(|(r, _)| *r == u64::MAX))
         {
             return false;
-        }
-        // Stage new volatile objects before publishing either endpoint, lever or wall.
-        // A failed allocation/id/ownership check leaves the pinned projection unchanged.
-        let mut staged = projection.map(|_| (**states).clone());
-        if let (Some(projection), Some(staged)) = (projection, staged.as_mut())
-            && !staged.project(key, projection, close)
-        {
-            return false;
-        }
-        if let Some(staged) = staged {
-            *states = Arc::new(staged);
         }
         let states = Arc::make_mut(&mut states);
         for passage in passages {
@@ -1040,14 +547,6 @@ impl BundleFacts {
         let Ok(states) = self.callbacks.lock() else {
             return true;
         };
-        if states
-            .encounter_rooms
-            .values()
-            .any(|room| room.contains(&pos))
-            || states.solid_items.contains(&pos)
-        {
-            return true;
-        }
         let Some(tile) = base.tile(pos.x, pos.y, pos.floor) else {
             return true;
         };

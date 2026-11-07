@@ -27,99 +27,6 @@ struct Input {
     replacement: Option<String>,
 }
 
-/// Resolve all carried stacks before touching any of them. Closed nested containers
-/// are traversed by the existing custody owner; filled containers are never destroyed.
-pub(super) async fn consume_reward_inputs(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    fence: CurrentCharacterGameplayFence,
-    request: &super::quest_state::QuestTransitionRequest,
-    callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
-) -> Result<bool, DurabilityError> {
-    let command = match request.cause {
-        super::quest_state::QuestCause::Command(command)
-        | super::quest_state::QuestCause::Use(command)
-        | super::quest_state::QuestCause::Step(command) => command,
-        _ => return Ok(false),
-    };
-    let keys: Vec<_> = callback
-        .take
-        .iter()
-        .chain(&callback.present)
-        .map(|i| i.item.as_str())
-        .collect();
-    let bound_event = callback.world_event.as_ref().and_then(|binding| {
-        (binding.event == oteryn_gameplay_world_change::timed::EventKind::BankRobbery
-            && binding.action == oteryn_gameplay_world_change::timed::Input::Recover)
-            .then_some(binding.event.key())
-    });
-    let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) AND ($4::text IS NULL OR EXISTS(SELECT 1 FROM game_item_mint_receipts m JOIN game_world_timed_kill_receipts k ON k.world_id=m.death_world_id AND k.occurrence=game_world_event_death_key(m.death_world_id,m.death_channel_id,m.death_scope_ownership_generation,m.death_actor_local_id,m.death_actor_local_generation) JOIN game_world_reset_active a ON a.world_id=k.world_id AND a.reset_epoch=k.cycle_id WHERE m.item_instance_id=i.item_instance_id AND m.death_world_id=encode($2,'hex')::uuid AND m.loot_table_production_key='oteryn:loot.creature.jesse_the_wicked' AND k.event_key=$4)) ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(&keys).bind(bound_event).fetch_all(&mut **tx).await?;
-    if rows.len() > 500 {
-        return Ok(false);
-    }
-    // Read-only hand-ins (Palimuth's crest) prove custody without replacing
-    // the original instance or manufacturing a second MINT receipt.
-    for evidence in &callback.present {
-        let mut needed = i64::from(evidence.count);
-        for row in &rows {
-            if row.try_get::<&str, _>("definition_production_key")? == evidence.item {
-                let quantity: i64 = row.try_get("quantity")?;
-                needed -= needed.min(quantity);
-            }
-        }
-        if needed != 0 {
-            return Ok(false);
-        }
-    }
-    let mut remaining: std::collections::BTreeMap<_, _> = callback
-        .take
-        .iter()
-        .map(|i| (i.item.as_str(), i64::from(i.count)))
-        .collect();
-    let mut inputs = Vec::new();
-    for row in rows {
-        let key: String = row.try_get("definition_production_key")?;
-        let Some(required) = remaining.get_mut(key.as_str()) else {
-            continue;
-        };
-        let quantity: i64 = row.try_get("quantity")?;
-        let count = (*required).min(quantity);
-        if count == 0 {
-            continue;
-        }
-        let input = Input {
-            item: row.try_get("item")?,
-            before: row.try_get("before_item")?,
-            location: row.try_get("location")?,
-            kind: row.try_get("kind")?,
-            quantity,
-            count: u16::try_from(count).map_err(|_| DurabilityError::InvalidStoredState)?,
-            replacement: None,
-        };
-        lock_location(tx, &input).await?;
-        let plain:bool=sqlx::query_scalar("SELECT NOT (EXISTS(SELECT 1 FROM game_item_keys WHERE item_instance_id=$1::uuid) OR EXISTS(SELECT 1 FROM game_item_timed_states WHERE item_instance_id=$1::uuid) OR EXISTS(SELECT 1 FROM game_item_texts WHERE item_instance_id=$1::uuid) OR EXISTS(SELECT 1 FROM game_item_imbuements WHERE item_instance_id=$1::uuid) OR EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=$1::uuid) OR EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=$1::uuid))")
-            .bind(&input.item).fetch_one(&mut **tx).await?;
-        if !plain {
-            return Ok(false);
-        }
-        *required -= count;
-        inputs.push(input);
-    }
-    if remaining.values().any(|n| *n != 0) {
-        return Ok(false);
-    }
-    let transaction: String = sqlx::query_scalar("SELECT game_character_uuid_v7()::text")
-        .fetch_one(&mut **tx)
-        .await?;
-    for input in inputs {
-        let proof=serde_json::to_vec(&serde_json::json!({"reward_callback":callback,"before":input.before,"location":input.location,"count":input.count})).map_err(|_|DurabilityError::InvalidStoredState)?;
-        sqlx::query("INSERT INTO game_quest_callback_consumptions(transaction_id,item_instance_id,character_id,cause_id,cause_ordinal,transition_key,before_item,before_ground,quantity,proof,proof_sha256,before_location,location_kind) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6,$7,NULL,$8,$9,sha256($9),$10,$11)")
-            .bind(&transaction).bind(&input.item).bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(&input.before).bind(i32::from(input.count)).bind(proof).bind(&input.location).bind(&input.kind).execute(&mut **tx).await?;
-        apply_input(tx, &input, &transaction).await?;
-    }
-    Ok(true)
-}
-
 pub(super) async fn consume(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     permit: &SpellLanePermit,
@@ -141,11 +48,6 @@ pub(super) async fn consume(
         return Ok(false);
     };
     if !context_is_current(tx, permit, fence, context).await? {
-        #[cfg(feature = "test-support")]
-        eprintln!(
-            "native world callback context refused {} epoch={}",
-            callback.key, context.reset_epoch
-        );
         return Ok(false);
     }
     if !super::world_event::changes::callbacks::require(
@@ -170,39 +72,11 @@ pub(super) async fn consume(
             return Ok(false);
         }
     }
-    if callback.offerings.is_empty()
-        && let Some((id, count)) = callback
-            .effects
-            .world_event
-            .as_ref()
-            .and_then(|binding| binding.cost())
-        && callback.item_on_target.as_ref().is_some_and(|item| {
-            item.item == format!("oteryn:item.tibia.i{id}")
-                && item.count == count
-                && item.replacement.is_none()
-                && item.target_replacement.is_none()
-        })
-    {
-        let mut fee = oteryn_gameplay_quests::quest::reward_callbacks::world_binding(callback);
-        fee.take.push(
-            oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
-                item: format!("oteryn:item.tibia.i{id}"),
-                count,
-            },
-        );
-        let consumed = consume_reward_inputs(tx, fence, request, &fee).await?;
-        #[cfg(feature = "test-support")]
-        eprintln!(
-            "native world callback fee {} consumed={consumed}",
-            callback.key
-        );
-        return Ok(consumed);
-    }
     if callback.offerings.is_empty() && callback.item_on_target.is_none() {
         return Ok(true);
     }
     consume_inputs(
-        tx, fence, request, callback, context, command, world_id, channel_id,
+        tx, permit, fence, request, callback, context, command, world_id, channel_id,
     )
     .await
 }
@@ -267,6 +141,7 @@ pub(super) async fn context_facts_are_current(
 #[allow(clippy::too_many_arguments)]
 async fn consume_inputs(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: &SpellLanePermit,
     fence: CurrentCharacterGameplayFence,
     request: &super::quest_state::QuestTransitionRequest,
     callback: &Callback,
@@ -306,7 +181,7 @@ async fn consume_inputs(
         if input.replacement.is_some() && (input.count != 1 || input.quantity != 1) {
             return Ok(false);
         }
-        lock_location(tx, &input).await?;
+        lock_location(tx, permit, &input).await?;
         if callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE {
             // Crystal actions_sacrifice.lua:15-18: stage one needs a real
             // carried tear but consumes none. All other stages use the same
@@ -422,7 +297,7 @@ async fn consume_inputs(
         .bind(&input.replacement)
         .execute(&mut **tx)
         .await?;
-        apply_input(tx, &input, &transaction).await?;
+        apply_input(tx, permit, &input, &transaction).await?;
     }
     Ok(true)
 }
@@ -432,7 +307,7 @@ async fn consume_inputs(
 #[allow(clippy::too_many_arguments)]
 pub(crate) async fn consume_native_npc_one(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    _permit: &SpellLanePermit,
+    permit: &SpellLanePermit,
     fence: CurrentCharacterGameplayFence,
     request: &super::quest_state::QuestTransitionRequest,
     command: crate::foundation::CommandRef,
@@ -460,7 +335,7 @@ pub(crate) async fn consume_native_npc_one(
         count: 1,
         replacement: None,
     };
-    lock_location(tx, &input).await?;
+    lock_location(tx, permit, &input).await?;
     let transaction: String = sqlx::query_scalar("SELECT game_character_uuid_v7()::text")
         .fetch_one(&mut **tx)
         .await?;
@@ -476,11 +351,14 @@ pub(crate) async fn consume_native_npc_one(
         .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string())
         .bind(&request.transition_key).bind(&input.before).bind(proof).bind(&input.location).bind(&input.kind)
         .execute(&mut **tx).await?;
-    apply_input(tx, &input, &transaction).await?;
+    apply_input(tx, permit, &input, &transaction).await?;
     Ok(true)
 }
 
-fn location_queries(kind: &str) -> Result<(&'static str, &'static str), DurabilityError> {
+fn location_queries(
+    _permit: &SpellLanePermit,
+    kind: &str,
+) -> Result<(&'static str, &'static str), DurabilityError> {
     match kind {
         "ground" => Ok((
             "SELECT to_jsonb(l) FROM game_item_ground_locations l \
@@ -513,9 +391,10 @@ fn location_queries(kind: &str) -> Result<(&'static str, &'static str), Durabili
 
 async fn lock_location(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: &SpellLanePermit,
     input: &Input,
 ) -> Result<(), DurabilityError> {
-    let (query, _) = location_queries(&input.kind)?;
+    let (query, _) = location_queries(permit, &input.kind)?;
     let actual: Option<serde_json::Value> = sqlx::query_scalar(query)
         .bind(&input.item)
         .fetch_optional(&mut **tx)
@@ -528,6 +407,7 @@ async fn lock_location(
 
 async fn apply_input(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: &SpellLanePermit,
     input: &Input,
     transaction: &str,
 ) -> Result<(), DurabilityError> {
@@ -545,7 +425,7 @@ async fn apply_input(
         return Err(DurabilityError::InvalidStoredState);
     }
     if input.replacement.is_none() && input.quantity == i64::from(input.count) {
-        let (_, query) = location_queries(&input.kind)?;
+        let (_, query) = location_queries(permit, &input.kind)?;
         let removed = sqlx::query(query)
             .bind(&input.item)
             .execute(&mut **tx)

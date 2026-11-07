@@ -459,3 +459,8 @@ Results on the final code:
 ## Review limits
 
 No quest completion flag, RewardClaim, protocol capability, DAILY reward or raid schedule is changed. No full-title readiness is inferred from the shared API. Full quest-lane callers for HELD titles remain deliberately unavailable. This branch is not a merge/readiness or independent review claim. Whole-diff self-review covered reset transaction composition, World/Channel scope, bounded primary-key reads, recovery/admission lock order, checked arithmetic, exact retry receipts, runtime grants, foreign-key indexes, rollback and stale-epoch refusal. The new migration leaves prior history unchanged. New public contribution helpers are the requested quest-lane integration seam; full dispatch callers remain held with their titles.
+
+
+## WPKG disposition: WEVENTS reverted
+
+All incoming WEVENTS entries above are historical source claims. The package reverted WEVENTS after its native provisioning failure and incomplete qualification within60minutes; no WEVENTS title is admitted by the current package.

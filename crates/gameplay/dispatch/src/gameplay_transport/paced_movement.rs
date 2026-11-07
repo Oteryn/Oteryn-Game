@@ -6,7 +6,6 @@ pub use autowalk::{AutoWalkRoute, AutoWalkTarget};
 pub(super) mod monster_trap;
 pub(super) mod special_movement;
 pub(super) mod underwater_drown;
-mod world_events;
 
 fn snowbunny_progress_operation(
     snow_origin: bool,
@@ -157,41 +156,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         };
         match outcome {
-            Ok((mut snapshot, duration)) => {
+            Ok((snapshot, duration)) => {
                 // PAR-M10: underwater ground drowns on entry and stops on exit, in the same
                 // owner turn as the committed step.
                 if let Some(map) = self.bundle_map() {
-                    let wall_clock =
-                        crate::world_clock::now_utc_ms().and_then(|now| i64::try_from(now).ok());
-                    if let Some(destination) =
-                        world_events::chyllfroest_return(map, snapshot.position(), wall_clock)
-                    {
-                        let closed = crate::map::floor::BundleDoors(map.facts.doors());
-                        let pz_blocked =
-                            super::pvp_live::pz_blocked(&states, actor, session, self.owner_now());
-                        if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
-                            &runtime,
-                            self.movement_cells,
-                            actor,
-                            session,
-                            snapshot,
-                            destination,
-                            pz_blocked,
-                            &closed,
-                        ) && let Ok(returned) = runtime.commit_source_step(proof)
-                        {
-                            snapshot = returned;
-                            map.facts.emit_movement_effect(
-                                crate::map::overlay::TilePos {
-                                    x: 32063,
-                                    y: 31091,
-                                    floor: -7,
-                                },
-                                10,
-                            );
-                            self.states.chat.push_quest_feedback(session,"You cannot pass here outside the period from April 1st to May 1st.");
-                        }
-                    }
                     states.stage_special_movement_step(
                         &runtime,
                         map,

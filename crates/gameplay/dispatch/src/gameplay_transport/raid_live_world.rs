@@ -106,8 +106,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let stamp = runtime.issue_owner_work().map_err(|_| DurabilityError::Unavailable)?;
                 let mut placement = PlacementContext {
                     random: &random, selected, bundle: index.map(),
-                    remaining_reads: selected.shared_wave_attempt_budget.map_or(
-                        usize::from(MAX_CREATURES) * usize::from(RAID_PLACEMENT_ATTEMPTS), usize::from),
+                    remaining_reads: usize::from(MAX_CREATURES) * usize::from(RAID_PLACEMENT_ATTEMPTS),
                     stamp, firing: step.identity.firing_id,
                 };
                 let retained: BTreeSet<_> = runtime.raid_creatures(step.identity.firing_id)
@@ -129,7 +128,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         runtime.content_pin().server_artifact_digest(),
                         selected.boss_entries.contains(&(identity.wave, identity.entry)),
                     ).map_err(|_| DurabilityError::Unavailable)?;
-                    let spec = if creature.timed_event { spec.with_timed_world_event() } else { spec };
                     // A retry returns the original success/failure before map
                     // lookup. A dead actor never becomes a second spawn.
                     let at = if retained.contains(&identity) { None }
@@ -224,7 +222,6 @@ pub(super) fn project_grimvale_portal(bundle: &crate::map::boot::BundleMap, open
         &[],
         &[],
         false,
-        None,
     )
 }
 
@@ -309,32 +306,16 @@ impl PlacementContext<'_> {
                     .then_some(area.from))
             }
             CatalogueSpawnMode::Area => {
-                let attempts = self
-                    .selected
-                    .shared_wave_attempt_budget
-                    .unwrap_or(RAID_PLACEMENT_ATTEMPTS);
-                for attempt in 0..attempts {
-                    if self.remaining_reads == 0 {
-                        break;
-                    }
-                    let candidate = if self.selected.shared_wave_attempt_budget.is_some() {
-                        area.candidate_in_shared_wave(
+                for attempt in 0..RAID_PLACEMENT_ATTEMPTS {
+                    let at = area
+                        .candidate(
                             self.random,
                             identity.wave,
                             identity.entry,
                             identity.index,
                             attempt,
                         )
-                    } else {
-                        area.candidate(
-                            self.random,
-                            identity.wave,
-                            identity.entry,
-                            identity.index,
-                            attempt,
-                        )
-                    };
-                    let at = candidate.map_err(|_| DurabilityError::InvalidStoredState)?;
+                        .map_err(|_| DurabilityError::InvalidStoredState)?;
                     if self.admits(map, runtime, at).await? {
                         return Ok(Some(at));
                     }

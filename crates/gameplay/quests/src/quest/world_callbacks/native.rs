@@ -80,7 +80,6 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
         && !callback.return_on_failure
         && callback.failure_message.is_none()
         && callback.success_message.is_none()
-        && callback.effects == Default::default()
 }
 
 impl Callback {

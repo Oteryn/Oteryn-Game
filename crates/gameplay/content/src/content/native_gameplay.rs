@@ -265,7 +265,7 @@ impl NativeMonsterMeleeProfile {
         };
         if !matches!(
             self.source_repository.as_str(),
-            "opentibiabr/canary" | "zimbadev/crystalserver" | "fifth-empearl/fencore"
+            "opentibiabr/canary" | "zimbadev/crystalserver"
         ) || !source_hex(&self.source_revision, 40)
             || !source_hex(&self.source_sha256, 64)
             || self.source_path.is_empty()

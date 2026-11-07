@@ -253,9 +253,9 @@ def build(authoring, manifest_path: Path) -> bytes:
     return result
 
 
-def provisioning_input(authoring_path: Path, manifest_path: Path, output_path: Path, *, authoring_bytes=None):
+def provisioning_input(authoring_path: Path, manifest_path: Path, output_path: Path):
     """Pin maintained source inputs; derive the large validated section only in memory."""
-    authoring = read(authoring_path) if authoring_bytes is None else authoring_bytes
+    authoring = read(authoring_path)
     section = build(parse(authoring), manifest_path)
     relative = lambda path: Path(os.path.relpath(path, output_path.parent)).as_posix()
     return canonical({

@@ -1329,3 +1329,26 @@ Current WPKG migration files:
 - `1342_world_event_native_credits.sql`
 - `1343_world_event_window_expiry.sql`
 - `1344_world_event_mint_provenance.sql`
+
+
+### WEVENTS reverted at its 60-minute qualification cutoff
+
+Revert merge3319b7ac6 and follow-ups4b6a0c711,c73e39924,7072c5ff9.
+Remove all WEVENTS functionality, canonical dependency0999 and own1340–1344
+migrations. Source reports and contracts remain as historical evidence only.
+Four owner PostgreSQL cases passed (47.42s actual); all17 native cases executed
+and failed (32.30s actual) at the common provisioning gate: combined63-outfit
+authoring was702,687bytes, above the existing200,000-byte input bound. A separately bounded inline16MiB
+format repaired provisioning without widening the Rust loader. Native nest and
+spring USE cases then executed successfully (145.432s and160.592s), but bank,
+Kingsday and spring purchases failed with missing callbacks. The source has
+four event reward callbacks and three NPC greetings absent from its producer;
+regeneration dropped these handwritten additions. Two native cases also retained
+numeric1127 migration assertions, now corrected in the attempted rebuild to1344.
+Complete focused gameplay qualification was not green within the window. No WEVENTS title is
+qualified by the package. Earlier Clippy/pin/producer successes are historical.
+
+Retain only the independent pin-refresh tooling repair: named preproduction
+fields regenerate even if manifest and pin were retained from different merge
+parents. The existing manifest equality test and strict pin-tool Clippy passed.
+Continue with SRV9; regenerate and validate final bundle pins after composition.

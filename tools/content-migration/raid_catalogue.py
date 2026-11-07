@@ -15,7 +15,6 @@ import hashlib
 import json
 import re
 import sys
-import tarfile
 from pathlib import Path
 from xml.parsers import expat
 
@@ -102,7 +101,7 @@ def xml(text: str) -> dict:
 
 
 def citation(source: dict, line: int) -> dict:
-    return {"repository": source.get("repository", REPOSITORY), "revision": source.get("revision", REVISION), "path": source["path"],
+    return {"repository": REPOSITORY, "revision": REVISION, "path": source["path"],
             "line": line, "sha256": source["sha256"], "evidence": "OTS_HYPOTHESIS_ONLY"}
 
 
@@ -251,23 +250,6 @@ def creature_catalogue(root: Path) -> dict[str, bool]:
             details = record["authoring"]["profile"]["details"]
             result[record["definition"]["identity"]["key"]] = (
                 details.get("bosstiary") is not None or details["system_eligibility"]["reward_boss"])
-    policy_path = root / "content/quests/world-event-creature-policy.json"
-    profiles_path = root / "content/creatures/definitions/spell-native-profiles.json"
-    if policy_path.exists() and profiles_path.exists():
-        policy_raw = policy_path.read_bytes()
-        policy = json.loads(policy_raw)
-        names = {"oteryn:creature.wevents." + row["name"] for row in policy["actors"]}
-        for record in json.loads(profiles_path.read_bytes())["records"]:
-            key = record["profile"]["target"]["key"]
-            if key not in names:
-                continue
-            declaration = record.get("source_qualification", "")
-            if not declaration.startswith("OTERYN_AUTHORED_POLICY "):
-                raise ValueError("WEVENTS_ACTOR_SOURCE")
-            proof = json.loads(declaration.removeprefix("OTERYN_AUTHORED_POLICY "))
-            if proof["sha256"] != hashlib.sha256(policy_raw).hexdigest():
-                raise ValueError("WEVENTS_ACTOR_POLICY_STALE")
-            result[key] = True
     if not result:
         raise ValueError("RAID_CREATURE_CATALOGUE_EMPTY")
     return result
@@ -390,145 +372,6 @@ def lua_flower(source: dict, placements: dict) -> dict:
             "interval_ms": int(interval.group(1)) * 60_000, "month": 6,
             "start": "startup", "repeat": "indefinite_four_area_cycle", "areas": areas,
             "creature": "oteryn:creature.dryad", "sources": [citation(source, 1), citation(source, 28), citation(source, 49)]}
-
-
-def qualify_flower_cycle(record: dict) -> None:
-    """WEVENTS owner decision: donor indefinite four-area cycle wins over five wiki waves."""
-    cycle = record["donor_cycle"]
-    record["shared_wave_attempt_budget"] = cycle["shared_attempt_budget"]
-    record["source_conflicts"] = ["wiki_five_waves_in_one_hour; owner_selected_donor_indefinite_four_area_cycle"]
-    record["schedule"] = {"kind": "calendar", "interval_ms": 4 * cycle["interval_ms"],
-                          "repeat_persistent": True, "repeat": True, "start_immediately": True,
-                          "window": {"start_month": 6, "start_day": 1, "end_month": 6, "end_day": 30}}
-    waves, announcements = [], []
-    for index, row in enumerate(cycle["areas"]):
-        delay = index * cycle["interval_ms"]
-        announcements.append({"delay_ms": delay, "kind": "advance", "text": row["message"], "source": row["source"]})
-        waves.append({"delay_ms": delay, "entries": [{"creature": cycle["creature"], "source_name": "Dryad",
-            "amount": {"min": cycle["requested_per_wave"], "max": cycle["requested_per_wave"]},
-            "area_anchor": area_anchor(row["area"]), "area": copy.deepcopy(row["area"]), "boss": False,
-            "spawn_mode": "shared_area", "source": row["source"]}]})
-    record["variants"] = [{"key": "world-events.flower-four-area-cycle", "announcements": announcements,
-                           "waves": waves, "unresolved": [], "sources": cycle["sources"]}]
-    record["end"] = {"kind": "until_reset", "despawn_after_ms": None}
-    record["inactive_reasons"] = []
-
-
-def retained_mummy_source(root: Path) -> dict:
-    """Read and verify the existing archive; no donor copy is added to the repository."""
-    path = "data-global/scripts/actions/worldchanges/the_mummys_curse/horestis_jars.lua"
-    revision = "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
-    digest = "6e47be40083c0ff174c454940382f891f96d7c304c999457e5165ab98d24751a"
-    archive = root / "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz"
-    with tarfile.open(archive) as retained:
-        manifest = retained.extractfile("corpus-manifest.json")
-        if manifest is None:
-            raise ValueError("WEVENTS_MUMMY_MANIFEST")
-        rows = [row for row in json.load(manifest)["files"] if row["source"] == "crystalserver"
-                and row["revision"] == revision and row["path"] == path]
-        if len(rows) != 1:
-            raise ValueError("WEVENTS_MUMMY_SOURCE_IDENTITY")
-        blob = retained.extractfile(rows[0]["cache_path"])
-        if blob is None:
-            raise ValueError("WEVENTS_MUMMY_BLOB")
-        raw = blob.read()
-    if hashlib.sha256(raw).hexdigest() != digest:
-        raise ValueError("WEVENTS_MUMMY_SHA256")
-    return {"path": path, "revision": revision, "repository": REPOSITORY,
-            "sha256": digest, "text": raw.decode()}
-
-
-def mummy_raid(source: dict, creatures: dict, placements: dict) -> dict:
-    name = re.search(r'local bossName = "([^"]+)"', source["text"])
-    position = re.search(r'local bossPosition = \{ x = (\d+), y = (\d+), z = (\d+) \}', source["text"])
-    if name is None or position is None:
-        raise ValueError("WEVENTS_MUMMY_SPAWN")
-    point = dict(zip(("x", "y", "floor"), map(int, position.groups()), strict=True))
-    area = {"from": point, "to": dict(point)}
-    record = {"key": "raid:world-events.horestis", "name": "The Mummy's Curse", "wiki_area": "Horestis Tomb",
-        "boss_names": [name.group(1)], "wiki_records": [], "wiki_sources": [], "sources": [citation(source, 105)],
-        "variant_group": None, "inactive_reasons": [],
-        "source_conflicts": ["owner_single_boss_admission_omits_duplicate_delayed_summon_at_line_106"],
-        "schedule": {"kind": "calendar", "interval_ms": 86_400_000, "start_immediately": True,
-            "window": {"start_month": 1, "start_day": 1, "end_month": 12, "end_day": 31}},
-        "end": {"kind": "until_reset", "despawn_after_ms": None},
-        "variants": [{"key": "world-events.horestis", "announcements": [], "unresolved": [],
-            "sources": [citation(source, 105)], "waves": [{"delay_ms": 0, "entries": [{
-                "creature": "oteryn:creature.horestis", "source_name": name.group(1), "amount": {"min": 1, "max": 1},
-                "area": area, "area_anchor": area_anchor(area), "spawn_mode": "single", "boss": True,
-                "source": citation(source, 2)}]}]}]}
-    qualify(record, creatures, placements)
-    return record
-
-
-def spring_raids(root: Path, creatures: dict, placements: dict) -> list[dict]:
-    """Oteryn hatch policy on verified public nest objects; not a donor timer."""
-    policy = load(root, "content/quests/world-event-object-policy.json")
-    source = {"path": "data/items/items.xml", "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
-              "repository": REPOSITORY, "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"}
-    result = []
-    for member, row in enumerate((row for row in policy["bindings"] if row["action"] in (52601, 52602)), 1):
-        x, y, z = row["position"]
-        area = {"from": {"x": x-2, "y": y-2, "floor": z},
-                "to": {"x": x+2, "y": y+2, "floor": z}}
-        record = {"key": f"raid:world-events.spring-nest-{member}", "name": f"Spring nest {member}",
-            "wiki_area": "Public dragon nest", "boss_names": [], "wiki_records": [], "wiki_sources": [],
-            "sources": [citation(source, 32647)], "variant_group": None, "inactive_reasons": [],
-            "source_conflicts": ["hatch_timer_and_population_are_oteryn_policy_CONTRACT_NOTES"],
-            "schedule": {"kind": "calendar", "interval_ms": 1000, "start_immediately": True,
-                "repeat_persistent": True,
-                "window": {"start_month": 4, "start_day": 16, "end_month": 4, "end_day": 23}},
-            "end": {"kind": "until_reset", "despawn_after_ms": None},
-            "variants": [{"key": f"world-events.spring-nest-{member}", "announcements": [], "unresolved": [],
-                "sources": [citation(source, 32647)], "waves": [{"delay_ms": 0, "entries": [{
-                    "creature": "oteryn:creature.dragon_hatchling", "source_name": "Dragon Hatchling",
-                    "amount": {"min": 1, "max": 1}, "area": area, "area_anchor": area_anchor(area),
-                    "spawn_mode": "area", "boss": False, "source": citation(source, 32647)}]}]}]}
-        qualify(record, creatures, placements)
-        result.append(record)
-    return result
-
-
-def authored_event_raids(root: Path, creatures: dict, placements: dict) -> list[dict]:
-    path = "content/quests/world-event-raid-policy.json"
-    raw = (root / path).read_bytes()
-    policy = json.loads(raw)
-    if policy.get("schema") != 1 or len(policy.get("raids", [])) > 32:
-        raise ValueError("WEVENTS_RAID_POLICY")
-    source = {"policy": path, "line": 1, "sha256": hashlib.sha256(raw).hexdigest(), "evidence": "OTERYN_AUTHORED_POLICY"}
-    records = []
-    owners = load(root, "content/encounters/world-changes/owner-catalogue.json")["entries"]
-    for rule in policy["raids"]:
-        declarations = [entry for entry in owners if entry["key"] == rule["event"]]
-        binding = {key: rule[key] for key in ("key", "member", "condition")}
-        if len(declarations) != 1 or binding not in declarations[0].get("binding", {}).get("raids", []):
-            raise ValueError("WEVENTS_RAID_OWNER_BINDING")
-        area = copy.deepcopy(rule["area"])
-        record = {"key": rule["key"], "name": rule["name"], "wiki_area": rule.get("area_name", "Thais"), "boss_names": [rule["source_name"]] if rule.get("boss", False) else [],
-            "wiki_records": [], "wiki_sources": [], "sources": [source], "variant_group": None,
-            "inactive_reasons": [], "source_conflicts": [rule["policy"]],
-            "schedule": {"kind": "calendar", "interval_ms": rule["interval_ms"], "start_immediately": True,
-                "repeat_persistent": True, "window": {"start_month": 1, "start_day": 1, "end_month": 12, "end_day": 31}},
-            "end": {"kind": "until_reset", "despawn_after_ms": None},
-            "variants": [{"key": rule["key"].replace("raid:", ""), "announcements": [], "unresolved": [],
-                "sources": [source], "waves": [{"delay_ms": 0, "entries": [{"creature": rule["creature"],
-                    "source_name": rule["source_name"], "amount": {"min": rule["count"], "max": rule["count"]},
-                    "area": area, "area_anchor": area_anchor(area), "spawn_mode": "area", "boss": rule.get("boss", False),
-                    "source": source}]}]}]}
-        if "points" in rule:
-            points = rule["points"]
-            if not points or len(points) > 32 or len(points) != rule["count"]:
-                raise ValueError("WEVENTS_FIXED_POPULATION")
-            entries = []
-            for point in points:
-                fixed = {"from": dict(point), "to": dict(point)}
-                entry = copy.deepcopy(record["variants"][0]["waves"][0]["entries"][0])
-                entry.update(area=fixed, area_anchor=area_anchor(fixed), spawn_mode="single", amount={"min": 1, "max": 1})
-                entries.append(entry)
-            record["variants"][0]["waves"][0]["entries"] = entries
-        qualify(record, creatures, placements)
-        records.append(record)
-    return records
 
 
 def calendar_schedule(observation: dict) -> dict:
@@ -688,7 +531,22 @@ def build_records(sources: dict[str, dict], evidence: dict, reconciliation: dict
             record["inactive_reasons"].remove("native_wave_area_unknown")
             if any(not entry["area"]["regions"] for entry in record["donor_cycle"]["areas"]):
                 record["inactive_reasons"].append("donor_flower_area_unbound")
-            qualify_flower_cycle(record)
+            # WORLD-SRC owner2026-11-05 explicitly selects donor-following spawn admission.
+            cycle = record["donor_cycle"]
+            record["schedule"].update(interval_ms=cycle["interval_ms"] * len(cycle["areas"]), repeat=True)
+            record["end"] = {"kind": "until_reset", "despawn_after_ms": None}
+            announcements, waves = [], []
+            for index, entry in enumerate(cycle["areas"]):
+                delay = index * cycle["interval_ms"]
+                announcements.append({"delay_ms": delay, "text": entry["message"], "kind": "advance", "source": entry["source"]})
+                waves.append({"delay_ms": delay, "entries": [{"creature": cycle["creature"], "source_name": "Dryad",
+                    "amount": {"min": cycle["requested_per_wave"], "max": cycle["requested_per_wave"]},
+                    "area_anchor": area_anchor(entry["area"]), "area": copy.deepcopy(entry["area"]),
+                    "boss": False, "spawn_mode": "shared_area", "source": entry["source"]}]})
+            record["variants"] = [{"key": "crystal:flower_month_cycle", "announcements": announcements, "waves": waves, "unresolved": []}]
+            record["inactive_reasons"] = [reason for reason in record["inactive_reasons"] if reason not in {
+                "wiki_donor_identity_unresolved", "message_kind_or_timing_unresolved", "calendar_firing_rule_unresolved"}]
+            record["compatibility_decision"] = "WORLD-SRC-1105: owner-authorized Crystal Flower Month cycle; archived Global conflict retained"
         qualify(record, creatures, placements)
         records.append(record)
     sugar = lua_sugar(sources["data-global/scripts/raids/bosses/sugar_mommy.lua"], creatures)
@@ -719,10 +577,6 @@ def outputs(root: Path, *, register: bool = True) -> dict[str, bytes]:
     evidence = json.loads(staged[EVIDENCE])
     records = build_records(sources, evidence, load(root, f"{EVIDENCE_DIR}/raid-source-reconciliation.json"),
                             creature_catalogue(root), load(root, PLACEMENTS))
-    records.append(mummy_raid(retained_mummy_source(root), creature_catalogue(root), load(root, PLACEMENTS)))
-    records.extend(spring_raids(root, creature_catalogue(root), load(root, PLACEMENTS)))
-    records.extend(authored_event_raids(root, creature_catalogue(root), load(root, PLACEMENTS)))
-    records.sort(key=lambda record: record["key"])
     totals = {kind: {"total": sum(r["kind"] == kind for r in records),
                      "active": sum(r["kind"] == kind and r["active"] for r in records)}
               for kind in ("city", "area", "boss", "multi_variant", "calendar")}
@@ -759,8 +613,7 @@ def main() -> int:
     for path, raw in generated.items():
         destination = args.root / path
         destination.parent.mkdir(parents=True, exist_ok=True)
-        if not destination.exists() or destination.read_bytes() != raw:
-            destination.write_bytes(raw)
+        destination.write_bytes(raw)
     index = json.loads(generated[INDEX])
     print(f"raid catalogue: total={index['record_count']} active={index['active_count']} kinds={index['totals']}")
     return 0

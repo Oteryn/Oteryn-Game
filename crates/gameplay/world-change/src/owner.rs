@@ -103,48 +103,6 @@ pub fn is_active(day: &DailyWorldChanges, key: &str) -> bool {
     }
 }
 
-/// Published timed owners reserve individual source memberships before ordinary
-/// activation. Unrelated points in a mixed source keep their own spawn owner.
-pub fn reserved_static_spawn(source: &str, creature: &str) -> bool {
-    static MEMBERS: std::sync::OnceLock<Vec<(String, String)>> = std::sync::OnceLock::new();
-    MEMBERS
-        .get_or_init(|| {
-            let Ok(value) = serde_json::from_str::<serde_json::Value>(CATALOGUE_JSON) else {
-                return Vec::new();
-            };
-            value["entries"]
-                .as_array()
-                .filter(|entries| entries.len() <= 256)
-                .into_iter()
-                .flatten()
-                .filter(|entry| {
-                    entry["status"] == "QUALIFIED"
-                        && entry["trigger"]["kind"] == "timed"
-                        && entry["trigger"]["owner"] == "world_event::changes::timed"
-                        && entry["key"]
-                            .as_str()
-                            .and_then(crate::timed::EventKind::from_key)
-                            .is_some()
-                })
-                .flat_map(|entry| {
-                    entry["binding"]["static_spawns"]
-                        .as_array()
-                        .filter(|members| members.len() <= 64)
-                        .into_iter()
-                        .flatten()
-                })
-                .filter_map(|member| {
-                    Some((
-                        member["key"].as_str()?.to_owned(),
-                        member["creature"].as_str()?.to_owned(),
-                    ))
-                })
-                .collect()
-        })
-        .iter()
-        .any(|(key, kind)| key == source && kind == creature)
-}
-
 /// Content admission is independent of a persisted progress counter. Held mechanics
 /// can accumulate test/upgrade state but cannot produce a physical activation.
 pub fn counter_admitted(kind: crate::counter::CounterKind) -> bool {

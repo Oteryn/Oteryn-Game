@@ -831,8 +831,6 @@ impl RootRuntime {
 
 #[derive(Clone)]
 pub struct DurabilityRoot {
-    #[cfg(any(test, feature = "test-support"))]
-    world_event_test_clock: Option<Arc<std::sync::atomic::AtomicI64>>,
     pool: PgPool,
     runtime: RootRuntime,
     ready_demand: Arc<AtomicBool>,
@@ -912,9 +910,6 @@ impl DurabilityRoot {
             relay_options: Some(Box::new(relay_options)),
             _root_i_charge: root_i_charge,
             staff_trust: Arc::default(),
-            #[cfg(any(test, feature = "test-support"))]
-            world_event_test_clock: (!production)
-                .then(|| Arc::new(std::sync::atomic::AtomicI64::new(-1))),
         })
     }
 
@@ -946,8 +941,6 @@ impl DurabilityRoot {
                 .map(Box::new),
             _root_i_charge: None,
             staff_trust: Arc::default(),
-            #[cfg(any(test, feature = "test-support"))]
-            world_event_test_clock: Some(Arc::new(std::sync::atomic::AtomicI64::new(-1))),
         })
     }
 
@@ -1443,6 +1436,3 @@ pub(super) async fn lock_admission_relations(
     }
     Ok(())
 }
-
-#[path = "db/world_event_clock.rs"]
-mod world_event_clock;

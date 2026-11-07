@@ -119,8 +119,6 @@ pub mod boss_reward;
 mod contents;
 mod grizzly;
 mod monk;
-pub(crate) mod quest;
-pub use quest::QuestRewardAdmission;
 mod soul_war;
 mod tibiadrome;
 
@@ -1314,7 +1312,7 @@ async fn apply_claim(
     })
 }
 
-pub(super) async fn lock_cause(
+async fn lock_cause(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     command: CommandRef,
 ) -> std::result::Result<(), DurabilityError> {

@@ -172,7 +172,6 @@ class LootTablesTests(unittest.TestCase):
         self.assertTrue(items['oteryn:item.tibia.i3031']['materializable'])
         self.assertTrue(items['oteryn:item.tibia.i3607']['materializable'])
         self.assertTrue(items['oteryn:item.tibia.i37109']['materializable'])
-        self.assertTrue(items['oteryn:item.tibia.i13429']['materializable'])
 
     def write(self, directory, creatures, loot, items):
         base = Path(directory)
@@ -182,13 +181,7 @@ class LootTablesTests(unittest.TestCase):
         return base/'creatures', base/'loot', base/'items'
 
     def test_forge_resource_uses_exact_native_admission_without_promoting_legacy(self):
-        self.check_native_resource('oteryn:item.tibia.i37109')
-
-    def test_robbery_bag_uses_exact_native_admission_without_promoting_legacy(self):
-        self.check_native_resource('oteryn:item.tibia.i13429')
-
-    def check_native_resource(self, key):
-        ref = {'family': 'Item', 'key': key, 'revision': 'r1'}
+        ref = {'family': 'Item', 'key': 'oteryn:item.tibia.i37109', 'revision': 'r1'}
         definition = {'identity': ref, 'materializable': False}
         profile = {'production_definition': {'family': 'Item', 'production_key': ref['key'],
                                              'revision_ref': 'r1'},

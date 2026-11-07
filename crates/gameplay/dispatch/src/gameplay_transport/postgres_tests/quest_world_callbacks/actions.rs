@@ -265,8 +265,7 @@ pub(super) async fn exercise(
                 },
                 catalogue.clone(),
                 &permit,
-                context,
-                None,
+                context
             )
             .await
             .map_err(debug)?,

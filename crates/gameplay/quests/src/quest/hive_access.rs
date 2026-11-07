@@ -772,7 +772,7 @@ pub fn callbacks() -> Vec<Callback> {
         selector:Selector {position:Some(gate.position),unique:None,action:None,appearance:Some(gate.appearance)},
         lever:None,reversible:false,passages:vec![],teleport:Some(gate.position),storage:vec![],minimum_level:None,
         experience:None,monk_reward:None,offerings:vec![],item_on_target:None,return_on_failure:false,
-        failure_message:Some("The Hive rejects your scent.".into()),success_message:None,native_rule:None,effects:Default::default(),
+        failure_message:Some("The Hive rejects your scent.".into()),success_message:None,native_rule:None,
         sources:vec!["crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/scripts/actions/objects/hive_gates.lua:3-24; wiki56902@930222:20; native B3 exact gates, authored east/west membership".into()],
     }).collect()
 }

@@ -14,7 +14,6 @@ use sha2::{Digest, Sha256};
 pub mod callbacks;
 pub mod counters;
 
-pub mod timed;
 /// The day after the reset `reset_epoch` of `world`, on the UTC calendar at `unix_ms`.
 pub fn roll(
     world: WorldId,
@@ -59,36 +58,11 @@ fn authored_candidates() -> Result<DailyCandidates, DurabilityError> {
     let mut grimvale = false;
     let mut stampede = None;
     let mut fire_earth = None;
-    let mut timed = oteryn_gameplay_world_change::daily_timed::Candidates::default();
     for entry in entries
         .iter()
         .filter(|entry| entry["status"] == "READY" || entry["status"] == "QUALIFIED")
     {
         let index = match entry["key"].as_str() {
-            Some(key)
-                if entry["trigger"]["kind"] == "timed"
-                    && entry["trigger"]["owner"] == "world_event::changes::timed" =>
-            {
-                use oteryn_gameplay_world_change::timed::EventKind as K;
-                let kind = K::from_key(key).ok_or(DurabilityError::InvalidStoredState)?;
-                let chance = |expected: u64| -> Result<u16, DurabilityError> {
-                    let chance = entry["trigger"]["activation"]["chance_permille"]
-                        .as_u64()
-                        .filter(|v| *v == expected)
-                        .ok_or(DurabilityError::InvalidStoredState)?;
-                    u16::try_from(chance).map_err(|_| DurabilityError::InvalidStoredState)
-                };
-                match kind {
-                    K::BankRobbery => timed.bank = true,
-                    K::SpringIntoLife => timed.spring = true,
-                    K::RiseOfDevovorga => timed.rise = true,
-                    K::DevovorgasEssence => timed.essence_permille = chance(16)?,
-                    K::Kingsday => timed.kingsday_permille = chance(24)?,
-                    K::InsectoidInvasion => timed.insectoid_permille = chance(100)?,
-                    _ => {}
-                }
-                continue;
-            }
             Some("stampede") if stampede.is_none() && entry["trigger"]["kind"] == "at_reset" => {
                 stampede = entry["trigger"]["chance_permille"]
                     .as_u64()
@@ -159,7 +133,6 @@ fn authored_candidates() -> Result<DailyCandidates, DurabilityError> {
         return Err(DurabilityError::InvalidStoredState);
     }
     Ok(DailyCandidates {
-        timed,
         thawing_percent,
         voice_percent,
         trader_percent,
@@ -375,5 +348,3 @@ pub async fn tally(
         .transpose()
         .map(|v| v.unwrap_or(0))
 }
-
-pub use oteryn_gameplay_world_change::owner::reserved_static_spawn;

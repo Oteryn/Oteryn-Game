@@ -34,7 +34,6 @@ pub struct RaidCreatureIdentity {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RaidCreaturePlan {
-    pub timed_event: bool,
     pub identity: RaidCreatureIdentity,
     pub creature: ProductionKey,
     pub area_anchor: ProductionKey,
@@ -97,7 +96,7 @@ pub(super) async fn reconcile_deadlines(
             .try_get::<Vec<u8>, _>(0)?
             .try_into()
             .map_err(|_| DurabilityError::InvalidStoredState)?;
-        let targets = sqlx::query("SELECT uuid_send(t.channel_id),t.owner_generation::text,COALESCE(r.committed_steps,0) AS steps FROM game_world_raid_targets t LEFT JOIN game_world_raid_channel_runs r USING(firing_id,channel_id) WHERE t.firing_id=encode($1,'hex')::uuid AND (r.state IS NULL OR r.state=1) AND NOT EXISTS(SELECT 1 FROM game_runtime_scope_assignments a JOIN game_durability_admission_runtime_guards g USING(scope_key) JOIN game_node_registrations n ON n.node_id=a.holder_node_id AND n.registration_revision=a.holder_registration_revision WHERE a.world_id=encode($2,'hex')::uuid AND a.channel_id=t.channel_id AND a.scope_kind=1 AND a.state=1 AND a.ownership_generation=t.owner_generation AND g.ownership_generation=a.ownership_generation AND g.ready AND n.state=1) ORDER BY t.channel_id LIMIT 32")
+        let targets = sqlx::query("SELECT uuid_send(t.channel_id),t.owner_generation::text,COALESCE(r.committed_steps,0) AS steps FROM game_world_raid_targets t LEFT JOIN game_world_raid_channel_runs r USING(firing_id,channel_id) WHERE t.firing_id=encode($1,'hex')::uuid AND (r.state IS NULL OR (r.state=1 AND NOT EXISTS(SELECT 1 FROM game_runtime_scope_assignments a JOIN game_durability_admission_runtime_guards g USING(scope_key) JOIN game_node_registrations n ON n.node_id=a.holder_node_id AND n.registration_revision=a.holder_registration_revision WHERE a.world_id=encode($2,'hex')::uuid AND a.channel_id=t.channel_id AND a.scope_kind=1 AND a.state=1 AND a.ownership_generation=t.owner_generation AND g.ownership_generation=a.ownership_generation AND g.ready AND n.state=1))) ORDER BY t.channel_id LIMIT 32")
             .bind(firing.as_slice()).bind(world.as_bytes().as_slice()).fetch_all(&mut **tx).await?;
         for target in targets {
             let channel_bytes: [u8; 16] = target
@@ -235,21 +234,13 @@ impl DurabilityRoot {
         let node = node.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            let mut world_current = effects::world_current(&mut tx, firing_id).await?;
+            let world_current = effects::world_current(&mut tx, firing_id).await?;
             if !effects::current(&mut tx, &node, firing_id, channel, generation).await? {
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(None);
             }
-            let firing = sqlx::query("SELECT raid_key,fired_at_ms,state FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid FOR UPDATE")
+            let firing = sqlx::query("SELECT fired_at_ms,state FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid FOR UPDATE")
                 .bind(firing_id.as_slice()).fetch_one(&mut *tx).await?;
-            if firing.try_get::<String,_>("raid_key")? == "oteryn:raid.raid.dryad_invasion" {
-                // The donor's June startup cycle lasts until the next save, including
-                // the overnight tail of June 30. A delayed runner cannot start new
-                // waves after that fence, even if no reset has published yet.
-                let in_day: bool = sqlx::query_scalar("SELECT extract(month FROM e.activated_at AT TIME ZONE 'UTC')=6 AND $2 >= (extract(epoch FROM e.activated_at)*1000)::bigint AND $2 < (extract(epoch FROM ((date_trunc('day',e.activated_at AT TIME ZONE 'Europe/Berlin'-interval '6 hours')+interval '1 day 6 hours') AT TIME ZONE 'Europe/Berlin'))*1000)::bigint FROM game_world_raid_firings f JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE f.firing_id=encode($1,'hex')::uuid")
-                    .bind(firing_id.as_slice()).bind(now_ms).fetch_one(&mut *tx).await?;
-                world_current &= in_day;
-            }
             let target: Option<String> = sqlx::query_scalar("SELECT owner_generation::text FROM game_world_raid_targets WHERE firing_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
                 .bind(firing_id.as_slice()).bind(channel.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let Some(target_generation) = target else {
@@ -294,13 +285,11 @@ impl DurabilityRoot {
                     advance: matches!(kind, oteryn_gameplay_encounter_rules::raid::AnnouncementKind::Advance),
                 },
                 RaidRunAction::SpawnWave { wave, entries, boss_step } => {
-                    let timed_event=crate::durability::world_event::changes::timed::raid_origin(&mut tx,firing_id).await?.is_some();
                     let mut creatures = Vec::new();
                     for (entry, value) in entries.iter().enumerate() {
                         let entry = u16::try_from(entry).map_err(|_| DurabilityError::InvalidStoredState)?;
                         for index in 0..value.count {
                             creatures.push(RaidCreaturePlan {
-                                timed_event,
                                 identity: RaidCreatureIdentity { wave: *wave, entry, index },
                                 creature: value.creature.clone(), area_anchor: value.area_anchor.clone(),
                             });

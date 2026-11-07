@@ -194,7 +194,7 @@ fn dead_bosses(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(super) fn raid_bundle_digest(&self) -> Option<[u8; 32]> {
+    fn raid_bundle_digest(&self) -> Option<[u8; 32]> {
         let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
             self.movement_cells.index()
         else {
@@ -606,12 +606,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let now = crate::world_clock::now_utc_ms().and_then(|now| i64::try_from(now).ok());
             if let Some(now_ms) = now {
-                if super::world_respawns::stopping_first(self.project_timed_events(), shutdown)
-                    .await
-                    .is_none()
-                {
-                    return RespawnExit::Shutdown;
-                }
                 if self.publish_raid_activity(now_ms).await.is_err() {
                     super::operator_event("raid_activity_projection_retry");
                 }

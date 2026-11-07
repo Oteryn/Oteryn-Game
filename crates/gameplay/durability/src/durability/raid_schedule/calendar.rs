@@ -7,8 +7,6 @@ use sqlx::{Postgres, Row, Transaction};
 pub struct CalendarRaidScheduleCandidate {
     pub window: RaidCalendarWindow,
     pub interval_ms: u32,
-    pub repeat_persistent: bool,
-    pub start_immediately: bool,
     /// A sourced recurring cycle keeps ordinary creatures while admitting the next firing.
     pub repeat: bool,
 }

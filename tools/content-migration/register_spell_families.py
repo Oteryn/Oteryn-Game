@@ -415,8 +415,6 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     itemhold_q.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import world_change_profiles
     world_change_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
-    import qengine_reward_item_profiles
-    qengine_reward_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Shop/chest admission adds ranged Items after the earlier owner overlays.
     # Complete their existing source authoring too before pinning the provider.
     ranged_item_profiles.apply_native(root, generated)
@@ -424,11 +422,6 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     # Creature roots. Bind executable closures only after those policies settle.
     from bind_monster_source_definitions import bind_definitions
     generated = bind_definitions(root, generated)
-    import wevents_creature_profiles
-    wevents_creature_profiles.admit(root, generated,
-        spell_import.PROVIDER_DESTINATIONS['creature_profiles'],
-        spell_import.PROVIDER_DESTINATIONS['presentation_profiles'],
-        NATIVE_MANIFEST, spell_import.canonical_bytes)
     pin_repository_inputs(root, generated)
     # Refresh only the three admitted World-change input sources after repository pins.
     # Probabilities/quantities stay byte-semantically pinned; Item policies own admission.
@@ -535,8 +528,7 @@ def main() -> int:
         for path, data in generated.items():
             destination = ROOT / path
             destination.parent.mkdir(parents=True, exist_ok=True)
-            if not destination.exists() or destination.read_bytes() != data:
-                destination.write_bytes(data)
+            destination.write_bytes(data)
     print(f"PASS registered spell import files={len(generated)} activation=false")
     return 0
 

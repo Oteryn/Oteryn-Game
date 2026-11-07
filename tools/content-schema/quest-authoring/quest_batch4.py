@@ -62,7 +62,7 @@ CALLBACK_FIELDS = {
     'key', 'quest', 'trigger', 'selector', 'lever', 'reversible', 'passages',
     'teleport', 'storage', 'minimum_level', 'experience', 'monk_reward',
     'offerings', 'item_on_target', 'return_on_failure', 'failure_message',
-    'success_message', 'native_rule', 'effects', 'sources',
+    'success_message', 'native_rule', 'sources',
 }
 CALLBACK_REQUIRED = {
     'key', 'quest', 'trigger', 'selector', 'reversible', 'passages',
@@ -168,14 +168,9 @@ def text_message(value, context):
             context + ': invalid message')
 
 
-def provenance(value, context, *, outfit=False):
+def provenance(value, context):
     require(isinstance(value, list) and value, context + ': empty provenance')
     for reference in value:
-        if outfit and isinstance(reference,str):
-            pinned=re.fullmatch(r'crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:(data-global/[a-zA-Z0-9_./-]+\.lua):sha256:[a-f0-9]{64}',reference)
-            if pinned:
-                require('..' not in pinned.group(1).split('/'),context + ': invalid source path')
-                continue
         match = SOURCE.fullmatch(reference) if isinstance(reference, str) else None
         require(match is not None, context + ': callback source must use the exact Crystal pin and line')
         source_path, first, last = match.groups()
@@ -225,149 +220,6 @@ def validate_native(callback, context):
         context + ': native rule has unrelated effects or feedback')
 
 
-def validate_effects(callback, context):
-    """The optional Channel effects share the Rust world_callbacks closed shape."""
-    effects = callback.get('effects', {})
-    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter', 'outfit_reward', 'world_event', 'item_reward', 'achievement'}
-    fields(effects, set(), allowed, context + ': effects')
-    binding = effects.get('world_event')
-    event_encounter = False
-    if binding is not None:
-        fields(binding, {'event', 'action'}, {'event', 'action', 'minimum_level', 'maximum_level'}, context + ': event')
-        event = binding['event']
-        require(event in {'chyllfroest', 'flower_month', 'mummys_curse', 'spring_into_life',
-                         'rise_of_devovorga', 'devovorga_s_essence', 'kingsday', 'bank_robbery',
-                         'insectoid_invasion'}, context + ': unknown event')
-        minimum, maximum = binding.get('minimum_level', 0), binding.get('maximum_level')
-        require(integer(minimum, 0, 2**32-1) and (maximum is None or integer(maximum, minimum, 2**32-1)),
-                context + ': invalid event level')
-        action = binding['action']
-        member = None
-        if isinstance(action, dict):
-            require(len(action) == 1, context + ': event action cardinality')
-            action, member = next(iter(action.items()))
-            ranges = {('spring_into_life', 'BeginObject'): (1, 2),
-                      ('devovorga_s_essence', 'Enter'): (0, 4),
-                      ('bank_robbery', 'ClaimObject'): (0, 0),
-                      ('insectoid_invasion', 'Fill'): (0, 0),
-                      ('insectoid_invasion', 'Extinguish'): (1, 3)}
-            bounds = ranges.get((event, action))
-            require(bounds is not None and integer(member, *bounds), context + ': invalid event action')
-        else:
-            require(isinstance(action, str) and (action == 'Observe'
-                    or action == 'Reward' and event in {'spring_into_life', 'rise_of_devovorga', 'kingsday'}
-                    or (event, action) in {('kingsday', 'Attend'), ('bank_robbery', 'Recover')}),
-                    context + ': invalid event action')
-        cost = None
-        if (event, action) == ('devovorga_s_essence', 'Enter'):
-            cost = ('oteryn:item.tibia.i11666', (2, 5, 8, 12, 16)[member])
-        elif (event, action) == ('spring_into_life', 'Observe'):
-            cost = ('oteryn:item.tibia.i3043', 1)
-        elif (event, action) == ('bank_robbery', 'Recover'):
-            cost = ('oteryn:item.tibia.i13429', 1)
-        if cost is not None:
-            item = callback.get('item_on_target') or {}
-            require((item.get('item'), item.get('count')) == cost, context + ': event cost differs')
-        event_encounter = (action == 'Enter' and callback['trigger'] == 'use'
-                           and callback.get('selector', {}).get('position') is not None)
-    reward, achievement = effects.get('item_reward'), effects.get('achievement')
-    require(not any(value is not None for value in (binding, reward, achievement)) or callback['storage'],
-            context + ': durable event effects require storage')
-    require(achievement is None or isinstance(achievement, str) and len(achievement) <= 256 and valid_key(achievement),
-            context + ': invalid achievement')
-    if reward is not None:
-        fields(reward, {'item', 'count'}, {'item', 'count', 'contents'}, context + ': item reward')
-        require(valid_key(reward['item']) and integer(reward['count'], 1, 100)
-                and isinstance(reward.get('contents', []), list) and len(reward.get('contents', [])) <= 20,
-                context + ': invalid item reward')
-        for content in reward.get('contents', []):
-            fields(content, {'item', 'count'}, {'item', 'count'}, context + ': reward contents')
-            require(valid_key(content['item']) and integer(content['count'], 1, 65535), context + ': invalid reward contents')
-        require(binding is not None or any(not row.get('preserve', False)
-                and not row['minimum'] <= row['set'] <= row['maximum'] for row in callback['storage']),
-                context + ': repeatable item reward')
-    outfit = effects.get('outfit_reward')
-    if outfit is not None:
-        fields(outfit, {'outfit','addons'}, {'outfit','addons'}, context + ': outfit reward')
-        require(isinstance(outfit['outfit'],str) and len(outfit['outfit'])<=160
-                and re.fullmatch(r'oteryn:(?:content\.)?outfit\.[a-z0-9_]+',outfit['outfit']) is not None
-                and integer(outfit['addons'],0,3), context + ': invalid outfit reward')
-        require(callback['trigger']=='use' and callback['storage']
-                and any(not s.get('preserve',False) and not s['minimum']<=s['set']<=s['maximum']
-                        for s in callback['storage']), context + ': repeatable outfit reward')
-    transform = effects.get('transform')
-    require(transform is None or integer(transform, 1, 65535), context + ': invalid transform')
-    facing = effects.get('facing')
-    require(facing is None or facing in ('north', 'east', 'south', 'west')
-            and callback.get('teleport') is not None, context + ': invalid destination facing')
-    require(callback['trigger'] != 'step_out' or not callback['return_on_failure'],
-            context + ': stepout cannot return to the departed tile')
-    require(callback.get('native_rule') is None or all(value is None for value in effects.values()),
-            context + ': native rule has unrelated effects')
-    magic = effects.get('magic')
-    if magic is not None:
-        fields(magic, {'position', 'effect'}, {'position', 'effect'}, context + ': magic')
-        position(magic['position'], context + ': magic')
-        require(integer(magic['effect'], 1, 65535), context + ': invalid magic effect')
-    operations = sum(effects.get(field) is not None for field in ('portals', 'item_cycle', 'encounter'))
-    require(operations <= 1 and (operations == 0 or callback['trigger'] == 'use'
-            and (callback.get('lever') is not None or event_encounter)
-            and (event_encounter or not callback['storage'])
-            and not callback['passages'] and callback.get('teleport') is None),
-            context + ': incompatible map effects')
-    pair = effects.get('portals')
-    if pair is not None:
-        fields(pair, {'appearance', 'portals'}, {'appearance', 'portals', 'lifetime_us'}, context + ': pair')
-        require(integer(pair['appearance'], 1, 65535)
-                and (pair.get('lifetime_us') is None or integer(pair['lifetime_us'], 1, 2**64-1)),
-                context + ': invalid portal appearance/lifetime')
-        require(isinstance(pair['portals'], list) and len(pair['portals']) == 2, context + ': paired endpoints required')
-        positions = []
-        for portal in pair['portals']:
-            fields(portal, {'position', 'destination'}, {'position', 'destination'}, context + ': portal')
-            positions.append(position(portal['position'], context + ': portal'))
-            position(portal['destination'], context + ': destination')
-        require(positions[0] != positions[1], context + ': duplicate portal endpoint')
-    cycle = effects.get('item_cycle')
-    if cycle is not None:
-        fields(cycle, {'position', 'remove', 'create'}, {'position', 'remove', 'create'}, context + ': cycle')
-        position(cycle['position'], context + ': cycle')
-        require(integer(cycle['remove'], 1, 65535) and integer(cycle['create'], 1, 65535)
-                and cycle['remove'] != cycle['create'], context + ': invalid item cycle')
-    encounter = effects.get('encounter')
-    if encounter is not None:
-        names = {'minimum_level', 'players', 'monsters', 'room_min', 'room_max'}
-        fields(encounter, names, names, context + ': encounter')
-        require(integer(encounter['minimum_level'], 1, 2**32-1) and not callback['reversible'],
-                context + ': invalid encounter level/reversal')
-        lower = position(encounter['room_min'], context + ': room min')
-        upper = position(encounter['room_max'], context + ': room max')
-        require(lower[2] == upper[2] and lower[0] <= upper[0] and lower[1] <= upper[1],
-                context + ': invalid encounter room')
-
-        def in_room(at):
-            return at[2] == lower[2] and lower[0] <= at[0] <= upper[0] and lower[1] <= at[1] <= upper[1]
-
-        for name in ('players', 'monsters'):
-            require(isinstance(encounter[name], list) and 1 <= len(encounter[name]) <= MAX_EFFECTS,
-                    context + ': invalid encounter ' + name)
-        origins, destinations, monsters = set(), set(), set()
-        for player in encounter['players']:
-            fields(player, {'from', 'to'}, {'from', 'to'}, context + ': member')
-            origin = position(player['from'], context + ': staging tile')
-            destination = position(player['to'], context + ': landing tile')
-            require(origin not in origins and destination not in destinations
-                    and not in_room(origin) and in_room(destination), context + ': invalid encounter member')
-            origins.add(origin)
-            destinations.add(destination)
-        for monster in encounter['monsters']:
-            fields(monster, {'position', 'creature'}, {'position', 'creature'}, context + ': monster')
-            at = position(monster['position'], context + ': spawn tile')
-            require(at not in monsters and at not in destinations and in_room(at)
-                    and valid_key(monster['creature']), context + ': invalid encounter spawn')
-            monsters.add(at)
-
-
 def validate_callback(callback, directory):
     context = directory + ' callback'
     fields(callback, CALLBACK_REQUIRED, CALLBACK_FIELDS, context)
@@ -375,7 +227,7 @@ def validate_callback(callback, directory):
     require(valid_key(key) and key.startswith('oteryn:quest-callback/'), context + ': foreign or invalid key')
     require(QUEST_OWNERS[directory] is not None and callback['quest'] == QUEST_OWNERS[directory],
             key + ': foreign quest owner or owner not qualified')
-    require(callback['trigger'] in ('use', 'step_in', 'step_out'), key + ': invalid trigger')
+    require(callback['trigger'] in ('use', 'step_in'), key + ': invalid trigger')
     selector = callback['selector']
     selector_fields = {'position', 'unique', 'action', 'appearance'}
     fields(selector, set(), selector_fields, key + ': selector')
@@ -436,9 +288,8 @@ def validate_callback(callback, directory):
     require(callback.get('monk_reward') is None, key + ': Monk rewards are outside batch four')
     text_message(callback.get('failure_message'), key + ': failure_message')
     text_message(callback.get('success_message'), key + ': success_message')
-    provenance(callback['sources'], key, outfit=callback.get('effects',{}).get('outfit_reward') is not None)
+    provenance(callback['sources'], key)
     validate_native(callback, key)
-    validate_effects(callback, key)
 
 
 def source_only(value, context):
