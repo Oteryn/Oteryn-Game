@@ -52,3 +52,12 @@ OOM was retried; direct exact test binary proved actual native reward behavior.
 Giant Smithhammer next RED2.69s after real PG initialization, missing callback;
 its uncommitted questpc8_smith_cache.rs scaffold is intentionally not in this
 green slice. Native chest32776,32253,z8 appearance2472 ordinal1 has no UID.
+
+Concurrent remote reconciliation (11335ecd3) preserves a stronger ordered
+hunting programme and generated chosen reward callbacks. Use
+content/quests/chosen-reward-callbacks.json (renamed from authored NPC file).
+Merged proof: hunting116.451671655s, Braindeath25.801730527s; see
+campaign-validation.json and cloud-braindeath-proof.json. Keep ordered
+programme/capture guards. Serial large Rust/Python builds avoid peak OOM.
+qengine2 newer059364f38 includes native payment support; explicit refspec fetch
+required before any new engine feature. Prior plain fetch left tracking stale.

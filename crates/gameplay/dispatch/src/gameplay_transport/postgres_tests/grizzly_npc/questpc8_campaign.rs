@@ -1,5 +1,5 @@
 //! Native Grizzly progression for the three selected task/boss pairs.
-//! Includes the authored final payout of 10,000 XP and 5,000 gold.
+//! The chosen campaign adds its own once-only 10,000 XP and 5,000 gold completion.
 //! No task counters, boss victories, points or quest receipts are seeded.
 use super::*;
 use crate::foundation::{CommandId, CommandRef, ExactActorRef, MovementLocalPosition};
@@ -126,18 +126,17 @@ pub(super) async fn exercise(
     say(owner, admitted, npc, &mut command, &["hi", "promotion"]).await?;
     assert_eq!(value(owner, authority, quest::PROMOTION_STORAGE).await?, 0);
     // Rank alone cannot replace the missing immutable victory/report evidence.
-    let greeting = command + 1;
-    command += 2;
+    // An incomplete ordered campaign answers with its objectives, without a grant.
     let early_xp = experience(h).await?;
-    wire::talk_refused(
-        owner,
-        admitted,
-        npc,
-        &[(greeting, "hi"), (command, "campaign")],
-    )
-    .await?;
+    say(owner, admitted, npc, &mut command, &["hi", "campaign"]).await?;
     assert_eq!(experience(h).await?, early_xp);
     assert_eq!(campaign_receipts(h).await?, 0);
+    let early_phase: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
+        .bind(id(41).as_slice()).bind(quest::campaign::PHASE).fetch_one(&h.pool).await?;
+    assert_eq!(
+        early_phase, 7,
+        "a premature claim cannot advance chosen progress"
+    );
 
     // Level 130 is an external eligibility condition. Establish it with the
     // actual XP owner, never by changing a stored level or bypassing the guard.
@@ -165,46 +164,6 @@ pub(super) async fn exercise(
         3
     );
     assert_eq!(value(owner, authority, quest::POINTS_STORAGE).await?, 18);
-    let campaign_xp = experience(h).await?;
-    // Missing custody refuses the whole reward, including XP and completion.
-    let greeting = command + 1;
-    command += 2;
-    wire::talk_refused(
-        owner,
-        admitted,
-        npc,
-        &[(greeting, "hi"), (command, "campaign")],
-    )
-    .await?;
-    assert_eq!(experience(h).await?, campaign_xp);
-    assert_eq!(campaign_receipts(h).await?, 0);
-    super::super::item_look::seed_main_backpack(h, &[]).await?;
-    say(owner, admitted, npc, &mut command, &["hi", "campaign"]).await?;
-    assert_eq!(
-        experience(h).await? - campaign_xp,
-        10_000,
-        "chosen campaign final XP must be separate from source task XP"
-    );
-    assert_eq!(campaign_receipts(h).await?, 1);
-    assert_eq!(campaign_gold(h).await?, 5_000);
-    let complete: bool = sqlx::query_scalar(
-        "SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2",
-    ).bind(id(41).as_slice()).bind(quest::QUEST).fetch_one(&h.pool).await?;
-    assert!(
-        complete,
-        "the chosen campaign must have a durable completion"
-    );
-    owner
-        .states
-        .quest_sessions
-        .lock()
-        .map_err(debug)?
-        .remove(&admitted.game_session_id);
-    owner.admit_quest_session(admitted).await;
-    say(owner, admitted, npc, &mut command, &["hi", "campaign"]).await?;
-    assert_eq!(experience(h).await? - campaign_xp, 10_000);
-    assert_eq!(campaign_gold(h).await?, 5_000);
-    assert_eq!(campaign_receipts(h).await?, 1);
     let before: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     let before_xp = experience(h).await?;
     // An extra report does not earn another achievement or another boss reward.
@@ -224,6 +183,68 @@ pub(super) async fn exercise(
             "oteryn:achievement/one_less",
             "oteryn:achievement/rootless_behaviour"
         ]
+    );
+    let before_campaign_xp = experience(h).await?;
+    eprintln!("QUESTPC8_CAMPAIGN POSTGRES_FINAL_PAYOUT_CHECK");
+    command += 1;
+    let greeting = command;
+    command += 1;
+    wire::talk_refused(
+        owner,
+        admitted,
+        npc,
+        &[(greeting, "hi"), (command, "campaign")],
+    )
+    .await?;
+    assert_eq!(
+        experience(h).await?,
+        before_campaign_xp,
+        "missing backpack refuses the complete reward transaction"
+    );
+    let phase: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
+        .bind(id(41).as_slice()).bind(quest::campaign::PHASE).fetch_one(&h.pool).await?;
+    assert_eq!(phase, 10, "failed delivery cannot complete the campaign");
+    super::super::item_look::seed_main_backpack(h, &[]).await?;
+    say(owner, admitted, npc, &mut command, &["hi", "campaign"]).await?;
+    assert_eq!(
+        experience(h).await? - before_campaign_xp,
+        10_000,
+        "the complete chosen campaign owes its authored XP exactly once"
+    );
+    let minted: (String, i64, bool) = sqlx::query_as("SELECT i.definition_production_key,m.quantity,m.created_xact_id=q.created_xact_id FROM game_reward_claim_mint_receipts m JOIN game_item_instances i USING(item_instance_id) JOIN game_character_quest_receipts q ON q.character_id=m.character_id AND q.cause_id=m.game_session_id AND q.cause_ordinal=m.command_id AND q.transition_key=m.claim_production_key WHERE q.character_id=encode($1,'hex')::uuid AND q.transition_key=$2")
+        .bind(id(41).as_slice()).bind("oteryn:quest-reward/chosen/hunting-campaign").fetch_one(&h.pool).await?;
+    assert_eq!(
+        minted,
+        ("oteryn:item.tibia.i3035".into(), 50, true),
+        "exact 5,000 gold value (50 platinum) shares the completion transaction"
+    );
+    let completed: bool = sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2")
+        .bind(id(41).as_slice()).bind(quest::QUEST).fetch_one(&h.pool).await?;
+    assert!(completed);
+    say(owner, admitted, npc, &mut command, &["hi", "campaign"]).await?;
+    assert_eq!(
+        experience(h).await? - before_campaign_xp,
+        10_000,
+        "fresh-command replay grants no XP twice"
+    );
+    owner
+        .states
+        .quest_sessions
+        .lock()
+        .map_err(debug)?
+        .remove(&admitted.game_session_id);
+    owner.admit_quest_session(admitted).await;
+    say(owner, admitted, npc, &mut command, &["hi", "campaign"]).await?;
+    assert_eq!(experience(h).await? - before_campaign_xp, 10_000);
+    let receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_reward_claim_mint_receipts WHERE claim_production_key=$1",
+    )
+    .bind("oteryn:quest-reward/chosen/hunting-campaign")
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(
+        receipts, 1,
+        "fresh-command replay cannot mint currency twice"
     );
     Ok(())
 }
@@ -564,10 +585,5 @@ async fn level_130(
 }
 
 async fn campaign_receipts(h: &Harness) -> TestResult<i64> {
-    Ok(sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_sources WHERE character_id=encode($1,'hex')::uuid AND transition_key='oteryn:quest-reward/chosen-hunting-campaign'").bind(id(41).as_slice()).fetch_one(&h.pool).await?)
-}
-
-async fn campaign_gold(h: &Harness) -> TestResult<i64> {
-    // The native currency owner denominates 5,000 gold as fifty platinum coins.
-    Ok(sqlx::query_scalar("SELECT COALESCE(sum(quantity),0)::bigint * 100 FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3035' AND lifecycle=1").fetch_one(&h.pool).await?)
+    Ok(sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_sources WHERE character_id=encode($1,'hex')::uuid AND transition_key='oteryn:quest-reward/chosen/hunting-campaign'").bind(id(41).as_slice()).fetch_one(&h.pool).await?)
 }

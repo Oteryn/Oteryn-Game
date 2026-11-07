@@ -144,7 +144,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             for offering in callback['offerings']}
     # Executable authored callbacks use the same exact canonical/native Item
     # qualification as source chests. Include every output, never a partial bag.
-    for relative in ('authored-world-callbacks.json', 'authored-reward-callbacks.json'):
+    for relative in ('authored-world-callbacks.json', 'chosen-reward-callbacks.json'):
         path = root / 'content/quests' / relative
         if not path.is_file():
             continue

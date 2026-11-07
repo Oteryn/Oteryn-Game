@@ -101,7 +101,7 @@ pub fn load() -> Result<Vec<RewardCallback>, String> {
         "../../../../../content/quests/shared-reward-callbacks.json"
     ))?;
     callbacks.extend(parse(include_str!(
-        "../../../../../content/quests/authored-reward-callbacks.json"
+        "../../../../../content/quests/chosen-reward-callbacks.json"
     ))?);
     let keys: BTreeSet<_> = callbacks.iter().map(|callback| &callback.key).collect();
     if keys.len() != callbacks.len() || callbacks.len() > 256 {
@@ -197,9 +197,17 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
 }
 
 pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
+    extend_callbacks(catalogue, load()?)
+}
+
+fn extend_callbacks(
+    catalogue: QuestStateCatalogue,
+    callbacks: Vec<RewardCallback>,
+) -> Result<QuestStateCatalogue, String> {
+    let npc_legacy = catalogue.npc_legacy.clone();
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
-    for callback in load()? {
+    for callback in callbacks {
         for requirement in &callback.required_receipts {
             if !catalogue
                 .transition(&requirement.transition)
@@ -215,6 +223,47 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                 ));
             }
         }
+
+        // Value participants are part of the pinned quest contract. Reply copy and
+        // source citations remain journal metadata and do not invalidate progress.
+        let value_plan = serde_json::to_vec(&(
+            &callback.key,
+            &callback.quest,
+            &callback.required_receipts,
+            &callback.npc,
+            &callback.keywords,
+            callback.topic,
+            callback.next_topic,
+            &callback.storage,
+            &callback.take,
+            &callback.present,
+            &callback.give,
+            &callback.outfit,
+            &callback.achievement,
+            callback.completes,
+            callback.experience,
+        ))
+        .map_err(|e| e.to_string())?;
+        let digest: String = Sha256::digest(value_plan)
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect();
+        transitions.push(QuestTransition {
+            key: format!("oteryn:quest-reward-rule/{digest}"),
+            quest: callback.quest.clone(),
+            effects: vec![QuestEffect {
+                track: callback
+                    .storage
+                    .first()
+                    .ok_or("reward storage")?
+                    .track
+                    .clone(),
+                from: QuestComparison::Any,
+                effect: QuestEffectKind::Computed,
+            }],
+            completes: false,
+            experience: None,
+        });
         for s in &callback.storage {
             if let Some(track) = tracks.iter_mut().find(|t| t.key == s.track) {
                 if track.quest != callback.quest {
@@ -232,30 +281,6 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                 });
             }
         }
-        // Seal every value participant and historical guard into the quest pin,
-        // using the same refused-marker pattern as the Grizzly source rules.
-        let digest: String =
-            Sha256::digest(serde_json::to_vec(&callback).map_err(|e| e.to_string())?)
-                .iter()
-                .map(|byte| format!("{byte:02x}"))
-                .collect();
-        let marker = format!("oteryn:quest-reward-plan/{digest}");
-        transitions.push(QuestTransition {
-            key: marker,
-            quest: callback.quest.clone(),
-            effects: vec![QuestEffect {
-                track: callback
-                    .storage
-                    .first()
-                    .ok_or("missing reward guard")?
-                    .track
-                    .clone(),
-                from: QuestComparison::Any,
-                effect: QuestEffectKind::Computed,
-            }],
-            completes: false,
-            experience: None,
-        });
         transitions.push(QuestTransition {
             key: callback.key,
             quest: callback.quest,
@@ -276,13 +301,52 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
             experience: callback.experience,
         });
     }
-    QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
-        .map_err(|e| format!("{e:?}"))
+    let mut updated = QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
+        .map_err(|e| format!("{e:?}"))?;
+    updated.npc_legacy = npc_legacy;
+    Ok(updated)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn reward_extension_preserves_native_npc_legacy_bindings() -> Result<(), String> {
+        let loaded = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|e| format!("{e:?}"))?;
+        assert!(
+            !loaded.catalogue().npc_legacy.is_empty(),
+            "adding rewards must preserve the native NPC source binding owner"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn reward_amount_is_part_of_the_quest_definition_hash() -> Result<(), String> {
+        let before = parse(include_str!(
+            "../../../../../content/quests/chosen-reward-callbacks.json"
+        ))?;
+        let mut changed = before.clone();
+        changed
+            .first_mut()
+            .and_then(|c| c.give.as_mut())
+            .ok_or("reward")?
+            .count = 51;
+        let empty = || {
+            super::super::grizzly_adams::extend(
+                QuestStateCatalogue::empty("content-1").ok_or("empty")?,
+            )
+        };
+        let before = extend_callbacks(empty()?, before)?;
+        let changed = extend_callbacks(empty()?, changed)?;
+        assert_ne!(
+            before.definition_hash(super::super::grizzly_adams::QUEST),
+            changed.definition_hash(super::super::grizzly_adams::QUEST),
+            "a changed payout must not reuse a running quest's pinned value plan"
+        );
+        Ok(())
+    }
+
     #[test]
     fn reward_receipt_predicates_require_the_same_quest_and_declared_value() -> Result<(), String> {
         let empty =

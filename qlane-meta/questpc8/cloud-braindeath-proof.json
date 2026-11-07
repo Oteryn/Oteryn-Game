@@ -28,5 +28,83 @@
     "unit": "provenance rejection passed1/1",
     "pin_refresh": "passed; world pin unchanged",
     "review": "independent exact d90c1bfa2 vs15b02adfd, no findings"
+  },
+  "merged_revalidation": {
+    "heads": [
+      "2ab818fac",
+      "28a7715f7"
+    ],
+    "checks": {
+      "pg": {
+        "exit_code": 0,
+        "log": "/tmp/questpc8-braindeath-merge-pg.log",
+        "sha256": "1c3739b108f6caf58d189388afdd55f73b9abc9bcd56296bfb90e1a3d8a46459",
+        "proof": [
+          "test gameplay_transport::monk_save::postgres_tests::questpc8_authored_programmes::questpc8_braindeath_exploration_native_death_coffin_and_replay ... POSTGRES_CASE_STARTED authored-braindeath after PostgreSQL fixture initialization",
+          "POSTGRES_CASE_COMPLETED questpc8_braindeath_exploration_native_death_coffin_and_replay duration=25.801730527s",
+          "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2535 filtered out; finished in 25.80s"
+        ]
+      },
+      "campaign": {
+        "exit_code": 0,
+        "log": "/tmp/questpc8-braindeath-merge-campaign.log",
+        "sha256": "ea163a91b42e17325fa17c83f6e4af8c6464e5ac53d9b095ffc5ee52ed5f6e45",
+        "proof": [
+          "GRIZZLY_NPC_WIRE POSTGRES_CASE_COMPLETED case=5",
+          "POSTGRES_CASE_COMPLETED questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards duration=116.451671655s",
+          "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2535 filtered out; finished in 116.45s"
+        ]
+      },
+      "reward-unit": {
+        "exit_code": 0,
+        "log": "/tmp/questpc8-braindeath-merge-reward-unit.log",
+        "sha256": "5fef344a09825ab20a14e5adb801c17e6601de5e5a133a015e37bace662640ee",
+        "proof": [
+          "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 264 filtered out; finished in 0.70s"
+        ]
+      },
+      "world-unit": {
+        "exit_code": 0,
+        "log": "/tmp/questpc8-braindeath-merge-world-unit.log",
+        "sha256": "9ef367f9d32a2280b7ed988f147a33e94cd9a99b9119d5b9d54f602cc223b8b7",
+        "proof": [
+          "test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 252 filtered out; finished in 1.44s"
+        ]
+      },
+      "capture-unit": {
+        "exit_code": 0,
+        "log": "/tmp/questpc8-braindeath-merge-capture-unit.log",
+        "sha256": "04d9c59cb5a9565a77ca2641e56f5fd208e35c348fb6e66080f09692aa5fd501",
+        "proof": [
+          "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 2527 filtered out; finished in 0.00s"
+        ]
+      },
+      "check": {
+        "exit_code": 0,
+        "log": "/tmp/questpc8-braindeath-merge-check.log",
+        "sha256": "4aa9d528e96406f7aa1ebedd5dca4c89afa5da546ee90b83c8d3daf9c1056760",
+        "proof": []
+      },
+      "clippy": {
+        "exit_code": 0,
+        "log": "/tmp/questpc8-braindeath-merge-clippy.log",
+        "sha256": "e60502a7471c262967cd4f780c6f70699ae7b69b3c5c30e65a5ae0786b3d611b",
+        "proof": []
+      },
+      "fmt-final": {
+        "exit_code": 0,
+        "log": "/tmp/questpc8-braindeath-merge-fmt-final.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "proof": []
+      },
+      "generator": {
+        "exit_code": 0,
+        "log": "/tmp/questpc8-braindeath-merge-generator.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "proof": []
+      }
+    },
+    "braindeath_duration_seconds": 25.801730527,
+    "hunting_duration_seconds": 116.451671655
   }
 }
