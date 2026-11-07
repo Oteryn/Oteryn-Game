@@ -73,6 +73,17 @@ async fn window(
     let Some(day) = super::load(tx, world, epoch).await? else {
         return Ok(None);
     };
+    let selected = match kind {
+        EventKind::SpringIntoLife => day.timed.spring,
+        EventKind::RiseOfDevovorga => day.timed.rise,
+        EventKind::DevovorgasEssence => day.timed.essence,
+        EventKind::Kingsday => day.timed.kingsday,
+        EventKind::InsectoidInvasion => day.timed.insectoid,
+        _ => true,
+    };
+    if !selected {
+        return Ok(None);
+    }
     // The donor starts Flower Month on a June startup/server save and then
     // cycles until reset, including the final June day's overnight tail.
     if kind == EventKind::FlowerMonth && !day.flower_month {
@@ -81,8 +92,8 @@ async fn window(
     let bounds: (i64, i64) = if let Some((start, end)) =
         kind.window().filter(|_| kind != EventKind::FlowerMonth)
     {
-        sqlx::query_as("SELECT (extract(epoch FROM make_date(extract(year FROM to_timestamp($1::double precision/1000) AT TIME ZONE 'UTC')::int,$2,$3)::timestamp AT TIME ZONE 'UTC')*1000)::bigint,(extract(epoch FROM make_date(extract(year FROM to_timestamp($1::double precision/1000) AT TIME ZONE 'UTC')::int,$4,$5)::timestamp AT TIME ZONE 'UTC')*1000)::bigint")
-            .bind(now).bind(i32::from(start.0)).bind(i32::from(start.1)).bind(i32::from(end.0)).bind(i32::from(end.1)).fetch_one(&mut **tx).await?
+        sqlx::query_as("SELECT (extract(epoch FROM ((make_date(extract(year FROM to_timestamp($1::double precision/1000) AT TIME ZONE 'UTC')::int,$2,$3)::timestamp + CASE WHEN $6 THEN interval '6 hours' ELSE interval '0 hours' END) AT TIME ZONE CASE WHEN $6 THEN 'Europe/Berlin' ELSE 'UTC' END))*1000)::bigint,(extract(epoch FROM ((make_date(extract(year FROM to_timestamp($1::double precision/1000) AT TIME ZONE 'UTC')::int,$4,$5)::timestamp + CASE WHEN $6 THEN interval '6 hours' ELSE interval '0 hours' END) AT TIME ZONE CASE WHEN $6 THEN 'Europe/Berlin' ELSE 'UTC' END))*1000)::bigint")
+            .bind(now).bind(i32::from(start.0)).bind(i32::from(start.1)).bind(i32::from(end.0)).bind(i32::from(end.1)).bind(kind.server_save_window()).fetch_one(&mut **tx).await?
     } else {
         sqlx::query_as("SELECT (extract(epoch FROM activated_at)*1000)::bigint,(extract(epoch FROM ((date_trunc('day',activated_at AT TIME ZONE 'Europe/Berlin'-interval '6 hours')+interval '1 day 6 hours') AT TIME ZONE 'Europe/Berlin'))*1000)::bigint FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric")
             .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_one(&mut **tx).await?
@@ -125,8 +136,11 @@ async fn state(
     } else {
         bounds.0
     };
-    let initial = serde_json::to_value(EventState::new(activation, bounds.1))
-        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let initial = serde_json::to_value(
+        EventState::for_kind(kind, activation, bounds.1)
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
+    )
+    .map_err(|_| DurabilityError::InvalidStoredState)?;
     sqlx::query("INSERT INTO game_world_timed_events VALUES(encode($1,'hex')::uuid,$2,$3,$4) ON CONFLICT DO NOTHING")
         .bind(world.as_bytes().as_slice()).bind(kind.key()).bind(cycle).bind(initial).execute(&mut **tx).await?;
     let value = sqlx::query_scalar("SELECT state FROM game_world_timed_events WHERE world_id=encode($1,'hex')::uuid AND event_key=$2 AND cycle_id=$3 FOR UPDATE")
@@ -138,6 +152,10 @@ async fn state(
     } else {
         state.start_ms == bounds.0
     };
+    state
+        .lifecycle
+        .validate()
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
     if !start_matches || state.end_ms != bounds.1 {
         return Err(DurabilityError::InvalidStoredState);
     }
@@ -173,8 +191,26 @@ pub async fn poll(
     let mut state = state(tx, world, kind, bounds, cycle, now).await?;
     // Channel clocks can arrive out of order; never rewind a committed projection.
     let now = now.max(state.observed_ms);
+    let mut hash = Sha256::new();
+    hash.update(b"oteryn.world_event.timed.v1\0");
+    hash.update(world.as_bytes());
+    hash.update(kind.key());
+    hash.update(cycle.to_be_bytes());
+    let root = GameplayDecisionRoot::from_bytes(hash.finalize().into());
+    let mut occurrence = [0; 16];
+    occurrence[8..].copy_from_slice(
+        &((now - state.start_ms).div_euclid(oteryn_gameplay_world_change::timed::HOUR))
+            .to_be_bytes(),
+    );
+    let draw = deterministic_decision_u64(
+        &root,
+        DecisionOccurrenceId::from_bytes(occurrence),
+        "hourly_trigger",
+        0,
+    )
+    .map_err(|_| DurabilityError::InvalidStoredState)?;
     state
-        .advance(kind, now, Input::Tick, 0)
+        .advance(kind, now, Input::Tick, draw)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     save(tx, world, kind, &state, cycle).await?;
     Ok(Some(state))
@@ -194,7 +230,7 @@ pub async fn interact(
         .is_err()
         || actor.fence.runtime_scope.world_id() != request.world
         || request.operation == [0; 16]
-        || request.input == Input::Tick
+        || matches!(request.input, Input::Tick | Input::Defeat(_))
     {
         return Ok(None);
     }
@@ -242,10 +278,15 @@ pub async fn interact(
     let (ready, ready_object): (i64, i32) = sqlx::query_as("SELECT ready_ms,ready_object FROM game_world_timed_participants WHERE world_id=encode($1,'hex')::uuid AND event_key=$2 AND cycle_id=$3 AND character_id=encode($4,'hex')::uuid FOR UPDATE")
         .bind(request.world.as_bytes().as_slice()).bind(request.kind.key()).bind(cycle).bind(character.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
     let object = match request.input {
-        Input::Jar(aid) => i32::from(aid),
-        Input::Tick => 0,
+        Input::Jar(aid) | Input::BeginObject(aid) | Input::Extinguish(aid) | Input::Fill(aid) => {
+            i32::from(aid)
+        }
+        Input::Enter(member) => i32::from(member),
+        _ => 0,
     };
-    if (request.now_ms < ready && ready_object == object) || request.now_ms < state.observed_ms {
+    if (request.kind == EventKind::MummysCurse && request.now_ms < ready && ready_object == object)
+        || request.now_ms < state.observed_ms
+    {
         return Ok(None);
     }
     let mut hash = Sha256::new();
@@ -261,12 +302,39 @@ pub async fn interact(
         0,
     )
     .map_err(|_| DurabilityError::InvalidStoredState)?;
+    if request.input == Input::Reward {
+        let (credited,claimed,reward_ready):(i64,bool,bool)=sqlx::query_as("SELECT credited,claimed,reward_ready FROM game_world_timed_participants WHERE world_id=encode($1,'hex')::uuid AND event_key=$2 AND cycle_id=$3 AND character_id=encode($4,'hex')::uuid")
+            .bind(request.world.as_bytes().as_slice()).bind(request.kind.key()).bind(cycle).bind(character.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        if !state.reward_admitted(
+            u64::try_from(credited).map_err(|_| DurabilityError::InvalidStoredState)?,
+            claimed,
+        ) || (request.kind == EventKind::SpringIntoLife && !reward_ready)
+        {
+            return Ok(None);
+        }
+        sqlx::query("UPDATE game_world_timed_participants SET claimed=true WHERE world_id=encode($1,'hex')::uuid AND event_key=$2 AND cycle_id=$3 AND character_id=encode($4,'hex')::uuid")
+            .bind(request.world.as_bytes().as_slice()).bind(request.kind.key()).bind(cycle).bind(character.as_bytes().as_slice()).execute(&mut **tx).await?;
+        sqlx::query("INSERT INTO game_world_timed_receipts(world_id,event_key,cycle_id,character_id,operation_id,input,applied) VALUES(encode($1,'hex')::uuid,$2,$3,encode($4,'hex')::uuid,$5,$6,true)")
+            .bind(request.world.as_bytes().as_slice()).bind(request.kind.key()).bind(cycle).bind(character.as_bytes().as_slice()).bind(request.operation.as_slice()).bind(input).execute(&mut **tx).await?;
+        return Ok(Some(true));
+    }
     let before = state.objects;
     let applied = state
         .advance(request.kind, request.now_ms, request.input, draw)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     let expected_jar = matches!(request.input, Input::Jar(aid) if aid == 50006 + u16::from(before));
-    let (cooldown, cooldown_object) = if !expected_jar {
+    let (cooldown, cooldown_object) = if request.kind == EventKind::SpringIntoLife
+        && applied
+        && matches!(request.input, Input::BeginObject(_))
+    {
+        (
+            request
+                .now_ms
+                .checked_add(oteryn_gameplay_world_change::timed::HOUR)
+                .ok_or(DurabilityError::InvalidStoredState)?,
+            object,
+        )
+    } else if !expected_jar {
         // An out-of-order jar must not clear another jar's failed-attempt cooldown.
         (ready, ready_object)
     } else if !applied && before < 4 {
@@ -282,8 +350,8 @@ pub async fn interact(
     };
     save(tx, request.world, request.kind, &state, cycle).await?;
     sqlx::query("UPDATE game_world_timed_participants SET credited=credited+$5,ready_ms=$6,ready_object=$7 WHERE world_id=encode($1,'hex')::uuid AND event_key=$2 AND cycle_id=$3 AND character_id=encode($4,'hex')::uuid")
-        .bind(request.world.as_bytes().as_slice()).bind(request.kind.key()).bind(cycle).bind(character.as_bytes().as_slice()).bind(i64::from(applied)).bind(cooldown).bind(cooldown_object).execute(&mut **tx).await?;
-    sqlx::query("INSERT INTO game_world_timed_receipts VALUES(encode($1,'hex')::uuid,$2,$3,encode($4,'hex')::uuid,$5,$6,$7)")
+        .bind(request.world.as_bytes().as_slice()).bind(request.kind.key()).bind(cycle).bind(character.as_bytes().as_slice()).bind(i64::from(applied && matches!(request.input,Input::Jar(_)|Input::BeginObject(_)|Input::Extinguish(_)|Input::Fill(_)))).bind(cooldown).bind(cooldown_object).execute(&mut **tx).await?;
+    sqlx::query("INSERT INTO game_world_timed_receipts(world_id,event_key,cycle_id,character_id,operation_id,input,applied) VALUES(encode($1,'hex')::uuid,$2,$3,encode($4,'hex')::uuid,$5,$6,$7)")
         .bind(request.world.as_bytes().as_slice()).bind(request.kind.key()).bind(cycle).bind(character.as_bytes().as_slice()).bind(request.operation.as_slice()).bind(input).bind(applied).execute(&mut **tx).await?;
     Ok(Some(applied))
 }

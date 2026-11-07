@@ -55,3 +55,22 @@ requirements for the free reward. These calendar/hatch/merchant choices are
 Oteryn policy, not claims about donor code. April as the month is independently
 corroborated by
 https://github.com/s2ward/talesoftibia.com/blob/9bc90ae10ee2f0c6ea21063b4188a402e378e4bf/site/json/events.json .
+
+## Shared lifecycle policy
+
+The Spring map scan found six source dragon-nest objects, of which four are
+inside house 3015. Only the two public objects at (32344,31604,6) and
+(33977,32646,6) are eligible selectors; house objects remain excluded.
+
+The reusable lifecycle model uses these explicitly authored fallback rules
+pending the native bindings and admission proofs: Rise runs September 1 server
+save through September 8 server save, with a 24-hour preparation stage, five
+distinct incarnations credited within five minutes, a synchronized retry on
+failure, then a final boss. These timings are Oteryn policy where retained
+source bytes did not supply a complete scheduler. Kingsday continues hourly
+waves after a victory during its selected day. Bank robbery checks once per
+elapsed hour after reset at 10 per mille, consumes failed checks, and admits at
+most one robbery per day. Insectoid restoration uses three shared fires and a
+bucket holding at most three units; each successful extinguish spends one
+unit atomically. Reset creates a new cycle. These are model rules, not claims
+that the six remaining titles have completed native qualification.

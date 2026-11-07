@@ -124,3 +124,53 @@ Reused worldchg `318ab59d200ad2030ca7c829566b88175cb7e2dc` through merge
 Its focused real PG case passed (7.27 s), printing `WORLDCHG-Q PG EXECUTED`
 with elapsed 7.262177514 s after concurrent writers, dedupe, rollback, stale
 scope/epoch and reset checks. No full PostgreSQL suite ran.
+
+## Shared seasonal lifecycle slice
+
+Migration 1122 admits all nine event identities, bounds the lifecycle state to
+32 KiB, adds per-Character reward readiness and an immutable raid-origin relation.
+Old daily snapshots and timed states decode with inactive/default new fields.
+New daily rolls remain part of the committed reset snapshot. The lifecycle
+model covers Spring timers, synchronized Devovorga preparation/incarnations/final
+boss, hourly Kingsday waves, consumed hourly robbery draws and shared bucket/fire
+restoration. Policy choices and public nest exclusions are in CONTRACT-NOTES.md.
+The declarative Quest/NPC binding schema is additive; payments and grants still
+need the existing custody/MINT transaction and native selector admission.
+
+The new model test initially failed because fire extinguishing did not spend
+water (`/tmp/wevents-water-red.log`). Both that defect and hourly celebration
+continuation after victory are covered by the focused regression. The earlier
+seasonal API red test is `/tmp/wevents-seasons-red.log`.
+
+Real PostgreSQL execution of
+`cargo test --locked -p oteryn-game-server --test character_authority_postgres wevents_postgres_timed_owner -- --nocapture`
+passed **1 test in 12.00 s**, with markers `WEVENTS PG EXECUTED: six lifecycle
+kinds, shared water/fire, serialization, runtime role, rollback;
+duration=5.481294ms` and `WEVENTS PG EXECUTED: timed owner, rollback, replay,
+calendar, jars, reset; duration=11.995856195s`.
+The six-kind portion writes and reloads actual PostgreSQL JSON under
+`oteryn_game_runtime`, validates the restored state and proves transaction
+rollback. It does not represent native spawn acknowledgement, paid encounter
+admission or physical reward delivery; those remain subsequent integration
+checks, and this slice promotes no additional title rows.
+
+Frozen-tree rerun after removing generated compiler caches: the same focused
+PostgreSQL test passed **1 test in 5.10 s**, with six-kind marker duration
+**7.512804 ms** and owner-case duration **5.096840617 s**
+(`/tmp/wevents-lifecycle-pg-retry.log`). The first frozen-tree link attempt
+failed with `No space left on device (os error 28)` and linker signal 7; deleting
+only old incremental compiler caches restored space. No source or test was
+removed or weakened.
+
+Final focused model checks passed **13 tests** across `wevents_objects`,
+`wevents_seasons` and `worldchg_owner`; the existing Quest reward loader bounds
+check passed **1 test**. `cargo check --locked` passed for world-change, quests
+and durability. Strict clippy `--lib -- -D warnings` passed for world-change,
+quests, durability, dispatch and game-server. Workspace `fmt --check`, explicit
+rustfmt of the two mounted test files, and `git diff --check` passed.
+Tool-driven `pin-refresh` and `pin-check` passed with unchanged World digest
+`d5e52c7a0ef24bf6aa7b78926fd0806e43eb731ac69b10783f20c9f10dcd88e5`.
+The diff review checked enum/schema correspondence, receipt immutability,
+current-epoch/session guards, failed hourly draw consumption, payment policy
+bounds and old snapshot defaults. No newly enabled value source is published in
+this schema slice. No full nextest or full PostgreSQL suite was run.

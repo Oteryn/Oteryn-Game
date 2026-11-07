@@ -35,6 +35,10 @@ pub struct OutfitReward {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct RewardCallback {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub world_event: Option<Box<oteryn_gameplay_world_change::binding::Binding>>,
+    #[serde(default)]
+    pub repeatable: bool,
     pub key: String,
     pub quest: String,
     pub npc: String,
@@ -87,7 +91,27 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
         let tracks: BTreeSet<_> = c.storage.iter().map(|s| &s.track).collect();
         let inputs: BTreeSet<_> = c.take.iter().map(|s| &s.item).collect();
         let evidence: BTreeSet<_> = c.present.iter().map(|s| &s.item).collect();
-        if !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
+        if c.world_event.as_ref().is_some_and(|b| {
+            !b.valid()
+                || b.cost().is_some_and(|(id, count)| {
+                    !c.take
+                        .iter()
+                        .any(|i| i.item == format!("oteryn:item.tibia.i{id}") && i.count == count)
+                })
+        }) || (c.repeatable
+            && (c
+                .storage
+                .iter()
+                .any(|s| !s.preserve && (s.set <= 0 || s.maximum.checked_add(s.set).is_none()))
+                || (c.take.is_empty()
+                    && c.world_event.as_ref().is_none_or(|b| {
+                        !matches!(
+                            b.action,
+                            oteryn_gameplay_world_change::timed::Input::Reward
+                                | oteryn_gameplay_world_change::timed::Input::ClaimObject(_)
+                        )
+                    }))))
+            || !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
             || !slug(&c.npc, "oteryn:npc.", b"_", 128)
@@ -99,7 +123,7 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                 .any(|s| !slug(&s.track, "oteryn:", b"._/:-", 128) || s.minimum > s.maximum)
             || c.storage
                 .iter()
-                .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+                .all(|s| s.preserve || (!c.repeatable && (s.minimum..=s.maximum).contains(&s.set)))
             || c.present.len() > 8
             || evidence.len() != c.present.len()
             || c.present
@@ -174,6 +198,8 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                     from: QuestComparison::Between(s.minimum, s.maximum),
                     effect: if s.preserve {
                         QuestEffectKind::Add(0)
+                    } else if callback.repeatable {
+                        QuestEffectKind::Add(s.set)
                     } else {
                         QuestEffectKind::Set(s.set)
                     },
@@ -185,6 +211,28 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
     }
     QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
         .map_err(|e| format!("{e:?}"))
+}
+
+/// A native world selector supplies the source context; NPC identity is unused.
+pub fn world_reward(callback: &super::world_callbacks::Callback) -> Option<RewardCallback> {
+    Some(RewardCallback {
+        world_event: callback.effects.world_event.clone(),
+        repeatable: false,
+        key: callback.key.clone(),
+        quest: callback.quest.clone(),
+        npc: String::new(),
+        keywords: Vec::new(),
+        topic: 0,
+        next_topic: 0,
+        storage: callback.storage.clone(),
+        take: Vec::new(),
+        present: Vec::new(),
+        give: Some(callback.effects.item_reward.clone()?),
+        outfit: None,
+        achievement: None,
+        reply: Vec::new(),
+        sources: callback.sources.clone(),
+    })
 }
 
 #[cfg(test)]

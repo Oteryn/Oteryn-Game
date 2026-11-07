@@ -103,6 +103,7 @@ pub struct DailyCandidates {
     pub trader_percent: u8,
     pub stampede_permille: u16,
     pub fire_earth_permille: u16,
+    pub timed: crate::daily_timed::Candidates,
 }
 
 /// The world changes of one day.
@@ -110,6 +111,8 @@ pub struct DailyCandidates {
 #[serde(deny_unknown_fields)]
 pub struct DailyWorldChanges {
     pub reset_epoch: u64,
+    #[serde(default)]
+    pub timed: crate::daily_timed::Selection,
     pub thawing: bool,
     pub their_masters_voice: bool,
     pub oriental_trader: Option<OrientalTraderTown>,
@@ -143,6 +146,7 @@ impl DailyWorldChanges {
                 thawing_percent: THAWING_PERCENT,
                 voice_percent: THEIR_MASTERS_VOICE_PERCENT,
                 trader_percent: ORIENTAL_TRADER_PERCENT,
+                timed: Default::default(),
                 stampede_permille: 125,
                 fire_earth_permille: 199,
             },
@@ -171,6 +175,7 @@ impl DailyWorldChanges {
         let fire_from_the_earth =
             (u128::from(draw(fire)) * 1000) >> 64 < u128::from(candidates.fire_earth_permille);
         Self {
+            timed: candidates.timed.select(month, day, &mut draw),
             stampede,
             fire_from_the_earth,
             world_counters: true,
@@ -187,7 +192,9 @@ impl DailyWorldChanges {
 
     /// The NPCs this day adds to the live map: `(key, (x, y, z))`.
     pub fn npcs(&self) -> impl Iterator<Item = (&'static str, (u16, u16, i8))> {
-        self.flower_month.then_some(ROSEMARIE).into_iter()
+        (self.flower_month || self.timed.spring)
+            .then_some(ROSEMARIE)
+            .into_iter()
     }
 
     /// The Items this day adds to the live map: `(appearance, (x, y, z))`.
@@ -237,6 +244,7 @@ mod tests {
         assert_eq!(
             all,
             DailyWorldChanges {
+                timed: Default::default(),
                 reset_epoch: 9,
                 thawing: true,
                 their_masters_voice: true,

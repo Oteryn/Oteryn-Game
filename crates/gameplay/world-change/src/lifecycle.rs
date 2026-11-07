@@ -1,0 +1,99 @@
+//! Reusable seasonal stages and source object population state. Native effects
+//! and all item/value writes remain with their existing fenced owners.
+use crate::objects::{ObjectStatus, SharedObjectState};
+use serde::{Deserialize, Serialize};
+use std::collections::{BTreeMap, BTreeSet};
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LifecycleState {
+    pub stage: u8,
+    pub generation: u64,
+    pub mask: u16,
+    pub first_defeat_ms: Option<i64>,
+    pub failed_attempts: u32,
+    pub objects: BTreeMap<u16, SharedObjectState>,
+    pub firing_versions: BTreeMap<u16, u64>,
+    pub successful_spawns: BTreeSet<u16>,
+    pub failed_spawns: BTreeSet<u16>,
+}
+
+impl LifecycleState {
+    pub fn validate(&self) -> Result<(), &'static str> {
+        if self.stage > 8
+            || self.objects.len() > 128
+            || self.firing_versions.len() > 128
+            || self.successful_spawns.len() > 128
+            || self.failed_spawns.len() > 128
+            || self.first_defeat_ms.is_some_and(|at| at < 0)
+        {
+            return Err("invalid lifecycle state");
+        }
+        for object in self.objects.values() {
+            object.validate()?;
+        }
+        Ok(())
+    }
+    pub fn next_generation(&mut self) -> Result<(), &'static str> {
+        let next = self
+            .generation
+            .checked_add(1)
+            .ok_or("event generation exhausted")?;
+        self.generation = next;
+        self.mask = 0;
+        self.first_defeat_ms = None;
+        self.firing_versions.clear();
+        self.successful_spawns.clear();
+        self.failed_spawns.clear();
+        Ok(())
+    }
+    pub fn ready(&self, object: u16, now: i64) -> bool {
+        self.objects
+            .get(&object)
+            .is_some_and(|o| o.status(now) == Ok(ObjectStatus::Ready))
+    }
+    pub fn begin(&mut self, object: u16, now: i64, delay: i64) -> Result<bool, &'static str> {
+        let Some(state) = self.objects.get_mut(&object) else {
+            return Err("unknown event object");
+        };
+        state.begin(now, delay)
+    }
+    /// The return value describes a new physical placement, not an admission request.
+    pub fn note_spawn(&mut self, member: u16, placed: bool) -> Result<bool, &'static str> {
+        if member >= 128 {
+            return Err("invalid event member");
+        }
+        Ok(if placed {
+            self.failed_spawns.remove(&member);
+            self.successful_spawns.insert(member)
+        } else if self.successful_spawns.contains(&member) {
+            false
+        } else {
+            self.failed_spawns.insert(member)
+        })
+    }
+    /// Five distinct members must be credited within one shared five-minute
+    /// window. Late attempts reset together; final member 5 belongs to stage 2.
+    pub fn defeat(&mut self, member: u8, now: i64) -> Result<(bool, bool), &'static str> {
+        if now < 0 {
+            return Err("invalid defeat clock");
+        }
+        match (self.stage, member) {
+            (1, 0..=4) => {
+                let bit = 1_u16 << member;
+                if self.mask & bit != 0 {
+                    return Ok((false, false));
+                }
+                self.first_defeat_ms.get_or_insert(now);
+                self.mask |= bit;
+                if self.mask == 31 {
+                    self.next_generation()?;
+                    self.stage = 2;
+                }
+                Ok((true, false))
+            }
+            (2, 5) => Ok((true, true)),
+            _ => Ok((false, false)),
+        }
+    }
+}

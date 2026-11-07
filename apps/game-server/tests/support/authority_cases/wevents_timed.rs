@@ -81,6 +81,72 @@ async fn run(h: &fixture::Harness) -> fixture::TestResult {
         .fetch_one(&h.pool)
         .await?;
     assert_eq!(count, 0);
+    // Exercise the new lifecycle schema with the actual runtime role. These
+    // are persistence checks, not title qualification or native effect ACKs.
+    let lifecycle_started = std::time::Instant::now();
+    let mut lifecycle_tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+        .execute(&mut *lifecycle_tx)
+        .await?;
+    for kind in [
+        EventKind::SpringIntoLife,
+        EventKind::RiseOfDevovorga,
+        EventKind::DevovorgasEssence,
+        EventKind::Kingsday,
+        EventKind::BankRobbery,
+        EventKind::InsectoidInvasion,
+    ] {
+        let mut state = oteryn_gameplay_world_change::timed::EventState::for_kind(
+            kind,
+            now,
+            now + 24 * 60 * MINUTE,
+        )
+        .map_err(fixture::debug)?;
+        if kind == EventKind::InsectoidInvasion {
+            assert!(
+                !state
+                    .advance(kind, now + 1, Input::Extinguish(1), 0)
+                    .map_err(fixture::debug)?
+            );
+            assert!(
+                state
+                    .advance(kind, now + 2, Input::Fill(0), 0)
+                    .map_err(fixture::debug)?
+            );
+            assert!(
+                state
+                    .advance(kind, now + 3, Input::Extinguish(1), 0)
+                    .map_err(fixture::debug)?
+            );
+        }
+        let encoded = serde_json::to_value(&state)?;
+        sqlx::query("INSERT INTO game_world_timed_events VALUES(encode($1,'hex')::uuid,$2,$3,$4)")
+            .bind(world.as_bytes().as_slice())
+            .bind(kind.key())
+            .bind(77_i64)
+            .bind(&encoded)
+            .execute(&mut *lifecycle_tx)
+            .await?;
+        let stored: serde_json::Value = sqlx::query_scalar("SELECT state FROM game_world_timed_events WHERE world_id=encode($1,'hex')::uuid AND event_key=$2 AND cycle_id=77")
+            .bind(world.as_bytes().as_slice()).bind(kind.key()).fetch_one(&mut *lifecycle_tx).await?;
+        let restored: oteryn_gameplay_world_change::timed::EventState =
+            serde_json::from_value(stored)?;
+        assert_eq!(restored, state);
+        restored.lifecycle.validate().map_err(fixture::debug)?;
+    }
+    lifecycle_tx.rollback().await?;
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM game_world_timed_events WHERE cycle_id=77"
+        )
+        .fetch_one(&h.pool)
+        .await?,
+        0
+    );
+    eprintln!(
+        "WEVENTS PG EXECUTED: six lifecycle kinds, shared water/fire, serialization, runtime role, rollback; duration={:?}",
+        lifecycle_started.elapsed()
+    );
     // Fresh session and stale epoch refusals reach the same production writer.
     let mut tx = h.pool.begin().await?;
     let mut stale = fixture::fence(1)?;

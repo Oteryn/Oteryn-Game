@@ -14,6 +14,10 @@ pub enum Facing {
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub world_event: Option<Box<oteryn_gameplay_world_change::binding::Binding>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub item_reward: Option<super::super::reward_callbacks::ItemReward>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outfit_reward: Option<super::super::reward_callbacks::OutfitReward>,
     pub transform: Option<u16>,
     pub facing: Option<Facing>,
@@ -88,6 +92,37 @@ pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
     let pos = |p: Position| (-15..=0).contains(&p.floor);
     let lever = callback.trigger == Trigger::Use && callback.lever.is_some();
+    if effects.world_event.as_ref().is_some_and(|binding| {
+        !binding.valid()
+            || binding.cost().is_some_and(|(id, count)| {
+                callback.item_on_target.as_ref().is_none_or(|item| {
+                    item.item != format!("oteryn:item.tibia.i{id}") || item.count != count
+                })
+            })
+    }) {
+        return false;
+    }
+    if effects.item_reward.as_ref().is_some_and(|reward| {
+        reward.count == 0
+            || reward.count > 100
+            || !super::super::valid_quest_key(&reward.item)
+            || reward.contents.len() > 20
+            || (effects.world_event.is_none()
+                && callback
+                    .storage
+                    .iter()
+                    .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
+    }) {
+        return false;
+    }
+    let event_encounter = effects.world_event.as_ref().is_some_and(|b| {
+        matches!(
+            b.action,
+            oteryn_gameplay_world_change::timed::Input::Enter(_)
+        )
+    }) && callback.trigger == Trigger::Use
+        && callback.selector.position.is_some();
+
     if effects.outfit_reward.as_ref().is_some_and(|r| {
         callback.trigger != Trigger::Use
             || callback.storage.is_empty()
@@ -118,8 +153,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
         + usize::from(effects.encounter.is_some());
     if operations > 1
         || (operations > 0
-            && (!lever
-                || !callback.storage.is_empty()
+            && ((!lever && !event_encounter)
+                || (!event_encounter && !callback.storage.is_empty())
                 || !callback.passages.is_empty()
                 || callback.teleport.is_some()))
     {
