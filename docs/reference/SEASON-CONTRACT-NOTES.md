@@ -874,3 +874,14 @@ source-qualified Cake notices in the existing outbox, with independent current
 Channel recipient/ACK proofs and immutable lure/phase receipt binding; ordinary
 kinds1-4 cursor and terminal rules remain unchanged. No notice code is marked
 complete by this reservation.
+
+### Complete source wrap and Carpet classification capture
+
+Normal source tooling now captures2015 initialized furniture profiles and1617
+XML forward wrap pairs. Reverse unwrap still requires existing purchased/prior
+wrap provenance in the durable owner; this catalogue alone grants no provenance.
+All161 XML ItemTypeCarpet identities are classified separately from160 Lua USE
+handlers: folded26151 remains nonCarpet;51222/51223 have initialized raw id+flags
+in both pinned donor appearances and exact existing canonical references. The
+existing Carpet enum ordinal2 is reused. Nine source tests pass in1.982s and
+source-generator check passes. Shared native provider refresh remains required.

@@ -10,6 +10,8 @@ from house_decoration_actions import (
     PROFILES,
     admit,
     apply_top_order,
+    apply_carpet_types,
+    initialized_item_ids,
     encode,
     sql_pairs,
 )
@@ -86,6 +88,44 @@ class HouseDecorationActions(unittest.TestCase):
             self.assertIn('Ground', profile['admission']['legal_destinations'])
             self.assertIsInstance(profile['attributes']['always_on_top'], bool)
             self.assertIn(profile['attributes']['always_on_top_order'], (0, 1, 2, 3))
+
+    def test_native_xml_wrap_pairs_are_exact_forward_evidence(self):
+        catalogue = json.loads((ROOT / CATALOGUE).read_bytes())
+        profiles = json.loads((ROOT / PROFILES).read_bytes())
+        keys = {row['production_definition']['production_key'] for row in profiles['records']}
+        pairs = {(row['item_id'], row['target']) for row in catalogue['wrap_pairs']}
+        self.assertEqual(len(pairs), 1617)
+        self.assertTrue({(6355,6371),(34276,23398),(35949,23398),(35969,23398)} <= pairs)
+        self.assertNotIn((23398,34276), pairs, 'reverse unwrap needs prior-wrap or purchased-origin provenance')
+        for row in catalogue['wrap_pairs']:
+            self.assertRegex(row['donor'], r'data/items/items.xml:\d+')
+            self.assertIn(f"oteryn:item.tibia.i{row['item_id']}", keys)
+            self.assertIn(f"oteryn:item.tibia.i{row['target']}", keys)
+        self.assertIn(b'FUNCTION game_house_native_wrap_pair(p_source TEXT,p_target TEXT)', sql_pairs(catalogue, profiles))
+
+    def test_initialized_appearance_requires_explicit_id_and_flags(self):
+        # Crystal items.cpp:156-169,226 excludes missing flags, including an
+        # object represented by the parser's default empty dictionary.
+        self.assertEqual(initialized_item_ids(bytes.fromhex('0a0208010a0408021a000a021a00')), {2})
+
+    def test_xml_only_carpets_are_qualified_without_fabricated_use_handlers(self):
+        overlay = json.loads((ROOT / PROFILES).read_bytes())
+        records = {row['production_definition']['production_key']: row for row in overlay['records']}
+        catalogue = json.loads((ROOT / CATALOGUE).read_bytes())
+        for item in (51222, 51223):
+            row = records[f'oteryn:item.tibia.i{item}']
+            self.assertEqual(row['production_binding']['disposition'], 'EXACT')
+            self.assertTrue(row['admission']['materializable'])
+            self.assertEqual(row['semantics']['classification']['value']['item_type'], {'state':'KNOWN','value':'CARPET'})
+            self.assertNotIn(item, {action['item_id'] for action in catalogue['carpets']})
+        self.assertEqual(sum(row['semantics']['classification'].get('value', {}).get('item_type') == {'state':'KNOWN','value':'CARPET'} for row in records.values()), 161)
+        self.assertNotEqual(records['oteryn:item.tibia.i26151']['semantics']['classification']['value']['item_type'], {'state':'KNOWN','value':'CARPET'})
+        existing = copy.deepcopy(records['oteryn:item.tibia.i37365'])
+        existing['semantics']['classification']['value']['item_type'] = {'state':'NA'}
+        existing['semantics']['classification']['value']['capabilities'] = {'state':'KNOWN','value':[]}
+        apply_carpet_types([existing], overlay)
+        self.assertEqual(existing['semantics']['classification']['value']['item_type'], {'state':'KNOWN','value':'CARPET'})
+        self.assertEqual(existing['semantics']['classification']['value']['capabilities'], {'state':'KNOWN','value':[]})
 
     def test_native_decoration_temporal_targets_are_closed(self):
         profiles = {row['production_definition']['production_key']: row for row in json.loads(

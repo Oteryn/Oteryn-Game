@@ -26,6 +26,18 @@ def encode(document):
     return (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
 
 
+def initialized_item_ids(raw):
+    """Crystal items.cpp:156-169,226: only explicit id+flags initialize ItemType."""
+    initialized = set()
+    for number, object_raw in source.engine_items.protobuf_fields(raw):
+        if number != 1:
+            continue
+        fields = dict(source.engine_items.protobuf_fields(object_raw))
+        if fields.get(1, 0) and 3 in fields:
+            initialized.add(fields[1])
+    return initialized
+
+
 def capture(crystal, canary):
     sources = {}
 
@@ -133,28 +145,42 @@ def capture(crystal, canary):
     appearance_raw = (canary / 'data/items/appearances.dat').read_bytes()
     objects = source.engine_items.load_appearance_objects(appearance_raw)
     bindings = binding_index(BINDINGS.read_bytes())
-    qualified = {item for item in xml if item in objects and str(item) in bindings}
+    crystal_appearance_raw = (crystal / 'data/items/appearances.dat').read_bytes()
+    initialized = initialized_item_ids(appearance_raw) & initialized_item_ids(crystal_appearance_raw)
+    qualified = {item for item in xml if item in initialized and str(item) in bindings}
     unavailable = [{**row, 'runtime_noop': True, 'engine_donor': 'src/game/game.cpp:3054-3057'}
                    for row in native_transforms + bed_rotations if row['target'] not in qualified]
     native_transforms = [row for row in native_transforms if row['target'] in qualified]
     native_transforms.extend({**row, 'requested_target': row['target'], 'target': row['item_id'], 'noop': True}
                              for row in unavailable)
     bed_item_ids = sorted(item for item in qualified if source.attrs(xml[item]).get('type') == 'bed')
+    # Crystal Items::parseItemNode: wrapableTo is a native forward transform;
+    # reverse unwrap still requires the owning prior-wrap/purchased-origin proof.
+    wrap_pairs = []
+    for item in sorted(qualified):
+        target = int(source.attrs(xml[item]).get('wrapableto', '0'))
+        if target > 0 and target in qualified:
+            wrap_pairs.append({'item_id': item, 'target': target,
+                               'donor': f'data/items/items.xml:{line_ids[item]}'})
+
     catalogue = {'schema': 'OTERYN_HOUSE_DECORATION_ACTIONS/v1', 'crystal_commit': PIN,
                  'sources': [{'path': path, 'sha256': digest} for path, digest in sorted(sources.items())],
                  'carpets': carpets, 'windows': windows, 'mirror': mirror, 'bathtub': bathtub,
                  'music': music, 'birdcage': birdcage, 'fish_tank': fish_tank, 'magic_trees': trees,
-                 'bed_kits': bed_kits, 'bed_item_ids': bed_item_ids,
+                 'bed_kits': bed_kits, 'bed_item_ids': bed_item_ids, 'wrap_pairs': wrap_pairs,
                  'native_transforms': sorted(native_transforms, key=lambda row: (row['item_id'], row['kind'])),
                  'unavailable_native_transforms': unavailable}
     ids = set(mirror['item_ids']) | {bathtub['item_id'], bathtub['target'], birdcage['item_id'], birdcage['target'], fish_tank['item_id'], 26100}
     ids.update(row['item_id'] for row in music)
-    for row in carpets + windows + trees + native_transforms:
+    for row in carpets + windows + trees + native_transforms + wrap_pairs:
         ids.update((row['item_id'], row['target']))
     for row in bed_kits:
         ids.update((row['item_id'], *row['south'], *row['east']))
     ids.update((2491, 5501, 15506, 2489, 5499, 15508))
     ids.update(bed_item_ids)
+    # Crystal XML:86273-86281 includes51222/51223, although carpets.lua has no
+    # USE handlers for them. Auto-carpet is ItemType, not Lua action membership.
+    ids.update(item for item in qualified if source.attrs(xml[item]).get('type') == 'carpet')
     # Crystal Items::parseItemNode's decayTo targets remain real Item references;
     # close the native policy graph rather than admitting only the active variants.
     pending = list(ids)
@@ -182,6 +208,8 @@ def capture(crystal, canary):
                 'appearance_sha256': hashlib.sha256(appearance_raw).hexdigest(),
                 'sources': [{'reference': 'crystal', 'revision': PIN, 'path': 'data/items/items.xml',
                              'sha256': hashlib.sha256(xml_raw).hexdigest()},
+                            {'reference': 'crystal', 'revision': PIN, 'path': 'data/items/appearances.dat',
+                             'sha256': hashlib.sha256(crystal_appearance_raw).hexdigest()},
                             {'reference': 'canary', 'revision': CANARY, 'path': 'data/items/appearances.dat',
                              'sha256': hashlib.sha256(appearance_raw).hexdigest()}],
                 'always_on_top': top, 'records': bound['records']}
@@ -198,6 +226,24 @@ def apply_top_order(records, overlay):
             row['attributes']['always_on_top_order'] = top
 
 
+def apply_carpet_types(records, overlay):
+    """Initialized Crystal XML carpet classification preserves richer existing facts."""
+    carpets = {row['production_definition']['production_key']: row['semantics']['classification']
+               for row in overlay['records'] if row['semantics']['classification'].get('value', {}).get('item_type') == source.K('CARPET')}
+    for row in records:
+        key = row['production_definition']['production_key']
+        if key not in carpets:
+            continue
+        current = row['semantics']['classification']
+        if current['state'] != 'KNOWN':
+            row['semantics']['classification'] = copy.deepcopy(carpets[key])
+            continue
+        item_type = current['value']['item_type']
+        if item_type['state'] == 'KNOWN' and item_type != source.K('CARPET'):
+            raise ValueError('HOUSE_CARPET_TYPE_CONFLICT:' + key)
+        current['value']['item_type'] = source.K('CARPET')
+
+
 def admit(root, generated, profile_path, manifest_path, order, canonical):
     overlay = json.loads((root / PROFILES).read_bytes())
     if (overlay['schema'] != 'OTERYN_HOUSE_DECORATION_PROFILES/v1'
@@ -209,6 +255,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     document['records'].extend(copy.deepcopy(row) for row in overlay['records']
                                if row['production_definition']['production_key'] not in existing)
     apply_top_order(document['records'], overlay)
+    apply_carpet_types(document['records'], overlay)
     for row in document['records']:
         key = row['production_definition']['production_key']
         item = key.removeprefix('oteryn:item.tibia.i')
@@ -253,7 +300,8 @@ def sql_pairs(catalogue, profiles=None):
             pairs.update((item, row[orientation][1]) for item in tails)
     text = '-- Generated by tools/content-migration/house_decoration_actions.py. Do not edit.\n'
     text += '-- W18 exact donor file:line locators and input hashes: house-decoration-actions.json.\n'
-    for function, values in [('game_house_decoration_pair', pairs), ('game_house_base_decoration_pair', base)]:
+    for function, values in [('game_house_decoration_pair', pairs), ('game_house_base_decoration_pair', base),
+                             ('game_house_native_wrap_pair', {(row['item_id'], row['target']) for row in catalogue['wrap_pairs']})]:
         rows = ',\n'.join(f"  ('oteryn:item.tibia.i{a}','oteryn:item.tibia.i{b}')" for a, b in sorted(values))
         text += (f'CREATE OR REPLACE FUNCTION {function}(p_source TEXT,p_target TEXT)\n'
                  'RETURNS BOOLEAN LANGUAGE sql IMMUTABLE AS $$\n'
