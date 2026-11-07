@@ -14903,6 +14903,276 @@
       ]
     },
     {
+      "key": "oteryn:quest-transition/questpc3/threatened-fairy/01",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 40016,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/nightmare_intruders",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/fairy01",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/fairies_counter",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 0,
+          "increment": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "My tainted siblings locked me up in the dark far too long. Now I'm finally free! Thank you, mortal being!",
+      "effects": {
+        "temporary_transform": {
+          "appearance": 25797,
+          "restore": 25796,
+          "lifetime_us": 30000000
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:content/quests/threatened-dreams-npc.json canonical quest-state declaration",
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/scripts/quests/threatened_dreams_quest/action_fairies_release.lua:1-67 git-blob=96e10ff0166fdc0d6c17fd584721173b973ae560 sha256=73a538f9be2e1afcd0d31632ab68689191229ba4049dc4562caa757587869243"
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/threatened-fairy/02",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 40017,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/nightmare_intruders",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/fairy02",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/fairies_counter",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 0,
+          "increment": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "My tainted siblings locked me up in the dark far too long. Now I'm finally free! Thank you, mortal being!",
+      "effects": {
+        "temporary_transform": {
+          "appearance": 25797,
+          "restore": 25796,
+          "lifetime_us": 30000000
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:content/quests/threatened-dreams-npc.json canonical quest-state declaration",
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/scripts/quests/threatened_dreams_quest/action_fairies_release.lua:1-67 git-blob=96e10ff0166fdc0d6c17fd584721173b973ae560 sha256=73a538f9be2e1afcd0d31632ab68689191229ba4049dc4562caa757587869243"
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/threatened-fairy/03",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 40018,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/nightmare_intruders",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/fairy03",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/fairies_counter",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 0,
+          "increment": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "My tainted siblings locked me up in the dark far too long. Now I'm finally free! Thank you, mortal being!",
+      "effects": {
+        "temporary_transform": {
+          "appearance": 25797,
+          "restore": 25796,
+          "lifetime_us": 30000000
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:content/quests/threatened-dreams-npc.json canonical quest-state declaration",
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/scripts/quests/threatened_dreams_quest/action_fairies_release.lua:1-67 git-blob=96e10ff0166fdc0d6c17fd584721173b973ae560 sha256=73a538f9be2e1afcd0d31632ab68689191229ba4049dc4562caa757587869243"
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/threatened-fairy/04",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 40019,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/nightmare_intruders",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/fairy04",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/fairies_counter",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 0,
+          "increment": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "My tainted siblings locked me up in the dark far too long. Now I'm finally free! Thank you, mortal being!",
+      "effects": {
+        "temporary_transform": {
+          "appearance": 25797,
+          "restore": 25796,
+          "lifetime_us": 30000000
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:content/quests/threatened-dreams-npc.json canonical quest-state declaration",
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/scripts/quests/threatened_dreams_quest/action_fairies_release.lua:1-67 git-blob=96e10ff0166fdc0d6c17fd584721173b973ae560 sha256=73a538f9be2e1afcd0d31632ab68689191229ba4049dc4562caa757587869243"
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/threatened-fairy/05",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 40020,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/nightmare_intruders",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/fairy05",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/fairies_counter",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 0,
+          "increment": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "My tainted siblings locked me up in the dark far too long. Now I'm finally free! Thank you, mortal being!",
+      "effects": {
+        "temporary_transform": {
+          "appearance": 25797,
+          "restore": 25796,
+          "lifetime_us": 30000000
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:content/quests/threatened-dreams-npc.json canonical quest-state declaration",
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/scripts/quests/threatened_dreams_quest/action_fairies_release.lua:1-67 git-blob=96e10ff0166fdc0d6c17fd584721173b973ae560 sha256=73a538f9be2e1afcd0d31632ab68689191229ba4049dc4562caa757587869243"
+      ]
+    },
+    {
       "key": "oteryn:quest-transition/questpc3/threatened-light/moon-cosmetic",
       "quest": "oteryn:quest.threatened_dreams_quest",
       "trigger": "use_carried",

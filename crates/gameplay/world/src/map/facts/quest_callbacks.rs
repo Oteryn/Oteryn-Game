@@ -5,6 +5,13 @@ use super::*;
 struct MovementDecay {
     revision: u64,
     restore: EntryFacts,
+    matching_appearance: Option<u16>,
+}
+
+#[derive(Clone, Copy)]
+enum DecayGuard {
+    Revision,
+    Appearance { expected_revision: u64 },
 }
 
 #[derive(Clone, Debug, Default)]
@@ -72,6 +79,46 @@ impl BundleFacts {
         now: u64,
         delay_us: u64,
     ) -> bool {
+        self.start_transform_decay(
+            key,
+            restore,
+            appearance,
+            (now, delay_us),
+            DecayGuard::Revision,
+        )
+    }
+
+    /// Source quest timers restore a matching appearance, including after another
+    /// player transforms it to that same appearance before the first deadline.
+    pub fn start_quest_callback_decay(
+        &self,
+        key: u64,
+        expected_revision: u64,
+        restore: EntryFacts,
+        appearance: u16,
+        now: u64,
+        delay_us: u64,
+    ) -> bool {
+        if expected_revision.checked_add(2).is_none() || delay_us == 0 {
+            return false;
+        }
+        self.start_transform_decay(
+            key,
+            restore,
+            appearance,
+            (now, delay_us),
+            DecayGuard::Appearance { expected_revision },
+        )
+    }
+
+    fn start_transform_decay(
+        &self,
+        key: u64,
+        restore: EntryFacts,
+        appearance: u16,
+        (now, delay_us): (u64, u64),
+        guard: DecayGuard,
+    ) -> bool {
         let Some(due) = now.checked_add(delay_us) else {
             return false;
         };
@@ -88,6 +135,15 @@ impl BundleFacts {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
+        let current_revision = states
+            .changed
+            .get(&key)
+            .map_or(0, |(revision, _)| *revision);
+        if let DecayGuard::Appearance { expected_revision } = guard
+            && current_revision != expected_revision
+        {
+            return false;
+        }
         let Some(revision) = states
             .changed
             .get(&key)
@@ -101,9 +157,17 @@ impl BundleFacts {
         }
         let states = Arc::make_mut(&mut states);
         states.changed.insert(key, (revision, after));
-        states
-            .movement_decays
-            .insert((due, key), MovementDecay { revision, restore });
+        states.movement_decays.insert(
+            (due, key),
+            MovementDecay {
+                revision,
+                restore,
+                matching_appearance: match guard {
+                    DecayGuard::Revision => None,
+                    DecayGuard::Appearance { .. } => Some(appearance),
+                },
+            },
+        );
         true
     }
 
@@ -117,7 +181,8 @@ impl BundleFacts {
     }
 
     /// The current Channel owner drains this even while no player is walking.
-    /// An intervening transform invalidates the old timer's exact object revision.
+    /// Movement timers retain exact revision guards; quest timers retain their
+    /// source appearance predicate without extending an earlier deadline.
     pub fn expire_movement_items(&self, now: u64) -> usize {
         let Ok(mut states) = self.callbacks.lock() else {
             return 0;
@@ -132,11 +197,13 @@ impl BundleFacts {
             let Some(((_, key), decay)) = states.movement_decays.pop_first() else {
                 break;
             };
-            if states
-                .changed
-                .get(&key)
-                .is_some_and(|(revision, _)| *revision == decay.revision)
-                && let Some(revision) = decay.revision.checked_add(1)
+            if let Some((current_revision, facts)) = states.changed.get(&key)
+                && decay
+                    .matching_appearance
+                    .map_or(*current_revision == decay.revision, |appearance| {
+                        facts.appearance_id == appearance
+                    })
+                && let Some(revision) = current_revision.checked_add(1)
             {
                 states.changed.insert(key, (revision, decay.restore));
                 changed += 1;

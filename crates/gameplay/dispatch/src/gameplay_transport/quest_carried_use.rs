@@ -422,6 +422,7 @@ async fn run_inner(
         return Err(UseDisposition::NotPossible);
     }
     let context = QuestWorldContext {
+        projection_time_us: None,
         carried: Some(CarriedUseContext {
             target,
             source: instance,

@@ -27,6 +27,9 @@ pub struct CarriedUseContext {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct QuestWorldContext {
+    /// Frozen Channel clock for recovering bounded local projections.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub projection_time_us: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub carried: Option<CarriedUseContext>,
     pub map_revision: String,
@@ -265,6 +268,20 @@ pub(super) async fn consume(
         }
     }
     if callback.offerings.is_empty() && callback.item_on_target.is_none() {
+        if callback.effects.temporary_transform.is_some() != context.projection_time_us.is_some()
+            || callback
+                .effects
+                .temporary_transform
+                .as_ref()
+                .is_some_and(|effect| {
+                    context
+                        .projection_time_us
+                        .and_then(|now| now.checked_add(effect.lifetime_us))
+                        .is_none()
+                })
+        {
+            return Ok(false);
+        }
         return Ok(true);
     }
     consume_inputs(

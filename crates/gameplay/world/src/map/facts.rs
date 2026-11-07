@@ -154,7 +154,9 @@ impl BundleFacts {
             }
         }
         // 13842: W05b Thawing ice flower (Crystal thawing.lua:1).
-        let movement_definitions = [12369, 13842, 26077, 26087, 26100]
+        // FairyRelease action_fairies_release.lua:29-46 also serves its two
+        // declared states when the temporary open appearance has no placement.
+        let movement_definitions = [12369, 13842, 25796, 25797, 26077, 26087, 26100]
             .into_iter()
             .chain(6594..=6608)
             .filter_map(|id| {
@@ -1053,6 +1055,35 @@ mod tests {
     use super::*;
     use crate::foundation::{ChannelId, WorldId};
     use crate::map::boot::{boot, tests as fixture};
+
+    #[test]
+    fn quest_decay_keeps_the_first_same_appearance_deadline_and_legacy_revision_guard() {
+        use oteryn_world_bundle::bundle::{Family, PaletteEntry, Terrain, TerrainKind};
+        let (bytes, _) = fixture::bundle();
+        let mut source = oteryn_world_bundle::bundle::read(&bytes).expect("fixture");
+        for appearance in [25796, 25797] {
+            source.manifest.palette.push(PaletteEntry {
+                key: format!("oteryn:terrain.tibia.i{appearance}"), family: Family::Terrain,
+                id: u32::try_from(source.manifest.palette.len()).expect("palette id"),
+                terrain: Some(Terrain { kind: TerrainKind::Common, walkable: None, ground_speed: None }),
+            });
+        }
+        let facts = BundleFacts::palette(&source.manifest, fixture::items).expect("facts");
+        let pos = TilePos { x: 100, y: 100, floor: -7 };
+        let key = crate::map::view::placement_key(pos, 1).expect("key");
+        let restore = facts.movement_item_facts(25796).expect("closed");
+        assert!(facts.start_quest_callback_decay(key, 0, restore, 25797, 10, 30_000_000));
+        assert!(!facts.start_quest_callback_decay(key, 0, restore, 25797, 11, 30_000_000), "stale source revision must refuse");
+        assert!(facts.start_quest_callback_decay(key, 1, restore, 25797, 20, 30_000_000));
+        assert_eq!(facts.expire_movement_items(30_000_009), 0);
+        assert_eq!(facts.expire_movement_items(30_000_010), 1, "later same-appearance use cannot postpone the first source timer");
+        assert_eq!(facts.base_entry(pos, 1, 0).expect("restored").appearance_id, 25796);
+        assert_eq!(facts.object_revision(key), 3);
+        assert_eq!(facts.expire_movement_items(30_000_020), 0);
+        assert!(facts.start_movement_decay(key, restore, 25797, 40_000_000, 10));
+        assert!(facts.transform_movement_item(key, 25797));
+        assert_eq!(facts.expire_movement_items(40_000_010), 0, "legacy movement timers still require their exact revision");
+    }
 
     #[test]
     fn source_house_membership_keeps_adjacent_identities_and_refuses_ambiguity() {

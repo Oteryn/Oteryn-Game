@@ -231,6 +231,7 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                     || c.health_loss.is_some()
             })
             || c.storage.is_empty()
+            || c.storage.iter().any(|storage| storage.increment.is_some())
             || c.storage.len() > 8
             || tracks.len() != c.storage.len()
             || c.storage

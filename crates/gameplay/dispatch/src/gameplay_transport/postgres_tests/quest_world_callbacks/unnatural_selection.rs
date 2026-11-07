@@ -45,6 +45,7 @@ async fn context(owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '
     let runtime = owner.runtime.lock().await;
     let actor = admitted.runtime_actor.ok_or("dance actor")?;
     Ok(QuestWorldContext {
+        projection_time_us: None,
                     carried: None,
         map_revision: crate::map::overlay::map_revision(owner.bundle_map().ok_or("map")?.overlay.base()),
         content_revision: format!("sha256:{}", runtime.content_pin().server_artifact_digest()

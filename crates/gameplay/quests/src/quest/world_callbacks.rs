@@ -64,6 +64,9 @@ pub struct Storage {
     pub minimum: i64,
     pub maximum: i64,
     pub set: i64,
+    /// Normal world callbacks may add to the locked value instead of setting it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub increment: Option<i64>,
     /// A read-only gate: validate the locked value without resetting later progress.
     #[serde(default, skip_serializing_if = "is_false")]
     pub preserve: bool,
@@ -112,10 +115,20 @@ pub struct MonkReward {
 pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_reward: Option<super::reward_callbacks::ItemReward>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub temporary_transform: Option<TemporaryTransform>,
+}
+/// A source object returns to its admitted appearance after a bounded Channel deadline.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct TemporaryTransform {
+    pub appearance: u16,
+    pub restore: u16,
+    pub lifetime_us: u64,
 }
 impl CallbackEffects {
     fn is_empty(&self) -> bool {
-        self.item_reward.is_none()
+        self.item_reward.is_none() && self.temporary_transform.is_none()
     }
 }
 
@@ -236,6 +249,40 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 && (!matches!(callback.trigger, Trigger::Use | Trigger::UseCarriedOnTarget)
                     || selector.appearance.is_none_or(|appearance| appearance == 0)))
             || !valid_carried(callback)
+            || callback
+                .effects
+                .temporary_transform
+                .as_ref()
+                .is_some_and(|effect| {
+                    effect.appearance == 0
+                        || effect.restore == 0
+                        || effect.appearance == effect.restore
+                        || !(1..=600_000_000).contains(&effect.lifetime_us)
+                        || callback.trigger != Trigger::Use
+                        || callback.storage.is_empty()
+                        || callback.effects.item_reward.is_some()
+                        || callback.lever.is_some()
+                        || callback.reversible
+                        || !callback.passages.is_empty()
+                        || callback.teleport.is_some()
+                        || !callback.offerings.is_empty()
+                        || callback.item_on_target.is_some()
+                        || callback.carried_use.is_some()
+                        || callback.native_rule.is_some()
+                        || callback.monk_reward.is_some()
+                        || callback.experience.is_some()
+                })
+            || callback.storage.iter().any(|storage| {
+                storage.increment.is_some_and(|delta| {
+                    delta == 0
+                        || !(-1_000_000..=1_000_000).contains(&delta)
+                        || storage.preserve
+                        || callback.carried_use.is_some()
+                        || callback.native_rule.is_some()
+                        || storage.minimum.checked_add(delta).is_none()
+                        || storage.maximum.checked_add(delta).is_none()
+                })
+            })
             || (callback.repeatable_reward
                 && (callback.effects.item_reward.is_none()
                     || !callback
@@ -383,9 +430,20 @@ fn extend_callbacks(
             })
             .transpose()?;
         for storage in &callback.storage {
+            let increment_min = storage
+                .increment
+                .and_then(|delta| storage.minimum.checked_add(delta));
+            let increment_max = storage
+                .increment
+                .and_then(|delta| storage.maximum.checked_add(delta));
             if let Some(track) = tracks.iter_mut().find(|track| track.key == storage.track) {
                 if callback.native_rule.is_none() && !storage.preserve {
-                    track.max = track.max.max(storage.set).max(storage.maximum);
+                    track.max = track
+                        .max
+                        .max(storage.set)
+                        .max(storage.maximum)
+                        .max(increment_max.unwrap_or(i64::MIN));
+                    track.min = track.min.min(increment_min.unwrap_or(i64::MAX));
                 }
             } else {
                 if callback.native_rule.is_some() {
@@ -398,11 +456,14 @@ fn extend_callbacks(
                     key: storage.track.clone(),
                     quest: callback.quest.clone(),
                     initial: -1,
-                    min: -1,
+                    min: (-1).min(increment_min.unwrap_or(i64::MAX)),
                     max: if storage.preserve {
                         storage.maximum
                     } else {
-                        storage.set.max(storage.maximum)
+                        storage
+                            .set
+                            .max(storage.maximum)
+                            .max(increment_max.unwrap_or(i64::MIN))
                     },
                 });
             }
@@ -419,6 +480,9 @@ fn extend_callbacks(
                     effect: match callback.native_rule {
                         Some(rule) => QuestEffectKind::Native(rule),
                         None if s.preserve => QuestEffectKind::Add(0),
+                        None if s.increment.is_some() => {
+                            QuestEffectKind::Add(s.increment.unwrap_or(0))
+                        }
                         None => match carried_binding {
                             Some(binding) => QuestEffectKind::SetWithBinding {
                                 value: s.set,

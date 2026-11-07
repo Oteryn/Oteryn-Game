@@ -156,6 +156,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 boss_id: boss.id,
                 exit: origin.position(),
                 world: QuestWorldContext {
+                    projection_time_us: None,
                     carried: None,
                     map_revision: crate::map::overlay::map_revision(map.overlay.base()),
                     content_revision: format!(

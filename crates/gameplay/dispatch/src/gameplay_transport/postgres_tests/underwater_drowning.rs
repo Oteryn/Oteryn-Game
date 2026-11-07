@@ -431,6 +431,7 @@ fn scenario_in_world(
                 teleport: Some(position(destination)),
                 storage: if refused {
                     vec![Storage {
+                        increment: None,
                         track: "fixture:unknown-track".into(),
                         minimum: 0,
                         maximum: 0,

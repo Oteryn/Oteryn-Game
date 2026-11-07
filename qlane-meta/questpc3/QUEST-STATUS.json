@@ -4374,7 +4374,7 @@
     },
     "current_batch": {
       "batch": "threatened_fairies_15",
-      "phase": "Compiled native five-entry PG RED complete; implement bounded relative world storage and existing channel transform/decay reuse now",
+      "phase": "Compiling WIP: reusable bounded relative world updates, frozen projection clock, appearance-guarded existing decay engine and five source callbacks implemented. Four-crate check PASS2m29s; 8 world callback domain tests PASS1.89s. Dedicated temporal boundary unit building; final focused PG/pins/lint next. No GREEN claimed beyond existing RED72151ms.",
       "entries": [
         "AID40016 Fairy01",
         "AID40017 Fairy02",
@@ -4406,6 +4406,14 @@
         "selector": "AIDs40016\u201340020; config coordinates are source placements, not runtime position predicates",
         "timer": "30sec, revert only if current appearance25797; intervening same-appearance uses retain earlier deadline",
         "counter": "canonical initial0 normalizes Lua absent/-1 branch to same first output1; capped5"
+      },
+      "implementation": {
+        "storage": "optional bounded increment; checked locked addition; preserve old absolute semantics; NPC mode rejects unsupported increment",
+        "time": "frozen optional projection_time_us preserves old serialized contexts and recovery deadline",
+        "decay": "existing channel owner; stale revision refusal, earlier same-appearance deadline retained; legacy revision guard preserved",
+        "appearance_admission": "25796/25797 declared served states, no portable inventory admission",
+        "authoring": "questpc3_threatened_fairies.py; AID selectors, 5 once flags, shared counter<5,30sec transform/restore",
+        "checks": "4-crate check2m29s,8 domain tests1.89s; dedicated decay unit running"
       }
     },
     "diagnosis": {

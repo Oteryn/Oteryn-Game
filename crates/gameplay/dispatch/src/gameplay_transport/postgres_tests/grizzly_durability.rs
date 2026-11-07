@@ -105,6 +105,7 @@ fn entry_context(boss_id: u8) -> TestResult<GrizzlyBossEntryContext> {
             floor: i16::from(boss.portal.z),
         },
         world: crate::durability::quest_world_callback::QuestWorldContext {
+            projection_time_us: None,
                     carried: None,
             map_revision: format!("sha256:{}", "07".repeat(32)),
             content_revision: format!("sha256:{}", "08".repeat(32)),

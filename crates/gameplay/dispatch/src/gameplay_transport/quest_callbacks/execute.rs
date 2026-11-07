@@ -50,6 +50,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(mut after) = map.facts.base_entry(pos, ordinal, id) else {
             return UseDisposition::Rejected;
         };
+        let temporary_restore = if let Some(effect) = &callback.effects.temporary_transform {
+            let Some(restore) = map.facts.quest_callback_replacement(key, effect.restore) else {
+                return UseDisposition::Rejected;
+            };
+            if map.facts.movement_item_facts(effect.appearance).is_none()
+                || expected_revision.checked_add(2).is_none()
+            {
+                return UseDisposition::Rejected;
+            }
+            Some(restore)
+        } else {
+            None
+        };
         if map.facts.object_revision(key) != expected_revision {
             return UseDisposition::StaleState;
         }
@@ -154,10 +167,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             None => None,
         };
-        if !map
-            .facts
-            .quest_callback_capacity(key, expected_revision, callback.passages.len())
-        {
+        if !map.facts.quest_callback_capacity(
+            key,
+            expected_revision,
+            if temporary_restore.is_some() {
+                2
+            } else {
+                callback.passages.len()
+            },
+        ) {
             return UseDisposition::Exhausted;
         }
         let mut success_message = if callback.storage.is_empty() {
@@ -165,6 +183,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        let mut projection_time = self.owner_now().get();
         if !callback.storage.is_empty() {
             let (Some(fence), Some(slot), Some(catalogue)) =
                 (fence, slot, self.quest_catalogue.as_ref())
@@ -172,6 +191,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             let context = QuestWorldContext {
+                projection_time_us: temporary_restore.map(|_| projection_time),
                 carried: None,
                 map_revision: crate::map::overlay::map_revision(map.overlay.base()),
                 content_revision: format!(
@@ -200,6 +220,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 return UseDisposition::Rejected;
             };
+            if let Some(frozen) = context.projection_time_us {
+                projection_time = frozen;
+            }
             let outcome = if callback.effects.item_reward.is_some() {
                 let Some(native) = self
                     .active_generation
@@ -308,7 +331,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // A pure per-character gift has no map projection. The transform owner
         // increments object revisions even for identical facts; retain the
         // source object's identity and revision for every other player.
+        if let (Some(effect), Some(restore)) =
+            (&callback.effects.temporary_transform, temporary_restore)
+        {
+            if !map.facts.start_quest_callback_decay(
+                key,
+                expected_revision,
+                restore,
+                effect.appearance,
+                projection_time,
+                effect.lifetime_us,
+            ) {
+                return UseDisposition::Rejected;
+            }
+            // A recovered committed occurrence keeps its original deadline.
+            map.facts.expire_movement_items(self.owner_now().get());
+            states.owner_wake.notify_waiters();
+        }
         if callback.effects.item_reward.is_none()
+            && callback.effects.temporary_transform.is_none()
             && !map.facts.apply_quest_callback(
                 key,
                 expected_revision,
