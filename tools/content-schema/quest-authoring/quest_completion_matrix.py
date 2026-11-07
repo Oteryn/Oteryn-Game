@@ -57,7 +57,7 @@ def load_reward_claims(root: Path):
     return {record["identity"]["key"]: record for record in records}
 
 
-def reward_claim_owner(definitions, reward_claims, runtime_claims=frozenset()):
+def reward_claim_owner(definitions, reward_claims, runtime_claims=frozenset(), use_proofs=frozenset()):
     if not definitions or any(definition.get("kind") != "reward_only" for definition in definitions):
         return None
     refs = [
@@ -87,7 +87,8 @@ def reward_claim_owner(definitions, reward_claims, runtime_claims=frozenset()):
         if claim is not None and claim.get("readiness") == "waiting_implementation"
     ]
     if len(ready) == len(refs):
-        state = ("REWARD_CLAIM_USE_ENABLED" if set(refs) <= runtime_claims
+        state = ("REWARD_CLAIM_USE_VERIFIED" if set(refs) <= use_proofs else
+                 "REWARD_CLAIM_USE_ENABLED" if set(refs) <= runtime_claims
                  else "REWARD_CLAIM_USE_PENDING")
     elif len(ready) + len(implementation_pending) == len(refs):
         # Complete source data; only native lowering/implementation is outstanding.
@@ -229,6 +230,8 @@ def expected(root: Path):
     index, definitions = load_definitions(root)
     reward_claims = load_reward_claims(root)
     runtime_claims = enabled_claims(root, reward_claims)
+    from quest_reward_use_proofs import PROOFS, load as load_use_proofs
+    use_proofs = load_use_proofs(root, reward_claims)
 
     catalogue = catalogue_obj["quests"]
     coverage = {q["title"]: q for q in coverage_obj["quests"]}
@@ -276,8 +279,8 @@ def expected(root: Path):
                     "counts": source.get("counts") if source else None,
                 },
             })
-        reward_owner = reward_claim_owner(defs, reward_claims, runtime_claims)
-        if reward_owner and reward_owner["state"] == "REWARD_CLAIM_USE_ENABLED":
+        reward_owner = reward_claim_owner(defs, reward_claims, runtime_claims, use_proofs)
+        if reward_owner and reward_owner["state"] in {"REWARD_CLAIM_USE_ENABLED", "REWARD_CLAIM_USE_VERIFIED"}:
             for definition in canonical:
                 definition["runtime_enabled"] = True
         source_state, progress_state, implementation_state = states(
@@ -335,6 +338,7 @@ def expected(root: Path):
             "definitions": DEFINITIONS,
             "reward_claims": REWARD_CLAIMS,
             "reward_claim_runtime_bindings": "content/world/placements/index.json",
+            "reward_use_proofs": PROOFS,
             "completion_candidate": COMPLETION_CANDIDATE,
             "completion_receipt": COMPLETION_RECEIPT,
         },

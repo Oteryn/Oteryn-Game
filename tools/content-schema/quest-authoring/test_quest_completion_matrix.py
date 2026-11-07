@@ -62,7 +62,8 @@ class QuestCompletionMatrixTest(unittest.TestCase):
             if row["work_state"] == "REWARD_CLAIM_USE_PENDING"
         ]
         enabled = sum(row["work_state"] == "REWARD_CLAIM_USE_ENABLED" for row in self.result["records"])
-        self.assertEqual(42, len(reward_only) + enabled)
+        verified = sum(row["work_state"] == "REWARD_CLAIM_USE_VERIFIED" for row in self.result["records"])
+        self.assertEqual(42, len(reward_only) + enabled + verified)
         self.assertTrue(
             all(
                 {definition["kind"] for definition in row["canonical"]} == {"reward_only"}
@@ -72,8 +73,9 @@ class QuestCompletionMatrixTest(unittest.TestCase):
         self.assertEqual(
             {
                 "NATIVE_BINDINGS_PENDING": 331,
-                "REWARD_CLAIM_USE_PENDING": 42 - enabled,
+                "REWARD_CLAIM_USE_PENDING": 42 - enabled - verified,
                 "REWARD_CLAIM_USE_ENABLED": enabled,
+                "REWARD_CLAIM_USE_VERIFIED": verified,
             },
             self.result["summary"]["implementation_state"],
         )
@@ -84,8 +86,9 @@ class QuestCompletionMatrixTest(unittest.TestCase):
             {
                 "REWARD_CLAIM_DATA_PENDING": 13,
                 "REWARD_CLAIM_IMPLEMENTATION_PENDING": 42,
-                "REWARD_CLAIM_USE_PENDING": 50 - enabled,
+                "REWARD_CLAIM_USE_PENDING": 50 - enabled - verified,
                 "REWARD_CLAIM_USE_ENABLED": enabled,
+                "REWARD_CLAIM_USE_VERIFIED": verified,
             },
             self.result["summary"]["reward_claim_owner_state"],
         )

@@ -1179,6 +1179,9 @@ def build(
     import qready1_chest_bindings
 
     qready1_chest_bindings.overlay_outputs(out)
+    import qready2_chest_bindings
+
+    qready2_chest_bindings.overlay_outputs(out)
     return out
 
 
