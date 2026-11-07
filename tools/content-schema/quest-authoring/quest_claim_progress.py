@@ -100,7 +100,11 @@ def apply_claims(root, records):
 
 
 def extend_state(root, quests, definitions):
-    rows = load(root)
+    return extend_bindings(quests, definitions, load(root))
+
+
+def extend_bindings(quests, definitions, rows):
+    """Shared monotone flag lowering after a producer validates its source binding."""
     for row in rows:
         definition = next((d for d in definitions if d['identity']['key'] == row['quest']), None)
         require(definition is not None, 'unknown owner quest')

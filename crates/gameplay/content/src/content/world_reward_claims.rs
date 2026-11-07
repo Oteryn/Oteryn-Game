@@ -7,6 +7,7 @@
 //! placements that did not bind and the records left out, so the caller can gate boot on it.
 
 mod native_state;
+mod source_leaf;
 
 use crate::content::{
     ContentError, DefinitionFamily, DefinitionRevisionRef, PlacementKey, ProductionKey,
@@ -43,7 +44,7 @@ pub trait RewardClaimTile {
 /// The RewardClaim shards, embedded as the quest document is: the plain shards, then the authored
 /// variant shards. Keys and the exact W15b native container projection are served;
 /// other source dispositions remain closed.
-pub const REWARD_CLAIM_SHARDS: [&str; 5] = [
+pub const REWARD_CLAIM_SHARDS: [&str; 6] = [
     include_str!(
         "../../../../../content/interactions/reward_claims/reward-claims-00000-00099.json"
     ),
@@ -58,6 +59,9 @@ pub const REWARD_CLAIM_SHARDS: [&str; 5] = [
     ),
     include_str!(
         "../../../../../content/interactions/reward_claims/reward-claim-variants-00100-00104.json"
+    ),
+    include_str!(
+        "../../../../../content/interactions/reward_claims/reward-claim-source-leaves.json"
     ),
 ];
 
@@ -284,13 +288,21 @@ fn candidate(
     definition: &serde_json::Map<String, Value>,
     admitted: &dyn Fn(&TypedDefinitionRef) -> bool,
 ) -> Result<Result<Candidate, LeftOut>, ClaimsError> {
-    if definition
-        .get("quest")
-        .and_then(|quest| quest.get("key"))
-        .and_then(Value::as_str)
-        == Some("canary:quest/dawnport_quest")
-    {
+    if matches!(
+        definition
+            .get("quest")
+            .and_then(|quest| quest.get("key"))
+            .and_then(Value::as_str),
+        Some(
+            "canary:quest/dawnport_quest"
+                | "oteryn:quest.dawnport_quest"
+                | "oteryn:quest.authored.dawnport_quest"
+        )
+    ) {
         return Ok(Err(LeftOut::OwnerExcluded));
+    }
+    if definition.get("definition_profile").and_then(Value::as_str) == Some(source_leaf::PROFILE) {
+        return source_leaf::candidate(definition, admitted);
     }
     let key_variant = definition.contains_key("definition_profile");
     let medusa = crystal_medusa_reconciliation(definition);

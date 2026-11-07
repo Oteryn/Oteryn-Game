@@ -362,10 +362,16 @@ def expected(root):
     chests = chest_transitions(root, quests)
     import quest_claim_progress
     native_bound = quest_claim_progress.extend_state(root, quests, records)
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'reward-claim-authoring'))
+    import native_source_leaf
+    _, source_bindings = native_source_leaf.build(root)
+    native_bound += quest_claim_progress.extend_bindings(quests, records, source_bindings)
     extra_sources = ()
     if native_bound:
         chests['native_bound'] = native_bound
         extra_sources = (quest_claim_progress.PATH, quest_claim_progress.TOOL)
+        if source_bindings:
+            extra_sources += (native_source_leaf.INPUT, native_source_leaf.TOOL, native_source_leaf.STARTUP)
     validate(quests)
     transitions = [t for q in quests for t in q['transitions']]
     effects = [effect['effect']['kind'] for t in transitions for effect in t['effects']]

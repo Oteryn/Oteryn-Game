@@ -102,6 +102,10 @@ def derive_packet(root, evidence):
     canonical = [r['definition'] for p in index['shards'] for r in read(root, p)['records']]
     canonical_by_source = {}
     for c in canonical:
+        # This migration owns the historical chest pilot. The independent
+        # source-leaf producer validates its own closed source format.
+        if c.get('definition_profile') == 'native_source_leaf_v1':
+            continue
         key = (c['provenance']['pilot_key'], c['provenance']['pilot_revision'])
         if key in canonical_by_source:
             raise ValueError('duplicate canonical RewardClaim source binding')

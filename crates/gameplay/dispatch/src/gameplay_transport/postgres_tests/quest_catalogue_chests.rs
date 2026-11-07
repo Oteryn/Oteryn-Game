@@ -1116,7 +1116,10 @@ pub(super) fn catalogue_source_world(
 }
 
 pub(super) fn claim_progress_cohort(claim: &str, track: &str) -> TestResult {
-    let selected: Vec<_> = cases()?.into_iter().filter(|case| case.claim == claim).collect();
+    let selected: Vec<_> = cases_including(|key| key == claim)?
+        .into_iter()
+        .filter(|case| case.claim == claim)
+        .collect();
     assert_eq!(selected.len(), 1, "one exact instruction source placement");
     execute_with_progress(selected, Some(track.to_owned()))
 }

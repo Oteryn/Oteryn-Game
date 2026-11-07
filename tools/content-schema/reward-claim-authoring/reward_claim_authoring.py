@@ -547,11 +547,14 @@ def committed_errors() -> list[str]:
     source_claims = load_json(ROOT / CLAIMS_REL)["claims"]
     from reward_claim_variant_authoring import PROFILE, stack_normalization_checks
     from reward_claim_variant_authoring import validate as validate_variants
-    plain = [r for r in records if r['definition'].get('definition_profile') != PROFILE]
+    import native_source_leaf
+    plain = [r for r in records if r['definition'].get('definition_profile') not in (PROFILE, native_source_leaf.PROFILE)]
     variants = [r for r in records if r['definition'].get('definition_profile') == PROFILE]
     items = load_items()
     errors = validate(plain, items, index["source_checks"], source_claims)
     errors += validate_variants(variants, ROOT, items, stack_problem)
+    errors += native_source_leaf.validate([r for r in records if
+        r['definition'].get('definition_profile') == native_source_leaf.PROFILE], ROOT)
     if index.get('variant_source_checks') != legacy_uid_checks(records) + stack_normalization_checks():
         errors.append('variant legacy UID diagnostics are missing or stale')
     bound = {p["quest_transition"] for r in records for p in r["definition"]["placements"] if "quest_transition" in p}
@@ -584,6 +587,8 @@ def generate() -> dict[str, str]:
     variants = derive(ROOT, items, stack_problem)
     extend_outputs(ROOT, outputs, variants, compact, CONTENT_DIR)
     records += variants
+    import native_source_leaf
+    records += native_source_leaf.extend_outputs(ROOT, outputs, compact)
     family_index = json.loads(outputs[INDEX_PATH])
     family_index['variant_source_checks'] = legacy_uid_checks(records) + stack_normalization_checks()
     outputs[INDEX_PATH] = compact(family_index)

@@ -76,7 +76,7 @@
     },
     "RewardClaim": {
       "index": "content/interactions/reward_claims/index.json",
-      "records": 336
+      "records": 337
     },
     "Service.Bank": {
       "index": "content/services/bank/index.json",
@@ -383,6 +383,9 @@
     },
     {
       "path": "content/interactions/reward_claims/index.json"
+    },
+    {
+      "path": "content/interactions/reward_claims/reward-claim-source-leaves.json"
     },
     {
       "path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"

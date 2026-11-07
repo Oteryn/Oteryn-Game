@@ -390,7 +390,7 @@
     "title": "Formorgar Mines Hoist Quest",
     "mechanism": "paired_portals_stepout_remote_predicates",
     "status": "UNFINISHED",
-    "blocker": "Remaining complete route: admit the exact UID20003 skeleton instruction reward and compose both actual acquisitions with all hoist movements, including UID3060. The compiler now restores all three source forcefield UIDs and the exact skeleton UID from pinned startup tables, without source B3 changes.",
+    "blocker": "Remaining whole-route composition: register the actual UID3060 callback using the existing remote-item operation, then exercise both real instruction acquisitions with all three source hoist movements and lever branches. Both exact source books now grant their independent durable instruction flags through native USE and cold replay; startup selectors are compiled from pinned source tables.",
     "from_lanes": [
       "questpc",
       "questpc7"
@@ -418,7 +418,8 @@
     "assumptions": [
       "The construction plans teach the hoist chest instruction. This repairs the missing FormorgarMinesHoistChest writer: all three retained movement scripts read that flag, but UID6214 writes FormorgarGlacierChest. Keep the separate skeleton instruction mandatory. The owner explicitly authorized conservative rules for missing source mechanisms."
     ],
-    "startup_binding_evidence": "cloud-startup-bindings-proof.json"
+    "startup_binding_evidence": "cloud-startup-bindings-proof.json",
+    "skeleton_instruction_evidence": "cloud-skeleton-instruction-proof.json"
   },
   {
     "canonical": "oteryn:quest.authored.last_creep_standing",

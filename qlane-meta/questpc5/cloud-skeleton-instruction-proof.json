@@ -1,0 +1,136 @@
+{
+  "schema": 1,
+  "scope": "Exact skeleton instruction acquisition through native source USE and cold replay; whole hoist route remains active.",
+  "red": {
+    "marker_seconds": 3.673203335,
+    "test_seconds": 3.71,
+    "error": "pinned skeleton source instruction has no native reward definition"
+  },
+  "green": {
+    "marker_seconds": 3.980427361,
+    "schema_case_seconds": 4.207241273,
+    "fresh_USE_seconds": 7.437596016,
+    "cold_replay_seconds": 8.942921741,
+    "native_source_case_seconds": 9.203434561,
+    "full_test_seconds": 59.34,
+    "flag": 1
+  },
+  "claim": "oteryn:reward-claim.source.formorgar_hoist_skeleton",
+  "unique_id": 20003,
+  "source_position": [
+    32211,
+    31273,
+    -10
+  ],
+  "item": "oteryn:item.tibia.i2822",
+  "source_format": "native_source_leaf_v1",
+  "source_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+  "source_path": "data-global/scripts/actions/other/others/quest_system2.lua",
+  "source_line": 285,
+  "checks": {
+    "source_python_tests": 2,
+    "claim_progress_python_tests": 4,
+    "quest_state_python_tests": 12,
+    "content_rust_tests": 12,
+    "cargo_check_changed_crates": 0,
+    "clippy_changed_crates_all_targets_all_features_D_warnings": 0,
+    "authoring_check": 0,
+    "cargo_and_mounted_fmt": 0,
+    "pin_refresh": 0,
+    "pin_check": 0
+  },
+  "world_digest": "264a3573a295a70bf5fe6dfaa2f41a82fdedd9f37c4d1116c6386a66b178d24d",
+  "logs": {
+    "red": {
+      "path": "/tmp/questpc5-skeleton-red.log",
+      "sha256": "57c8181d01df8046aa59960fb5f797ff37b81376703c62a96d6d23ec126864ea",
+      "evidence": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 34s",
+        "POSTGRES_CASE_STARTED skeleton_instruction_source 3.673203335s",
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2565 filtered out; finished in 3.71s"
+      ]
+    },
+    "green": {
+      "path": "/tmp/questpc5-skeleton-green.log",
+      "sha256": "10c5ee6e25ad96daf987d623b384246ce6683950e761b7d9fd63fefc6b9a130b",
+      "evidence": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 19s",
+        "POSTGRES_CASE_STARTED skeleton_instruction_source 3.980427361s",
+        "POSTGRES_CASE_COMPLETED skeleton_instruction_source 4.207241273s",
+        "POSTGRES_CASE_OBSERVED instruction_claim=oteryn:reward-claim.source.formorgar_hoist_skeleton cold_replay=false access=Some(1) duration=7.437596016s",
+        "POSTGRES_CASE_OBSERVED instruction_claim=oteryn:reward-claim.source.formorgar_hoist_skeleton cold_replay=true access=Some(1) duration=8.942921741s",
+        "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.source.formorgar_hoist_skeleton (32211, 31273, -10) native_source=true duration=9.203434561s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2565 filtered out; finished in 59.34s"
+      ]
+    },
+    "python": {
+      "path": "/tmp/questpc5-skeleton-python.log",
+      "sha256": "2ae03acebd207a3ac029f9d05315bf851ddb872e3f8cf94c7b3fdc78c60ec5da",
+      "evidence": [
+        "Ran 2 tests in 1.917s",
+        "OK"
+      ]
+    },
+    "progress-unit": {
+      "path": "/tmp/questpc5-skeleton-progress-unit.log",
+      "sha256": "56e03afda220e7ba78bbcecf9a2e53a0149cfc3e311fa10bbd01b25e8e5ba671",
+      "evidence": [
+        "Ran 4 tests in 0.003s",
+        "OK"
+      ]
+    },
+    "state-unit": {
+      "path": "/tmp/questpc5-skeleton-state-unit.log",
+      "sha256": "369d77bf383620c6c98271316656102fb3cfa15ba209a0b6735c00a033558fff",
+      "evidence": [
+        "Ran 12 tests in 4.898s",
+        "OK"
+      ]
+    },
+    "content-unit": {
+      "path": "/tmp/questpc5-skeleton-content-unit.log",
+      "sha256": "a79a70a8605c48f6afa43ee41858bec051a46e678b5d3d9028f1ee536bab8d25",
+      "evidence": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 03s",
+        "test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 305 filtered out; finished in 0.22s"
+      ]
+    },
+    "check": {
+      "path": "/tmp/questpc5-skeleton-check.log",
+      "sha256": "5f79ec1399083875317ddbe067b28a1a09b9f5c5faf5ad84f5e14bf0b32b2df0",
+      "evidence": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 48s"
+      ]
+    },
+    "clippy": {
+      "path": "/tmp/questpc5-skeleton-clippy.log",
+      "sha256": "b662a227f4a33a4630a73732859b965b71a51d451d760f4954a9de4570221816",
+      "evidence": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 15s"
+      ]
+    },
+    "authoring-check": {
+      "path": "/tmp/questpc5-skeleton-authoring-check.log",
+      "sha256": "766d44c371f8afd6aa34b7ab3a4359590d8a32fc3c37048ddb65c26958d261f0",
+      "evidence": [
+        "reward claim content check: ok"
+      ]
+    },
+    "pins": {
+      "path": "/tmp/questpc5-skeleton-pins.log",
+      "sha256": "f130188038f8583cefcec1bb57f974db20613338ec0d0da5bcc91f29906f3933",
+      "evidence": [
+        "    Finished `release` profile [optimized] target(s) in 0.19s",
+        "      \"digest\": \"264a3573a295a70bf5fe6dfaa2f41a82fdedd9f37c4d1116c6386a66b178d24d\","
+      ]
+    },
+    "pin-check": {
+      "path": "/tmp/questpc5-skeleton-pin-check.log",
+      "sha256": "b1dbc96bec47b3b9e9a8e578926d1fdbd2cbc2c87fae4b4f1715dc98f39903c1",
+      "evidence": [
+        "    Finished `release` profile [optimized] target(s) in 0.11s",
+        "      \"digest\": \"264a3573a295a70bf5fe6dfaa2f41a82fdedd9f37c4d1116c6386a66b178d24d\","
+      ]
+    }
+  }
+}
