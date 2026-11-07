@@ -355,7 +355,7 @@
     "qualified_elsewhere_candidate": "qengine2 proves Wayfarer Outfits Quest QUALIFIED. Reuse its Cranky Lizard Crone callbacks and run affected integration PG before recording native NPC qualification."
   },
   "recovered_from": "95accb923",
-  "next_batch": "Continue remaining owned entries immediately; preserve all cumulative PG cases. No final turn until all owned scope qualified and pushed.",
+  "next_batch": "Finish real PG RED on canonical blocked boat target, implement generic bounded landing preflight and shared house/door protections, run PG GREEN plus changed-crate checks, restore Tarak qualification and push; continue all other entries.",
   "batches": [
     {
       "name": "atomic quest/NPC state prerequisite",
@@ -1576,7 +1576,7 @@
     },
     {
       "name": "retail-travel-and-placement-qualification-24",
-      "state": "QUALIFIED",
+      "state": "QUALIFIED_COMPONENTS",
       "entries": [
         "Captain Seahorse",
         "Captain Max",
@@ -1629,7 +1629,26 @@
       },
       "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at 0fc546da09e407e4d346cab34c89c355f1005f2b; details in verification_components.latest_checked_source. Source identity checked before each slice",
       "test_code_commit": "7a0d7c335f0404915a92497b8c74f0b567422967",
-      "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
+      "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring.",
+      "qualified_entries": [
+        "Captain Seahorse",
+        "Captain Max",
+        "Tarak (Sunken)"
+      ],
+      "additional_runtime_gate": {
+        "source_cell": [
+          32939,
+          31182,
+          7
+        ],
+        "source_items": [
+          4602,
+          1756
+        ],
+        "known_ground_walkable": false,
+        "cause": "paid_travel.rs exact-cell preflight rejects a target for which arrival already supports NPC-0 radius3 fallback",
+        "active_test": "npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals; all18 routes retained, actual water target plus protected nearer-house candidate and admitted shore"
+      }
     }
   ],
   "incoming_six_cells": {
@@ -2040,9 +2059,9 @@
   },
   "counts": {
     "PENDING": 16,
-    "QUALIFIED": 151,
+    "QUALIFIED": 150,
     "EXCLUDED": 24,
-    "AUTHORED; QUALIFICATION PENDING": 126,
+    "AUTHORED; QUALIFICATION PENDING": 127,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
   },
@@ -5980,15 +5999,29 @@
       "npc": "Tarak (Inner)",
       "town": "Yalahar",
       "audit_status": "DIFF",
-      "work": "Retail placement authored. Monument Tower50 route; passage/trip keyword aliases; displayed name Tarak.",
+      "work": "Retail placement authored. Monument Tower50 route; passage/trip keyword aliases; displayed name Tarak. Canonical boat landing requires the existing bounded respawn fallback in paid preflight; active regression/fix.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/302; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:2596; content/services/travel/travel-00000-00058.json:1#/records/50",
       "test": "npcfix_fading_and_retained_placements_postgres; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "QUALIFIED",
+      "status": "AUTHORED; QUALIFICATION PENDING",
       "qualification": {
         "batch": "retail-travel-and-placement-qualification-24",
         "postgres_red_seconds": 47.16,
         "postgres_green_seconds": 134.5,
-        "scope": "Existing authored retail placements with exact native identity plus matching previously green PostgreSQL travel components; full source repair declarations were independently checked by the content catalogue test."
+        "scope": "Source-cell actor and prior synthetic travel component retained; actual canonical boat landing admission is being repaired."
+      },
+      "runtime_landing_issue": {
+        "source_cell": [
+          32939,
+          31182,
+          7
+        ],
+        "source_items": [
+          4602,
+          1756
+        ],
+        "known_ground_walkable": false,
+        "cause": "paid_travel.rs exact-cell preflight rejects a target for which arrival already supports NPC-0 radius3 fallback",
+        "active_test": "npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals; all18 routes retained, actual water target plus protected nearer-house candidate and admitted shore"
       }
     },
     {
@@ -6063,5 +6096,16 @@
     "pin": "568fe0d9753bba3d73f38b4ae884063d2d543b866e337a6f0aab6fd9cc72ec9a; pin-check PASS",
     "scope": "Preserve six incoming qualifications. Altar final review pending; Sweaty smithing continues immediately."
   },
-  "branch": "claude/happy-davinci-ijz3wy-npcfix"
+  "branch": "claude/happy-davinci-ijz3wy-npcfix",
+  "active_landing_batch": {
+    "state": "RED_BUILDING",
+    "entries": [
+      "Tarak (Inner)",
+      "Tarak (Sunken)",
+      "Captain Max",
+      "Captain Seahorse"
+    ],
+    "source_contract": "NPC-0 radius3 north-clockwise fallback is already implemented in entities/carrier/runtime_actor_death.rs; reuse its iterator, preserve authored target and exact keyword/price, retain house/door rejection and apply it to fallback landings. No terrain rewrite or collision exception.",
+    "red_build": "/tmp/npcfix-evidence/paid-landing-red-build.log"
+  }
 }
