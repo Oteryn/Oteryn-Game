@@ -129,8 +129,9 @@ fn scenario_case(
         if name.starts_with("qengine-rewards-banshees") {
             // Starting character attributes only; no quest, claim or reward is seeded.
             let (level, xp) = if name.ends_with("low-level") { (59_i64, 3_091_400_i64) } else { (60_i64, 3_256_800_i64) };
-            sqlx::query("UPDATE game_character_progression_state SET level=$1,total_experience=$2 WHERE character_id=encode($3,'hex')::uuid")
-                .bind(level).bind(xp).bind(id(41).as_slice()).execute(&h.pool).await?;
+            let stored: i64 = sqlx::query_scalar("INSERT INTO game_character_progression_state VALUES(encode($3,'hex')::uuid,1,$1,$2,'profile-1','ruleset-1','content-1','simulation-1','evidence-1','declaration-1','policy-1','reward-1') RETURNING level")
+                .bind(level).bind(xp).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(stored, level, "starting level must actually exist");
         }
         prepare_current_session(&h)
             .await

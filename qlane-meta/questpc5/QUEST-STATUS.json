@@ -326,7 +326,7 @@
     "title": "Oramond Quest",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "The selected root-gathering stage requests Oramond roots with item_resolution=unresolved; the canonical recipe has no exact Native Item join for that input. Unrelated same-name Item33938 is held and cannot be selected by label.",
+    "blocker": "Root identity resolved to donor Item21291; daily authored callback restart requested from qengine2 while native collection/tool bindings remain to author.",
     "from_lanes": [
       "questpc2"
     ],
@@ -335,7 +335,9 @@
     "canonical_location": {
       "path": "content/quests/definitions/quests-00100-00199.json",
       "pointer": "/records/79/definition"
-    }
+    },
+    "engine_request": "Daily restart/completion for authored NPC/world callback routes, reusing existing storage-time guards; qengine2 a1ea4e48 checked, no authored callback clock binding.",
+    "fact_resolution": "Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:14,34 SHA256d0dc431a875ab44870e1758a949fe761b8fe3cfa3b950e11dbc37a309120b8ea grants exact Item21291; chavis.lua:84 consumes five. No same-name33938 substitution."
   },
   {
     "canonical": "oteryn:quest.ornamented_shield_quest",
@@ -378,7 +380,7 @@
     "title": "Overhunting World Change",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "Captured Wolf12369 native custody, atomic Benevola turn-in and the world counter/server-save composition remain unimplemented. The numeric source gap is resolved:50 captures or500 kills, activation at next server save; no fabricated threshold is needed.",
+    "blocker": "Own scope is selected personal five-trap daily route only; global population/counter/server-save changes belong world lanes. Daily callback restart requested from qengine2; personal capture contacts remain to bind.",
     "from_lanes": [
       "questpc2"
     ],
@@ -402,7 +404,8 @@
       ],
       "evidence": "content/encounters/world-changes/owner-catalogue.json",
       "reviewed_wvar_sha": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
-    }
+    },
+    "engine_request": "Daily restart/completion for authored NPC/world callback routes, reusing existing storage-time guards; qengine2 a1ea4e48 checked, no authored callback clock binding."
   },
   {
     "canonical": "oteryn:quest.power_ring_quest",
@@ -526,13 +529,17 @@
       "path": "content/quests/definitions/quests-00200-00299.json",
       "pointer": "/records/37/definition"
     },
-    "active_step": "Selected seven-seal programme and original UID6060/6061 gates authored; PG RED reproduced; GREEN and stable-main compile pending.",
+    "active_step": "Correct level60 PG RED115.988758922s proven; merged canonical QNPCFX f641d8d6c and regenerated native items/binding evidence/pins; stable merged-tree compile then GREEN pending.",
     "pg_red": {
       "server": "PostgreSQL 18.6",
-      "duration_seconds": 116.022293498,
-      "failure": "seal exploration obeys level and order: -1 instead of 0",
-      "log": "/tmp/questpc5-banshees-red.log"
-    }
+      "duration_seconds": 115.988758922,
+      "log": "/tmp/questpc5-banshees-valid-red.log",
+      "precondition": "actual stored level60 asserted; old pre-binding runtime documents",
+      "failure": "first seal stage -1 instead of 0"
+    },
+    "invalidated_pg_attempts": [
+      "Original RED and green2 positive/level59 proof used UPDATE on absent progression row. Neither is counted as qualified mechanic/level proof. Serpentine regression passed independently135.685266054s."
+    ]
   },
   {
     "canonical": "oteryn:quest.demon_helmet_quest",

@@ -32,7 +32,7 @@
     "Presentation": 3145,
     "Proficiency": 443,
     "Quest": 352,
-    "RewardClaim": 336,
+    "RewardClaim": 337,
     "Service.Bank": 1,
     "Service.Blessing": 4,
     "Service.Promotion": 4,
@@ -71,15 +71,15 @@
       },
       {
         "path": "rulesets/items/imbuements/catalogue.json",
-        "sha256": "ff249b7e5866a06ebdfcdf05b24c45446c991646f66726cf59566831fddc3e58"
+        "sha256": "5a628ce84ca4d31ecd485cc38583eef805e367fa1d20d25531f9eb326bafdf66"
       },
       {
         "path": "rulesets/items/imbuements/equipment.json",
-        "sha256": "a9a9f7ea4be54f5bfaccb72799322fb509f6dc8ac03c2caafa2f7c4d927d8d96"
+        "sha256": "8b13aba1aea1981651e281e28ab5510aee3a867283e914ac6cac80b812f95f09"
       },
       {
         "path": "rulesets/items/imbuements/index.json",
-        "sha256": "0719ce5030c6fe0fae69b329b3304a8c282824be9e475e01cbfccba77c96bb53"
+        "sha256": "89a22e75ce6c0e0c58cab7be071644abc79ee5f542d033942beca3e4a5b04fd5"
       },
       {
         "path": "rulesets/items/imbuements/owner-policy.json",

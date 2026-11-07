@@ -81,6 +81,9 @@ pub(super) async fn exercise(
         .fetch_one(&h.pool)
         .await?;
     eprintln!("POSTGRES_CASE_STARTED banshees_whole server_version={version} low_level={low}");
+    let level: i64 = sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
+        .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(level, if low { 59 } else { 60 }, "verified starting level");
     let offered = crate::gameplay_transport::appearance_change::offer::offered(
         owner.offered_capabilities(),
         owner.appearance_available(),

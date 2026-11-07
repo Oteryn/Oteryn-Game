@@ -1,0 +1,44 @@
+{
+  "state": "COMPILING_WIP_TESTS_PENDING",
+  "main": "f641d8d6c",
+  "merge": "7c8d92684",
+  "workspace_check": {
+    "exit": 0,
+    "duration": "4m 10s",
+    "log": "/tmp/questpc5-qnpcfx-check3.log"
+  },
+  "fmt_all_check": {
+    "exit": 0,
+    "log": "/tmp/questpc5-qnpcfx-fmt-final.log"
+  },
+  "native_regeneration": {
+    "files": 45,
+    "log": "/tmp/questpc5-qnpcfx-native-regen.log"
+  },
+  "central_regeneration": {
+    "log": "/tmp/questpc5-qnpcfx-post-regen.log",
+    "frozen_source_cores": "unchanged",
+    "binding_evidence": "regenerated",
+    "item_mint_audit": "regenerated",
+    "completion_matrix": "regenerated"
+  },
+  "pins": {
+    "refresh": "/tmp/questpc5-qnpcfx-pins.log",
+    "check": "/tmp/questpc5-qnpcfx-pincheck.log",
+    "duplicate_migrations": "/tmp/questpc5-qnpcfx-dup.log"
+  },
+  "banshees_valid_red": {
+    "level": 60,
+    "server": "PostgreSQL18.6",
+    "duration_seconds": 115.988758922,
+    "log": "/tmp/questpc5-banshees-valid-red.log"
+  },
+  "pending": [
+    "six focused PG cases on canonical QNPCFX",
+    "quests/dispatch/durability/npc unit tests",
+    "strict changed-crate Clippy",
+    "game-server unit tests after canonical-main node changes"
+  ],
+  "qualification": "No new quest QUALIFIED in this checkpoint; 12 prior qualifications retained.",
+  "migration_ownership": "Own1270\u20131276; canonical1310\u20131315 consumed from main; no1277/1278/1300 copy, even locally."
+}
