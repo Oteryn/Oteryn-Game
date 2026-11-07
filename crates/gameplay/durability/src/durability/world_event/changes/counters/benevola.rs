@@ -106,6 +106,8 @@ impl DurabilityRoot {
             &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
             None,
             None,
+            None,
+            None,
             Some((permit, handover)),
         )
         .await

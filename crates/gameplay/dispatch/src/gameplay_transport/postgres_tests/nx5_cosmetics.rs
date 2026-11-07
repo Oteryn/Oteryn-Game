@@ -50,7 +50,22 @@ fn nx5_every_global_item_rule_qualifies_against_source_bound_production_cosmetic
                 count += 1;
             }
             assert_eq!(count, 46);
-            use crate::domain::appearance::{EarnedCosmetics, Sex};
+            use crate::domain::appearance::{
+                AppearanceContent, EarnedCosmetic, EarnedCosmetics, Sex, UnlockFact,
+            };
+            use oteryn_gameplay_items::item_cosmetics::{PROVENANCE, SourceCosmetics};
+            let grant_key = "oteryn:item-grant.outfit.512-513.base";
+            // Raw looks remain ambiguous; only the authored mapping selects a primary.
+            assert!(cosmetics.outfit_pair(&[512, 513]).is_none());
+            let resolved = oteryn_gameplay_items::item_cosmetics::resolve(
+                catalogue, &cosmetics, grant_key,
+            ).map_err(|e| format!("source-bound alias resolution: {e:?}"))?;
+            assert_eq!(resolved.cosmetic_key, "oteryn:outfit.crystal_warlord");
+            assert!(cosmetics.outfit_for_grant(&[514, 516], grant_key).is_none());
+            assert!(cosmetics.outfit_for_grant(&[512, 513], "unknown").is_none());
+            let legacy = EarnedCosmetic::Outfit("oteryn:content.outfit.crystal_warlord_outfits");
+            assert_eq!(cosmetics.earned_unlock(grant_key, PROVENANCE, legacy), UnlockFact::Compatible);
+            assert_eq!(cosmetics.earned_unlock(grant_key, "wrong", legacy), UnlockFact::Incompatible);
             let facts = vec![
                 (
                     "oteryn:appearance-grant/quest/soul-war/revenant-base".to_owned(),

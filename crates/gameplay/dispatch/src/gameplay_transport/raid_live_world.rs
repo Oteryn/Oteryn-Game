@@ -222,6 +222,7 @@ pub(super) fn project_grimvale_portal(bundle: &crate::map::boot::BundleMap, open
         &[],
         &[],
         false,
+        None,
     )
 }
 

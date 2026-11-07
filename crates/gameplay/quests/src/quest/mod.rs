@@ -35,11 +35,13 @@ pub mod liquid_black;
 pub mod loader;
 pub mod log;
 pub mod monk_shrines;
+pub mod native_kills;
 pub mod native_rules;
 #[cfg(test)]
 pub mod npc_rules;
 pub mod planegazer_finale;
 mod quests_2_focus;
+pub mod reward_callbacks;
 pub mod rotten_blood;
 pub mod schrodinger_island;
 pub mod shared_world_progress;
@@ -318,8 +320,9 @@ impl QuestStateCatalogue {
             }
             if transition.effects.is_empty()
                 && !transition.completes
-                && !(transition.key == "oteryn:quest-transition/worldchange/benevola/handover"
-                    && transition.quest == "oteryn:quest/worldchange/benevola"
+                && !(((transition.key == "oteryn:quest-transition/worldchange/benevola/handover"
+                    && transition.quest == "oteryn:quest/worldchange/benevola")
+                    || transition.key.starts_with("oteryn:quest-reward/"))
                     && transition.experience.is_none())
             {
                 return Err(E::InvalidEffect(transition.key));

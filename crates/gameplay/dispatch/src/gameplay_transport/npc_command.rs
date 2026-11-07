@@ -56,6 +56,7 @@ mod monk;
 mod planegazer_finale;
 mod premium_purchase;
 mod quest_dialogue;
+mod reward_callbacks;
 mod service_context;
 mod session_transfer;
 mod threatened_dreams;
@@ -774,6 +775,11 @@ pub(super) async fn npc_bank_talk(
         drop(runtime);
         drop(_trade_permit);
         return grizzly::talk(admission, actor, command, intent, context).await;
+    }
+    if let Some(step) = reward_callbacks::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = fire_feathered::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);

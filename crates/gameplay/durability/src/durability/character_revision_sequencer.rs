@@ -32,6 +32,7 @@ use tokio::sync::{Mutex as SlotQueue, OwnedMutexGuard};
 mod cyclopedia;
 mod death_promotion;
 mod grizzly;
+mod native_kills;
 mod npc_marriage;
 mod npc_purchase;
 mod npc_travel;
@@ -449,6 +450,41 @@ impl RevisionSlot {
         .await
     }
 
+    /// Commit a content-bound NPC exchange and all its value participants.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the revision slot forwards the complete existing Quest and reward admission context"
+    )]
+    pub async fn commit_quest_reward<G: super::quest_state::grizzly::GrizzlyPremiumGate>(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+        admission: super::reward_claim_mint::quest::QuestRewardAdmission<'_>,
+        gate: &G,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_character_quest_reward(
+                    authority,
+                    node,
+                    fence,
+                    request.clone(),
+                    std::sync::Arc::clone(&catalogue),
+                    admission,
+                    gate,
+                )
+            },
+        )
+        .await
+    }
+
     /// Benevola uses the same Quest receipt revision cursor as ordinary NPC quests.
     #[allow(clippy::too_many_arguments)]
     pub async fn commit_benevola_handover(
@@ -551,6 +587,7 @@ impl RevisionSlot {
         catalogue: std::sync::Arc<QuestStateCatalogue>,
         permit: &super::spell_owner_commit::SpellLanePermit,
         context: super::quest_world_callback::QuestWorldContext,
+        native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
     ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
         self.sequenced(
             root_revision(root, authority),
@@ -565,6 +602,7 @@ impl RevisionSlot {
                     std::sync::Arc::clone(&catalogue),
                     permit,
                     context.clone(),
+                    native,
                 )
             },
         )
