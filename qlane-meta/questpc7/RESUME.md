@@ -1,3 +1,30 @@
+# Eligibility mechanism PG GREEN — 2026-11-07
+
+Three actual PG18.6 cases pass in74.879/75.427/73.091s after RED74.410s.
+ELIGIBILITY-PG-PROOF.json records the exact case boundaries. Hunter and
+Illuminated Warrior own starts are native; neither whole entry is qualified.
+The existing Premium transaction latch is reused, missing authority denies,
+level is read under the Character lock, and completed parents are read-only.
+High-level fixture initialization uses the published native XP threshold;
+the separately owned Make Believe completion is a fenced fixture precondition.
+The subject quest stages are never seeded. Scope remains21 ACTIVE.
+
+Final source is uncommitted pending strict lint, authoring/content/world/pin
+checks. Cargo check passed /tmp/questpc7-eligibility-check.log. PG green is
+/tmp/questpc7-eligibility-green.log. Current source adds typed requirements,
+reusable gated reward forwarding, Elane's source placement and exact retained
+Summer Wayland greetings. Both rows remain ACTIVE, with remaining bindings ours.
+
+Illuminated art/item numeric IDs are absent from the retained Summer XML,
+Wayland grant code (dialogue only), current Crystal XML and public wiki raw
+pages checked within the ten-minute fact budget. Costs/requirements are known.
+Use documented authored compatibility representations rather than invent donor
+numeric IDs or defer: distinct Oteryn item/outfit identities, existing admitted
+visual references, exact counters/entitlements. Implement the generic adapter
+and any bounded hand-in mechanism needed for the selected amounts. Preserve
+known source weight0.30oz and nonstackable fact unless explicitly documenting
+an Oteryn adaptation. URLs and source SHAs are in CONTRACT-NOTES.md. Continue.
+
 # Friends and Traders QUALIFIED — 2026-11-07
 
 The whole selected Exchange Quests / Friends and Traders route is QUALIFIED.

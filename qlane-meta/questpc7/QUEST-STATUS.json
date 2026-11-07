@@ -1497,6 +1497,11 @@
       "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
       "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
       "scope": "Generic owner only; not this quest's route qualification"
+    },
+    "eligibility_progress": {
+      "state": "native start and shared eligibility mechanism implemented; PG GREEN, final checks pending",
+      "proof": "qlane-meta/questpc7/ELIGIBILITY-PG-PROOF.json",
+      "boundary": "Not whole route qualification; finish remaining physical/reward bindings here"
     }
   },
   {
@@ -1611,6 +1616,11 @@
       "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
       "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
       "scope": "Generic owner only; not this quest's route qualification"
+    },
+    "eligibility_progress": {
+      "state": "native start and shared eligibility mechanism implemented; PG GREEN, final checks pending",
+      "proof": "qlane-meta/questpc7/ELIGIBILITY-PG-PROOF.json",
+      "boundary": "Not whole route qualification; finish remaining physical/reward bindings here"
     }
   }
 ]

@@ -79,3 +79,23 @@
   and unchanged stake quantities; reply category alone is not a grant proof.
   The fixture allocates14 actor slots for13 selected NPCs plus its player,
   using the existing bounded constructor; production carrier checks stay intact.
+
+- Eligibility reuses the native transaction-scoped Premium latch (the existing
+  quest premium trait), not a client/session boolean. Level is locked native
+  progression; completed-parent facts are read-only under the Character fence.
+  Make Believe canonical is `oteryn:quest.authored.make_believe_quest`,
+  content/quests/definitions/quests-00300-00351.json:1#/records/15/definition.
+- Illuminated source lookup was timeboxed. Retained Summer00ce02a57ca5a12e48f32a3476e37471167e4c3f:
+  data-global/npc/wayland_smythers.lua:112-114 SHA9a6b7b1ff8c351bc44275c053a6992093e69984f6ae77a519dcdc9040be7b851
+  confirms2500/1250/1250; its script and XML contain no Illuminated grant IDs.
+  https://www.tibiawiki.com.br/Illuminated_Warrior_Outfits?action=raw and
+  https://www.tibiawiki.com.br/Illuminated_Warrior_Outfits_Quest?action=raw
+  confirm Premium, Make Believe and counts, with no look ID.
+  https://www.tibiawiki.com.br/Scraps_of_a_Radiant_Attire?action=raw confirms
+  weight0.30oz/nonstackable; no numeric Item ID is published there. Current
+  https://raw.githubusercontent.com/zimbadev/crystalserver/main/data/XML/outfits.xml
+  also has no Illuminated Warrior row. Do not spend further time repeating this
+  lookup: author distinct Oteryn compatibility identities using existing admitted
+  appearance references, preserving known weight/stack behavior and exact totals;
+  add a bounded escrow if totals exceed the existing carried-tree bound. This is
+  an explicit native adaptation, not a claim of an unknown original numeric ID.
