@@ -1042,3 +1042,17 @@ corrected code returns(3,3), waves3. Source manual combat.md:264; no new IDs.
 The genuine native Bazaar interaction currently reaches an excluded E11
 adapter boundary: its Reference-only loader rejects native OTNSW03 content.
 Root requested owner scope direction; no byte limit or artifact pin was bypassed.
+
+## W17 bounded Drome Highscores server checkpoint
+
+Categories13/14 use the existing revision-stable Highscores owner and native
+filters. Drome-specific scored metadata includes vocation-none scorers (manual
+combat.md:259,262-264; classic vocation filters remain unchanged). Current
+auction withdrawal is scoped to13/14, preserving captured ranks/paging and
+ordinary categories. Migration1105 extends category checks and the strict
+role guard by only the existing score-table SELECT permission.
+Actual PostgreSQL: lifetime/current/private-own-row PASS6.209s;51-row retained
+snapshot withdrawal/paging/own-rank proof PASS5.514s. Real Reference-profile
+public observer proof uses actual Game capture/sign/custody and producer-created
+Character; source issuer floor+1 bootstrap is fixed, final rerun pending.
+No Platform E11 logic or immutable public projection body policy was changed.

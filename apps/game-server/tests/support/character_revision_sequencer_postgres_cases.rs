@@ -411,6 +411,33 @@ async fn publish_readiness(
     Ok(())
 }
 
+/// Reuse the existing full bootstrap receipt producer for an offline second
+/// Character (id101/account100), retaining every creation/progression guard.
+#[allow(
+    dead_code,
+    reason = "shared fixture targets use the observer only in selected cases"
+)]
+pub(super) async fn seed_offline_observer(harness: &Harness) -> TestResult {
+    seed_offline_observer_parts(&harness.pool, &harness.root, &harness.node).await
+}
+
+pub(super) async fn seed_offline_observer_parts(
+    pool: &sqlx::PgPool,
+    root: &DurabilityRoot,
+    node: &NodeIncarnationProof,
+) -> TestResult {
+    seed_character(
+        pool,
+        root,
+        node,
+        true,
+        false,
+        CreationFixture::Observer,
+        "starter-1",
+    )
+    .await
+}
+
 /// One Character (id 41) with a live session, lease, scope assignment and readiness, and, when
 /// `initialized`, progression at revision one (level 50, 1000 experience).
 async fn seed_character(
