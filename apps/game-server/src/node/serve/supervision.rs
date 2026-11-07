@@ -42,6 +42,7 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
         .active_generation
         .and_then(|active| active.native_gameplay());
     let runtime = owners.runtime;
+    let movement_cells = owners.movement_cells;
     let config = &material.config;
     let (active_layers_epoch, active_layers) =
         super::super::raid_scheduler::world_change_layers(owners.movement_cells);
@@ -203,7 +204,15 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
                 &loops_stop
             ),
             both(
-                timed_npc_loop(runtime, timed_npcs, &loops_stop),
+                timed_npc_loop(
+                    root,
+                    runtime,
+                    timed_npcs,
+                    material.world,
+                    reset_epoch,
+                    movement_cells,
+                    &loops_stop
+                ),
                 account_closure_offline_loop(
                     root,
                     authority,
@@ -351,8 +360,12 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
 }
 
 async fn timed_npc_loop(
+    root: &DurabilityRoot,
     runtime: &Mutex<ChannelRuntimeV1>,
     timed_npcs: bundle_npcs::TimedNpcSpawns,
+    world: WorldId,
+    epoch: u64,
+    cells: &crate::content::NativeEntryMovementCells,
     stop: &CancellationToken,
 ) {
     if timed_npcs.is_empty() {
@@ -367,7 +380,21 @@ async fn timed_npc_loop(
         let Some(now) = crate::world_clock::now_utc_ms() else {
             continue;
         };
+        // Reuse this existing NPC/world-clock loop, never a second Noodles timer.
+        // The World snapshot is fetched before taking the runtime lock.
+        let live = if timed_npcs.has_noodles() {
+            root.live_world_changes(world, epoch).await.ok().flatten()
+        } else {
+            None
+        };
         let mut runtime = runtime.lock().await;
+        if let Some(live) = &live
+            && let Err(error) = timed_npcs.project_noodles(&mut runtime, live, cells)
+        {
+            event(&format!(
+                "event=noodles_npc_tick state=retry reason={error:?}"
+            ));
+        }
         if let Some(Err(error)) = timed_npcs.tick(&mut runtime, now) {
             event(&format!(
                 "event=timed_npc_tick state=retry reason={error:?}"

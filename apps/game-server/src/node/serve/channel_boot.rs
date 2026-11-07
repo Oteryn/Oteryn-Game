@@ -96,11 +96,19 @@ pub(super) async fn prepare_channel(
         None if reset_epoch == 0 => bootstrap_world_changes(),
         None => return Err(BootError::Readiness("current world-change epoch")),
     };
+    let shared = root
+        .shared_world_changes(material.world, reset_epoch)
+        .await
+        .map_err(|_| BootError::ContentActivation("durable shared world changes"))?;
+    if reset_epoch != 0 && shared.is_none() {
+        return Err(BootError::Readiness("current shared world-change epoch"));
+    }
     let bundle = bundle
         .map(|checked| {
             let checked = daily_world_changes::bind_layers(checked, &daily)
                 .map_err(BootError::WorldBundle)?;
-            let checked = daily_world_changes::prepare_map(checked, material.world, &daily);
+            let checked =
+                daily_world_changes::prepare_map(checked, material.world, &daily, shared.as_ref());
             boot_bundle_world(checked, material.world, material.channel, gameplay)
         })
         .transpose()?;
@@ -301,6 +309,17 @@ pub(super) async fn prepare_channel(
         daily.flower_month,
     ));
     let timed_npcs = bundle_npcs::TimedNpcSpawns::from_boot(npc_boot);
+    if timed_npcs.has_noodles()
+        && let Some(live) = root
+            .live_world_changes(material.world, reset_epoch)
+            .await
+            .map_err(|_| BootError::Readiness("current Noodles world phase"))?
+        && let Err(error) = timed_npcs.project_noodles(&mut channel_runtime, &live, &movement_cells)
+    {
+        event(&format!(
+            "event=noodles_npc_boot state=retry reason={error:?}"
+        ));
+    }
     // W05c: the day/night NPCs of the current world minute; one that cannot stand yet is
     // retried by the world tick (`supervision.rs` `timed_npc_loop`).
     if let Some(Err(error)) =

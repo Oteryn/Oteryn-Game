@@ -54,25 +54,60 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
         } else if entry["status"] == "QUALIFIED" {
             qualified += 1;
             assert!(entry["binding"].is_object(), "{key}");
-            let mut active = all;
-            if let Some(kind) = oteryn_gameplay_world_change::counter::CounterKind::from_key(key) {
-                use oteryn_gameplay_world_change::counter::CounterKind as K;
-                active.counter_stages[kind.index()] = match kind {
-                    K::FireFeathered => 3,
-                    K::Overhunting => 2,
-                    _ => 1,
-                };
+            if matches!(
+                key,
+                "steamship"
+                    | "twisted_waters"
+                    | "rathleton"
+                    | "horse_station"
+                    | "noodles_is_gone"
+                    | "swamp_fever"
+            ) {
+                match key {
+                    "stampede" => {
+                        assert_eq!(entry["binding"]["raid_key"], "raid:porthope.stampede");
+                        assert!(is_active(&all, key));
+                    }
+                    "steamship" | "twisted_waters" | "rathleton" => {
+                        assert_eq!(entry["binding"]["kind"], "contribution");
+                        assert!(
+                            !is_active(&all, key),
+                            "a daily draw cannot authorize a tally transition"
+                        );
+                    }
+                    "horse_station" | "noodles_is_gone" => {
+                        assert_eq!(entry["binding"]["kind"], "live_world_action");
+                        assert!(!is_active(&all, key));
+                    }
+                    "swamp_fever" => {
+                        assert_eq!(entry["binding"]["raid_key"], "raid:venore.feverishcitizens");
+                        assert!(!is_active(&all, key));
+                    }
+                    _ => return Err(format!("unqualified binding: {key}").into()),
+                }
+            } else {
+                let mut active = all;
+                if let Some(kind) =
+                    oteryn_gameplay_world_change::counter::CounterKind::from_key(key)
+                {
+                    use oteryn_gameplay_world_change::counter::CounterKind as K;
+                    active.counter_stages[kind.index()] = match kind {
+                        K::FireFeathered => 3,
+                        K::Overhunting => 2,
+                        _ => 1,
+                    };
+                }
+                if key == "stampede" {
+                    assert_eq!(entry["binding"]["raid_key"], "raid:porthope.stampede");
+                }
+                assert!(is_active(&active, key), "{key}");
             }
-            if key == "stampede" {
-                assert_eq!(entry["binding"]["raid_key"], "raid:porthope.stampede");
-            }
-            assert!(is_active(&active, key), "{key}");
         } else {
             assert_eq!(entry["status"], "HELD");
             assert!(!is_active(&all, key), "{key}");
         }
     }
-    assert_eq!((ready, qualified), (0, 12));
+    assert_eq!((ready, qualified), (0, 18));
     assert_eq!(entries.len(), 43);
     for key in [
         "river_runs_deep",

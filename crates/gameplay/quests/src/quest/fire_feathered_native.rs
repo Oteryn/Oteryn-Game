@@ -47,7 +47,7 @@ pub fn callbacks() -> Vec<Callback> {
         storage:vec![Storage{track:TRACKS[index].into(),minimum:0,maximum:0,set:1,preserve:false}],
         minimum_level:None,experience:None,monk_reward:None,offerings:vec![],
         item_on_target:Some(ItemOnTarget{item:format!("oteryn:item.tibia.i{input}"),count:1,replacement:(!consume).then(||format!("oteryn:item.tibia.i{input}")),target_replacement:None}),
-        return_on_failure:false,failure_message:None,success_message:None,native_rule:None,
+        return_on_failure:false,failure_message:None,success_message:None,native_rule:None,effects:Default::default(),
         sources:vec!["crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/guardian_of_the_deep_seas.lua:explicit-native-world-quest-adaptation;wiki69583@1149608:145,153,158,160,162;NOT_DONOR_GEOMETRY".into()],
     }).collect()
 }

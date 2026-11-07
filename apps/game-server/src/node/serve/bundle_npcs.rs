@@ -143,6 +143,7 @@ enum TimedPeriod {
 #[derive(Debug, Clone, Copy)]
 pub(super) struct TimedNpcSpawns {
     admitted: [bool; TIMED_NPCS.len()],
+    noodles: [bool; 2],
 }
 
 impl TimedNpcSpawns {
@@ -153,11 +154,44 @@ impl TimedNpcSpawns {
                 admitted[index] = keys.contains(*key);
             }
         }
-        Self { admitted }
+        let noodles = ["oteryn:npc.noodles", "oteryn:npc.dog_lady"]
+            .map(|key| boot.is_some_and(|boot| boot.admits(key)));
+        Self { admitted, noodles }
+    }
+
+    pub(super) fn has_noodles(self) -> bool {
+        self.noodles.iter().any(|admitted| *admitted)
+    }
+
+    pub(super) fn project_noodles(
+        self,
+        runtime: &mut ChannelRuntimeV1,
+        live: &crate::durability::world_event::changes::actions::LiveChanges,
+        cells: &crate::content::NativeEntryMovementCells,
+    ) -> Result<(), NpcPlacementError> {
+        crate::gameplay_transport::noodles::project(
+            runtime,
+            live,
+            |key| match key {
+                "oteryn:npc.noodles" => self.noodles[0],
+                "oteryn:npc.dog_lady" => self.noodles[1],
+                _ => false,
+            },
+            |position| {
+                cells.index().lookup(
+                    cells.scope(),
+                    crate::content::LogicalCell {
+                        x: position.x,
+                        y: position.y,
+                        z: i32::from(position.floor),
+                    },
+                ) == Ok(crate::content::CollisionClass::Walkable)
+            },
+        )
     }
 
     pub(super) fn is_empty(self) -> bool {
-        !self.admitted.iter().any(|admitted| *admitted)
+        !self.admitted.iter().any(|admitted| *admitted) && !self.has_noodles()
     }
 
     /// One world-clock step at `now_utc_ms` (boot and every world tick): the clock the

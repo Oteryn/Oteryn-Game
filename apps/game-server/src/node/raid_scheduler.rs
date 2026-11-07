@@ -82,7 +82,8 @@ fn source_order(raid: &CatalogueRaid) -> (u8, u16) {
         CatalogueSchedule::LegacyXml { source_order, .. } => (0, source_order),
         CatalogueSchedule::Lua { .. } => (1, 0),
         CatalogueSchedule::Calendar { .. } => (2, 0),
-        CatalogueSchedule::Unknown => (3, 0),
+        CatalogueSchedule::WorldChange => (3, 0),
+        CatalogueSchedule::Unknown => (4, 0),
     }
 }
 
@@ -155,6 +156,7 @@ fn candidates(
                         repeat: *repeat,
                     });
                 }
+                CatalogueSchedule::WorldChange => {}
                 CatalogueSchedule::Unknown => return Err(RaidError::InvalidDefinition),
             }
             Ok(candidate)
@@ -540,7 +542,7 @@ mod tests {
             assert!(next >= previous);
             previous = next;
         }
-        assert_eq!(previous.0, 2);
+        assert_eq!(previous, (3, 0));
         Ok(())
     }
 }

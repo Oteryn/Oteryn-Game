@@ -19945,6 +19945,2323 @@
     },
     {
       "active": true,
+      "assumptions": [
+        "Owner-authorized escape reports retain the first N sourced stable horses; no new creature or position is invented."
+      ],
+      "boss_names": [],
+      "end": {
+        "kind": "until_reset"
+      },
+      "global_observations": [],
+      "inactive_reasons": [],
+      "key": "raid:horsestation.stable.1",
+      "kind": "area",
+      "name": "horsestation.stable.1",
+      "schedule": {
+        "kind": "world_change"
+      },
+      "sources": [
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 1,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        },
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 18,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        },
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 39,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "raid:horsestation.stable.1/source",
+          "sources": [
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 1,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            },
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 18,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            },
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 39,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 1000,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32438,
+                      "y": 32231
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32442,
+                      "y": 32238
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32438_32231_7-32442_32238_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 19,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Horse",
+                  "spawn_mode": "area"
+                }
+              ],
+              "raw_delay_ms": 0
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Horse stations",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
+      "assumptions": [
+        "Owner-authorized escape reports retain the first N sourced stable horses; no new creature or position is invented."
+      ],
+      "boss_names": [],
+      "end": {
+        "kind": "until_reset"
+      },
+      "global_observations": [],
+      "inactive_reasons": [],
+      "key": "raid:horsestation.stable.2",
+      "kind": "area",
+      "name": "horsestation.stable.2",
+      "schedule": {
+        "kind": "world_change"
+      },
+      "sources": [
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 1,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        },
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 18,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        },
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 39,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "raid:horsestation.stable.2/source",
+          "sources": [
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 1,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            },
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 18,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            },
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 39,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 1000,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 2,
+                    "min": 2
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32438,
+                      "y": 32231
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32442,
+                      "y": 32238
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32438_32231_7-32442_32238_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 19,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Horse",
+                  "spawn_mode": "area"
+                }
+              ],
+              "raw_delay_ms": 0
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Horse stations",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
+      "assumptions": [
+        "Owner-authorized escape reports retain the first N sourced stable horses; no new creature or position is invented."
+      ],
+      "boss_names": [],
+      "end": {
+        "kind": "until_reset"
+      },
+      "global_observations": [],
+      "inactive_reasons": [],
+      "key": "raid:horsestation.stable.3",
+      "kind": "area",
+      "name": "horsestation.stable.3",
+      "schedule": {
+        "kind": "world_change"
+      },
+      "sources": [
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 1,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        },
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 18,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        },
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 39,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "raid:horsestation.stable.3/source",
+          "sources": [
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 1,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            },
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 18,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            },
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 39,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 1000,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 3,
+                    "min": 3
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32438,
+                      "y": 32231
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32442,
+                      "y": 32238
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32438_32231_7-32442_32238_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 19,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Horse",
+                  "spawn_mode": "area"
+                }
+              ],
+              "raw_delay_ms": 0
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Horse stations",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
+      "assumptions": [
+        "Owner-authorized escape reports retain the first N sourced stable horses; no new creature or position is invented."
+      ],
+      "boss_names": [],
+      "end": {
+        "kind": "until_reset"
+      },
+      "global_observations": [],
+      "inactive_reasons": [],
+      "key": "raid:horsestation.stable.4",
+      "kind": "area",
+      "name": "horsestation.stable.4",
+      "schedule": {
+        "kind": "world_change"
+      },
+      "sources": [
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 1,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        },
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 18,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        },
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 39,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "raid:horsestation.stable.4/source",
+          "sources": [
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 1,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            },
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 18,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            },
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 39,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 1000,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 3,
+                    "min": 3
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32438,
+                      "y": 32231
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32442,
+                      "y": 32238
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32438_32231_7-32442_32238_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 19,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Horse",
+                  "spawn_mode": "area"
+                },
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32438,
+                      "y": 32231
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32442,
+                      "y": 32238
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32438_32231_7-32442_32238_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.grey_horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 20,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Grey Horse",
+                  "spawn_mode": "area"
+                }
+              ],
+              "raw_delay_ms": 0
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Horse stations",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
+      "assumptions": [
+        "Owner-authorized escape reports retain the first N sourced stable horses; no new creature or position is invented."
+      ],
+      "boss_names": [],
+      "end": {
+        "kind": "until_reset"
+      },
+      "global_observations": [],
+      "inactive_reasons": [],
+      "key": "raid:horsestation.stable.5",
+      "kind": "area",
+      "name": "horsestation.stable.5",
+      "schedule": {
+        "kind": "world_change"
+      },
+      "sources": [
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 1,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        },
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 18,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        },
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 39,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "raid:horsestation.stable.5/source",
+          "sources": [
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 1,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            },
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 18,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            },
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 39,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 1000,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 3,
+                    "min": 3
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32438,
+                      "y": 32231
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32442,
+                      "y": 32238
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32438_32231_7-32442_32238_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 19,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Horse",
+                  "spawn_mode": "area"
+                },
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32438,
+                      "y": 32231
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32442,
+                      "y": 32238
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32438_32231_7-32442_32238_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.grey_horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 20,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Grey Horse",
+                  "spawn_mode": "area"
+                },
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32438,
+                      "y": 32231
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32442,
+                      "y": 32238
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32438_32231_7-32442_32238_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.brown_horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 21,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Brown Horse",
+                  "spawn_mode": "area"
+                }
+              ],
+              "raw_delay_ms": 0
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Horse stations",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
+      "assumptions": [
+        "Owner-authorized escape reports retain the first N sourced stable horses; no new creature or position is invented."
+      ],
+      "boss_names": [],
+      "end": {
+        "kind": "until_reset"
+      },
+      "global_observations": [],
+      "inactive_reasons": [],
+      "key": "raid:horsestation.stable.6",
+      "kind": "area",
+      "name": "horsestation.stable.6",
+      "schedule": {
+        "kind": "world_change"
+      },
+      "sources": [
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 1,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        },
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 18,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        },
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 39,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "raid:horsestation.stable.6/source",
+          "sources": [
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 1,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            },
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 18,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            },
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 39,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 1000,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 3,
+                    "min": 3
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32438,
+                      "y": 32231
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32442,
+                      "y": 32238
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32438_32231_7-32442_32238_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 19,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Horse",
+                  "spawn_mode": "area"
+                },
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32438,
+                      "y": 32231
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32442,
+                      "y": 32238
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32438_32231_7-32442_32238_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.grey_horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 20,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Grey Horse",
+                  "spawn_mode": "area"
+                },
+                {
+                  "amount": {
+                    "max": 2,
+                    "min": 2
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32438,
+                      "y": 32231
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32442,
+                      "y": 32238
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32438_32231_7-32442_32238_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.brown_horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 21,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Brown Horse",
+                  "spawn_mode": "area"
+                }
+              ],
+              "raw_delay_ms": 0
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Horse stations",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
+      "assumptions": [
+        "Owner-authorized escape reports retain the first N sourced stable horses; no new creature or position is invented."
+      ],
+      "boss_names": [],
+      "end": {
+        "kind": "until_reset"
+      },
+      "global_observations": [],
+      "inactive_reasons": [],
+      "key": "raid:horsestation.stable.7",
+      "kind": "area",
+      "name": "horsestation.stable.7",
+      "schedule": {
+        "kind": "world_change"
+      },
+      "sources": [
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 1,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        },
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 18,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        },
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 39,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "raid:horsestation.stable.7/source",
+          "sources": [
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 1,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            },
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 18,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            },
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 39,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 1000,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 3,
+                    "min": 3
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32438,
+                      "y": 32231
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32442,
+                      "y": 32238
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32438_32231_7-32442_32238_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 19,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Horse",
+                  "spawn_mode": "area"
+                },
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32438,
+                      "y": 32231
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32442,
+                      "y": 32238
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32438_32231_7-32442_32238_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.grey_horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 20,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Grey Horse",
+                  "spawn_mode": "area"
+                },
+                {
+                  "amount": {
+                    "max": 2,
+                    "min": 2
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32438,
+                      "y": 32231
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32442,
+                      "y": 32238
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32438_32231_7-32442_32238_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.brown_horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 21,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Brown Horse",
+                  "spawn_mode": "area"
+                },
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32846,
+                      "y": 32114
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x128-y125.b3",
+                        "sha256": "4d8eddf9d19b47a689221359549cc4443b8fd534c30dfab6036ba2e0897a8b13"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32850,
+                      "y": 32120
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32846_32114_7-32850_32120_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 40,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Horse",
+                  "spawn_mode": "area"
+                }
+              ],
+              "raw_delay_ms": 0
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Horse stations",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
+      "assumptions": [
+        "Owner-authorized escape reports retain the first N sourced stable horses; no new creature or position is invented."
+      ],
+      "boss_names": [],
+      "end": {
+        "kind": "until_reset"
+      },
+      "global_observations": [],
+      "inactive_reasons": [],
+      "key": "raid:horsestation.stable.8",
+      "kind": "area",
+      "name": "horsestation.stable.8",
+      "schedule": {
+        "kind": "world_change"
+      },
+      "sources": [
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 1,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        },
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 18,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        },
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 39,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "raid:horsestation.stable.8/source",
+          "sources": [
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 1,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            },
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 18,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            },
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 39,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 1000,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 3,
+                    "min": 3
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32438,
+                      "y": 32231
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32442,
+                      "y": 32238
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32438_32231_7-32442_32238_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 19,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Horse",
+                  "spawn_mode": "area"
+                },
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32438,
+                      "y": 32231
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32442,
+                      "y": 32238
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32438_32231_7-32442_32238_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.grey_horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 20,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Grey Horse",
+                  "spawn_mode": "area"
+                },
+                {
+                  "amount": {
+                    "max": 2,
+                    "min": 2
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32438,
+                      "y": 32231
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32442,
+                      "y": 32238
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32438_32231_7-32442_32238_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.brown_horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 21,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Brown Horse",
+                  "spawn_mode": "area"
+                },
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32846,
+                      "y": 32114
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x128-y125.b3",
+                        "sha256": "4d8eddf9d19b47a689221359549cc4443b8fd534c30dfab6036ba2e0897a8b13"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32850,
+                      "y": 32120
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32846_32114_7-32850_32120_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 40,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Horse",
+                  "spawn_mode": "area"
+                },
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32846,
+                      "y": 32114
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x128-y125.b3",
+                        "sha256": "4d8eddf9d19b47a689221359549cc4443b8fd534c30dfab6036ba2e0897a8b13"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32850,
+                      "y": 32120
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32846_32114_7-32850_32120_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.grey_horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 41,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Grey Horse",
+                  "spawn_mode": "area"
+                }
+              ],
+              "raw_delay_ms": 0
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Horse stations",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
+      "assumptions": [
+        "Owner-authorized escape reports retain the first N sourced stable horses; no new creature or position is invented."
+      ],
+      "boss_names": [],
+      "end": {
+        "kind": "until_reset"
+      },
+      "global_observations": [],
+      "inactive_reasons": [],
+      "key": "raid:horsestation.stable.9",
+      "kind": "area",
+      "name": "horsestation.stable.9",
+      "schedule": {
+        "kind": "world_change"
+      },
+      "sources": [
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 1,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        },
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 18,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        },
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 39,
+          "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "raid:horsestation.stable.9/source",
+          "sources": [
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 1,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            },
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 18,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            },
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 39,
+              "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 1000,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 3,
+                    "min": 3
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32438,
+                      "y": 32231
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32442,
+                      "y": 32238
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32438_32231_7-32442_32238_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 19,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Horse",
+                  "spawn_mode": "area"
+                },
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32438,
+                      "y": 32231
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32442,
+                      "y": 32238
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32438_32231_7-32442_32238_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.grey_horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 20,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Grey Horse",
+                  "spawn_mode": "area"
+                },
+                {
+                  "amount": {
+                    "max": 2,
+                    "min": 2
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32438,
+                      "y": 32231
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32442,
+                      "y": 32238
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32438_32231_7-32442_32238_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.brown_horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 21,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Brown Horse",
+                  "spawn_mode": "area"
+                },
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32846,
+                      "y": 32114
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x128-y125.b3",
+                        "sha256": "4d8eddf9d19b47a689221359549cc4443b8fd534c30dfab6036ba2e0897a8b13"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32850,
+                      "y": 32120
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32846_32114_7-32850_32120_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 40,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Horse",
+                  "spawn_mode": "area"
+                },
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32846,
+                      "y": 32114
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x128-y125.b3",
+                        "sha256": "4d8eddf9d19b47a689221359549cc4443b8fd534c30dfab6036ba2e0897a8b13"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32850,
+                      "y": 32120
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32846_32114_7-32850_32120_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.grey_horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 41,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Grey Horse",
+                  "spawn_mode": "area"
+                },
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32846,
+                      "y": 32114
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x128-y125.b3",
+                        "sha256": "4d8eddf9d19b47a689221359549cc4443b8fd534c30dfab6036ba2e0897a8b13"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32850,
+                      "y": 32120
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32846_32114_7-32850_32120_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.brown_horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 42,
+                    "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b"
+                  },
+                  "source_name": "Brown Horse",
+                  "spawn_mode": "area"
+                }
+              ],
+              "raw_delay_ms": 0
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Horse stations",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
+      "assumptions": [
+        "Owner-authorized zero horses or three hours from first escape activates a three-hour raid; replaces donor rent30%/24h policy."
+      ],
+      "boss_names": [],
+      "end": {
+        "despawn_after_ms": 10800000,
+        "kind": "despawn_after"
+      },
+      "global_observations": [],
+      "inactive_reasons": [],
+      "key": "raid:horsestation.wild",
+      "kind": "area",
+      "name": "horsestation.wild",
+      "schedule": {
+        "kind": "world_change"
+      },
+      "sources": [
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 57,
+          "path": "data-global/npc/palomino.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "595387918194d62554ba02e66c381e945fc065a0c0b3b2658ce773fe52f293da"
+        },
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 126,
+          "path": "data-global/npc/palomino.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "595387918194d62554ba02e66c381e945fc065a0c0b3b2658ce773fe52f293da"
+        },
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 138,
+          "path": "data-global/npc/palomino.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "595387918194d62554ba02e66c381e945fc065a0c0b3b2658ce773fe52f293da"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "raid:horsestation.wild/source",
+          "sources": [
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 57,
+              "path": "data-global/npc/palomino.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "595387918194d62554ba02e66c381e945fc065a0c0b3b2658ce773fe52f293da"
+            },
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 126,
+              "path": "data-global/npc/palomino.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "595387918194d62554ba02e66c381e945fc065a0c0b3b2658ce773fe52f293da"
+            },
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 138,
+              "path": "data-global/npc/palomino.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "595387918194d62554ba02e66c381e945fc065a0c0b3b2658ce773fe52f293da"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 1000,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 3,
+                    "min": 3
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32456,
+                      "y": 32193
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      },
+                      {
+                        "path": "content/world/placements/region-z07-x126-y126.b3",
+                        "sha256": "4a7e66d10f4d310fb76a16e4af34f71a47c70e15b84f20e4880da6f791e0593e"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32491,
+                      "y": 32261
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32456_32193_7-32491_32261_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.wild_horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 138,
+                    "path": "data-global/npc/palomino.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "595387918194d62554ba02e66c381e945fc065a0c0b3b2658ce773fe52f293da"
+                  },
+                  "source_name": "Wild Horse",
+                  "spawn_mode": "area"
+                },
+                {
+                  "amount": {
+                    "max": 3,
+                    "min": 3
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32456,
+                      "y": 32193
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      },
+                      {
+                        "path": "content/world/placements/region-z07-x126-y126.b3",
+                        "sha256": "4a7e66d10f4d310fb76a16e4af34f71a47c70e15b84f20e4880da6f791e0593e"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32491,
+                      "y": 32261
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32456_32193_7-32491_32261_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 138,
+                    "path": "data-global/npc/palomino.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "595387918194d62554ba02e66c381e945fc065a0c0b3b2658ce773fe52f293da"
+                  },
+                  "source_name": "Horse",
+                  "spawn_mode": "area"
+                },
+                {
+                  "amount": {
+                    "max": 3,
+                    "min": 3
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32456,
+                      "y": 32193
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      },
+                      {
+                        "path": "content/world/placements/region-z07-x126-y126.b3",
+                        "sha256": "4a7e66d10f4d310fb76a16e4af34f71a47c70e15b84f20e4880da6f791e0593e"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32491,
+                      "y": 32261
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32456_32193_7-32491_32261_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.grey_horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 138,
+                    "path": "data-global/npc/palomino.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "595387918194d62554ba02e66c381e945fc065a0c0b3b2658ce773fe52f293da"
+                  },
+                  "source_name": "Grey Horse",
+                  "spawn_mode": "area"
+                },
+                {
+                  "amount": {
+                    "max": 3,
+                    "min": 3
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32456,
+                      "y": 32193
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      },
+                      {
+                        "path": "content/world/placements/region-z07-x126-y126.b3",
+                        "sha256": "4a7e66d10f4d310fb76a16e4af34f71a47c70e15b84f20e4880da6f791e0593e"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32491,
+                      "y": 32261
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32456_32193_7-32491_32261_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.brown_horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 138,
+                    "path": "data-global/npc/palomino.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "595387918194d62554ba02e66c381e945fc065a0c0b3b2658ce773fe52f293da"
+                  },
+                  "source_name": "Brown Horse",
+                  "spawn_mode": "area"
+                },
+                {
+                  "amount": {
+                    "max": 3,
+                    "min": 3
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32431,
+                      "y": 32240
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      },
+                      {
+                        "path": "content/world/placements/region-z07-x126-y126.b3",
+                        "sha256": "4a7e66d10f4d310fb76a16e4af34f71a47c70e15b84f20e4880da6f791e0593e"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32464,
+                      "y": 32280
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32431_32240_7-32464_32280_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.wild_horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 138,
+                    "path": "data-global/npc/palomino.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "595387918194d62554ba02e66c381e945fc065a0c0b3b2658ce773fe52f293da"
+                  },
+                  "source_name": "Wild Horse",
+                  "spawn_mode": "area"
+                },
+                {
+                  "amount": {
+                    "max": 3,
+                    "min": 3
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32431,
+                      "y": 32240
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      },
+                      {
+                        "path": "content/world/placements/region-z07-x126-y126.b3",
+                        "sha256": "4a7e66d10f4d310fb76a16e4af34f71a47c70e15b84f20e4880da6f791e0593e"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32464,
+                      "y": 32280
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32431_32240_7-32464_32280_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 138,
+                    "path": "data-global/npc/palomino.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "595387918194d62554ba02e66c381e945fc065a0c0b3b2658ce773fe52f293da"
+                  },
+                  "source_name": "Horse",
+                  "spawn_mode": "area"
+                },
+                {
+                  "amount": {
+                    "max": 3,
+                    "min": 3
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32431,
+                      "y": 32240
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      },
+                      {
+                        "path": "content/world/placements/region-z07-x126-y126.b3",
+                        "sha256": "4a7e66d10f4d310fb76a16e4af34f71a47c70e15b84f20e4880da6f791e0593e"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32464,
+                      "y": 32280
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32431_32240_7-32464_32280_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.grey_horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 138,
+                    "path": "data-global/npc/palomino.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "595387918194d62554ba02e66c381e945fc065a0c0b3b2658ce773fe52f293da"
+                  },
+                  "source_name": "Grey Horse",
+                  "spawn_mode": "area"
+                },
+                {
+                  "amount": {
+                    "max": 3,
+                    "min": 3
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32431,
+                      "y": 32240
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      },
+                      {
+                        "path": "content/world/placements/region-z07-x126-y126.b3",
+                        "sha256": "4a7e66d10f4d310fb76a16e4af34f71a47c70e15b84f20e4880da6f791e0593e"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32464,
+                      "y": 32280
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32431_32240_7-32464_32280_7",
+                  "boss": false,
+                  "boss_source": null,
+                  "creature": "oteryn:creature.brown_horse",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 138,
+                    "path": "data-global/npc/palomino.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "595387918194d62554ba02e66c381e945fc065a0c0b3b2658ce773fe52f293da"
+                  },
+                  "source_name": "Brown Horse",
+                  "spawn_mode": "area"
+                }
+              ],
+              "raw_delay_ms": 0
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Horse stations",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
       "boss_names": [],
       "end": {
         "despawn_after_ms": null,
@@ -42135,8 +44452,8 @@
   "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
   "totals": {
     "area": {
-      "active": 34,
-      "total": 102
+      "active": 44,
+      "total": 112
     },
     "boss": {
       "active": 70,

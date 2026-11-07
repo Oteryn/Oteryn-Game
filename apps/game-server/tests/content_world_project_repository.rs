@@ -17,13 +17,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        427,
-        "3873d0698b98aa2280046cf75d4900863124cf1d6aae6f7c100b1be195260531",
+        490,
+        "eab9819f713797650331870dc89e186b98ebf98453f9bf4de2a63ecbd90c29ab",
     ),
     (
         "definitions/declarations.json",
-        27_600_259,
-        "949746ad0a2d1304ca5a1ec75ae4cd707650c1e24d4017a0733af52ca4fa5809",
+        27_600_402,
+        "90c2f380623f39085ac7a09408b9cd7ec8577a870a55350cb98202a5dc9e4e12",
     ),
     (
         "definitions/reference.json",
@@ -37,8 +37,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1960,
-        "13f7bb45ba2dd0f08c4903f1a6b3d50e5d94cc85b9ac206b57e80aed92fad1d4",
+        1981,
+        "b7096b4f0e7df0ec617936f265d8f23ba8baa388086c3813f0205083cfc85afb",
     ),
     (
         "presentations/bindings.json",
@@ -47,13 +47,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        411,
-        "bbedaf68b426c503359199872eaa7cba22bde95b4a5391096567f1ccca05b6c1",
+        432,
+        "f81a64bc7fecc1598537520852c36870e88a2832a3fb7900956d1271b4a244b7",
     ),
     (
         "provenance/imports.json",
         6_773_322,
-        "ba6e6ac791b4799e695d7eaab9a54c974c56b798d1d43bd40809af5ed75eba8d",
+        "36fb32d8c52f5fc2d1ece2fd0348477da642e1b265c6d78a61d09f5f7b554531",
     ),
     (
         "provenance/sources.json",
@@ -140,7 +140,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "ce41135b19867a03e20d3ecf98e2e88d076db66101949876fd6e130cd9fbba20";
+const TREE_SHA256: &str = "185c42a9529bcf0d8c833268fe3529d0a6834f05f80abaf12dedb652c569a62c";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.
@@ -393,7 +393,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     .expect("capture tracked canonical package");
     assert_eq!(
         project.project_revision(),
-        "e06-market-crystal-parity-20261031-r1"
+        "e06-market-crystal-parity-20261031-r1-wcontrib-rank-access"
     );
     // E06 adds the client market mint batch ahead of the Crystal parity batch.
     assert_eq!(project.imports().len(), 35);

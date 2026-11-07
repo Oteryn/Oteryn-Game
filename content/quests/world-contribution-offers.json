@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "noodles"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/noodles/collar_earned",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "If Noodles is missing, ask me for the {leashes} and bring him safely back."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ottokar",
+      "keywords": [
+        "medicine",
+        "medicine pouch",
+        "belongings",
+        "belongings of deceasead",
+        "belongings of deceased"
+      ],
+      "topic": 0,
+      "next_topic": 71,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/swamp-fever/ottokar-exchanges",
+          "minimum": -1,
+          "maximum": 9223372036854775806,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring me the medicine pouch?"
+      ]
+    }
+  ]
+}

@@ -708,7 +708,7 @@
       "key": "horse_station",
       "title": "Horse Station World Change",
       "quest": "oteryn:quest.horse_station_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00100-00199.json",
@@ -721,6 +721,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "CONTRACT-NOTES.md",
+          "locator": "WCONTRIB source contracts and conservative rules; focused PostgreSQL execution markers in WORLDCHG-Q"
         }
       ],
       "source_refs": [
@@ -741,10 +745,15 @@
           "url": "https://tibia.fandom.com/index.php?curid=54702&oldid=502074"
         }
       ],
-      "reason": "Startup horse anchors/counts and stable handler are known. Escape, three-hour/zero-horse raid activation/expiry and native stable transition are not composed; donor stable script references an unassigned waveEvent.",
-      "missing_facts": [
-        "Startup horse anchors/counts and stable handler are known. Escape, three-hour/zero-horse raid activation/expiry and native stable transition are not composed; donor stable script references an unassigned waveEvent."
-      ]
+      "reason": "Custody/current-generation receipts, shared transition and native admission/projection are implemented; conservative source decisions are recorded in CONTRACT-NOTES.md.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "live_world_action",
+        "owner": "world_event::changes::actions",
+        "raid_key": "raid:horsestation.wild",
+        "stable_keys": "raid:horsestation.stable.1..9",
+        "replay_owner": "Quest receipt"
+      }
     },
     {
       "key": "insectoid_invasion",
@@ -1040,7 +1049,7 @@
       "key": "noodles_is_gone",
       "title": "Noodles is Gone Mini World Change",
       "quest": "oteryn:quest.authored.noodles_is_gone_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -1057,6 +1066,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "CONTRACT-NOTES.md",
+          "locator": "WCONTRIB source contracts and conservative rules; focused PostgreSQL execution markers in WORLDCHG-Q"
         }
       ],
       "source_refs": [
@@ -1077,14 +1090,19 @@
           "url": "https://tibia.fandom.com/index.php?curid=76254&oldid=1122443"
         }
       ],
-      "reason": "W 15 fixes 92 permille. Retained Noodles mutations are PostmanMission 06; Dog Collar escort, disappearance/return and next-save Dog Lady transition are absent.",
-      "missing_facts": [
-        "W 15 fixes 92 permille. Retained Noodles mutations are PostmanMission 06; Dog Collar escort, disappearance/return and next-save Dog Lady transition are absent."
-      ],
+      "reason": "Custody/current-generation receipts, shared transition and native admission/projection are implemented; conservative source decisions are recorded in CONTRACT-NOTES.md.",
+      "missing_facts": [],
       "trigger": {
         "kind": "at_reset",
         "chance_permille": 92,
         "duration": "until_next_reset"
+      },
+      "binding": {
+        "kind": "live_world_action",
+        "owner": "world_event::changes::actions",
+        "item": 14156,
+        "save_projection": "Dog Lady on the following saved day",
+        "replay_owner": "Quest receipt"
       }
     },
     {
@@ -1238,7 +1256,7 @@
       "key": "rathleton",
       "title": "Rathleton Quest",
       "quest": "oteryn:quest.authored.rathleton_quest",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -1251,6 +1269,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "CONTRACT-NOTES.md",
+          "locator": "WCONTRIB source contracts and conservative rules; focused PostgreSQL execution markers in WORLDCHG-Q"
         }
       ],
       "source_refs": [
@@ -1279,10 +1301,20 @@
           "url": "https://www.tibiawiki.com.br/index.php?curid=33732&oldid=386889"
         }
       ],
-      "reason": "50/150/300/500 spent-vote rank thresholds are known. Ballot identity, election period, eligibility/point debit, winner transition and native rank admission are absent.",
-      "missing_facts": [
-        "50/150/300/500 spent-vote rank thresholds are known. Ballot identity, election period, eligibility/point debit, winner transition and native rank admission are absent."
-      ]
+      "reason": "Custody/current-generation receipts, shared transition and native admission/projection are implemented; conservative source decisions are recorded in CONTRACT-NOTES.md.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "contribution",
+        "resource": "votes",
+        "owner": "world_event::changes::elections",
+        "ballots": 12,
+        "rank_thresholds": [
+          50,
+          150,
+          300,
+          500
+        ]
+      }
     },
     {
       "key": "rise_of_devovorga",
@@ -1568,7 +1600,7 @@
       "key": "steamship",
       "title": "Steamship World Change",
       "quest": "oteryn:quest.steamship_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00200-00299.json",
@@ -1581,6 +1613,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "crates/gameplay/durability/src/durability/world_event/changes/custody.rs",
+          "locator": "Quest transaction contribution participant; migration1110 debit proof"
         }
       ],
       "source_refs": [
@@ -1601,16 +1637,18 @@
           "url": "https://tibia.fandom.com/index.php?curid=54769&oldid=772277"
         }
       ],
-      "reason": "200 sharedCoal and Junkar destinations/prices are known. Coal custody/debit, shared unlock transition and transport gate are absent; savecoal dialogue is not a debit.",
-      "missing_facts": [
-        "200 sharedCoal and Junkar destinations/prices are known. Coal custody/debit, shared unlock transition and transport gate are absent; savecoal dialogue is not a debit."
-      ]
+      "reason": "WCONTRIB: fenced Quest/NPC custody debit and replay receipt; 200 shared Coal opens sourced Junkar travel for the next saved day. Existing prices and destinations retained.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "contribution",
+        "resource": "coal"
+      }
     },
     {
       "key": "swamp_fever",
       "title": "Swamp Fever World Change",
       "quest": "oteryn:quest.swamp_fever_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00200-00299.json",
@@ -1623,6 +1661,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "crates/gameplay/durability/src/durability/world_event/changes/custody.rs",
+          "locator": "Quest transaction contribution participant; migration1110 debit proof"
         }
       ],
       "source_refs": [
@@ -1643,10 +1685,12 @@
           "url": "https://tibia.fandom.com/index.php?curid=55045&oldid=749214"
         }
       ],
-      "reason": "Ottokar exchanges medicine 12517 for belongings 12413 as an individual task. Epidemic threshold, medicine drop/custody and shared disease transition are absent.",
-      "missing_facts": [
-        "Ottokar exchanges medicine 12517 for belongings 12413 as an individual task. Epidemic threshold, medicine drop/custody and shared disease transition are absent."
-      ]
+      "reason": "WCONTRIB: sourced medicine pouch12517 drop and separate Ottokar exchange retained; explicit epidemic donation debits custody. Owner-authorized conservative assumption:100 daily pouches prevent next-day epidemic; native feverish-citizen raid uses saved disease gate.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "raid",
+        "raid_key": "raid:venore.feverishcitizens"
+      }
     },
     {
       "key": "thawing",
@@ -1930,7 +1974,7 @@
       "key": "twisted_waters",
       "title": "Twisted Waters World Change",
       "quest": "oteryn:quest.authored.twisted_waters_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -1943,6 +1987,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "crates/gameplay/durability/src/durability/world_event/changes/custody.rs",
+          "locator": "Quest transaction contribution participant; migration1110 debit proof"
         }
       ],
       "source_refs": [
@@ -1963,10 +2011,12 @@
           "url": "https://tibia.fandom.com/index.php?curid=55048&oldid=935150"
         }
       ],
-      "reason": "1000 worldcorpse deposits, save transitions and 20-hour personal restriction are known. Deposit debit, lake-state projection and catch eligibility are absent.",
-      "missing_facts": [
-        "1000 worldcorpse deposits, save transitions and 20-hour personal restriction are known. Deposit debit, lake-state projection and catch eligibility are absent."
-      ]
+      "reason": "WCONTRIB: 1000 shared corpse deposits drive next-save lake state. Conservative source gap policy accepts the portable aged Swamp Troll corpse4178 with its sourced decay budget and recovers one lake stage on a day below threshold; native dirty-water fishing retains personal20-hour Shimmer restriction.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "contribution",
+        "resource": "corpses"
+      }
     },
     {
       "key": "warpath",

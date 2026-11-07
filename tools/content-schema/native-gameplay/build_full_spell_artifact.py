@@ -500,6 +500,25 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
                 raise ValueError(f"Loot table given twice: {definition['identity']['key']}")
             tables[definition['identity']['key']] = definition
     facts = item_facts(item_definitions)
+    # WCONTRIB admits only this sourced native cohort, preserving the canonical
+    # reference definitions while allowing their real creature loot/corpse mint.
+    native_path = item_definitions / 'spell-native-profiles.json'
+    contribution_keys = {f'oteryn:item.tibia.i{identifier}' for identifier in (3111, 4176, 4177, 4178, 6018, 12413, 12517, 12557, 12558, 12559, 12560, 12561, 12562, 12563, 14156, 21182, 21291)}
+    if native_path.is_file():
+        _, native_items = read(native_path)
+        for row in native_items['records']:
+            definition = row['production_definition']
+            key = definition['production_key']
+            if key not in contribution_keys:
+                continue
+            fact = facts.get(key)
+            expected = {'family': definition['family'], 'key': key, 'revision': definition['revision_ref']}
+            if fact is None or fact['item'] != expected:
+                raise ValueError('World contribution requires exact canonical Item identity')
+            fact['materializable'] = row['admission']['materializable'] is True
+            container = row['semantics']['container']
+            capacity = container.get('value', {}).get('capacity', {})
+            fact['container_capacity'] = capacity.get('value') if capacity.get('state') == 'KNOWN' else None
     bindings, named, used = {}, {}, {}
     corpse_refs, yield_keys, corpse_tables = {}, set(), {}
     profile_path = item_definitions / 'spell-native-profiles.json'
@@ -570,6 +589,11 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
     for key, corpses in corpse_tables.items():
         if corpses & qualified_corpses:
             admit_yields(used[key]['entries'])
+    # WCONTRIB fishing outputs are minted by the gathering owner rather than
+    # every creature's static loot table. Keep their exact native admission facts.
+    for key in ('oteryn:item.tibia.i3111', 'oteryn:item.tibia.i12557'):
+        if key in facts:
+            name(facts[key]['item'])
     # FORGECREATURE: this resource is added by the live fiend's death classification,
     # rather than by every creature's static loot table. Preserve core admission facts.
     sliver = facts.get('oteryn:item.tibia.i37109')

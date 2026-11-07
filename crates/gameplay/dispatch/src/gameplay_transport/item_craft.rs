@@ -267,6 +267,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         request.station = Some(station);
+        if request.station.as_ref().is_some_and(|station| {
+            oteryn_gameplay_items::fishing::is_spent_dirty_water(&station.production_key)
+        }) {
+            return disposition(UseDisposition::NothingToUse);
+        }
         let mut catch_roll = 1;
         let mut fishing_skill = 10;
         // Fishing is the same durable consume/mint owner as cooking, but keeps the rod and
@@ -463,6 +468,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     } else if tool_id == 9306 && attempt.after == Some(4609) {
                         // Crystal items.xml:13998-14005: spent sewer water recovers in 20 min.
                         vec![(4597, 1_200_000)]
+                    } else if (12558..=12560).contains(&attempt.after.unwrap_or(0)) {
+                        // Crystal items.xml:30564-30586: spent dirty water recovers in20min.
+                        vec![(u32::from(target_id), 1_200_000)]
                     } else if seed_attempt.is_some() {
                         oteryn_gameplay_items::event_planting::planting_decays(attempt.after?)
                     } else {

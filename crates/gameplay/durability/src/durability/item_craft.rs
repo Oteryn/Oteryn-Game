@@ -28,6 +28,7 @@ mod event_containers;
 mod harvest;
 mod skinning;
 pub mod soulpit;
+mod twisted_waters;
 pub use enchanting::EnchantingCraft;
 pub use harvest::{MapHarvestOperand, MapHarvestRequest, MapHarvestResult};
 pub use skinning::SkinningRequest;
@@ -167,6 +168,11 @@ async fn write_with_skinning<C: ItemLoopContent>(
     if request.enchanting.is_some() {
         return enchanting::write(tx, fence, request, native, content).await;
     }
+    if request.station.as_ref().is_some_and(|station| {
+        oteryn_gameplay_items::fishing::is_spent_dirty_water(&station.production_key)
+    }) {
+        return Ok(UseDisposition::NothingToUse);
+    }
     let (world, _) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
     // Root serialization precedes all item locks. Basic cooking accepts main-backpack leaves.
     let source = sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,uuid_send(e.parent_item_instance_id) AS parent,e.placement_ordinal::text AS ordinal,NULL::jsonb AS nested_source FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND e.world_id=i.world_id AND b.world_id=i.world_id FOR UPDATE OF i")
@@ -213,6 +219,7 @@ async fn write_with_skinning<C: ItemLoopContent>(
             .gathering
             .as_ref()
             .is_none_or(|g| g.attempt.consumes_bait);
+    let mut shimmer_caught_at = None;
     let conversion = if let Some(prepared) = &skinning {
         Some(oteryn_gameplay_items::item_craft::CookingConversion {
             recipe: prepared.conversion.recipe.clone(),
@@ -265,9 +272,16 @@ async fn write_with_skinning<C: ItemLoopContent>(
         {
             return Ok(UseDisposition::StaleState);
         }
-        let outputs = gathering
-            .attempt
-            .yield_item
+        let yield_item = if (12561..=12563).contains(&gathering.mutation.before) {
+            let Some(catch) = twisted_waters::prepare(tx, fence, gathering).await? else {
+                return Ok(UseDisposition::NothingToUse);
+            };
+            shimmer_caught_at = catch.caught_at;
+            catch.yield_item
+        } else {
+            gathering.attempt.yield_item
+        };
+        let outputs = yield_item
             .map(|id| {
                 let record = native.item_policy_for_source_id(u32::from(id))?.record();
                 Some((
@@ -570,6 +584,9 @@ async fn write_with_skinning<C: ItemLoopContent>(
     }
     sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES($1::uuid,$2::uuid,1,1,2,$3,$4,encode($5,'hex')::uuid,$6,$6+$7,$8,sha256($8),1)")
         .bind(&event).bind(&transaction).bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id()).bind(request.source.as_slice()).bind(occurred).bind(super::item_mint_audit::AUDIT_RETENTION_P90D_MS).bind(&envelope).execute(&mut ***tx).await?;
+    if let Some(caught_at) = shimmer_caught_at {
+        twisted_waters::record(tx, fence, &transaction, caught_at).await?;
+    }
     // The successful yield, counter and grant share the craft receipt transaction.
     // Exact replay returned before this writer, so a retry never advances the counter.
     use oteryn_gameplay_progression::achievement_granters;

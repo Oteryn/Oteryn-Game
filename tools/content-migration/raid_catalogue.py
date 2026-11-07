@@ -17,6 +17,7 @@ import re
 import sys
 from pathlib import Path
 from xml.parsers import expat
+import horse_station_raids
 
 ROOT = Path(__file__).resolve().parents[2]
 REVISION = "201189f871d23597b82caf88fd611454a2ddefb8"
@@ -577,6 +578,8 @@ def outputs(root: Path, *, register: bool = True) -> dict[str, bytes]:
     evidence = json.loads(staged[EVIDENCE])
     records = build_records(sources, evidence, load(root, f"{EVIDENCE_DIR}/raid-source-reconciliation.json"),
                             creature_catalogue(root), load(root, PLACEMENTS))
+    records.extend(horse_station_raids.records(root, creature_catalogue(root), load(root, PLACEMENTS), qualify))
+    records.sort(key=lambda record: record["key"])
     totals = {kind: {"total": sum(r["kind"] == kind for r in records),
                      "active": sum(r["kind"] == kind and r["active"] for r in records)}
               for kind in ("city", "area", "boss", "multi_variant", "calendar")}

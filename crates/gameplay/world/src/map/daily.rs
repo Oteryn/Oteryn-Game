@@ -6,6 +6,13 @@ use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LakeState {
+    Clean,
+    Dirty,
+    Stinking,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DailyMap {
     pub seed: [u8; 32],
@@ -13,6 +20,8 @@ pub struct DailyMap {
     pub grimvale_full_moon: bool,
     /// One of the three committed `oriental_trader/<town>` layer keys.
     pub trader: Option<&'static str>,
+    /// The current saved World's lake projection; absent for legacy map fixtures.
+    pub lake_state: Option<LakeState>,
 }
 
 impl DailyMap {
@@ -106,6 +115,9 @@ impl Projection {
                 id: definition.reference.get() - 1,
                 terrain,
             });
+        }
+        if let Some(state) = daily.lake_state {
+            lake_palette(&mut manifest, state, item)?;
         }
         Ok(Self {
             daily: daily.clone(),
@@ -236,6 +248,86 @@ fn fungus(manifest: &Manifest, sector: &mut Sector, daily: &DailyMap) -> Result<
     Ok(())
 }
 
+fn lake_appearance(state: LakeState, source: u16) -> Option<u16> {
+    match (state, source) {
+        (LakeState::Clean, 12558..=12563) => Some(4610),
+        (LakeState::Dirty, 4608..=4613 | 12558..=12563) => Some(12561),
+        (LakeState::Stinking, 4608..=4613 | 12558..=12563) => Some(12563),
+        _ => None,
+    }
+}
+
+fn lake_palette(
+    manifest: &mut Manifest,
+    state: LakeState,
+    item: &impl Fn(&str) -> Option<super::facts::ItemDefinition>,
+) -> Result<(), Error> {
+    let needed: Vec<_> = manifest
+        .palette
+        .iter()
+        .filter_map(|entry| {
+            let appearance = lake_appearance(state, palette_appearance(&entry.key)?)?;
+            Some((appearance, entry.terrain))
+        })
+        .collect();
+    for (appearance, terrain) in needed {
+        // A target appearance with different ground semantics cannot substitute
+        // for this source palette entry. Preserve its exact terrain binding.
+        if manifest.palette.iter().any(|entry| {
+            palette_appearance(&entry.key) == Some(appearance) && entry.terrain == terrain
+        }) {
+            continue;
+        }
+        let key = format!("oteryn:item.tibia.i{appearance}");
+        let definition =
+            item(&key).ok_or_else(|| refusal(&format!("unserved lake appearance {appearance}")))?;
+        manifest.palette.push(bundle::PaletteEntry {
+            key,
+            family: bundle::Family::Item,
+            id: definition.reference.get() - 1,
+            terrain,
+        });
+    }
+    Ok(())
+}
+
+fn lake(manifest: &Manifest, sector: &mut Sector, state: LakeState) -> Result<(), Error> {
+    if sector.floor != -7 {
+        return Ok(());
+    }
+    // The committed native B3 region-z07-x127-y127 contains one connected
+    // 499-tile component of source lake water12558..12563 in these bounds.
+    // Region SHA25673a839c9ca9f5aa623bd1e6deade1babd23fd656dae8ae5ced8c6192184fc2e8.
+    // Appearance policy is an owner-authorized fallback: blue4610 / dirty12561 /
+    // heavily polluted12563. Ground semantics and every placement attribute stay intact.
+    for tile in &mut sector.tiles {
+        if tile.house != 0
+            || !(32597..=32630).contains(&tile.x)
+            || !(32642..=32671).contains(&tile.y)
+        {
+            continue;
+        }
+        for item in tile.items.iter_mut().filter(|item| item.depth == 0) {
+            let source = &manifest.palette[item.palette as usize];
+            let Some(appearance) = palette_appearance(&source.key)
+                .and_then(|appearance| lake_appearance(state, appearance))
+            else {
+                continue;
+            };
+            item.palette = manifest
+                .palette
+                .iter()
+                .position(|entry| {
+                    palette_appearance(&entry.key) == Some(appearance)
+                        && entry.terrain == source.terrain
+                })
+                .and_then(|index| u32::try_from(index).ok())
+                .ok_or_else(|| refusal("lake palette loses source terrain"))?;
+        }
+    }
+    Ok(())
+}
+
 /// Projects the same verified sectors for both the compact map and its fact owners. Nothing
 /// is written to the bundle or its pins; rebuilding from the original bytes restores the day.
 pub(super) fn visit(
@@ -349,6 +441,9 @@ fn project(
             sector.tiles = tiles.into_values().collect();
         }
         fungus(manifest, &mut sector, daily)?;
+        if let Some(state) = daily.lake_state {
+            lake(manifest, &mut sector, state)?;
+        }
         visitor(manifest, sector)
     })?;
     if let Some(pending) = pending {
@@ -421,4 +516,125 @@ pub(super) fn grimvale_spawns(
         }
     }
     Some(sources)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn wcontrib_lake_projection_preserves_custody_attributes_flags_and_terrain() -> Result<(), Error>
+    {
+        let terrain = bundle::Terrain {
+            kind: bundle::TerrainKind::Ground,
+            walkable: Some(false),
+            ground_speed: Some(0),
+        };
+        let mut manifest = Manifest {
+            subareas: Default::default(),
+            format: bundle::FORMAT.into(),
+            min_reader_version: bundle::VERSION,
+            projection_class: "server".into(),
+            compiler_version: "wcontrib-test".into(),
+            build_class: bundle::BuildClass::Production,
+            identity: bundle::Identity::default(),
+            world: bundle::Extent {
+                min_x: 32000,
+                min_y: 32000,
+                max_x: 33000,
+                max_y: 33000,
+                floors: vec![-7],
+            },
+            palette: vec![bundle::PaletteEntry {
+                key: "oteryn:item.tibia.i4610".into(),
+                family: bundle::Family::Item,
+                id: 4610,
+                terrain: Some(terrain),
+            }],
+            draft_areas: Vec::new(),
+            skipped_provisional_keys: Vec::new(),
+            dropped_teleports: Vec::new(),
+            spawns: Default::default(),
+            npcs: Default::default(),
+        };
+        for appearance in [12561, 12563] {
+            manifest.palette.push(bundle::PaletteEntry {
+                key: format!("oteryn:item.tibia.i{appearance}"),
+                family: bundle::Family::Item,
+                id: appearance,
+                terrain: Some(terrain),
+            });
+        }
+        let tile = Tile {
+            x: 32613,
+            y: 32655,
+            flags: 17,
+            house: 0,
+            zones: Vec::new(),
+            items: vec![Item {
+                palette: 0,
+                depth: 0,
+                attrs: Attrs {
+                    action: Some(555),
+                    unique: Some(888),
+                    ..Attrs::default()
+                },
+            }],
+        };
+        let mut outside = tile.clone();
+        outside.x = 32631;
+        let mut house = tile.clone();
+        house.house = 1;
+        let mut nested = tile.clone();
+        nested.items[0].depth = 1;
+        let original = Sector {
+            floor: -7,
+            sx: 32613 / 32,
+            sy: 32655 / 32,
+            tiles: vec![tile, outside, house, nested],
+        };
+        let mut different_terrain = manifest.clone();
+        different_terrain.palette[1].terrain = None;
+        lake_palette(&mut different_terrain, LakeState::Dirty, &|key| {
+            let appearance: u32 = key.strip_prefix("oteryn:item.tibia.i")?.parse().ok()?;
+            Some(super::super::facts::ItemDefinition {
+                reference: std::num::NonZeroU32::new(appearance + 1)?,
+                solid: Some(false),
+                blocks_projectile: false,
+                pickupable: false,
+                door: false,
+            })
+        })?;
+        let mut cloned_terrain = original.clone();
+        lake(&different_terrain, &mut cloned_terrain, LakeState::Dirty)?;
+        assert_ne!(cloned_terrain.tiles[0].items[0].palette, 1);
+        assert_eq!(
+            different_terrain.palette[cloned_terrain.tiles[0].items[0].palette as usize].terrain,
+            Some(terrain)
+        );
+        let mut dirty = original.clone();
+        let mut other_floor = original.clone();
+        other_floor.floor = -8;
+        let original_other_floor = other_floor.clone();
+        lake(&manifest, &mut other_floor, LakeState::Dirty)?;
+        assert_eq!(other_floor, original_other_floor);
+        lake(&manifest, &mut dirty, LakeState::Dirty)?;
+        assert_eq!(dirty.tiles[0].items[0].palette, 1);
+        assert_eq!(
+            dirty.tiles[0].items[0].attrs,
+            original.tiles[0].items[0].attrs
+        );
+        assert_eq!(dirty.tiles[0].flags, 17);
+        assert_eq!(&dirty.tiles[1..], &original.tiles[1..]);
+        assert_eq!(
+            manifest.palette[dirty.tiles[0].items[0].palette as usize].terrain,
+            Some(terrain)
+        );
+        let mut stinking = original.clone();
+        lake(&manifest, &mut stinking, LakeState::Stinking)?;
+        assert_eq!(stinking.tiles[0].items[0].palette, 2);
+        lake(&manifest, &mut dirty, LakeState::Clean)?;
+        assert_eq!(dirty, original);
+        Ok(())
+    }
 }

@@ -239,7 +239,7 @@ impl DurabilityRoot {
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(None);
             }
-            let firing = sqlx::query("SELECT fired_at_ms,state FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid FOR UPDATE")
+            let firing = sqlx::query("SELECT fired_at_ms,state,raid_key FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid FOR UPDATE")
                 .bind(firing_id.as_slice()).fetch_one(&mut *tx).await?;
             let target: Option<String> = sqlx::query_scalar("SELECT owner_generation::text FROM game_world_raid_targets WHERE firing_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
                 .bind(firing_id.as_slice()).bind(channel.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
@@ -269,7 +269,9 @@ impl DurabilityRoot {
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(Some(pending));
             }
-            if state != 1 || firing.try_get::<i16, _>("state")? != 1 {
+            let firing_state=firing.try_get::<i16,_>("state")?;
+            let current_projection=firing_state==2 && crate::durability::world_event::changes::actions::horse_projection(&firing.try_get::<String,_>("raid_key")?);
+            if state != 1 || (firing_state!=1 && !current_projection) {
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(None);
             }
@@ -360,6 +362,9 @@ impl DurabilityRoot {
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(RaidWrite::CompareFailed);
             }
+            crate::durability::world_event::changes::actions::lock_horse_projection(
+                &mut tx,identity.firing_id,
+            ).await?;
             let owner: Option<String> = sqlx::query_scalar("SELECT owner_generation::text FROM game_world_raid_channel_runs WHERE firing_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid FOR UPDATE")
                 .bind(identity.firing_id.as_slice()).bind(identity.channel.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             if owner.as_deref() != Some(&identity.generation.get().to_string()) {
@@ -381,16 +386,21 @@ impl DurabilityRoot {
                     return Ok(RaidWrite::CompareFailed);
                 }
             }
-            let mut changed = false;
+            let mut fresh_deaths=0_u16;
             for death in deaths {
                 let result = sqlx::query("UPDATE game_world_raid_creatures c SET state=2 WHERE firing_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND wave=$3 AND entry=$4 AND creature_index=$5 AND state=1 AND EXISTS(SELECT 1 FROM game_world_raid_creature_placements p WHERE (p.firing_id,p.channel_id,p.wave,p.entry,p.creature_index)=(c.firing_id,c.channel_id,c.wave,c.entry,c.creature_index) AND p.placed)")
                     .bind(identity.firing_id.as_slice()).bind(identity.channel.as_bytes().as_slice())
                     .bind(effects::small(death.wave)?).bind(effects::small(death.entry)?).bind(effects::small(death.index)?)
                     .execute(&mut *tx).await?;
-                changed |= result.rows_affected() != 0;
+                if result.rows_affected()!=0 {
+                    fresh_deaths=fresh_deaths.checked_add(1).ok_or(DurabilityError::InvalidStoredState)?;
+                }
             }
+            crate::durability::world_event::changes::actions::record_horse_deaths(
+                &mut tx,&node,identity,fresh_deaths,
+            ).await?;
             commit_semantic_transaction(tx, deadline).await?;
-            Ok(if changed { RaidWrite::Applied } else { RaidWrite::Replayed })
+            Ok(if fresh_deaths>0 { RaidWrite::Applied } else { RaidWrite::Replayed })
         })).await
     }
 
@@ -490,7 +500,7 @@ impl DurabilityRoot {
         });
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            let mut rows = sqlx::query("SELECT uuid_send(f.firing_id),f.raid_key,f.fired_at_ms FROM game_world_raid_targets t JOIN game_world_raid_firings f USING(firing_id) JOIN game_runtime_scope_assignments a ON a.world_id=f.world_id AND a.channel_id=t.channel_id AND a.scope_kind=1 AND a.state=1 WHERE t.channel_id=encode($1,'hex')::uuid AND (f.fired_at_ms,f.firing_id)>($2,encode($3,'hex')::uuid) AND (f.state=1 OR EXISTS(SELECT 1 FROM game_world_raid_channel_runs r WHERE r.firing_id=f.firing_id AND r.channel_id=t.channel_id AND r.state=1 AND (f.state=3 OR r.owner_generation<>a.ownership_generation)) OR EXISTS(SELECT 1 FROM game_world_raid_effects e WHERE e.firing_id=f.firing_id AND e.channel_id=t.channel_id AND e.state=1) OR EXISTS(SELECT 1 FROM game_world_raid_creatures c WHERE c.firing_id=f.firing_id AND c.channel_id=t.channel_id AND c.state=1)) ORDER BY f.fired_at_ms,f.firing_id LIMIT $4")
+            let mut rows = sqlx::query("SELECT uuid_send(f.firing_id),f.raid_key,f.fired_at_ms FROM game_world_raid_targets t JOIN game_world_raid_firings f USING(firing_id) JOIN game_runtime_scope_assignments a ON a.world_id=f.world_id AND a.channel_id=t.channel_id AND a.scope_kind=1 AND a.state=1 WHERE t.channel_id=encode($1,'hex')::uuid AND (f.fired_at_ms,f.firing_id)>($2,encode($3,'hex')::uuid) AND (f.state=1 OR EXISTS(SELECT 1 FROM game_world_raid_channel_runs r WHERE r.firing_id=f.firing_id AND r.channel_id=t.channel_id AND r.state=1 AND (f.state=3 OR r.owner_generation<>a.ownership_generation OR EXISTS(SELECT 1 FROM game_world_raid_schedule_sources s WHERE s.world_id=f.world_id AND s.raid_key=f.raid_key AND s.source_kind=4))) OR EXISTS(SELECT 1 FROM game_world_raid_effects e WHERE e.firing_id=f.firing_id AND e.channel_id=t.channel_id AND e.state=1) OR EXISTS(SELECT 1 FROM game_world_raid_creatures c WHERE c.firing_id=f.firing_id AND c.channel_id=t.channel_id AND c.state=1)) ORDER BY f.fired_at_ms,f.firing_id LIMIT $4")
                 .bind(channel.as_bytes().as_slice()).bind(after.fired_at_ms).bind(after.firing_id.as_slice())
                 .bind(i64::try_from(MAX_CANDIDATES + 1).map_err(|_| DurabilityError::InvalidStoredState)?)
                 .fetch_all(&mut *tx).await?;

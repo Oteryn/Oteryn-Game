@@ -58,12 +58,69 @@ async fn quote(
     {
         return Ok(Err(TravelRefusal::UnavailableRoute));
     }
+    if !super::rank_admission::travel(tx, fence, route).await? {
+        return Ok(Err(TravelRefusal::UnavailableRoute));
+    }
+    if matches!(
+        route.service.as_str(),
+        "oteryn:service.travel.palomino" | "oteryn:service.travel.appaloosa"
+    ) {
+        let world = fence.runtime_scope.world_id();
+        let Some(epoch) = super::rank_admission::epoch(tx, world).await? else {
+            return Ok(Err(TravelRefusal::UnavailableRoute));
+        };
+        let now_ms: i64 = sqlx::query_scalar(
+            "SELECT floor(extract(epoch FROM transaction_timestamp())*1000)::bigint",
+        )
+        .fetch_one(&mut ***tx)
+        .await?;
+        let state =
+            crate::durability::world_event::changes::actions::horse_state(tx, world, epoch, now_ms)
+                .await?;
+        if state.is_none_or(|state| state.stable_horses == 0 || state.raid_active(now_ms)) {
+            return Ok(Err(TravelRefusal::UnavailableRoute));
+        }
+    }
+    if matches!(
+        route.service.as_str(),
+        "oteryn:service.travel.junkar_mines"
+            | "oteryn:service.travel.junkar_robsons"
+            | "oteryn:service.travel.junkar_thais"
+    ) {
+        // The caller already fenced this Character/session and reset admission.
+        // Read the shared save projection in this same fee/arrival transaction;
+        // a boot-time or conversation snapshot cannot authorize transport.
+        let world = fence.runtime_scope.world_id();
+        let epoch: Option<String> = sqlx::query_scalar(
+            "SELECT reset_epoch::text FROM game_world_reset_active \
+             WHERE world_id=encode($1,'hex')::uuid",
+        )
+        .bind(world.as_bytes().as_slice())
+        .fetch_optional(&mut ***tx)
+        .await?;
+        let Some(epoch) = epoch else {
+            return Ok(Err(TravelRefusal::UnavailableRoute));
+        };
+        let epoch = epoch
+            .parse()
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        if !crate::durability::world_event::changes::shared(tx, world, epoch)
+            .await?
+            .is_some_and(|state| state.steamship_open)
+        {
+            return Ok(Err(TravelRefusal::UnavailableRoute));
+        }
+    }
     if route.yalahar_gate || route.yalahar_town_gate.is_some() {
         let town = route.yalahar_town_gate.as_deref().unwrap_or("ab_dendriel");
-        let track = format!("oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/{town}");
+        let track = format!(
+            "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/{town}"
+        );
         let permitted: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND ((track_key=$2 AND value=1) OR (track_key='oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/towns_counter' AND value>=5)))")
             .bind(fence.character_id.as_bytes().as_slice()).bind(track).fetch_one(&mut ***tx).await?;
-        if !permitted { return Ok(Err(TravelRefusal::UnavailableRoute)); }
+        if !permitted {
+            return Ok(Err(TravelRefusal::UnavailableRoute));
+        }
     }
     if let Some(track) = &route.quest_gate {
         let permitted: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND value>=1)")

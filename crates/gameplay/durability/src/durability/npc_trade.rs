@@ -833,6 +833,9 @@ impl DurabilityRoot {
                     if !current {
                         return Ok(Err(NpcTradeError::AuthorityRejected));
                     }
+                    if !super::npc_travel::rank_admission::trade(&mut tx, fence.character_id, &request.cause.npc_key).await? {
+                        return Ok(Err(NpcTradeError::RequirementNotMet));
+                    }
                     if !yasir_permitted(&mut tx, world_id, &request.cause.npc_key, yasir_position).await? {
                         return Ok(Err(NpcTradeError::RequirementNotMet));
                     }

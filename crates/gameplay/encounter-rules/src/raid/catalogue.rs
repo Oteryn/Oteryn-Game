@@ -81,6 +81,8 @@ impl CatalogueWorldChange {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum CatalogueSchedule {
+    /// Current shared World state selects this projection in the existing scheduler.
+    WorldChange,
     LegacyXml {
         interval_s: u32,
         margin_ms: u64,
@@ -342,6 +344,20 @@ impl CatalogueRaid {
             required.validate()?;
         }
         match &self.schedule {
+            CatalogueSchedule::WorldChange
+                if self.key != "raid:horsestation.wild"
+                    && !self
+                        .key
+                        .strip_prefix("raid:horsestation.stable.")
+                        .is_some_and(|count| {
+                            count.len() == 1
+                                && count
+                                    .parse::<u16>()
+                                    .is_ok_and(|count| (1..=9).contains(&count))
+                        }) =>
+            {
+                return Err(RaidError::InvalidDefinition);
+            }
             CatalogueSchedule::LegacyXml { interval_s: 0, .. } | CatalogueSchedule::Unknown => {
                 return Err(RaidError::InvalidDefinition);
             }
@@ -490,9 +506,9 @@ impl CatalogueRaid {
                 mean_interval_s: interval_s,
                 min_gap_s: 0,
             },
-            CatalogueSchedule::Lua { .. } | CatalogueSchedule::Calendar { .. } => {
-                RaidPolicy::SourceScheduled
-            }
+            CatalogueSchedule::Lua { .. }
+            | CatalogueSchedule::Calendar { .. }
+            | CatalogueSchedule::WorldChange => RaidPolicy::SourceScheduled,
             CatalogueSchedule::Unknown => return Err(RaidError::InvalidDefinition),
         };
         let definition = RaidDefinition {
@@ -519,13 +535,69 @@ mod tests {
     use crate::raid::{RaidRunAction, RaidRunCursor};
 
     #[test]
+    fn wcontrib_horse_catalogue_binds_stable_counts_and_wild_wave()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let catalogue = RaidCatalogue::embedded()?;
+        for count in 1..=9_u16 {
+            let key = ProductionKey::new(&format!("raid:horsestation.stable.{count}"))?;
+            let selected = catalogue
+                .get(&key)
+                .ok_or("stable projection")?
+                .select([7; 32], [9; 16])?;
+            assert_eq!(selected.definition.policy, RaidPolicy::SourceScheduled);
+            assert_eq!(
+                selected.definition.waves[0]
+                    .entries
+                    .iter()
+                    .map(|entry| entry.count)
+                    .sum::<u16>(),
+                count
+            );
+            assert!(selected.definition.waves[0].entries.iter().all(|entry| {
+                matches!(
+                    entry.creature.as_str(),
+                    "oteryn:creature.horse"
+                        | "oteryn:creature.grey_horse"
+                        | "oteryn:creature.brown_horse"
+                )
+            }));
+        }
+        let key = ProductionKey::new("raid:horsestation.wild")?;
+        let wild = catalogue
+            .get(&key)
+            .ok_or("wild projection")?
+            .select([7; 32], [9; 16])?;
+        assert_eq!(
+            wild.definition.waves[0]
+                .entries
+                .iter()
+                .map(|entry| entry.count)
+                .sum::<u16>(),
+            24
+        );
+        assert_eq!(wild.definition.despawn_after_ms, Some(10_800_000));
+        assert_eq!(wild.areas.len(), 2);
+        let mut invalid: serde_json::Value = serde_json::from_str(CATALOGUE)?;
+        let record = invalid["records"]
+            .as_array_mut()
+            .ok_or("records")?
+            .iter_mut()
+            .find(|record| record["key"] == "raid:horsestation.wild")
+            .ok_or("wild record")?;
+        record["key"] = serde_json::json!("raid:unknown.worldchange");
+        assert!(RaidCatalogue::from_json(&serde_json::to_string(&invalid)?).is_err());
+        Ok(())
+    }
+
+    #[test]
     fn every_active_catalogue_raid_parses_and_inactive_has_reasons()
     -> Result<(), Box<dyn std::error::Error>> {
         let catalogue = RaidCatalogue::embedded()?;
         // RAIDS-GLOBAL 2026-11-01 replaces the former single-Badger catalogue:
-        // 160 Crystal XML definitions + Sugar Mommy + 78 unresolved wiki identities.
-        assert_eq!(catalogue.records().len(), 239);
-        assert_eq!(catalogue.active().count(), 136);
+        // 160 Crystal XML definitions + Sugar Mommy + 78 unresolved wiki identities,
+        // plus ten source-backed Horse Station World projections.
+        assert_eq!(catalogue.records().len(), 249);
+        assert_eq!(catalogue.active().count(), 146);
         for record in catalogue.records() {
             if record.active {
                 record.select([7; 32], [9; 16])?.definition.validate()?;

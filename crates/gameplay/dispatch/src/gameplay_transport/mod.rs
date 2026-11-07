@@ -125,6 +125,7 @@ mod native_activity;
 mod native_activity_return;
 mod newhaven_arrival;
 mod newhaven_travel;
+pub mod noodles;
 mod novelty_item_use;
 mod npc_actor;
 mod npc_command;

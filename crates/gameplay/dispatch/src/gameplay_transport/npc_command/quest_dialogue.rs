@@ -59,6 +59,16 @@ impl NpcConversations {
 }
 
 impl State {
+    fn start_paid_travel(&mut self, context: Context) -> bool {
+        // A new service choice cancels an uncommitted question, never a retained
+        // semantic operation awaiting receipt reconciliation.
+        if self.pending.is_some() {
+            return false;
+        }
+        self.apply_topic(context, Some(Topic::default()));
+        true
+    }
+
     fn topic(&self, context: &Context) -> Topic {
         if self.context.as_ref() == Some(context) {
             self.topic.clone()
@@ -74,6 +84,23 @@ impl State {
     }
 }
 
+impl NpcConversations {
+    pub(in crate::gameplay_transport) fn start_paid_travel(
+        &self,
+        session: GameSessionId,
+        context: (u64, u64, String),
+    ) -> bool {
+        let Ok(mut sessions) = self.sessions.lock() else {
+            return false;
+        };
+        sessions
+            .entry(session)
+            .or_default()
+            .quest_dialogue
+            .start_paid_travel(context)
+    }
+}
+
 pub(super) struct Step {
     context: Context,
     topic: Topic,
@@ -86,6 +113,8 @@ pub(super) struct Step {
 struct Pending {
     actor: ExactActorRef,
     character: CharacterId,
+    world_action_context:
+        Option<crate::durability::world_event::changes::actions::WorldActionContext>,
     request: QuestTransitionRequest,
     intent: NpcTalkIntent,
     context: Context,
@@ -220,13 +249,20 @@ pub(super) async fn apply(
     };
     // Resolve the admitted customer and existing wire bounds before a topic or
     // durable transition can change. A missing fact never publishes a token.
-    let rendered = reply(
+    let mut rendered = reply(
         &admission.states.chat,
         command.game_session_id,
         &step.context,
         &intent,
         step.reply.clone(),
     );
+    if step
+        .transition
+        .as_ref()
+        .is_some_and(|k| k.starts_with("oteryn:quest-reward/"))
+    {
+        rendered.inventory_changed = true;
+    }
     if rendered.disposition != NpcIntentDisposition::Ok {
         return rendered;
     }
@@ -275,11 +311,17 @@ pub(super) async fn apply(
     if fence.item_fence() != item_fence {
         return rejected();
     }
+    let mut world_action_context = None;
     {
         let runtime = admission.runtime.lock().await;
         let states = admission.states.spell_states.lock().await;
         if states.is_dead(actor)
             || !states.spell_idle(&runtime, actor, command.game_session_id)
+            || (transition.starts_with("oteryn:quest-reward/")
+                && admission.active_generation.is_none_or(|generation| {
+                    runtime.content_pin().server_artifact_digest()
+                        != generation.identity().server_artifact_digest()
+                }))
             || admission.states.npc_conversations.current_npc(
                 &admission.states.chat,
                 &runtime,
@@ -295,6 +337,37 @@ pub(super) async fn apply(
                 })
         {
             return rejected();
+        }
+        if transition == oteryn_gameplay_quests::quest::noodles::RETURN {
+            let visible = runtime.visible_entities();
+            let Some(player) = visible.players.iter().find(|p| p.actor == actor) else {
+                return rejected();
+            };
+            let Some(npc) = visible.npcs.iter().find(|n| {
+                n.actor.placement_identity() == intent.npc_actor.identity
+                    && n.generation == intent.npc_actor.generation
+            }) else {
+                return rejected();
+            };
+            let native = |p: crate::foundation::MovementLocalPosition| {
+                Some(oteryn_gameplay_quests::quest::world_callbacks::Position {
+                    x: u16::try_from(p.x).ok()?,
+                    y: u16::try_from(p.y).ok()?,
+                    floor: i8::try_from(-p.floor).ok()?,
+                })
+            };
+            let (Some(actor_position), Some(target_position)) =
+                (native(player.position), native(npc.position))
+            else {
+                return rejected();
+            };
+            world_action_context = Some(
+                crate::durability::world_event::changes::actions::WorldActionContext {
+                    actor: actor_position,
+                    target_npc: step.context.2.clone(),
+                    target_position,
+                },
+            );
         }
     }
     let request = QuestTransitionRequest {
@@ -318,6 +391,7 @@ pub(super) async fn apply(
         state.pending = Some(Pending {
             actor,
             character: fence.character_id,
+            world_action_context: world_action_context.clone(),
             request: request.clone(),
             intent: intent.clone(),
             context: step.context.clone(),
@@ -325,8 +399,45 @@ pub(super) async fn apply(
             reply: step.reply.clone(),
         });
     }
-    let outcome = slot
-        .commit_quest_transition(
+    let value_callback = oteryn_gameplay_quests::quest::reward_callbacks::load()
+        .ok()
+        .is_some_and(|callbacks| callbacks.iter().any(|c| c.key == request.transition_key));
+    let outcome = if let Some(context) = world_action_context {
+        slot.commit_world_action(
+            admission.root,
+            admission.character,
+            admission.holder,
+            fence,
+            request,
+            std::sync::Arc::clone(catalogue),
+            context,
+        )
+        .await
+    } else if value_callback {
+        let Some(native) = admission
+            .active_generation
+            .and_then(|g| g.native_gameplay())
+        else {
+            finish(admission, command.game_session_id, false);
+            return rejected();
+        };
+        let weights = super::super::item_ref_admission::NativeItemWeights(native)
+            .with_wheel(admission.premium_coordinator);
+        slot.commit_quest_reward(
+            admission.root,
+            admission.character,
+            admission.holder,
+            fence,
+            request,
+            std::sync::Arc::clone(catalogue),
+            crate::durability::reward_claim_mint::QuestRewardAdmission {
+                native,
+                weights: &weights,
+            },
+        )
+        .await
+    } else {
+        slot.commit_quest_transition(
             admission.root,
             admission.character,
             admission.holder,
@@ -334,8 +445,13 @@ pub(super) async fn apply(
             request,
             std::sync::Arc::clone(catalogue),
         )
-        .await;
+        .await
+    };
     drop(slot);
+    #[cfg(test)]
+    if value_callback && let Err(error) = &outcome {
+        eprintln!("quest reward commit: {error:?}");
+    }
     match outcome {
         Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => {
             #[cfg(test)]
@@ -398,15 +514,38 @@ pub(in crate::gameplay_transport) async fn resume(
     if pending.request.cause != QuestCause::Command(CommandRef::new(command.game_session_id, id)) {
         return None;
     }
-    match admission
-        .root
-        .reconcile_character_quest_transition(
-            admission.character,
-            pending.character,
-            pending.request,
-        )
-        .await
+    // Recovery reads the retained receipt; it never reconstructs a spatial action
+    // from a player or NPC which may have moved since the unknown commit.
+    if pending.request.transition_key == oteryn_gameplay_quests::quest::noodles::RETURN
+        && pending.world_action_context.is_none()
     {
+        return Some(NpcTalkOutcome::only(NpcIntentDisposition::Rejected));
+    }
+    let value_callback = pending
+        .request
+        .transition_key
+        .starts_with("oteryn:quest-reward/");
+    let receipt = if let Some(context) = pending.world_action_context.as_ref() {
+        admission
+            .root
+            .reconcile_character_world_action(
+                admission.character,
+                pending.character,
+                pending.request,
+                context,
+            )
+            .await
+    } else {
+        admission
+            .root
+            .reconcile_character_quest_transition(
+                admission.character,
+                pending.character,
+                pending.request,
+            )
+            .await
+    };
+    match receipt {
         Ok(receipt) => {
             finish(admission, command.game_session_id, receipt.is_some());
             if receipt.is_some() {
@@ -416,13 +555,14 @@ pub(in crate::gameplay_transport) async fn resume(
                 admission
                     .refresh_level_up_vitals(pending.actor, command.game_session_id)
                     .await;
-                let rendered = reply(
+                let mut rendered = reply(
                     &admission.states.chat,
                     command.game_session_id,
                     &pending.context,
                     &pending.intent,
                     pending.reply,
                 );
+                rendered.inventory_changed = value_callback;
                 let runtime = admission.runtime.lock().await;
                 Some(publish_committed_reply(
                     admission.states.npc_conversations.current_npc(
@@ -452,6 +592,53 @@ mod publication_tests;
 #[cfg(test)]
 mod tests {
     use super::{State, Topic};
+
+    #[test]
+    fn wcontrib_passage_confirmation_cannot_cast_an_old_vote_or_stable_report() {
+        let mut state = State::default();
+        let marvin = (1, 2, "oteryn:npc.marvin".to_owned());
+        state.apply_topic(
+            marvin.clone(),
+            Some(Topic {
+                number: 100,
+                value: Some("world-contribution".into()),
+            }),
+        );
+        assert!(
+            oteryn_gameplay_quests::quest::rathleton::dialogue(
+                &marvin.2,
+                "yes",
+                state.topic(&marvin).number
+            )
+            .is_some()
+        );
+        assert!(state.start_paid_travel(marvin.clone()));
+        assert!(
+            oteryn_gameplay_quests::quest::rathleton::dialogue(
+                &marvin.2,
+                "yes",
+                state.topic(&marvin).number
+            )
+            .is_none()
+        );
+        let keeper = (1, 2, "oteryn:npc.palomino".to_owned());
+        state.apply_topic(
+            keeper.clone(),
+            Some(Topic {
+                number: 501,
+                value: Some("world-contribution".into()),
+            }),
+        );
+        assert!(state.start_paid_travel(keeper.clone()));
+        assert!(
+            oteryn_gameplay_quests::quest::horse_station::dialogue(
+                &keeper.2,
+                "yes",
+                state.topic(&keeper).number
+            )
+            .is_none()
+        );
+    }
 
     #[test]
     fn topic_is_bound_to_npc_and_conversation_and_catalogue_generation() {
