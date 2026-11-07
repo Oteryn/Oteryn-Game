@@ -271,6 +271,41 @@ pub(super) async fn consume(
             return Ok(false);
         }
     }
+    for required in &callback.effects.present {
+        let rows = sqlx::query(
+            "SELECT i.quantity,i.item_instance_id::text AS item,c.location,c.kind FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c \
+             JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 \
+             AND i.definition_family='Item' AND i.definition_production_key=$3 \
+             ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(world_id.as_bytes().as_slice())
+            .bind(&required.item).fetch_all(&mut **tx).await?;
+        if rows.len() > 500 {
+            return Ok(false);
+        }
+        let mut quantity = 0i64;
+        for row in rows {
+            let count = row.try_get::<i64, _>("quantity")?;
+            quantity = quantity
+                .checked_add(count)
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            lock_location(
+                tx,
+                &Input {
+                    item: row.try_get("item")?,
+                    before: serde_json::Value::Null,
+                    location: row.try_get("location")?,
+                    kind: row.try_get("kind")?,
+                    quantity: count,
+                    count: required.count,
+                    replacement: None,
+                },
+            )
+            .await?;
+        }
+        if quantity < i64::from(required.count) {
+            return Ok(false);
+        }
+    }
     if callback.offerings.is_empty() && callback.item_on_target.is_none() {
         return Ok(true);
     }

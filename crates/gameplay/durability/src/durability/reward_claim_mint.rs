@@ -125,6 +125,7 @@ mod fluid;
 mod grizzly;
 mod monk;
 pub(crate) mod quest;
+mod quest_participants;
 mod quest_bulk;
 mod quest_requirements;
 pub use quest_requirements::RewardClaimQuestRequirement;

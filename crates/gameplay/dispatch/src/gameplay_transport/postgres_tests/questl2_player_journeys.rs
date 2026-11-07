@@ -407,7 +407,7 @@ async fn bone(
     let [muriel] =
         super::classic_quests::install_nearby(owner, admitted, ["oteryn:npc.muriel"]).await?;
     assert_eq!(
-        grant(owner, admitted, muriel, "bone-pit-issue").await?.0,
+        grant(owner, admitted, muriel, "l2-bone-start").await?.0,
         NpcIntentDisposition::Rejected
     );
     assert_eq!(stage(h, BONE).await?, None);
@@ -459,7 +459,7 @@ async fn bone(
             .await?;
     assert_eq!(level, 35);
     assert_eq!(
-        grant(owner, admitted, muriel, "bone-pit-issue").await?.0,
+        grant(owner, admitted, muriel, "l2-bone-start").await?.0,
         NpcIntentDisposition::Ok
     );
     assert_eq!(stage(h, BONE).await?, Some(1));
@@ -498,7 +498,7 @@ async fn bone(
     let branch = if lost {
         "bone-pit-lost-sample"
     } else {
-        "bone-pit-return"
+        "l2-bone-return"
     };
     let (result, last) = grant(owner, admitted, muriel, branch).await?;
     assert_eq!(result, NpcIntentDisposition::Ok);

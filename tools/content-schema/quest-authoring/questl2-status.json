@@ -533,6 +533,64 @@
         "Existing paid/bulk/deadline NPC exchanges retain their full journey"
       ],
       "qualification_scope": "World map USE participant; complete Father quest qualification is not inferred."
+    },
+    {
+      "name": "bounded counters, transaction-clock timers and atomic foreign quest participants",
+      "status": "QUALIFIED",
+      "migration": 1148,
+      "reused_engine_commits": [
+        "6ad33a4b1",
+        "e9d98947f"
+      ],
+      "postgres_test": "questl2_shared_counter_timer_foreign_owner_player_journey",
+      "postgres_version": "18.6",
+      "red": {
+        "duration_seconds": 2.814890475,
+        "result": "unsupported state_ops and participants"
+      },
+      "green": {
+        "duration_seconds": 77.612949698,
+        "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-engine-shared",
+        "passed": 1,
+        "failed": 0
+      },
+      "proves": [
+        "Actual Amber and Norma NPC hand-ins from unstarted quest state",
+        "Foreign counter increment and reset commit with primary reward",
+        "Early elapsed-timer collection refuses without granting",
+        "Timer-only test clock arrangement preserves all other quest progress",
+        "Both earned addons publish to the native client catalogue",
+        "Exact Citizen base and both addon unlock keys"
+      ],
+      "eleven_track_regression_seconds": 45.13778713,
+      "post_merge_evidence": [
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-engine-shared",
+          "duration_seconds": 174.859751639,
+          "postgresql": "18.6",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "temporary quest targets and carried evidence",
+      "status": "QUALIFIED",
+      "post_merge_evidence": [
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-bone",
+          "duration_seconds": 152.752474902,
+          "postgresql": "18.6",
+          "passed": true
+        }
+      ],
+      "proves": [
+        "Missing carried tool refuses the dig",
+        "Shovel custody is proved without consuming it",
+        "Target remains until its exact server deadline and expires at the deadline",
+        "A later dig allocates a different target identity",
+        "The issued container transforms in place and collection removes the target",
+        "The next NPC action sees committed world progress immediately"
+      ]
     }
   ],
   "entries": [
@@ -583,25 +641,13 @@
       "post_merge_evidence": [
         {
           "marker": "POSTGRES_CASE_COMPLETED catalogue-npc-father",
-          "duration_seconds": 290.468596643,
+          "duration_seconds": 123.576378458,
           "postgresql": "18.6",
           "passed": true
         },
         {
           "marker": "POSTGRES_CASE_COMPLETED fathers_burden_eight_handins_cape_experience_and_replay",
-          "duration_seconds": 311.777449528,
-          "postgresql": "18.6",
-          "passed": true
-        },
-        {
-          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-father-scale",
-          "duration_seconds": 268.365429117,
-          "postgresql": "18.6",
-          "passed": true
-        },
-        {
-          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-father-sinew",
-          "duration_seconds": 205.520203101,
+          "duration_seconds": 198.498914091,
           "postgresql": "18.6",
           "passed": true
         }
@@ -619,8 +665,58 @@
     },
     {
       "title": "An Interest In Botany",
-      "status": "PENDING",
-      "evidence": []
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-botany",
+          "duration_seconds": 90.651961143,
+          "postgresql": "18.6",
+          "passed": true,
+          "log": "/tmp/l2-botany-green3.log",
+          "red_log": "/tmp/l2-botany-red.log",
+          "red_duration_seconds": 2.937707454
+        }
+      ],
+      "journey": "Fresh quest tracks; native storage door locked before actual Rabaz mission acceptance; source door opens with ChestDoor 0; physical movement to actual untagged chest; world-issued almanach; refusals without book/knife and for reversed or repeated sample; carried Obsidian Knife and book retained across ordered plant samples; return to Rabaz; book consumed, Sedge Hat plus ten platinum coins minted with identical PostgreSQL audit created_xact_id, 3000 XP and stage 4; repeat confirmation refused without duplicate outputs.",
+      "source_contract": {
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "witnesses": [
+          "data-global/npc/rabaz.lua:145-184 sha256:b74ee3591cc967215c463d104d887ace6d448f3ea46d7521f0a0a264f5347643",
+          "data-global/startup/tables/chest.lua:2807-2813 sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
+          "data-global/scripts/actions/tools/skinning.lua:224-250,349 sha256:2065a1ff806ab025efac6add9646e0a91084015d507b994e3dcf384365d37861"
+        ],
+        "native_door": {
+          "position": [
+            33007,
+            31536,
+            10
+          ],
+          "appearance": 7721,
+          "action": 42965
+        },
+        "book_chest": {
+          "position": [
+            33004,
+            31530,
+            10
+          ],
+          "appearance": 2469,
+          "unique": null
+        },
+        "npc_placement": [
+          33009,
+          31532,
+          10
+        ]
+      },
+      "post_merge_evidence": [
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-botany",
+          "duration_seconds": 203.310121134,
+          "postgresql": "18.6",
+          "passed": true
+        }
+      ]
     },
     {
       "title": "An Uneasy Alliance",
@@ -854,13 +950,7 @@
       "post_merge_evidence": [
         {
           "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-exchange-fixed",
-          "duration_seconds": 343.756798977,
-          "postgresql": "18.6",
-          "passed": true
-        },
-        {
-          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-paid-stake-priests",
-          "duration_seconds": 152.2132391,
+          "duration_seconds": 175.231487823,
           "postgresql": "18.6",
           "passed": true
         }
@@ -981,6 +1071,15 @@
           "passed": 1,
           "failed": 0,
           "batch": 5
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-bone",
+          "duration_seconds": 75.015421206,
+          "postgresql": "18.6",
+          "passed": true,
+          "log": "/tmp/l2-bone-green5.log",
+          "red_log": "/tmp/l2-bone-red.log",
+          "red_duration_seconds": 2.863603091
         }
       ],
       "assumptions": [
@@ -993,17 +1092,44 @@
       "post_merge_evidence": [
         {
           "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-full-bone",
-          "duration_seconds": 586.599513425,
+          "duration_seconds": 149.422671891,
           "postgresql": "18.6",
           "passed": true
         },
         {
           "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-full-bone-lost",
-          "duration_seconds": 419.180323655,
+          "duration_seconds": 176.241600897,
+          "postgresql": "18.6",
+          "passed": true
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-bone",
+          "duration_seconds": 152.752474902,
           "postgresql": "18.6",
           "passed": true
         }
-      ]
+      ],
+      "journey": "Fresh quest tracks; actual Muriel level refusal then real durable XP leveling to 35; NPC issues empty container; pit refuses missing shovel; carried shovel is retained; source-bound remains expire at 60 seconds; a second dig produces a new identity; literal USE transforms the same container to sample 131 and removes remains; Muriel consumes sample and grants Death Ring plus one-time completion XP atomically; command replay and repeat dig refusal.",
+      "source_contract": {
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "witnesses": [
+          "data-global/npc/muriel.lua:61-85,133-141 sha256:7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc",
+          "data-global/scripts/lib/register_actions.lua:502-512 sha256:4a9c9f217f034d69372170a50bdfbbad3427453fc98fb233e0bd29c8779cf069",
+          "data-global/scripts/quests/others/actions_ectoplasm_container.lua:4-12 sha256:584ec08275530b23bfc4222e6294acfaf84d9a1235d1d0738f77a04306666e28"
+        ],
+        "production_pit": {
+          "position": [
+            32408,
+            32107,
+            10
+          ],
+          "appearance": 103,
+          "ordinal": 0,
+          "startup_witness": "data-global/startup/tables/item.lua:449-452 sha256:677bffd2482d16a5c73633e3f7324c4dc16cf1e00fbb5368e56ce4b6d60402fd",
+          "served_region_sha256": "cd6f083af1456d58b3868ee59f08bed31d5b0a05474669712ad966200d2f1fda"
+        },
+        "xp_note": "1000 completion XP is an owner-authorized lane restoration documented in CONTRACT-NOTES.md; pinned donor grants only Death Ring."
+      }
     },
     {
       "title": "Kilmaresh",
@@ -1076,14 +1202,8 @@
       },
       "post_merge_evidence": [
         {
-          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-sam",
-          "duration_seconds": 153.06855982,
-          "postgresql": "18.6",
-          "passed": true
-        },
-        {
           "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-full-sam",
-          "duration_seconds": 160.22001571,
+          "duration_seconds": 199.176697266,
           "postgresql": "18.6",
           "passed": true
         }
@@ -1214,14 +1334,8 @@
       "journey": "Actual NPC issuance/hand-in, native sealed door before/after entitlement, source chest reward, final return where applicable, replay and duplicate refusal; no quest progress or earned outputs seeded.",
       "post_merge_evidence": [
         {
-          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-outfox",
-          "duration_seconds": 310.326424456,
-          "postgresql": "18.6",
-          "passed": true
-        },
-        {
           "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-full-outfox",
-          "duration_seconds": 326.979484943,
+          "duration_seconds": 177.189890138,
           "postgresql": "18.6",
           "passed": true
         }
@@ -2079,6 +2193,208 @@
           "resolution": "The authored world reward now requires NPC stage 2 and atomically writes 3 with armor. The strengthened xmin assertion passed in 160.22001571 seconds."
         }
       ]
+    },
+    "bone_pit_slice": {
+      "postgres_passed": 3,
+      "postgres_log": "/tmp/l2-bone-green5.log",
+      "regression_postgres_log": "/tmp/l2-bone-green5.log",
+      "regressions": [
+        "Sam full journey",
+        "Outfox full journey"
+      ],
+      "authoring_passed": 58,
+      "authoring_log": "/tmp/l2-bone-authoring-final.log",
+      "lane_authoring_passed": 16,
+      "lane_authoring_log": "/tmp/l2-bone-l2-authoring-final.log",
+      "effects_authoring_passed": 22,
+      "effects_authoring_log": "/tmp/l2-bone-effects-authoring.log",
+      "clippy_exit_code": 0,
+      "clippy_log": "/tmp/l2-bone-clippy-cache.log",
+      "formatting_exit_code": 0,
+      "pin_check_log": "/tmp/l2-bone-pin-check-final.log",
+      "world_pin_digest": "053a2a27bb7fd93fe044456f533b738b90a765bc0d83e5ce5a55550657b18b68"
+    },
+    "botany_slice": {
+      "postgres_passed": 1,
+      "postgres_log": "/tmp/l2-botany-green3.log",
+      "authoring_passed": 39,
+      "authoring_log": "/tmp/l2-botany-authoring-final.log",
+      "placements_passed": 11,
+      "placements_log": "/tmp/l2-botany-placements.log",
+      "clippy_exit_code": 0,
+      "clippy_log": "/tmp/l2-botany-clippy-last.log",
+      "formatting_exit_code": 0,
+      "formatting_log": "/tmp/l2-botany-fmt-final.log",
+      "pin_check_log": "/tmp/l2-botany-pin-check.log",
+      "world_pin_digest": "62c88d908453297f90650d434a6060736b4d3b562b0af1909f42ff31da36a295"
+    },
+    "shared_state_owner_slice": {
+      "postgres_log": "/tmp/l2-shared-engine-green3.log",
+      "clippy_log": "/tmp/l2-shared-clippy.log",
+      "clippy_all_targets": true,
+      "clippy_deny_warnings": true,
+      "authoring_passed": 23,
+      "authoring_log": "/tmp/l2-shared-authoring3.log",
+      "domain_passed": 1,
+      "world_pin_check": "/tmp/l2-shared-pin-check.log",
+      "migration_clash_check": "Seventy fetched remote heads: npcfix occupies 1147; 1148 unused before this slice."
+    },
+    "mergee992_authoring": {
+      "passed": true,
+      "qengine_tests": 28,
+      "qengine_duration_seconds": 16.953,
+      "l2_tests": 20,
+      "l2_duration_seconds": 36.407,
+      "world_tests": 22,
+      "world_duration_seconds": 1.4,
+      "migration_1148_clash_check": {
+        "branch_refs": 82,
+        "clashes": 0,
+        "source_ref": "origin/claude/happy-davinci-ijz3wy-questl2"
+      }
+    },
+    "mergee992_postgres": {
+      "initial_log": "/tmp/l2-mergee992-pg.log",
+      "initial": {
+        "selected": 22,
+        "passed": 20,
+        "failed": 2,
+        "duration_seconds": 861.6
+      },
+      "initial_failures": [
+        {
+          "test": "catalogue_npc_father_fresh_acceptance_is_one_eleven_track_transaction",
+          "failure": "fresh-session transaction timeout before quest actions",
+          "duration_seconds": 14.397
+        },
+        {
+          "test": "participant_authoring_rejects_owner_confusion_duplicates_and_invalid_sex",
+          "failure": "fixture minimum 2 did not exceed the selected source maximum; corrected to maximum + 1 without changing runtime validation"
+        }
+      ],
+      "reruns": [
+        {
+          "log": "/tmp/l2-mergee992-father-rerun.log",
+          "selected": 1,
+          "passed": 1,
+          "failed": 0,
+          "duration_seconds": 123.65
+        },
+        {
+          "log": "/tmp/l2-mergee992-reward-unit-rerun.log",
+          "selected": 8,
+          "passed": 8,
+          "failed": 0,
+          "duration_seconds": 3.32
+        }
+      ],
+      "all_selected_cases_passed": true,
+      "completed": [
+        {
+          "marker": "POSTGRES_CASE_COMPLETED fathers_burden_eight_handins_cape_experience_and_replay",
+          "duration_seconds": 198.498914091,
+          "postgresql": "18.6",
+          "passed": true
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-botany",
+          "duration_seconds": 203.310121134,
+          "postgresql": "18.6",
+          "passed": true
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-exchange-fixed",
+          "duration_seconds": 175.231487823,
+          "postgresql": "18.6",
+          "passed": true
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-engine-shared",
+          "duration_seconds": 174.859751639,
+          "postgresql": "18.6",
+          "passed": true
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-full-bone",
+          "duration_seconds": 149.422671891,
+          "postgresql": "18.6",
+          "passed": true
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-full-bone-lost",
+          "duration_seconds": 176.241600897,
+          "postgresql": "18.6",
+          "passed": true
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-full-outfox",
+          "duration_seconds": 177.189890138,
+          "postgresql": "18.6",
+          "passed": true
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-full-sam",
+          "duration_seconds": 199.176697266,
+          "postgresql": "18.6",
+          "passed": true
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-bone",
+          "duration_seconds": 152.752474902,
+          "postgresql": "18.6",
+          "passed": true
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED catalogue-npc-father",
+          "duration_seconds": 123.576378458,
+          "postgresql": "18.6",
+          "passed": true
+        }
+      ]
+    },
+    "mergee992_clippy": {
+      "passed": true,
+      "all_targets": true,
+      "warnings_denied": true,
+      "duration_seconds": 345,
+      "packages": [
+        "oteryn-gameplay-dispatch",
+        "oteryn-gameplay-durability",
+        "oteryn-gameplay-quests",
+        "oteryn-gameplay-content",
+        "oteryn-gameplay-world",
+        "oteryn-game-server",
+        "oteryn-world-bundle-compiler"
+      ],
+      "log": "/tmp/l2-mergee992-clippy.log"
+    },
+    "mergee992_format": {
+      "passed": true,
+      "log": "/tmp/l2-mergee992-final-fmt.log"
+    },
+    "mergee992_repository_generation": {
+      "passed": true,
+      "log": "/tmp/l2-mergee992-regenerate.log",
+      "pin_check_log": "/tmp/l2-mergee992-pin-check.log",
+      "world_digest": "62c88d908453297f90650d434a6060736b4d3b562b0af1909f42ff31da36a295",
+      "inputs_digest": "6c621d52db0c867d1a521929f9100bdd3e3ca231f8291abaa8cfe658a1c8287e",
+      "bytes": 31102570
+    },
+    "mergee992_postgeneration": {
+      "passed": true,
+      "authoring_tests": 70,
+      "qengine_duration_seconds": 24.461,
+      "l2_duration_seconds": 43.213,
+      "world_duration_seconds": 1.005,
+      "checks": [
+        "quests_2_content.py --check",
+        "qengine_rewards.py --check",
+        "quest_batch4.py --available --check",
+        "quest_state_lowering.py --check",
+        "cargo fmt --all --check"
+      ],
+      "binary_changes": 0,
+      "excluded_path_changes": 0
     }
   },
   "cross_lane_inspection": {
@@ -2161,14 +2477,16 @@
       "commit": "79fd117c3",
       "scope": "Ten source priests, exact carried stake evidence and ordinary-fallback confirmation refusal; preserve all existing QENGINE2/L2 callbacks.",
       "fresh_postgres_green_seconds": 286.804990407
-    }
+    },
+    "latest_qengine2_inspected": "5ad49dbe9"
   },
   "next_batch": {
     "entries": [
       "Kilmaresh",
-      "An Interest In Botany",
-      "An Uneasy Alliance"
+      "Krailos",
+      "The Repenters"
     ],
-    "rule": "Inspect and reuse published shared-engine and lane mechanisms, then source-author and prove complete fresh PostgreSQL journeys."
+    "rule": "Inspect and reuse published shared-engine and lane mechanisms, then source-author and prove complete fresh PostgreSQL journeys.",
+    "dependency_order": "Complete New Frontier before An Uneasy Alliance, which requires New Frontier Mission06 at least 5."
   }
 }

@@ -629,6 +629,18 @@ pub fn resolve_map_target<F: MapFacts, C>(
         return Err(MapTargetRefusal::StateRevisionMismatch);
     }
     let placement_key = u64::from_be_bytes(key.try_into().map_err(|_| nothing)?);
+    if view::placement_of(placement_key).is_none() {
+        let (pos, _) = source.facts.movement_item(placement_key).ok_or(nothing)?;
+        if target.expected_revision != source.facts.object_revision(placement_key) {
+            return Err(MapTargetRefusal::Use(UseDisposition::StaleState));
+        }
+        return Ok(MapObjectTarget {
+            pos,
+            ordinal: 0,
+            placement_key,
+            canonical: None,
+        });
+    }
     let (pos, ordinal) = view::placement_of(placement_key).ok_or(nothing)?;
     if !unhidden_base_entry(source.overlay, pos, ordinal) || source.facts.base_hidden(placement_key)
     {

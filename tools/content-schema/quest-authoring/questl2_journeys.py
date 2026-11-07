@@ -15,8 +15,8 @@ def append(add, state, callbacks, inputs):
         topic=1, offer=(['mission', 'quest'],
             'It belonged to my father and before that to my grandfather. That helmet is at least 600 years old! I need it back. Are you willing to help me?'))
     track = 'u8_1/tibia_tales/into_the_bone_pit'
-    add('bone-pit-issue', 'tibia_tales', 'muriel', ['yes'],
-        [state(track, 0, 1)],
+    add('l2-bone-start', 'tibia_tales', 'muriel', ['yes'],
+        [state(track, -1, 1, 0)],
         'Great! Here is the container for the bone. Once, I used it to collect ectoplasma of ghosts, but it will work here as well. ...',
         give=(4852, 1), topic=1, offer=(['mission'],
             'Find that pit, dig for a well-preserved human skeleton and conserve a sample in a special container which you receive from me. Are you going to help me?'))
@@ -24,7 +24,7 @@ def append(add, state, callbacks, inputs):
     if warning not in inputs['data-global/npc/muriel.lua'].decode():
         raise ValueError('Bone Pit level warning drift')
     callbacks[-1].update(minimum_level=35, failure_reply=[warning])
-    add('bone-pit-return', 'tibia_tales', 'muriel', ['mission'],
+    add('l2-bone-return', 'tibia_tales', 'muriel', ['mission'],
         [state(track, 2, 3)],
         'Excellent! Now I can try to put my theoretical thoughts into practice and find a cure for the symptoms of undead. Here, take this for your efforts.',
         take=[(131, 1)], give=(6299, 1))

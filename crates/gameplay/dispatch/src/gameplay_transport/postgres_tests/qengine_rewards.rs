@@ -32,6 +32,16 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
             y: 31969,
             floor: -5,
         }),
+        "qengine-rewards-l2-bone" => Some(Position {
+            x: 32408,
+            y: 32107,
+            floor: -10,
+        }),
+        "qengine-rewards-l2-botany" => Some(Position {
+            x: 33007,
+            y: 31536,
+            floor: -10,
+        }),
         _ => None,
     };
     let outcome = super::kill_reward_e2e::scenario_thread::run(name, move || {
@@ -192,6 +202,12 @@ fn questl2_exchange_fixed_source_journey() -> TestResult {
     scenario("qengine-rewards-exchange-fixed")
 }
 
+#[path = "qengine_rewards/questl2_shared_engine.rs"]
+mod questl2_shared_engine;
+
+#[path = "qengine_rewards/questl2_botany.rs"]
+mod questl2_botany;
+
 #[path = "qengine_rewards/questl2_journeys.rs"]
 pub(super) mod questl2_journeys;
 
@@ -275,6 +291,8 @@ async fn talk(
 
 fn offer_words(key: &str) -> &'static [&'static str] {
     match key.rsplit('/').next().unwrap_or(key) {
+        "l2-botany-start" | "l2-botany-return" => &["mission"],
+        "l2-bone-start" => &["mission"],
         "outfox-start" => &["mission"],
         "exchange-cyclops-start" => &["uth'lokr", "yes"],
         "exchange-cyclops-skirts" | "exchange-cyclops-draconian-steel" => &["uth'lokr"],
@@ -305,6 +323,9 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l4-royal-costume-base" => &["outfit", "yes", "armor"],
         "l4-royal-costume-shield" => &["outfit", "yes", "shield"],
         "l4-royal-costume-crown" => &["outfit", "yes", "crown"],
+        "l6-citizen-rook-backpack-start" => &["addon", "backpack"],
+        "l6-citizen-rook-backpack-materials" => &["backpack"],
+        "l6-citizen-rook-hat-start" | "l6-citizen-rook-hat" => &["hat"],
         "l4-pirate-sabre-start" => &["task", "yes"],
         "l4-pirate-eye-patches" => &["eye patches"],
         "l4-pirate-peg-legs" => &["peg legs"],
@@ -313,7 +334,6 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l4-pirate-hat" => &["task"],
         "hallowed-holy-water" => &["holy water"],
         "sam-backpack" => &["old backpack"],
-        "bone-pit-issue" => &["mission"],
         key if key.starts_with("token-") => &["souvenir"],
         key if key.starts_with("ape-") || key.starts_with("thieves-") => &["mission"],
         "deepling-helmet" => &[
@@ -780,8 +800,17 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
-    if matches!(name, "qengine-rewards-l2-sam" | "qengine-rewards-l2-outfox") {
-        return questl2_journeys::exercise(owner, admitted, h, name).await;
+    if name == "qengine-rewards-l2-engine-shared" {
+        return questl2_shared_engine::exercise(owner, admitted, h).await;
+    }
+    if name == "qengine-rewards-l2-botany" {
+        return questl2_botany::exercise(owner, admitted, h).await;
+    }
+    if matches!(
+        name,
+        "qengine-rewards-l2-sam" | "qengine-rewards-l2-outfox" | "qengine-rewards-l2-bone"
+    ) {
+        return questl2_journeys::exercise(owner, admitted, h, authority, name).await;
     }
     if name.starts_with("qengine-rewards-l2-father-") {
         return super::questl2_world_rewards::exercise(owner, admitted, h, name).await;

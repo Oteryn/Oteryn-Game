@@ -158,3 +158,23 @@ bounded state; read-only, offering-consuming and item-on-target callbacks
 cannot use this form. The original world occurrence, quest receipt and all
 native output/audit participants commit together. Positive appearance-only
 selectors resolve the actual server map stack for item-id registrations.
+
+World callbacks can require carried tools through `effects.present`, a list of
+at most eight unique `{item, count}` entries (counts 1–100). The durable quest
+writer locks those carried instances and their custody locations before the
+transition. The tools remain carried. This evidence can accompany an ordinary
+world transition or an item transformation.
+
+For source scripts that create temporary remains or devices,
+`effects.temporary_item` accepts `{appearance, action, lifetime_us}`. The
+appearance must resolve to served, non-pickupable facts. The lifetime is positive
+and at most 24 hours. The existing Channel projection owner creates a distinct
+object at the selected target's tile, keeps its action binding server-side, and
+expires that exact identity through the existing owner deadline cycle.
+`effects.remove_target: true` removes the selected base or temporary object
+after the durable transition commits. A source-bound temporary object supports
+the same digest, object revision, actor, reach and quest guards as a base object.
+Creation/removal requires a durable USE callback and cannot mix with levers,
+portals, encounters, item cycles, target transforms or world item rewards.
+Into the Bone Pit exercises issuance, retained shovel evidence, exact expiry,
+container transformation, target removal, and final NPC completion on PostgreSQL.

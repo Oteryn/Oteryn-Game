@@ -10,6 +10,17 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ezebeth.lua:93-103:sha256:280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82"
       ]
+    },
+    {
+      "key": "oteryn:quest-progress/outfit_quest/ref",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amber.lua:103-106:sha256:00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9"
+      ]
     }
   ],
   "callbacks": [
@@ -232,42 +243,6 @@
       ]
     },
     {
-      "key": "oteryn:quest-reward/bone-pit-issue",
-      "quest": "oteryn:quest.tibia_tales",
-      "npc": "oteryn:npc.muriel",
-      "keywords": [
-        "yes"
-      ],
-      "topic": 1,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/into_the_bone_pit",
-          "minimum": 0,
-          "maximum": 0,
-          "set": 1
-        }
-      ],
-      "take": [],
-      "give": {
-        "item": "oteryn:item.tibia.i4852",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Great! Here is the container for the bone. Once, I used it to collect ectoplasma of ghosts, but it will work here as well. ..."
-      ],
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/muriel.lua:sha256:7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc"
-      ],
-      "minimum_level": 35,
-      "failure_reply": [
-        "Indeed there is something to be done, but I need someone more experienced. Come back later if you want to."
-      ]
-    },
-    {
       "key": "oteryn:quest-reward/bone-pit-lost-sample",
       "quest": "oteryn:quest.tibia_tales",
       "npc": "oteryn:npc.muriel",
@@ -303,55 +278,6 @@
           "item": "oteryn:item.tibia.i131",
           "minimum": 0,
           "maximum": 0
-        }
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/bone-pit-return",
-      "quest": "oteryn:quest.tibia_tales",
-      "npc": "oteryn:npc.muriel",
-      "keywords": [
-        "mission"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/into_the_bone_pit",
-          "minimum": 2,
-          "maximum": 2,
-          "set": 3
-        }
-      ],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i131",
-          "count": 1
-        }
-      ],
-      "give": {
-        "item": "oteryn:item.tibia.i6299",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Excellent! Now I can try to put my theoretical thoughts into practice and find a cure for the symptoms of undead. Here, take this for your efforts."
-      ],
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/muriel.lua:sha256:7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc"
-      ],
-      "minimum_level": 35,
-      "experience": 1000,
-      "failure_reply": [
-        "Indeed there is something to be done, but I need someone more experienced. Come back later if you want to."
-      ],
-      "inventory": [
-        {
-          "item": "oteryn:item.tibia.i131",
-          "minimum": 1,
-          "maximum": 4294967295
         }
       ]
     },
@@ -1925,6 +1851,175 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l2-bone-return",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.muriel",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/into_the_bone_pit",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i131",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i6299",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Excellent! Now I can try to put my theoretical thoughts into practice and find a cure for the symptoms of undead. Here, take this for your efforts."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/muriel.lua:sha256:7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc"
+      ],
+      "minimum_level": 35,
+      "experience": 1000,
+      "failure_reply": [
+        "Indeed there is something to be done, but I need someone more experienced. Come back later if you want to."
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i131",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-bone-start",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.muriel",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/into_the_bone_pit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4852",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Great! Here is the container for the bone. Once, I used it to collect ectoplasma of ghosts, but it will work here as well. ..."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/muriel.lua:sha256:7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc"
+      ],
+      "minimum_level": 35,
+      "failure_reply": [
+        "Indeed there is something to be done, but I need someone more experienced. Come back later if you want to."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-botany-return",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.rabaz",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/an_interest_in_botany/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i11699",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i11700",
+        "count": 1,
+        "contents": [],
+        "backpack_outputs": [
+          {
+            "item": "oteryn:item.tibia.i3035",
+            "count": 10
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here, I always wore this comfortable hat when travelling, take it. It may be of use for you on further reconnaissances in Zao. Again you have my thanks, friend."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rabaz.lua:171:sha256:b74ee3591cc967215c463d104d887ace6d448f3ea46d7521f0a0a264f5347643"
+      ],
+      "experience": 3000
+    },
+    {
+      "key": "oteryn:quest-reward/l2-botany-start",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.rabaz",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/an_interest_in_botany/questline",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/an_interest_in_botany/chest_door",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Yes? Yes! That's the enthusiasm I need! Remember to bring a sharp knife to gather the samples, plants - even mutated deformed plants - are very sensitive you know. Off you go and be careful out there, Zao is no place for the feint hearted mind you."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rabaz.lua:165:sha256:b74ee3591cc967215c463d104d887ace6d448f3ea46d7521f0a0a264f5347643"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/l2-elementalist-base",
       "quest": "oteryn:quest.elementalist_outfits_quest",
       "npc": "oteryn:npc.broken_servant_sentry",
@@ -3079,6 +3174,259 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/percybald.lua:sha256:b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-citizen-rook-backpack",
+      "quest": "oteryn:quest.citizen_outfits_quest_on_rook",
+      "npc": "oteryn:npc.amber",
+      "keywords": [
+        "addon",
+        "outfit",
+        "backpack"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_backpack_rook",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 4
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.citizen",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amber.lua:sha256:00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook_timer",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 7201
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ],
+      "participants": [
+        {
+          "quest": "oteryn:quest.outfit_and_addon_quests",
+          "storage": [
+            {
+              "track": "oteryn:quest-progress/outfit_quest/ref",
+              "minimum": 0,
+              "maximum": 2147483647,
+              "set": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-citizen-rook-backpack-materials",
+      "quest": "oteryn:quest.citizen_outfits_quest_on_rook",
+      "npc": "oteryn:npc.amber",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_backpack_rook",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5878",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amber.lua:sha256:00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook_timer",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-citizen-rook-backpack-start",
+      "quest": "oteryn:quest.citizen_outfits_quest_on_rook",
+      "npc": "oteryn:npc.amber",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_backpack_rook",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amber.lua:sha256:00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9"
+      ],
+      "participants": [
+        {
+          "quest": "oteryn:quest.outfit_and_addon_quests",
+          "storage": [],
+          "state_ops": [
+            {
+              "track": "oteryn:quest-progress/outfit_quest/ref",
+              "from": {
+                "kind": "between",
+                "minimum": 0,
+                "maximum": 2147483646
+              },
+              "effect": {
+                "kind": "add",
+                "value": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-citizen-rook-hat",
+      "quest": "oteryn:quest.citizen_outfits_quest_on_rook",
+      "npc": "oteryn:npc.norma",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_hat_rook",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_hat_rook",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3374",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i5902",
+          "count": 50
+        },
+        {
+          "item": "oteryn:item.tibia.i5890",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.citizen",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/norma.lua:sha256:c1eb0cbfdf9520fe110dd90b07674729d70aeaf69926f8f40a5f65d2983e2105"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-citizen-rook-hat-start",
+      "quest": "oteryn:quest.citizen_outfits_quest_on_rook",
+      "npc": "oteryn:npc.norma",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_hat_rook",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_hat_rook",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/norma.lua:sha256:c1eb0cbfdf9520fe110dd90b07674729d70aeaf69926f8f40a5f65d2983e2105"
       ]
     },
     {

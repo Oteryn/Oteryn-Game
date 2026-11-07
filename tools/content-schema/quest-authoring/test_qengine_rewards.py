@@ -38,6 +38,20 @@ class QuestRewards(unittest.TestCase):
             with self.assertRaises((ValueError, ValidationError)):
                 q.validate_callbacks(invalid)
 
+    def test_shared_participant_tracks_require_their_declared_owner(self):
+        document=copy.deepcopy(self.callbacks)
+        declaration=next(d for d in document['tracks'] if d.get('writable'))
+        declaration['quest']='oteryn:quest.wrong_owner'
+        with self.assertRaises(ValueError):
+            q.validate_callbacks(document)
+
+    def test_shared_operations_reject_duplicate_atomic_tracks(self):
+        document=copy.deepcopy(self.callbacks)
+        callback=next(c for c in document['callbacks'] if c.get('state_ops'))
+        callback['state_ops'].append(copy.deepcopy(callback['state_ops'][0]))
+        with self.assertRaises(ValueError):
+            q.validate_callbacks(document)
+
     @classmethod
     def setUpClass(cls):
         cls.outputs=q.build()
@@ -176,14 +190,14 @@ class QuestRewards(unittest.TestCase):
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
         original = {c['key'].split('/')[-1] for c in callbacks
-                    if not c['key'].split('/')[-1].startswith(('l1-', 'l2-', 'l3-', 'l4-', 'token-', 'ape-', 'thieves-', 'draconia-', 'exchange-', 'bone-pit-'))
+                    if not c['key'].split('/')[-1].startswith(('l1-', 'l2-', 'l3-', 'l4-', 'l6-', 'token-', 'ape-', 'thieves-', 'draconia-', 'exchange-', 'bone-pit-'))
                     and c['key'].split('/')[-1] not in ('sam-kroox', 'outfox-start')}
         self.assertEqual(original, {'pirate-sabre', 'knight-sword', 'deepling-helmet',
                                    'hallowed-holy-water', 'outfox-helmet', 'sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),34)
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),36)
         # Published QENGINE2 has13 non-outfit branches; L2 adds the pinned
         # Jorge37, Ape6, Thieves7, Kroox1, dragon2 and Quentin/Gamon2 source branches.
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),13 + 37 + 6 + 7 + 1 + 2 + 2 + 10 + 13 + 3)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),13 + 37 + 6 + 7 + 1 + 2 + 2 + 10 + 13 + 3 + 2 + 3)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 

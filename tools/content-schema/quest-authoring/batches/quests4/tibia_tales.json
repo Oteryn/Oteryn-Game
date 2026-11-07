@@ -11,7 +11,7 @@
         "position": null,
         "unique": null,
         "action": 4206,
-        "appearance": null
+        "appearance": 3133
       },
       "lever": null,
       "reversible": false,
@@ -30,13 +30,15 @@
         "item": "oteryn:item.tibia.i4852",
         "count": 1,
         "replacement": "oteryn:item.tibia.i131",
-        "target_replacement": null,
-        "target_remove": true
+        "target_replacement": null
       },
       "return_on_failure": false,
       "failure_message": null,
+      "effects": {
+        "remove_target": true
+      },
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_ectoplasm_container.lua:4-13:sha256:584ec08275530b23bfc4222e6294acfaf84d9a1235d1d0738f77a04306666e28"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_ectoplasm_container.lua:4-12:sha256:584ec08275530b23bfc4222e6294acfaf84d9a1235d1d0738f77a04306666e28"
       ]
     }
   ],

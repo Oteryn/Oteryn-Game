@@ -104,7 +104,13 @@ fn scenario_case(
     if stateless_destination.is_some() {
         assert_eq!(callback.selector.position, Some(trigger));
     }
-    let world = if matches!(name, "qengine-rewards-l2-sam" | "qengine-rewards-l2-outfox") {
+    let world = if matches!(
+        name,
+        "qengine-rewards-l2-sam"
+            | "qengine-rewards-l2-outfox"
+            | "qengine-rewards-l2-bone"
+            | "qengine-rewards-l2-botany"
+    ) {
         None
     } else {
         Some(if draconia && !draconia_journey {

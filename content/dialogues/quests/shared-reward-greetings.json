@@ -24,6 +24,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.amber",
+      "greet": "Oh hello, nice to see you |PLAYERNAME|. Are you here to hear some stories of my {adventures} or do you need {help}?",
+      "farewell": "See you later, |PLAYERNAME|.",
+      "walkaway": "Yeah, see you later.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amber.lua:428:sha256:00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amber.lua:427:sha256:00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amber.lua:426:sha256:00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9"
+      ]
+    },
+    {
       "npc": "oteryn:npc.an_old_dragonlord",
       "greet": "Greetings, |PLAYERNAME|.",
       "farewell": "Good bye, |PLAYERNAME|.",
@@ -299,6 +310,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.norma",
+      "greet": "Welcome, welcome! Have a seat! If you like a drink or something to eat, just ask me for a {trade}!",
+      "farewell": "Come back soon!",
+      "walkaway": "Hey, where are you going? We've just started!",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/norma.lua:189:sha256:c1eb0cbfdf9520fe110dd90b07674729d70aeaf69926f8f40a5f65d2983e2105",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/norma.lua:187:sha256:c1eb0cbfdf9520fe110dd90b07674729d70aeaf69926f8f40a5f65d2983e2105",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/norma.lua:186:sha256:c1eb0cbfdf9520fe110dd90b07674729d70aeaf69926f8f40a5f65d2983e2105"
+      ]
+    },
+    {
       "npc": "oteryn:npc.palimuth",
       "greet": "Greetings.",
       "farewell": "Good bye, |PLAYERNAME|.",
@@ -329,6 +351,17 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/quentin.lua:179:sha256:ec847fd5847361ac4ac7e278426fa284712ffd50f77b1b00cc38cc5c4ff480e9",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/quentin.lua:181:sha256:ec847fd5847361ac4ac7e278426fa284712ffd50f77b1b00cc38cc5c4ff480e9",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/quentin.lua:180:sha256:ec847fd5847361ac4ac7e278426fa284712ffd50f77b1b00cc38cc5c4ff480e9"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rabaz",
+      "greet": "Ah, a customer! Please feel free to browse my wares, |PLAYERNAME|.",
+      "farewell": "Good bye.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rabaz.lua:195:sha256:b74ee3591cc967215c463d104d887ace6d448f3ea46d7521f0a0a264f5347643",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rabaz.lua:196:sha256:b74ee3591cc967215c463d104d887ace6d448f3ea46d7521f0a0a264f5347643",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rabaz.lua:197:sha256:b74ee3591cc967215c463d104d887ace6d448f3ea46d7521f0a0a264f5347643"
       ]
     },
     {

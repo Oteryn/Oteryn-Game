@@ -21,6 +21,11 @@ pub enum QuestCallbackProjection {
         endpoints: [(TilePos, TilePos, EntryFacts); 2],
         expires: Option<u64>,
     },
+    Objects {
+        position: TilePos,
+        create: Option<(EntryFacts, Option<u16>, u64)>,
+        remove: Option<u64>,
+    },
     ItemCycle {
         position: TilePos,
         remove: Option<u64>,
@@ -40,6 +45,7 @@ pub(super) struct CallbackStates {
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
+    temporary_items: BTreeMap<u64, (TilePos, Option<u16>, u64)>,
 }
 
 impl CallbackStates {
@@ -103,6 +109,42 @@ impl CallbackStates {
                     );
                 }
             }
+            QuestCallbackProjection::Objects {
+                position,
+                create,
+                remove,
+            } => {
+                if let Some(key) = remove {
+                    if let Some((pos, _, _)) = self.temporary_items.remove(key) {
+                        if let Some(entries) = self.movement_items.get_mut(&pos) {
+                            entries.retain(|e| !matches!(e.source, view::EntrySource::Added(id) if id.get() == *key));
+                            if entries.is_empty() {
+                                self.movement_items.remove(&pos);
+                            }
+                        }
+                    } else {
+                        self.hidden.insert(*key);
+                    }
+                }
+                if let Some((facts, action, expires)) = create {
+                    let Some(sequence) = self.movement_sequence.checked_add(1) else {
+                        return false;
+                    };
+                    let Some(entry) = EntryId::callback(sequence) else {
+                        return false;
+                    };
+                    self.movement_sequence = sequence;
+                    self.movement_items
+                        .entry(*position)
+                        .or_default()
+                        .push(view::ComposedEntry {
+                            source: view::EntrySource::Added(entry),
+                            facts: *facts,
+                        });
+                    self.temporary_items
+                        .insert(entry.get(), (*position, *action, *expires));
+                }
+            }
             QuestCallbackProjection::ItemCycle {
                 position,
                 remove,
@@ -149,6 +191,7 @@ impl CallbackStates {
             + self.movement_decays.len()
             + self.movement_effects.len()
             + self.movement_speech.len()
+            + self.temporary_items.len()
             + self.portals.len()
             + self.solid_items.len()
             + self.movement_items.values().map(Vec::len).sum::<usize>();
@@ -275,6 +318,7 @@ impl BundleFacts {
             .map(|((due, _), _)| *due)
             .into_iter()
             .chain(states.portals.values().filter_map(|p| p.expires))
+            .chain(states.temporary_items.values().map(|(_, _, due)| *due))
             .min()
     }
 
@@ -294,6 +338,23 @@ impl BundleFacts {
             .collect();
         for owner in expired {
             states.remove_portals(owner);
+            changed += 1;
+        }
+        let expired_items: Vec<_> = states
+            .temporary_items
+            .iter()
+            .filter_map(|(key, (pos, _, due))| (*due <= now).then_some((*key, *pos)))
+            .collect();
+        for (key, pos) in expired_items {
+            states.temporary_items.remove(&key);
+            if let Some(entries) = states.movement_items.get_mut(&pos) {
+                entries.retain(
+                    |e| !matches!(e.source, view::EntrySource::Added(id) if id.get() == key),
+                );
+                if entries.is_empty() {
+                    states.movement_items.remove(&pos);
+                }
+            }
             changed += 1;
         }
         while states
@@ -483,6 +544,34 @@ impl BundleFacts {
             .is_none_or(|due| due > now)
             .then_some(portal.destination)
     }
+    /// Resolve the exact current base or callback-created object under this Channel owner.
+    pub fn quest_callback_entry(
+        &self,
+        base: &super::super::WorldBase,
+        key: u64,
+    ) -> Option<(TilePos, EntryFacts)> {
+        if let Some((pos, ordinal)) = view::placement_of(key) {
+            if self.base_hidden(key) {
+                return None;
+            }
+            let tile = base.tile(pos.x, pos.y, pos.floor)?;
+            let (id, _) = tile
+                .ids()
+                .iter()
+                .zip(tile.depths())
+                .filter(|(_, d)| **d == 0)
+                .nth(usize::from(ordinal))?;
+            return Some((pos, self.base_entry(pos, ordinal, *id)?));
+        }
+        let states = self.callbacks.lock().ok()?;
+        let (pos, _, _) = states.temporary_items.get(&key)?;
+        let facts = states.movement_items.get(pos)?.iter().find_map(|entry| {
+            matches!(entry.source, view::EntrySource::Added(id) if id.get() == key)
+                .then_some(entry.facts)
+        })?;
+        Some((*pos, facts))
+    }
+
     /// Source selector validation against the original bound placement, never a client id.
     pub fn quest_callback_matches(
         &self,
@@ -492,7 +581,22 @@ impl BundleFacts {
         appearance: Option<u16>,
     ) -> bool {
         let Some((pos, _)) = view::placement_of(key) else {
-            return false;
+            let Ok(states) = self.callbacks.lock() else {
+                return false;
+            };
+            let Some((pos, bound_action, _)) = states.temporary_items.get(&key) else {
+                return false;
+            };
+            return unique.is_none()
+                && action.is_none_or(|id| Some(id) == *bound_action)
+                && appearance.is_none_or(|id| {
+                    states.movement_items.get(pos).is_some_and(|entries| {
+                        entries.iter().any(|entry| {
+                            matches!(entry.source, view::EntrySource::Added(e) if e.get() == key)
+                                && entry.facts.appearance_id == id
+                        })
+                    })
+                });
         };
         if self.house_tile(pos) {
             return false;

@@ -1,6 +1,6 @@
 {
   "schema": "OTERYN_NPC_PLACEMENT_SCOPE/v1",
-  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QENGINE2-L1: Cael, Cranky Lizard Crone, Palimuth and Yalahari outfit hand-ins at the existing Global source candidate cells; alternate example-map cells are excluded by explicit selection; QUESTPC: Viola Lost Wisdom at the reviewed Newhaven Magic Shop source cell; QUESTL2: Jorge token shop and Tereban source programme at their pinned Global candidate cells; example-map cells excluded; QENGINE2 published native payment/outfit story NPCs; QUESTL2 dragon greeting at pinned Crystal an_old_dragon_lord.lua cell32796,31558,z2 (sha25685016cc08856f49d94c507f43bc84f54801d3a2844946ae391015a0d8c84a052); QUESTL2 native paid-stake issuance at pinned Gamon and Quentin cells; QUESTL2 ten Wooden Stake priests at pinned source cells; QUESTL2 fixed Cyclops/Marina exchanges and source-driven absolute reward deadlines; QUESTL2 Sam, Budrik and Kroox source mission journeys at their admitted Global candidate cells; published L2 source world rewards and bulk exchanges",
+  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QENGINE2-L1: Cael, Cranky Lizard Crone, Palimuth and Yalahari outfit hand-ins at the existing Global source candidate cells; alternate example-map cells are excluded by explicit selection; QUESTPC: Viola Lost Wisdom at the reviewed Newhaven Magic Shop source cell; QUESTL2: Jorge token shop and Tereban source programme at their pinned Global candidate cells; example-map cells excluded; QENGINE2 published native payment/outfit story NPCs; QUESTL2 dragon greeting at pinned Crystal an_old_dragon_lord.lua cell32796,31558,z2 (sha25685016cc08856f49d94c507f43bc84f54801d3a2844946ae391015a0d8c84a052); QUESTL2 native paid-stake issuance at pinned Gamon and Quentin cells; QUESTL2 ten Wooden Stake priests at pinned source cells; QUESTL2 fixed Cyclops/Marina exchanges and source-driven absolute reward deadlines; QUESTL2 Sam, Budrik and Kroox source mission journeys at their admitted Global candidate cells; published L2 source world rewards and bulk exchanges; published L2 source world rewards and bulk exchanges",
   "npcs": [
     "oteryn:npc.a_seagull",
     "oteryn:npc.a_sweaty_cyclops",
@@ -69,7 +69,8 @@
     "oteryn:npc.zirella",
     "oteryn:npc.budrik",
     "oteryn:npc.kroox",
-    "oteryn:npc.sam"
+    "oteryn:npc.sam",
+    "oteryn:npc.rabaz"
   ],
   "position_conflicts": [],
   "placement_cells": {
@@ -115,6 +116,13 @@
         "z": 7
       }
     ],
+    "oteryn:npc.kroox": [
+      {
+        "x": 32651,
+        "y": 31887,
+        "z": 9
+      }
+    ],
     "oteryn:npc.budrik": [
       {
         "x": 32525,
@@ -122,11 +130,11 @@
         "z": 8
       }
     ],
-    "oteryn:npc.kroox": [
+    "oteryn:npc.rabaz": [
       {
-        "x": 32651,
-        "y": 31887,
-        "z": 9
+        "x": 33009,
+        "y": 31532,
+        "z": 10
       }
     ]
   }

@@ -17,6 +17,13 @@ pub struct CallbackEffects {
     pub outfit_reward: Option<super::super::reward_callbacks::OutfitReward>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_reward: Option<super::super::reward_callbacks::ItemReward>,
+    /// Read-only carried evidence, locked with the quest transition.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub present: Vec<super::super::reward_callbacks::ItemAmount>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub temporary_item: Option<TemporaryItem>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub remove_target: bool,
     pub transform: Option<u16>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
@@ -29,6 +36,15 @@ impl CallbackEffects {
     pub(super) fn is_empty(&self) -> bool {
         self == &Self::default()
     }
+}
+
+/// A bounded, source-bound object added at the selected target's tile.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct TemporaryItem {
+    pub appearance: u16,
+    pub action: Option<u16>,
+    pub lifetime_us: u64,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -102,6 +118,40 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
             || !super::super::reward_callbacks::valid_item_reward(reward)
     }) {
+        return false;
+    }
+    if effects.present.len() > 8
+        || effects
+            .present
+            .iter()
+            .any(|i| i.count == 0 || i.count > 100 || !super::super::valid_quest_key(&i.item))
+        || effects
+            .present
+            .iter()
+            .map(|i| &i.item)
+            .collect::<BTreeSet<_>>()
+            .len()
+            != effects.present.len()
+        || ((!effects.present.is_empty()
+            || effects.temporary_item.is_some()
+            || effects.remove_target)
+            && (callback.trigger != Trigger::Use
+                || callback.is_read_only()
+                || callback.storage.is_empty()))
+        || effects.temporary_item.as_ref().is_some_and(|i| {
+            i.appearance == 0
+                || i.action == Some(0)
+                || i.lifetime_us == 0
+                || i.lifetime_us > 86_400_000_000
+        })
+        || ((effects.temporary_item.is_some() || effects.remove_target)
+            && (effects.portals.is_some()
+                || effects.item_cycle.is_some()
+                || effects.encounter.is_some()
+                || effects.transform.is_some()
+                || callback.lever.is_some()
+                || effects.item_reward.is_some()))
+    {
         return false;
     }
     let pos = |p: Position| (-15..=0).contains(&p.floor);
