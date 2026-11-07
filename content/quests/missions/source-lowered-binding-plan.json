@@ -10,6 +10,14 @@
     "Source action/movement ownership routes work to QUEST-TRIGGER-1 but does not bind a placement or occurrence root.",
     "runtime_enabled remains false until the owning runtime child admits the exact binding."
   ],
+  "native_claim_exclusions": [
+    {
+      "basis": "EXISTING_NATIVE_CLAIM_BINDING_NOT_A_MISSING_TRIGGER",
+      "claim": "oteryn:reward-claim.quest.u7_5.sams_old_backpack.armor",
+      "quest": "oteryn:quest.sam_s_old_backpack_quest",
+      "transition": "oteryn:quest-transition/native-claim/sams-old-backpack-armor"
+    }
+  ],
   "records": [
     {
       "native_binding_count": 0,

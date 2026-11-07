@@ -741,6 +741,7 @@ pub(super) async fn seed(
         .collect::<Result<Vec<_>, _>>()?;
     let setup = "oteryn:quest-transition/qengine-rewards-fixture-ready";
     let mut transitions = vec![QuestTransition {
+        world_change: None,
         key: setup.into(),
         quest: callback.quest.clone(),
         effects: callback

@@ -83,7 +83,7 @@ pub(super) async fn exercise(
     let parent = "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4";
     let parent_key = "oteryn:quest-transition/questl2-fixture/dreamer-parent";
     let parent_track = tracks.get(parent).ok_or("Dreamer parent")?;
-    transitions.push(QuestTransition {
+    transitions.push(QuestTransition { world_change: None,
         key: parent_key.into(),
         quest: parent_track.quest.clone(),
         effects: vec![oteryn_gameplay_quests::quest::QuestEffect {

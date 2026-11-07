@@ -1,4 +1,7 @@
+import copy
 import unittest
+
+from native_claim_plan_exclusions import declared_native_claim, claim_only_owner
 from pathlib import Path
 
 import source_lowered_binding_plan as plan
@@ -9,6 +12,38 @@ class SourceLoweredBindingPlanTest(unittest.TestCase):
     def setUpClass(cls):
         cls.root = Path(__file__).resolve().parents[3]
         cls.packet = plan.expected(cls.root)
+
+    def test_declared_claims_are_excluded_without_qualifying_the_quest(self):
+        state = plan.read(self.root, plan.QUEST_STATE)
+        claims = [(quest['quest'], row) for quest in state['quests']
+                  for row in quest['transitions']
+                  if (row.get('source') or {}).get('owner') == 'chest'
+                  and plan.completion_state(quest) == 'LOWERED']
+        self.assertEqual(1, len(claims))
+        self.assertEqual(self.packet['native_claim_exclusions'],
+                         [declared_native_claim(self.root, quest, row)
+                          for quest, row in claims])
+        for quest, row in claims:
+            altered = copy.deepcopy(row)
+            altered['effects'][0]['effect']['value'] += 1
+            with self.assertRaisesRegex(ValueError, 'differs from declared claim'):
+                declared_native_claim(self.root, quest, altered)
+            altered['key'] += '-unregistered'
+            with self.assertRaisesRegex(ValueError, 'unregistered native chest'):
+                declared_native_claim(self.root, quest, altered)
+
+    def test_claim_only_owner_has_no_donor_mission_coverage(self):
+        state = plan.read(self.root, plan.QUEST_STATE)
+        owners = [quest for quest in state['quests'] if claim_only_owner(self.root, quest)]
+        self.assertEqual(['oteryn:quest.formogar_mine_hoist'],
+                         [quest['quest'] for quest in owners])
+        altered = copy.deepcopy(owners[0])
+        altered['tracks'][0]['bounds_basis'] = 'donor_mission'
+        self.assertFalse(claim_only_owner(self.root, altered))
+        altered = copy.deepcopy(owners[0])
+        altered['transitions'][0]['effects'][0]['effect']['value'] += 1
+        with self.assertRaisesRegex(ValueError, 'differs from declared claim'):
+            claim_only_owner(self.root, altered)
 
     def test_exact_source_lowered_gap_is_six_owners_and_121_transitions(self):
         self.assertEqual(

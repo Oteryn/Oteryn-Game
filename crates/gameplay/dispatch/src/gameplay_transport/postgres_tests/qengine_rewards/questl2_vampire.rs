@@ -69,7 +69,7 @@ pub(super) async fn exercise(
         }
         transitions.push(transition);
     }
-    transitions.push(QuestTransition {
+    transitions.push(QuestTransition { world_change: None,
         key: ELIGIBLE.into(),
         quest: "oteryn:quest.the_inquisition_quest".into(),
         effects: vec![QuestEffect {

@@ -56,6 +56,7 @@ def classify_transition(transition: dict) -> tuple[str, str]:
 
 
 def expected(root: Path) -> dict:
+    from native_claim_plan_exclusions import declared_native_claim
     state = read(root, QUEST_STATE)
     chosen = read(root, CHOSEN_PLAN)
     chosen_owners = {row["quest"] for row in chosen["records"]}
@@ -65,12 +66,18 @@ def expected(root: Path) -> dict:
     source_owner_counts: Counter[str] = Counter()
     requested = 0
     completes = 0
+    native_claim_exclusions = []
 
     for quest in state["quests"]:
         if completion_state(quest) != "LOWERED" or quest["quest"] in chosen_owners:
             continue
         transitions = []
+        excluded_before = len(native_claim_exclusions)
         for transition in quest["transitions"]:
+            native_claim = declared_native_claim(root, quest["quest"], transition)
+            if native_claim is not None:
+                native_claim_exclusions.append(native_claim)
+                continue
             lane, basis = classify_transition(transition)
             source = transition.get("source") or {}
             lane_counts[lane] += 1
@@ -90,6 +97,8 @@ def expected(root: Path) -> dict:
                 }
             )
         if not transitions:
+            if len(native_claim_exclusions) - excluded_before == len(quest["transitions"]) and quest["transitions"]:
+                continue
             raise ValueError(f"{quest['quest']}: Source-lowered owner has no transitions")
         records.append(
             {
@@ -130,6 +139,7 @@ def expected(root: Path) -> dict:
             "runtime_enabled remains false until the owning runtime child admits the exact binding.",
         ],
         "records": records,
+        "native_claim_exclusions": native_claim_exclusions,
     }
     return result
 

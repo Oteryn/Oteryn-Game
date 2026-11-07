@@ -434,7 +434,7 @@ fn exercise_with_remote(
                 .map(|(_, storage)| storage)
                 .collect();
             let seed = "oteryn:quest-transition/fixture/stag-stage";
-            let mut transitions = vec![QuestTransition {
+            let mut transitions = vec![QuestTransition { world_change: None,
                 key: seed.into(),
                 quest: callback.quest.clone(),
                 effects: guards

@@ -677,6 +677,7 @@ fn scenario() -> TestResult {
         };
         let world = super::quest_world_callbacks::world(
             &Callback {
+                world_change: None,
                 key: "oteryn:quest-callback/soul-war-final-reward".into(),
                 quest: "oteryn:quest/soul-war".into(),
                 trigger: Trigger::Use,

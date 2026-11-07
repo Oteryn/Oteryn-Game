@@ -89,6 +89,7 @@ pub(super) async fn exercise(
         .ok_or("independent Dreamer qualification")?;
     let parent_key = "oteryn:quest-transition/qengine2-story/document-parent";
     transitions.push(QuestTransition {
+        world_change: None,
         key: parent_key.into(),
         quest: parent_track.quest.clone(),
         effects: vec![QuestEffect {

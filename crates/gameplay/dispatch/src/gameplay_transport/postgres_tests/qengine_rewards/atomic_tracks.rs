@@ -20,7 +20,7 @@ pub(super) async fn exercise(
             max: 1,
         })
         .collect();
-    let good = QuestTransition {
+    let good = QuestTransition { world_change: None,
         key: "oteryn:quest-transition/l2-atomic/complete".into(),
         quest: quest.into(),
         effects: tracks

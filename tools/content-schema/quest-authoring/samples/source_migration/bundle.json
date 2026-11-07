@@ -638900,7 +638900,7 @@
     {
       "id": "oteryn:schema/quest-content/v1",
       "path": "tools/content-schema/quest-authoring/quest_content.schema.json",
-      "sha256": "9641720bad94fc45296e0bd7537bd118dfe9649de3b411566f38c111e4027904"
+      "sha256": "5ea7c6ff13fbb549cbc6a8727be7269680d23571f7525b79f97e5ef9138ed2dc"
     },
     {
       "id": "oteryn:schema/quest-progress-source/v1",

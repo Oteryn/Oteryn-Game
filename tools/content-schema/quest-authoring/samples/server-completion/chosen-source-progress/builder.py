@@ -194,7 +194,9 @@ def project(root, quest, canonical_ref, recipe, normalization, state=NEW_STATE, 
 def build(root):
     root = pathlib.Path(root)
     source = json.loads((root / SOURCE_STATE).read_text(encoding="utf-8"))
-    source_by_owner = {quest["quest"]: quest for quest in source["quests"]}
+    from native_claim_plan_exclusions import claim_only_owner
+    source_by_owner = {quest["quest"]: quest for quest in source["quests"]
+                       if not claim_only_owner(root, quest)}
     quests = []
     overlays = []
     skipped_source_lowered = []

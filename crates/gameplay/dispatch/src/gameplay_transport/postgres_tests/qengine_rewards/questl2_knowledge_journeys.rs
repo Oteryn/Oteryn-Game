@@ -671,7 +671,7 @@ async fn tomes(
                     .ok_or("foreign prerequisite track")?,
             );
         }
-        let t = QuestTransition {
+        let t = QuestTransition { world_change: None,
             key: format!("oteryn:quest-transition/l2-tomes-fixture/{key}"),
             quest: format!("oteryn:quest.{quest}"),
             effects: values

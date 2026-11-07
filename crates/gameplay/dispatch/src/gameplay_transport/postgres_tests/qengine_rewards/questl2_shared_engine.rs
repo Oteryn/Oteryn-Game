@@ -88,7 +88,7 @@ pub(super) async fn exercise(
     let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM now()))::bigint")
         .fetch_one(&h.pool)
         .await?;
-    transitions.push(QuestTransition {
+    transitions.push(QuestTransition { world_change: None,
         key: CLOCK.into(),
         quest: "oteryn:quest.citizen_outfits_quest_on_rook".into(),
         effects: vec![QuestEffect {
