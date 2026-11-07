@@ -1418,7 +1418,19 @@
         "qlane-meta/questpc8/continuation-validation.json"
       ]
     },
-    "round": "L7"
+    "round": "L7",
+    "engine_request": {
+      "owner": "qengine2",
+      "state": "sent",
+      "feature": "Exact carried USE item replacement/reward plus fenced live-player quest-state predicate",
+      "where": [
+        "crates/gameplay/quests",
+        "crates/gameplay/dispatch",
+        "crates/gameplay/durability"
+      ],
+      "proof": "ENGINE-REQUESTS.md",
+      "boundary": "Latest owner rule reserves large shared features to qengine2; ownership reassignment may move this not-started quest."
+    }
   },
   {
     "canonical": "oteryn:quest.the_secret_library_quest",
@@ -1651,7 +1663,18 @@
         "qlane-meta/questpc8/continuation-validation.json"
       ]
     },
-    "round": "L7"
+    "round": "L7",
+    "engine_request": {
+      "owner": "qengine2",
+      "state": "sent",
+      "feature": "Source item-look disguises (lookTypeEx) with appearance restoration",
+      "where": [
+        "crates/gameplay/quests",
+        "crates/gameplay/dispatch"
+      ],
+      "proof": "ENGINE-REQUESTS.md",
+      "boundary": "Latest owner rule reserves large shared features to qengine2; ownership reassignment may move this not-started quest."
+    }
   },
   {
     "canonical": "oteryn:quest.authored.braindeath_quest",

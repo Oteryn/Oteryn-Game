@@ -1,3 +1,25 @@
+# Published batch and remaining engine handoffs
+
+Pushed0fd3f01d61745a07677bdc7c0960f7bdde015a94, then generated topology follow-up
+3840119fa2677b9e0b34bf68f552d765fdb5e55e. Five native PG gates green; latest
+workspacealltargets check PASS2m48s and fmt PASS. This final handoff update is
+metadata only; product files remain identical to that checked/pushed state.
+See ENGINE-REQUESTS.md for the two remaining shared capabilities assigned to
+qengine2 by the owner. Do not implement them locally or duplicate a new lane.
+Wait for the coordinator's ownership/merged-engine notice, then reuse that work.
+No PR opened; wpkg collects this branch. Final lane migrations1300-1306 are
+listed exactly, with hashes, in migration-number-registry.json.
+
+# Remaining dependencies after green native batch
+
+Two owner-directed ENGINE-REQUEST lines were sent; see ENGINE-REQUESTS.md.
+Colours needs carried USE outputs and a fenced actual yellow-player predicate.
+Wrath needs source crate item-look disguise11328 (lookTypeEx), not a fake
+creature. Latest owner reserves these shared changes to qengine2; do not build
+a large replacement here. Ownership coordinator may transfer these not-started
+quests to new packets; preserve the18 names already reported as DONE/INPROGRESS.
+All current native mechanic fixes and Winterlight are green and pushed0fd3f01d6.
+
 # Published19:58UTC
 
 PUSHED0fd3f01d61745a07677bdc7c0960f7bdde015a94: merged main, five native PG
