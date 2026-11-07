@@ -827,3 +827,15 @@ aliasing, generation mismatch and truncated keys. Durability check passed in
 1m00s; the legacy Hazard PostgreSQL regression and clippy are still running at
 this WIP checkpoint. This does not remove the transport's Channel-only endgame
 composition gate or qualify the unsupported Primal hooks.
+
+### Consumer checkpoint validation completed
+
+At `77e1b2067`, the legacy real-dispatch Hazard scenario
+`primal_hazard_postgres_kill_unlock_selection_replay_cap_and_fences` passed in
+40.46s, covering selection, unlocks, replay, caps and fences. Durability clippy
+passed with warnings denied (3m05s); fmt and architecture passed. The fresh full
+Primal reachability case ran for 72.94s and remains red with
+`SourceHookUnavailable`. Tagged Instance scope matching is covered by the new
+unit regression; an end-to-end Instance death/reward case is not yet proven.
+The transport's endgame Channel-only cast, Soul War/Rotten Blood consumers,
+Instance corpse custody and native Primal hook composition remain unfinished.
