@@ -13,32 +13,31 @@
     "normal_profile": "This checkout retained normal unoptimized+debuginfo profiles and existing env.sh. Only stopped-build incremental caches were removed."
   },
   "active_batch": {
-    "name": "retail-population-qualification-17",
-    "state": "QUALIFIED",
+    "name": "additional-postal-qualification-18",
+    "state": "QUALIFIED_COMPONENTS",
     "entries": [
-      "Maro",
-      "Marvin",
-      "Nicholas",
-      "Normod",
-      "Peremin",
-      "Baltim"
+      "Olrik",
+      "Chemar",
+      "Chrystal",
+      "Fyodor",
+      "Nelly"
     ],
-    "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed.",
+    "scope": "Actual canonical map admission, native actor coordinates/floor and exact names only. Postal command qualification continues in this session; no whole-entry qualification inferred.",
     "red": {
+      "seconds": 47.59,
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 36.09,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-17-red.log",
-      "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
+      "log": "/tmp/npcfix-evidence/additional-postal-placement-red.log",
+      "sha256": "bcd0e5bdec6fe3a56ef505552e9b6a84f324b85f717bc6f84bdedbf3806fe825"
     },
     "green": {
+      "seconds": 105.34,
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 81.0,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-17-green.log",
-      "cumulative_cases": 102
+      "log": "/tmp/npcfix-evidence/additional-postal-placement-green.log",
+      "sha256": "5ebf883f76abc0e17889f4a11a40701af500d47a10fc62415409439a2b64d97b"
     },
-    "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse e2615554b upstreamb25b5b8ca all-target/all-feature check59.70s and strict clippy1m19s plus fresh merged PG54/80.51s; source identity checked before each slice",
-    "test_code_commit": "e2615554b49b114273c24e6c2c4cba6b781ade47",
-    "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
+    "cumulative_cases": 107,
+    "checks": "fmt PASS. No Rust or production content in this component commit; reuse source-equivalent prior check/clippy proof. Physical fixture and production inputs unchanged.",
+    "postal_continuation": "New five-case test RED505.72s at Nelly: price-only fixture lookup selected other same-price merchandise. Strengthen selectors to exact item, side and price; keep every rank/replay assertion and rerun all five. Uncommitted Rust test stays out of this green physical component."
   },
   "active_smithing_batch": {
     "state": "GREEN; committing and pushing",
@@ -1100,6 +1099,33 @@
       "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse e2615554b upstreamb25b5b8ca all-target/all-feature check59.70s and strict clippy1m19s plus fresh merged PG54/80.51s; source identity checked before each slice",
       "test_code_commit": "e2615554b49b114273c24e6c2c4cba6b781ade47",
       "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
+    },
+    {
+      "name": "additional-postal-qualification-18",
+      "state": "QUALIFIED_COMPONENTS",
+      "entries": [
+        "Olrik",
+        "Chemar",
+        "Chrystal",
+        "Fyodor",
+        "Nelly"
+      ],
+      "scope": "Actual canonical map admission, native actor coordinates/floor and exact names only. Postal command qualification continues in this session; no whole-entry qualification inferred.",
+      "red": {
+        "seconds": 47.59,
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "log": "/tmp/npcfix-evidence/additional-postal-placement-red.log",
+        "sha256": "bcd0e5bdec6fe3a56ef505552e9b6a84f324b85f717bc6f84bdedbf3806fe825"
+      },
+      "green": {
+        "seconds": 105.34,
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "log": "/tmp/npcfix-evidence/additional-postal-placement-green.log",
+        "sha256": "5ebf883f76abc0e17889f4a11a40701af500d47a10fc62415409439a2b64d97b"
+      },
+      "cumulative_cases": 107,
+      "checks": "fmt PASS. No Rust or production content in this component commit; reuse source-equivalent prior check/clippy proof. Physical fixture and production inputs unchanged.",
+      "postal_continuation": "New five-case test RED505.72s at Nelly: price-only fixture lookup selected other same-price merchandise. Strengthen selectors to exact item, side and price; keep every rank/replay assertion and rerun all five. Uncommitted Rust test stays out of this green physical component."
     }
   ],
   "active_reward_delivery": {
@@ -1377,7 +1403,7 @@
     "scope_review": "Incoming runtime delta is Offer.any_topic for non-reward offer roots; reward confirmation topic and exact keyword selection remain unchanged. NPC placement/runtime entity code and World pin are unchanged. New profiles only3560/12804; old profiles unchanged. Reuse upstream canonical smithing PG104.01s/delayed92.45s, check59.70s and strict clippy1m19s; preserve current actor proof.",
     "next": "Push merged green evidence immediately, then continue independent placement rows. Workshop owner retains soul-orb/refusal/review scope."
   },
-  "next_batch": "Continue remaining owned entries immediately; preserve all cumulative PG cases. No final turn until all owned scope qualified and pushed.",
+  "next_batch": "Immediately repair exact-item postal fixture selection, run all five cases and changed-dispatch checks, then upgrade this same batch to whole-entry QUALIFIED and push. Continue every remaining entry.",
   "workshop_merged_validation": {
     "state": "GREEN; source publication; independent review follows",
     "postgres": "workshop-readiness-pg.log: 7 PASS/221.52s; workshop-readiness-incoming-pg.log: 1 PASS/96.56s; start/completion markers retained",
@@ -1393,8 +1419,8 @@
   "last_publication": "Merge latest green placement qualifications with canonical L2 fixed smithing integration; fast-forward push in progress.",
   "counts": {
     "PENDING": 16,
-    "QUALIFIED": 59,
-    "AUTHORED; QUALIFICATION PENDING": 218,
+    "QUALIFIED": 113,
+    "AUTHORED; QUALIFICATION PENDING": 164,
     "EXCLUDED": 24,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
@@ -1453,7 +1479,15 @@
       "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/251; content/services/trade/trade-00000-00326.json:1#/records/221",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "status": "AUTHORED; QUALIFICATION PENDING",
+      "qualification_components": {
+        "physical": {
+          "seconds": 105.34,
+          "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+          "log": "/tmp/npcfix-evidence/additional-postal-placement-green.log",
+          "sha256": "5ebf883f76abc0e17889f4a11a40701af500d47a10fc62415409439a2b64d97b"
+        }
+      }
     },
     {
       "npc": "Ahmet",
@@ -1646,6 +1680,14 @@
         "state": "QUALIFIED",
         "postgres": "same six-NPC test,106.18s",
         "note": "Postal economics remain to be qualified separately; no whole-NPC claim."
+      },
+      "qualification_components": {
+        "physical": {
+          "seconds": 105.34,
+          "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+          "log": "/tmp/npcfix-evidence/additional-postal-placement-green.log",
+          "sha256": "5ebf883f76abc0e17889f4a11a40701af500d47a10fc62415409439a2b64d97b"
+        }
       }
     },
     {
@@ -1925,7 +1967,15 @@
       "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/70; content/services/trade/trade-00000-00326.json:1#/records/64",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "status": "AUTHORED; QUALIFICATION PENDING",
+      "qualification_components": {
+        "physical": {
+          "seconds": 105.34,
+          "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+          "log": "/tmp/npcfix-evidence/additional-postal-placement-green.log",
+          "sha256": "5ebf883f76abc0e17889f4a11a40701af500d47a10fc62415409439a2b64d97b"
+        }
+      }
     },
     {
       "npc": "Eliza",
@@ -3611,7 +3661,15 @@
       "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/125; content/services/trade/trade-00000-00326.json:1#/records/111",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "status": "AUTHORED; QUALIFICATION PENDING",
+      "qualification_components": {
+        "physical": {
+          "seconds": 105.34,
+          "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+          "log": "/tmp/npcfix-evidence/additional-postal-placement-green.log",
+          "sha256": "5ebf883f76abc0e17889f4a11a40701af500d47a10fc62415409439a2b64d97b"
+        }
+      }
     },
     {
       "npc": "Georgia Rainbird",
@@ -4095,7 +4153,15 @@
       "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/236; content/services/trade/trade-00000-00326.json:1#/records/209",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "status": "AUTHORED; QUALIFICATION PENDING",
+      "qualification_components": {
+        "physical": {
+          "seconds": 105.34,
+          "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+          "log": "/tmp/npcfix-evidence/additional-postal-placement-green.log",
+          "sha256": "5ebf883f76abc0e17889f4a11a40701af500d47a10fc62415409439a2b64d97b"
+        }
+      }
     },
     {
       "npc": "Nor",

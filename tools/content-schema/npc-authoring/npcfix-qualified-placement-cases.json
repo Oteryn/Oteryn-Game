@@ -1159,6 +1159,63 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "additional-postal-qualification-18",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "Verified published pre-NPCFIX33-placement baseline absence. Existing authored source placement retained; service coverage adds five actors without changing the original13-case fixture.",
+      "cases": [
+        {
+          "npc": "oteryn:npc.olrik",
+          "name": "Olrik",
+          "expected": {
+            "x": 32675,
+            "y": 31698,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.chemar",
+          "name": "Chemar",
+          "expected": {
+            "x": 33269,
+            "y": 32438,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.chrystal",
+          "name": "Chrystal",
+          "expected": {
+            "x": 33174,
+            "y": 31811,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.fyodor",
+          "name": "Fyodor",
+          "expected": {
+            "x": 33639,
+            "y": 31898,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.nelly",
+          "name": "Nelly",
+          "expected": {
+            "x": 32308,
+            "y": 31134,
+            "floor": -7
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }

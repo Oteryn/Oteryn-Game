@@ -189,3 +189,7 @@ Pushed-ready retail-population-qualification-15: Eathar, Edmund, Elbert, Elliott
 Pushed-ready retail-population-qualification-16: Graham, Guide Kunibert, Hexel, Jossel, Klesar, Kromrek. Actual PG historical RED42.06s/current GREEN88.65s, marker present; cumulative native placement/identity assertions retained. fmt PASS; unchanged Rust check/clippy proof reused from e2615554b. No production changes; prior authored repair now qualified. Continue immediately.
 
 Pushed-ready retail-population-qualification-17: Maro, Marvin, Nicholas, Normod, Peremin, Baltim. Actual PG historical RED36.09s/current GREEN81.00s, marker present; cumulative native placement/identity assertions retained. fmt PASS; unchanged Rust check/clippy proof reused from e2615554b. No production changes; prior authored repair now qualified. Continue immediately.
+
+## Five postal physical components green; command qualification active
+
+Olrik, Chemar, Chrystal, Fyodor and Nelly: actual PG historical absence RED47.59s/current canonical-native GREEN105.34s,107 cumulative cases. Publish this data-only actor component immediately; whole entry statuses remain pending until postal commands pass. Five-case command RED505.72s exposes Nelly fixture price collisions: select exact parcel/letter identity, side and price, retain all rank and replay assertions, rerun five cases and dispatch checks. Rust test remains uncommitted until green. Counts reconciled from entries. Continue immediately; this is not a final deferred state.
