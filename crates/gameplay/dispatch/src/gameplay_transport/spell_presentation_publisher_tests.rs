@@ -649,10 +649,15 @@ fn w18_house_decoration_effects_follow_current_house_custody_and_hide_channel_cu
         timed_output: None,
     };
     chat.publish_item_speech(&runtime, actor, session, &effects);
-    assert_eq!(
-        chat.drain(session).len(),
-        1,
-        "House mirror speech reaches its actual resident"
+    assert!(
+        matches!(
+            chat.drain(session).as_slice(),
+            [oteryn_protocol_oteryn::chat::ChatLine::Local {
+                mode: oteryn_protocol_oteryn::chat::ChatSpeechMode::MonsterSay,
+                ..
+            }]
+        ),
+        "House mirror speech retains the donor's MonsterSay presentation"
     );
     assert!(
         chat.drain(other_session).is_empty(),

@@ -112,14 +112,13 @@ impl ChatRuntime {
         };
         for (listener, heard) in local_listeners(SpeechMode::Say, at, listeners) {
             if let Some(entry) = sessions.get_mut(&listener) {
-                entry.egress.push(local_line(
-                    speaker_id,
-                    &name,
-                    SpeechMode::Say,
-                    &text,
-                    at,
-                    heard,
-                ));
+                let mut line = local_line(speaker_id, &name, SpeechMode::Say, &text, at, heard);
+                // Crystal data/scripts/actions/objects/wall_mirror.lua:17-22
+                // uses TALKTYPE_MONSTER_SAY while keeping local SAY listeners.
+                if let ChatLine::Local { mode, .. } = &mut line {
+                    *mode = ChatSpeechMode::MonsterSay;
+                }
+                entry.egress.push(line);
             }
         }
     }
