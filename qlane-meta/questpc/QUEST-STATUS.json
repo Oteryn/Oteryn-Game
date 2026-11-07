@@ -8547,7 +8547,7 @@
     "earlier_snapshot_merged": "6c09e0365110db6683f938dd08d5d584744cbf37",
     "merge_resolution": "Retained the current newer tree in all 86 overlapping paths. Earlier snapshot retained in ancestry.",
     "owner_rule": "All shared engine features remain in scope; historical outside-lane engine blockers are nonterminal and must be implemented or reused.",
-    "active": "Mintwallin original source composition qualified and publishing. Next Devil Helmet sewer435: verify source floor facts, add composed floor routing and source UID25030 entry/departure, then whole source PG.",
+    "active": "Merged NPC acceptance/rescues/hand-in and native stock keys validating before push; then implement three Hidden Threats crafting components, followed by forged-key doors and Cave Spider room. Mintwallin and Life Ring earlier source qualifications remain intact.",
     "concurrent_remote_head": "4e12ac30e",
     "validation": {
       "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal -- --nocapture",
@@ -9177,9 +9177,73 @@
       "90a959a3e",
       "89cfab3ee"
     ],
-    "status": "merged_validation_running",
-    "resolution": "Preserve all runtime changes from both branches. Union NPC source components and native stock engine progress; keep the refreshed44-placement world pin. Only latest batch metadata conflicted.",
-    "evidence": "qlane-meta/questpc/cloud-hidden-npcs-validation.json"
+    "status": "GREEN",
+    "resolution": "Only latest batch metadata conflicted. Preserve every runtime file and both source evidence records; current44-placement world pin9865615f... retained.",
+    "postgres_version": 180006,
+    "scope": "Merged native stock/source predicates and full NPC acceptance/rescue/hand-in composition plus native3003 crash/replay",
+    "logs": {
+      "fmt": {
+        "path": "qlane-meta/questpc/cloud-hidden-merge-fmt.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "markers": [],
+        "results": []
+      },
+      "check": {
+        "path": "qlane-meta/questpc/cloud-hidden-merge-check.log",
+        "sha256": "c82686c2461962af8a9f5ef4e393513248904c49713d332a035320f9ab9a1281",
+        "markers": [],
+        "results": [
+          "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 45s"
+        ]
+      },
+      "clippy": {
+        "path": "qlane-meta/questpc/cloud-hidden-merge-clippy.log",
+        "sha256": "fcf70c76e109f4c42d090fa20c6e1b06b8cbcd4cabefea81c8b2d4521144127b",
+        "markers": [],
+        "results": [
+          "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 52s"
+        ]
+      },
+      "generation": {
+        "path": "qlane-meta/questpc/cloud-hidden-merge-generation.log",
+        "sha256": "a087d5fd96e7a8d9a7c9fb746f867139b26830446a77d9d2450c77cd787f1e2b",
+        "markers": [],
+        "results": []
+      },
+      "npc": {
+        "path": "qlane-meta/questpc/cloud-hidden-merge-npc.log",
+        "sha256": "a236635ee7ca9bf452d6e6b2654352bcb05ae855f47bdc0267de26ded305725b",
+        "markers": [
+          "POSTGRES_CASE_STARTED quest_source_objects mint=false version=180006",
+          "POSTGRES_CASE_STARTED hidden_threats_source_npc_acceptance version=180006",
+          "POSTGRES_CASE_COMPLETED hidden_threats_source_npcs phase=2 duration=92.12186287s"
+        ],
+        "results": [
+          "    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 32s",
+          "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2569 filtered out; finished in 92.12s"
+        ]
+      },
+      "key": {
+        "path": "qlane-meta/questpc/cloud-hidden-merge-key.log",
+        "sha256": "d8c773f3781a3fc9c62c47681e0f11763d6d56d31e753fa6a21269536909c65d",
+        "markers": [
+          "QUESTPC-MAP-KEY-WIRE-PG version=18.6 (Debian 18.6-1.pgdg13+2) appearance=2969 key=3003 crash=true full=false native=Some(TilePos { x: 32790, y: 31593, floor: -7 })",
+          "QUESTPC-MAP-KEY-WIRE-PG GREEN key=3003 crash=true full=false native=Some(TilePos { x: 32790, y: 31593, floor: -7 }) duration=41.149019549s"
+        ],
+        "results": [
+          "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.24s",
+          "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2569 filtered out; finished in 45.51s"
+        ]
+      },
+      "pin": {
+        "path": "qlane-meta/questpc/cloud-hidden-merge-pin.log",
+        "sha256": "4fd5ed964e8948491b1fc32a8231acf28ab20f0d492a0f8a835473c45c26e813",
+        "markers": [],
+        "results": [
+          "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.10s"
+        ]
+      }
+    }
   },
   "concurrent_cloud_batch": {
     "name": "Draconia exit six-scene PG proof; implementation checks running",

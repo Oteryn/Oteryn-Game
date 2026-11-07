@@ -6,10 +6,13 @@ predicates. Runtime merged without conflicts. The only JSON metadata conflict
 keeps both batch records. Current44-NPC-placement world pin9865615f... supersedes
 the older remote2cabea56... pin. Both implementations and all evidence retained.
 
-Merged format/check/strict Clippy, source generation checks, one full NPC hand-in
-composition and native3003 crash/replay, then pin check are running. Archive
-evidence and commit/push merge after green. Continue forge/doors/Cave Spider
-room; full Hidden Threats remains active. Counts60/117/1excluded unchanged.
+Merged five-crate format/check/strict Clippy, source generation checks, full NPC
+hand-in composition, native3003 crash/replay and pin check are GREEN. Exact
+markers/durations/hashes: cloud-hidden-merge-validation.json. Commit/push merge. Continue forge/doors/Cave Spider
+room; full Hidden Threats remains active. Detailed next craft reuse/test plan is
+/tmp/questpc-hidden-next-plan.md; temporary normalized item policies and fresh
+source custody are ready. Latest qengine2 checked2638a83ca has no forge delta.
+Counts60/117/1excluded unchanged.
 
 ---
 
