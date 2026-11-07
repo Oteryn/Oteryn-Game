@@ -77,6 +77,35 @@ pub enum ActivityTemplateRefusal {
 pub struct ActivityTemplateDiagnostic {
     pub path: String,
     pub reason: ActivityTemplateRefusal,
+    pub unavailable_source_hooks: Vec<String>,
+}
+
+impl ActivityTemplateDiagnostic {
+    fn rejected(candidate: &BossLeverCandidate, reason: ActivityTemplateRefusal) -> Self {
+        Self {
+            path: candidate.path.clone(),
+            reason,
+            unavailable_source_hooks: if reason == ActivityTemplateRefusal::SourceHookUnavailable {
+                unavailable_source_hooks(candidate)
+                    .map(str::to_owned)
+                    .collect()
+            } else {
+                Vec::new()
+            },
+        }
+    }
+}
+
+fn unavailable_source_hooks(candidate: &BossLeverCandidate) -> impl Iterator<Item = &str> {
+    // Crystal 201189f data-global/monster/quests/primal_ordeal_quest/
+    // the_primal_menace.lua:66-69,338-347: captured death and think callbacks
+    // require native owners. A diagnostic must not imply BossLeverOnDeath
+    // implements those distinct source hooks.
+    candidate
+        .required_callbacks
+        .iter()
+        .map(String::as_str)
+        .filter(|hook| *hook != "BossLeverOnDeath")
 }
 
 /// Produced only by the active Content owner, never by a client or SQL catalogue
@@ -222,6 +251,7 @@ impl ContentActivationController {
             diagnostics.push(ActivityTemplateDiagnostic {
                 path: String::new(),
                 reason: ActivityTemplateRefusal::NoActiveGeneration,
+                unavailable_source_hooks: Vec::new(),
             });
             return (Vec::new(), diagnostics);
         }
@@ -230,10 +260,9 @@ impl ContentActivationController {
         for candidate in ordered {
             match self.qualify_activity_template(room, content_revision, candidate) {
                 Ok(template) => templates.push(template),
-                Err(reason) => diagnostics.push(ActivityTemplateDiagnostic {
-                    path: candidate.path.clone(),
-                    reason,
-                }),
+                Err(reason) => {
+                    diagnostics.push(ActivityTemplateDiagnostic::rejected(candidate, reason))
+                }
             }
         }
         (templates, diagnostics)
@@ -374,10 +403,7 @@ impl ContentActivationController {
         }
         if !candidate.blockers.is_empty()
             || !candidate.callbacks_known
-            || candidate
-                .required_callbacks
-                .iter()
-                .any(|hook| hook != "BossLeverOnDeath")
+            || unavailable_source_hooks(candidate).next().is_some()
         {
             return Err(R::SourceHookUnavailable);
         }
@@ -616,6 +642,37 @@ mod tests {
             controller.qualify_activity_template(pin.qualified_room(), "rev-1", &forged),
             Err(ActivityTemplateRefusal::InvalidSourceCapture)
         ));
+        Ok(())
+    }
+
+    #[test]
+    fn primal_hook_diagnostic_names_the_captured_unimplemented_callbacks() -> Result<(), String> {
+        let candidates = captured_boss_levers().map_err(debug)?;
+        let primal = candidates
+            .iter()
+            .find(|candidate| candidate.path.ends_with("/the_primal_manace.lua"))
+            .ok_or("captured Primal lever")?;
+        let diagnostic = ActivityTemplateDiagnostic::rejected(
+            primal,
+            ActivityTemplateRefusal::SourceHookUnavailable,
+        );
+        assert_eq!(
+            diagnostic.unavailable_source_hooks,
+            vec![
+                "ThePrimalMenaceDeath",
+                "ThePrimeOrdealBossDeath",
+                "mType.onThink",
+            ]
+        );
+        let map_rejection = ActivityTemplateDiagnostic::rejected(
+            primal,
+            ActivityTemplateRefusal::OutsideQualifiedMap,
+        );
+        assert!(map_rejection.unavailable_source_hooks.is_empty());
+        assert_eq!(
+            map_rejection.reason,
+            ActivityTemplateRefusal::OutsideQualifiedMap
+        );
         Ok(())
     }
 

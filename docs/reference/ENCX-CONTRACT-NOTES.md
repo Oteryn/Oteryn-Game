@@ -1027,3 +1027,22 @@ remains the captured Primal callbacks in `activity_template.rs`; neither source
 hook qualification nor the unfinished W10/W11/W16 chain tests are relaxed.
 
 Checkpoint gates passed: workspace/all-target compile 220.394s; fmt 14.866s.
+
+
+## W10 callback qualification diagnostics
+
+Boot now reports the exact unavailable captured source hooks with each
+`SourceHookUnavailable` rejection. Qualification and diagnostics use the same
+hook filter; no source hook was admitted by this change. Crystal 201189f,
+`data-global/monster/quests/primal_ordeal_quest/the_primal_menace.lua:66-69,338-347`
+requires the distinct Primal death/quest callbacks and think owner. Map failures
+retain their own reason and do not report a callback rejection.
+
+The new test `primal_hook_diagnostic_names_the_captured_unimplemented_callbacks`
+failed first (missing diagnostic API), then passed in 0.010s. All five activity
+qualification tests passed in 82.869s. The native Instance corpse PostgreSQL
+regression `native_instance_corpse_mint_postgres_physical_death_loot_replay_and_scope_fences`
+executed and passed in 5.370s. No IDs, migrations, wire shapes or generated
+registrations changed. W10/W11/W16 full production chains remain unfinished.
+
+Follow-up gates passed: workspace/all-target compile 409.527s (including test-build lock wait), changed-crate/all-target clippy with warnings denied 170.204s, fmt 14.531s, duplicate migrations 0.358s.

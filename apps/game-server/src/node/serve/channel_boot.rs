@@ -68,8 +68,8 @@ pub(super) async fn prepare_channel(
         .map_err(|_| BootError::ContentActivation("qualified activity catalogue publication"))?;
     for diagnostic in activity_diagnostics {
         event(&format!(
-            "event=activity_template state=unavailable source={} reason={:?}",
-            diagnostic.path, diagnostic.reason
+            "event=activity_template state=unavailable source={} reason={:?} unavailable_source_hooks={:?}",
+            diagnostic.path, diagnostic.reason, diagnostic.unavailable_source_hooks
         ));
     }
     for template in &activity_templates {
