@@ -1,3 +1,16 @@
+# Full native Venore test compiles; explicit refusal helper needs correction
+
+Actual PG106.49945674s reached the native Norman programme. The initial
+construction-job request correctly rejected missing held prerequisites, but
+the new test used an all-accepted wire helper. Replace only the negative
+conversations with existing grizzly_npc::wire::talk_refused, preserving strict
+Rejected assertions; then rerun to reach the absent first machine callback.
+Native southern chamber walkable cells are recorded in
+venore-circuit-progress.json; use the group around33016,32147 for five native
+corym guardians. No production circuit callbacks have been applied yet.
+19of23remain QUALIFIED; four remain. Migration registry is validated and
+pushed84508a1e4. Continue and push every15minutes; do not end.
+
 # Migration registry validated; Venore supply slice GREEN
 
 Five focused PostgreSQL cases pass on the renamed embedded ledger: Venore

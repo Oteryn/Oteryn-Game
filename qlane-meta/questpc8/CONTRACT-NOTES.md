@@ -567,3 +567,32 @@ the original atomic Father's Burden eleven-track receipt allowance. All
 active filename references and recorded path inventories are updated. No
 manual SQLx checksum pins exist here: the sole GAME_MIGRATOR embeds the
 renamed directory and its focused unit compares the full source number list.
+
+## Colours follow-up: bounded source search and conservative authoring rule
+
+The pinned Canary47dfd51f and Crystal201189f trees contain no executable
+Colours/powder/Nathaniel programme. Public GitHub code search likewise yielded
+no applicable implementation. The Brazilian walkthrough explicitly requires
+self marking once, then applying remaining powder to a differently marked
+player; it does not establish a client looktype or cosmetic palette binding.
+Source: https://www.tibiawiki.com.br/index.php?title=The_Colours_of_Magic&action=raw .
+
+For the chosen green-only route, implement authoritative native Quest colour
+labels (Blue,Yellow,Green) through actual carried USE and real peer authority.
+Do not invent client looktypes, outfit colours or a client colour-ID binding.
+The peer must acquire its Yellow label by its own native command and durable
+receipt; no fixture colour/progress insert or trusted client colour is valid.
+The selected source Character may become Green only after an exact native
+Yellow peer match. Reuse current session/lease/generation fences for both
+Characters before any grant; a departed or stale peer must refuse atomically.
+
+Pinned XML supplies two stat-identical blue Items12208/12228 and two yellow
+Items12207/12227, all weight50 and without charges/duration. It does not prove
+full/remaining roles. Choose lower IDs for unopened powder and higher IDs for
+remaining powder as an explicit Oteryn item-state convention, not a recovered
+source role. Likewise choose the earlier Zaoan chess box18339 (capacity32,
+weight3800) over its duplicate31282; give one empty box only, never invented
+chess pieces. Sources: pinned imports/canary/items-xml/items.xml SHA256
+1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2 and
+https://www.tibiawiki.com.br/index.php?title=Strange_Blue_Powder&action=raw .
+These are implementation rules for the next entry, not current qualification.

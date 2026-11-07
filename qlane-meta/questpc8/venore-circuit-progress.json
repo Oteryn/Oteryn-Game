@@ -1,0 +1,43 @@
+{
+  "state": "Compiling WIP",
+  "postgres_duration_seconds": 106.49945674,
+  "postgres_marker": "POSTGRES_CASE_FINISHED questpc8_venore_native_daily_circuit",
+  "log_sha256": "27449c3e7be342d9cba1c4c86f321c2e784cb7dc941b5ab57a30b68ebb54541b",
+  "exact_red_point": "The first construction-job request correctly rejects missing held prerequisites, but the new test accidentally used the all-accepted wire helper. Use the existing explicit talk_refused helper for negative commands, preserve those rejection assertions, then reach the missing first machine callback.",
+  "native_walkable_chamber_cells": [
+    [
+      33008,
+      32130
+    ],
+    [
+      33011,
+      32130
+    ],
+    [
+      33012,
+      32130
+    ],
+    [
+      33013,
+      32130
+    ],
+    [
+      33016,
+      32147
+    ],
+    [
+      33017,
+      32147
+    ],
+    [
+      33017,
+      32148
+    ],
+    [
+      33019,
+      32146
+    ]
+  ],
+  "qualified_l7": 19,
+  "remaining_l7": 4
+}

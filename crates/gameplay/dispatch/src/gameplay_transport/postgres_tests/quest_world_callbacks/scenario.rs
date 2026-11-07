@@ -30,6 +30,7 @@ fn scenario_case(
             | "authored-mystery-assembly"
             | "authored-mystery-geometry"
             | "authored-static-constructors"
+            | "authored-venore"
             | "authored-venore-supplies"
             | "catalogue-npc-father"
             | "fathers-burden-handins"
@@ -85,7 +86,9 @@ fn scenario_case(
         if stateless_destination.is_some() {
             assert_eq!(callback.selector.position, Some(trigger));
         }
-        let world = if matches!(
+        let world = if name == "authored-venore" {
+            super::super::questpc8_venore::world()?
+        } else if matches!(
             name,
             "authored-mystery-geometry" | "authored-mystery-assembly"
         ) {
@@ -182,7 +185,7 @@ fn scenario_case(
                 3
             } else if name == "authored-secret-library" {
                 5
-            } else if name == "authored-anniversary" {
+            } else if matches!(name, "authored-anniversary" | "authored-venore") {
                 12
             } else if name == "authored-torch" {
                 3
@@ -397,6 +400,8 @@ fn scenario_case(
                 &authority,
             )
             .await?;
+        } else if name == "authored-venore" {
+            super::super::questpc8_venore::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "authored-venore-supplies" {
             super::super::questpc8_venore_supplies::exercise_supplies(
                 &mut owner,
