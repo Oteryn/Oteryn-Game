@@ -556,6 +556,73 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-09",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.zizzle",
+          "name": "Zizzle",
+          "expected": {
+            "x": 33103,
+            "y": 31120,
+            "floor": -12
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.zlak",
+          "name": "Zlak",
+          "expected": {
+            "x": 33082,
+            "y": 31220,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.zumtah",
+          "name": "Zumtah",
+          "expected": {
+            "x": 33362,
+            "y": 31207,
+            "floor": -8
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.zurak",
+          "name": "Zurak",
+          "expected": {
+            "x": 33158,
+            "y": 31225,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.maelyrra",
+          "name": "Maelyrra",
+          "expected": {
+            "x": 33484,
+            "y": 32237,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.captain_jack_rat",
+          "name": "Captain Jack Rat",
+          "expected": {
+            "x": 33792,
+            "y": 31384,
+            "floor": -6
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }
