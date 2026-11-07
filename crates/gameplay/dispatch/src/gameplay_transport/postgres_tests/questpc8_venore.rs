@@ -213,12 +213,12 @@ pub(super) async fn exercise(
     .await?;
     assert_eq!(progress(h, "stage").await?, 12);
     assert_eq!(quantity(h, 17514).await?, 0);
-    arrive_near(
+    super::questpc8_mystery_geometry::arrive(
         owner,
         admitted,
         TilePos {
-            x: 33020,
-            y: 32145,
+            x: 33019,
+            y: 32146,
             floor: -8,
         },
     )

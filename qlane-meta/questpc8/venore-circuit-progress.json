@@ -1,9 +1,9 @@
 {
-  "state": "Compiling WIP",
+  "state": "Compiling complete-circuit WIP; gameplay replay and recurring MINT remain active work",
   "postgres_duration_seconds": 109.560418934,
   "postgres_marker": "POSTGRES_CASE_FINISHED questpc8_venore_native_daily_circuit",
   "log_sha256": "e3b045c1913b9d31d1e29ca9c2946b16b352cb5e152ece1a54e42d8e71db1d55",
-  "exact_red_point": "Native missing-tool refusals and initial Norman supply grant pass. At stage1, the native second machine33016,32025,z6 ordinal2 has no authored binding and returns NothingToUse; the required guarded out-of-order result is Rejected. Preserve this assertion and mount the nine exact selectors.",
+  "exact_red_point": "Prior PostgreSQL109.560s proved the second native machine unbound. All nine bindings and complete first-circuit data are now authored; new native replay is pending. Daily report/restart MINT still needs occurrence-specific claim keys; no full qualification is claimed.",
   "native_walkable_chamber_cells": [
     [
       33008,
@@ -40,5 +40,18 @@
   ],
   "qualified_l7": 19,
   "remaining_l7": 4,
-  "next_slice": "Complete first native circuit, then add reusable occurrence-bound MINT for recurring report/restart rewards before qualification."
+  "next_slice": "Complete first native circuit, then add reusable occurrence-bound MINT for recurring report/restart rewards before qualification.",
+  "authored": {
+    "machine_callbacks": 9,
+    "hand_ins": 2,
+    "guardian_count": 5,
+    "experience": 1000,
+    "gold": 1000,
+    "repeat_seconds": 72000
+  },
+  "checks": {
+    "quest_units": "8PASS",
+    "cargo_check_tests": "PASS3m15s",
+    "native_regeneration": "PASS41files"
+  }
 }

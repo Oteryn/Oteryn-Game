@@ -3037,6 +3037,420 @@
         }
       ],
       "success_message": "The crystal landmark resonates with the three fragments. Use the rock to assemble the statue."
+    },
+    {
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-venore-machine-1",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33015,
+          "y": 32022,
+          "floor": -6
+        },
+        "appearance": 17405,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "premium_required": false,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17513",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You oil this construction machine."
+    },
+    {
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-venore-machine-2",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33016,
+          "y": 32025,
+          "floor": -6
+        },
+        "appearance": 17515,
+        "ordinal": 2,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "premium_required": false,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17513",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You oil this construction machine."
+    },
+    {
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-venore-machine-3",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33017,
+          "y": 32041,
+          "floor": -6
+        },
+        "appearance": 17407,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "premium_required": false,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17513",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You oil this construction machine."
+    },
+    {
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-venore-machine-4",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33030,
+          "y": 32099,
+          "floor": -6
+        },
+        "appearance": 17406,
+        "ordinal": 2,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "premium_required": false,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17513",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You oil this construction machine."
+    },
+    {
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-venore-machine-5",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33016,
+          "y": 32097,
+          "floor": -6
+        },
+        "appearance": 17515,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "premium_required": false,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17513",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You oil this construction machine."
+    },
+    {
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-venore-machine-6",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33013,
+          "y": 32095,
+          "floor": -6
+        },
+        "appearance": 17408,
+        "ordinal": 2,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "premium_required": false,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17513",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You oil this construction machine."
+    },
+    {
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-venore-machine-7",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33016,
+          "y": 32142,
+          "floor": -6
+        },
+        "appearance": 17406,
+        "ordinal": 2,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        }
+      ],
+      "premium_required": false,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17513",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You oil this construction machine."
+    },
+    {
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-venore-machine-8",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33015,
+          "y": 32138,
+          "floor": -6
+        },
+        "appearance": 17515,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        }
+      ],
+      "premium_required": false,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17513",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You oil this construction machine."
+    },
+    {
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-venore-machine-9",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33022,
+          "y": 32147,
+          "floor": -6
+        },
+        "appearance": 17407,
+        "ordinal": 3,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10
+        }
+      ],
+      "premium_required": false,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17513",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You oil this construction machine."
     }
   ]
 }

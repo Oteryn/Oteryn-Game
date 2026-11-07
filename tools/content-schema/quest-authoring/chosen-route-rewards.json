@@ -598,6 +598,203 @@
         "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
         "OTERYN_AUTHORED_APPROXIMATION: chosen sequential daily construction circuit; supplies use pinned source Item facts."
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/venore-daily/scott",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "npc": "oteryn:npc.scott_the_scout",
+      "keywords": [
+        "grind stone"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i17617",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your construction circuit progress is recorded."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/venore-daily/frank",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "npc": "oteryn:npc.frank_the_plank",
+      "keywords": [
+        "pathfinder kit"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 12
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i17514",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your construction circuit progress is recorded."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/venore-daily/report",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "npc": "oteryn:npc.norman_the_foreman",
+      "keywords": [
+        "construction report"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 13
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/kills",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 10,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "All three jobs and the daily bonus:1000experience and1000gold. Return after20hours."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ],
+      "completes": true,
+      "experience": 1000,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/last-report",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/venore-daily/restart",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "npc": "oteryn:npc.norman_the_foreman",
+      "keywords": [
+        "construction jobs"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/kills",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i17617",
+        "count": 1,
+        "contents": [],
+        "backpack_outputs": [
+          {
+            "item": "oteryn:item.tibia.i17514",
+            "count": 1
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your construction circuit progress is recorded."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i3003",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3457",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i17513",
+          "count": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/last-report",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
     }
   ],
   "offers": [
@@ -801,5 +998,42 @@
       ]
     }
   ],
-  "tracks": []
+  "tracks": [
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/venore-daily/last-report",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "sources": [
+        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/venore-daily/stage",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 13,
+      "sources": [
+        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/venore-daily/kills",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 5,
+      "sources": [
+        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    }
+  ]
 }

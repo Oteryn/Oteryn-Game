@@ -596,3 +596,26 @@ chess pieces. Sources: pinned imports/canary/items-xml/items.xml SHA256
 1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2 and
 https://www.tibiawiki.com.br/index.php?title=Strange_Blue_Powder&action=raw .
 These are implementation rules for the next entry, not current qualification.
+
+## Venore catalogue and recurrence composition
+
+The original loader validated death stages before installing reward tracks.
+Venore's first nine machine steps reach10, then NPC hand-ins reach11/12.
+Its five-kill stage12 therefore needs explicit bounds before death validation.
+Predeclare only the existing reward document's writable tracks through the
+existing catalogue constructor; install complete rewards afterward as before.
+Stage is-1..13, kills-1..5, last-report0..i64::MAX with initial0. Existing
+legacy NPC binding metadata is retained and declaration conflicts still fail.
+
+Five authored corym cells are33016,32147;33017,32147;33017,32148;33013,32130;
+33012,32130,z8, all observed Walkable through the unchanged native B3
+collision reader. These are Oteryn guardian placements, not donor spawn IDs.
+Player fixture arrival33019,32146,z8 is separately source-verified walkable.
+
+Recurring report and restart gifts need occurrence-specific MINT claims. The
+original claims have primary key(Character,claim family,claim production key),
+so a second circuit cannot reuse its callback key. Extend the shared
+occurrence-key owner with an explicit portable-reward option, while retaining
+its exact unsigned command/Character/session hash and same-transaction source
+receipt proof. A changed-state predicate must reject free no-op replay. This
+is active implementation owned here, not a dependency on another lane.

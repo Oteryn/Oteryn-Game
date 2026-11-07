@@ -1,3 +1,24 @@
+# Complete native Venore circuit compiles; run replay and finish recurrence
+
+Nine exact native machine selectors, Scott/Frank exact hand-ins, five native
+corym guardians,1000XP/1000gold report and72000-second restart are authored.
+Eight reward/loader units and cargo check--tests for Quest/NPC/dispatch pass
+(3m15s); native regeneration41files passes. No full circuit GREEN is claimed.
+The callback clock has explicit writable0..i64::MAX metadata; stage and kill
+bounds are predeclared before world/death validation through the generic
+reward-track preloader. Final reward installation remains in its existing
+order, preserving source receipt and NPC legacy validation.
+
+Next add a strict nonce-key assertion after the native report and run the full
+PG case. Every first-circuit objective must pass; recurring rewards must have
+a claim key distinct from the callback key and from the next command nonce.
+The current once-key owner will fail that assertion. Implement the explicit
+per-occurrence option through existing shared claim-key function, a same-txn
+changed-state receipt and lane migration1303. Draft SQL is
+/tmp/questpc8_occurrence_mint.sql. Do not qualify after just one circuit.
+Pin refresh/check is finishing; source world geometry/NPC placement stays
+809f7333.19of23L7remain QUALIFIED; four remain. Continue without ending.
+
 # Actual Venore binding RED109.560418934s — mount the circuit now
 
 Correct explicit negative NPC wire helpers pass: Norman refuses missing

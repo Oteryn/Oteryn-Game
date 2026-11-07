@@ -197,8 +197,10 @@ pub fn load_embedded_quest_state(
     content_revision: &str,
 ) -> Result<LoweredQuestState, QuestLoadError> {
     let mut lowered = parse_quest_state(EMBEDDED, content_revision)?;
-    lowered.catalogue =
-        super::world_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue = super::world_callbacks::extend(
+        super::reward_callbacks::declare_tracks(lowered.catalogue).map_err(QuestLoadError::Json)?,
+    )
+    .map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::monk_shrines::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =

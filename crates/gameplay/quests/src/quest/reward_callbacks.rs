@@ -345,6 +345,14 @@ fn value_plan(callback: &RewardCallback) -> Result<Vec<u8>, String> {
     .map_err(|error| error.to_string())
 }
 
+/// Declare authored bounds before world and death adapters validate their stages.
+/// Their complete rewards and provenance are still installed by `extend` afterward.
+pub(crate) fn declare_tracks(
+    catalogue: QuestStateCatalogue,
+) -> Result<QuestStateCatalogue, String> {
+    extend_callbacks(catalogue, Vec::new(), load_document()?.tracks)
+}
+
 pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let document = load_document()?;
     extend_callbacks(catalogue, document.callbacks, document.tracks)
@@ -533,8 +541,22 @@ mod tests {
                 QuestStateCatalogue::empty("content-1").ok_or("empty")?,
             )
         };
-        let before = extend_callbacks(empty()?, before, Vec::new())?;
-        let changed = extend_callbacks(empty()?, changed, Vec::new())?;
+        let before = extend_callbacks(
+            empty()?,
+            before,
+            parse_document(include_str!(
+                "../../../../../content/quests/chosen-reward-callbacks.json"
+            ))?
+            .tracks,
+        )?;
+        let changed = extend_callbacks(
+            empty()?,
+            changed,
+            parse_document(include_str!(
+                "../../../../../content/quests/chosen-reward-callbacks.json"
+            ))?
+            .tracks,
+        )?;
         assert_ne!(
             before.definition_hash(super::super::grizzly_adams::QUEST),
             changed.definition_hash(super::super::grizzly_adams::QUEST),

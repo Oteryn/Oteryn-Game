@@ -445,6 +445,59 @@
         "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/movement_teleport.lua",
         "Conservative chosen programme: fixed native palace ground23881 and object25051 stand for unavailable loose skull28489/hair28490 targets. Only carried ebony wood converts; fixed stations are not consumed. Charles raft assistance is an authored discussion, not a paid shortcut passage. The selected temple research counterpart is the source Liquid Death entrance. No fabricated source tags."
       ]
+    },
+    {
+      "key": "oteryn:quest-death/authored-venore-coryms",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "creature": "oteryn:creature.little_corym_charlatan",
+      "stage": "oteryn:quest-progress/chosen/venore-daily/stage",
+      "stage_value": 12,
+      "counter": "oteryn:quest-progress/chosen/venore-daily/kills",
+      "required": 5,
+      "minimum": {
+        "x": 33005,
+        "y": 32130,
+        "floor": -8
+      },
+      "maximum": {
+        "x": 33035,
+        "y": 32160,
+        "floor": -8
+      },
+      "guardian": {
+        "position": {
+          "x": 33016,
+          "y": 32147,
+          "floor": -8
+        },
+        "additional_positions": [
+          {
+            "x": 33017,
+            "y": 32147,
+            "floor": -8
+          },
+          {
+            "x": 33017,
+            "y": 32148,
+            "floor": -8
+          },
+          {
+            "x": 33013,
+            "y": 32130,
+            "floor": -8
+          },
+          {
+            "x": 33012,
+            "y": 32130,
+            "floor": -8
+          }
+        ],
+        "respawn_ms": 90000
+      },
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: five native Little Corym Charlatans in the source-verified walkable southern construction basement, not claimed source spawn IDs. Native captured death and present principal only; CONTRACT-NOTES.md."
+      ]
     }
   ]
 }
