@@ -1372,3 +1372,8 @@ All changed crates passed strict Clippy for all targets/features in266.089s. The
 - `srv9-native-precompile`: 398.836s, passed.
 
 The native dispatch test binary compiles; this is not PostgreSQL execution proof. Generated legacy/tree/native files are reproduced by repository tooling, including preserved WORLDCHG and main custody inputs. Pin refresh/check, focused PostgreSQL and final integration validation remain pending.
+
+
+### Owner standing rule: full dependent-crate qualification before another push
+
+The freshly fetched origin/main is bbb3e06d0 (four new main commits). Compose it locally before the full unfiltered nextest matrix; no push until all failures are collected, grouped, repaired and the complete dependent set reruns green. The first reverse-normal-dependency closure contains22crates (recorded outside the repository). SRV9 pin-check passed in173.413s. The focused native command did not execute tests: compilation exhausted disk space. Completed task caches were removed, restoring10GiB; no source or prepared dependency cache was deleted. This local checkpoint is not PostgreSQL qualification.
