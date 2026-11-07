@@ -40,13 +40,13 @@ pub(super) fn target(
     let (key, action) = selected?;
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
-    Some(FloorAssemblyTarget {
+    Some(FloorAssemblyTarget::new(
         action,
         placement,
-        scope: TerrainScope {
+        TerrainScope {
             map_revision: map_revision(map.overlay.base()),
             content_generation: content,
             reset_epoch: epoch.try_into().ok()?,
         },
-    })
+    ))
 }

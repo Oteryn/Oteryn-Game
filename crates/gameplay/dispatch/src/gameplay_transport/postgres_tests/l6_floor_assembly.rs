@@ -24,6 +24,32 @@ fn l6_floor_ruby_preserves_helmet_and_starts_exact_deadline() -> TestResult {
 }
 
 #[test]
+fn l6_floor_ruby_due_cycle_expires_same_physical_helmet() -> TestResult {
+    run_case("l6-floor-assembly-ruby-cycle")
+}
+
+#[test]
+fn l6_floor_ruby_due_cycle_carried_keeps_original_deadline() -> TestResult {
+    run_case("l6-floor-assembly-ruby-cycle-carried")
+}
+#[test]
+fn l6_floor_ruby_due_cycle_nested_keeps_original_deadline() -> TestResult {
+    run_case("l6-floor-assembly-ruby-cycle-nested")
+}
+#[test]
+fn l6_floor_ruby_due_cycle_equipped_advances_equipment_epoch() -> TestResult {
+    run_case("l6-floor-assembly-ruby-cycle-equipped")
+}
+#[test]
+fn l6_floor_ruby_due_cycle_future_is_not_early() -> TestResult {
+    run_case("l6-floor-assembly-ruby-cycle-future")
+}
+#[test]
+fn l6_floor_ruby_due_cycle_unhosted_equipment_is_refused() -> TestResult {
+    run_case("l6-floor-assembly-ruby-cycle-unhosted")
+}
+
+#[test]
 fn l6_floor_ruby_missing_target_keeps_input() -> TestResult {
     run_case("l6-floor-assembly-ruby-missing-target")
 }
@@ -134,15 +160,15 @@ async fn probe_atomic_refusals(
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
     let revision = crate::map::overlay::map_revision(map.overlay.base());
-    let target = FloorAssemblyTarget {
-        action: 40040,
+    let target = FloorAssemblyTarget::new(
+        40040,
         placement,
-        scope: crate::durability::terrain_tool::TerrainScope {
+        crate::durability::terrain_tool::TerrainScope {
             map_revision: revision.clone(),
             content_generation: native.source_digest(),
             reset_epoch: owner.reset_epoch.try_into()?,
         },
-    };
+    );
     let request = LoopMoveRequest {
         item: source.try_into().map_err(|_| "source UUID")?,
         count: Some(1),
@@ -406,6 +432,9 @@ async fn ruby_exercise(
     fence: CurrentCharacterGameplayFence,
     name: &str,
 ) -> TestResult {
+    if name.contains("-cycle") {
+        return expiry_exercise(owner, harness, fence, name).await;
+    }
     let missing = name.ends_with("-missing-target");
     let unbound = name.ends_with("-unbound");
     let ruby_count = if name.ends_with("-stack") { 2 } else { 1 };
@@ -535,5 +564,364 @@ async fn ruby_exercise(
             .fetch_one(&harness.pool)
             .await?;
     assert_eq!(replay_count, receipt_count);
+    Ok(())
+}
+
+async fn expiry_exercise(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    fence: CurrentCharacterGameplayFence,
+    name: &str,
+) -> TestResult {
+    use crate::durability::character_equipment::{EquipmentMove, EquipmentMoveRefusal};
+    use crate::durability::item_loop_move::{
+        FloorAssemblyTarget, LoopDestination, LoopGround, LoopMoveRequest,
+    };
+    use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
+    let native = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native")?;
+    let command = |n| -> TestResult<_> {
+        Ok(crate::foundation::CommandRef::new(
+            fence.game_session_id,
+            crate::foundation::CommandId::new(n)?,
+        ))
+    };
+    if name.ends_with("-unhosted") {
+        super::quest_world_callbacks::input_item(
+            owner,
+            fence.item_fence(),
+            &Offering {
+                position: ALTAR,
+                item: "oteryn:item.tibia.i3230".into(),
+                count: 1,
+            },
+            70,
+            true,
+        )
+        .await?;
+        let item:Vec<u8>=sqlx::query_scalar("SELECT uuid_send(item_instance_id) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3230' AND lifecycle=1").fetch_one(&harness.pool).await?;
+        if owner.root.has_ready_demand() {
+            owner.root.maintain_ready_once().await?;
+        }
+        let result = owner
+            .root
+            .commit_equipment_move(
+                owner.character,
+                owner.holder,
+                &fence.item_fence(),
+                command(1)?,
+                &NativeItemWeights(native),
+                EquipmentMove {
+                    item: item.try_into().map_err(|_| "helmet UUID")?,
+                    from_slot: None,
+                    to_slot: Some(1),
+                },
+            )
+            .await?;
+        assert!(matches!(result, Err(EquipmentMoveRefusal::TimedNotHosted)));
+        let occupied: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_character_equipment_slots WHERE slot=1")
+                .fetch_one(&harness.pool)
+                .await?;
+        assert_eq!(occupied, 0);
+        return Ok(());
+    }
+    let equipped = name.ends_with("-equipped");
+    let nested = name.ends_with("-nested");
+    let carried = equipped || nested || name.ends_with("-carried");
+    let future = name.ends_with("-future");
+    for (id, n, keep) in [(3229, 60, false), (3030, 61, true)] {
+        super::quest_world_callbacks::input_item(
+            owner,
+            fence.item_fence(),
+            &Offering {
+                position: ALTAR,
+                item: format!("oteryn:item.tibia.i{id}"),
+                count: if id == 3030 { 2 } else { 1 },
+            },
+            n,
+            keep,
+        )
+        .await?;
+    }
+    let nested_bag = if nested {
+        super::quest_world_callbacks::input_item(
+            owner,
+            fence.item_fence(),
+            &Offering {
+                position: ALTAR,
+                item: "oteryn:item.tibia.i2854".into(),
+                count: 1,
+            },
+            70,
+            true,
+        )
+        .await?;
+        let id:Vec<u8>=sqlx::query_scalar("SELECT uuid_send(i.item_instance_id) FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id) WHERE i.definition_production_key='oteryn:item.tibia.i2854' AND i.lifecycle=1").fetch_one(&harness.pool).await?;
+        Some(<[u8; 16]>::try_from(id).map_err(|_| "nested bag UUID")?)
+    } else {
+        None
+    };
+    let source:Vec<u8>=sqlx::query_scalar("SELECT uuid_send(i.item_instance_id) FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.definition_production_key='oteryn:item.tibia.i3030'")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(owner.world_id.as_bytes().as_slice()).fetch_one(&harness.pool).await?;
+    let original:(String,String)=sqlx::query_as("SELECT item_instance_id::text,minted_transaction_id::text FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3229' AND lifecycle=1").fetch_one(&harness.pool).await?;
+    let item: Vec<u8> = sqlx::query_scalar("SELECT uuid_send($1::uuid)")
+        .bind(&original.0)
+        .fetch_one(&harness.pool)
+        .await?;
+    let helmet: [u8; 16] = item.try_into().map_err(|_| "helmet UUID")?;
+    let map = owner.bundle_map().ok_or("map")?;
+    let key = oteryn_world_bundle::bundle::placement_key(ALTAR.floor, ALTAR.x, ALTAR.y, 1)
+        .ok_or("altar")?;
+    assert!(
+        map.facts
+            .quest_callback_matches(key, None, Some(40040), None)
+    );
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let revision = crate::map::overlay::map_revision(map.overlay.base());
+    let frame = owner
+        .runtime
+        .lock()
+        .await
+        .content_pin()
+        .frame_binding_digest()
+        .to_vec();
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint")
+            .fetch_one(&harness.pool)
+            .await?;
+    let target = FloorAssemblyTarget::new(
+        40040,
+        placement,
+        crate::durability::terrain_tool::TerrainScope {
+            map_revision: revision.clone(),
+            content_generation: native.source_digest(),
+            reset_epoch: owner.reset_epoch.try_into()?,
+        },
+    );
+    let ground = LoopGround {
+        spatial_position: crate::durability::map_item_mint_audit::map_item_spatial_position(
+            ALTAR.x,
+            ALTAR.y,
+            ALTAR.floor,
+        ),
+        map_revision: revision,
+        content_revision: format!(
+            "sha256:{}",
+            native
+                .source_digest()
+                .iter()
+                .map(|b| format!("{b:02x}"))
+                .collect::<String>()
+        ),
+        placement_context: frame,
+    };
+    let request = LoopMoveRequest {
+        item: source.try_into().map_err(|_| "ruby UUID")?,
+        count: Some(1),
+        pickup_cell: None,
+        destination: LoopDestination::Ground(ground.clone()),
+    };
+    let permit = owner.spell_lane_permit().await.ok_or("expiry lane")?;
+    let mut first = None;
+    for cycle in 0..if future { 1 } else { 2 } {
+        let base = 1 + cycle * 10;
+        let occurred = if future {
+            now
+        } else {
+            now - 1_800_000 - 1000 + i64::try_from(cycle)? * 10
+        };
+        if owner.root.has_ready_demand() {
+            owner.root.maintain_ready_once().await?;
+        }
+        let moved = owner
+            .root
+            .commit_item_loop_floor_assembly(
+                &permit,
+                owner.character,
+                owner.holder,
+                fence.item_fence(),
+                command(base)?,
+                &NativeItemWeights(native),
+                native,
+                request.clone(),
+                target.clone().with_test_occurred_at(occurred),
+            )
+            .await?
+            .map_err(|e| format!("historical transform:{e:?}"))?;
+        if first.is_none() {
+            first = Some(moved.transaction_id);
+        }
+        let before:String=sqlx::query_scalar("SELECT definition_production_key FROM game_item_instances WHERE item_instance_id=$1::uuid").bind(&original.0).fetch_one(&harness.pool).await?;
+        assert_eq!(before, "oteryn:item.tibia.i3230");
+        let deadline:i64=sqlx::query_scalar("SELECT expires_at_unix_ms FROM game_floor_transform_deadlines WHERE item_instance_id=$1::uuid").bind(&original.0).fetch_one(&harness.pool).await?;
+        assert_eq!(deadline, occurred + 1_800_000);
+        if carried {
+            if owner.root.has_ready_demand() {
+                owner.root.maintain_ready_once().await?;
+            }
+            owner
+                .root
+                .commit_item_loop_move(
+                    &permit,
+                    owner.character,
+                    owner.holder,
+                    &fence.item_fence(),
+                    command(base + 1)?,
+                    &NativeItemWeights(native),
+                    LoopMoveRequest {
+                        item: helmet,
+                        count: Some(1),
+                        pickup_cell: Some(ground.spatial_position.clone()),
+                        destination: nested_bag
+                            .map(LoopDestination::Container)
+                            .unwrap_or(LoopDestination::MainBackpack),
+                    },
+                )
+                .await?
+                .map_err(|e| format!("clocked helmet pickup:{e:?}"))?;
+        }
+        let mut equipment_epoch = None;
+        if equipped {
+            if owner.root.has_ready_demand() {
+                owner.root.maintain_ready_once().await?;
+            }
+            owner
+                .root
+                .commit_equipment_move(
+                    owner.character,
+                    owner.holder,
+                    &fence.item_fence(),
+                    command(base + 2)?,
+                    &NativeItemWeights(native),
+                    EquipmentMove {
+                        item: helmet,
+                        from_slot: None,
+                        to_slot: Some(1),
+                    },
+                )
+                .await?
+                .map_err(|e| format!("clocked helmet equip:{e:?}"))?;
+            equipment_epoch=Some(sqlx::query_scalar::<_,String>("SELECT revision::text FROM game_character_equipment_state WHERE character_id=encode($1,'hex')::uuid").bind(fence.character_id.as_bytes().as_slice()).fetch_one(&harness.pool).await?.parse::<u64>()?);
+        }
+        let retained:i64=sqlx::query_scalar("SELECT expires_at_unix_ms FROM game_floor_transform_deadlines WHERE item_instance_id=$1::uuid").bind(&original.0).fetch_one(&harness.pool).await?;
+        assert_eq!(retained, deadline);
+        if owner.root.has_ready_demand() {
+            owner.root.maintain_ready_once().await?;
+        }
+        let expired = owner
+            .root
+            .drain_spell_item_deadlines(
+                &permit,
+                owner.character,
+                owner.holder,
+                fence.runtime_scope,
+                fence.scope_ownership_generation.get(),
+            )
+            .await
+            .map_err(|e| format!("expiry owner:{e:?}"))?;
+        if future {
+            assert_eq!(expired, 0);
+            return Ok(());
+        }
+        assert_eq!(
+            expired, 1,
+            "the actual fenced owner must execute the original overdue floor deadline"
+        );
+        let after:(String,String)=sqlx::query_as("SELECT definition_production_key,minted_transaction_id::text FROM game_item_instances WHERE item_instance_id=$1::uuid AND lifecycle=1").bind(&original.0).fetch_one(&harness.pool).await?;
+        assert_eq!(
+            after,
+            ("oteryn:item.tibia.i3229".into(), original.1.clone())
+        );
+        if let Some(epoch) = equipment_epoch {
+            let next:String=sqlx::query_scalar("SELECT revision::text FROM game_character_equipment_state WHERE character_id=encode($1,'hex')::uuid").bind(fence.character_id.as_bytes().as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(next.parse::<u64>()?, epoch + 1);
+        }
+        if owner.root.has_ready_demand() {
+            owner.root.maintain_ready_once().await?;
+        }
+        assert_eq!(
+            owner
+                .root
+                .drain_spell_item_deadlines(
+                    &permit,
+                    owner.character,
+                    owner.holder,
+                    fence.runtime_scope,
+                    fence.scope_ownership_generation.get()
+                )
+                .await
+                .map_err(|e| format!("expiry replay:{e:?}"))?,
+            0
+        );
+        if cycle == 0 && carried {
+            if equipped {
+                if owner.root.has_ready_demand() {
+                    owner.root.maintain_ready_once().await?;
+                }
+                owner
+                    .root
+                    .commit_equipment_move(
+                        owner.character,
+                        owner.holder,
+                        &fence.item_fence(),
+                        command(base + 3)?,
+                        &NativeItemWeights(native),
+                        EquipmentMove {
+                            item: helmet,
+                            from_slot: Some(1),
+                            to_slot: None,
+                        },
+                    )
+                    .await?
+                    .map_err(|e| format!("expired helmet unequip:{e:?}"))?;
+            }
+            if owner.root.has_ready_demand() {
+                owner.root.maintain_ready_once().await?;
+            }
+            owner
+                .root
+                .commit_item_loop_move(
+                    &permit,
+                    owner.character,
+                    owner.holder,
+                    &fence.item_fence(),
+                    command(base + 4)?,
+                    &NativeItemWeights(native),
+                    LoopMoveRequest {
+                        item: helmet,
+                        count: Some(1),
+                        pickup_cell: None,
+                        destination: LoopDestination::Ground(ground.clone()),
+                    },
+                )
+                .await?
+                .map_err(|e| format!("expired helmet redrop:{e:?}"))?;
+        }
+    }
+    let history:(i64,i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_floor_transform_receipts),(SELECT count(*) FROM game_floor_transform_expiry_receipts),(SELECT count(*) FROM game_floor_transform_expiry_audit)").fetch_one(&harness.pool).await?;
+    assert_eq!(history, (2, 2, 2));
+    if owner.root.has_ready_demand() {
+        owner.root.maintain_ready_once().await?;
+    }
+    let replay = owner
+        .root
+        .commit_item_loop_floor_assembly(
+            &permit,
+            owner.character,
+            owner.holder,
+            fence.item_fence(),
+            command(1)?,
+            &NativeItemWeights(native),
+            native,
+            request,
+            target,
+        )
+        .await?
+        .map_err(|e| format!("original transform replay:{e:?}"))?;
+    assert_eq!(Some(replay.transaction_id), first);
     Ok(())
 }

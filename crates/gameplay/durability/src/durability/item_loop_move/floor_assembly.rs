@@ -10,6 +10,40 @@ pub struct FloorAssemblyTarget {
     pub action: u16,
     pub placement: Vec<u8>,
     pub scope: TerrainScope,
+    #[cfg(any(test, feature = "test-support"))]
+    test_occurred_at: Option<i64>,
+}
+
+impl FloorAssemblyTarget {
+    pub fn new(action: u16, placement: Vec<u8>, scope: TerrainScope) -> Self {
+        Self {
+            action,
+            placement,
+            scope,
+            #[cfg(any(test, feature = "test-support"))]
+            test_occurred_at: None,
+        }
+    }
+
+    /// Seed an original historical occurrence; the actual expiry owner still
+    /// uses PostgreSQL's current clock and all production fences/constraints.
+    #[cfg(any(test, feature = "test-support"))]
+    #[must_use]
+    pub fn with_test_occurred_at(mut self, occurred_at: i64) -> Self {
+        self.test_occurred_at = Some(occurred_at);
+        self
+    }
+
+    pub(super) fn source_occurrence(&self, database_now: i64) -> i64 {
+        #[cfg(any(test, feature = "test-support"))]
+        {
+            self.test_occurred_at.unwrap_or(database_now)
+        }
+        #[cfg(not(any(test, feature = "test-support")))]
+        {
+            database_now
+        }
+    }
 }
 
 impl DurabilityRoot {

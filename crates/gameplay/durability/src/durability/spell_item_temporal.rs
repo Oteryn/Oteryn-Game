@@ -213,7 +213,8 @@ pub async fn drain_due_items_in_transaction(
             .bind(&event).bind(&transaction).bind(bytes).execute(&mut **tx).await?;
         changed += 1;
     }
-    Ok(changed)
+    let floor = super::item_loop_move::floor_transform::drain_due(tx, authority, limit - changed).await?;
+    Ok(changed + floor)
 }
 
 /// Every stage is frozen by the complete original source Item policy in the
