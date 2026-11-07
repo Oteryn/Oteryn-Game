@@ -169,7 +169,8 @@
       "proof": "cloud-nimmersatt-counted-use-proof.json",
       "postgres_red_seconds": 52.591790992,
       "postgres_green_seconds": 58.014944345,
-      "whole_recipe_qualified": false
+      "whole_recipe_qualified": false,
+      "world_pin_check": "PASS3492205b964d74c721dba0c3db3e7e8ca32647aae1c41d9837c34935f965293b"
     }
   },
   {

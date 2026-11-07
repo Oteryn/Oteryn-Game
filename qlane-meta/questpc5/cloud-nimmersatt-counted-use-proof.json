@@ -30,12 +30,12 @@
     "generator": "PASS",
     "nimmersatt_python_units": 3,
     "legion_preservation_python_units": 5,
-    "remaining": "independent World pin check",
     "world_callback_rust_units": 23,
     "loader_rust_units": 7,
     "fmt": "PASS",
     "cargo_check": "PASS125s final",
-    "strict_all_targets_all_features_clippy": "PASS72s final"
+    "strict_all_targets_all_features_clippy": "PASS72s final",
+    "repository_pin_check": "PASS3492205b964d74c721dba0c3db3e7e8ca32647aae1c41d9837c34935f965293b"
   },
   "world_digest": "3492205b964d74c721dba0c3db3e7e8ca32647aae1c41d9837c34935f965293b",
   "previous_green_seconds": 59.926035917
