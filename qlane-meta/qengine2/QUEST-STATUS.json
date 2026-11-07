@@ -3184,7 +3184,7 @@
     "peer_reuse_audit": "26 origin lane heads inspected; questpc3 262618b3cd9fce9de09ee83064de6f31e95aa8e7 conditional kill progression and questpc7 653feac452d8dbb2cf03edbfc733a1bf59bd77d7 world reward composition identified for reuse",
     "qualification_counts_unchanged": true,
     "carried_exchange": {
-      "state": "WIP; migration syntax fix validated by actual PostgreSQL; full own7-test rerun queued",
+      "state": "WIP; awaiting post-main unit/own PostgreSQL results under PREPUSH-2",
       "api": "RewardCallback.carried_exchange (default false), existing QuestRewardAdmission and consumption/MINT transaction",
       "red_pg_seconds": 70.008946262,
       "red_pg_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-authored-bindings success=false",
@@ -3193,7 +3193,7 @@
       "registry_units_green": 4,
       "migration": 1552,
       "reuse": "questpc3 9936a44dd27374dfcd9c5430888c972b0d35e5ef bounded exchange input selection and SQL proof; opt-in preserves original legacy-tool tests",
-      "focused_green_log": "/tmp/qengine2-authored-pg-green2.log",
+      "focused_green_log": "/tmp/qengine2-prepush2-backend/own-pg.log",
       "counts_unchanged": true,
       "focused_rerun_1": {
         "passed": 6,
@@ -3206,5 +3206,38 @@
         "actual_migration_probe": "/tmp/qengine2-1552-migration-probe.log; PostgreSQL18.6; transaction rolled back"
       }
     }
+  },
+  "prepush2": {
+    "main": "e1ca3e0033013c35b10d9b5b2be7f103f813fd14",
+    "local_merge": "3f300c2c8",
+    "merge_conflicts_resolved": 1,
+    "regeneration": "PASS full World package, content tree, native registrations and world pins; no generated drift",
+    "audit_tags": "PASS repo updater, no diff",
+    "quest_binding_evidence": "PASS310identities,6628exactJSONpointers",
+    "item_mount_equivalence": "PASS34111items,252mounts",
+    "world_metadata": "PASS",
+    "unit_results": {
+      "oteryn-gameplay-quests": {
+        "passed": 270,
+        "skipped": 0,
+        "seconds": 34.251
+      },
+      "items_and_social": {
+        "passed": 326,
+        "skipped": 0,
+        "seconds": 3.856
+      }
+    },
+    "pending_tests": [
+      "oteryn-game-server lib/bin units",
+      "oteryn-gameplay-content lib/bin units",
+      "oteryn-gameplay-dispatch lib/bin units",
+      "oteryn-gameplay-durability lib/bin units",
+      "own authored carried exchange PostgreSQL case"
+    ],
+    "pending_log": "/tmp/qengine2-prepush2-backend/state.json",
+    "workspace_log": "/tmp/qengine2-prepush2-workspace-check.log",
+    "fmt_log": "/tmp/qengine2-prepush2-fmt-check.log",
+    "no_new_quest_qualification": true
   }
 }

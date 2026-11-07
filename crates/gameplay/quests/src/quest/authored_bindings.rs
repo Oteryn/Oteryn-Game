@@ -197,6 +197,12 @@ impl Bindings {
                     }
                 };
                 transitions.push(QuestTransition {
+                    world_change: match &stage.trigger {
+                        Trigger::MapUse { callback } | Trigger::StepIn { callback } => {
+                            callback.world_change.clone()
+                        }
+                        Trigger::NpcDialogue { .. } | Trigger::CarriedUse { .. } => None,
+                    },
                     key: key.clone(),
                     quest: quest.quest.clone(),
                     effects: storage

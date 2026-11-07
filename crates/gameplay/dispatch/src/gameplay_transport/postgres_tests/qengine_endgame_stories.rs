@@ -256,6 +256,7 @@ pub(super) async fn rift(
     }
     let parent = "oteryn:quest-transition/qengine2-story/l13-ferumbras-complete";
     transitions.push(QuestTransition {
+        world_change: None,
         key: parent.into(),
         quest: "oteryn:quest.ferumbras_ascension_quest".into(),
         effects: vec![],
