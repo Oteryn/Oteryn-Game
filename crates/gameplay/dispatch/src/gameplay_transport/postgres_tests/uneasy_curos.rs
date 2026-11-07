@@ -172,6 +172,28 @@ pub(super) async fn exercise(
     if !name.ends_with("missing") {
         prerequisite(owner, admitted, name.ends_with("precedence")).await?;
     }
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    if !name.ends_with("missing") {
+        let copied = {
+            let sessions = owner
+                .states
+                .quest_sessions
+                .lock()
+                .map_err(|_| "quest copy lock")?;
+            sessions
+                .get(&admitted.game_session_id)
+                .and_then(|entry| entry.copy.as_ref())
+                .and_then(|copy| copy.tracks().get(&format!("{FRONTIER}mission06")))
+                .copied()
+        };
+        assert_eq!(
+            copied,
+            Some(5),
+            "controlled prerequisite must reach the real NPC read copy"
+        );
+    }
     let [npc] = super::classic_quests::install(owner, admitted, [NPC]).await?;
     // The common NPC helper places at player x,y+1: this is exactly Curos's
     // committed source coordinate, rather than an arbitrary test-only anchor.

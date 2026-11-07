@@ -1,0 +1,80 @@
+{
+  "status": "QUALIFIED_START_COMPONENT",
+  "production_bindings_commit": "c1d291858",
+  "generated_deployment_mirror_commit": "254a58b22",
+  "postgres": "PostgreSQL18.6",
+  "cases_seconds": {
+    "start": 97.595232695,
+    "precedence": 97.627157253,
+    "missing": 98.56090553
+  },
+  "proof_boundary": "Native Curos typed NPC commands at his committed source coordinate on a bounded scene; exact greeting, real fenced NPC writer, one two-track receipt and replay. Controlled foreign prerequisite fixture does not qualify The New Frontier or claim one continuous world traversal.",
+  "assertions": [
+    "Missing mission-six prerequisite creates no quest flags.",
+    "Prerequisite5 plus Frontier questline19 starts door0 and questline1 atomically in one receipt; exact command replay retains one receipt.",
+    "Prerequisite5 plus preceding Frontier questline16 refuses Uneasy start.",
+    "All three use the refreshed real quest read copy; completed fixture values are asserted before native dialogue."
+  ],
+  "source": "cloud-uneasy-curos-progress.json and tools/content-schema/quest-authoring/uneasy_curos.py verify Curos blob4fdff/SHA6fee; public201189 source is byte-identical to retained9f corpus.",
+  "validation": {
+    "cargo_check": "PASS NPC/quests/durability/dispatch1m20s",
+    "strict_clippy": "PASS four production crates8m16s, final dispatch all-targets/all-features after fixture refresh5m18s",
+    "fmt": "PASS cargo fmt and explicit mounted rustfmt",
+    "greeting_unit": "PASS one source identity/hash/literal rejection unit; non-PG 0.00s is not PostgreSQL proof",
+    "generator": "PASS source generator --check and placement converter --check",
+    "pin_refresh": {
+      "inputs_digest": "bf7cb49f4e74d0007703c8beb6db559f6f4bb739bd2a9f2600db7b570df97867",
+      "pins": [
+        {
+          "digest": "909676ba6b038ac4d7b89d4aa2be2c7267ce6b4c2442f43bce4aa3814d631bb9",
+          "previous": "174f5942b036a38769872612f292957daa670bfb2a3a96f3b6a2aec395d32a62",
+          "world": "oteryn"
+        }
+      ]
+    },
+    "pin_check": {
+      "inputs_digest": "bf7cb49f4e74d0007703c8beb6db559f6f4bb739bd2a9f2600db7b570df97867",
+      "pins": [
+        {
+          "bytes": 31102047,
+          "digest": "909676ba6b038ac4d7b89d4aa2be2c7267ce6b4c2442f43bce4aa3814d631bb9",
+          "world": "oteryn"
+        }
+      ]
+    },
+    "old_greeting_path_regression": "ActualPG Dragonlord exchange/replay/exact flag PASS106.606954443s"
+  },
+  "whole_title_promoted": false,
+  "remaining": [
+    "Curos report, briefing and final tome grant",
+    "Native quest door and Renegade Orc placement route",
+    "Crystal10186->10187 action40030 with10-second reversion and exact questline3->4"
+  ],
+  "historical_failure_boundary": "Original missing-placement RED genuinePG47s. Initial positive floor rejected before PG and is excluded. First positive after bindings used stale fixture copy; corrected. Earlier precedence pass is not used as the final source-precedence proof; both refusals rerun with refreshed copy.",
+  "logs": {
+    "cloud-uneasy-curos-start-green.log": {
+      "raw_sha256": "690c9376fa8782f302455493b58e72c2e03c83377c2bf7e36f077d1c4cbc377c",
+      "stored_sha256": "3891a603d61a961bffab048b544595176eebf734dd9cfcaf95c2b9b774e1bd11"
+    },
+    "cloud-uneasy-curos-refusals-green.log": {
+      "raw_sha256": "d90e4f540ab5fffbee720a28eb395ac1aee5da7697cfaa55e0d6f8a15cb2dd51",
+      "stored_sha256": "3232e91c7b100c14c2b6214ef73e55ada6d9c38e5e4ab2e25b40ec212fa4f050"
+    },
+    "cloud-uneasy-curos-final-clippy.log": {
+      "raw_sha256": "9745ff0f34b7c985c64d4efc65932d4082e425f89df9cf2059df3aecb55ea2a0",
+      "stored_sha256": "9745ff0f34b7c985c64d4efc65932d4082e425f89df9cf2059df3aecb55ea2a0"
+    },
+    "cloud-uneasy-curos-check.log": {
+      "raw_sha256": "b38e3ad2e855657293363cedb3942ef282d860b294e00c92300c62812792df0d",
+      "stored_sha256": "b38e3ad2e855657293363cedb3942ef282d860b294e00c92300c62812792df0d"
+    },
+    "cloud-uneasy-curos-greeting-unit.log": {
+      "raw_sha256": "5d5bc38e4fd8a8b3c9e7217b0ace611ba97c8a389f19832eb8a2a3037a6b1762",
+      "stored_sha256": "c90cdf2fd599f5a44efa18ac2488bd4c9aab090124505ca8b8129f33fb9198a7"
+    },
+    "cloud-uneasy-curos-pincheck.log": {
+      "raw_sha256": "fea017fbbc470f46999aea6ca97c007afe4258692339f9a0955b28924163e774",
+      "stored_sha256": "fea017fbbc470f46999aea6ca97c007afe4258692339f9a0955b28924163e774"
+    }
+  }
+}

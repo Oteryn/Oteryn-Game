@@ -1,0 +1,12 @@
+
+running 2 tests
+UNEASY_CUROS actual_postgresql=true PostgreSQL 18.6 (Debian 18.6-1.pgdg13+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+test gameplay_transport::monk_save::postgres_tests::uneasy_curos::uneasy_curos_preserves_preceding_frontier_branch has been running for over 60 seconds
+test gameplay_transport::monk_save::postgres_tests::uneasy_curos::uneasy_curos_requires_completed_frontier_mission has been running for over 60 seconds
+UNEASY_CUROS actual_postgresql=true PostgreSQL 18.6 (Debian 18.6-1.pgdg13+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+UNEASY_CUROS POSTGRES_CASE_COMPLETED case=precedence duration=97.627157253s
+test gameplay_transport::monk_save::postgres_tests::uneasy_curos::uneasy_curos_preserves_preceding_frontier_branch ... ok
+UNEASY_CUROS POSTGRES_CASE_COMPLETED case=missing duration=98.56090553s
+test gameplay_transport::monk_save::postgres_tests::uneasy_curos::uneasy_curos_requires_completed_frontier_mission ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 2624 filtered out; finished in 98.56s

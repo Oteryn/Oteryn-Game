@@ -8627,18 +8627,40 @@
   },
   "owner_execution_override": "Shared quest-engine, reward/binding, NPC, Item and callback features are owned here when needed. Check and reuse origin/claude/happy-davinci-ijz3wy-qengine2 first; historical outside-lane blockers are active implementation obligations, not final dispositions.",
   "latest_cloud_batch": {
-    "scope": "source damaging-player selection across two real admitted characters",
+    "scope": "native Curos source acceptance and closed greeting extension",
     "status": "GREEN",
     "validation": {
-      "cargo_check_tests": "PASS 3m42s",
-      "strict_clippy": "PASS dispatch all-targets/all-features -D warnings 5m04s including lock wait",
-      "cargo_fmt": "PASS",
-      "generated_inputs": "No content/generator/migration input changed; existing regenerated world pin174f5942 and inputs ed2f5e73 unchanged."
+      "cargo_check": "PASS NPC/quests/durability/dispatch1m20s",
+      "strict_clippy": "PASS four production crates8m16s, final dispatch all-targets/all-features after fixture refresh5m18s",
+      "fmt": "PASS cargo fmt and explicit mounted rustfmt",
+      "greeting_unit": "PASS one source identity/hash/literal rejection unit; non-PG 0.00s is not PostgreSQL proof",
+      "generator": "PASS source generator --check and placement converter --check",
+      "pin_refresh": {
+        "inputs_digest": "bf7cb49f4e74d0007703c8beb6db559f6f4bb739bd2a9f2600db7b570df97867",
+        "pins": [
+          {
+            "digest": "909676ba6b038ac4d7b89d4aa2be2c7267ce6b4c2442f43bce4aa3814d631bb9",
+            "previous": "174f5942b036a38769872612f292957daa670bfb2a3a96f3b6a2aec395d32a62",
+            "world": "oteryn"
+          }
+        ]
+      },
+      "pin_check": {
+        "inputs_digest": "bf7cb49f4e74d0007703c8beb6db559f6f4bb739bd2a9f2600db7b570df97867",
+        "pins": [
+          {
+            "bytes": 31102047,
+            "digest": "909676ba6b038ac4d7b89d4aa2be2c7267ce6b4c2442f43bce4aa3814d631bb9",
+            "world": "oteryn"
+          }
+        ]
+      },
+      "old_greeting_path_regression": "ActualPG Dragonlord exchange/replay/exact flag PASS106.606954443s"
     },
     "whole_title_promoted": false
   },
   "continuation": {
-    "next": "Native Curos NPC start with NewFrontier prerequisite, atomic two flags; then quest door/native Renegade spawn, crystal transform/revert and exact tome reward.",
+    "next": "Refresh other-lane ownership; continue Curos later source stages/exact10217grant, native door/boss source route, crystal40030 with10-second revert. Reuse existing world mutation owner; qworld supplies calendar decisions, not this timed object transform.",
     "runtime_change_since_4f151ba81": true,
     "red_point": null,
     "source": "Crystal 9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d data-global/scripts/quests/an_uneasy_alliance/creaturescripts_renegade_orc_kill.lua, blob 8d1ecd7810b863df6f44e9e4aead98264fe50395",
@@ -8666,10 +8688,9 @@
     },
     "multi_player_proof": "cloud-source-death-multi-validation.json",
     "curos_baseline": {
-      "status": "WIP_PRODUCTION_STRICT_PASS_ACCEPTANCE_FIXTURE_REFRESH_PENDING",
-      "proof": "cloud-uneasy-curos-progress.json",
-      "red_point": "Positive start probe used stale fixture read copy; refresh + explicit copied-prerequisite assertion added locally, rerun pending.",
-      "runtime_change": true
+      "status": "GREEN",
+      "proof": "cloud-uneasy-curos-validation.json",
+      "red_point": null
     },
     "curos_static_checks": {
       "programme": "Curos start only; preceding Frontier guards; two flags in one existing writer commit",
@@ -9321,6 +9342,11 @@
       "proof": "cloud-source-death-validation.json",
       "whole_title_promoted": false,
       "multi_player_proof": "cloud-source-death-multi-validation.json"
+    },
+    "uneasy_curos_start": {
+      "status": "QUALIFIED_SOURCE_COMPONENT",
+      "proof": "cloud-uneasy-curos-validation.json",
+      "whole_title_promoted": false
     }
   },
   "cross_lane_qualified_elsewhere": {

@@ -1,3 +1,21 @@
+## Curos native acceptance GREEN — 2026-11-07
+ActualPG18.6 correctedfullcase set: start97.595232695s,precedence97.627157253s,
+missing98.56090553s. Exactsourcegreet; nativeCurosat33174,31394,z7; foreign
+prereqcontrolledthroughfencedwriter andREADCOPYREFRESHassert5; one receipt
+Door0+Questline1, commandreplayone receipt. NoTheNewFrontier qualification
+and no inventedcontinuousworldwalk. Oldprecedencepasswithstale fixture is
+notfinalproof; bothrefusals rerun. SourcebaselineRED47s andfixtureerrors retained.
+Fourcratecheck/strictPASS; finaldispatchstrict5m18s; fmt/source/converter/unit
+PASS. Pinrefresh+pincheck909676ba6b038ac4d7b89d4aa2be2c7267ce6b4c2442f43bce4aa3814d631bb9, inputsbf7cb49f4e74d0007703c8beb6db559f6f4bb739bd2a9f2600db7b570df97867, NPC47.
+Generateddeploymirror committed254a58b22; no deployment. Dragonlordregression
+PG106.606954443s. Proof cloud-uneasy-curos-validation.json. Wholecounts61/116/1
+excluded,73ownedatlastsnapshot. NEXT refreshotherlaneownership then Curoslater
+missions/exact10217grant, nativequestdoor/Renegade spawn, crystal40030 transform
+10186->10187 for10sec andQuestline3->4. qworldb06d40852 calendar/state owner
+not mapobjecttimer; inspectexistingquest world mutation owner beforeextending
+generically. No missingengine handoff. Beforepush fetch exacttarget/mergeFETCH_HEAD,
+max15min; neverforce/rebase/main/PR. PR3020 lastOPEN15:?? (actualinspection14:36).
+
 ## Curos partial PG / generated deployment mirror checkpoint — 2026-11-07
 Productionstrict4crates PASS8m16s, newsourcegreet/sourceplacement nativePG
 missingprereq124.181213218s andbranchprecedence120.191585836s PASS.
