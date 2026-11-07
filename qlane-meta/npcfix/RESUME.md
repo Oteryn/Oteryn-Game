@@ -321,3 +321,5 @@ retail-population-qualification-38 QUALIFIED: Guide Elena, Jean Claude, Julian, 
 retail-population-qualification-39 QUALIFIED: Maria, Nathaniel, Nelliem, Oldrak, Chuckles, Emperor Rehal. Actual PG RED76.14s -> GREEN171.02s. Every prior cumulative case retained; current production snapshot byte-identical to fully checked source. All strict/source/repository/pin gates PASS. Continue immediately.
 
 retail-population-qualification-40 QUALIFIED: Maris, Maritima, Ortheus, Palimuth. Actual PG RED69.66s -> GREEN253.62s. Every prior cumulative case retained; current production snapshot byte-identical to fully checked source. All strict/source/repository/pin gates PASS. Continue immediately.
+
+retail-population-qualification-41 QUALIFIED: Peter, Xorlosh, Yalahari. Actual PG RED74.73s -> GREEN151.37s. Every prior cumulative case retained; current production snapshot byte-identical to fully checked source. All strict/source/repository/pin gates PASS. Continue immediately.
