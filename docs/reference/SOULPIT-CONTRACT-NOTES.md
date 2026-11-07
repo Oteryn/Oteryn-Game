@@ -755,3 +755,26 @@ Fury Gates selects/realizes at startup; donor content is not an accepted Game re
   the existing command budget; authority, history and unknown-commit failures
   remain closed. Autonomous traversal filters current readiness before its bounded
   page limit so an earlier unready fight cannot hide a later current fight.
+
+### Real PostgreSQL proof (2026-11-07)
+
+All seven cases ran against the configured PostgreSQL route with migrations
+1140/1141 and existing admission/custody/deferred guards enabled:
+
+| Test suffix | Seconds |
+| --- | ---: |
+| `soulpit_native_item_use_entry_return_and_animus_query_postgres` | 43.872 |
+| `soulpit_production_owner_spawns_native_wave_and_timeout_returns_without_mastery_postgres` | 40.846 |
+| `soulpit_native_entry_refuses_insufficient_wave_capacity_without_burning_core_postgres` | 40.269 |
+| `soulpit_shared_entry_debits_core_and_commits_real_instance_session_postgres` | 44.128 |
+| `soulpit_terminal_return_requires_checkpoint_and_interrupt_never_grants_mastery_postgres` | 52.329 |
+| `soulpit_survivor_completion_and_animus_commit_together_postgres` | 42.072 |
+| `soulpit_failure_after_animus_insert_rolls_back_completion_postgres` | 42.352 |
+
+The shared fixture refreshes and holds authenticated Account evidence immediately
+before successor admission, exactly like production; content loading must not
+consume the existing five-second freshness window. Failure probes use durable
+sequence observations to prove execution reached the debit or Animus insertion;
+all rollback and replay assertions remain active. The 1,510 frontend tests and
+seven runtime orchestration tests also pass. Final all-target clippy and remaining
+focused crate validation are separate gates, not implied by this SQL proof.
