@@ -3046,7 +3046,13 @@
             "POSTGRES_CASE_COMPLETED S06_GLIDER ground=false missing=false duration=76.292884279s success=false",
             "POSTGRES_CASE_COMPLETED S06_GLIDER ground=false missing=true duration=82.527214895s success=false",
             "POSTGRES_CASE_COMPLETED S06_GLIDER ground=true missing=false duration=85.552327297s success=false"
-          ]
+          ],
+          "gates": {
+            "check": "GREEN content/items/durability/dispatch allfeatures; /tmp/qengine2-s06-glider-check.log",
+            "clippy": "GREEN content/items/durability/dispatch/server allfeatures alltargets -Dwarnings5m33s; /tmp/qengine2-s06-glider-clippy-retry.log",
+            "pins": "GREEN refresh/check24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25; /tmp/qengine2-s06-glider-pin-check.log",
+            "postgres": "Rerun rebuilding after disk-interrupted compilation; /tmp/qengine2-s06-glider-green3.log"
+          }
         }
       },
       {

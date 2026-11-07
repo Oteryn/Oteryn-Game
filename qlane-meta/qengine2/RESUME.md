@@ -915,3 +915,11 @@ dispatch checkGREEN12m09includingqueue; strict server alltargets/features
 ClippyGREEN12m20includingqueue. Whole S06/Glider stillAUTHORING until new PG
 run /tmp/qengine2-s06-glider-green2.log passes. Pin refresh running, full
 changed-crate strict Clippy queued. Counts44/66; continue through66.
+
+Glider current gatesGREEN: five changed crates content/items/durability/dispatch/
+server strict allfeatures/alltargets Clippy5m33s after disk retry. Pin refresh
+and pin-check bothGREEN, unchanged world digest24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25.
+PG green2 build was interrupted by disk full, not a runtime result; retry
+green3 queued/rebuilding with all six admitted source components. Corrected
+content integration rerun also executing. Keep compilation and 7.6GB pin
+runtime serialized to stay within16GB memory. Counts44/66.
