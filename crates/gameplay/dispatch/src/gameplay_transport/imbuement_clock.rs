@@ -35,14 +35,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> bool {
         let now = u64::try_from(self.clock_origin.elapsed().as_millis()).unwrap_or(u64::MAX);
         let Some(combat) = self.observe_actor_combat_state(actor, session).await else {
+            #[cfg(test)]
+            eprintln!("SRV7_IMBUEMENT_CHECKPOINT_REFUSE line={}", line!());
             return false;
         };
-        let Ok(observed) = self
+        let observed = match self
             .root
             .read_worn_imbuements(self.character, self.holder, fence)
             .await
-        else {
-            return false;
+        {
+            Ok(observed) => observed,
+            Err(error) => {
+                #[cfg(test)]
+                eprintln!("SRV7_IMBUEMENT_CHECKPOINT_READ error={error:?}");
+                #[cfg(not(test))]
+                let _ = error;
+                #[cfg(test)]
+                eprintln!("SRV7_IMBUEMENT_CHECKPOINT_REFUSE line={}", line!());
+                return false;
+            }
         };
         let mut clocks = self.states.timed_items.imbuements.lock().await;
         let has_combat_effects = observed
@@ -86,6 +97,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .collect::<Vec<_>>();
             if !changes.is_empty() {
                 let Some(serial) = clock.serial.checked_add(1) else {
+                    #[cfg(test)]
+                    eprintln!("SRV7_IMBUEMENT_CHECKPOINT_REFUSE line={}", line!());
                     return false;
                 };
                 clock.serial = serial;
@@ -115,6 +128,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
                 .is_err()
             {
+                #[cfg(test)]
+                eprintln!("SRV7_IMBUEMENT_CHECKPOINT_REFUSE line={}", line!());
                 return false;
             }
             // Replay is resolved before accepting a new baseline. Failure time is paused;
@@ -139,6 +154,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return true;
         }
         let Ok(effects) = self.read_admission_effects(session).await else {
+            #[cfg(test)]
+            eprintln!("SRV7_IMBUEMENT_CHECKPOINT_REFUSE line={}", line!());
             return false;
         };
         let runtime = self.runtime.lock().await;

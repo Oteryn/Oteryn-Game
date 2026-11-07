@@ -3,6 +3,8 @@ use super::*;
 use oteryn_gameplay_content::content::ReferenceItemField as F;
 use oteryn_protocol_oteryn::house_wrap as wire;
 
+type PreviousWrapReceipt = (Option<Vec<u8>>, Vec<u8>, Vec<u8>, String, String);
+
 pub struct OpaqueHouseWrapResult {
     pub reply: wire::Reply,
     pub fresh: bool,
@@ -46,7 +48,7 @@ impl DurabilityRoot {
                 return Ok(wire::Reply::Refused(wire::Refusal::Stale));
             }
             // Replay is independent of the current opaque handle/observed item.
-            let previous:Option<(Option<Vec<u8>>,Vec<u8>,Vec<u8>,String,String)>=sqlx::query_as(
+            let previous:Option<PreviousWrapReceipt>=sqlx::query_as(
                 "SELECT use_intent,uuid_send(character_id),uuid_send(world_id),house_key,((before_item->>'state_revision')::numeric+1)::text FROM game_house_furniture_wrap_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
                 .bind(context.fence.game_session_id.as_bytes().as_slice()).bind(command.command_id().get().to_string())
                 .fetch_optional(&mut **tx).await?;

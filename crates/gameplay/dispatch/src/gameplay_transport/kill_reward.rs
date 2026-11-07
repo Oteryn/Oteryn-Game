@@ -2218,7 +2218,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let principal = match self.states.attack.lock().await.kills().ordered_principal() {
                 Ok(Some(principal)) => principal,
                 Ok(None) => return DrainOutcome::Drained,
-                Err(()) => return DrainOutcome::Deferred,
+                Err(()) => {
+                    #[cfg(test)]
+                    eprintln!("SRV7_NATIVE_KILL_DRAIN_DEFER line={}", line!());
+                    return DrainOutcome::Deferred;
+                }
             };
             let fence = match self.current_quest_fence(principal.0).await {
                 Ok(Some(fence)) => fence,
@@ -2231,7 +2235,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .discard_gone(principal.0, None);
                     continue;
                 }
-                Err(()) => return DrainOutcome::Deferred,
+                Err(()) => {
+                    #[cfg(test)]
+                    eprintln!("SRV7_NATIVE_KILL_DRAIN_DEFER line={}", line!());
+                    return DrainOutcome::Deferred;
+                }
             };
             let taken = {
                 let attack = self.states.attack.lock().await;
@@ -2244,10 +2252,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let mut taken = match taken {
                 TakeOutcome::Empty => continue,
-                TakeOutcome::CapacityWait => return DrainOutcome::Deferred,
+                TakeOutcome::CapacityWait => {
+                    #[cfg(test)]
+                    eprintln!("SRV7_NATIVE_KILL_DRAIN_DEFER stage=capacity_wait");
+                    return DrainOutcome::Deferred;
+                }
                 TakeOutcome::Taken(taken) => taken,
             };
             let Some(entry) = taken.entry() else {
+                #[cfg(test)]
+                eprintln!("SRV7_NATIVE_KILL_DRAIN_DEFER stage=taken_entry_unavailable");
                 return DrainOutcome::Deferred;
             };
             let report = DurableKillSettle {
@@ -2266,6 +2280,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             match report.verdict {
                 SettleVerdict::Final => taken.finish(),
                 SettleVerdict::Retry => {
+                    #[cfg(test)]
+                    eprintln!("SRV7_NATIVE_KILL_DRAIN_DEFER stage=settle_retry");
                     taken.requeue();
                     return DrainOutcome::Deferred;
                 }

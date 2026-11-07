@@ -135,8 +135,18 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         force: bool,
     ) -> bool {
-        let Ok(Some(fence)) = self.current_quest_fence(session).await else {
-            return false;
+        let observed_fence = self.current_quest_fence(session).await;
+        let fence = match observed_fence {
+            Ok(Some(fence)) => fence,
+            other => {
+                #[cfg(test)]
+                eprintln!("SRV7_TIMED_CHECKPOINT_FENCE outcome={other:?}");
+                #[cfg(not(test))]
+                let _ = other;
+                #[cfg(test)]
+                eprintln!("SRV7_TIMED_CHECKPOINT_REFUSE line={}", line!());
+                return false;
+            }
         };
         let native = {
             let runtime = self.runtime.lock().await;
@@ -145,12 +155,16 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 || super::item_ref_admission::pinned_index(&runtime, self.active_generation)
                     .is_none()
             {
+                #[cfg(test)]
+                eprintln!("SRV7_TIMED_CHECKPOINT_REFUSE line={}", line!());
                 return false;
             }
             let Some(native) = self
                 .active_generation
                 .and_then(|active| active.native_gameplay())
             else {
+                #[cfg(test)]
+                eprintln!("SRV7_TIMED_CHECKPOINT_REFUSE line={}", line!());
                 return false;
             };
             native
@@ -174,7 +188,22 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             {
                 read.equipment().clone()
             }
-            _ => return false,
+            Err(error) => {
+                #[cfg(test)]
+                eprintln!("SRV7_TIMED_CHECKPOINT_EQUIPMENT error={error:?}");
+                #[cfg(not(test))]
+                let _ = error;
+                #[cfg(test)]
+                eprintln!("SRV7_TIMED_CHECKPOINT_REFUSE line={}", line!());
+                return false;
+            }
+            Ok(_) => {
+                #[cfg(test)]
+                eprintln!("SRV7_TIMED_CHECKPOINT_EQUIPMENT fence_or_content_mismatch");
+                #[cfg(test)]
+                eprintln!("SRV7_TIMED_CHECKPOINT_REFUSE line={}", line!());
+                return false;
+            }
         };
         if !self
             .checkpoint_imbuement_equipment(actor, session, fence)
@@ -198,6 +227,8 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     .install_admission_suppressions(&runtime, actor, session, Some(base))
                     .await;
             }
+            #[cfg(test)]
+            eprintln!("SRV7_TIMED_CHECKPOINT_REFUSE line={}", line!());
             return false;
         }
         let now = u64::try_from(self.clock_origin.elapsed().as_millis()).unwrap_or(u64::MAX);
@@ -206,6 +237,8 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 &equipment, native,
             )
         else {
+            #[cfg(test)]
+            eprintln!("SRV7_TIMED_CHECKPOINT_REFUSE line={}", line!());
             return false;
         };
         let mut clocks = self.states.timed_items.sessions.lock().await;
@@ -224,6 +257,8 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 && let Some((request, _)) = &lane.pending
             {
                 if !self.states.player_trades.physical(session, None) {
+                    #[cfg(test)]
+                    eprintln!("SRV7_TIMED_CHECKPOINT_REFUSE line={}", line!());
                     return false;
                 }
                 match self
@@ -263,6 +298,8 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     .read_timed_row(self.character, self.holder, fence, item.item_instance_id)
                     .await
                 else {
+                    #[cfg(test)]
+                    eprintln!("SRV7_TIMED_CHECKPOINT_REFUSE line={}", line!());
                     return false;
                 };
                 if row.is_some_and(|row| row.values.is_none()) {
@@ -347,17 +384,23 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             let Some(equipment) =
                 super::equipment_move::read_current_equipment(self, session).await
             else {
+                #[cfg(test)]
+                eprintln!("SRV7_TIMED_CHECKPOINT_REFUSE line={}", line!());
                 return false;
             };
             let Some(active) = super::equipment_move::equipment_effects_owner::equipped_mana_shield(
                 &equipment, native,
             ) else {
+                #[cfg(test)]
+                eprintln!("SRV7_TIMED_CHECKPOINT_REFUSE line={}", line!());
                 return false;
             };
             // I05: a burned dwarven ring's suppressdrunk ends with it, like the mana shield.
             let Some(effects) = super::equipment_move::equipment_effects_owner::equipment_effects(
                 &equipment, native,
             ) else {
+                #[cfg(test)]
+                eprintln!("SRV7_TIMED_CHECKPOINT_REFUSE line={}", line!());
                 return false;
             };
             active_mana_shield = active;
@@ -368,6 +411,8 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             &proficiency_equipment,
             native,
         ) else {
+            #[cfg(test)]
+            eprintln!("SRV7_TIMED_CHECKPOINT_REFUSE line={}", line!());
             return false;
         };
         let runtime = self.runtime.lock().await;
@@ -376,6 +421,8 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             .await
             .is_none()
         {
+            #[cfg(test)]
+            eprintln!("SRV7_TIMED_CHECKPOINT_REFUSE line={}", line!());
             return false;
         }
         let mut states = self.states.spell_states.lock().await;

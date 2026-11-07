@@ -110,6 +110,17 @@ pub(super) async fn death_and_replay(
         owner.drain_kill_rewards(session).await,
         DrainOutcome::Drained
     );
+    // Separate guard component proof over clones of the real retained MINT
+    // reservation. The actual successful native death/MINT above is its source;
+    // neither the private MINT context nor the real reservation is modified.
+    let mut guard_case = h.pool.begin().await?;
+    sqlx::raw_sql(sqlx::AssertSqlSafe(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../tools/content-schema/native-gameplay/tests/mint-reservation-generated-key-cases.sql"
+    ))))
+    .execute(&mut *guard_case)
+    .await?;
+    guard_case.rollback().await?;
     let body:(Vec<u8>,Vec<u8>,i64)=sqlx::query_as("SELECT uuid_send(i.item_instance_id),uuid_send(r.death_instance_id),i.quantity FROM game_item_instances i JOIN game_item_mint_receipts r USING(item_instance_id) JOIN game_item_ground g USING(item_instance_id) WHERE i.definition_production_key='oteryn:item.tibia.i43758' AND r.loot_purpose_key='CORPSE_MATERIALIZATION'")
         .fetch_one(&h.pool).await?;
     let crate::foundation::RuntimeScopeRefV1::Instance { instance_id, .. } = actor.runtime_scope()

@@ -14,7 +14,7 @@ pub struct OneItemCraftV1 {
 }
 
 #[allow(clippy::too_many_arguments)]
-pub(super) fn encode(
+pub(in crate::durability) fn encode(
     fence: CurrentCharacterItemFence,
     request: &ItemCraftRequest,
     recipe: &str,

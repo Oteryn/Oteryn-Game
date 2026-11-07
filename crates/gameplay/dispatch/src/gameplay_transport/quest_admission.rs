@@ -129,7 +129,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Result<Option<crate::durability::character_progression::CurrentCharacterGameplayFence>, ()>
     {
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let (current, _) = store.current_session_at(session).await.map_err(|_| ())?;
+        let (current, _) = store.current_session_at(session).await.map_err(|error| {
+            #[cfg(test)]
+            eprintln!("SRV7_CURRENT_QUEST_FENCE_READ stage=current_session error={error:?}");
+            #[cfg(not(test))]
+            let _ = error;
+        })?;
         if current.session_state() == crate::foundation::GameSessionState::Terminal {
             return Ok(None);
         }
@@ -140,7 +145,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .root
             .read_current_character(self.character, character_id)
             .await
-            .map_err(|_| ())?;
+            .map_err(|error| {
+                #[cfg(test)]
+                eprintln!("SRV7_CURRENT_QUEST_FENCE_READ stage=character_root error={error:?}");
+                #[cfg(not(test))]
+                let _ = error;
+            })?;
         Ok(Some(
             crate::durability::character_progression::CurrentCharacterGameplayFence {
                 character_id,

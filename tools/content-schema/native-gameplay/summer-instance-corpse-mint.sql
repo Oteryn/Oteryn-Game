@@ -24,6 +24,25 @@ BEGIN
  END LOOP;
 END $scope_columns$;
 
+-- Stored generated values are computed after BEFORE triggers. Compare every
+-- immutable input, while omitting only this DB-derived scope key (NEW is NULL
+-- here). World/Channel/Instance and every other full-cause field remain fixed.
+CREATE OR REPLACE FUNCTION game_item_mint_reservation_guard() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+ IF TG_OP='UPDATE' AND NEW.work_units_used=OLD.work_units_used+1
+ AND (to_jsonb(NEW)-'work_units_used'-'death_scope_key')
+     =(to_jsonb(OLD)-'work_units_used'-'death_scope_key') THEN
+  RETURN NEW;
+ END IF;
+ RAISE EXCEPTION 'DUR-03 item MINT reservation is immutable except its work-unit charge'
+  USING ERRCODE='23514';
+END $$;
+DO $mint_guard_path$
+BEGIN
+ EXECUTE format('ALTER FUNCTION game_item_mint_reservation_guard() SET search_path=%I,pg_temp',current_schema());
+END $mint_guard_path$;
+
 -- This context is neither client input nor a writable GUC. Only possession of
 -- the actual registered Node secret can arm its current Instance assignment.
 CREATE TABLE game_summer_instance_mint_context(

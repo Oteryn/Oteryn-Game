@@ -342,7 +342,16 @@ impl LoadedNpcCatalogue {
             .ok_or(BootError::ContentActivation("NPC catalogue content root"))?;
         let catalogue_sha256 = npc::catalogue_sha256(content)
             .map_err(|_| BootError::ContentActivation("NPC catalogue digest"))?;
-        let mut talk = NpcTalkBook::from_model(&model);
+        let programs = oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::runtime()
+            .map_err(|_| BootError::ContentActivation("NPC quest programs"))?;
+        let native_npcs = programs
+            .programs()
+            .iter()
+            .flat_map(|program| program.document.rules.iter().map(|rule| rule.npc.as_str()))
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>();
+        let mut talk = NpcTalkBook::from_model_with_native_quests(&model, &native_npcs);
         talk.bind_source_voices(catalogue, &model, |text| {
             crate::chat::ChatText::parse(text)
                 .ok()
