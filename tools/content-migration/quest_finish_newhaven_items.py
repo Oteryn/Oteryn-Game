@@ -191,6 +191,18 @@ def apply_native(root, generated, profile_path, manifest_path, provider_order, c
         if binding['target'] != definition['identity']:
             raise ValueError('NEWHAVEN_ITEM_BINDING')
         previous = indexed.get(key)
+        if previous is not None and item in CANONICAL_LOOT_ITEMS:
+            # Canonical ordinary loot may already have a richer source owner.
+            # Reuse its exact native policy instead of replacing source-derived
+            # semantics or authoring metadata with the chest projection.
+            import grizzly_shop_profiles
+            if (previous['production_binding'] != binding
+                    or not previous['admission']['materializable']
+                    or 'CharacterInventory' not in previous['admission']['legal_destinations']
+                    or grizzly_shop_profiles.known_conflict(
+                        definition['semantics'], previous['semantics'])):
+                raise ValueError(f'NEWHAVEN_NATIVE_LOOT_CONFLICT:{item}')
+            continue
         row = copy.deepcopy(previous) if previous else {
             'authoring': {'item': copy.deepcopy(definition['identity'])},
             'attributes': {'speed_bonus': 0},

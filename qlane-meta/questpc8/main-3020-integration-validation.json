@@ -1,0 +1,71 @@
+{
+  "main_head": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+  "state": "workspace check and focused units green; generation, strict Clippy and actual native PG gate pending",
+  "canonical_main_migrations": [
+    "0999_quest_reward_callbacks.sql",
+    "1000_quest_reward_payments.sql",
+    "1001_quest_reward_participants.sql",
+    "1002_quest_reward_state_operations.sql",
+    "1003_quest_reward_target_sets.sql",
+    "1004_quest_paid_item_exchanges.sql",
+    "1005_quest_carried_use_proofs.sql",
+    "1006_quest_owned_base_predicates.sql",
+    "1007_quest_carried_payment_reapplication.sql",
+    "1008_quest_carried_membership_projection.sql"
+  ],
+  "lane_migrations": [
+    "1300_questpc8_custody_and_npc_proofs.sql",
+    "1301_questpc8_reward_backpack_outputs.sql",
+    "1302_questpc8_world_reward_receipts.sql",
+    "1303_questpc8_state_operation_validation.sql",
+    "1304_questpc8_occurrence_reward_mint.sql"
+  ],
+  "old_1200_1205_files_removed": true,
+  "distinct_lane_prerequisites": "fluid/charge MINT proofs, source corpse policy, atomic eleven-track NPC receipt width, Viola and Father value proofs are absent from main SQL and occur once in lane migration1300; main0999-1008 remain byte-identical",
+  "postgres_schema_diagnostic": {
+    "marker": "POSTGRES_MIGRATION_SCHEMA_COMPLETE",
+    "duration_seconds": 3,
+    "result": "PASS",
+    "version": "PostgreSQL 18.6 (Debian 18.6-1.pgdg13+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit",
+    "scope": "fresh database, all committed SQL files plus lane migration changes; SQLx metadata table initialized; diagnostic is not a native route qualification",
+    "log": "/tmp/questpc8-3020-migration-pg2.log"
+  },
+  "duplicate_migration_guard": "PASS staged-tree check",
+  "compile": {
+    "result": "PASS",
+    "scope": [
+      "oteryn-gameplay-quests",
+      "oteryn-gameplay-npc",
+      "oteryn-gameplay-durability",
+      "oteryn-gameplay-dispatch"
+    ],
+    "all_targets": true,
+    "duration": "4m00s",
+    "log": "/tmp/questpc8-main-3020-integration-check7.log"
+  },
+  "admission_default_fix": "project declared non-minus-one initial values without writing progress; separately mark virtual tracks so storage doors still require durable rows; bounded atomic projection tests added",
+  "remaining": "finish merge generation/pins, own focused tests and native PG GREEN, workspace all-target check, strict32-crate Clippy/fmt, then one push",
+  "prevention_policy": "owner speed-first replacement: focused own mechanic and PG tests; workspace all-targets check; changed-crate strict Clippy/fmt; duplicate migrations; repo generation/pins; CI full suites",
+  "full_reverse_dependency_nextest": "STOPPED before runtime; forbidden by replacement rule",
+  "workspace_check": {
+    "result": "PASS",
+    "command": "cargo check --workspace --all-targets --keep-going",
+    "duration": "7m39s",
+    "log": "/tmp/questpc8-3020-workspace-check.log"
+  },
+  "focused_tests": {
+    "reward_callbacks": {
+      "red_failed": 7,
+      "green_passed": 21,
+      "green_seconds": 3.99
+    },
+    "admission_copy": {
+      "green_passed": 9,
+      "includes_legacy_defaults": true
+    },
+    "newhaven_item_owners": {
+      "green_passed": 11,
+      "green_seconds": 7.454
+    }
+  }
+}

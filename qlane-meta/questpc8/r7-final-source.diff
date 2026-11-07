@@ -23,11 +23,11 @@ index cd9905ca6..acd43e751 100644
  use oteryn_client_runtime::quest_log::{QuestLogQuery, QuestRefusal};
  use oteryn_client_ui::quest_log::{panel_text, tracking_query};
  use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
-diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
+diff --git a/apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql b/apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql
 new file mode 100644
 index 000000000..40a635973
 --- /dev/null
-+++ b/apps/game-server/migrations/1200_quest_finish.sql
++++ b/apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql
 @@ -0,0 +1,438 @@
 +-- QUEST-FINISH: source-resolved fluid rewards use the existing fluid state
 +-- owner and once-claim transaction, never a synthetic item or a later fill.

@@ -1,3 +1,87 @@
+# Current gates at18:10UTC: focused tests green, generation and Clippy running
+
+NEW OWNER RULE: no full reverse-dependent nextest. Only own mechanic tests
+(including real PG), cargo check --workspace --all-targets, changed-crate
+Clippy, fmt, duplicate migrations, repo generation/pins before ONE push.
+
+Main1ae39c7f merge remains in progress; local HEADc8f855844, remotee70393b99.
+No1200-1205files. Main0999-1008 byte-identical; unique lane prerequisite
+proofs in1300, other lane files1301-1304. Fresh full SQL schema PG PASS3s,
+marker complete, temp DB removed. Duplicate-number guard PASS.
+
+Workspace all-targets check PASS7m39s. Reward unit tests RED7/21 -> GREEN21
+(/tmp/questpc8-3020-reward-unit-tests2.log). Admission unit tests GREEN9,
+including after legacy-default refinement (/tmp/questpc8-3020-admission-unit-tests2.log).
+Newhaven source-owner preservation tests GREEN11/11(7.454s); existing-source
+record stays byte-identical and conflicting physical facts refuse atomically.
+Original fresh-mount assertions remain, with explicit empty provider fixture.
+
+ACTIVE generation: session99553, log/tmp/questpc8-main-3020-regenerate3.log.
+World materialization already succeeded; continuation replays world_project
+conversion, authoring tools and checks. QENGINE admission now precedes
+Newhaven and callback item admission; canonical qengine importer untouched.
+Two earlier overlap failures139(mininghelmet)/3723(white mushroom) fixed.
+Minimal reuse diagnostic GREEN. Need final45-generated-output drift check.
+
+ACTIVE Clippy32crates: session27659 (unit tests then Clippy),
+log/tmp/questpc8-3020-changed-clippy3.log. Prior runs found one needless
+borrow and two duplicate attributes, all fixed. Do not use old full44runner.
+
+NEXT: when generated inputs settle, run focused dispatch PG Winterlight,
+Venore and Father fresh11-track/legacy/value cases (5cases, no full suite),
+retaining success markers/durations. Winterlight prior native RED84.828s
+is fixed by virtual declared initials with durable-only door semantics;
+full actual native route still required. Regenerate final world pins with
+compiler CLI, run fresh Clippy/fmt/workspace check as needed, duplicate
+guard, finish merge commit with required identity/trailers, fetch+merge
+remote branch if moved, push fast-forward. Then Colours/Wrath remain;
+never end on status alone.20of23qualified; no new qualification yet.
+
+# OWNER SPEED-FIRST RULE REPLACES FULL REVERSE-DEPENDENT TEST GATE
+
+Do NOT run full reverse-dependency nextest. Before next push: own mechanic
+RED/GREEN and actually executed own PG cases; cargo check --workspace
+--all-targets; strict Clippy on32changed crates; fmt; duplicate migrations;
+repo generation/pins. CI runs full suites, owner will return one failure list.
+Finish current main1ae39c7f merge and push once when these gates pass.
+
+Current focused reward tests RED7/21: duplicate reward extension in loader,
+missing value-extension validators, clock declaration shape, and receipt-test
+fixture now requiring unrelated new-main participants. Fixed all four roots
+together; rerun /tmp/questpc8-3020-reward-unit-tests2.log session62377.
+Admission unit tests running session22606; generator session79498.
+Known admission-default native RED84.828s fixed with virtual read projection
+and durable-only storage doors. Need actual Winterlight native PG GREEN.
+
+# Main1ae39c7f integration compile PASS4m00s; generation running
+
+Second main merge is still uncommitted (MERGE_HEAD1ae39c7f). Canonical
+QENGINE2 main code retained; shared-module duplicates removed and existing
+lane extensions composed on top. Quests/NPC/durability/dispatch all-target
+check PASS4m00s. Repository regen log:
+/tmp/questpc8-main-3020-regenerate.log (session79498).
+
+Removed1200-1205. Main0999-1008 stay byte-identical. Distinct prerequisites
+absent from main are once in1300_questpc8_custody_and_npc_proofs.sql; older
+lane files shifted to1301-1304 with git mv and exact references updated.
+Fresh PostgreSQL18 schema diagnostic PASS3s, marker complete, DB removed;
+not a native route pass. Duplicate migration guard PASS. See
+main-3020-integration-validation.json.
+
+Fixed known Winterlight admission-default defect (prior native PG84.828s
+RED): bounded virtual initial projection preserves durable-only storage
+doors, existing values and atomic overflow refusal. Two unit tests added.
+Main greeting owns Miraia; chosen duplicate removed. Focused custody3,
+corpse12, starter2 tests PASS; loot2failures are old generated-main profile
+missing Queen30318, rerun after generation. Four Python conflict blocks
+resolved, py_compile PASS. No remaining source merge markers.
+
+Do not push partial work. After generation/pins, run focused Winterlight,
+then discover complete changed+reverse dependent set, full nextest with PG
+and no fail-fast, strict Clippy/fmt. Collect all failures, fix together,
+rerun full set then ONE push.20of23active entries qualified; continue
+Winterlight,Colours,Wrath, never end on status alone.
+
 # Full44-crate PostgreSQL gate launched16:59:29UTC
 
 World pin refresh PASS95e866ad15e6afe3e5919d8e29aa94b4ff6eb132ef3d20efbb4c8dbc18a6aba7.

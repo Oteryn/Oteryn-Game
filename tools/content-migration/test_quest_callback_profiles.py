@@ -40,6 +40,10 @@ class QuestCallbackProfiles(unittest.TestCase):
                                      BLOODY_TEAR, 'oteryn:item.tibia.i9388', 'oteryn:item.tibia.i2973')]
         self.generated = {PROFILE: json.dumps(self.document).encode(),
                           MANIFEST: b'{"item_profiles":{"sha256":"pending"}}'}
+        # The callback importer consumes the real upstream constructor proof.
+        import authored_static_item_constructors
+        self.generated[authored_static_item_constructors.ADMISSIONS] = (
+            ROOT / authored_static_item_constructors.ADMISSIONS).read_bytes()
 
     def admit(self):
         (self.root / 'content/quests/world-callbacks.json').write_text(json.dumps(self.callbacks))
@@ -225,6 +229,7 @@ class QuestCallbackProfiles(unittest.TestCase):
         # Complete charged/fluid/key/text recipes add thirty identities to the
         # original 130-Item closure, including the fixed Holy Icon entitlement.
         self.assertEqual(len(expected), 160)
+        self.assertTrue({f'oteryn:item.tibia.i{item}' for item in (2859, 2949, 3053, 3083)} <= expected)
         for key in expected:
             row = rows[key]
             self.assertTrue(row['admission']['materializable'], key)

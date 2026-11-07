@@ -288,7 +288,7 @@ mod tests {
     #[test]
     fn overlay_admits_all_three_bags_with_canary_weights() {
         let bags = reward_bags().expect("overlay parses");
-        assert_eq!(bags.len(), 27);
+        assert_eq!(bags.len(), 28);
         for (bag, (constant, key, count, total)) in bags.iter().zip([
             ("BAG_YOU_DESIRE", "oteryn:item.tibia.i34109", 21, 81_000),
             ("PRIMAL_BAG", "oteryn:item.tibia.i39546", 14, 54_000),
@@ -300,6 +300,39 @@ mod tests {
             assert_eq!(bag.rewards.iter().map(|r| r.weight).sum::<u64>(), total);
             assert!(bag.rewards.iter().all(|r| r.weight > 0));
         }
+    }
+
+    #[test]
+    fn gnomish_supply_preserves_original_rare_intervals() -> Result<(), String> {
+        let bag = reward_bags()
+            .ok_or("catalogue")?
+            .iter()
+            .find(|b| b.bag == "oteryn:item.tibia.i15698")
+            .ok_or("supply package")?;
+        assert_eq!(bag.roll_max, Some(10001));
+        assert_eq!(bag.rewards.len(), 25);
+        assert_eq!(bag.rewards.iter().map(|r| r.weight).sum::<u64>(), 10001);
+        for roll in [9636, 9746] {
+            assert_eq!(
+                select_reward(&bag.rewards, roll).ok_or("CA2")?.item,
+                "oteryn:item.tibia.i16257"
+            );
+        }
+        for roll in [9747, 9835] {
+            assert_eq!(
+                select_reward(&bag.rewards, roll).ok_or("MA2")?.item,
+                "oteryn:item.tibia.i16254"
+            );
+        }
+        assert_ne!(
+            select_reward(&bag.rewards, 9635).ok_or("before")?.item,
+            "oteryn:item.tibia.i16257"
+        );
+        assert_ne!(
+            select_reward(&bag.rewards, 9836).ok_or("after")?.item,
+            "oteryn:item.tibia.i16254"
+        );
+        Ok(())
     }
 
     #[test]

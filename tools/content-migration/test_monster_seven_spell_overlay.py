@@ -34,8 +34,9 @@ class AcceptedOverlayTests(unittest.TestCase):
     def test_registration_replays_all_current_outputs(self):
         actual=registration.outputs(ROOT)
         # Includes the exact first-party static-constructor admission packet.
-        self.assertEqual(len(actual),44)
+        self.assertEqual(len(actual),45)
         self.assertIn('content/items/authored-static-admissions.json',actual)
+        self.assertIn('tools/content-schema/native-gameplay/qengine-reward-item-profiles.json',actual)
         self.assertIn('content/items/definitions/srx1-item-updates.json',actual)
         self.assertIn('content/items/definitions/starting-loadout-profiles.json',actual)
         self.assertIn('content/cosmetics/outfits/native-cosmetics.json',actual)

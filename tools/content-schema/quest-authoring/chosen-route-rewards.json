@@ -892,15 +892,6 @@
       ]
     },
     {
-      "npc": "oteryn:npc.miraia",
-      "greet": "Greetings, |PLAYERNAME|. Ask about your trading mission.",
-      "farewell": "Farewell.",
-      "walkaway": "Farewell.",
-      "sources": [
-        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/miraia.lua"
-      ]
-    },
-    {
       "npc": "oteryn:npc.rashid",
       "greet": "Greetings, |PLAYERNAME|. Ask about your trading mission.",
       "farewell": "Farewell.",

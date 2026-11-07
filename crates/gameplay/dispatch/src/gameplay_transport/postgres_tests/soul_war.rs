@@ -375,8 +375,7 @@ fn scenario() -> TestResult {
             completes: false,
             premium_required: false, monk_reward: None, present: Vec::new(), required_travel: Vec::new(), offerings: vec![], item_on_target: None,
             return_on_failure: false, failure_message: None, success_message: None,
-            native_rule: None,
-                effects: Default::default(), sources: vec![],
+            native_rule: None, effects: Default::default(), sources: vec![],
         }, trigger)?;
         let h = Harness::create_with_admission_seed(admin, "soul_war_durable", false, false).await?;
         prepare_current_session(&h).await?;

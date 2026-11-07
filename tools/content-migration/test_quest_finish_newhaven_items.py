@@ -73,6 +73,11 @@ class NewhavenItemTests(unittest.TestCase):
         profiles = 'content/items/definitions/spell-native-profiles.json'
         manifest = 'content/spells.manifest.json'
         generated = {path: (root / path).read_bytes() for path in (profiles, manifest)}
+        # Exercise a fresh mount; the existing-owner case below separately
+        # requires byte-identical preservation of its richer source facts.
+        document = json.loads(generated[profiles])
+        document['records'] = []
+        generated[profiles] = json.dumps(document).encode()
         newhaven.apply_native(root, generated, profiles, manifest,
             lambda row: row['production_definition']['production_key'],
             lambda value: (json.dumps(value) + '\n').encode())
@@ -134,6 +139,30 @@ class NewhavenItemTests(unittest.TestCase):
         self.assertEqual(definition['semantics']['protection'], {'custom': 'preserve'})
         self.assertEqual(definition['stack_class'], 'NonStackable')
         self.assertTrue(definition['materializable'])
+
+    def test_existing_ordinary_loot_owner_is_preserved_and_conflicts_refuse_atomically(self):
+        root = Path(__file__).resolve().parents[2]
+        profiles = 'content/items/definitions/spell-native-profiles.json'
+        manifest = 'content/spells.manifest.json'
+        planned = {path: (root / path).read_bytes() for path in (profiles, manifest)}
+        key = 'oteryn:item.tibia.i3723'
+        before = next(row for row in json.loads(planned[profiles])['records']
+                      if row['production_definition']['production_key'] == key)
+        order = lambda row: row['production_definition']['production_key']
+        canonical = lambda value: json.dumps(value).encode()
+        newhaven.apply_native(root, planned, profiles, manifest, order, canonical)
+        after = next(row for row in json.loads(planned[profiles])['records']
+                     if row['production_definition']['production_key'] == key)
+        self.assertEqual(after, before)
+        corrupt = json.loads(planned[profiles])
+        row = next(row for row in corrupt['records']
+                   if row['production_definition']['production_key'] == key)
+        row['semantics']['physical']['value']['weight']['value'] += 1
+        planned[profiles] = canonical(corrupt)
+        untouched = dict(planned)
+        with self.assertRaisesRegex(ValueError, 'NEWHAVEN_NATIVE_LOOT_CONFLICT'):
+            newhaven.apply_native(root, planned, profiles, manifest, order, canonical)
+        self.assertEqual(planned, untouched)
 
 
 if __name__ == '__main__':

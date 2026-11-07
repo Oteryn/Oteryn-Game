@@ -24,13 +24,13 @@ apps/game-server/migrations/0136_character_tutorial.sql:55:CREATE TABLE game_tut
 apps/game-server/migrations/0136_character_tutorial.sql:64:REVOKE ALL ON game_tutorial_corruptor_claims FROM PUBLIC;
 apps/game-server/migrations/0136_character_tutorial.sql:65:GRANT SELECT, INSERT ON game_tutorial_corruptor_claims TO oteryn_game_runtime;
 tools/content-migration/stage_monster_optional_documents.py:119:    inputs = config['read_only_inputs']
-apps/game-server/migrations/1200_quest_finish.sql:92:        SELECT fluid_subtype,last_transaction_id INTO actual,actual_transaction
-apps/game-server/migrations/1200_quest_finish.sql:111:        NEW.item_instance_id,NEW.world_id,NEW.last_transaction_id,NEW.fluid_subtype)
-apps/game-server/migrations/1200_quest_finish.sql:146:           OR NOT entry ?& ARRAY['ordinal','charges_remaining']
-apps/game-server/migrations/1200_quest_finish.sql:149:           OR jsonb_typeof(entry->'charges_remaining')<>'number'
-apps/game-server/migrations/1200_quest_finish.sql:150:           OR (entry->>'charges_remaining')::NUMERIC<>1 THEN RETURN FALSE; END IF;
-apps/game-server/migrations/1200_quest_finish.sql:187:          AND p_charges=1 AND (f->>'charges_remaining')::INTEGER=p_charges
-apps/game-server/migrations/1200_quest_finish.sql:213:        SELECT (f->>'charges_remaining')::INTEGER INTO expected
+apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql:92:        SELECT fluid_subtype,last_transaction_id INTO actual,actual_transaction
+apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql:111:        NEW.item_instance_id,NEW.world_id,NEW.last_transaction_id,NEW.fluid_subtype)
+apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql:146:           OR NOT entry ?& ARRAY['ordinal','charges_remaining']
+apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql:149:           OR jsonb_typeof(entry->'charges_remaining')<>'number'
+apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql:150:           OR (entry->>'charges_remaining')::NUMERIC<>1 THEN RETURN FALSE; END IF;
+apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql:187:          AND p_charges=1 AND (f->>'charges_remaining')::INTEGER=p_charges
+apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql:213:        SELECT (f->>'charges_remaining')::INTEGER INTO expected
 tools/repository/test_validate_game_atlas_semantic_search_triggers.py:504:def _assert_read_only_permissions(workflow: str) -> None:
 tools/repository/test_validate_game_atlas_semantic_search_triggers.py:699:    _assert_read_only_permissions(semantic)
 tools/repository/test_validate_game_atlas_semantic_search_triggers.py:700:    _assert_read_only_permissions(static)

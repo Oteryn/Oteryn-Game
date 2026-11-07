@@ -851,6 +851,9 @@
     },
     {
       "path": "rulesets/progression/wheel-of-destiny/spell-profile.json"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
     }
   ],
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -1007,7 +1010,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3748,
+          "record_count": 3792,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1015,7 +1018,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "76136fa2b24f22191ee38a24bb9050e5facba8d4ec0d16013083b73e2c7edabc"
+          "sha256": "d17b3bfc27d2848c306293196f5f1f8bc1b1d7762253febe2f7646d816ced5f7"
         },
         {
           "creates_canonical_identities": false,

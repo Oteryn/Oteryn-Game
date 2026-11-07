@@ -60,10 +60,10 @@
     }
   },
   "lane_migrations": [
-    "apps/game-server/migrations/1300_questpc8_reward_backpack_outputs.sql",
-    "apps/game-server/migrations/1301_questpc8_world_reward_receipts.sql",
-    "apps/game-server/migrations/1302_questpc8_state_operation_validation.sql",
-    "apps/game-server/migrations/1303_questpc8_occurrence_reward_mint.sql"
+    "apps/game-server/migrations/1301_questpc8_reward_backpack_outputs.sql",
+    "apps/game-server/migrations/1302_questpc8_world_reward_receipts.sql",
+    "apps/game-server/migrations/1303_questpc8_state_operation_validation.sql",
+    "apps/game-server/migrations/1304_questpc8_occurrence_reward_mint.sql"
   ],
   "input_sha256": {
     "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc8_venore.rs": "aa735a37e527c84e4db1774ceacc0101158df3fb00580719ba31c13245793052",
@@ -72,6 +72,6 @@
     "tools/content-schema/native-gameplay/quest-corpse-objectives.json": "414041e01e1a599e5f4ef980dd82056c916037329ce614f73f583875a532e028",
     "tools/content-schema/native-gameplay/loot-tables.json": "70f129e25f585bb4428781dc827c399684e01464a01d79196c2940d6928e11a8",
     "content/items/definitions/spell-native-profiles.json": "f2be0c3fc138cfc3a17b43585c347e3d4d0a0409a21a3083305f285d6c3e8955",
-    "apps/game-server/migrations/1303_questpc8_occurrence_reward_mint.sql": "c79752de099590d21afb9ae783e47cb9adf804bcf7663bd715af2a245c31fc37"
+    "apps/game-server/migrations/1304_questpc8_occurrence_reward_mint.sql": "c79752de099590d21afb9ae783e47cb9adf804bcf7663bd715af2a245c31fc37"
   }
 }

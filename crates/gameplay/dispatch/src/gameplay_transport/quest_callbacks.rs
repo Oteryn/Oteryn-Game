@@ -600,9 +600,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .collect::<Vec<_>>();
         // Overlapping eligible stages still refuse; registration order is never authority.
         if selected.is_empty() {
-            return self
-                .step_daily_world_gate(permit, actor, session, origin, entered)
-                .await;
+            if trigger == Trigger::StepIn {
+                return self
+                    .step_daily_world_gate(permit, actor, session, origin, entered)
+                    .await;
+            }
+            return entered;
         }
         let selected_pair = if let [pair] = selected.as_slice() {
             *pair

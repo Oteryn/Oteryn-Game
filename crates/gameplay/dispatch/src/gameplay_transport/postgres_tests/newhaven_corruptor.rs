@@ -697,7 +697,7 @@ async fn qualify_lifecycle(
     corpse: [u8; 16],
 ) -> TestResult {
     sqlx::raw_sql(sqlx::AssertSqlSafe(
-        include_str!("../../../../../../apps/game-server/migrations/1201_corruptor_lifecycle.sql")
+        include_str!("../../../../../../apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql")
             .to_owned(),
     ))
     .execute(&h.pool)

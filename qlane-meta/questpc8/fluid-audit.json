@@ -7,7 +7,7 @@
     "apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs": "0c6edd25c9dd1692c0b87220f75b6e22bcb935e049ea33b3f695ad0d7ff891a0",
     "crates/gameplay/durability/src/durability/reward_claim_mint.rs": "dc8b35af6ed2d04b9225398dc7acc44d3c43555d21cd3d185757fcf123f5173e",
     "crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs": "d003e122f9b52822c3a94c81b44ff1aa77aef230ff98d9d6433143f57f6e195e",
-    "apps/game-server/migrations/1200_quest_finish.sql": "17b2492031a0e6bccae2e6a7945cdc984c00771a1c652c1b036b60024a215493"
+    "apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql": "17b2492031a0e6bccae2e6a7945cdc984c00771a1c652c1b036b60024a215493"
   },
   "findings": [],
   "static_review": {

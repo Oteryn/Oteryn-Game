@@ -1,5 +1,5 @@
 {
-  "state": "full 44-crate PostgreSQL run launched; awaiting final strict-check Cargo lock",
+  "state": "superseded by owner speed-first rule; full reverse-dependency runtime run was never started",
   "main_head": "bbb3e06d04875fc1e63f024b853194f7580cc875",
   "lane_source_head": "e70393b99336f248cb49614d7b707d1a82ca80ee",
   "changed_crates": [
@@ -94,7 +94,7 @@
       "log_sha256": "14ea4146a0081e5576868e8c896dfea8077a7becbc909c41a7b39c1d4961f2c8"
     }
   ],
-  "push_policy": "Complete full reverse-dependency run, collect all failures, fix together, rerun full set, then one push. Automatic push reminder superseded per owner correction.",
+  "push_policy": "Owner replacement: own mechanic red/green tests and executed PG; cargo check --workspace --all-targets; changed-crate strict Clippy; fmt; duplicate migrations; regenerated files/pins. CI owns full suites.",
   "generation_integration": {
     "resolved": [
       "new Callback fields on Schrodinger constructor",
@@ -118,7 +118,7 @@
     "postgres_fixture_enabled": true,
     "fail_fast": false,
     "log": "/tmp/questpc8-full-dependent-nextest.log",
-    "result": "RUNNING"
+    "result": "CANCELED_BEFORE_RUNTIME for owner-mandated main3020 merge; do not resume under new speed-first rule"
   },
   "world_pin": {
     "result": "PASS",

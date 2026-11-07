@@ -43,18 +43,18 @@
     }
   ],
   "qbase_migrations": [
-    "apps/game-server/migrations/1200_quest_finish.sql",
-    "apps/game-server/migrations/1201_corruptor_lifecycle.sql",
-    "apps/game-server/migrations/1202_questpc_npc_revision.sql",
-    "apps/game-server/migrations/1203_questpc_viola.sql",
-    "apps/game-server/migrations/1204_questpc_viola_book.sql",
-    "apps/game-server/migrations/1205_fathers_burden_items.sql"
+    "apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql",
+    "apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql",
+    "apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql",
+    "apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql",
+    "apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql",
+    "apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql"
   ],
   "lane_migrations": [
-    "apps/game-server/migrations/1300_questpc8_reward_backpack_outputs.sql",
-    "apps/game-server/migrations/1301_questpc8_world_reward_receipts.sql",
-    "apps/game-server/migrations/1302_questpc8_state_operation_validation.sql",
-    "apps/game-server/migrations/1303_questpc8_occurrence_reward_mint.sql"
+    "apps/game-server/migrations/1301_questpc8_reward_backpack_outputs.sql",
+    "apps/game-server/migrations/1302_questpc8_world_reward_receipts.sql",
+    "apps/game-server/migrations/1303_questpc8_state_operation_validation.sql",
+    "apps/game-server/migrations/1304_questpc8_occurrence_reward_mint.sql"
   ],
   "duplicate_numbers": [],
   "validation_state": "PASS: canonical coordinator numbering, all8shared migrations byte-identical to current QENGINE2, all4lane migrations initialized on PostgreSQL, final strict/generated/pin checks pass.",
@@ -134,7 +134,7 @@
     }
   },
   "supplement_1303": {
-    "path": "apps/game-server/migrations/1303_questpc8_occurrence_reward_mint.sql",
+    "path": "apps/game-server/migrations/1304_questpc8_occurrence_reward_mint.sql",
     "sha256": "c79752de099590d21afb9ae783e47cb9adf804bcf7663bd715af2a245c31fc37",
     "state": "PASS: initialized full native PostgreSQL113.890788027s, exact occurrence/no-op/replay guards; final strict/default/generated/pin checks pass."
   },

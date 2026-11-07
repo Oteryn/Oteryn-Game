@@ -1563,10 +1563,10 @@
     },
     "round": "L7",
     "active_validation": {
-      "main_merge": "bbb3e06d0; source resolved, generated integration in progress",
-      "full_reverse_dependency_gate": "44-crate compile PASS16m31s; full PG run launched2026-11-07T16:59:29Z, pending result",
-      "known_red": "native PostgreSQL 84.828575874s: declared initial stage absent from admission copy",
-      "proof": "reverse-dependency-validation.json"
+      "main_merge": "1ae39c7f integration all-target check PASS4m00s; generation running",
+      "known_red_fixed": "prior native PG84.828575874s initial-stage absence; virtual initial read view now preserves durable-only door proof",
+      "full_reverse_dependency_gate": "recompute after generation; prior44-package run was interrupted before runtime for owner-mandated new main merge",
+      "proof": "main-3020-integration-validation.json"
     }
   },
   {
