@@ -34,8 +34,8 @@ pub async fn require(
 
 impl DurabilityRoot {
     /// Stateless entry callbacks use the same current Character/node/map/reset proof
-    /// as a value-bearing quest callback. This reads no personal quest progress and
-    /// creates no quest receipt. The caller retains its permit and rechecks the local
+    /// as a value-bearing quest callback. Hive gates additionally observe the
+    /// QuestState-owned scent timestamp; this creates no quest receipt. The caller retains its permit and rechecks the local
     /// actor/object CAS before applying the prepared movement.
     #[allow(
         clippy::too_many_arguments,
@@ -73,6 +73,14 @@ impl DurabilityRoot {
                         .is_err()
                         || !context_facts_are_current(&mut tx, fence, &context).await?
                         || !require(&mut tx, world_id, context.reset_epoch, &callback).await?
+                        || !hive_gate_permitted(
+                            &mut tx,
+                            world_id,
+                            context.reset_epoch,
+                            fence.character_id,
+                            &callback,
+                        )
+                        .await?
                     {
                         return Ok(false);
                     }
@@ -82,4 +90,39 @@ impl DurabilityRoot {
             })
             .await
     }
+}
+
+/// The existing QuestState timestamp is a Character permit, never a World-stage counter.
+pub async fn hive_gate_permitted(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+    epoch: u64,
+    character: crate::domain::CharacterId,
+    callback: &str,
+) -> Result<bool, DurabilityError> {
+    use oteryn_gameplay_quests::quest::hive_access;
+    if hive_access::exit_gate(callback).is_some() {
+        // The enclosing observer still proves Character/node/map/content/reset.
+        // Loading the current World here also refuses a missing/retired epoch.
+        return Ok(super::load(tx, world, epoch).await?.is_some());
+    }
+    let Some(gate) = hive_access::gate(callback) else {
+        return Ok(true);
+    };
+    let Some(day) = super::load(tx, world, epoch).await? else {
+        return Ok(false);
+    };
+    if day.counter_stages[oteryn_gameplay_world_change::counter::CounterKind::HiveBorn.index()]
+        < gate.minimum_stage
+    {
+        return Ok(false);
+    }
+    let purchased:Option<i64>=sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND quest_key=$3")
+        .bind(character.as_bytes().as_slice()).bind(hive_access::PURCHASED).bind(oteryn_gameplay_quests::quest::shared_world_progress::HIVE_QUEST)
+        .fetch_optional(&mut **tx).await?;
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&mut **tx)
+            .await?;
+    Ok(purchased.is_some_and(|purchased| hive_access::permit_valid(purchased, now)))
 }

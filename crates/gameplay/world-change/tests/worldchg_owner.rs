@@ -72,7 +72,7 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
             assert!(!is_active(&all, key), "{key}");
         }
     }
-    assert_eq!((ready, qualified), (4, 6));
+    assert_eq!((ready, qualified), (0, 12));
     assert_eq!(entries.len(), 43);
     for key in [
         "river_runs_deep",
@@ -277,4 +277,52 @@ fn worldchg_phase_query_keeps_unselected_voice_inactive() {
     let mut selected = day;
     selected.their_masters_voice = true;
     assert!(is_active(&selected, "their_masters_voice@1"));
+}
+
+#[test]
+fn worldchg_final_six_native_bindings_qualify_only_their_current_world_state()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_gameplay_world_change::{
+        counter::CounterKind as K,
+        daily::DailyWorldChanges,
+        owner::{CATALOGUE_JSON, counter_admitted, is_active},
+    };
+    let catalogue: serde_json::Value = serde_json::from_str(CATALOGUE_JSON)?;
+    let selected = DailyWorldChanges::roll(700, 6, 13, |_| 0);
+    let inactive = DailyWorldChanges::roll(701, 1, 1, |_| u64::MAX);
+    for key in [
+        "deeplings",
+        "hive_born",
+        "grimvale",
+        "oriental_trader",
+        "thawing",
+        "their_masters_voice",
+    ] {
+        let entry = catalogue["entries"]
+            .as_array()
+            .ok_or("entries")?
+            .iter()
+            .find(|entry| entry["key"] == key)
+            .ok_or("native binding")?;
+        assert_eq!(entry["status"], "QUALIFIED", "{key}");
+        assert!(entry.get("missing_facts").is_none(), "{key}");
+        assert!(is_active(&selected, key), "selected {key}");
+    }
+    for key in [
+        "grimvale",
+        "oriental_trader",
+        "thawing",
+        "their_masters_voice",
+    ] {
+        assert!(!is_active(&inactive, key), "unselected {key}");
+    }
+    for kind in [K::Deeplings, K::HiveBorn, K::TheirMastersVoice] {
+        assert!(counter_admitted(kind));
+        let mut completed = selected;
+        completed.counter_stages[kind.index()] = 4;
+        assert!(!is_active(&completed, &format!("{}@3", kind.key())));
+        completed.world_counters = false;
+        assert!(!is_active(&completed, &format!("{}@1", kind.key())));
+    }
+    Ok(())
 }

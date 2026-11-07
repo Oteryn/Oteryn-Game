@@ -133,6 +133,9 @@ struct Document {
 /// Shared World prerequisites for exact native source callbacks. Ordinary quest
 /// travel and exits remain independent of these event-only predicates.
 pub fn world_change_requirement(key: &str) -> Option<(&'static str, Option<u8>)> {
+    if super::hive_access::gate(key).is_some() {
+        return Some(("hive_born", None));
+    }
     match key {
         "oteryn:quest-callback/fire-feathered-native-darkness"
         | "oteryn:quest-callback/fire-feathered-native-life"
@@ -159,6 +162,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     }
     callbacks.extend(super::fire_feathered_native::callbacks());
     callbacks.extend(super::shared_world_progress::callbacks());
+    callbacks.extend(super::hive_access::callbacks());
     callbacks.push(super::rotten_blood::altar_callback());
     callbacks.push(super::schrodinger_island::callback());
     callbacks.extend(super::deepling_boss_access::callbacks(&callbacks)?);

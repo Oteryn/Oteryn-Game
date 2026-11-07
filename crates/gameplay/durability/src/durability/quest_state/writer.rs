@@ -601,6 +601,18 @@ impl DurabilityRoot {
                         && !super::super::world_event::changes::counters::benevola::consume(
                             &mut tx, permit, &recovery, &node, fence, &request, handover).await?
                     { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
+                    if request.transition_key==oteryn_gameplay_quests::quest::hive_access::BUY {
+                        let world=fence.runtime_scope.world_id();
+                        let epoch:Option<String>=sqlx::query_scalar("SELECT reset_epoch::text FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid")
+                            .bind(world.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
+                        let day=if let Some(epoch)=epoch {
+                            super::super::world_event::changes::load(&mut tx,world,epoch.parse().map_err(|_|DurabilityError::InvalidStoredState)?).await?
+                        }else{None};
+                        if day.is_none_or(|day| !oteryn_gameplay_world_change::owner::is_active(&day,"hive_born")
+                            || day.counter_stages[oteryn_gameplay_world_change::counter::CounterKind::HiveBorn.index()]<2) {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                    }
                     if oteryn_gameplay_quests::quest::shared_world_progress::binding(&request.transition_key).is_some() || oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key).is_some() {
                         // Native object/NPC selection and the locked complete quest plan
                         // precede shared credit. Refusal drops all input and quest writes.

@@ -113,10 +113,7 @@ pub fn counter_admitted(kind: crate::counter::CounterKind) -> bool {
             .as_array()
             .into_iter()
             .flatten()
-            .filter(|entry| {
-                entry["status"] == "QUALIFIED"
-                    || (entry["status"] == "READY" && entry["key"] == "their_masters_voice")
-            })
+            .filter(|entry| entry["status"] == "QUALIFIED")
             .filter_map(|entry| entry["key"].as_str().map(str::to_owned))
             .collect()
     })

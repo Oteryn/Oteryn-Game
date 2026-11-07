@@ -21,6 +21,18 @@ pub(super) fn prepare(
                 return None;
             }
             let text = intent.text.trim().to_ascii_lowercase();
+            if matches!(
+                text.as_str(),
+                "pheromone" | "pheromones" | "pheronome" | "permit"
+            ) {
+                let enough = tracks
+                    .get(oteryn_gameplay_quests::quest::hive_access::FAVOUR)
+                    .copied()
+                    .unwrap_or(0)
+                    >= 50;
+                return Some(Choice {transition:enough.then(||oteryn_gameplay_quests::quest::hive_access::BUY.into()),next_topic:None,
+                    reply:vec![if enough {"For fifty Favour Points, your scent will let you pass the open Hive gates for seven days."} else {"Complete missions to earn fifty Favour Points before buying the seven-day scent."}.into()]});
+            }
             let labels = [
                 "antenna",
                 "digestion",

@@ -164,12 +164,29 @@ pub fn completed_action(key: &str, changes: &[QuestTrackChange]) -> Option<Share
         _ => true,
     };
     let length = match binding.action {
-        SharedAction::HiveTask(2) => 3,
-        SharedAction::HiveTask(_) => 2,
+        SharedAction::HiveTask(2) => 4,
+        SharedAction::HiveTask(_) => 3,
         _ => 1,
     };
-    (main && active && changes.len() == length && (!compound || hatchlings))
-        .then_some(binding.action)
+    (main
+        && active
+        && changes.len() == length
+        && (!compound || hatchlings)
+        && match binding.action {
+            SharedAction::HiveTask(task) => {
+                changes
+                    .iter()
+                    .filter(|change| {
+                        change.track == super::hive_access::FAVOUR
+                            && change.after.checked_sub(change.before)
+                                == Some(super::hive_access::favour_reward(task))
+                    })
+                    .count()
+                    == 1
+            }
+            _ => true,
+        })
+    .then_some(binding.action)
 }
 
 pub const HIVE_QUEST: &str = "oteryn:quest.hive_native_shared";
@@ -399,6 +416,50 @@ pub fn extend(catalogue: super::QuestStateCatalogue) -> Result<super::QuestState
             max: 0,
         },
     );
+    for (key, maximum) in [
+        (super::hive_access::FAVOUR, i64::MAX),
+        (super::hive_access::PURCHASED, i64::MAX),
+    ] {
+        tracks.insert(
+            key.into(),
+            QuestTrack {
+                key: key.into(),
+                quest: HIVE_QUEST.into(),
+                initial: 0,
+                min: 0,
+                max: maximum,
+            },
+        );
+    }
+    for (task, binding) in BINDINGS.iter().take(6).enumerate() {
+        let transition = transitions.get_mut(binding.key).ok_or("Hive turn-in")?;
+        transition.effects.push(QuestEffect {
+            track: super::hive_access::FAVOUR.into(),
+            from: QuestComparison::Any,
+            effect: QuestEffectKind::Add(super::hive_access::favour_reward(task as u8)),
+        });
+    }
+    transitions.insert(
+        super::hive_access::BUY.into(),
+        QuestTransition {
+            key: super::hive_access::BUY.into(),
+            quest: HIVE_QUEST.into(),
+            effects: vec![
+                QuestEffect {
+                    track: super::hive_access::FAVOUR.into(),
+                    from: QuestComparison::Ge(50),
+                    effect: QuestEffectKind::Add(-50),
+                },
+                QuestEffect {
+                    track: super::hive_access::PURCHASED.into(),
+                    from: QuestComparison::Any,
+                    effect: QuestEffectKind::SetNow,
+                },
+            ],
+            completes: false,
+            experience: None,
+        },
+    );
     super::QuestStateCatalogue::new(
         catalogue.content_revision,
         tracks.into_values().collect(),
@@ -441,6 +502,13 @@ mod tests {
                     track: HATCHLINGS_TRACK.into(),
                     before: 8,
                     after: 0,
+                });
+            }
+            if let SharedAction::HiveTask(task) = source.action {
+                changes.push(QuestTrackChange {
+                    track: super::super::hive_access::FAVOUR.into(),
+                    before: 0,
+                    after: super::super::hive_access::favour_reward(task),
                 });
             }
             assert_eq!(completed_action(source.key, &changes), Some(source.action));

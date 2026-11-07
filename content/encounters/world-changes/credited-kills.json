@@ -10,7 +10,8 @@
     "deer_kills": "Native binding:1000 deer kills per save; source explicitly leaves numeric threshold unknown.",
     "wolf_recovery": "Native binding:100 weighted recovery credits per save;1 trapped-wolf return equals10 kills, as sourced.",
     "geometry": "Explicit native bounded eligibility regions. Seacrest Grounds uses retained discovery_geometry.lua:1307. Demon and Mage bounds cover the retained native populations with eight-cell margins. Goroma volcano footprint and Overhunting hunting region are native-authored bindings rather than claimed donor polygons.",
-    "spawn_composition": "Native phase composition over bounded existing source points: Demon faction strength replaces the same points by prince/lord/base/lord/prince; Seacrest Grounds aquatic population becomes Seacrest Serpents then Renegade Quara; Hive stage-two admits Kollos/Spidris and stage-three admits Elite. These point-to-phase assignments are explicit native authoring, not a claim that donor inventory encoded stage membership. Existing source delays/caps remain owned by Spawn."
+    "spawn_composition": "Native phase composition over bounded existing source points: Demon faction strength replaces the same points by prince/lord/base/lord/prince; Seacrest Grounds aquatic population becomes Seacrest Serpents then Renegade Quara; Hive stage-two admits Kollos/Spidris and stage-three admits Elite. These point-to-phase assignments are explicit native authoring, not a claim that donor inventory encoded stage membership. Existing source delays/caps remain owned by Spawn.",
+    "deepling_stage_two_composition": "CHOSEN_NATIVE: completing either shared coral path or stair path marks stage-two completion for the next save. Retained donors establish personal Crystal 9-13, not the shared OR/AND predicate; no donor composition is claimed."
   },
   "definitions": [
     {

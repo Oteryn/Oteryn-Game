@@ -1,7 +1,7 @@
 {
   "schema": "OTERYN_WORLD_CHANGE_OWNER_CATALOGUE/v1",
   "owner": "world_event::changes; existing WorldReset finalization",
-  "selection": "Existing daily owner selects four READY candidates and the QUALIFIED Stampede binding. HELD entries remain excluded even when their accepted chances/thresholds are known.",
+  "selection": "The existing server-save owner selects daily candidates. Qualified counter bindings project current World phases; transferred HELD titles remain excluded.",
   "entries": [
     {
       "key": "awash",
@@ -226,7 +226,7 @@
       "key": "deeplings",
       "title": "Deeplings World Change",
       "quest": "oteryn:quest.deeplings_worldchange",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00100-00199.json",
@@ -243,6 +243,10 @@
         {
           "path": "content/encounters/world-changes/credited-kills.json",
           "locator": "deeplings; source mechanics and explicit native geometry/parameters"
+        },
+        {
+          "path": "crates/gameplay/quests/src/quest/deepling_boss_access.rs",
+          "locator": "WORLDCHG-Q native execution; focused unit and PostgreSQL proof in review report"
         }
       ],
       "source_refs": [
@@ -263,13 +267,11 @@
           "url": "https://tibia.fandom.com/index.php?curid=56900&oldid=501316"
         }
       ],
-      "reason": "Individual boss gates exist, but shared stage accumulation, stage-save transition and map/spawn stage membership are not established.",
-      "missing_facts": [
-        "Individual boss gates exist, but shared stage accumulation, stage-save transition and map/spawn stage membership are not established."
-      ],
+      "reason": "Heart/net shared progress, save transitions, explicit native coral-OR-stair completion and phase-three boss access preserving personal Crystal 13.",
       "binding": {
         "counter_key": "deeplings",
-        "counter_bindings": "content/encounters/world-changes/credited-kills.json"
+        "counter_bindings": "content/encounters/world-changes/credited-kills.json",
+        "native_callbacks": "crates/gameplay/quests/src/quest/deepling_boss_access.rs"
       }
     },
     {
@@ -560,7 +562,7 @@
       "key": "grimvale",
       "title": "Grimvale Mini World Change",
       "quest": "oteryn:quest.grimvale_mini_world_change",
-      "status": "READY",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00100-00199.json",
@@ -573,6 +575,10 @@
         {
           "path": "crates/gameplay/world-change/src/daily.rs",
           "locator": "daily.rs:grimvale_respawn_event.lua:3; native spawn substitutions"
+        },
+        {
+          "path": "content/quests/world-callbacks.json",
+          "locator": "WORLDCHG-Q native execution; focused unit and PostgreSQL proof in review report"
         }
       ],
       "source_refs": [
@@ -593,7 +599,7 @@
           "url": "https://tibia.fandom.com/index.php?curid=76239&oldid=1102848"
         }
       ],
-      "reason": "Existing daily physical activation reused; READY qualifies the active-state gate only, not quest rewards or completion.",
+      "reason": "Current monthly selection plus the existing XML Feroxa final wave opens the exact native portal; stateless entry rechecks the current World and source.",
       "trigger": {
         "kind": "calendar",
         "day": 13
@@ -601,14 +607,14 @@
       "binding": {
         "kind": "raid",
         "raid_key": "raid:edron.feroxa",
-        "native_callbacks": "WORLDCHG-Q scoped native callbacks"
+        "native_callbacks": "content/quests/world-callbacks.json"
       }
     },
     {
       "key": "hive_born",
       "title": "Hive Born World Change",
       "quest": "oteryn:quest.authored.hive_born_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -625,6 +631,10 @@
         {
           "path": "content/encounters/world-changes/credited-kills.json",
           "locator": "hive_born; source mechanics and explicit native geometry/parameters"
+        },
+        {
+          "path": "crates/gameplay/quests/src/quest/hive_access.rs",
+          "locator": "WORLDCHG-Q native execution; focused unit and PostgreSQL proof in review report"
         }
       ],
       "source_refs": [
@@ -645,13 +655,11 @@
           "url": "https://tibia.fandom.com/index.php?curid=56902&oldid=930222"
         }
       ],
-      "reason": "200 daily task actions, 3/5-day resets and 7-day permit are known. Native shared accumulator, stage transition, timed access and map/spawn stage bindings are absent.",
-      "missing_facts": [
-        "200 daily task actions, 3/5-day resets and 7-day permit are known. Native shared accumulator, stage transition, timed access and map/spawn stage bindings are absent."
-      ],
+      "reason": "Completed native missions credit the World and award personal Favour atomically; fifty Favour buys seven days of scent. Forty-eight native gates enforce shared stages and scent while preserving outward escape.",
       "binding": {
         "counter_key": "hive_born",
-        "counter_bindings": "content/encounters/world-changes/credited-kills.json"
+        "counter_bindings": "content/encounters/world-changes/credited-kills.json",
+        "native_callbacks": "crates/gameplay/quests/src/quest/hive_access.rs"
       }
     },
     {
@@ -1083,7 +1091,7 @@
       "key": "oriental_trader",
       "title": "Oriental Trader Mini World Change",
       "quest": "oteryn:quest.oriental_trader_mini_world_change",
-      "status": "READY",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00100-00199.json",
@@ -1096,6 +1104,10 @@
         {
           "path": "crates/gameplay/world-change/src/daily.rs",
           "locator": "daily.rs:oriental_trader.lua:3-44; admitted map layers and Yasir placement"
+        },
+        {
+          "path": "crates/gameplay/durability/src/durability/npc_trade.rs",
+          "locator": "WORLDCHG-Q native execution; focused unit and PostgreSQL proof in review report"
         }
       ],
       "source_refs": [
@@ -1116,7 +1128,7 @@
           "url": "https://tibia.fandom.com/index.php?curid=76256&oldid=887151"
         }
       ],
-      "reason": "Existing daily physical activation reused; READY qualifies the active-state gate only, not quest rewards or completion.",
+      "reason": "Selected three-town ship layer and native Yasir conversation/offers; current selected deck is checked inside the trade transaction, after historical replay.",
       "trigger": {
         "kind": "at_reset",
         "chance_percent": 33,
@@ -1127,7 +1139,7 @@
         ]
       },
       "binding": {
-        "native_callbacks": "WORLDCHG-Q scoped native callbacks"
+        "native_callbacks": "crates/gameplay/durability/src/durability/npc_trade.rs"
       }
     },
     {
@@ -1640,7 +1652,7 @@
       "key": "thawing",
       "title": "Thawing Mini World Change",
       "quest": "oteryn:quest.thawing_mini_world_change",
-      "status": "READY",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00200-00299.json",
@@ -1653,6 +1665,10 @@
         {
           "path": "crates/gameplay/world-change/src/daily.rs",
           "locator": "daily.rs:thawing.lua:1-19; 14 admitted ice-flower placements"
+        },
+        {
+          "path": "crates/gameplay/durability/src/durability/item_craft/harvest.rs",
+          "locator": "WORLDCHG-Q native execution; focused unit and PostgreSQL proof in review report"
         }
       ],
       "source_refs": [
@@ -1673,13 +1689,13 @@
           "url": "https://tibia.fandom.com/index.php?curid=76268&oldid=890265"
         }
       ],
-      "reason": "Existing daily physical activation reused; READY qualifies the active-state gate only, not quest rewards or completion.",
+      "reason": "Fourteen sourced flower placements use stable Added identity and current-save harvest authority; native yield, replay, restart and regrowth are composed.",
       "trigger": {
         "kind": "at_reset",
         "chance_percent": 10
       },
       "binding": {
-        "native_callbacks": "WORLDCHG-Q scoped native callbacks"
+        "native_callbacks": "crates/gameplay/durability/src/durability/item_craft/harvest.rs"
       }
     },
     {
@@ -1822,7 +1838,7 @@
       "key": "their_masters_voice",
       "title": "Their Master's Voice World Change",
       "quest": "oteryn:quest.their_masters_voice",
-      "status": "READY",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00200-00299.json",
@@ -1835,6 +1851,10 @@
         {
           "path": "crates/gameplay/world-change/src/daily.rs",
           "locator": "daily.rs:their_masters_voice.lua:4; map daily fungus projection"
+        },
+        {
+          "path": "crates/gameplay/durability/src/durability/terrain_tool.rs",
+          "locator": "WORLDCHG-Q native execution; focused unit and PostgreSQL proof in review report"
         }
       ],
       "source_refs": [
@@ -1855,13 +1875,13 @@
           "url": "https://tibia.fandom.com/index.php?curid=55047&oldid=1110638"
         }
       ],
-      "reason": "Existing daily physical activation reused; READY qualifies the active-state gate only, not quest rewards or completion.",
+      "reason": "Native gobbler custody and atomic XP feed the shared timed encounter, owned servant waves and Mad Mage; participation observes the current twenty-five-use period.",
       "trigger": {
         "kind": "at_reset",
         "chance_percent": 20
       },
       "binding": {
-        "native_callbacks": "WORLDCHG-Q scoped native callbacks"
+        "native_callbacks": "crates/gameplay/durability/src/durability/terrain_tool.rs"
       }
     },
     {

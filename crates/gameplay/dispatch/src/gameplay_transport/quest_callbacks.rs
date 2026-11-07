@@ -352,7 +352,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             (snapshot, context)
         };
+        let backend_callback = native(snapshot.position()).map_or_else(
+            || callback.key.clone(),
+            |at| {
+                oteryn_gameplay_quests::quest::hive_access::observation_key(
+                    &callback.key,
+                    Position {
+                        x: at.x,
+                        y: at.y,
+                        floor: at.floor,
+                    },
+                )
+            },
+        );
         // No runtime or spell-state guard is retained over this independent current query.
+        // Only the derived observation key bypasses stage/scent for egress. The actual
+        // callback key, selector, movement snapshot and source revision stay unchanged.
         if !matches!(
             self.root
                 .observe_world_callback_gate(
@@ -361,7 +376,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     permit,
                     fence,
                     context.clone(),
-                    callback.key.clone(),
+                    backend_callback,
                 )
                 .await,
             Ok(true)
@@ -628,6 +643,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(id) = CommandId::new(command.command_id) else {
                 return UseDisposition::Rejected;
             };
+            let mut directional;
+            let callback = if oteryn_gameplay_quests::quest::hive_access::gate(&callback.key).is_some() {
+                directional = (**callback).clone();
+                let Some(destination)=oteryn_gameplay_quests::quest::hive_access::destination(&callback.key,
+                    Position {x:at.x,y:at.y,floor:at.floor}) else { return UseDisposition::Rejected; };
+                directional.teleport=Some(destination);
+                &directional
+            } else { callback };
             let result = self.execute_quest_callback(
                 &permit,
                 &mut runtime,
