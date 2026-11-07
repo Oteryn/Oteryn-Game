@@ -38,6 +38,10 @@
       "index": "content/encounters/definitions/index.json",
       "records": 108
     },
+    "Encounter.Raid": {
+      "index": "content/encounters/raids/index.json",
+      "records": 239
+    },
     "Formula": {
       "index": "content/abilities/formulas/index.json",
       "records": 6126
@@ -72,7 +76,7 @@
     },
     "RewardClaim": {
       "index": "content/interactions/reward_claims/index.json",
-      "records": 337
+      "records": 336
     },
     "Service.Bank": {
       "index": "content/services/bank/index.json",
@@ -369,6 +373,15 @@
       "path": "content/encounters/definitions/index.json"
     },
     {
+      "path": "content/encounters/raids/catalogue.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json"
+    },
+    {
+      "path": "content/encounters/raids/index.json"
+    },
+    {
       "path": "content/interactions/reward_claims/index.json"
     },
     {
@@ -384,7 +397,7 @@
       "path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
     },
     {
-      "path": "content/interactions/reward_claims/reward-claims-00200-00231.json"
+      "path": "content/interactions/reward_claims/reward-claims-00200-00230.json"
     },
     {
       "path": "content/items/definitions/items-00000-00499.json"
@@ -1000,7 +1013,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3806,
+          "record_count": 3807,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1008,7 +1021,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "8f5f8f6982acf479fedba5fea4d7c536ba60e021cfcd31781211c1122bc8ab34"
+          "sha256": "453c7ef658b6c3d846718637310ae771a16b02ddfbf7197d32184a3205c31b2e"
         },
         {
           "creates_canonical_identities": false,

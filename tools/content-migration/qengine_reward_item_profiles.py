@@ -116,13 +116,21 @@ def extend_equipment(prior, record):
 
 def admit(root,generated,profile_path,manifest_path,order,canonical):
     packet=capture(root)
+    admit_records(root,generated,profile_path,manifest_path,order,canonical,packet['records'])
     generated[PROOF]=(json.dumps(packet,ensure_ascii=False,indent=2)+'\n').encode()
+
+
+def admit_records(root,generated,profile_path,manifest_path,order,canonical,records):
+    """Merge qualified physical profiles while preserving existing native owners."""
     document=json.loads(generated[profile_path])
     present={r['production_definition']['production_key']:r for r in document['records']}
-    for record in packet['records']:
+    for record in records:
         key=record['production_definition']['production_key']
         if key in present:
             prior = present[key]
+            from questl2_profile_alias import canonical_authoring
+            if canonical_authoring(prior, record):
+                record['authoring'] = copy.deepcopy(prior['authoring'])
             if prior == record:
                 continue
             if int(key.rsplit('i', 1)[-1]) in EQUIPMENT_IDS:

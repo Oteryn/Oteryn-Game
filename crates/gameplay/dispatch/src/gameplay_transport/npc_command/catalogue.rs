@@ -7,7 +7,7 @@ use crate::durability::quest_state::{
     npc_program::{self, NpcProgramRequest},
 };
 use crate::foundation::{CommandId, CommandRef};
-use oteryn_gameplay_quests::quest::npc_rules::{NpcRuleCatalog, NpcRuleTrigger};
+use oteryn_gameplay_quests::quest::npc_rules::{NpcRuleCatalog, NpcRuleEffect, NpcRuleTrigger};
 use std::sync::Arc;
 
 type Context = (u64, u64, String);
@@ -16,6 +16,7 @@ pub(super) struct Conversation {
     context: Context,
     actor: ExactActorRef,
     npc: EntityRef,
+    npc_actor: ExactActorRef,
     topic: i32,
 }
 #[derive(Clone)]
@@ -30,7 +31,12 @@ pub(super) enum Pending {
     },
 }
 pub(super) enum Step {
-    Reply(Vec<String>),
+    Reply {
+        lines: Vec<String>,
+        end: bool,
+        end_delay_ms: u64,
+        npc_actor: ExactActorRef,
+    },
     Refused,
     Held,
     Commit(Box<CommitStep>),
@@ -146,14 +152,42 @@ pub(super) fn prepare(
         context: context.clone(),
         actor,
         npc: intent.npc_actor,
+        npc_actor: admission.states.chat.engaged(command.game_session_id)?,
         topic: plan.next_topic,
     };
-    if plan.track_changes.is_empty() {
-        state.catalogue = Some(Pending::Topic(next));
-        return if plan.reply.is_empty() {
+    if plan.track_changes.is_empty()
+        && plan
+            .effects
+            .iter()
+            .any(|effect| matches!(effect, NpcRuleEffect::Experience { .. }))
+    {
+        return Some(Step::Refused);
+    }
+    if plan.track_changes.is_empty() && request.npc != "oteryn:npc.pemaret" {
+        let end = plan
+            .effects
+            .iter()
+            .any(|effect| matches!(effect, NpcRuleEffect::EndConversation { .. }));
+        let end_delay_ms = plan
+            .effects
+            .iter()
+            .filter_map(|effect| match effect {
+                NpcRuleEffect::EndConversation { delay_ms } => Some(*delay_ms),
+                _ => None,
+            })
+            .min()
+            .unwrap_or(0);
+        let npc_actor = next.npc_actor;
+        state.catalogue = (!end).then_some(Pending::Topic(next));
+        return if plan.reply.is_empty() && !end {
             None
         } else {
-            Some(Step::Reply(plan.reply))
+            Some(Step::Reply {
+                lines: plan.reply,
+                end,
+                end_delay_ms,
+                npc_actor,
+            })
         };
     }
     request.transition_key = plan.selected_rule_keys.first()?.clone();
@@ -197,6 +231,41 @@ fn response(
         window: None,
     }
 }
+fn end_response(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+    npc_actor: ExactActorRef,
+    delay_ms: u64,
+    response: &mut NpcTalkOutcome,
+) {
+    if delay_ms != 0 {
+        let Some(generation) = admission.states.chat.npc_conversation_generation(session) else {
+            return;
+        };
+        if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
+            && let Some(state) = sessions.get_mut(&session)
+        {
+            let deadline = std::time::Instant::now() + std::time::Duration::from_millis(delay_ms);
+            if state.delayed_end.as_ref().is_none_or(|end| {
+                end.generation != generation
+                    || end.npc_actor != npc_actor
+                    || deadline < end.deadline
+            }) {
+                state.delayed_end = Some(DelayedEnd {
+                    npc_actor,
+                    generation,
+                    deadline,
+                });
+            }
+        }
+        return;
+    }
+    admission.states.chat.end_engagement(session, npc_actor);
+    if let Some(conversation) = &mut response.conversation {
+        conversation.open = None;
+    }
+}
+
 fn install(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     session: GameSessionId,
@@ -228,7 +297,24 @@ pub(super) async fn apply(
         request,
         fallback_lines,
     } = match step {
-        Step::Reply(lines) => return response(admission, command.game_session_id, &intent, lines),
+        Step::Reply {
+            lines,
+            end,
+            end_delay_ms,
+            npc_actor,
+        } => {
+            let mut response = response(admission, command.game_session_id, &intent, lines);
+            if end {
+                end_response(
+                    admission,
+                    command.game_session_id,
+                    npc_actor,
+                    end_delay_ms,
+                    &mut response,
+                );
+            }
+            return response;
+        }
         Step::Refused => return rejected(),
         Step::Held => return unknown(),
         Step::Commit(c) => *c,
@@ -297,9 +383,11 @@ pub(super) async fn apply(
             fallback_lines: fallback_lines.clone(),
         });
     }
-    let moves_items = request.npc == "oteryn:npc.tereban"
-        && (request.transition_key.ends_with("-deliver")
-            || request.transition_key.ends_with("/mission-complete"));
+    let moves_items = (request.npc == "oteryn:npc.pemaret"
+        && request.transition_key.ends_with("/deliver"))
+        || request.npc == "oteryn:npc.tereban"
+            && (request.transition_key.ends_with("-deliver")
+                || request.transition_key.ends_with("/mission-complete"));
     let outcome = slot
         .commit_npc_program(
             admission.root,
@@ -336,9 +424,9 @@ pub(super) async fn apply(
             install(
                 admission,
                 command.game_session_id,
-                Some(Conversation {
+                (!commit.end_conversation).then_some(Conversation {
                     topic: commit.next_topic,
-                    ..next
+                    ..next.clone()
                 }),
             );
             admission
@@ -354,7 +442,17 @@ pub(super) async fn apply(
                     commit.reply
                 },
             );
-            response.inventory_changed = !commit.read_only && moves_items;
+            response.inventory_changed =
+                !commit.read_only && (commit.inventory_changed || moves_items);
+            if commit.end_conversation {
+                end_response(
+                    admission,
+                    command.game_session_id,
+                    next.npc_actor,
+                    commit.end_delay_ms,
+                    &mut response,
+                );
+            }
             response
         }
         Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
@@ -398,9 +496,11 @@ pub(in crate::gameplay_transport) async fn resume(
     {
         return None;
     }
-    let moves_items = request.npc == "oteryn:npc.tereban"
-        && (request.transition_key.ends_with("-deliver")
-            || request.transition_key.ends_with("/mission-complete"));
+    let moves_items = (request.npc == "oteryn:npc.pemaret"
+        && request.transition_key.ends_with("/deliver"))
+        || request.npc == "oteryn:npc.tereban"
+            && (request.transition_key.ends_with("-deliver")
+                || request.transition_key.ends_with("/mission-complete"));
     Some(
         match admission
             .root
@@ -411,9 +511,9 @@ pub(in crate::gameplay_transport) async fn resume(
                 install(
                     admission,
                     command.game_session_id,
-                    Some(Conversation {
+                    (!commit.end_conversation).then_some(Conversation {
                         topic: commit.next_topic,
-                        ..next
+                        ..next.clone()
                     }),
                 );
                 admission
@@ -429,7 +529,16 @@ pub(in crate::gameplay_transport) async fn resume(
                         commit.reply
                     },
                 );
-                response.inventory_changed = moves_items;
+                response.inventory_changed = commit.inventory_changed || moves_items;
+                if commit.end_conversation {
+                    end_response(
+                        admission,
+                        command.game_session_id,
+                        next.npc_actor,
+                        commit.end_delay_ms,
+                        &mut response,
+                    );
+                }
                 response
             }
             Ok(None) => {
@@ -442,4 +551,43 @@ pub(in crate::gameplay_transport) async fn resume(
             },
         },
     )
+}
+
+pub(super) struct DelayedEnd {
+    npc_actor: ExactActorRef,
+    generation: u64,
+    deadline: std::time::Instant,
+}
+
+pub(super) fn follow_end(
+    conversations: &NpcConversations,
+    chat: &ChatRuntime,
+    session: GameSessionId,
+) {
+    let generation = chat.npc_conversation_generation(session);
+    let engaged = chat.engaged(session);
+    let due = {
+        let Ok(mut sessions) = conversations.sessions.lock() else {
+            return;
+        };
+        let Some(state) = sessions.get_mut(&session) else {
+            return;
+        };
+        let Some(end) = &state.delayed_end else {
+            return;
+        };
+        if generation != Some(end.generation) || engaged != Some(end.npc_actor) {
+            state.delayed_end = None;
+            return;
+        }
+        if std::time::Instant::now() < end.deadline {
+            return;
+        }
+        state.delayed_end.take()
+    };
+    if let Some(end) = due
+        && chat.npc_conversation_generation(session) == Some(end.generation)
+    {
+        chat.end_engagement(session, end.npc_actor);
+    }
 }

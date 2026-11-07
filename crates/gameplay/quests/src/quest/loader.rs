@@ -238,11 +238,14 @@ pub fn load_embedded_quest_state(
     );
     lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
         .map_err(QuestLoadError::Json)?;
+    let source_owners = original_legacy.keys().cloned().collect();
     super::npc_rules::merge_legacy_definitions(&mut lowered.catalogue.npc_legacy, original_legacy)
         .map_err(QuestLoadError::Json)?;
+    super::npc_predecessors::preserve_native_only(&mut lowered.catalogue, source_owners);
     // Preserve source captures and their counts; only the production catalogue
     // and its executable bindings are filtered by the owner's target scope.
     let npc_legacy = std::mem::take(&mut lowered.catalogue.npc_legacy);
+    let predecessors = std::mem::take(&mut lowered.catalogue.predecessors);
     lowered.catalogue = QuestStateCatalogue::new(
         content_revision,
         lowered
@@ -262,6 +265,7 @@ pub fn load_embedded_quest_state(
     )
     .map_err(QuestLoadError::Catalogue)?;
     lowered.catalogue.npc_legacy = npc_legacy;
+    lowered.catalogue.predecessors = predecessors;
     lowered
         .source_tracks
         .retain(|key, _| lowered.catalogue.track(key).is_some());
@@ -503,11 +507,20 @@ mod tests {
             (track.quest.as_str(), track.initial, track.min, track.max),
             (QUEST, 0, 0, 1)
         );
+        // Keep the observed completion domain and the pre-existing wider
+        // integer counter domain; the source sentinel must not lower either min.
+        for (suffix, max) in [("status", 2), ("progress", i64::from(i32::MAX))] {
+            let key = format!("oteryn:quest-progress/quest/u8_6/afathers_burden/{suffix}");
+            let track = lowered.catalogue().track(&key).expect("Father track");
+            assert_eq!((track.initial, track.min, track.max), (0, 0, max));
+        }
+        // Canonical NPC admission extends only literal write bounds; a boolean
+        // quest-log flag retains its exact 0..1 domain and absent value.
         let native = embedded();
         let track = native.catalogue().track(QUEST_LOG).expect("native track");
         assert_eq!(
             (track.quest.as_str(), track.initial, track.min, track.max),
-            (QUEST, 0, -1, i64::from(i32::MAX))
+            (QUEST, 0, 0, 1)
         );
         for lowered in [&lowered, &native] {
             assert_eq!(

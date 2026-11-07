@@ -18,8 +18,8 @@
       "authoring": {
         "item": {
           "family": "Item",
-          "key": "candidate:item/131",
-          "revision": "spell-p2-r21"
+          "key": "oteryn:item.tibia.i131",
+          "revision": "definition-r1"
         }
       },
       "semantics": {
@@ -340,8 +340,8 @@
       "authoring": {
         "item": {
           "family": "Item",
-          "key": "candidate:item/139",
-          "revision": "spell-p2-r21"
+          "key": "oteryn:item.tibia.i139",
+          "revision": "definition-r1"
         }
       },
       "semantics": {
@@ -3329,8 +3329,8 @@
       "authoring": {
         "item": {
           "family": "Item",
-          "key": "candidate:item/4827",
-          "revision": "spell-p2-r21"
+          "key": "oteryn:item.tibia.i4827",
+          "revision": "definition-r1"
         }
       },
       "semantics": {
@@ -3812,8 +3812,8 @@
       "authoring": {
         "item": {
           "family": "Item",
-          "key": "candidate:item/4831",
-          "revision": "spell-p2-r21"
+          "key": "oteryn:item.tibia.i4831",
+          "revision": "definition-r1"
         }
       },
       "semantics": {
@@ -4135,8 +4135,8 @@
       "authoring": {
         "item": {
           "family": "Item",
-          "key": "candidate:item/4852",
-          "revision": "spell-p2-r21"
+          "key": "oteryn:item.tibia.i4852",
+          "revision": "definition-r1"
         }
       },
       "semantics": {
@@ -7950,8 +7950,8 @@
       "authoring": {
         "item": {
           "family": "Item",
-          "key": "candidate:item/7870",
-          "revision": "spell-p2-r21"
+          "key": "oteryn:item.tibia.i7870",
+          "revision": "definition-r1"
         }
       },
       "semantics": {
@@ -8451,8 +8451,8 @@
       "authoring": {
         "item": {
           "family": "Item",
-          "key": "candidate:item/7935",
-          "revision": "spell-p2-r21"
+          "key": "oteryn:item.tibia.i7935",
+          "revision": "definition-r1"
         }
       },
       "semantics": {
@@ -10072,8 +10072,8 @@
       "authoring": {
         "item": {
           "family": "Item",
-          "key": "candidate:item/11699",
-          "revision": "spell-p2-r21"
+          "key": "oteryn:item.tibia.i11699",
+          "revision": "definition-r1"
         }
       },
       "semantics": {
@@ -18840,8 +18840,11 @@
       "authoring": {
         "item": {
           "family": "Item",
-          "key": "candidate:item/31266",
-          "revision": "spell-p2-r21"
+          "key": "oteryn:item.tibia.i31266",
+          "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
         }
       },
       "semantics": {
@@ -19181,8 +19184,11 @@
       "authoring": {
         "item": {
           "family": "Item",
-          "key": "candidate:item/31268",
-          "revision": "spell-p2-r21"
+          "key": "oteryn:item.tibia.i31268",
+          "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Amulets and Necklaces"
         }
       },
       "semantics": {

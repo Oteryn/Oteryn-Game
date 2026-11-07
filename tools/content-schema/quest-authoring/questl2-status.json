@@ -3420,5 +3420,44 @@
       "pin_refresh": "PASS /tmp/l2-brooch-pin-refresh.log",
       "world_digest": "32e2b19f9a6d36638e64952ee8e28c825ae5b927c75d876e3012f1344b1b1a9c"
     }
+  },
+  "prepush2_main_integration": {
+    "main": "f641d8d6c1b7b800db28103f9a5f4e48972d051d",
+    "status": "COMPILING_WIP_TESTS_PENDING",
+    "quest_qualification_changes": 0,
+    "decisions": [
+      "Reuse canonical QNPCFX NPC exchange, calendar and conversation implementations",
+      "Main1315 replaces the duplicated Father SQL proof at the end of1219; retain other distinct1219 value owners",
+      "Preserve exact legacy snapshot versions alongside canonical predecessor support",
+      "Preserve main NPC eight-effect cap and its exact atomic eleven-track Father exception; durable QuestState cap stays16",
+      "Native-only claim bindings are not donor mission completion coverage"
+    ],
+    "authoring_checks": {
+      "binding_plan": "7 passed /tmp/l2-qnpcfx-binding-plan-tests.log",
+      "completion": "310 candidates;382 unsupported;0 chosen-source holds /tmp/l2-qnpcfx-completion-check.log",
+      "alias_guards": "2 passed; conflicting known weight rejected"
+    },
+    "pending": [
+      "Remaining changed-crate unit tests under PREPUSH-2 cadence exception",
+      "Focused PostgreSQL regressions after canonical QNPCFX integration",
+      "Final Clippy rerun after removing duplicate scenario routing"
+    ],
+    "quest_unit_tests": {
+      "passed": 303,
+      "failed": 0,
+      "ignored": 0,
+      "duration_seconds": 20.67,
+      "log": "/tmp/l2-qnpcfx-quests-units4.log"
+    },
+    "workspace_all_targets": {
+      "result": "PASS",
+      "duration_seconds": 294,
+      "log": "/tmp/l2-qnpcfx-workspace-final.log"
+    },
+    "pin_refresh": {
+      "result": "PASS",
+      "log": "/tmp/l2-qnpcfx-final-pin-refresh.log",
+      "inputs_digest": "8f9e3848b6ccf98b9d0914f7faa46142968dee26a2d842a4b0c5815c29bb58af"
+    }
   }
 }
