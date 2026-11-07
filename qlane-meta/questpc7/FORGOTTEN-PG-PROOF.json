@@ -1,0 +1,33 @@
+{
+  "test": "questpc7_forgotten_whole_native_paths_and_learning",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red_seconds": 42.191567216,
+  "red_error": "whole selected Forgotten Knowledge route must exist: left0 right10 after SHOW server_version",
+  "green_seconds": null,
+  "pending": [
+    "whole native route PG GREEN",
+    "focused units/generators/check/strict Clippy/pins/content/world/fmt"
+  ],
+  "scope": "Eleven chosen stages: exact physical Heavy Old Tome recovery/hand-in, six terminal native bosses, physical dragon egg, Ivalisse and six source A Strange Chalice dialogue steps, completion and actual native powerful learning.",
+  "assumptions": [
+    "Chosen personal temple tome recovery site does not claim original spawn.",
+    "Physical egg4839 is selected USE adaptation, not original Frozen Horror creature fight.",
+    "Terminal Soul fights in retained base Dragon King arena; original floor12 spawn has only one clear tile.",
+    "Whole selected completion licenses the seventeen source Forgotten powerful families; no unrelated quest or early original boss flags."
+  ],
+  "sources": [
+    "data-global/npc/a_strange_chalice.lua:60-113 sha256:7eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea",
+    "data/XML/imbuements.xml:37-415 sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
+  ],
+  "first_implemented_attempt": {
+    "seconds": 75.348908819,
+    "postgres": "18.6",
+    "result": "RED",
+    "error": "CellOccupied: fixture initially placed the player on the retained Ivalisse cell before installing the NPC. Production route compiles; move the fixture player to the source approach before NPC installation."
+  },
+  "author_tests": {
+    "count": 32,
+    "seconds": 41.97,
+    "result": "PASS"
+  }
+}

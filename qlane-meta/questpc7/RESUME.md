@@ -1,3 +1,31 @@
+# Forgotten compiling WIP checkpoint — 2026-11-07 14:23 UTC
+
+All32 author tests PASS41.970s. Source and full test compile (test build86s).
+Actual PG18.6 first implemented attempt RED75.348908819s, exact CellOccupied
+at installation: shared scenario starts one tile west of supplied trigger,
+which is Ivalisse actual32326,32093,-7. Fix fixture by normal walking east to
+source approach32327,32093,-7 BEFORE stocking/service checks/NPC install.
+No production guard, placement or route needs weakening. Push compiling WIP
+now under explicit owner rule, fix fixture immediately, rerun whole PG then
+/tmp/questpc7-forgotten-validation.py (17 gates). Keep ACTIVE.
+
+# Forgotten Knowledge whole route in verification — 2026-11-07
+
+Heart QUALIFIED and pushed837815d30. Five ACTIVE remain. Forgotten actual
+PG18.6 RED42.191567216s proved missing route after SHOW server_version.
+Producer now publishes11 world callbacks,6 native death objectives and10 NPC
+callbacks. Ivalisse source instructions alone do not satisfy father aid: existing
+A Strange Chalice at33419,31125,-9 requires all6 source words through learned/
+zzubaran, then the fire portal opens. Shared test NPC installer supports exact
+source positions without changing old callers. Real tome23986 recovery and
+exact hand-in; chosen physical egg4839; terminal Soul in actual base arena
+since original floor12 spawn is isolated. Whole selected completion licenses
+17 native powerful families; Heart independently remains alternative only for
+its3 named families. No migration, foreign quest completion or subject seeds.
+Authoring checks and first fullPG GREEN attempt running; keep ACTIVE until all
+gates pass. Push compiling/green slices at most15min after14:11 qualification
+push. New code source/generators must be staged before final pin refresh.
+
 # Heart of Destruction QUALIFIED — 2026-11-07
 
 Whole native PG18.6 RED42.197816668s→GREEN81.696754812s: all6 bosses,

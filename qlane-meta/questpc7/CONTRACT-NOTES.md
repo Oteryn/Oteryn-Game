@@ -563,3 +563,48 @@ Two ordinary source imbuing shrines in the PG map are independent service
 fixtures, not new production World placements. Generic native service inputs
 (sword, normal coins, three recipe materials) use fenced MINT and transfer;
 no Heart reward, tool, stage or completion is inserted by the fixture.
+
+## Forgotten Knowledge: finite selected route and native learning
+
+The selected eleven-stage recipe is the scope, not the donor's original party,
+lockout, form or cross-quest progression. Ivalisse's source names her father
+Silus (data-global/npc/ivalisse.lua:81, SHA256
+455bf9ca148de6aec55a2801f9234bb492b161bac253afd3703cb8c609f11bda).
+Her chosen dialogue supplies the fire-route instructions; it does not complete
+The New Frontier or assert its original storage29 prerequisite. The source
+recipe itself has no parent quest. Source Albinius identifies Heavy Old Tome
+23986 (data-global/npc/albinius.lua:27,76, SHA256
+1a476ee079849acee80dd99fb107ae5fd674c2d3c3343beed8002840d09cea18).
+A personal once-only temple recovery interaction produces one real tome;
+Ivalisse consumes that exact item in one fenced hand-in. It is not an NPC
+shop purchase or a claim that the selected archive site originally spawned it.
+
+The selected egg USE milestone binds an existing physical dragon egg4839 at
+33003,32662,-3. This is a documented chosen adaptation, not the original Frozen
+Horror combat mechanic. Source actions_frozen_horror.lua:10 instead creates a
+Dragon Egg creature at32269,31084,-14 (SHA256
+53f1005d33185fe0993cf7324ce6ae3a83618ff3de25edf75ba63fe03d000fe7).
+The original isolated Soul spawn33359,31182,-12 has one clear tile and no
+arrival tile in the retained map. The selected terminal Soul therefore fights
+in the source Dragon King arena33357,31182,-10. The source action declares
+that base arena (actions_dragonking_zyrtarch.lua:2-4, SHA256
+388437b82e425285e6df26c92e1f747b388f3028370d9dd619ae8de4630c53a1).
+Native terminal identities follow creaturescripts_bosses_kill.lua:1-16,
+SHA256a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907.
+Last Lore Keeper uses a clear source-arena cell; original astral phases are
+not claimed by the finite selected single-kill objective.
+
+Completing all selected milestones licenses the source Forgotten Knowledge
+powerful families implemented by native recipes. This conservative rule waits
+for whole completion instead of granting original per-boss unlocks early.
+The selected egg milestone substitutes for the omitted original ice-boss path;
+it never claims that Melting Frozen Horror was defeated. Source XML
+(data/XML/imbuements.xml:37-415, SHA256
+7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd)
+provides exact family/storage mappings. Featherweight has storage0; Vibrancy's
+46317 is unrelated and is not attributed to this quest. Native elemental-damage
+recipes are absent and are not fabricated. Heart remains an independent
+alternative only for its three source-named powerful families. Basic/intricate
+recipes and other established access rules retain their existing treatment.
+
+The selected father stage also requires actual A Strange Chalice dialogue: chalice, daughter, story, disguised, thirsty, learned. Existing canonical identity and retained candidate33419,31125,-9 are reused. Source data-global/npc/a_strange_chalice.lua:60-113 SHA2567eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea identifies the father and provides zzubaran; Ivalisse alone does not finish that stage.

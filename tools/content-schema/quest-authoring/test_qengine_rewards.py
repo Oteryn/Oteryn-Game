@@ -446,12 +446,58 @@ class HeartProgramme(unittest.TestCase):
 
     def test_powerful_learning_binds_only_the_source_named_families_to_native_completion(self):
         import questpc7_knowledge
-        rules=questpc7_knowledge.build(q.ROOT,q.donor_inputs(),q.PIN)['rules']
+        rules=[r for r in questpc7_knowledge.build(q.ROOT,q.donor_inputs(),q.PIN)['rules'] if 'oteryn:quest.heart_of_destruction_quest' in r['any_completed_quests']]
         self.assertEqual([(r['family'],r['tier']) for r in rules],[(1,3),(11,3),(12,3)])
         for rule in rules:
-            self.assertEqual(rule['any_completed_quests'],['oteryn:quest.heart_of_destruction_quest'])
+            self.assertEqual(rule['any_completed_quests'],['oteryn:quest.heart_of_destruction_quest','oteryn:quest.forgotten_knowledge_quest'])
             self.assertTrue(any('data-global/npc/yana.lua:185-187:sha256:' in src for src in rule['sources']))
             self.assertTrue(any(src.startswith('canonical:') for src in rule['sources']))
+
+
+class ForgottenProgramme(unittest.TestCase):
+    def test_exact_selected_stages_source_terminal_bosses_and_tome_exchange(self):
+        import questpc7_forgotten_programme as f
+        worlds,objectives,rewards=f.build(q.ROOT,q.donor_inputs(),q.PIN)
+        self.assertEqual(len(worlds),11)
+        self.assertEqual([r['creature'] for r in objectives],['oteryn:creature.'+n for n in ['lloyd','lady_tenebris','the_enraged_thorn_knight','soul_of_dragonking_zyrtarch','the_time_guardian','the_last_lore_keeper']])
+        self.assertEqual([r['stage_value'] for r in objectives],[2,3,5,7,8,9])
+        self.assertEqual(len({r['counter'] for r in objectives}),6)
+        self.assertTrue(all(r['required']==1 for r in objectives))
+        tome=next(r for r in worlds if r['key'].endswith('/questpc7-forgotten-tome'))
+        self.assertEqual(tome['item_reward'],{'item':'oteryn:item.tibia.i23986','count':1,'contents':[]})
+        take=next(r for r in rewards if r['key'].endswith('/questpc7-forgotten-tome'))
+        self.assertEqual(take['take'],[{'item':'oteryn:item.tibia.i23986','count':1}])
+        self.assertEqual(len(rewards),10)
+        self.assertEqual(sum(r['npc']=='oteryn:npc.ivalisse' for r in rewards),4)
+        self.assertEqual([r['keywords'][0] for r in rewards if r['npc']=='oteryn:npc.a_strange_chalice'],['chalice','daughter','story','disguised','thirsty','learned'])
+        self.assertEqual([r['key'] for r in rewards if r.get('completes')],['oteryn:quest-reward/questpc7-forgotten-complete'])
+        self.assertTrue(all(r['requirements']=={'min_level':0,'premium':True,'completed_quests':[]} for r in worlds+rewards))
+
+    def test_every_world_selector_exists_in_retained_native_map(self):
+        import questpc7_forgotten_programme as f
+        import sys
+        sys.path.insert(0,str(q.ROOT/'tools/content-schema/world-authoring'))
+        import world_region_codec as codec
+        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette'];cache={}
+        worlds,_,_=f.build(q.ROOT,q.donor_inputs(),q.PIN)
+        for c in worlds:
+            p=c['selector']['position'];x,y,z=p['x'],p['y'],p['floor']
+            path=f'content/world/placements/region-z{-z:02}-x{x//256}-y{y//256}.b3'
+            if path not in cache:cache[path]=codec.decode_region((q.ROOT/path).read_bytes())[3]
+            native=[palette[i]['source_item_id'] for _,cells in cache[path] for tx,ty,_,_,_,items in cells if (tx,ty)==(x,y) for i,depth,_ in items if depth==0]
+            self.assertIn(c['selector']['appearance'],native,c['key'])
+        egg=next(r for r in worlds if r['key'].endswith('/questpc7-forgotten-egg'))
+        self.assertEqual(egg['selector']['appearance'],4839)
+
+    def test_native_learning_matches_source_families_and_preserves_heart_alternatives(self):
+        import questpc7_knowledge
+        rules=questpc7_knowledge.build(q.ROOT,q.donor_inputs(),q.PIN)['rules']
+        self.assertEqual([(r['family'],r['tier']) for r in rules],[(f,3) for f in [1,3,4,5,6,7,8,10,11,12,14,15,16,17,18,19,20]])
+        for rule in rules:
+            expected=['oteryn:quest.forgotten_knowledge_quest']
+            if rule['family'] in [1,11,12]:expected.insert(0,'oteryn:quest.heart_of_destruction_quest')
+            self.assertEqual(rule['any_completed_quests'],expected)
+            self.assertTrue(any('data/XML/imbuements.xml:' in s for s in rule['sources']))
 
 if __name__=='__main__':
     unittest.main()

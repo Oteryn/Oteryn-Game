@@ -4893,6 +4893,644 @@
         "content/world/placements/region-z14-x126-y122.b3:1:sha256:3df7f463fc58299f2b4cd53aba79344414f4d72e6e2d0c56a0f5d4631718e494",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-forgotten-tome",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32334,
+          "y": 32090,
+          "floor": -7
+        },
+        "appearance": 23899,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32327,
+        "y": 32093,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You recover a Heavy Old Tome for the temple record.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z07-x126-y125.b3:1:sha256:b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
+      ],
+      "item_reward": {
+        "item": "oteryn:item.tibia.i23986",
+        "count": 1,
+        "contents": []
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-forgotten-energy-entry",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32327,
+          "y": 32093,
+          "floor": -7
+        },
+        "appearance": 23898,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32799,
+        "y": 32831,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/programme",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/boss_0",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The restored record opens the Energy Portal.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z07-x126-y125.b3:1:sha256:b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-forgotten-passage-0",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32798,
+          "y": 32831,
+          "floor": -14
+        },
+        "appearance": 15469,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32912,
+        "y": 31602,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/programme",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/boss_0",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/boss_1",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The ancient guardian is defeated. Follow the restored path.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z14-x128-y128.b3:1:sha256:e8f96a7b6754fcf438b1a55bbe0d73cedd6e4e3321b0b6c33303c294dffe7f3b",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-forgotten-passage-1",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32911,
+          "y": 31602,
+          "floor": -14
+        },
+        "appearance": 23950,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33004,
+        "y": 32663,
+        "floor": -3
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/programme",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/boss_1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The ancient guardian is defeated. Follow the restored path.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z14-x128-y123.b3:1:sha256:dcfa219637e4fe4d31dbc93bf592057d93ef3d37d6bdd10c1d183235637b4fc6",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-forgotten-passage-2",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32623,
+          "y": 32883,
+          "floor": -14
+        },
+        "appearance": 1019,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32327,
+        "y": 32093,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/programme",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/boss_2",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The ancient guardian is defeated. Follow the restored path.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z14-x127-y128.b3:1:sha256:f818c8913aab12300cd2e84dc6593a76215f758a8b83c8ac9c62c5329b29b3e7",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-forgotten-passage-3",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33356,
+          "y": 31185,
+          "floor": -10
+        },
+        "appearance": 10998,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32977,
+        "y": 31665,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/programme",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/boss_3",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/boss_4",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The ancient guardian is defeated. Follow the restored path.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z10-x130-y121.b3:1:sha256:8eda13410a87ebf971595eeacb54bbe16eb2ba2bfc379fc4f1cd3af7fd8a48ef",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-forgotten-passage-4",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32976,
+          "y": 31665,
+          "floor": -14
+        },
+        "appearance": 23908,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31986,
+        "y": 32843,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/programme",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/boss_4",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/boss_5",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The ancient guardian is defeated. Follow the restored path.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z14-x128-y123.b3:1:sha256:dcfa219637e4fe4d31dbc93bf592057d93ef3d37d6bdd10c1d183235637b4fc6",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-forgotten-passage-5",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 31985,
+          "y": 32843,
+          "floor": -14
+        },
+        "appearance": 410,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32327,
+        "y": 32093,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/programme",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/boss_5",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The ancient guardian is defeated. Follow the restored path.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z14-x124-y128.b3:1:sha256:2a5e9f0f36729af80ae8a40c92d07ebde9b20410966aefc248512247cb73e791",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-forgotten-egg",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33003,
+          "y": 32662,
+          "floor": -3
+        },
+        "appearance": 4839,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32624,
+        "y": 32883,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/programme",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/boss_2",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You secure the Dragon Mother egg and restore the selected Ice Portal route.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z03-x128-y127.b3:1:sha256:4143a9190fa20ae867b2cc015dcc6e974fdfbd786c6eb91f750cb5d832ba9072",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-forgotten-fire-entry",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32328,
+          "y": 32093,
+          "floor": -7
+        },
+        "appearance": 4525,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33419,
+        "y": 31124,
+        "floor": -9
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/programme",
+          "minimum": 60,
+          "maximum": 60,
+          "set": 60,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/boss_father_visit",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "Find Ivalisse's father, disguised as a chalice.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z07-x126-y125.b3:1:sha256:b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-forgotten-father-passage",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33420,
+          "y": 31124,
+          "floor": -9
+        },
+        "appearance": 11002,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33357,
+        "y": 31185,
+        "floor": -10
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/programme",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 7,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/father",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/forgotten/boss_3",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The password zzubaran opens the fire route.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z09-x130-y121.b3:1:sha256:207afee64040ad35fef81382d73667ae3b3307d2f3bd8f0b370aa2ecc961d1e8",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
+      ]
     }
   ]
 }

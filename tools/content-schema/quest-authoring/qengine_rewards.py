@@ -30,10 +30,10 @@ def sha(value):
 
 
 def donor_inputs():
-    paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
+    paths = ['data/XML/imbuements.xml', 'data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
         'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'king_tibianus', 'jorge', 'henricus', 'the_forgemaster', 'elane', 'a_sweaty_cyclops', 'marina', 'gamon', 'quentin', 'tibra', 'maealil',
-        'yberius', 'isimov', 'amanda', 'kasmir', 'rahkem', 'brewster', 'tyrias', 'yana')]
+        'yberius', 'isimov', 'amanda', 'kasmir', 'rahkem', 'brewster', 'tyrias', 'yana', 'ivalisse', 'a_strange_chalice')]
     paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua',
@@ -317,6 +317,10 @@ def build():
     heart_worlds, heart_objectives, heart_callbacks = heart.build(ROOT, inputs, PIN)
     formal_worlds.extend(heart_worlds)
     callbacks.extend(heart_callbacks)
+    forgotten = load_module('questpc7_forgotten_programme','tools/content-schema/quest-authoring/questpc7_forgotten_programme.py')
+    forgotten_worlds, forgotten_objectives, forgotten_callbacks = forgotten.build(ROOT, inputs, PIN)
+    formal_worlds.extend(forgotten_worlds)
+    callbacks.extend(forgotten_callbacks)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'callbacks':callbacks})
@@ -329,7 +333,7 @@ def build():
             'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'callbacks':callbacks}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
     generated['content/quests/questpc7-world-callbacks.json'] = encoded({'schema':1,'callbacks':formal_worlds})
-    generated['content/quests/questpc7-death-objectives.json'] = encoded({'schema':1,'objectives':encounters.objectives(ROOT)+hydra_objectives+hero_objectives+ferumbras_objectives+grave_objectives+grimvale_objectives+heart_objectives})
+    generated['content/quests/questpc7-death-objectives.json'] = encoded({'schema':1,'objectives':encounters.objectives(ROOT)+hydra_objectives+hero_objectives+ferumbras_objectives+grave_objectives+grimvale_objectives+heart_objectives+forgotten_objectives})
     generated['content/quests/native-world-callback-bindings.json'] = encoded({'schema':1,'bindings':hoist_bindings})
     knowledge = load_module('questpc7_knowledge','tools/content-schema/quest-authoring/questpc7_knowledge.py')
     generated['content/quests/imbuement-knowledge.json'] = encoded(knowledge.build(ROOT, inputs, PIN))

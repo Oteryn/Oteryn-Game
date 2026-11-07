@@ -49,6 +49,24 @@ pub(super) async fn install<const N: usize>(
     admitted: &AdmittedSession,
     keys: [&str; N],
 ) -> TestResult<[EntityRef; N]> {
+    install_with_positions(owner, admitted, keys, None).await
+}
+
+pub(super) async fn install_positions<const N: usize>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    keys: [&str; N],
+    positions: [Position; N],
+) -> TestResult<[EntityRef; N]> {
+    install_with_positions(owner, admitted, keys, Some(positions)).await
+}
+
+async fn install_with_positions<const N: usize>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    keys: [&str; N],
+    positions: Option<[Position; N]>,
+) -> TestResult<[EntityRef; N]> {
     let catalogue = NpcDataCatalogue::load(
         std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
         std::ffi::OsStr::new("world"),
@@ -101,9 +119,10 @@ pub(super) async fn install<const N: usize>(
         .into_iter()
         .enumerate()
         .map(|(i, key)| {
-            Ok(NpcPlacements {
-                key: key.into(),
-                placements: vec![NpcPlacement {
+            let p = if let Some(positions) = positions.as_ref() {
+                positions[i]
+            } else {
+                Position {
                     x: u16::try_from(
                         at.x + if N > 5 {
                             i32::try_from(i % 5)? - 2
@@ -113,6 +132,14 @@ pub(super) async fn install<const N: usize>(
                     )?,
                     y: u16::try_from(at.y + if N > 5 { 1 + i32::try_from(i / 5)? } else { 1 })?,
                     floor: -i8::try_from(at.floor)?,
+                }
+            };
+            Ok(NpcPlacements {
+                key: key.into(),
+                placements: vec![NpcPlacement {
+                    x: p.x,
+                    y: p.y,
+                    floor: p.floor,
                     direction: MovementFacing::South,
                 }],
             })
