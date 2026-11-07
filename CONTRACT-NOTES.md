@@ -274,3 +274,26 @@ are renamed1200–1205 without content changes. L2 owns1210–1216, including on
 L2 extensions; Father's eleven-track write remains one physical transaction.
 Renaming QBASE after QENGINE2 exposed a historical nonempty receipt constraint;
 1210 retains that shared content and restores QENGINE2's guarded value-only arm.
+
+Next L2 batch source contract: Yonan four-piece Regalia assembly is pinned in
+`data-global/npc/yonan.lua:198-209` (Crystal9f), SHA256
+`ab32c38fec7fc99be97b91ed19d79e64880c9ff955d58d8eee3504282f6e3848`:
+parts31572–31575 produce31576, with no source fee or quest prerequisite.
+Alliance supply requirements are pinned in the repository's structured wiki
+source record for An Uneasy Alliance Quest, spoiler revision891001 SHA256
+`2788b3c0b943e0b71687494a5e7bc5aa81542e0b1407793c165cd64e00fc2dfd`,
+lines7–9: bucket of milk, crocodile steak, wooden flute. Where quantities are
+not captured, the owner-authorized restoration uses one of each. Accepted XML
+identities are steak10219 and flute2948; subtype checks use the native fluid owner.
+Curos's source mission states and Tome reward remain at curos.lua:71-101, SHA256
+`6feee8de2475788bca144210fd47cbf857b5dce3a16215ff2647e971bcd3a42e`.
+The rebel death witness is creaturescripts_renegade_orc_kill.lua:1-15 SHA256
+`cfbb7215d0d987b18e8c3e53dabf2954c4b523527121cd8185739745f73c5c99`;
+crystal-ball action40030 is actions_crystal_ball.lua:1-25 SHA256
+`6371998f8ecfe0c5d0c14f8dd6eb7e493a54145ebb0a016659ab3330e5b49211`.
+Cael's source tome stages and incremental unlocks are cael.lua:84-128, SHA256
+`4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd`.
+Existing QENGINE2, PC3, PC5 and PC8 heads were checked for reusable fluid hand-in
+and generic monster callbacks; no corresponding implementation was found there.
+The three new PG tests first prove missing bindings, then require full native
+journey execution; binding presence alone can never qualify these entries.

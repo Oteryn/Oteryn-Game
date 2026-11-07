@@ -233,6 +233,8 @@ pub(super) mod questl2_delivery_journeys;
 
 #[path = "qengine_rewards/questl2_journeys.rs"]
 pub(super) mod questl2_journeys;
+#[path = "qengine_rewards/questl2_knowledge_journeys.rs"]
+mod questl2_knowledge_journeys;
 
 #[path = "qengine_rewards/questl2_shared_engine.rs"]
 mod questl2_shared_engine;
@@ -846,6 +848,12 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if matches!(
+        name,
+        "qengine-rewards-l2-regalia" | "qengine-rewards-l2-alliance" | "qengine-rewards-l2-tomes"
+    ) {
+        return questl2_knowledge_journeys::exercise(owner, admitted, h, name).await;
+    }
     if matches!(
         name,
         "qengine-rewards-l2-steal" | "qengine-rewards-l2-troll" | "qengine-rewards-l2-cartography"

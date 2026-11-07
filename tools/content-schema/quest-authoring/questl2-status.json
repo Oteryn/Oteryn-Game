@@ -2815,6 +2815,20 @@
       "An Uneasy Alliance",
       "Tomes of Knowledge"
     ],
-    "source_tracing": "Pinned Yonan, Curos, Zalamon and Cael sources extracted; reuse atomic multi-item hand-ins, mission issuance and incremental entitlement tracks."
+    "phase": "RED native binding probes; full native journey route explicitly refuses until composed.",
+    "postgres_log": "/tmp/l2-knowledge-red.log",
+    "postgres_version": "18.6",
+    "red_durations_seconds": {
+      "Kilmaresh": 2.818852458,
+      "Tomes of Knowledge": 2.8604569,
+      "An Uneasy Alliance": 2.938600806
+    },
+    "compile": "dispatch test binary compiled in5m16s",
+    "mechanisms": [
+      "Native fluid subtype inputs and outputs using existing fluid/MINT owners",
+      "Generic kill/device callbacks using existing quest and kill owners",
+      "Incremental tome and shop/access entitlements"
+    ],
+    "source_contract": "CONTRACT-NOTES.md: next L2 batch source contract"
   }
 }
