@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "8e87a0b0a37a4362a13c938e4034011d02894eb3ca68a07a3d5b385c3f1a78f9",
+  "input_sha256": "1bc68c2aeae8c4ffc07b1de0e2204408883f94d0451e322edb09abf3777462ae",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -2049,7 +2049,6 @@
     "oteryn:creature.demon",
     "oteryn:creature.demon_outcast",
     "oteryn:creature.demon_parrot",
-    "oteryn:creature.demon_skeleton",
     "oteryn:creature.destroyer",
     "oteryn:creature.devoted_radiant_acolyte",
     "oteryn:creature.devoted_radiant_inquisitor",
@@ -2488,7 +2487,6 @@
     "oteryn:creature.scorpion",
     "oteryn:creature.sea_captain",
     "oteryn:creature.sea_serpent",
-    "oteryn:creature.seacrest_serpent",
     "oteryn:creature.serpent_spawn",
     "oteryn:creature.shaburak_demon",
     "oteryn:creature.shaburak_lord",
@@ -2652,7 +2650,6 @@
     "oteryn:creature.zombie"
   ],
   "unsettleable_creatures": [
-    "oteryn:creature.abyssal_calamary",
     "oteryn:creature.acid_blob",
     "oteryn:creature.acolyte_of_darkness",
     "oteryn:creature.acolyte_of_the_cult",
@@ -2826,7 +2823,6 @@
     "oteryn:creature.demon",
     "oteryn:creature.demon_outcast",
     "oteryn:creature.demon_parrot",
-    "oteryn:creature.demon_skeleton",
     "oteryn:creature.destroyer",
     "oteryn:creature.devoted_radiant_acolyte",
     "oteryn:creature.devoted_radiant_inquisitor",
@@ -3258,7 +3254,6 @@
     "oteryn:creature.scorpion",
     "oteryn:creature.sea_captain",
     "oteryn:creature.sea_serpent",
-    "oteryn:creature.seacrest_serpent",
     "oteryn:creature.serpent_spawn",
     "oteryn:creature.shaburak_demon",
     "oteryn:creature.shaburak_lord",

@@ -1084,7 +1084,7 @@ async fn legacy_decaying(
         .appearance_observation(actor, admitted.game_session_id, vec![])
         .await
         .ok_or("legacy catalogue")?;
-    let outfit = "oteryn:outfit.decaying_defender";
+    let outfit = "oteryn:content.outfit.decaying_defender_outfits";
     let option = observed
         .catalogue
         .outfits

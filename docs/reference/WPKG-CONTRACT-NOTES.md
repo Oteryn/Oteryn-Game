@@ -933,3 +933,18 @@ encoder, keeping its output byte-identical to ordinary native regeneration.
 Its12 tests pass5.827s and all25 cosmetic compiler tests pass2.879s. This also
 retains main's bounded external cosmetics descriptor instead of embedding the
 large source shards. Final native model, pins and PG remain pending.
+
+
+### WCONTRIB generated content and pin checkpoint
+
+- wcontrib-tree-regenerate-v3: PASS 717.331s
+- wcontrib-grizzly-regenerate-final: PASS 4.009s
+- wcontrib-fmt-final: PASS 14.912s
+- wcontrib-pin-refresh: PASS 164.928s
+- wcontrib-pin-check: PASS 177.482s
+
+Native Item union:3612 existing records remain byte-semantically unchanged;
+24 additions, zero removals, zero duplicates; total3636. This includes exact
+preservation of the14156/21182 shared owners. Pin-check World digest is
+`b096b258e9351ca8ea571e3e2a73a34d4883ddda590b6ea67c212f52c9cb4aeb`.
+Real PostgreSQL execution and the final content tests remain pending here.
