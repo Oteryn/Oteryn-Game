@@ -30,3 +30,9 @@ Their inspected callback surfaces do not expose the requested world achievement/
 Do not merge unrelated quest ownership or author these shared additions locally; wait for the coordinator's main merge announcement and reuse that implementation.
 
 Packet evidence git-blob: fd2bf2793d54d77706f323aedb4f224d5def82a1.
+
+## Additional existing-owner integration request: First Dragon boss rooms
+
+ENGINE-REQUEST questpc3: StepIn boss admission using existing occupancy, named-boss cooldown and timed room cleanup owners | needed by: The First Dragon Quest | where: gameplay/quests world_callbacks::Encounter and gameplay/dispatch quest_callbacks/encounter.rs
+
+Retained Crystal data-global/scripts/quests/the_first_dragon/movements_entrance_teleport.lua:41-87, tree9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d, git-blob8543eff38c536b247ca605cdb1972fe603388863, SHA256d7fd9593fb416160ed4b1d63e53890ef3d3ae8db8f559a15750c9bd062c094a0. Source checks occupied room, canFightBoss, Questline1 and the respective kill/chest/life/quiz threshold, then spawns the named boss, teleports the player, records a two-hour named-boss cooldown and schedules room cleanup. Literal cleanup delay is30minutes despite the ten-minute speech. Reuse existing boss cooldown and room lifecycle owners; do not write a second boss authority. Current Encounter schema has only minimum_level, players, monsters and room bounds, with no named cooldown/cleanup policy. Dispatch's boss_encounter.rs already exposes the native durable cooldown query. Reuse inspected QENGINE2e5850715e and QUESTPC4 8bf3338ec; no matching First Dragon entry binding found. Continue the existing-engine life-site and quiz slices while this integration is routed to qengine2.
