@@ -1,0 +1,18 @@
+crates/protocol-oteryn/src/weapon_proficiency.rs:329:pub const COMMAND_TYPE_PROFICIENCY_BROWSE: u32 = 641;
+crates/protocol-oteryn/src/mechanics_status.rs:4:pub const COMMAND_TYPE_MECHANICS_STATUS_QUERY: u32 = 669;
+crates/gameplay/durability/src/durability/mechanics_status.rs:23:    pub async fn read_mechanics_status(
+crates/gameplay/dispatch/src/gameplay_transport/mechanics_status.rs:15:        fn mechanics_status_query(
+crates/gameplay/dispatch/src/gameplay_transport/mechanics_status.rs:45:            .read_mechanics_status(self.character, self.holder, fence)
+crates/gameplay/dispatch/src/gameplay_transport/mechanics_status.rs:163:        async fn mechanics_status_query(
+crates/gameplay/dispatch/src/gameplay_transport/weapon_proficiency_browse.rs:11:        fn weapon_proficiency_browse(
+crates/gameplay/dispatch/src/gameplay_transport/weapon_proficiency_browse.rs:26:        async fn weapon_proficiency_browse(
+crates/gameplay/dispatch/src/gameplay_transport/connection/routing/weapon_proficiency_browse.rs:16:        .weapon_proficiency_browse(actor, admitted.game_session_id, u32::from_be_bytes(bytes))
+crates/gameplay/dispatch/src/gameplay_transport/connection/routing/mechanics_status.rs:13:        .mechanics_status_query(*admitted, command.command_id)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cl6_status.rs:5:    CAPABILITY_MECHANICS_STATUS_V1, COMMAND_TYPE_MECHANICS_STATUS_QUERY, MechanicsStatus,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cl6_status.rs:103:            .read_mechanics_status(owner.character, owner.holder, fence)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cl6_status.rs:111:            COMMAND_TYPE_MECHANICS_STATUS_QUERY,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cl6_status.rs:151:            COMMAND_TYPE_MECHANICS_STATUS_QUERY,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cl6_status.rs:210:            COMMAND_TYPE_MECHANICS_STATUS_QUERY,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/proficiency_browse.rs:83:                FreshAdmissionAuthority::weapon_proficiency_browse(&owner, actor, session, offset)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/proficiency_browse.rs:111:            FreshAdmissionAuthority::weapon_proficiency_browse(&owner, actor, session, u32::MAX)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/proficiency_browse.rs:117:            FreshAdmissionAuthority::weapon_proficiency_browse(&owner, actor, wrong_session, 0)

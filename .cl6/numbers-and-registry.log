@@ -1,0 +1,8 @@
+PASS capability 384 mechanics-status: free on origin/main
+PASS command 669 mechanics-status-query: free on origin/main
+PASS command 641 proficiency-browse: free on origin/main
+PASS mechanic 642 mechanics_status: free on origin/main
+PASS mechanic 638 weapon_proficiency_browse: free on origin/main
+PASS offer 639 uniquely belongs to mechanics_status; CL7 adds no offer or capability
+PASS fragment IDs match filenames, no duplicate registrations or merge markers
+PASS repository protocol fragment validation

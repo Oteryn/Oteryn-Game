@@ -1,0 +1,25 @@
+   Compiling libc v0.2.191
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling jobserver v0.1.35
+   Compiling syn v3.0.9
+   Compiling cc v1.4.4
+   Compiling zstd-sys v2.1.2+zstd.1.5.7
+   Compiling serde_derive v1.0.229
+   Compiling serde v1.0.229
+   Compiling zstd-safe v8.2.0
+   Compiling zstd v0.14.3
+   Compiling oteryn-world-bundle v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/world-bundle)
+   Compiling oteryn-world-bundle-compiler v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/tools/world-bundle-compiler)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 6.96s
+     Running `/home/mole/oteryn-cache/target-codex/lanes/cl6/debug/oteryn-world-bundle-compiler pin-refresh .`
+{
+  "inputs_digest": "ebae5fa901f10f1711a101fc00c19584b7704e3beccf626c8afa4c1b2b1b8f87",
+  "pins": [
+    {
+      "digest": "3af394d0f4e68a8485d4655e3109ceaf867320c5ca053290a29e8d297faf7afd",
+      "previous": "3af394d0f4e68a8485d4655e3109ceaf867320c5ca053290a29e8d297faf7afd",
+      "world": "oteryn"
+    }
+  ]
+}

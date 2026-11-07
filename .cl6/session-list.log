@@ -1,0 +1,207 @@
+   Compiling zmij v1.0.23
+   Compiling memchr v2.8.3
+   Compiling serde_json v1.0.154
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32
+    |
+208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+    |                                ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
+    |
+
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)
+   Compiling oteryn-protocol-oteryn v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/protocol-oteryn)
+   Compiling oteryn-session v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/session)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 16.05s
+     Running unittests src/lib.rs (/home/mole/oteryn-cache/target-codex/lanes/cl6/debug/deps/oteryn_session-cf22dbad7a713af8)
+appearance_state::mapping_tests::appearance_mapping_context_palette_and_item_downgrades_refuse: test
+appearance_state::mapping_tests::appearance_mapping_reducer_is_atomic_on_stale_gapped_and_reused_refs: test
+capability_support::creature_push_tests::creature_push_is_advertised_and_routed_with_its_prerequisites: test
+capability_support::hotkey_equip_tests::hotkey_equip_carried_is_advertised_with_its_command_owner: test
+capability_support::target_move_tests::target_walk_is_advertised_and_routed_with_its_prerequisites: test
+capability_support::weapon_proficiency_tests::proficiency_browse_is_advertised_and_routed_with_item_identity: test
+depot_containers::tests::selected_container_snapshot_is_required_typed_and_versioned: test
+gated_command::target_move::tests::cells_roundtrip_at_signed_coordinate_and_floor_limits: test
+gated_command::world_context::tests::look_and_bed_are_advertised_and_routed: test
+guild_chat::public_channels_tests::public_and_private_chat_session_selection_and_refusal_guards_are_closed: test
+guild_chat::public_channels_tests::public_channel_session_blocks_unselected_sends_and_accepts_legacy_room_refusals: test
+guild_chat::public_channels_tests::public_channel_session_pushes_fail_before_mutation_and_poison_the_session: test
+guild_chat::public_channels_tests::public_channel_session_selected_extension_accepts_snapshot_deltas_and_refusal: test
+guild_chat::public_channels_tests::public_channel_session_snapshots_require_the_negotiated_room_extension: test
+guild_chat_tests::guild_chat_client_keeps_login_motd_and_send_rank_and_not_allowed_status: test
+guild_chat_tests::monster_mount_voice_requires_the_negotiated_capability: test
+guild_chat_tests::party_chat_client_requires_party_capability_for_send_receive_and_refusal: test
+item_movement::tests::count_and_destinations_follow_negotiation: test
+private_channels::tests::private_channel_list_client_applies_replacements_as_chat_events: test
+private_channels::tests::private_channel_list_client_refuses_malformed_overflow_and_stale_revisions_atomically: test
+private_channels::tests::private_channel_list_client_requires_cap259_for_added_public_rooms: test
+private_channels::tests::private_channel_list_client_requires_cap80_before_any_state_change: test
+property_services::character_info::tests::existing_character_info_layout_is_strict_and_correlated: test
+tests::a_base_mismatch_an_unselected_domain_and_an_unregistered_type_poison_the_session: test
+tests::a_cast_applies_the_vitals_delta_and_a_rejected_cast_changes_nothing: test
+tests::a_cast_claims_its_vitals_delta_after_a_pushed_spatial_delta: test
+tests::a_chat_snapshot_of_another_type_or_without_the_capability_is_refused: test
+tests::a_committed_use_returns_at_its_result_and_its_domain_2_delta_arrives_as_an_event: test
+tests::a_committed_use_with_no_delta_returns_at_its_result: test
+tests::a_contradicting_chat_delta_poisons_the_session: test
+tests::a_contradicting_entity_delta_poisons_the_session: test
+tests::a_delta_between_the_result_and_the_steps_own_delta_applies_as_pushed: test
+tests::a_delta_pushed_before_the_result_applies_and_the_steps_own_delta_still_applies: test
+tests::a_duplicate_item_handle_in_a_snapshot_is_refused: test
+tests::a_join_snapshot_without_domain_10_is_refused_when_capability_17_is_selected: test
+tests::a_leftover_delta_applies_on_the_next_idle_read: test
+tests::a_line_pushed_by_another_speaker_applies_while_idle: test
+tests::a_logout_is_refused_before_sending_when_capability_21_is_not_selected: test
+tests::a_logout_result_whose_status_disagrees_with_its_code_fails_the_session: test
+tests::a_misshapen_admission_refusal_fails_closed: test
+tests::a_probe_refreshes_the_silence_deadline: test
+tests::a_pushed_delta_enters_updates_and_removes_entities_and_is_queued: test
+tests::a_pushed_delta_mismatch_during_an_exchange_poisons_the_session: test
+tests::a_pushed_item_delta_with_a_wrong_revision_or_a_duplicate_handle_fails_closed: test
+tests::a_pushed_vitals_delta_during_idle_applies_and_is_queued_once: test
+tests::a_refused_logout_keeps_the_session_playing_and_an_accepted_one_ends_it: test
+tests::a_resume_never_changes_the_selected_set: test
+tests::a_rooms_delta_replaces_the_open_set_and_lines_keep_the_last_64: test
+tests::a_sealed_use_result_without_capability_11_fails_closed_and_others_carry_no_gate_id: test
+tests::a_selection_outside_the_advertised_set_is_refused: test
+tests::a_stale_move_result_changes_nothing_locally: test
+tests::a_status_that_contradicts_the_disposition_fails_closed: test
+tests::a_step_claims_the_entity_delta_and_moves_the_own_actor_in_both_views: test
+tests::a_step_delta_makes_entities_appear_move_and_leave_in_the_store_and_queue: test
+tests::a_stream_closed_before_admission_fails_closed: test
+tests::a_too_early_step_is_retried_with_backoff_and_needs_capability_13: test
+tests::a_type_2_snapshot_is_refused_without_capability_6_and_type_1_with_it: test
+tests::a_type_2_snapshot_of_0_1_and_256_entities_is_stored_by_entity_ref: test
+tests::account_achievements_tests::account_achievements_core_command_needs_no_notice_capability: test
+tests::account_achievements_tests::account_achievements_malformed_or_wrong_page_poisons_session: test
+tests::achievement_notices_join_requires_the_domain_13_snapshot_when_selected: test
+tests::achievement_notices_preserve_typed_payload_when_selected: test
+tests::achievement_notices_reach_typed_client_events_only_when_selected: test
+tests::achievement_notices_validate_snapshots_and_reject_bad_deltas_without_advancing: test
+tests::admits_joins_and_steps_over_an_in_memory_stream: test
+tests::ambient_b24_negotiates_without_enabling_legacy_presentation: test
+tests::an_admission_refusal_frame_surfaces_its_code: test
+tests::an_intent_over_the_bound_is_refused_before_anything_is_sent: test
+tests::an_unknown_admission_code_is_generic_and_terminal: test
+tests::analyser_tests::analyser_join_requires_an_empty_typed_snapshot: test
+tests::analyser_tests::analyser_recovery_cannot_roll_back_confirmed_revision: test
+tests::analyser_tests::analyser_selected_facts_are_typed_and_invalid_batches_preserve_revision: test
+tests::appearance_session_tests::appearance_result_first_and_observation_first_converge_through_session_dispatch: test
+tests::appearance_session_tests::item_dictionary_tests::appearance_item_dictionary_validates_snapshot_and_delta_atomically: test
+tests::asynchronous_vitals_before_command_result_preserves_mandated_cast_delta: test
+tests::attack_and_fight_mode_intents_are_sent_and_the_combat_state_is_kept: test
+tests::attack_intents_are_refused_before_sending_when_capability_17_is_not_selected: test
+tests::browse_field_moves_both_directions_and_up_receives_field_delta: test
+tests::capability_11_dispositions_and_the_gate_id_need_the_negotiated_capability: test
+tests::channel_list_tests::gap_world_channel_list: test
+tests::channel_list_tests::gap_world_channel_list_malformed_admission: test
+tests::chat_is_refused_without_capability_7_and_sends_nothing: test
+tests::cl26s3_client_advertises_daily_reward_v2: test
+tests::clxa_entity_light_survives_join_update_expiry_and_leave: test
+tests::container_tree_tests::container_tree_join_refuses_missing_malformed_and_unknown_snapshots: test
+tests::container_tree_tests::container_tree_session_admits_commands_and_applies_live_updates: test
+tests::depot_map_tests::depot_client_admits_bundle_browses_and_waits_for_committed_inventory: test
+tests::depot_map_tests::depot_client_refuses_unselected_capability_without_sending: test
+tests::depot_map_tests::depot_container_deposit_waits_for_container_delta_without_inventory_change: test
+tests::depot_map_tests::open_tests::empty_depot_source_allocates_before_replacing_view_zero: test
+tests::depot_map_tests::open_tests::missing_depot_source_delta_expires_at_session_deadline_without_ending_play: test
+tests::derived_gated_routes_match_previous_table: test
+tests::event_wait_ignores_empty_idle_windows_until_the_overlay_delta_arrives: test
+tests::every_intent_variant_reaches_the_wire_at_the_text_bound: test
+tests::expired_idle_window_does_not_start_queued_delta_but_finishes_started_frame: test
+tests::field_10_is_required_with_capability_4_and_refused_without_it: test
+tests::gap_cl1_advertises_existing_character_tab_capability: test
+tests::gated_domains_and_commands_route_by_selected_capability: test
+tests::highscores_query_uses_selected_session_and_preserves_live_result: test
+tests::hotkey_equip_carried_session_reuses_equipment_snapshot_delta_and_reply: test
+tests::hotkey_equip_session_decodes_selected_equipment_snapshot_and_delta: test
+tests::idle_applies_sequenced_actor_vitals_before_liveness_ack: test
+tests::invalid_unsolicited_vitals_poison_idle_and_command_without_advancing_state: test
+tests::item_commands_are_refused_before_sending_without_capability_4: test
+tests::item_movement_tests::counted_moves_use_live_selection_and_preserve_refusals_and_updates: test
+tests::item_movement_tests::empty_rejected_move_fails_closed: test
+tests::item_snapshots_of_another_type_or_without_the_capability_are_refused: test
+tests::muted_and_exhausted_results_report_their_wait_and_change_nothing: test
+tests::negotiated_names_survive_join_delta_and_visibility_leave: test
+tests::npc_service_and_staff_prerequisites_route_with_interleaved_domains: test
+tests::opening_a_corpse_and_looting_one_entry_follows_the_result_with_both_deltas: test
+tests::p17c_client_advertises_exiva_and_field_prerequisites: test
+tests::p17c_exiva_selection_routes_command_170_and_refuses_without_selection: test
+tests::p17c_field_functions_select_with_prerequisites_on_the_default_client: test
+tests::pc04_house_transfer::pc04_house_transfer_codec_refuses_malformed_and_roundtrips_boundaries: test
+tests::pc04_house_transfer::pc04_house_transfer_handoff_restarts_the_command_namespace: test
+tests::pc04_house_transfer::pc04_property_codecs_use_the_real_session_routes: test
+tests::pc04_house_transfer::pc04_transfer_refusal_preserves_namespace_and_invalid_ack_poison: test
+tests::player_trade_and_container_pushes_are_typed_revision_checked_and_selected: test
+tests::presentation_audio_negotiates_and_validates_revisions_before_delivery: test
+tests::prey_native_capability_routes_tier_and_confirmed_pick_and_refuses_without_selection: test
+tests::property_services_tests::cp01_property_commands_use_admitted_session_routes: test
+tests::property_services_tests::cp01_training_adapter_round_trips_boundaries_and_rejects_malformed_replies: test
+tests::pvp_expert_tests::party_icons_are_typed_and_require_current_visible_player_incarnations: test
+tests::pvp_expert_tests::pc01_expert_session_validates_snapshot_and_delivers_confirmed_modes: test
+tests::pvp_expert_tests::pc01_panel_capabilities_have_registered_session_routes: test
+tests::quest_log_tests::quest_log_admission_rejects_missing_malformed_or_wrong_type_snapshot: test
+tests::quest_log_tests::quest_log_session_command_22_and_domain_16_are_gated: test
+tests::raids_global_server_message_decode_and_revision_failures_do_not_advance: test
+tests::raids_global_server_message_join_accepts_only_empty_or_status_snapshot: test
+tests::raids_global_server_messages_reach_typed_events_in_order_only_when_selected: test
+tests::recovery_preserves_identity_sequences_and_selection: test
+tests::recovery_retains_unacknowledged_step_id_after_flushing_command: test
+tests::refusal_details_survive_step_and_use_exchange: test
+tests::refusal_suffix_requires_selection_and_rejects_unknown_or_success_detail: test
+tests::replacement_snapshot_tests::negotiated_names_survive_a_floor_replacement_and_following_delta: test
+tests::replacement_snapshot_tests::replacement_snapshot_between_result_and_claimed_delta_rebases_spatial_state: test
+tests::replacement_snapshot_tests::replacement_snapshot_idle_and_during_command_continues_sequence: test
+tests::replacement_snapshot_tests::replacement_snapshot_is_atomic_and_poisoned_on_invalid_transfer_or_domain: test
+tests::replacement_snapshot_tests::replacement_snapshot_multichunk_replaces_gated_domain_and_rebases_waiting_delta: test
+tests::replacement_snapshot_tests::replacement_snapshot_notifies_overlay_and_gated_consumers: test
+tests::rune_use_dispositions_18_and_19_need_capability_21: test
+tests::selected_mechanic_panels_have_raw_command_routes: test
+tests::server_save_notices_reach_typed_client_events_only_when_selected: test
+tests::silent_peer_ends_even_across_short_idle_windows: test
+tests::spell_catalog_tests::gap_spell_catalog_rejects_invalid_admission: test
+tests::spell_catalog_tests::gap_spell_catalog_session_replacement_and_preservation: test
+tests::status_projection_tests::battle_instinct_shipped_session_routes: test
+tests::status_projection_tests::condition_status_shipped_session_routes: test
+tests::status_projection_tests::nx7_skill_display_shipped_session_routes: test
+tests::status_projection_tests::party_effects_shipped_session_routes: test
+tests::status_projection_tests::rest_status_shipped_session_routes: test
+tests::status_projection_tests::skill_progress_shipped_session_routes: test
+tests::target_move_tests::unselected_target_walk_is_refused_without_consuming_a_command: test
+tests::the_advertised_set_carries_capability_4_with_its_requirement: test
+tests::the_advertised_set_carries_chat_and_stays_closed: test
+tests::the_advertised_set_is_closed_under_the_registry_requires: test
+tests::the_event_queue_holds_exactly_the_limit_and_fails_closed_one_past_it: test
+tests::the_join_snapshot_sets_the_inventory_and_open_container_or_leaves_them_empty: test
+tests::the_join_snapshot_sets_the_open_rooms_or_leaves_them_empty: test
+tests::the_store_holds_exactly_256_entities_and_fails_closed_at_257: test
+tests::too_early_without_capability_13_fails_closed: test
+tests::tutorial_notices_reach_typed_client_events_only_when_selected: test
+tests::two_consecutive_spatial_deltas_end_the_step_at_the_first_and_nothing_is_lost: test
+tests::unselected_gated_commands_and_domains_are_refused: test
+tests::world_context_tests::world_context_existing_look_and_bed_commands_cross_the_session: test
+tests::world_event_query_uses_selected_session_and_empty_payload: test
+tests::world_light_tests::clock_snapshot_and_updates_validate_before_delivery: test
+tests::world_weather_tests::weather_requires_valid_snapshot_and_negotiated_capability: test
+tests::world_weather_tests::weather_snapshot_and_updates_validate_before_delivery: test
+vip_presence::tests::vip_presence_client_expires_without_network_and_does_not_reannounce: test
+vip_presence::tests::vip_presence_selection_requires_chat_and_the_existing_vip_owner: test
+
+172 tests, 0 benchmarks

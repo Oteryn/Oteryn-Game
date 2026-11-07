@@ -1,0 +1,12 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.51s
+     Running `/home/mole/oteryn-cache/target-codex/lanes/cl6/debug/oteryn-world-bundle-compiler pin-check . .cl6/pin-check`
+{
+  "inputs_digest": "ebae5fa901f10f1711a101fc00c19584b7704e3beccf626c8afa4c1b2b1b8f87",
+  "pins": [
+    {
+      "bytes": 31101773,
+      "digest": "3af394d0f4e68a8485d4655e3109ceaf867320c5ca053290a29e8d297faf7afd",
+      "world": "oteryn"
+    }
+  ]
+}

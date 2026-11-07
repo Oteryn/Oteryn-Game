@@ -1,0 +1,3702 @@
+diff --git a/apps/client/src/features/0006-world-spatial-entities/scene.rs b/apps/client/src/features/0006-world-spatial-entities/scene.rs
+index 7673742fc..70d2f699c 100644
+--- a/apps/client/src/features/0006-world-spatial-entities/scene.rs
++++ b/apps/client/src/features/0006-world-spatial-entities/scene.rs
+@@ -94,11 +94,27 @@ impl Scene {
+             } else {
+                 self.actor_draws.push((tile, draws));
+             }
+-            if self.view.contains(tile)
+-                && let Some(name) = entity.display_name
+-                && let Ok(name) = name.as_str()
+-            {
+-                self.names.push((tile, self.cache.name(name)));
++            if self.view.contains(tile) {
++                let name = entity
++                    .display_name
++                    .as_ref()
++                    .and_then(|name| name.as_str().ok());
++                let mark = if entity.kind == oteryn_session::EntityKind::Creature {
++                    match entry.forge_stacks {
++                        Some(stacks @ 1..=5) => Some(format!("Influenced {stacks}")),
++                        Some(15) => Some(String::from("Fiendish")),
++                        _ => None,
++                    }
++                } else {
++                    None
++                };
++                let label = match (name, mark) {
++                    (Some(name), Some(mark)) => format!("{name} - {mark}"),
++                    (Some(name), None) => name.to_owned(),
++                    (None, Some(mark)) => mark,
++                    (None, None) => continue,
++                };
++                self.names.push((tile, self.cache.name(&label)));
+             }
+         }
+         if !entries.is_empty() {
+diff --git a/apps/client/src/features/0006-world-spatial-entities/tests/play.rs b/apps/client/src/features/0006-world-spatial-entities/tests/play.rs
+index edc2cb81b..94a402c23 100644
+--- a/apps/client/src/features/0006-world-spatial-entities/tests/play.rs
++++ b/apps/client/src/features/0006-world-spatial-entities/tests/play.rs
+@@ -84,12 +84,23 @@ fn live_names_reach_scene_and_disappear_with_visibility() -> Result<(), BatchErr
+             health_percent: 100,
+         },
+     };
+-    view.set_presentations(vec![oteryn_session::VisibleAppearance {
++    let mut appearance = oteryn_session::VisibleAppearance {
++        forge_stacks: None,
+         light: None,
+         entity,
+         look: None,
+-    }])?;
++    };
++    view.set_presentations(vec![appearance.clone()])?;
+     assert_eq!(view.scene().name_count(), 1);
++    let unmarked = view.scene().sprites().len();
++    for stacks in [1, 5, 15] {
++        appearance.forge_stacks = Some(stacks);
++        view.set_presentations(vec![appearance.clone()])?;
++        assert!(view.scene().sprites().len() > unmarked);
++    }
++    appearance.forge_stacks = None;
++    view.set_presentations(vec![appearance])?;
++    assert_eq!(view.scene().sprites().len(), unmarked);
+     view.set_presentations(Vec::new())?;
+     assert_eq!(view.scene().name_count(), 0);
+     Ok(())
+@@ -100,6 +111,7 @@ fn own_identity_draws_once_between_step_and_appearance_publish() -> Result<(), B
+     let mut view = PlayView::new(TileCoord::new(100, 200), 0, &[])?;
+     view.set_own_identity([1; 16]);
+     let own = oteryn_session::VisibleAppearance {
++        forge_stacks: None,
+         light: None,
+         entity: oteryn_session::WorldSpatialEntity {
+             display_name: None,
+@@ -172,6 +184,7 @@ fn live_presentations_keep_target_clock_and_light_through_rebuilds() -> Result<(
+     let selected = view.scene().target();
+     assert!(selected.is_some());
+     let appearance = oteryn_session::VisibleAppearance {
++        forge_stacks: None,
+         light: None,
+         entity,
+         look: None,
+diff --git a/apps/client/src/features/0006-world-spatial-entities/tests/scene.rs b/apps/client/src/features/0006-world-spatial-entities/tests/scene.rs
+index e564597dc..230564d0f 100644
+--- a/apps/client/src/features/0006-world-spatial-entities/tests/scene.rs
++++ b/apps/client/src/features/0006-world-spatial-entities/tests/scene.rs
+@@ -1,10 +1,77 @@
+ use super::*;
++#[test]
++fn cl6_forge_marks_reach_native_name_glyphs_and_clear_with_visibility() -> Result<(), BatchError> {
++    let tile = TileCoord::new(100, 200);
++    let mut scene =
++        Scene::centered_on(Arc::new(World::builtin()?), None, tile, StepDir::South, &[])?;
++    let mut entry = VisibleAppearance {
++        entity: oteryn_session::WorldSpatialEntity {
++            entity: oteryn_session::EntityRef {
++                identity: [8; 16],
++                generation: 1,
++            },
++            kind: oteryn_session::EntityKind::Creature,
++            position: oteryn_session::ActorPosition {
++                x: 101,
++                y: 200,
++                floor: 0,
++            },
++            display_name: Some(
++                oteryn_session::EntityDisplayName::new("Rat")
++                    .map_err(|_| BatchError::InvalidView)?,
++            ),
++            detail: EntityDetail::Actor {
++                direction: oteryn_session::StepDirection::South,
++                appearance_ref: 1,
++                health_percent: 100,
++            },
++        },
++        look: None,
++        light: None,
++        forge_stacks: None,
++    };
++    for (mark, expected) in [
++        (None, "Rat"),
++        (Some(1), "Rat - Influenced 1"),
++        (Some(5), "Rat - Influenced 5"),
++        (Some(15), "Rat - Fiendish"),
++        (None, "Rat"),
++    ] {
++        entry.forge_stacks = mark;
++        scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
++        let glyphs = scene.cache.name(expected);
++        assert_eq!(
++            scene.names,
++            vec![(TileCoord::new(101, 200), glyphs)],
++            "{expected}"
++        );
++    }
++    entry.forge_stacks = Some(15);
++    entry.entity.display_name = None;
++    scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
++    assert_eq!(scene.names[0].1, scene.cache.name("Fiendish"));
++    entry.entity.kind = oteryn_session::EntityKind::Player;
++    scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
++    assert!(
++        scene.names.is_empty(),
++        "forge marks describe creatures only"
++    );
++    entry.entity.kind = oteryn_session::EntityKind::Creature;
++    entry.entity.position.floor = -1;
++    scene.set_presentations_from(&[entry], 0, None)?;
++    assert!(scene.names.is_empty());
++    scene.set_presentations_from(&[], 0, None)?;
++    assert!(scene.names.is_empty());
++    Ok(())
++}
++
+ #[test]
+ fn live_outfit_uses_server_look_and_empty_outfit_suppresses_pixels() -> Result<(), BatchError> {
+     let tile = TileCoord::new(100, 200);
+     let mut scene =
+         Scene::centered_on(Arc::new(World::builtin()?), None, tile, StepDir::South, &[])?;
+     let mut entry = VisibleAppearance {
++        forge_stacks: None,
+         light: None,
+         entity: oteryn_session::WorldSpatialEntity {
+             display_name: Some(
+@@ -79,6 +146,7 @@ fn other_actor_keeps_object_marker_and_local_player() -> Result<(), BatchError>
+         },
+     };
+     let mut appearance = VisibleAppearance {
++        forge_stacks: None,
+         light: None,
+         entity,
+         look: Some(oteryn_session::Look::EmptyOutfit),
+@@ -106,6 +174,7 @@ fn recenter_reuses_loaded_assets_outfits_glyphs_and_packed_atlas() -> Result<(),
+     let mut scene = Scene::centered_on(world.clone(), None, tile, StepDir::South, &[])?;
+     scene.set_own_identity([1; 16]);
+     let entry = VisibleAppearance {
++        forge_stacks: None,
+         light: None,
+         entity: oteryn_session::WorldSpatialEntity {
+             display_name: Some(
+@@ -191,6 +260,7 @@ fn play_view_rebuild_retains_the_same_cached_image() -> Result<(), BatchError> {
+     let mut view = crate::play::PlayView::new(TileCoord::new(100, 200), 0, &[])?;
+     view.set_own_identity([1; 16]);
+     let entry = VisibleAppearance {
++        forge_stacks: None,
+         light: None,
+         entity: oteryn_session::WorldSpatialEntity {
+             display_name: Some(
+diff --git a/apps/client/src/features/0019-world-light/tests/play.rs b/apps/client/src/features/0019-world-light/tests/play.rs
+index d2b79787b..fc05d8ca3 100644
+--- a/apps/client/src/features/0019-world-light/tests/play.rs
++++ b/apps/client/src/features/0019-world-light/tests/play.rs
+@@ -9,6 +9,7 @@ fn clxa_character_light_reaches_native_scene_and_expires_on_update()
+     };
+     let mut view = PlayView::new(TileCoord::new(0, 0), 7, &[])?;
+     let entry = VisibleAppearance {
++        forge_stacks: None,
+         entity: oteryn_session::WorldSpatialEntity {
+             display_name: None,
+             kind: EntityKind::Player,
+diff --git a/apps/client/src/features/0082-creature-push/input.rs b/apps/client/src/features/0082-creature-push/input.rs
+index b45a02788..c2fdd7c15 100644
+--- a/apps/client/src/features/0082-creature-push/input.rs
++++ b/apps/client/src/features/0082-creature-push/input.rs
+@@ -3,10 +3,7 @@ use crate::play::{PlayLink, PlayView, mailbox::lock};
+ use oteryn_client_runtime::server_mechanic::ServerMechanicCommand;
+ use oteryn_input_actions::{ButtonState, Modifiers, MouseButton, NormalizedInputEvent};
+ use oteryn_renderer::{BatchError, TileCoord};
+-use oteryn_session::{
+-    ActorPosition, EntityKind,
+-    creature_push::{CreaturePushIntent, encode_creature_push_intent},
+-};
++use oteryn_session::{ActorPosition, EntityKind, creature_push::CreaturePushIntent};
+ 
+ impl PlayView {
+     pub fn world_pointer_input(
+@@ -120,14 +117,12 @@ impl PlayView {
+                                             floor,
+                                         },
+                                     };
+-                                    if let Ok(payload) = encode_creature_push_intent(&intent) {
++                                    if let Some(command) =
++                                        oteryn_client_ui::creature_push::request(intent)
++                                    {
+                                         let _ = link.commands.send(
+                                             crate::combat_input::PlayCommand::ServerMechanic(
+-                                                ServerMechanicCommand {
+-                                                    capability: 82,
+-                                                    command_type: 98,
+-                                                    payload,
+-                                                },
++                                                command,
+                                             ),
+                                         );
+                                     }
+diff --git a/apps/client/src/features/0195-weapon-proficiency/native.rs b/apps/client/src/features/0195-weapon-proficiency/native.rs
+index c22165080..2a5dfd012 100644
+--- a/apps/client/src/features/0195-weapon-proficiency/native.rs
++++ b/apps/client/src/features/0195-weapon-proficiency/native.rs
+@@ -2,6 +2,10 @@
+ use oteryn_client_runtime::raw_feature::FeatureCommand;
+ use oteryn_client_ui::weapon_proficiency::{Intent, WeaponProficiencyPanel, request};
+ 
++pub(in crate::play) fn action_clicked(id: usize, notification: usize) -> bool {
++    matches!(id, 101..=111) && notification == 0 // Win32 BN_CLICKED
++}
++
+ pub(in crate::play) fn display(p: &WeaponProficiencyPanel) -> String {
+     format!(
+         "{}\r\n{}\r\n{}",
+@@ -13,7 +17,7 @@ pub(in crate::play) fn display(p: &WeaponProficiencyPanel) -> String {
+             "Ready"
+         },
+         p.feedback.unwrap_or(""),
+-        p.result.as_deref().unwrap_or("")
++        oteryn_client_ui::weapon_proficiency::panel_text(p)
+     )
+ }
+ 
+@@ -26,6 +30,14 @@ pub(in crate::play) fn submit(
+     if p.pending || !p.selected {
+         return None;
+     }
++    if let Some(intent) = match id {
++        109 => Some(Intent::Browse),
++        110 => Some(Intent::PreviousPage),
++        111 => Some(Intent::NextPage),
++        _ => None,
++    } {
++        return request(p, intent);
++    }
+     let intent = match id {
+         101 => Intent::SelectPerk,
+         102 => Intent::Modify,
+@@ -89,7 +101,7 @@ mod window {
+                 let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
+                 let id = w & 0xffff;
+                 let note = (w >> 16) & 0xffff;
+-                if !actions.is_null() && matches!(id, 101..=108) && note == BN_CLICKED as usize {
++                if !actions.is_null() && action_clicked(id, note) {
+                     (*actions).0.push(id);
+                 }
+                 return 0;
+@@ -205,6 +217,21 @@ mod window {
+                     WS_TABSTOP,
+                 );
+             }
++            for (id, label) in [
++                (109, "Refresh weapons"),
++                (110, "Previous page"),
++                (111, "Next page"),
++            ] {
++                control(
++                    hwnd,
++                    "BUTTON",
++                    label,
++                    id,
++                    [10 + (id as i32 - 109) * 175, 310, 165, 28],
++                    WS_TABSTOP,
++                );
++            }
++            actions.0.push(109);
+             let output = control(
+                 hwnd,
+                 "EDIT",
+diff --git a/apps/client/src/features/0195-weapon-proficiency/tests/play.rs b/apps/client/src/features/0195-weapon-proficiency/tests/play.rs
+index 12252cffc..e090f3c9e 100644
+--- a/apps/client/src/features/0195-weapon-proficiency/tests/play.rs
++++ b/apps/client/src/features/0195-weapon-proficiency/tests/play.rs
+@@ -85,3 +85,98 @@ fn native_proficiency_rejects_invalid_fields_and_clears_perks() {
+         native_controls::submit(&mut p, 101, ["258", "2", "1", "1", "9", "2"], false).is_none()
+     );
+ }
++
++#[test]
++fn native_proficiency_browse_decodes_experience_and_pages_the_complete_list()
++-> Result<(), Box<dyn std::error::Error>> {
++    use crate::play::play_channel;
++    use oteryn_client_runtime::weapon_proficiency::{ProficiencyPage, ProficiencyRow};
++    for id in 109..=111 {
++        assert!(native_controls::action_clicked(id, 0));
++        assert!(!native_controls::action_clicked(id, 1));
++    }
++    assert!(!native_controls::action_clicked(112, 0));
++    let (link, mut commands, outbox) = play_channel();
++    outbox.weapon_proficiency_initialize(true);
++    link.weapon_proficiency_request(Intent::Browse);
++    let crate::combat_input::PlayCommand::Feature(command) = commands.try_recv()? else {
++        return Err("missing catalogue query".into());
++    };
++    assert_eq!(
++        (command.capability, command.kind, command.payload),
++        (195, 641, vec![0, 0, 0, 0])
++    );
++    let page = ProficiencyPage {
++        offset: 0,
++        total: 2,
++        rows: vec![ProficiencyRow {
++            definition: 258.try_into()?,
++            name: "Sword".into(),
++            experience: 12345,
++            level: 2,
++            selections: vec![Some(1), None],
++        }],
++    };
++    outbox.weapon_proficiency_result(&GatedCommandResult {
++        command_id: 1,
++        status: CommandStatus::Accepted,
++        server_sequence: 1,
++        payload: page.encode().ok_or("encode")?,
++    });
++    let panel = link.weapon_proficiency_panel();
++    let text = native_controls::display(&panel);
++    assert!(text.contains("12345 XP"));
++    assert!(text.contains("Sword"));
++    assert!(text.contains("1 / 2"));
++    link.weapon_proficiency_request(Intent::NextPage);
++    let crate::combat_input::PlayCommand::Feature(command) = commands.try_recv()? else {
++        return Err("missing next page".into());
++    };
++    assert_eq!(command.payload, 1u32.to_be_bytes());
++    outbox.weapon_proficiency_result(&GatedCommandResult {
++        command_id: 2,
++        status: CommandStatus::Accepted,
++        server_sequence: 2,
++        payload: vec![0],
++    });
++    assert!(link.weapon_proficiency_panel().feedback.is_some());
++    assert!(native_controls::display(&link.weapon_proficiency_panel()).contains("12345 XP"));
++    Ok(())
++}
++
++#[test]
++fn proficiency_page_rejects_truncation_trailing_and_oversized_rows()
++-> Result<(), Box<dyn std::error::Error>> {
++    use oteryn_client_runtime::weapon_proficiency::{ProficiencyPage, ProficiencyRow};
++    let mut page = ProficiencyPage {
++        offset: 0,
++        total: 1,
++        rows: vec![ProficiencyRow {
++            definition: 1.try_into()?,
++            name: "Weapon".into(),
++            experience: u32::MAX,
++            level: 9,
++            selections: vec![None; 7],
++        }],
++    };
++    let bytes = page.encode().ok_or("encode")?;
++    assert_eq!(ProficiencyPage::decode(&bytes), Some(page.clone()));
++    for end in 0..bytes.len() {
++        assert!(ProficiencyPage::decode(&bytes[..end]).is_none());
++    }
++    let mut trailing = bytes;
++    trailing.push(0);
++    assert!(ProficiencyPage::decode(&trailing).is_none());
++    page.rows[0].level = 10;
++    assert!(page.encode().is_none());
++    page.rows[0].level = 9;
++    page.rows[0].name = "x".repeat(129);
++    assert!(page.encode().is_none());
++    page.rows[0].name = "weapon".into();
++    page.rows[0].selections.push(None);
++    assert!(page.encode().is_none());
++    page.rows[0].selections.clear();
++    page.offset = u32::MAX;
++    assert!(page.encode().is_none());
++    Ok(())
++}
+diff --git a/apps/client/src/features/0384-mechanics-status/play.json b/apps/client/src/features/0384-mechanics-status/play.json
+new file mode 100644
+index 000000000..9b9ef9b9f
+--- /dev/null
++++ b/apps/client/src/features/0384-mechanics-status/play.json
+@@ -0,0 +1 @@
++{"concerns":["protocol"],"events":{}}
+diff --git a/apps/client/src/features/0384-mechanics-status/protocol.rs b/apps/client/src/features/0384-mechanics-status/protocol.rs
+new file mode 100644
+index 000000000..d7eab6970
+--- /dev/null
++++ b/apps/client/src/features/0384-mechanics-status/protocol.rs
+@@ -0,0 +1,62 @@
++//! Native admitted query flow for Character effects.
++use crate::combat_input::PlayCommand;
++use crate::play::{Outbox, PlayLink, mailbox::lock};
++use oteryn_client_runtime::raw_feature::FeatureCommand;
++use oteryn_input_actions::NormalizedInputEvent;
++impl PlayLink {
++    pub fn mechanics_status_request(&self) {
++        let mut mailbox = lock(&self.mailbox);
++        if let Some(payload) =
++            oteryn_client_ui::mechanics_status::request(&mut mailbox.mechanics_status)
++            && self
++                .commands
++                .send(PlayCommand::Feature(FeatureCommand {
++                    capability: 384,
++                    kind: 669,
++                    payload,
++                }))
++                .is_err()
++        {
++            mailbox.mechanics_status.pending = false;
++            mailbox.mechanics_status.error = Some("Session ended");
++        }
++    }
++    pub fn mechanics_status_input(&self, events: &[NormalizedInputEvent]) -> bool {
++        if !oteryn_client_ui::mechanics_status::open_key(events) {
++            return false;
++        }
++        self.mechanics_status_request();
++        #[cfg(windows)]
++        crate::play::status_window::open_window(self, "Character effects — Ctrl+Alt+Shift+U", |mailbox| {
++            &mut mailbox.mechanics_status
++        });
++        #[cfg(not(windows))]
++        {
++            lock(&self.mailbox).mechanics_status.open = true;
++        }
++        true
++    }
++    pub fn mechanics_status_panel(
++        &self,
++    ) -> oteryn_client_ui::mechanics_status::MechanicsStatusPanel {
++        lock(&self.mailbox).mechanics_status.clone()
++    }
++}
++impl Outbox {
++    pub(in crate::play) fn mechanics_status_initialize(&self, selected: bool) {
++        lock(&self.0).mechanics_status.selected = selected;
++    }
++    pub(in crate::play) fn mechanics_status_result(
++        &self,
++        result: &oteryn_session::GatedCommandResult,
++    ) {
++        let accepted = matches!(
++            result.status,
++            oteryn_session::CommandStatus::Accepted
++                | oteryn_session::CommandStatus::DuplicateReplay
++        );
++        lock(&self.0)
++            .mechanics_status
++            .finish(accepted, &result.payload);
++    }
++}
+diff --git a/apps/client/src/features/local-status-flows/tests/play.rs b/apps/client/src/features/local-status-flows/tests/play.rs
+index 05aa549d3..8eebd7a44 100644
+--- a/apps/client/src/features/local-status-flows/tests/play.rs
++++ b/apps/client/src/features/local-status-flows/tests/play.rs
+@@ -341,3 +341,23 @@ fn nx7_complete_skills_native_play_queue_decode_and_display() -> Result<(), Erro
+         .join()
+         .map_err(|_| "NX-7 play thread panicked")?
+ }
++
++flow!(
++    cl6_mechanics_status_native_queue_refusal_replay_logout,
++    mechanics_status,
++    mechanics_status_panel,
++    mechanics_status_request,
++    mechanics_status_input,
++    mechanics_status_initialize,
++    384,
++    669,
++    24,
++    oteryn_session::mechanics_status::MechanicsStatus {
++        observed_unix_ms: 100,
++        dust: 73,
++        dust_limit: 100,
++        deaths: vec![oteryn_session::mechanics_status::DeathConsumption { at_unix_ms: 50, consumed: vec!["oteryn:blessing.twist_of_fate".into()] }],
++        timers: vec![oteryn_session::mechanics_status::EffectTimer { key: "wealth_duplex".into(), remaining_ms: 1234, online_only: true }],
++        members: vec![oteryn_session::mechanics_status::MemberEffects { bonuses: [0; 5], party_spell_remaining_ms: [0; 5], character: [1;16], name: "Friend".into(), conditions: Some(oteryn_session::condition_status::ConditionStatus { conditions: vec![oteryn_session::condition_status::ActiveCondition { icon: 13, sub_id: 0, remaining_ms: 4001 }] }) }],
++    }
++);
+diff --git a/apps/client/src/play/mailbox.rs b/apps/client/src/play/mailbox.rs
+index 35cf41072..76a922b6a 100644
+--- a/apps/client/src/play/mailbox.rs
++++ b/apps/client/src/play/mailbox.rs
+@@ -162,6 +162,7 @@ pub(super) struct Mailbox {
+     pub(super) wheel: oteryn_client_ui::wheel_allocation::WheelPanel,
+     pub(super) wheel_shutdown: bool,
+     pub(super) exiva: oteryn_client_ui::exiva_settings::ExivaPanel,
++    pub(super) mechanics_status: oteryn_client_ui::mechanics_status::MechanicsStatusPanel,
+     pub(super) condition_status: oteryn_client_ui::condition_status::ConditionStatusPanel,
+     pub(super) rest_status: oteryn_client_ui::rest_status::RestStatusPanel,
+     pub(super) battle_instinct_status:
+@@ -389,6 +390,7 @@ impl Outbox {
+         mailbox.animus = Default::default();
+         mailbox.loyalty_skills = Default::default();
+         mailbox.condition_status = Default::default();
++        mailbox.mechanics_status = Default::default();
+         mailbox.rest_status = Default::default();
+         mailbox.battle_instinct_status = Default::default();
+         mailbox.skill_progress = Default::default();
+@@ -426,6 +428,7 @@ impl Outbox {
+         mailbox.animus = Default::default();
+         mailbox.loyalty_skills = Default::default();
+         mailbox.condition_status = Default::default();
++        mailbox.mechanics_status = Default::default();
+         mailbox.rest_status = Default::default();
+         mailbox.battle_instinct_status = Default::default();
+         mailbox.skill_progress = Default::default();
+diff --git a/apps/client/src/play/session_loop.rs b/apps/client/src/play/session_loop.rs
+index ad22361a3..48f65387f 100644
+--- a/apps/client/src/play/session_loop.rs
++++ b/apps/client/src/play/session_loop.rs
+@@ -46,6 +46,7 @@ pub async fn run_session<T: Stepper>(
+     outbox.wheel_initialize(session.wheel_selected());
+     outbox.exiva_initialize(session.exiva_selected());
+     outbox.loyalty_skills_initialize(session.loyalty_skills_selected());
++    outbox.mechanics_status_initialize(session.feature_selected(384));
+     outbox.condition_status_initialize(session.feature_selected(276));
+     outbox.rest_status_initialize(session.feature_selected(277));
+     outbox.battle_instinct_status_initialize(session.feature_selected(278));
+@@ -132,6 +133,7 @@ pub async fn run_session<T: Stepper>(
+                         225 => outbox.boss_difficulty_result(&result),
+                         250 => outbox.hireling_management_result(&result),
+                         276 => outbox.condition_status_result(&result),
++                        384 => outbox.mechanics_status_result(&result),
+                         277 => outbox.rest_status_result(&result),
+                         278 => outbox.battle_instinct_status_result(&result),
+                         279 | 370 => outbox.skill_progress_result(&result),
+diff --git a/apps/client/src/play/status_window.rs b/apps/client/src/play/status_window.rs
+index e16c61e4e..a74203921 100644
+--- a/apps/client/src/play/status_window.rs
++++ b/apps/client/src/play/status_window.rs
+@@ -54,6 +54,7 @@ macro_rules! panel {
+     };
+ }
+ panel!(condition_status, ConditionStatusPanel, 276, 492);
++panel!(mechanics_status, MechanicsStatusPanel, 384, 669);
+ panel!(rest_status, RestStatusPanel, 277, 493);
+ panel!(battle_instinct_status, BattleInstinctStatusPanel, 278, 494);
+ impl StatusPanel for oteryn_client_ui::skill_progress::SkillProgressPanel {
+diff --git a/apps/client/src/windows_shell/input.rs b/apps/client/src/windows_shell/input.rs
+index dcfa46b46..d3201d7fc 100644
+--- a/apps/client/src/windows_shell/input.rs
++++ b/apps/client/src/windows_shell/input.rs
+@@ -50,6 +50,7 @@ impl Application {
+                 || play.link.spell_catalog_input(events)
+                 || play.link.spell_bar_input(events)
+                 || play.link.loyalty_skills_input(events)
++                || play.link.mechanics_status_input(events)
+                 || play.link.condition_status_input(events)
+                 || play.link.rest_status_input(events)
+                 || play.link.battle_instinct_status_input(events)
+diff --git a/crates/client-runtime/src/lib.rs b/crates/client-runtime/src/lib.rs
+index da4f990fa..1f4cc3e09 100644
+--- a/crates/client-runtime/src/lib.rs
++++ b/crates/client-runtime/src/lib.rs
+@@ -197,6 +197,7 @@ pub use oteryn_session::battle_instinct_status;
+ pub use oteryn_session::condition_status;
+ /// Loyalty skills wire values owned by the admitted session.
+ pub use oteryn_session::loyalty_skills;
++pub use oteryn_session::mechanics_status;
+ pub use oteryn_session::party_effects;
+ pub use oteryn_session::rest_status;
+ pub use oteryn_session::skill_display;
+@@ -225,8 +226,8 @@ pub mod player_trade;
+ pub mod player_typing;
+ pub use oteryn_session::{CommandStatus, WorldSpatialEntity, player_typing::TypingUpdate};
+ pub use oteryn_session::{
+-    arena, boss_difficulty, character_info, cyclopedia_character, cyclopedia_tracker,
+-    weapon_proficiency,
++    arena, boss_difficulty, character_info, creature_push, cyclopedia_character,
++    cyclopedia_tracker, weapon_proficiency,
+ };
+ /// Prey command execution through the admitted session.
+ #[path = "features/0140-prey/protocol.rs"]
+diff --git a/crates/client-ui/src/features/0082-creature-push/fixtures/registrations.json b/crates/client-ui/src/features/0082-creature-push/fixtures/registrations.json
+index e582393aa..2d6892750 100644
+--- a/crates/client-ui/src/features/0082-creature-push/fixtures/registrations.json
++++ b/crates/client-ui/src/features/0082-creature-push/fixtures/registrations.json
+@@ -2,18 +2,20 @@
+   {
+     "mechanic": "0082-creature-push",
+     "kind": "handlers",
+-    "id": "0082-creature-push-unsupported",
+-    "status": "unsupported",
+-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
++    "id": "0082-creature-push-drag",
++    "status": "supported",
++    "direction": "client_to_server",
++    "capability": 82,
+     "commands": [
+       98
+     ],
++    "entry": "mod.rs::request",
+     "not_applicable": {
+-      "state": "Unsupported until the owning mechanic migration.",
+-      "protocol": "Unsupported until the owning mechanic migration.",
+-      "view": "Unsupported until the owning mechanic migration.",
+-      "input": "Unsupported until the owning mechanic migration.",
+-      "settings": "Unsupported until the owning mechanic migration."
++      "view": "The native world scene renders the actor and server push feedback.",
++      "input": "Primary-button dragging in apps/client/src/features/0082-creature-push/input.rs selects a live player or creature and a destination tile.",
++      "settings": "Dragging uses the existing primary-button binding.",
++      "state": "The native play mailbox owns the negotiated capability and transient drag state; no independent panel state.",
++      "protocol": "The request adapter reuses the existing session creature_push codec; no separate UI codec."
+     }
+   }
+ ]
+diff --git a/crates/client-ui/src/features/0082-creature-push/mod.rs b/crates/client-ui/src/features/0082-creature-push/mod.rs
+new file mode 100644
+index 000000000..037728942
+--- /dev/null
++++ b/crates/client-ui/src/features/0082-creature-push/mod.rs
+@@ -0,0 +1,13 @@
++//! Native world dragging reuses the authoritative creature push intent.
++use oteryn_client_runtime::{
++    creature_push::{CreaturePushIntent, encode_creature_push_intent},
++    server_mechanic::ServerMechanicCommand,
++};
++
++pub fn request(intent: CreaturePushIntent) -> Option<ServerMechanicCommand> {
++    Some(ServerMechanicCommand {
++        capability: 82,
++        command_type: 98,
++        payload: encode_creature_push_intent(&intent).ok()?,
++    })
++}
+diff --git a/crates/client-ui/src/features/0082-creature-push/registrations/handlers.json b/crates/client-ui/src/features/0082-creature-push/registrations/handlers.json
+index 96e8de4c6..8e13cf9ee 100644
+--- a/crates/client-ui/src/features/0082-creature-push/registrations/handlers.json
++++ b/crates/client-ui/src/features/0082-creature-push/registrations/handlers.json
+@@ -1,17 +1,19 @@
+ {
+   "mechanic": "0082-creature-push",
+   "kind": "handlers",
+-  "id": "0082-creature-push-unsupported",
+-  "status": "unsupported",
+-  "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
++  "id": "0082-creature-push-drag",
++  "status": "supported",
++  "direction": "client_to_server",
++  "capability": 82,
+   "commands": [
+     98
+   ],
++  "entry": "mod.rs::request",
+   "not_applicable": {
+-    "state": "Unsupported until the owning mechanic migration.",
+-    "protocol": "Unsupported until the owning mechanic migration.",
+-    "view": "Unsupported until the owning mechanic migration.",
+-    "input": "Unsupported until the owning mechanic migration.",
+-    "settings": "Unsupported until the owning mechanic migration."
++    "view": "The native world scene renders the actor and server push feedback.",
++    "input": "Primary-button dragging in apps/client/src/features/0082-creature-push/input.rs selects a live player or creature and a destination tile.",
++    "settings": "Dragging uses the existing primary-button binding.",
++    "state": "The native play mailbox owns the negotiated capability and transient drag state; no independent panel state.",
++    "protocol": "The request adapter reuses the existing session creature_push codec; no separate UI codec."
+   }
+ }
+diff --git a/crates/client-ui/src/features/0195-weapon-proficiency/fixtures/registrations.json b/crates/client-ui/src/features/0195-weapon-proficiency/fixtures/registrations.json
+index bfc418cc0..b0d9ea089 100644
+--- a/crates/client-ui/src/features/0195-weapon-proficiency/fixtures/registrations.json
++++ b/crates/client-ui/src/features/0195-weapon-proficiency/fixtures/registrations.json
+@@ -3,7 +3,7 @@
+     "mechanic": "0195-weapon-proficiency",
+     "kind": "handlers",
+     "id": "0195-weapon-proficiency-378",
+-    "status": "unsupported",
++    "status": "supported",
+     "direction": "client_to_server",
+     "capability": 195,
+     "entry": "protocol.rs::request",
+@@ -12,14 +12,13 @@
+     },
+     "commands": [
+       378
+-    ],
+-    "reason": "No native editor yet collects the weapon, level, perk, slot, revision, and shaping choices."
++    ]
+   },
+   {
+     "mechanic": "0195-weapon-proficiency",
+     "kind": "handlers",
+     "id": "0195-weapon-proficiency-379",
+-    "status": "unsupported",
++    "status": "supported",
+     "direction": "client_to_server",
+     "capability": 195,
+     "entry": "protocol.rs::request",
+@@ -28,14 +27,13 @@
+     },
+     "commands": [
+       379
+-    ],
+-    "reason": "No native editor yet collects the weapon, level, perk, slot, revision, and shaping choices."
++    ]
+   },
+   {
+     "mechanic": "0195-weapon-proficiency",
+     "kind": "handlers",
+     "id": "0195-weapon-proficiency-380",
+-    "status": "unsupported",
++    "status": "supported",
+     "direction": "client_to_server",
+     "capability": 195,
+     "entry": "protocol.rs::request",
+@@ -44,14 +42,13 @@
+     },
+     "commands": [
+       380
+-    ],
+-    "reason": "No native editor yet collects the weapon, level, perk, slot, revision, and shaping choices."
++    ]
+   },
+   {
+     "mechanic": "0195-weapon-proficiency",
+     "kind": "handlers",
+     "id": "0195-weapon-proficiency-392",
+-    "status": "unsupported",
++    "status": "supported",
+     "direction": "client_to_server",
+     "capability": 195,
+     "entry": "protocol.rs::request",
+@@ -60,14 +57,13 @@
+     },
+     "commands": [
+       392
+-    ],
+-    "reason": "No native editor yet collects the weapon, level, perk, slot, revision, and shaping choices."
++    ]
+   },
+   {
+     "mechanic": "0195-weapon-proficiency",
+     "kind": "handlers",
+     "id": "0195-weapon-proficiency-393",
+-    "status": "unsupported",
++    "status": "supported",
+     "direction": "client_to_server",
+     "capability": 195,
+     "entry": "protocol.rs::request",
+@@ -76,14 +72,13 @@
+     },
+     "commands": [
+       393
+-    ],
+-    "reason": "No native editor yet collects the weapon, level, perk, slot, revision, and shaping choices."
++    ]
+   },
+   {
+     "mechanic": "0195-weapon-proficiency",
+     "kind": "handlers",
+     "id": "0195-weapon-proficiency-394",
+-    "status": "unsupported",
++    "status": "supported",
+     "direction": "client_to_server",
+     "capability": 195,
+     "entry": "protocol.rs::request",
+@@ -92,14 +87,13 @@
+     },
+     "commands": [
+       394
+-    ],
+-    "reason": "No native editor yet collects the weapon, level, perk, slot, revision, and shaping choices."
++    ]
+   },
+   {
+     "mechanic": "0195-weapon-proficiency",
+     "kind": "handlers",
+     "id": "0195-weapon-proficiency-395",
+-    "status": "unsupported",
++    "status": "supported",
+     "direction": "client_to_server",
+     "capability": 195,
+     "entry": "protocol.rs::request",
+@@ -108,8 +102,22 @@
+     },
+     "commands": [
+       395
+-    ],
+-    "reason": "No native editor yet collects the weapon, level, perk, slot, revision, and shaping choices."
++    ]
++  },
++  {
++    "mechanic": "0195-weapon-proficiency",
++    "kind": "handlers",
++    "id": "0195-weapon-proficiency-641",
++    "status": "supported",
++    "direction": "client_to_server",
++    "capability": 195,
++    "entry": "protocol.rs::request",
++    "not_applicable": {
++      "settings": "The proficiency catalogue and XP are server-owned."
++    },
++    "commands": [
++      641
++    ]
+   },
+   {
+     "mechanic": "0195-weapon-proficiency",
+diff --git a/crates/client-ui/src/features/0195-weapon-proficiency/protocol.rs b/crates/client-ui/src/features/0195-weapon-proficiency/protocol.rs
+index 484ef6756..f7f6e9ff2 100644
+--- a/crates/client-ui/src/features/0195-weapon-proficiency/protocol.rs
++++ b/crates/client-ui/src/features/0195-weapon-proficiency/protocol.rs
+@@ -10,6 +10,9 @@ use oteryn_client_runtime::{
+ use std::num::NonZeroU32;
+ #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+ pub enum Intent {
++    Browse,
++    NextPage,
++    PreviousPage,
+     SelectPerk,
+     Modify,
+     RankUp,
+@@ -28,6 +31,34 @@ pub fn request(p: &mut WeaponProficiencyPanel, intent: Intent) -> Option<Feature
+         p.feedback = Some("Waiting for the server");
+         return None;
+     }
++    if matches!(
++        intent,
++        Intent::Browse | Intent::NextPage | Intent::PreviousPage
++    ) {
++        let offset = match intent {
++            Intent::NextPage => {
++                let page = p.page.as_ref()?;
++                let next = page
++                    .offset
++                    .checked_add(u32::try_from(page.rows.len()).ok()?)?;
++                if next >= page.total || page.rows.is_empty() {
++                    return None;
++                }
++                next
++            }
++            Intent::PreviousPage => p.page.as_ref()?.offset.saturating_sub(20),
++            _ => 0,
++        };
++        p.pending = true;
++        p.feedback = None;
++        p.command_kind = 641;
++        p.requested_offset = offset;
++        return Some(FeatureCommand {
++            capability: 195,
++            kind: 641,
++            payload: offset.to_be_bytes().to_vec(),
++        });
++    }
+     let Some(definition) = NonZeroU32::new(p.weapon) else {
+         p.feedback = Some("Enter a nonzero weapon id");
+         return None;
+@@ -54,7 +85,9 @@ pub fn request(p: &mut WeaponProficiencyPanel, intent: Intent) -> Option<Feature
+             },
+             Intent::DeclineOffer => ModificationOperation::ReshapeChoose { choice: None },
+             Intent::Clear => ModificationOperation::Clear,
+-            Intent::SelectPerk => return None,
++            Intent::SelectPerk | Intent::Browse | Intent::NextPage | Intent::PreviousPage => {
++                return None;
++            }
+         };
+         let request = ModificationRequest {
+             definition,
+@@ -87,6 +120,19 @@ pub fn apply_result(p: &mut WeaponProficiencyPanel, result: &GatedCommandResult)
+         p.feedback = Some("The server refused the proficiency action");
+         return false;
+     }
++    if p.command_kind == 641 {
++        match oteryn_client_runtime::weapon_proficiency::ProficiencyPage::decode(&result.payload) {
++            Some(page) if page.offset == p.requested_offset => {
++                p.page = Some(page);
++                p.feedback = None;
++                return true;
++            }
++            _ => {
++                p.feedback = Some("The server returned an invalid proficiency page");
++                return false;
++            }
++        }
++    }
+     let text = if p.command_kind == 378 {
+         SelectPerkReply::decode(&result.payload)
+             .map(|v| format!("Selection: {:?}; levels: {:?}", v.result, v.selections))
+diff --git a/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-378.json b/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-378.json
+index 6c11e74a4..82ca17f92 100644
+--- a/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-378.json
++++ b/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-378.json
+@@ -2,7 +2,7 @@
+   "mechanic": "0195-weapon-proficiency",
+   "kind": "handlers",
+   "id": "0195-weapon-proficiency-378",
+-  "status": "unsupported",
++  "status": "supported",
+   "direction": "client_to_server",
+   "capability": 195,
+   "entry": "protocol.rs::request",
+@@ -11,6 +11,5 @@
+   },
+   "commands": [
+     378
+-  ],
+-  "reason": "No native editor yet collects the weapon, level, perk, slot, revision, and shaping choices."
++  ]
+ }
+diff --git a/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-379.json b/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-379.json
+index acca8f488..cf44ee6c6 100644
+--- a/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-379.json
++++ b/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-379.json
+@@ -2,7 +2,7 @@
+   "mechanic": "0195-weapon-proficiency",
+   "kind": "handlers",
+   "id": "0195-weapon-proficiency-379",
+-  "status": "unsupported",
++  "status": "supported",
+   "direction": "client_to_server",
+   "capability": 195,
+   "entry": "protocol.rs::request",
+@@ -11,6 +11,5 @@
+   },
+   "commands": [
+     379
+-  ],
+-  "reason": "No native editor yet collects the weapon, level, perk, slot, revision, and shaping choices."
++  ]
+ }
+diff --git a/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-380.json b/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-380.json
+index 95c3d7679..0b80d1383 100644
+--- a/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-380.json
++++ b/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-380.json
+@@ -2,7 +2,7 @@
+   "mechanic": "0195-weapon-proficiency",
+   "kind": "handlers",
+   "id": "0195-weapon-proficiency-380",
+-  "status": "unsupported",
++  "status": "supported",
+   "direction": "client_to_server",
+   "capability": 195,
+   "entry": "protocol.rs::request",
+@@ -11,6 +11,5 @@
+   },
+   "commands": [
+     380
+-  ],
+-  "reason": "No native editor yet collects the weapon, level, perk, slot, revision, and shaping choices."
++  ]
+ }
+diff --git a/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-392.json b/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-392.json
+index 4fd47ad3d..8bc63392c 100644
+--- a/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-392.json
++++ b/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-392.json
+@@ -2,7 +2,7 @@
+   "mechanic": "0195-weapon-proficiency",
+   "kind": "handlers",
+   "id": "0195-weapon-proficiency-392",
+-  "status": "unsupported",
++  "status": "supported",
+   "direction": "client_to_server",
+   "capability": 195,
+   "entry": "protocol.rs::request",
+@@ -11,6 +11,5 @@
+   },
+   "commands": [
+     392
+-  ],
+-  "reason": "No native editor yet collects the weapon, level, perk, slot, revision, and shaping choices."
++  ]
+ }
+diff --git a/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-393.json b/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-393.json
+index 48ed98d1f..c8e0f0f51 100644
+--- a/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-393.json
++++ b/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-393.json
+@@ -2,7 +2,7 @@
+   "mechanic": "0195-weapon-proficiency",
+   "kind": "handlers",
+   "id": "0195-weapon-proficiency-393",
+-  "status": "unsupported",
++  "status": "supported",
+   "direction": "client_to_server",
+   "capability": 195,
+   "entry": "protocol.rs::request",
+@@ -11,6 +11,5 @@
+   },
+   "commands": [
+     393
+-  ],
+-  "reason": "No native editor yet collects the weapon, level, perk, slot, revision, and shaping choices."
++  ]
+ }
+diff --git a/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-394.json b/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-394.json
+index 74000fbeb..4e80349ca 100644
+--- a/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-394.json
++++ b/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-394.json
+@@ -2,7 +2,7 @@
+   "mechanic": "0195-weapon-proficiency",
+   "kind": "handlers",
+   "id": "0195-weapon-proficiency-394",
+-  "status": "unsupported",
++  "status": "supported",
+   "direction": "client_to_server",
+   "capability": 195,
+   "entry": "protocol.rs::request",
+@@ -11,6 +11,5 @@
+   },
+   "commands": [
+     394
+-  ],
+-  "reason": "No native editor yet collects the weapon, level, perk, slot, revision, and shaping choices."
++  ]
+ }
+diff --git a/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-395.json b/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-395.json
+index e935f2ebd..ca18b05e9 100644
+--- a/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-395.json
++++ b/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-395.json
+@@ -2,7 +2,7 @@
+   "mechanic": "0195-weapon-proficiency",
+   "kind": "handlers",
+   "id": "0195-weapon-proficiency-395",
+-  "status": "unsupported",
++  "status": "supported",
+   "direction": "client_to_server",
+   "capability": 195,
+   "entry": "protocol.rs::request",
+@@ -11,6 +11,5 @@
+   },
+   "commands": [
+     395
+-  ],
+-  "reason": "No native editor yet collects the weapon, level, perk, slot, revision, and shaping choices."
++  ]
+ }
+diff --git a/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-641.json b/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-641.json
+new file mode 100644
+index 000000000..7cbdce120
+--- /dev/null
++++ b/crates/client-ui/src/features/0195-weapon-proficiency/registrations/handler-641.json
+@@ -0,0 +1,15 @@
++{
++  "mechanic": "0195-weapon-proficiency",
++  "kind": "handlers",
++  "id": "0195-weapon-proficiency-641",
++  "status": "supported",
++  "direction": "client_to_server",
++  "capability": 195,
++  "entry": "protocol.rs::request",
++  "not_applicable": {
++    "settings": "The proficiency catalogue and XP are server-owned."
++  },
++  "commands": [
++    641
++  ]
++}
+diff --git a/crates/client-ui/src/features/0195-weapon-proficiency/state.rs b/crates/client-ui/src/features/0195-weapon-proficiency/state.rs
+index f42eab713..52646c3bc 100644
+--- a/crates/client-ui/src/features/0195-weapon-proficiency/state.rs
++++ b/crates/client-ui/src/features/0195-weapon-proficiency/state.rs
+@@ -12,5 +12,7 @@ pub struct WeaponProficiencyPanel {
+     pub revision: u64,
+     pub shaping_choice: u8,
+     pub result: Option<String>,
++    pub page: Option<oteryn_client_runtime::weapon_proficiency::ProficiencyPage>,
++    pub requested_offset: u32,
+     pub feedback: Option<&'static str>,
+ }
+diff --git a/crates/client-ui/src/features/0195-weapon-proficiency/view.rs b/crates/client-ui/src/features/0195-weapon-proficiency/view.rs
+index b4ef09484..1c8348ec0 100644
+--- a/crates/client-ui/src/features/0195-weapon-proficiency/view.rs
++++ b/crates/client-ui/src/features/0195-weapon-proficiency/view.rs
+@@ -1,7 +1,27 @@
+ use super::WeaponProficiencyPanel;
+ #[must_use]
+ pub fn panel_text(p: &WeaponProficiencyPanel) -> String {
+-    let state = p.result.as_deref().unwrap_or("No server result yet");
++    let mut catalogue = String::new();
++    if let Some(page) = &p.page {
++        catalogue.push_str(&format!(
++            "Weapons {}–{} / {}\r\n",
++            if page.rows.is_empty() {
++                0
++            } else {
++                page.offset + 1
++            },
++            page.offset + page.rows.len() as u32,
++            page.total
++        ));
++        for row in &page.rows {
++            catalogue.push_str(&format!(
++                "{} [{}]: {} XP, level {}, perks {:?}\r\n",
++                row.name, row.definition, row.experience, row.level, row.selections
++            ));
++        }
++    }
++    catalogue.push_str(p.result.as_deref().unwrap_or(""));
++    let state = catalogue.as_str();
+     match p.feedback {
+         Some(f) => format!("Weapon proficiency\n{state}\n{f}"),
+         None => format!("Weapon proficiency\n{state}"),
+diff --git a/crates/client-ui/src/features/0276-condition-status/mod.rs b/crates/client-ui/src/features/0276-condition-status/mod.rs
+index 94911e9a8..5d076b64d 100644
+--- a/crates/client-ui/src/features/0276-condition-status/mod.rs
++++ b/crates/client-ui/src/features/0276-condition-status/mod.rs
+@@ -7,4 +7,4 @@ mod view;
+ pub use input::open_key;
+ pub use protocol::request;
+ pub use state::ConditionStatusPanel;
+-pub use view::panel_text;
++pub use view::{panel_text, status_text};
+diff --git a/crates/client-ui/src/features/0276-condition-status/view.rs b/crates/client-ui/src/features/0276-condition-status/view.rs
+index 394533bd3..3ea7b1453 100644
+--- a/crates/client-ui/src/features/0276-condition-status/view.rs
++++ b/crates/client-ui/src/features/0276-condition-status/view.rs
+@@ -42,6 +42,10 @@ pub fn panel_text(panel: &ConditionStatusPanel) -> String {
+     let Some(status) = &panel.snapshot else {
+         return "Loading conditions…".into();
+     };
++    status_text(status)
++}
++/// Render an already decoded observation without duplicating the icon catalogue.
++pub fn status_text(status: &super::ConditionStatus) -> String {
+     if status.conditions.is_empty() {
+         return "No active conditions".into();
+     }
+diff --git a/crates/client-ui/src/features/0384-mechanics-status/fixtures/registrations.json b/crates/client-ui/src/features/0384-mechanics-status/fixtures/registrations.json
+new file mode 100644
+index 000000000..26a55c0dd
+--- /dev/null
++++ b/crates/client-ui/src/features/0384-mechanics-status/fixtures/registrations.json
+@@ -0,0 +1,33 @@
++[
++  {
++    "mechanic": "0384-mechanics-status",
++    "kind": "keybindings",
++    "id": "0384-mechanics-status-open",
++    "status": "supported",
++    "context": "gameplay",
++    "chord": "CTRL+ALT+SHIFT+U",
++    "entry": "input.rs::open_key"
++  },
++  {
++    "mechanic": "0384-mechanics-status",
++    "kind": "panels",
++    "id": "0384-mechanics-status-panel",
++    "status": "supported",
++    "entry": "view.rs::panel_text"
++  },
++  {
++    "mechanic": "0384-mechanics-status",
++    "kind": "handlers",
++    "id": "0384-mechanics-status-query",
++    "status": "supported",
++    "commands": [
++      669
++    ],
++    "direction": "client_to_server",
++    "capability": 384,
++    "entry": "protocol.rs::request",
++    "not_applicable": {
++      "settings": "Read-only existing owner observations; no client rule settings."
++    }
++  }
++]
+diff --git a/crates/client-ui/src/features/0384-mechanics-status/input.rs b/crates/client-ui/src/features/0384-mechanics-status/input.rs
+new file mode 100644
+index 000000000..03b80a742
+--- /dev/null
++++ b/crates/client-ui/src/features/0384-mechanics-status/input.rs
+@@ -0,0 +1,5 @@
++use oteryn_input_actions::{ButtonState, Modifier, NormalizedInputEvent};
++/// Ctrl+Alt+Shift+U opens character effects; repeats and extra modifiers do not reopen it.
++pub fn open_key(events: &[NormalizedInputEvent]) -> bool {
++    events.iter().any(|event| matches!(event, NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers, repeat: false } if code.get() == 24 && modifiers.contains(Modifier::Control) && modifiers.contains(Modifier::Alt) && modifiers.contains(Modifier::Shift) && !modifiers.contains(Modifier::Super)))
++}
+diff --git a/crates/client-ui/src/features/0384-mechanics-status/mod.rs b/crates/client-ui/src/features/0384-mechanics-status/mod.rs
+new file mode 100644
+index 000000000..44a419b45
+--- /dev/null
++++ b/crates/client-ui/src/features/0384-mechanics-status/mod.rs
+@@ -0,0 +1,105 @@
++//! CL6 observations from existing server owners.
++pub use oteryn_client_runtime::mechanics_status::*;
++mod input;
++mod protocol;
++mod state;
++mod view;
++pub use input::open_key;
++pub use protocol::request;
++pub use state::MechanicsStatusPanel;
++pub use view::panel_text;
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    #[test]
++    fn cl6_all_owner_projections_reach_native_text_and_refusals_retain_confirmation()
++    -> Result<(), &'static str> {
++        let mut panel = MechanicsStatusPanel {
++            selected: true,
++            ..Default::default()
++        };
++        let mut value = MechanicsStatus {
++            observed_unix_ms: 100,
++            dust: 73,
++            dust_limit: 100,
++            deaths: vec![DeathConsumption {
++                at_unix_ms: 50,
++                consumed: vec![
++                    "oteryn:blessing.spiritual_shielding".into(),
++                    "oteryn:blessing.twist_of_fate".into(),
++                ],
++            }],
++            timers: vec![
++                EffectTimer {
++                    key: "oteryn:item.tibia.i7440".into(),
++                    remaining_ms: 60_001,
++                    online_only: false,
++                },
++                EffectTimer {
++                    key: "wealth_duplex".into(),
++                    remaining_ms: 1234,
++                    online_only: true,
++                },
++            ],
++            members: vec![
++                MemberEffects {
++                    bonuses: [0; 5],
++                    party_spell_remaining_ms: [120001; 5],
++                    character: [1; 16],
++                    name: "Friend".into(),
++                    conditions: Some(oteryn_client_runtime::condition_status::ConditionStatus {
++                        conditions: vec![
++                            oteryn_client_runtime::condition_status::ActiveCondition {
++                                icon: 13,
++                                sub_id: 0,
++                                remaining_ms: 4001,
++                            },
++                        ],
++                    }),
++                },
++                MemberEffects {
++                    bonuses: [0; 5],
++                    party_spell_remaining_ms: [0; 5],
++                    character: [2; 16],
++                    name: "Away".into(),
++                    conditions: None,
++                },
++            ],
++        };
++        value.members[0].bonuses = [6, 12, 6, 12, 50];
++        assert_eq!(request(&mut panel), Some(vec![]));
++        assert!(panel.finish(true, &value.encode().ok_or("encode")?));
++        let text = panel_text(&panel);
++        for expected in [
++            "Dust: 73 / 100",
++            "Spiritual Shielding",
++            "Twist of Fate: consumed",
++            "Mastermind Potion: 61s",
++            "Wealth Duplex: 2s (online time)",
++            "Friend",
++            "Haste: 5s",
++            "Damage reduction: 6%",
++            "Auto attack: 12%",
++            "Spell damage: 6%",
++            "Spell healing: 12%",
++            "Mantra: +50",
++            "Away",
++            "not observed in this Channel",
++            "Train Party: 121s",
++            "Protect Party: 121s",
++            "Enchant Party: 121s",
++            "Heal Party: 121s",
++            "Enlighten Party: 121s",
++        ] {
++            assert!(text.contains(expected), "missing {expected}: {text}");
++        }
++        assert!(request(&mut panel).is_some());
++        assert!(!panel.finish(false, &[]));
++        assert_eq!(panel.snapshot, Some(value.clone()));
++        assert!(request(&mut panel).is_some());
++        assert!(!panel.finish(true, &[255]));
++        assert_eq!(panel.snapshot, Some(value));
++        Ok(())
++    }
++}
+diff --git a/crates/client-ui/src/features/0384-mechanics-status/protocol.rs b/crates/client-ui/src/features/0384-mechanics-status/protocol.rs
+new file mode 100644
+index 000000000..e24a2676a
+--- /dev/null
++++ b/crates/client-ui/src/features/0384-mechanics-status/protocol.rs
+@@ -0,0 +1,9 @@
++use super::MechanicsStatusPanel;
++pub fn request(panel: &mut MechanicsStatusPanel) -> Option<Vec<u8>> {
++    if !panel.selected || panel.pending {
++        return None;
++    }
++    panel.pending = true;
++    panel.error = None;
++    Some(Vec::new())
++}
+diff --git a/crates/client-ui/src/features/0384-mechanics-status/registrations/handlers.json b/crates/client-ui/src/features/0384-mechanics-status/registrations/handlers.json
+new file mode 100644
+index 000000000..7379e974d
+--- /dev/null
++++ b/crates/client-ui/src/features/0384-mechanics-status/registrations/handlers.json
+@@ -0,0 +1,15 @@
++{
++  "mechanic": "0384-mechanics-status",
++  "kind": "handlers",
++  "id": "0384-mechanics-status-query",
++  "status": "supported",
++  "commands": [
++    669
++  ],
++  "direction": "client_to_server",
++  "capability": 384,
++  "entry": "protocol.rs::request",
++  "not_applicable": {
++    "settings": "Read-only existing owner observations; no client rule settings."
++  }
++}
+diff --git a/crates/client-ui/src/features/0384-mechanics-status/registrations/open.json b/crates/client-ui/src/features/0384-mechanics-status/registrations/open.json
+new file mode 100644
+index 000000000..987c029b0
+--- /dev/null
++++ b/crates/client-ui/src/features/0384-mechanics-status/registrations/open.json
+@@ -0,0 +1,9 @@
++{
++  "mechanic": "0384-mechanics-status",
++  "kind": "keybindings",
++  "id": "0384-mechanics-status-open",
++  "status": "supported",
++  "context": "gameplay",
++  "chord": "CTRL+ALT+SHIFT+U",
++  "entry": "input.rs::open_key"
++}
+diff --git a/crates/client-ui/src/features/0384-mechanics-status/registrations/panel.json b/crates/client-ui/src/features/0384-mechanics-status/registrations/panel.json
+new file mode 100644
+index 000000000..fba4a4c81
+--- /dev/null
++++ b/crates/client-ui/src/features/0384-mechanics-status/registrations/panel.json
+@@ -0,0 +1,7 @@
++{
++  "mechanic": "0384-mechanics-status",
++  "kind": "panels",
++  "id": "0384-mechanics-status-panel",
++  "status": "supported",
++  "entry": "view.rs::panel_text"
++}
+diff --git a/crates/client-ui/src/features/0384-mechanics-status/state.rs b/crates/client-ui/src/features/0384-mechanics-status/state.rs
+new file mode 100644
+index 000000000..b72da23fe
+--- /dev/null
++++ b/crates/client-ui/src/features/0384-mechanics-status/state.rs
+@@ -0,0 +1,21 @@
++use super::MechanicsStatus;
++#[derive(Debug, Clone, Default, PartialEq, Eq)]
++pub struct MechanicsStatusPanel {
++    pub selected: bool,
++    pub open: bool,
++    pub pending: bool,
++    pub snapshot: Option<MechanicsStatus>,
++    pub error: Option<&'static str>,
++}
++impl MechanicsStatusPanel {
++    pub fn finish(&mut self, accepted: bool, payload: &[u8]) -> bool {
++        self.pending = false;
++        if accepted && let Some(snapshot) = MechanicsStatus::decode(payload) {
++            self.snapshot = Some(snapshot);
++            self.error = None;
++            return true;
++        }
++        self.error = Some("Character effects could not be refreshed. Try Refresh.");
++        false
++    }
++}
+diff --git a/crates/client-ui/src/features/0384-mechanics-status/view.rs b/crates/client-ui/src/features/0384-mechanics-status/view.rs
+new file mode 100644
+index 000000000..790203bd0
+--- /dev/null
++++ b/crates/client-ui/src/features/0384-mechanics-status/view.rs
+@@ -0,0 +1,125 @@
++use super::MechanicsStatusPanel;
++fn blessing_name(key: &str) -> String {
++    key.strip_prefix("oteryn:blessing.")
++        .unwrap_or(key)
++        .split('_')
++        .map(|word| {
++            let mut chars = word.chars();
++            chars.next().map_or_else(String::new, |first| {
++                first.to_uppercase().chain(chars).collect()
++            })
++        })
++        .collect::<Vec<_>>()
++        .join(" ")
++}
++fn timer_name(key: &str) -> &str {
++    match key {
++        "oteryn:item.tibia.i7439" => "Berserk Potion",
++        "oteryn:item.tibia.i7440" => "Mastermind Potion",
++        "oteryn:item.tibia.i7443" => "Bullseye Potion",
++        "oteryn:item.tibia.i49271" => "Transcendence Potion",
++        "oteryn:item.tibia.i35563" => "Magic Shield Potion",
++        "wealth_duplex" => "Wealth Duplex",
++        _ => key,
++    }
++}
++pub fn panel_text(panel: &MechanicsStatusPanel) -> String {
++    if !panel.selected {
++        return "Character effects unavailable in this session".into();
++    }
++    let mut text = panel.error.map_or_else(String::new, |error| {
++        format!("{error}\r\nShowing last confirmed observation.\r\n")
++    });
++    let Some(status) = &panel.snapshot else {
++        text.push_str("Loading character effects…");
++        return text;
++    };
++    text.push_str(&format!(
++        "Confirmed server observation\r\nDust: {} / {}\r\n\r\nBlessing consumption (latest deaths)\r\n",
++        status.dust, status.dust_limit
++    ));
++    if status.deaths.is_empty() {
++        text.push_str("No recorded deaths\r\n");
++    }
++    for (index, death) in status.deaths.iter().enumerate() {
++        text.push_str(&format!(
++            "Death {} ({}s before observation)\r\n",
++            index + 1,
++            (status.observed_unix_ms - death.at_unix_ms) / 1000
++        ));
++        let mut any_regular = false;
++        let mut twist = false;
++        for key in &death.consumed {
++            if key == "oteryn:blessing.twist_of_fate" {
++                twist = true;
++            } else {
++                text.push_str(&format!("Consumed: {}\r\n", blessing_name(key)));
++                any_regular = true;
++            }
++        }
++        if !any_regular {
++            text.push_str("No regular blessings consumed\r\n");
++        }
++        text.push_str(if twist {
++            "Twist of Fate: consumed\r\n"
++        } else {
++            "Twist of Fate: not consumed\r\n"
++        });
++    }
++    text.push_str("\r\nActive potion and concoction timers\r\n");
++    if status.timers.is_empty() {
++        text.push_str("No active timed effects\r\n");
++    }
++    for timer in &status.timers {
++        text.push_str(&format!(
++            "{}: {}s{}\r\n",
++            timer_name(&timer.key),
++            timer.remaining_ms.div_ceil(1000),
++            if timer.online_only {
++                " (online time)"
++            } else {
++                ""
++            }
++        ));
++    }
++    text.push_str("Kooldown Aid and Antidote are instant; no active-effect timer.\r\n\r\nParty member effects\r\n");
++    if status.members.is_empty() {
++        text.push_str("No party\r\n");
++    }
++    for member in &status.members {
++        text.push_str(&format!("{}\r\n", member.name));
++        if let Some(conditions) = &member.conditions {
++            text.push_str(&crate::condition_status::status_text(conditions));
++            text.push_str("\r\n");
++            for (label, value) in [
++                "Damage reduction",
++                "Auto attack",
++                "Spell damage",
++                "Spell healing",
++            ]
++            .into_iter()
++            .zip(member.bonuses[..4].iter())
++            {
++                text.push_str(&format!("{label}: {value}%\r\n"));
++            }
++            text.push_str(&format!("Mantra: +{}\r\n", member.bonuses[4]));
++            for (label, remaining) in [
++                "Train Party",
++                "Protect Party",
++                "Enchant Party",
++                "Heal Party",
++                "Enlighten Party",
++            ]
++            .into_iter()
++            .zip(member.party_spell_remaining_ms)
++            {
++                if remaining > 0 {
++                    text.push_str(&format!("{label}: {}s\r\n", remaining.div_ceil(1000)));
++                }
++            }
++        } else {
++            text.push_str("Effects not observed in this Channel\r\n");
++        }
++    }
++    text
++}
+diff --git a/crates/client-ui/src/lib.rs b/crates/client-ui/src/lib.rs
+index 0dd6bfd85..71555c4c9 100644
+--- a/crates/client-ui/src/lib.rs
++++ b/crates/client-ui/src/lib.rs
+@@ -43,6 +43,8 @@ pub mod training;
+ 
+ #[path = "features/0014-container-tree/mod.rs"]
+ pub mod container_tree;
++#[path = "features/0082-creature-push/mod.rs"]
++pub mod creature_push;
+ #[path = "features/0012-item-equip-drop/mod.rs"]
+ pub mod equipment;
+ #[path = "features/0004-item-view-move/mod.rs"]
+@@ -264,6 +266,8 @@ pub mod chat_public_channels;
+ pub mod battle_instinct_status;
+ #[path = "features/0276-condition-status/mod.rs"]
+ pub mod condition_status;
++#[path = "features/0384-mechanics-status/mod.rs"]
++pub mod mechanics_status;
+ #[path = "features/0280-party-effects/mod.rs"]
+ pub mod party_effects;
+ #[path = "features/0277-rest-status/mod.rs"]
+diff --git a/crates/gameplay/dispatch/mechanics/0638-weapon_proficiency_browse.mechanic b/crates/gameplay/dispatch/mechanics/0638-weapon_proficiency_browse.mechanic
+new file mode 100644
+index 000000000..5d5392c67
+--- /dev/null
++++ b/crates/gameplay/dispatch/mechanics/0638-weapon_proficiency_browse.mechanic
+@@ -0,0 +1,10 @@
++name=weapon_proficiency_browse
++commands=641
++transport=weapon_proficiency_browse
++composed=weapon_proficiency_browse
++authority=weapon_proficiency_browse
++[route]
++match routing::weapon_proficiency_browse::route(authority, session.actor, &session.admitted, command).await {
++    Some(dispatch) => dispatch,
++    None => return Err(ServeEnd::Disconnected),
++}
+diff --git a/crates/gameplay/dispatch/mechanics/0642-mechanics_status.mechanic b/crates/gameplay/dispatch/mechanics/0642-mechanics_status.mechanic
+new file mode 100644
+index 000000000..cbd673e79
+--- /dev/null
++++ b/crates/gameplay/dispatch/mechanics/0642-mechanics_status.mechanic
+@@ -0,0 +1,8 @@
++name=mechanics_status
++commands=669
++transport=mechanics_status
++composed=mechanics_status
++authority=mechanics_status
++offer=639,mechanics_status::offered,mechanics_status_available
++[route]
++routing::mechanics_status::route(authority, &session.admitted, command).await
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/connection/routing/mechanics_status.rs b/crates/gameplay/dispatch/src/gameplay_transport/connection/routing/mechanics_status.rs
+new file mode 100644
+index 000000000..4d964b6dc
+--- /dev/null
++++ b/crates/gameplay/dispatch/src/gameplay_transport/connection/routing/mechanics_status.rs
+@@ -0,0 +1,19 @@
++use super::super::{AdmittedSession, FreshAdmissionAuthority};
++use super::Dispatch;
++
++pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
++    authority: &A,
++    admitted: &AdmittedSession,
++    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
++) -> Dispatch {
++    if !command.payload.is_empty() {
++        return Dispatch::Reply(crate::foundation::CommandStatus::Rejected, Vec::new());
++    }
++    match authority
++        .mechanics_status_query(*admitted, command.command_id)
++        .await
++    {
++        Some(payload) => Dispatch::Reply(crate::foundation::CommandStatus::Accepted, payload),
++        None => Dispatch::Reply(crate::foundation::CommandStatus::Rejected, Vec::new()),
++    }
++}
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/connection/routing/weapon_proficiency_browse.rs b/crates/gameplay/dispatch/src/gameplay_transport/connection/routing/weapon_proficiency_browse.rs
+new file mode 100644
+index 000000000..212c2e03c
+--- /dev/null
++++ b/crates/gameplay/dispatch/src/gameplay_transport/connection/routing/weapon_proficiency_browse.rs
+@@ -0,0 +1,22 @@
++use super::super::{AdmittedSession, ExactActorRef, FreshAdmissionAuthority};
++use super::Dispatch;
++use crate::foundation::CommandStatus;
++use oteryn_protocol_oteryn::ClientCommandView;
++
++pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
++    authority: &A,
++    actor: ExactActorRef,
++    admitted: &AdmittedSession,
++    command: ClientCommandView<'_>,
++) -> Option<Dispatch> {
++    let Ok(bytes) = <[u8; 4]>::try_from(command.payload) else {
++        return Some(Dispatch::Reply(CommandStatus::Rejected, Vec::new()));
++    };
++    match authority
++        .weapon_proficiency_browse(actor, admitted.game_session_id, u32::from_be_bytes(bytes))
++        .await
++    {
++        Some(page) => Some(Dispatch::Reply(CommandStatus::Accepted, page.encode()?)),
++        None => Some(Dispatch::Reply(CommandStatus::Rejected, Vec::new())),
++    }
++}
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/mechanics_status.rs b/crates/gameplay/dispatch/src/gameplay_transport/mechanics_status.rs
+new file mode 100644
+index 000000000..b78ae8a31
+--- /dev/null
++++ b/crates/gameplay/dispatch/src/gameplay_transport/mechanics_status.rs
+@@ -0,0 +1,172 @@
++//! CL6 read-only projection. Existing owners remain authoritative.
++use super::{ComposedFreshAdmission, capabilities::OfferedCapability, connection::AdmittedSession};
++use oteryn_protocol_oteryn::mechanics_status::CAPABILITY_MECHANICS_STATUS_V1;
++pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
++    base.iter()
++        .copied()
++        .filter(|entry| available || entry.id != CAPABILITY_MECHANICS_STATUS_V1)
++        .collect()
++}
++macro_rules! authority_methods {
++    () => {
++        fn mechanics_status_available(&self) -> bool {
++            false
++        }
++        fn mechanics_status_query(
++            &self,
++            _admitted: $crate::gameplay_transport::AdmittedSession,
++            _command_id: u64,
++        ) -> impl std::future::Future<Output = Option<Vec<u8>>> {
++            async { None }
++        }
++    };
++}
++pub(super) use authority_methods;
++
++impl ComposedFreshAdmission<'_, '_, '_> {
++    pub(super) async fn mechanics_status_page(&self, admitted: AdmittedSession) -> Option<Vec<u8>> {
++        if !admitted
++            .continuity
++            .selected_capabilities
++            .contains(CAPABILITY_MECHANICS_STATUS_V1)
++        {
++            return None;
++        }
++        let fence = admitted.item_fence?;
++        if fence.game_session_id != admitted.game_session_id
++            || fence.connection_generation.get() != admitted.continuity.connection_generation
++        {
++            return None;
++        }
++        let _permit = self.spell_lane_permit().await?;
++        // No runtime or spell-state guard crosses this durable await.
++        let mut observation = self
++            .root
++            .read_mechanics_status(self.character, self.holder, fence)
++            .await
++            .ok()?;
++        let runtime = self.runtime.lock().await;
++        if !super::battle_instinct_status::actor_is_current(&runtime, admitted)
++            || runtime.binding().runtime_scope() != fence.runtime_scope
++            || runtime.binding().scope_generation().get() != fence.scope_ownership_generation.get()
++        {
++            return None;
++        }
++        let states = self.states.spell_states.try_lock().ok()?;
++        let actor = admitted.runtime_actor?;
++        let now = self.owner_now().get();
++        let state = states.get(&runtime, actor, admitted.game_session_id)?;
++        let conditions = state.owned_conditions();
++        if !conditions.accepts_time(now) {
++            return None;
++        }
++        for instance in conditions.instances() {
++            let definition = instance.definition();
++            if oteryn_gameplay_progression::condition_potions::PotionCondition::from_key(
++                definition.key(),
++            )
++            .is_none()
++                || conditions
++                    .active_at(definition.condition_type().conflict_key(), now)
++                    .is_none()
++            {
++                continue;
++            }
++            observation
++                .status
++                .timers
++                .push(oteryn_protocol_oteryn::mechanics_status::EffectTimer {
++                    key: definition.key().to_owned(),
++                    remaining_ms: u64::try_from(instance.remaining_duration_ms(now)?.max(1))
++                        .ok()?,
++                    online_only: false,
++                });
++        }
++        observation.status.timers.sort_by(|a, b| a.key.cmp(&b.key));
++        let census = runtime.positioned_actor_census().ok()?;
++        for (member, live) in observation
++            .status
++            .members
++            .iter_mut()
++            .zip(observation.live_members)
++        {
++            let Some((session, generation)) = live else {
++                continue;
++            };
++            let target = census.iter().find_map(|(target, _, held)| {
++                if *held != Some(session) {
++                    return None;
++                }
++                let lease = runtime.bound_attacker_lease(*target, session).ok()?;
++                (lease.character_id().as_bytes() == &member.character
++                    && lease.generation() == generation)
++                    .then_some(*target)
++            });
++            let Some(target) = target else {
++                continue;
++            };
++            member.conditions =
++                super::condition_status::snapshot(&runtime, &states, target, session, now);
++            if member.conditions.is_some() {
++                let state = states.get(&runtime, target, session)?;
++                let buffs = state.virtue_party_bonuses(now);
++                member.bonuses = [
++                    buffs.damage_reduction,
++                    buffs.auto_attack,
++                    buffs.spell_damage,
++                    buffs.spell_healing,
++                    buffs.mantra,
++                ];
++                let owned = state.owned_conditions();
++                member.party_spell_remaining_ms = party_spell_remaining(owned, now);
++            }
++        }
++        observation.status.encode()
++    }
++}
++pub(super) fn party_spell_remaining(
++    conditions: &oteryn_gameplay_foundation::foundation::condition::ConditionStore<String>,
++    now: u64,
++) -> [u32; 5] {
++    let mut remaining = [0; 5];
++    for instance in conditions.instances() {
++        if conditions
++            .active_at(instance.definition().condition_type().conflict_key(), now)
++            .is_none()
++        {
++            continue;
++        }
++        let index = match instance.definition().key() {
++            "candidate:spell/train_party/effect-attributes" => 0,
++            "candidate:spell/protect_party/effect-attributes" => 1,
++            "candidate:spell/enchant_party/effect-attributes" => 2,
++            "candidate:spell/heal_party/effect-regeneration" => 3,
++            "candidate:spell/enlighten_party/effect-regeneration" => 4,
++            _ => continue,
++        };
++        if let Some(ms) = instance
++            .remaining_duration_ms(now)
++            .and_then(|ms| u32::try_from(ms).ok())
++        {
++            remaining[index] = ms.max(1);
++        }
++    }
++    remaining
++}
++macro_rules! composed_methods {
++    () => {
++        fn mechanics_status_available(&self) -> bool {
++            self.active_generation
++                .and_then(|active| active.native_gameplay())
++                .is_some()
++        }
++        async fn mechanics_status_query(
++            &self,
++            admitted: connection::AdmittedSession,
++            _command_id: u64,
++        ) -> Option<Vec<u8>> {
++            self.mechanics_status_page(admitted).await
++        }
++    };
++}
++pub(super) use composed_methods;
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cl6_status.rs b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cl6_status.rs
+new file mode 100644
+index 000000000..6d91253d6
+--- /dev/null
++++ b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cl6_status.rs
+@@ -0,0 +1,320 @@
++//! CL6: actual composed query, existing durable owners, and current-session refusals.
++use super::*;
++use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
++use oteryn_protocol_oteryn::mechanics_status::{
++    CAPABILITY_MECHANICS_STATUS_V1, COMMAND_TYPE_MECHANICS_STATUS_QUERY, MechanicsStatus,
++};
++
++#[test]
++fn cl6_status_postgres_real_dispatch_existing_owners_and_fences() -> TestResult {
++    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
++        return Ok(());
++    }
++    std::thread::Builder::new()
++        .stack_size(128 << 20)
++        .spawn(|| {
++            scenario(false)
++                .and_then(|()| scenario(true))
++                .map_err(|error| error.to_string())
++        })?
++        .join()
++        .map_err(|_| "CL6 PostgreSQL thread panicked")??;
++    Ok(())
++}
++
++fn scenario(pvp: bool) -> TestResult {
++    let started = std::time::Instant::now();
++    run(async |admin| {
++        let h = Harness::create_with_admission_seed(admin, "mechanics_status", true, false).await?;
++        eprintln!(
++            "POSTGRES_STARTED CL6 pvp={pvp} cl6_status_postgres_real_dispatch_existing_owners_and_fences"
++        );
++        prepare_current_session(&h).await?;
++        let seal = h.recovery.seal_current().map_err(debug)?;
++        let authority = h
++            .root
++            .open_character_authority(&seal)
++            .await
++            .map_err(debug)?;
++        let mut deps = Dependencies::new()?;
++        deps.admitted.continuity.selected_capabilities = SelectedCapabilities::select(
++            &[OfferedCapability {
++                id: CAPABILITY_MECHANICS_STATUS_V1,
++                requires: &[],
++            }],
++            &[CAPABILITY_MECHANICS_STATUS_V1],
++        )
++        .ok_or("capability")?;
++        deps.runtime
++            .lock()
++            .await
++            .initialize_first_entry_position(deps.actor)
++            .map_err(debug)?;
++        let (controller, _) =
++            crate::content::native_gameplay::test_support::activated_with_loot_tables(
++                deps.admitted.world_id,
++                None,
++            );
++        let mut owner = deps.owner(&h, &authority);
++        owner.active_generation = controller.active();
++        assert!(crate::gameplay_transport::connection::FreshAdmissionAuthority::mechanics_status_available(&owner));
++        deps.initialize(&owner).await;
++        let current =
++            crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
++                .current_session_at(deps.admitted.game_session_id)
++                .await?
++                .0;
++        let mut admitted = deps.admitted;
++        admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
++        admitted.first_entry = crate::gameplay_transport::connection::FirstEntryOutcome::Positioned;
++        let fence = admitted.item_fence.ok_or("fence")?;
++        deps.runtime
++            .lock()
++            .await
++            .bind_attacker_lease(
++                deps.actor,
++                admitted.game_session_id,
++                crate::foundation::CharacterLease::new(
++                    crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
++                        .map_err(debug)?,
++                    fence.character_lease_generation,
++                )
++                .map_err(debug)?,
++            )
++            .map_err(debug)?;
++        let now = owner.owner_now().get();
++        {
++            let runtime = deps.runtime.lock().await;
++            let mut states = owner.states.spell_states.try_lock().map_err(debug)?;
++            let state = states
++                .get_mut(&runtime, deps.actor, admitted.game_session_id)
++                .ok_or("actor")?;
++            *state = state.after_food(180, now / 1_000).ok_or("food")?;
++        }
++        assert!(
++            crate::gameplay_transport::battle_instinct_status::actor_is_current(
++                &*deps.runtime.lock().await,
++                admitted
++            ),
++            "fixture runtime must match the canonical current fence"
++        );
++        owner
++            .root
++            .read_mechanics_status(owner.character, owner.holder, fence)
++            .await
++            .map_err(debug)?;
++        let command_id = admitted.continuity.next_command_id;
++        let (status, bytes) = super::cyclopedia::support::exchange(
++            &owner,
++            &mut admitted,
++            command_id,
++            COMMAND_TYPE_MECHANICS_STATUS_QUERY,
++            &[],
++        )
++        .await?;
++        assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
++        let projection = MechanicsStatus::decode(&bytes).ok_or("CL6 decode")?;
++        assert_eq!((projection.dust, projection.dust_limit), (0, 100));
++        assert!(projection.deaths.is_empty());
++        assert!(projection.members.is_empty());
++        let gameplay_fence = owner
++            .current_quest_fence(admitted.game_session_id)
++            .await
++            .map_err(debug)?
++            .ok_or("CL6 current gameplay fence")?;
++        // This is the real dust ledger writer; no Forge operation/history exists.
++        let mut tx = h.pool.begin().await?;
++        sqlx::query("SELECT 1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
++            .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *tx).await?;
++        crate::durability::character_forge_dust::gain_forge_dust_in_transaction(
++            &mut tx,
++            &gameplay_fence,
++            crate::durability::character_forge_dust::ForgeDustGainCause::CreatureKill {
++                occurrence: id(200),
++            },
++            73,
++            crate::durability::character_forge_dust::ForgeDustWriteIds {
++                entry_id: id(201),
++                transaction_id: id(202),
++            },
++        )
++        .await
++        .map_err(debug)?;
++        tx.commit().await?;
++        let before_revision: String = sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
++            .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
++        let command_id = admitted.continuity.next_command_id;
++        let (status, bytes) = super::cyclopedia::support::exchange(
++            &owner,
++            &mut admitted,
++            command_id,
++            COMMAND_TYPE_MECHANICS_STATUS_QUERY,
++            &[],
++        )
++        .await?;
++        assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
++        assert_eq!(
++            MechanicsStatus::decode(&bytes).ok_or("dust decode")?.dust,
++            73
++        );
++        let after_revision: String = sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
++            .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
++        assert_eq!(
++            before_revision, after_revision,
++            "read cannot mutate Character revision"
++        );
++        let mut request = crate::gameplay_transport::death_ml_loss_postgres::death(90)?;
++        // Held blessing seed matches the existing death fixture. The real receipt writer
++        // validates and consumes it with all normal production triggers enabled.
++        let mut tx = h.pool.begin().await?;
++        sqlx::query("SET LOCAL session_replication_role = replica")
++            .execute(&mut *tx)
++            .await?;
++        sqlx::query("INSERT INTO game_character_blessings(character_id,blessing_key,provenance) VALUES(encode($1,'hex')::uuid,'oteryn:blessing.spiritual_shielding','fixture'),(encode($1,'hex')::uuid,'oteryn:blessing.twist_of_fate','fixture')")
++            .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *tx).await?;
++        tx.commit().await?;
++        request.held_blessings = vec![
++            "oteryn:blessing.spiritual_shielding".into(),
++            "oteryn:blessing.twist_of_fate".into(),
++        ];
++        if pvp {
++            super::fixture::pvp_source_death_fixture::seed_root(&h.pool, 41, 60, 42).await?;
++            sqlx::query("INSERT INTO game_character_pvp_state(character_id,world_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
++                .bind(id(41).as_slice()).bind(id(42).as_slice()).execute(&h.pool).await?;
++            super::fixture::pvp_source_death_fixture::seed_ledger(
++                &h.pool,
++                41,
++                60,
++                true,
++                Some(1),
++                "0 seconds",
++            )
++            .await?;
++            request.pvp_contributors = vec![
++                crate::durability::pvp_death_consequences::PvpDeathContributor {
++                    character_id: crate::domain::CharacterId::from_bytes(id(60)).map_err(debug)?,
++                    kind: crate::durability::pvp_death_consequences::PvpContributorKind::Damage,
++                    unjustified: true,
++                },
++            ];
++        }
++        let receipt = owner
++            .settle_source_player_death(gameplay_fence, request, None, None)
++            .await
++            .map_err(debug)?;
++        let command_id = admitted.continuity.next_command_id;
++        let (status, bytes) = super::cyclopedia::support::exchange(
++            &owner,
++            &mut admitted,
++            command_id,
++            COMMAND_TYPE_MECHANICS_STATUS_QUERY,
++            &[],
++        )
++        .await?;
++        assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
++        let status = MechanicsStatus::decode(&bytes).ok_or("death decode")?;
++        let expected: Vec<_> = receipt
++            .blessings_before
++            .iter()
++            .filter(|key| !receipt.blessings_after.contains(key))
++            .cloned()
++            .collect();
++        assert_eq!(status.deaths.len(), 1);
++        assert_eq!(status.deaths[0].consumed, expected);
++        assert_eq!(
++            status.deaths[0].consumed,
++            [if pvp {
++                "oteryn:blessing.twist_of_fate"
++            } else {
++                "oteryn:blessing.spiritual_shielding"
++            }]
++        );
++        let mut stale = admitted;
++        stale
++            .item_fence
++            .as_mut()
++            .ok_or("fence")?
++            .character_lease_generation += 1;
++        assert!(owner.mechanics_status_page(stale).await.is_none());
++        stale = admitted;
++        stale.continuity.connection_generation += 1;
++        assert!(owner.mechanics_status_page(stale).await.is_none());
++        stale = admitted;
++        stale.runtime_actor = None;
++        assert!(owner.mechanics_status_page(stale).await.is_none());
++        stale = admitted;
++        stale.game_session_id = crate::foundation::GameSessionId::decode(&id(99)).map_err(debug)?;
++        assert!(owner.mechanics_status_page(stale).await.is_none());
++        stale = admitted;
++        stale.continuity.selected_capabilities = SelectedCapabilities::NONE;
++        assert!(owner.mechanics_status_page(stale).await.is_none());
++        eprintln!(
++            "CL6_STATUS POSTGRES_CASE_COMPLETED pvp={pvp} elapsed={:?}",
++            started.elapsed()
++        );
++        Ok(())
++    })
++}
++
++pub(super) async fn query_actor(
++    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
++    actor: crate::foundation::ExactActorRef,
++    session: crate::foundation::GameSessionId,
++) -> TestResult<MechanicsStatus> {
++    use crate::gameplay_transport::connection::{
++        AdmittedSession, FirstEntryOutcome, SessionContinuity,
++    };
++    let fence = owner
++        .current_quest_fence(session)
++        .await
++        .map_err(debug)?
++        .ok_or("CL6 current fence")?
++        .item_fence();
++    let mut continuity = SessionContinuity::FRESH;
++    continuity.connection_generation = fence.connection_generation.get();
++    continuity.selected_capabilities = SelectedCapabilities::select(
++        &[OfferedCapability {
++            id: CAPABILITY_MECHANICS_STATUS_V1,
++            requires: &[],
++        }],
++        &[CAPABILITY_MECHANICS_STATUS_V1],
++    )
++    .ok_or("CL6 capability")?;
++    let admitted = AdmittedSession {
++        game_session_id: session,
++        world_id: owner.world_id,
++        channel_id: owner.channel_id,
++        runtime_actor: Some(actor),
++        first_entry: FirstEntryOutcome::Positioned,
++        controller: None,
++        continuity,
++        item_fence: Some(fence),
++    };
++    MechanicsStatus::decode(
++        &owner
++            .mechanics_status_page(admitted)
++            .await
++            .ok_or("CL6 projection")?,
++    )
++    .ok_or_else(|| "CL6 projection decode".into())
++}
++pub(super) async fn check_timer(
++    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
++    actor: crate::foundation::ExactActorRef,
++    session: crate::foundation::GameSessionId,
++    key: &str,
++    active: bool,
++    max_ms: u64,
++) -> TestResult {
++    let status = query_actor(owner, actor, session).await?;
++    let timer = status.timers.iter().find(|timer| timer.key == key);
++    if active {
++        let timer = timer.ok_or("CL6 active timer")?;
++        assert!((1..=max_ms).contains(&timer.remaining_ms));
++        assert_eq!(timer.online_only, key == "wealth_duplex");
++    } else {
++        assert!(timer.is_none(), "expired/instant timer: {key}");
++    }
++    eprintln!("CL6_TIMER POSTGRES_ASSERTION_EXECUTED key={key} active={active}");
++    Ok(())
++}
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/condition_potions.rs b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/condition_potions.rs
+index 6024cf289..cb5c74213 100644
+--- a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/condition_potions.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/condition_potions.rs
+@@ -435,6 +435,7 @@ async fn assert_effect(
+     potion: ConditionPotion,
+     h: &Harness,
+ ) -> TestResult {
++    super::cl6_status::check_timer(owner, actor, session, potion.key(), true, 600_000).await?;
+     let (start, end): (String, String) = sqlx::query_as("SELECT applied_owner_micros::text,expires_owner_micros::text FROM game_item_condition_potion_receipts WHERE condition_key=$1 ORDER BY applied_owner_micros DESC LIMIT 1")
+         .bind(potion.key()).fetch_one(&h.pool).await?;
+     let (start, end) = (start.parse::<u64>()?, end.parse::<u64>()?);
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_effects.rs b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_effects.rs
+index e1a66de16..3179f0bed 100644
+--- a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_effects.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_effects.rs
+@@ -211,6 +211,14 @@ pub(super) async fn check_buffs(
+         "enlighten_party" => 4,
+         _ => return Err("party spell fixture".into()),
+     };
++    let full = super::cl6_status::query_actor(owner, actor, session).await?;
++    let member = full.members.iter().find(|member| member.character == *fence.character_id.as_bytes()).ok_or("CL6 party member")?;
++    assert!(member.conditions.is_some(), "same-Channel member must have a qualified condition observation");
++    let projected = member.party_spell_remaining_ms[index];
++    if affected { assert!(projected > 0 && projected <= 120000, "CL6 {spell}: {projected}"); }
++    else { assert_eq!(projected, 0, "CL6 out-of-range member"); }
++    assert!(full.members.len() >= 3, "native projection includes other members, not only self");
++    eprintln!("CL6_PARTY POSTGRES_ASSERTION_EXECUTED spell={spell} affected={affected}");
+     let remaining = snapshot.party_spell_remaining_ms[index];
+     if affected {
+         assert!(remaining > 0 && remaining <= 120000, "{spell}: {remaining}");
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/proficiency_browse.rs b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/proficiency_browse.rs
+new file mode 100644
+index 000000000..d0a759d6b
+--- /dev/null
++++ b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/proficiency_browse.rs
+@@ -0,0 +1,218 @@
++//! CL7: the production read owner exposes the complete pinned catalogue and live XP.
++use super::fixture::{Harness, debug, id, run};
++use super::{Dependencies, TestResult, prepare_current_session};
++use crate::gameplay_transport::connection::FreshAdmissionAuthority;
++use crate::gameplay_transport::weapon_proficiency::ProductionProficiencyCatalogue;
++use oteryn_protocol_oteryn::{self as protocol, weapon_proficiency::ProficiencyPage};
++use tokio::io::AsyncWriteExt;
++
++#[test]
++fn proficiency_browse_postgres_pinned_catalogue_live_xp_and_session_fence() -> TestResult {
++    std::thread::Builder::new()
++        .name("proficiency-browse".into())
++        .stack_size(64 << 20)
++        .spawn(|| scenario().map_err(|error| error.to_string()))?
++        .join()
++        .map_err(|_| "proficiency browse panicked")?
++        .map_err(Into::into)
++}
++fn scenario() -> TestResult {
++    run(async |admin| {
++        let started = std::time::Instant::now();
++        let harness =
++            Harness::create_with_admission_seed(admin, "proficiency_browse", false, false).await?;
++        prepare_current_session(&harness).await?;
++        let seal = harness.recovery.seal_current().map_err(debug)?;
++        let authority = harness
++            .root
++            .open_character_authority(&seal)
++            .await
++            .map_err(debug)?;
++        let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
++        let (controller, pin) =
++            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
++        let generation = controller.active().ok_or("active")?;
++        let frame_digest = pin.frame_binding().digest();
++        let room = pin.qualified_room().clone();
++        let deps = Dependencies::with_content(
++            pin.into_channel_pin(),
++            room,
++            crate::spell::cast::v1_spell_book().map_err(debug)?,
++        )?;
++        deps.runtime
++            .lock()
++            .await
++            .initialize_pinned_test_position(
++                deps.actor,
++                crate::foundation::MovementLocalPosition {
++                    x: 7,
++                    y: 0,
++                    floor: 7,
++                },
++            )
++            .map_err(debug)?;
++        let mut owner = deps.owner(&harness, &authority);
++        owner.active_generation = Some(generation);
++        let catalogue = ProductionProficiencyCatalogue::embedded().ok_or("catalogue")?;
++        owner.proficiency_catalogue = Some(catalogue.clone());
++        deps.initialize(&owner).await;
++        let actor = deps.actor;
++        let session = deps.admitted.game_session_id;
++        let mut admitted = deps.admitted;
++        owner.admit_progression_session(&mut admitted).await;
++        let sword = "oteryn:item.tibia.i3264";
++        let sword_definition = generation
++            .native_gameplay()
++            .ok_or("native")?
++            .item_index()
++            .ok_or("index")?
++            .definition_ref("Item", sword, "definition-r1")
++            .ok_or("sword reference")?;
++        {
++            let mut states = owner.states.proficiencies.lock().map_err(|_| "states")?;
++            let state = states.entry(session).or_default();
++            let mut track = catalogue.empty_track(sword).ok_or("sword")?;
++            track.progress = 12345;
++            state.install_track(sword, track);
++        }
++        let mut offset = 0;
++        let mut keys = Vec::new();
++        let mut found = false;
++        loop {
++            let page =
++                FreshAdmissionAuthority::weapon_proficiency_browse(&owner, actor, session, offset)
++                    .await
++                    .ok_or("page")?;
++            assert_eq!(
++                ProficiencyPage::decode(&page.encode().ok_or("encode")?),
++                Some(page.clone())
++            );
++            assert_eq!(page.offset, offset);
++            assert!(page.rows.len() <= 20);
++            for row in &page.rows {
++                if row.definition == sword_definition {
++                    assert_eq!(row.experience, 12345);
++                    found = true;
++                } else {
++                    assert_eq!(row.experience, 0);
++                }
++                keys.push(row.definition.get());
++            }
++            offset += u32::try_from(page.rows.len())?;
++            if offset == page.total {
++                break;
++            }
++            assert!(!page.rows.is_empty());
++        }
++        assert!(found);
++        assert!(keys.len() > 20);
++        assert!(keys.windows(2).all(|pair| pair[0] < pair[1]));
++        assert!(
++            FreshAdmissionAuthority::weapon_proficiency_browse(&owner, actor, session, u32::MAX)
++                .await
++                .is_none()
++        );
++        let wrong_session = crate::foundation::GameSessionId::decode(&id(99)).map_err(debug)?;
++        assert!(
++            FreshAdmissionAuthority::weapon_proficiency_browse(&owner, actor, wrong_session, 0)
++                .await
++                .is_none()
++        );
++        let sword_offset = u32::try_from(
++            keys.iter()
++                .position(|reference| *reference == sword_definition.get())
++                .ok_or("sword index")?,
++        )?;
++        sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
++        sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
++        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice()).bind(generation.identity().client_artifact_digest().as_slice()).bind(frame_digest.as_slice()).execute(&harness.pool).await?;
++        admitted.item_fence = Some(
++            owner
++                .current_quest_fence(session)
++                .await
++                .map_err(|_| "fence")?
++                .ok_or("fence")?
++                .item_fence(),
++        );
++        admitted.first_entry = crate::gameplay_transport::connection::FirstEntryOutcome::Positioned;
++        admitted.continuity.selected_capabilities =
++            crate::gameplay_transport::capabilities::SelectedCapabilities::select(
++                crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
++                &[4, 6, 12, 14, 195],
++            )
++            .ok_or("capabilities")?;
++        assert!(
++            super::proficiency_select_perk::connection(&owner, admitted, async |client| {
++                let page = wire_query(
++                    client,
++                    1,
++                    &sword_offset.to_be_bytes(),
++                    protocol::CommandStatus::Accepted,
++                )
++                .await?;
++                assert_eq!(page.as_ref().map(|p| p.total), Some(offset));
++                assert_eq!(
++                    page.and_then(|p| p.rows.first().map(|row| row.experience)),
++                    Some(12345)
++                );
++                assert!(
++                    wire_query(client, 2, &[0], protocol::CommandStatus::Rejected)
++                        .await?
++                        .is_none()
++                );
++                assert!(
++                    wire_query(
++                        client,
++                        3,
++                        &u32::MAX.to_be_bytes(),
++                        protocol::CommandStatus::Rejected
++                    )
++                    .await?
++                    .is_none()
++                );
++                Ok(())
++            })
++            .await?
++        );
++        eprintln!(
++            "POSTGRES_CASE_COMPLETED proficiency_browse: {} weapons, {:?}",
++            keys.len(),
++            started.elapsed()
++        );
++        Ok(())
++    })
++}
++
++async fn wire_query(
++    client: &mut tokio::io::DuplexStream,
++    command_id: u64,
++    payload: &[u8],
++    status: protocol::CommandStatus,
++) -> TestResult<Option<ProficiencyPage>> {
++    let frame = protocol::encode_client_command(
++        1,
++        &protocol::ClientCommandValue {
++            command_id,
++            command_type: 641,
++            payload,
++        },
++    )
++    .map_err(debug)?;
++    client.write_u32(u32::try_from(frame.len())?).await?;
++    client.write_all(&frame).await?;
++    loop {
++        let frame = super::item_look::read_frame(client).await?;
++        let envelope = protocol::decode_wire_envelope(&frame).map_err(debug)?;
++        if envelope.message_type() == protocol::MessageType::CommandResult {
++            let result = protocol::decode_command_result(envelope.payload()).map_err(debug)?;
++            assert_eq!(result.status, status);
++            if status == protocol::CommandStatus::Accepted {
++                return Ok(Some(
++                    ProficiencyPage::decode(result.payload).ok_or("wire page")?,
++                ));
++            }
++            assert!(result.payload.is_empty());
++            return Ok(None);
++        }
++    }
++}
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/proficiency_select_perk.rs b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/proficiency_select_perk.rs
+index cd0f347cc..e43187b66 100644
+--- a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/proficiency_select_perk.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/proficiency_select_perk.rs
+@@ -318,7 +318,7 @@ async fn current_character(
+ }
+ 
+ /// Serve one admitted connection, drive it to its snapshot, run `exercise`, then close it.
+-async fn connection<F>(
++pub(super) async fn connection<F>(
+     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+     admitted: AdmittedSession,
+     exercise: F,
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/special_potions.rs b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/special_potions.rs
+index f08533c84..507da7df5 100644
+--- a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/special_potions.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/special_potions.rs
+@@ -433,6 +433,7 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
+         let applied: u64 = applied.parse()?;
+         let expires: u64 = expires.parse()?;
+         assert_eq!(expires - applied, if item == 7644 { 0 } else { 60_000_000 });
++        super::cl6_status::check_timer(&owner, deps.actor, admitted.game_session_id, &key, item == 35563, 60_000).await?;
+         let after_conditions = {
+             let runtime = deps.runtime.lock().await;
+             let states = owner.states.spell_states.lock().await;
+@@ -551,6 +552,7 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
+                 "expiry cannot consume another potion"
+             );
+         }
++        super::cl6_status::check_timer(&owner, deps.actor, admitted.game_session_id, &key, false, 60_000).await?;
+         eprintln!("PG_MARKER i14-special-potion-effect-burn-flask-replay-cooldown {item}");
+         drop(owner);
+         drop(authority);
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs
+index 2f5b2d9fc..d79c8e5d3 100644
+--- a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs
+@@ -213,7 +213,9 @@ pub(super) async fn before_kill(
+     }
+     if let Some(case @ (Case::DuplexOfflineIgnored | Case::DuplexOnlineSpent)) = CASE.get() {
+         use_wealth_duplex(owner, h, actor, session).await?;
+-        return age_wealth_duplex(h, session, matches!(case, Case::DuplexOnlineSpent)).await;
++        let online = matches!(case, Case::DuplexOnlineSpent);
++        age_wealth_duplex(h, session, online).await?;
++        return super::cl6_status::check_timer(owner, actor, session, "wealth_duplex", !online, 3_600_000).await;
+     }
+     if !matches!(CASE.get(), Some(Case::Gut)) {
+         return Ok(());
+@@ -315,6 +317,7 @@ async fn use_wealth_duplex(
+         .fetch_one(pool)
+         .await?;
+     assert_eq!((left, burns, effects), (1, 1, 1), "one unit, one burn, one effect");
++    super::cl6_status::check_timer(owner, actor, session, "wealth_duplex", true, 3_600_000).await?;
+     Ok(())
+ }
+ 
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/weapon_proficiency.rs b/crates/gameplay/dispatch/src/gameplay_transport/weapon_proficiency.rs
+index 09d719d15..1984ce819 100644
+--- a/crates/gameplay/dispatch/src/gameplay_transport/weapon_proficiency.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/weapon_proficiency.rs
+@@ -216,6 +216,9 @@ impl ProductionProficiencyCatalogue {
+             content_revision: content_revision.to_owned(),
+         })
+     }
++    pub(super) fn weapon_keys(&self) -> impl Iterator<Item = &str> {
++        self.data.bindings().keys().map(String::as_str)
++    }
+     pub(super) fn empty_track(&self, item_key: &str) -> Option<LiveProficiencyTrack> {
+         let shape = self.resolved(item_key)?.shape;
+         Some(LiveProficiencyTrack {
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/weapon_proficiency_browse.rs b/crates/gameplay/dispatch/src/gameplay_transport/weapon_proficiency_browse.rs
+new file mode 100644
+index 000000000..8ff1e82b9
+--- /dev/null
++++ b/crates/gameplay/dispatch/src/gameplay_transport/weapon_proficiency_browse.rs
+@@ -0,0 +1,95 @@
++//! CL7 P08: read-only, pinned catalogue and live session progress. No custody or XP writes.
++use super::{ComposedFreshAdmission, item_ref_admission::pinned_index};
++use crate::content::ReferenceItemField;
++use crate::foundation::{ExactActorRef, GameSessionId};
++use oteryn_protocol_oteryn::weapon_proficiency::{
++    PROFICIENCY_PAGE_SIZE, ProficiencyPage, ProficiencyRow,
++};
++
++macro_rules! authority_methods {
++    () => {
++        fn weapon_proficiency_browse(
++            &self,
++            _actor: $crate::foundation::ExactActorRef,
++            _session: $crate::foundation::GameSessionId,
++            _offset: u32,
++        ) -> impl std::future::Future<
++            Output = Option<oteryn_protocol_oteryn::weapon_proficiency::ProficiencyPage>,
++        > {
++            async { None }
++        }
++    };
++}
++pub(super) use authority_methods;
++macro_rules! composed_methods {
++    () => {
++        async fn weapon_proficiency_browse(
++            &self,
++            actor: $crate::foundation::ExactActorRef,
++            session: $crate::foundation::GameSessionId,
++            offset: u32,
++        ) -> Option<oteryn_protocol_oteryn::weapon_proficiency::ProficiencyPage> {
++            $crate::gameplay_transport::weapon_proficiency_browse::execute(
++                self, actor, session, offset,
++            )
++            .await
++        }
++    };
++}
++pub(super) use composed_methods;
++
++pub(super) async fn execute(
++    owner: &ComposedFreshAdmission<'_, '_, '_>,
++    actor: ExactActorRef,
++    session: GameSessionId,
++    offset: u32,
++) -> Option<ProficiencyPage> {
++    let catalogue = owner.proficiency_catalogue.as_ref()?;
++    // The same lock fences both the content pin and the session that owns the XP tracks.
++    let runtime = owner.runtime.lock().await;
++    runtime.owner_fence().ok()?;
++    runtime.player_control_facts(actor, session).ok()?;
++    let index = pinned_index(&runtime, owner.active_generation)?;
++    let states = owner.states.proficiencies.lock().ok()?;
++    let progress = states.get(&session);
++    let mut rows = Vec::with_capacity(PROFICIENCY_PAGE_SIZE);
++    let mut total = 0u32;
++    for key in catalogue.weapon_keys() {
++        let Some(revision) = index.revision(key) else {
++            continue;
++        };
++        let definition = index.definition_ref("Item", key, revision)?;
++        if total >= offset && rows.len() < PROFICIENCY_PAGE_SIZE {
++            let track = progress.and_then(|state| state.track(key));
++            let empty = catalogue.empty_track(key)?;
++            let track = track.unwrap_or(&empty);
++            rows.push(ProficiencyRow {
++                definition,
++                name: owner
++                    .active_generation?
++                    .native_gameplay()?
++                    .item_policy(key, revision)
++                    .and_then(|policy| match &policy.record().semantics.presentation {
++                        ReferenceItemField::Known(presentation) => match &presentation.name {
++                            ReferenceItemField::Known(name) => Some(name.clone()),
++                            _ => None,
++                        },
++                        _ => None,
++                    })
++                    .unwrap_or_else(|| format!("Weapon {definition}")),
++                experience: track.progress,
++                level: track.shape.track_shape().level(track.progress),
++                selections: track.selections.clone(),
++            });
++        }
++        total = total.checked_add(1)?;
++    }
++    if offset > total {
++        return None;
++    }
++    Some(ProficiencyPage {
++        offset,
++        total,
++        rows,
++    })
++}
+diff --git a/crates/gameplay/durability/src/durability/core_modules.rs b/crates/gameplay/durability/src/durability/core_modules.rs
+index 06d4249e8..1cbe4b188 100644
+--- a/crates/gameplay/durability/src/durability/core_modules.rs
++++ b/crates/gameplay/durability/src/durability/core_modules.rs
+@@ -111,6 +111,7 @@ pub mod mail;
+ pub mod map_item_mint;
+ pub mod map_item_mint_audit;
+ pub mod market;
++pub mod mechanics_status;
+ pub mod monk_state;
+ pub mod native_admission_source;
+ pub mod native_map_items;
+diff --git a/crates/gameplay/durability/src/durability/mechanics_status.rs b/crates/gameplay/durability/src/durability/mechanics_status.rs
+new file mode 100644
+index 000000000..b980c42e5
+--- /dev/null
++++ b/crates/gameplay/durability/src/durability/mechanics_status.rs
+@@ -0,0 +1,95 @@
++//! CL6 read-only projections; existing durable owners and admission remain authoritative.
++use super::character_authority::{
++    CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
++};
++use super::db::{
++    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
++};
++use super::item_transfer::CurrentCharacterItemFence;
++use super::runtime_scope_assignment::NodeIncarnationProof;
++use super::{DurabilityError, DurabilityRoot};
++use crate::foundation::{GameSessionId, GameSessionState, PartyPresence, RuntimeScopeRefV1};
++use oteryn_protocol_oteryn::mechanics_status::{
++    DeathConsumption, EffectTimer, MechanicsStatus, MemberEffects,
++};
++use sqlx::Row;
++
++/// These live bindings are observations, not tokens authorizing a write or a cast.
++pub struct MechanicsObservation {
++    pub status: MechanicsStatus,
++    pub live_members: Vec<Option<(GameSessionId, u64)>>,
++}
++impl DurabilityRoot {
++    pub async fn read_mechanics_status(
++        &self,
++        authority: &ReconciledCharacterAuthority<'_, '_>,
++        node: &NodeIncarnationProof,
++        fence: CurrentCharacterItemFence,
++    ) -> Result<MechanicsObservation, CharacterAuthorityError> {
++        let recovery = authority.record_for(self)?;
++        let node = node.clone();
++        let root = self.clone();
++        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
++            let mut tx = begin_semantic_transaction(holder, deadline).await?;
++            assert_recovery_fence(&mut tx, &recovery).await?;
++            lock_admission_relations(&mut tx).await?;
++            if super::character_progression::assert_item_only_fence(&mut tx, &fence, &node).await?.is_err() {
++                return Ok(Err(CharacterAuthorityError::Rejected));
++            }
++            let dust = super::character_forge_dust::read_forge_dust(&mut tx, fence.character_id).await?;
++            let rows = sqlx::query("SELECT committed_at AS at, blessings_before, blessings_after FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid ORDER BY committed_at DESC,death_occurrence_id DESC LIMIT 5")
++                .bind(fence.character_id.as_bytes().as_slice()).fetch_all(&mut *tx).await?;
++            let mut deaths = Vec::with_capacity(rows.len());
++            for row in rows {
++                let before: Vec<String> = row.try_get("blessings_before")?;
++                let after: Vec<String> = row.try_get("blessings_after")?;
++                if after.iter().any(|key| !before.contains(key)) { return Err(DurabilityError::InvalidStoredState); }
++                let mut consumed: Vec<_> = before.into_iter().filter(|key| !after.contains(key)).collect();
++                consumed.sort();
++                consumed.dedup();
++                deaths.push(DeathConsumption { at_unix_ms: row.try_get("at")?, consumed });
++            }
++            // The existing owner counts online intervals, including reconnect/terminal stamps.
++            // expires_at alone is not an authoritative Wealth Duplex timer.
++            let remaining: i64 = sqlx::query_scalar("WITH instant AS (SELECT public.game_daily_effect_now() AS at), latest AS (SELECT character_id,started_at FROM game_character_concoction_effects,instant WHERE character_id=encode($1,'hex')::uuid AND concoction='wealth_duplex' AND started_at<=instant.at ORDER BY started_at DESC LIMIT 1) SELECT COALESCE((SELECT (greatest(0,$2::bigint-public.game_character_online_us(latest.character_id,latest.started_at,instant.at))+999)/1000 FROM latest,instant),0)::bigint")
++                .bind(fence.character_id.as_bytes().as_slice())
++                .bind(super::item_use::concoction::WEALTH_DUPLEX_ONLINE_MICROS)
++                .fetch_one(&mut *tx).await?;
++            let timers = if remaining > 0 { vec![EffectTimer { key: "wealth_duplex".into(), remaining_ms: u64::try_from(remaining).map_err(|_| DurabilityError::InvalidStoredState)?, online_only: true }] } else { vec![] };
++            let world = fence.runtime_scope.world_id();
++            let world_hex = world.as_bytes().iter().map(|b| format!("{b:02x}")).collect::<String>();
++            sqlx::query("SELECT pg_advisory_xact_lock(45,hashtext($1))").bind(world_hex).execute(&mut *tx).await?;
++            let party = super::world_party::observe_world_party(&mut tx, *world.as_bytes(), *fence.character_id.as_bytes()).await.map_err(|_| DurabilityError::Unavailable)?;
++            let mut members = Vec::with_capacity(party.members.len());
++            let mut live_members = Vec::with_capacity(party.members.len());
++            let sessions = super::fresh_admission::FreshAdmissionStore::from_root(root);
++            for member in party.members {
++                let name: String = sqlx::query_scalar("SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid")
++                    .bind(member.character.as_slice()).bind(world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
++                let colocated = member.presence == PartyPresence::Channel && matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { channel_id, .. } if member.channel == Some(*channel_id.as_bytes()));
++                let held: Option<Vec<u8>> = if colocated {
++                    sqlx::query_scalar("SELECT uuid_send(holder_game_session_id) FROM game_durability_admission_character_guards WHERE character_id=encode($1,'hex')::uuid AND eligible AND holder_game_session_id IS NOT NULL")
++                        .bind(member.character.as_slice()).fetch_optional(&mut *tx).await?
++                } else { None };
++                let live = if let Some(held) = held {
++                    let session = GameSessionId::decode(&held).map_err(|_| DurabilityError::InvalidStoredState)?;
++                    let current = sessions.current_session_in_transaction(&mut tx, session).await?;
++                    if current.session_state() == GameSessionState::Active
++                        && current.current_control_loss_epoch().is_none()
++                        && current.current_transport().is_some()
++                        && current.commit().character_id().as_bytes() == &member.character
++                        && current.current_runtime_scope() == fence.runtime_scope
++                        && current.current_scope_generation() == fence.scope_ownership_generation
++                    { Some((current.current_game_session_id(), current.current_character_lease().generation())) } else { None }
++                } else { None };
++                members.push(MemberEffects { bonuses: [0; 5], character: member.character, name, conditions: None, party_spell_remaining_ms: [0;5] });
++                live_members.push(live);
++            }
++            let observed_unix_ms = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&mut *tx).await?;
++            let status = MechanicsStatus { observed_unix_ms, dust: u32::from(dust.balance()), dust_limit: u32::from(dust.limit().get()), deaths, timers, members };
++            status.encode().ok_or(DurabilityError::InvalidStoredState)?;
++            commit_semantic_transaction(tx, deadline).await?;
++            Ok(Ok(MechanicsObservation { status, live_members }))
++        })).await?
++    }
++}
+diff --git a/crates/gameplay/durability/src/durability/world_party.rs b/crates/gameplay/durability/src/durability/world_party.rs
+index 5c604dbb1..3d7b2a66d 100644
+--- a/crates/gameplay/durability/src/durability/world_party.rs
++++ b/crates/gameplay/durability/src/durability/world_party.rs
+@@ -271,7 +271,7 @@ async fn observe_world_party_batch(
+     Ok(snapshots.into_values().collect())
+ }
+ 
+-async fn observe_world_party(
++pub(super) async fn observe_world_party(
+     tx: &mut Transaction<'_, Postgres>,
+     world: [u8; 16],
+     character: [u8; 16],
+diff --git a/crates/protocol-oteryn/capabilities/0195-weapon-proficiency-v1.json b/crates/protocol-oteryn/capabilities/0195-weapon-proficiency-v1.json
+index f36229aba..0e06fe1fd 100644
+--- a/crates/protocol-oteryn/capabilities/0195-weapon-proficiency-v1.json
++++ b/crates/protocol-oteryn/capabilities/0195-weapon-proficiency-v1.json
+@@ -2,9 +2,20 @@
+   "id": 195,
+   "name": "WEAPON_PROFICIENCY_V1",
+   "constant": "weapon_proficiency::CAPABILITY_WEAPON_PROFICIENCY_V1",
+-  "requires": [4],
++  "requires": [
++    4
++  ],
+   "acceptance_requires": true,
+-  "commands": [378, 379, 380, 392, 393, 394, 395],
++  "commands": [
++    378,
++    379,
++    380,
++    392,
++    393,
++    394,
++    395,
++    641
++  ],
+   "domains": [],
+   "supersedes": [],
+   "offers": {
+diff --git a/crates/protocol-oteryn/capabilities/0384-mechanics-status-v1.json b/crates/protocol-oteryn/capabilities/0384-mechanics-status-v1.json
+new file mode 100644
+index 000000000..ffe133df7
+--- /dev/null
++++ b/crates/protocol-oteryn/capabilities/0384-mechanics-status-v1.json
+@@ -0,0 +1,17 @@
++{
++  "id": 384,
++  "name": "MECHANICS_STATUS_V1",
++  "constant": "mechanics_status::CAPABILITY_MECHANICS_STATUS_V1",
++  "requires": [],
++  "acceptance_requires": false,
++  "commands": [
++    669
++  ],
++  "domains": [],
++  "supersedes": [],
++  "offers": {
++    "production": false,
++    "item_view": false,
++    "bundle_world": true
++  }
++}
+diff --git a/crates/protocol-oteryn/src/lib.rs b/crates/protocol-oteryn/src/lib.rs
+index 5b46d51e2..1d3cc57bc 100644
+--- a/crates/protocol-oteryn/src/lib.rs
++++ b/crates/protocol-oteryn/src/lib.rs
+@@ -84,6 +84,7 @@ pub mod loop_training;
+ pub mod loyalty_skills;
+ pub mod mail;
+ pub mod market;
++pub mod mechanics_status;
+ pub mod npc_service;
+ pub mod npc_shop;
+ pub mod party;
+diff --git a/crates/protocol-oteryn/src/mechanics_status.rs b/crates/protocol-oteryn/src/mechanics_status.rs
+new file mode 100644
+index 000000000..bbf8e9227
+--- /dev/null
++++ b/crates/protocol-oteryn/src/mechanics_status.rs
+@@ -0,0 +1,334 @@
++//! CL6 read-only observations of existing death, potion, party and Forge owners.
++use crate::condition_status::ConditionStatus;
++pub const CAPABILITY_MECHANICS_STATUS_V1: u32 = 384;
++pub const COMMAND_TYPE_MECHANICS_STATUS_QUERY: u32 = 669;
++pub const MAX_REPLY_BYTES: usize = 65_536;
++pub const MAX_DEATHS: usize = 5;
++pub const MAX_MEMBERS: usize = 50;
++pub const MAX_TIMERS: usize = 16;
++
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct DeathConsumption {
++    pub at_unix_ms: i64,
++    /// Receipt before-minus-after; includes Twist of Fate only when actually consumed.
++    pub consumed: Vec<String>,
++}
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct EffectTimer {
++    pub key: String,
++    pub remaining_ms: u64,
++    pub online_only: bool,
++}
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct MemberEffects {
++    pub character: [u8; 16],
++    pub name: String,
++    /// None means no qualified live owner in this Channel, never "no effects".
++    pub conditions: Option<ConditionStatus>,
++    /// Train, Protect, Enchant, Heal, Enlighten Party; zero means inactive.
++    pub party_spell_remaining_ms: [u32; 5],
++    /// Damage reduction, auto attack, spell damage, healing (%); then Mantra points.
++    pub bonuses: [u32; 5],
++}
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct MechanicsStatus {
++    pub observed_unix_ms: i64,
++    pub dust: u32,
++    pub dust_limit: u32,
++    pub deaths: Vec<DeathConsumption>,
++    pub timers: Vec<EffectTimer>,
++    pub members: Vec<MemberEffects>,
++}
++fn text(out: &mut Vec<u8>, value: &str, max: usize) -> Option<()> {
++    if value.is_empty() || value.len() > max || value.chars().any(char::is_control) {
++        return None;
++    }
++    out.push(u8::try_from(value.len()).ok()?);
++    out.extend_from_slice(value.as_bytes());
++    Some(())
++}
++impl MechanicsStatus {
++    pub fn encode(&self) -> Option<Vec<u8>> {
++        if self.observed_unix_ms < 0
++            || self.dust_limit == 0
++            || self.dust > self.dust_limit
++            || self.deaths.len() > MAX_DEATHS
++            || self.timers.len() > MAX_TIMERS
++            || self.members.len() > MAX_MEMBERS
++            || self
++                .deaths
++                .windows(2)
++                .any(|v| v[0].at_unix_ms < v[1].at_unix_ms)
++            || self.timers.windows(2).any(|v| v[0].key >= v[1].key)
++            || self.members.iter().enumerate().any(|(i, m)| {
++                self.members[..i]
++                    .iter()
++                    .any(|prior| prior.character == m.character)
++            })
++        {
++            return None;
++        }
++        let mut out = Vec::new();
++        out.extend_from_slice(&self.observed_unix_ms.to_le_bytes());
++        out.extend_from_slice(&self.dust.to_le_bytes());
++        out.extend_from_slice(&self.dust_limit.to_le_bytes());
++        out.push(u8::try_from(self.deaths.len()).ok()?);
++        for death in &self.deaths {
++            if death.at_unix_ms < 0
++                || death.at_unix_ms > self.observed_unix_ms
++                || death.consumed.len() > 32
++                || death.consumed.windows(2).any(|v| v[0] >= v[1])
++            {
++                return None;
++            }
++            out.extend_from_slice(&death.at_unix_ms.to_le_bytes());
++            out.push(u8::try_from(death.consumed.len()).ok()?);
++            for key in &death.consumed {
++                text(&mut out, key, 128)?;
++            }
++        }
++        out.push(u8::try_from(self.timers.len()).ok()?);
++        for timer in &self.timers {
++            if timer.remaining_ms == 0 {
++                return None;
++            }
++            text(&mut out, &timer.key, 128)?;
++            out.extend_from_slice(&timer.remaining_ms.to_le_bytes());
++            out.push(u8::from(timer.online_only));
++        }
++        out.push(u8::try_from(self.members.len()).ok()?);
++        for member in &self.members {
++            if member.conditions.is_none()
++                && (member.party_spell_remaining_ms != [0; 5] || member.bonuses != [0; 5])
++            {
++                return None;
++            }
++            out.extend_from_slice(&member.character);
++            text(&mut out, &member.name, 128)?;
++            out.push(u8::from(member.conditions.is_some()));
++            if let Some(conditions) = &member.conditions {
++                let bytes = conditions.encode()?;
++                out.extend_from_slice(&u16::try_from(bytes.len()).ok()?.to_le_bytes());
++                out.extend_from_slice(&bytes);
++            }
++            for remaining in member
++                .party_spell_remaining_ms
++                .into_iter()
++                .chain(member.bonuses)
++            {
++                out.extend_from_slice(&remaining.to_le_bytes());
++            }
++        }
++        (out.len() <= MAX_REPLY_BYTES).then_some(out)
++    }
++    pub fn decode(bytes: &[u8]) -> Option<Self> {
++        if bytes.len() > MAX_REPLY_BYTES {
++            return None;
++        }
++        let mut r = Reader(bytes);
++        let observed_unix_ms = i64::from_le_bytes(r.take()?);
++        let dust = u32::from_le_bytes(r.take()?);
++        let dust_limit = u32::from_le_bytes(r.take()?);
++        let count = r.count(MAX_DEATHS)?;
++        let mut deaths = Vec::with_capacity(count);
++        for _ in 0..count {
++            let at_unix_ms = i64::from_le_bytes(r.take()?);
++            let count = r.count(32)?;
++            let mut consumed = Vec::with_capacity(count);
++            for _ in 0..count {
++                consumed.push(r.text()?);
++            }
++            deaths.push(DeathConsumption {
++                at_unix_ms,
++                consumed,
++            });
++        }
++        let count = r.count(MAX_TIMERS)?;
++        let mut timers = Vec::with_capacity(count);
++        for _ in 0..count {
++            timers.push(EffectTimer {
++                key: r.text()?,
++                remaining_ms: u64::from_le_bytes(r.take()?),
++                online_only: r.flag()?,
++            });
++        }
++        let count = r.count(MAX_MEMBERS)?;
++        let mut members = Vec::with_capacity(count);
++        for _ in 0..count {
++            let character = r.take()?;
++            let name = r.text()?;
++            let conditions = if r.flag()? {
++                let size = usize::from(u16::from_le_bytes(r.take()?));
++                let bytes = r.bytes(size)?;
++                Some(ConditionStatus::decode(bytes)?)
++            } else {
++                None
++            };
++            let mut party_spell_remaining_ms = [0; 5];
++            for remaining in &mut party_spell_remaining_ms {
++                *remaining = u32::from_le_bytes(r.take()?);
++            }
++            let mut bonuses = [0; 5];
++            for bonus in &mut bonuses {
++                *bonus = u32::from_le_bytes(r.take()?);
++            }
++            members.push(MemberEffects {
++                character,
++                name,
++                conditions,
++                party_spell_remaining_ms,
++                bonuses,
++            });
++        }
++        if !r.0.is_empty() {
++            return None;
++        }
++        let value = Self {
++            observed_unix_ms,
++            dust,
++            dust_limit,
++            deaths,
++            timers,
++            members,
++        };
++        value.encode()?;
++        Some(value)
++    }
++}
++struct Reader<'a>(&'a [u8]);
++impl<'a> Reader<'a> {
++    fn bytes(&mut self, size: usize) -> Option<&'a [u8]> {
++        let (a, b) = self.0.split_at_checked(size)?;
++        self.0 = b;
++        Some(a)
++    }
++    fn take<const N: usize>(&mut self) -> Option<[u8; N]> {
++        self.bytes(N)?.try_into().ok()
++    }
++    fn count(&mut self, max: usize) -> Option<usize> {
++        let n = usize::from(self.take::<1>()?[0]);
++        (n <= max).then_some(n)
++    }
++    fn flag(&mut self) -> Option<bool> {
++        match self.take::<1>()?[0] {
++            0 => Some(false),
++            1 => Some(true),
++            _ => None,
++        }
++    }
++    fn text(&mut self) -> Option<String> {
++        let n = self.count(128)?;
++        Some(std::str::from_utf8(self.bytes(n)?).ok()?.to_owned())
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    #[test]
++    fn cl6_status_codec_bounds_and_all_fields() -> Result<(), &'static str> {
++        let value = MechanicsStatus {
++            observed_unix_ms: 100,
++            dust: 73,
++            dust_limit: 100,
++            deaths: vec![DeathConsumption {
++                at_unix_ms: 50,
++                consumed: vec!["oteryn:blessing.twist_of_fate".into()],
++            }],
++            timers: vec![EffectTimer {
++                key: "wealth_duplex".into(),
++                remaining_ms: 1234,
++                online_only: true,
++            }],
++            members: vec![MemberEffects {
++                bonuses: [0; 5],
++                party_spell_remaining_ms: [0; 5],
++                character: [1; 16],
++                name: "Friend".into(),
++                conditions: Some(ConditionStatus::default()),
++            }],
++        };
++        let bytes = value.encode().ok_or("encode")?;
++        assert_eq!(MechanicsStatus::decode(&bytes), Some(value.clone()));
++        for end in 0..bytes.len() {
++            assert!(MechanicsStatus::decode(&bytes[..end]).is_none());
++        }
++        let mut trailing = bytes;
++        trailing.push(0);
++        assert!(MechanicsStatus::decode(&trailing).is_none());
++        let mut bad = value.clone();
++        bad.dust = 101;
++        assert!(bad.encode().is_none());
++        let mut bad = value.clone();
++        bad.timers[0].remaining_ms = 0;
++        assert!(bad.encode().is_none());
++        let mut bad = value.clone();
++        bad.members.push(bad.members[0].clone());
++        assert!(bad.encode().is_none());
++        let mut bad = value.clone();
++        bad.members[0].name = "bad\nname".into();
++        assert!(bad.encode().is_none());
++        let mut bad = value;
++        let duplicate = bad.deaths[0].consumed[0].clone();
++        bad.deaths[0].consumed.push(duplicate);
++        assert!(bad.encode().is_none());
++        Ok(())
++    }
++    #[test]
++    fn cl6_status_largest_owner_bounds_fit_one_reply() -> Result<(), &'static str> {
++        let conditions = ConditionStatus {
++            conditions: (0..64)
++                .map(|sub_id| crate::condition_status::ActiveCondition {
++                    icon: 20,
++                    sub_id,
++                    remaining_ms: -1,
++                })
++                .collect(),
++        };
++        let keys: Vec<String> = (0..32)
++            .map(|n| format!("{n:03}{}", "x".repeat(125)))
++            .collect();
++        let value = MechanicsStatus {
++            observed_unix_ms: 10,
++            dust: 100,
++            dust_limit: 100,
++            deaths: (5..10)
++                .rev()
++                .map(|at_unix_ms| DeathConsumption {
++                    at_unix_ms,
++                    consumed: keys.clone(),
++                })
++                .collect(),
++            timers: keys[..MAX_TIMERS]
++                .iter()
++                .map(|key| EffectTimer {
++                    key: key.clone(),
++                    remaining_ms: u64::MAX,
++                    online_only: false,
++                })
++                .collect(),
++            members: (0..50)
++                .map(|n| MemberEffects {
++                    bonuses: [0; 5],
++                    character: [n; 16],
++                    name: "n".repeat(128),
++                    conditions: Some(conditions.clone()),
++                    party_spell_remaining_ms: [120_000; 5],
++                })
++                .collect(),
++        };
++        let bytes = value.encode().ok_or("largest encode")?;
++        assert!(bytes.len() > 60_000 && bytes.len() <= MAX_REPLY_BYTES);
++        assert_eq!(MechanicsStatus::decode(&bytes), Some(value.clone()));
++        let mut excessive = value;
++        excessive.members.push(MemberEffects {
++            bonuses: [0; 5],
++            character: [99; 16],
++            name: "Extra".into(),
++            conditions: None,
++            party_spell_remaining_ms: [0; 5],
++        });
++        assert!(excessive.encode().is_none());
++        Ok(())
++    }
++}
+diff --git a/crates/protocol-oteryn/src/tests/capabilities_golden/0195-weapon-proficiency-v1.json b/crates/protocol-oteryn/src/tests/capabilities_golden/0195-weapon-proficiency-v1.json
+index 147e74cea..0e06fe1fd 100644
+--- a/crates/protocol-oteryn/src/tests/capabilities_golden/0195-weapon-proficiency-v1.json
++++ b/crates/protocol-oteryn/src/tests/capabilities_golden/0195-weapon-proficiency-v1.json
+@@ -13,7 +13,8 @@
+     392,
+     393,
+     394,
+-    395
++    395,
++    641
+   ],
+   "domains": [],
+   "supersedes": [],
+diff --git a/crates/protocol-oteryn/src/tests/capabilities_golden/0384-mechanics-status-v1.json b/crates/protocol-oteryn/src/tests/capabilities_golden/0384-mechanics-status-v1.json
+new file mode 100644
+index 000000000..ffe133df7
+--- /dev/null
++++ b/crates/protocol-oteryn/src/tests/capabilities_golden/0384-mechanics-status-v1.json
+@@ -0,0 +1,17 @@
++{
++  "id": 384,
++  "name": "MECHANICS_STATUS_V1",
++  "constant": "mechanics_status::CAPABILITY_MECHANICS_STATUS_V1",
++  "requires": [],
++  "acceptance_requires": false,
++  "commands": [
++    669
++  ],
++  "domains": [],
++  "supersedes": [],
++  "offers": {
++    "production": false,
++    "item_view": false,
++    "bundle_world": true
++  }
++}
+diff --git a/crates/protocol-oteryn/src/weapon_proficiency.rs b/crates/protocol-oteryn/src/weapon_proficiency.rs
+index c12fae6b5..fd9a297b5 100644
+--- a/crates/protocol-oteryn/src/weapon_proficiency.rs
++++ b/crates/protocol-oteryn/src/weapon_proficiency.rs
+@@ -325,6 +325,109 @@ impl ModificationReply {
+     }
+ }
+ 
++/// CL7: paged, read-only view of every admitted weapon and current session XP.
++pub const COMMAND_TYPE_PROFICIENCY_BROWSE: u32 = 641;
++pub const PROFICIENCY_PAGE_SIZE: usize = 20;
++
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct ProficiencyRow {
++    pub definition: NonZeroU32,
++    pub name: String,
++    pub experience: u32,
++    pub level: u8,
++    pub selections: Vec<Option<u8>>,
++}
++
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct ProficiencyPage {
++    pub offset: u32,
++    pub total: u32,
++    pub rows: Vec<ProficiencyRow>,
++}
++impl ProficiencyPage {
++    pub fn encode(&self) -> Option<Vec<u8>> {
++        if self.rows.len() > PROFICIENCY_PAGE_SIZE
++            || self.offset > self.total
++            || self
++                .offset
++                .checked_add(u32::try_from(self.rows.len()).ok()?)?
++                > self.total
++        {
++            return None;
++        }
++        let mut bytes = self.offset.to_be_bytes().to_vec();
++        bytes.extend(self.total.to_be_bytes());
++        bytes.push(u8::try_from(self.rows.len()).ok()?);
++        for row in &self.rows {
++            if row.name.is_empty()
++                || row.name.len() > 128
++                || row.level > 9
++                || row.selections.len() > MAX_LEVELS
++            {
++                return None;
++            }
++            bytes.extend(row.definition.get().to_be_bytes());
++            bytes.push(u8::try_from(row.name.len()).ok()?);
++            bytes.extend(row.name.as_bytes());
++            bytes.extend(row.experience.to_be_bytes());
++            bytes.push(row.level);
++            bytes.push(u8::try_from(row.selections.len()).ok()?);
++            bytes.extend(row.selections.iter().map(|v| v.unwrap_or(CLEAR_PERK)));
++        }
++        Some(bytes)
++    }
++    pub fn decode(mut bytes: &[u8]) -> Option<Self> {
++        fn take<'a>(bytes: &mut &'a [u8], count: usize) -> Option<&'a [u8]> {
++            let (head, tail) = bytes.split_at_checked(count)?;
++            *bytes = tail;
++            Some(head)
++        }
++        fn number(bytes: &mut &[u8]) -> Option<u32> {
++            Some(u32::from_be_bytes(take(bytes, 4)?.try_into().ok()?))
++        }
++        let offset = number(&mut bytes)?;
++        let total = number(&mut bytes)?;
++        let count = usize::from(*take(&mut bytes, 1)?.first()?);
++        if count > PROFICIENCY_PAGE_SIZE {
++            return None;
++        }
++        let mut rows = Vec::with_capacity(count);
++        for _ in 0..count {
++            let definition = NonZeroU32::new(number(&mut bytes)?)?;
++            let length = usize::from(*take(&mut bytes, 1)?.first()?);
++            let name = std::str::from_utf8(take(&mut bytes, length)?)
++                .ok()?
++                .to_owned();
++            let experience = number(&mut bytes)?;
++            let level = *take(&mut bytes, 1)?.first()?;
++            let length = usize::from(*take(&mut bytes, 1)?.first()?);
++            if length > MAX_LEVELS {
++                return None;
++            }
++            let selections = take(&mut bytes, length)?
++                .iter()
++                .map(|v| (*v != CLEAR_PERK).then_some(*v))
++                .collect();
++            rows.push(ProficiencyRow {
++                definition,
++                name,
++                experience,
++                level,
++                selections,
++            });
++        }
++        let page = Self {
++            offset,
++            total,
++            rows,
++        };
++        if !bytes.is_empty() || page.encode().is_none() {
++            return None;
++        }
++        Some(page)
++    }
++}
++
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+diff --git a/crates/session/src/appearance_state.rs b/crates/session/src/appearance_state.rs
+index 11b891065..7d34b6928 100644
+--- a/crates/session/src/appearance_state.rs
++++ b/crates/session/src/appearance_state.rs
+@@ -98,13 +98,22 @@ pub(crate) fn validate_result(
+     Ok(())
+ }
+ impl AppearanceState {
++    fn binding(
++        &self,
++        entity: world_spatial_entities::EntityRef,
++        reference: u32,
++    ) -> Option<&wire::Binding> {
++        self.bindings
++            .get(&entity)
++            .filter(|binding| binding.appearance_ref == reference)
++    }
++
+     pub(crate) fn resolve(
+         &self,
+         entity: world_spatial_entities::EntityRef,
+         reference: u32,
+     ) -> Option<&wire::Look> {
+-        let binding = self.bindings.get(&entity)?;
+-        (binding.appearance_ref == reference).then_some(&binding.look)
++        self.binding(entity, reference).map(|binding| &binding.look)
+     }
+ }
+ 
+@@ -148,6 +157,8 @@ pub struct VisibleAppearance {
+     pub look: Option<wire::Look>,
+     /// Server-reported (light level, indexed colour), absent when unlit.
+     pub light: Option<(u8, u8)>,
++    /// Exact visible appearance binding: 1–5 influenced stacks, 15 fiendish.
++    pub forge_stacks: Option<u8>,
+ }
+ 
+ impl<S: SessionStream> Session<S> {
+@@ -159,6 +170,14 @@ impl<S: SessionStream> Session<S> {
+             .flat_map(WorldEntities::iter)
+             .map(|entity| VisibleAppearance {
+                 entity: *entity,
++                forge_stacks: match entity.detail {
++                    world_spatial_entities::EntityDetail::Actor { appearance_ref, .. } => self
++                        .appearance
++                        .as_ref()
++                        .and_then(|state| state.binding(entity.entity, appearance_ref))
++                        .and_then(|binding| binding.forge_stacks),
++                    _ => None,
++                },
+                 light: self
+                     .entities
+                     .as_ref()
+diff --git a/crates/session/src/capability_support.rs b/crates/session/src/capability_support.rs
+index 891d3c1f4..b8b0fab86 100644
+--- a/crates/session/src/capability_support.rs
++++ b/crates/session/src/capability_support.rs
+@@ -69,6 +69,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
+     // CL26s1: private-channel prerequisite of public channels (259); ids stay ascending.
+     chat::private_channel::CAPABILITY_CHAT_PRIVATE_CHANNEL_V1,
+     oteryn_protocol_oteryn::npc_shop::CAPABILITY_NPC_SHOP_V1,
++    oteryn_protocol_oteryn::creature_push::CAPABILITY_CREATURE_PUSH_V1,
+     oteryn_protocol_oteryn::channel_list::CAPABILITY_CHANNEL_LIST_V1,
+     oteryn_protocol_oteryn::house_transfer::CAPABILITY_HOUSE_TRANSFER_V1,
+     property_services::pvp_expert::CAPABILITY_PVP_EXPERT_V1,
+@@ -95,7 +96,9 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
+     animus_mastery::CAPABILITY_ANIMUS_MASTERY_V1,
+     // CL26s3: native daily reward wall, query, and claim controls.
+     oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_V1,
++    oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_CARRIED_V1,
+     oteryn_protocol_oteryn::daily_reward::CAPABILITY_DAILY_REWARD_V2,
++    oteryn_protocol_oteryn::weapon_proficiency::CAPABILITY_WEAPON_PROFICIENCY_V1,
+     oteryn_protocol_oteryn::cyclopedia_character::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+     // CL26s4: personal boss reward commands.
+     oteryn_protocol_oteryn::team_finder::CAPABILITY_TEAM_FINDER_LEADER_V1,
+@@ -121,6 +124,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
+     spell_catalog::CAPABILITY_ACTOR_SPELL_CATALOG_V1,
+     oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1,
+     skill_display::CAPABILITY_SKILL_DISPLAY_V1,
++    mechanics_status::CAPABILITY_MECHANICS_STATUS_V1,
+ ];
+ 
+ /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
+@@ -162,6 +166,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
+     task_board::CAPABILITY_TASK_BOARD_V1,
+     oteryn_protocol_oteryn::server_save_countdown::CAPABILITY_SERVER_SAVE_COUNTDOWN_V1,
+     oteryn_protocol_oteryn::npc_shop::CAPABILITY_NPC_SHOP_V1,
++    oteryn_protocol_oteryn::creature_push::CAPABILITY_CREATURE_PUSH_V1,
+     oteryn_protocol_oteryn::channel_list::CAPABILITY_CHANNEL_LIST_V1,
+     oteryn_protocol_oteryn::house_transfer::CAPABILITY_HOUSE_TRANSFER_V1,
+     property_services::pvp_expert::CAPABILITY_PVP_EXPERT_V1,
+@@ -205,6 +210,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
+     spell_catalog::CAPABILITY_ACTOR_SPELL_CATALOG_V1,
+     oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1,
+     skill_display::CAPABILITY_SKILL_DISPLAY_V1,
++    mechanics_status::CAPABILITY_MECHANICS_STATUS_V1,
+ ];
+ 
+ pub(super) fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {
+@@ -232,3 +238,42 @@ mod target_move_tests {
+         assert!(gated_routes().any(|(id, commands, _)| id == 64 && commands.contains(&81)));
+     }
+ }
++
++#[cfg(test)]
++mod creature_push_tests {
++    use super::*;
++
++    #[test]
++    fn creature_push_is_advertised_and_routed_with_its_prerequisites() {
++        for capability in [6, 13, 82] {
++            assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&capability));
++        }
++        assert!(gated_routes().any(|(id, commands, _)| id == 82 && commands.contains(&98)));
++    }
++}
++
++#[cfg(test)]
++mod weapon_proficiency_tests {
++    use super::*;
++
++    #[test]
++    fn proficiency_browse_is_advertised_and_routed_with_item_identity() {
++        for capability in [4, 195] {
++            assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&capability));
++        }
++        assert!(gated_routes().any(|(id, commands, _)| id == 195 && commands.contains(&641)));
++    }
++}
++
++#[cfg(test)]
++mod hotkey_equip_tests {
++    use super::*;
++
++    #[test]
++    fn hotkey_equip_carried_is_advertised_with_its_command_owner() {
++        for capability in [179, 180] {
++            assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&capability));
++        }
++        assert!(gated_routes().any(|(id, commands, _)| id == 179 && commands.contains(&348)));
++    }
++}
+diff --git a/crates/session/src/lib.rs b/crates/session/src/lib.rs
+index ba354d945..5ab0d781b 100644
+--- a/crates/session/src/lib.rs
++++ b/crates/session/src/lib.rs
+@@ -159,6 +159,7 @@ pub use oteryn_protocol_oteryn::imbuement;
+ /// The capability-21 logout result a client reads, re-exported so it needs no protocol import.
+ pub use oteryn_protocol_oteryn::logout::LogoutResult;
+ pub use oteryn_protocol_oteryn::loyalty_skills;
++pub use oteryn_protocol_oteryn::mechanics_status;
+ pub use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTradeSide};
+ pub use oteryn_protocol_oteryn::npc_shop;
+ pub use oteryn_protocol_oteryn::party_effects;
+diff --git a/crates/session/src/session_tests_capabilities.rs b/crates/session/src/session_tests_capabilities.rs
+index 1554ce7f6..dad4d3bf3 100644
+--- a/crates/session/src/session_tests_capabilities.rs
++++ b/crates/session/src/session_tests_capabilities.rs
+@@ -137,6 +137,7 @@ fn derived_gated_routes_match_previous_table() {
+         (72, &[89], &[]),
+         (75, &[], &[40]),
+         (81, &[97], &[]),
++        (82, &[98], &[]),
+         // P-C03 routes the existing character-info and raid-schedule commands.
+         (97, &[113], &[]),
+         (149, &[171, 172, 173], &[]),
+@@ -190,12 +191,13 @@ fn derived_gated_routes_match_previous_table() {
+         (279, &[495], &[]),
+         (280, &[496], &[]),
+         (370, &[640], &[]),
++        (384, &[669], &[]),
+         // CL25J: native feature adapters now use these existing gated wire routes.
+         (151, &[177], &[]),
+         (152, &[181], &[]),
+         (153, &[182], &[]),
+         (154, &[183, 184, 185, 186], &[]),
+-        (195, &[378, 379, 380, 392, 393, 394, 395], &[]),
++        (195, &[378, 379, 380, 392, 393, 394, 395, 641], &[]),
+         (197, &[383, 384], &[98]),
+         (199, &[387, 388], &[]),
+         (225, &[431], &[]),
+diff --git a/crates/session/src/session_tests_chat.rs b/crates/session/src/session_tests_chat.rs
+index fb5f01b94..584ed6d71 100644
+--- a/crates/session/src/session_tests_chat.rs
++++ b/crates/session/src/session_tests_chat.rs
+@@ -142,9 +142,9 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
+         &[
+             3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 28, 30,
+             31, 36, 37, 39, 40, 42, 43, 49, 51, 53, 54, 55, 57, 59, 60, 61, 62, 63, 64, 66, 67, 68,
+-            72, 75, 80, 81, 83, 86, 87, 91, 92, 97, 98, 99, 115, 117, 132, 134, 140, 147, 148, 149,
+-            150, 151, 152, 153, 154, 165, 168, 179, 182, 199, 200, 224, 230, 232, 233, 240, 258,
+-            259, 272, 274, 275, 276, 277, 278, 279, 280, 285, 286, 287, 288, 370
++            72, 75, 80, 81, 82, 83, 86, 87, 91, 92, 97, 98, 99, 115, 117, 132, 134, 140, 147, 148,
++            149, 150, 151, 152, 153, 154, 165, 168, 179, 180, 182, 195, 199, 200, 224, 230, 232,
++            233, 240, 258, 259, 272, 274, 275, 276, 277, 278, 279, 280, 285, 286, 287, 288, 370, 384
+         ]
+     );
+ }
+diff --git a/crates/session/src/tests/appearance_session_tests.rs b/crates/session/src/tests/appearance_session_tests.rs
+index 0e9b61ef4..37563cc77 100644
+--- a/crates/session/src/tests/appearance_session_tests.rs
++++ b/crates/session/src/tests/appearance_session_tests.rs
+@@ -12,11 +12,13 @@ fn appearance_result_first_and_observation_first_converge_through_session_dispat
+ -> Result<(), BoxError> {
+     block_on(async {
+         for result_first in [true, false] {
+-            let (snapshot, entity, spatial) = appearance_fixture::snapshot()?;
++            let (mut snapshot, entity, spatial) = appearance_fixture::snapshot()?;
++            snapshot.bindings[0].forge_stacks = Some(5);
+             let domain = (21, 1, 1, snapshot.encode().map_err(|e| format!("{e:?}"))?);
+             let original = snapshot.bindings[0].look.clone();
+             let mut binding = snapshot.bindings[0].clone();
+             binding.root_revision = 2;
++            binding.forge_stacks = Some(15);
+             binding.look = appearance::Look::Outfit {
+                 look_type: 129,
+                 colours: [2, 1, 0, 2],
+@@ -70,6 +72,7 @@ fn appearance_result_first_and_observation_first_converge_through_session_dispat
+                 Ok::<_, BoxError>(())
+             });
+             let mut session = Session::admit(client, entity_admission()?).await?;
++            assert_eq!(session.visible_appearances()[0].forge_stacks, Some(5));
+             assert_eq!(
+                 session.visible_appearances()[0].look.as_ref(),
+                 Some(&original)
+@@ -105,6 +108,7 @@ fn appearance_result_first_and_observation_first_converge_through_session_dispat
+                 );
+             }
+             session.service_liveness(Duration::from_millis(50)).await?;
++            assert_eq!(session.visible_appearances()[0].forge_stacks, Some(15));
+             assert_eq!(
+                 *session
+                     .appearance
+diff --git a/docs/contracts/protocol-oteryn/v1/mechanics-status-v1.md b/docs/contracts/protocol-oteryn/v1/mechanics-status-v1.md
+new file mode 100644
+index 000000000..d7752056f
+--- /dev/null
++++ b/docs/contracts/protocol-oteryn/v1/mechanics-status-v1.md
+@@ -0,0 +1,88 @@
++# Mechanics status v1
++
++CL6 owner authorization (2026-11-06): additive read-only projections for C20c,
++S13c, W09 and P19. Capability 384, command 669; mechanic 642, offer 639.
++No domain, migration, new gameplay rule or durable state. Existing capabilities
++and reply formats remain unchanged. Offered in bundle Worlds with native gameplay.
++The native client opens Character effects with Ctrl+Alt+Shift+U and refreshes once
++per second while open; statuses are observations, never settlement authority.
++
++## Request
++
++Empty. Unselected capability, malformed request, unavailable owner or stale
++Character/session/connection/scope fence returns Rejected with empty payload.
++Existing command ingress retains exact replies for duplicate CommandRefs; a new
++query observes current owners. No target identifier is accepted from the client.
++
++## Reply
++
++Accepted payload is little-endian, at most 65536 bytes:
++
++- i64 database observation Unix milliseconds, u32 current dust, u32 dust limit.
++- u8 death count (0..5), newest first. Each: i64 committed Unix milliseconds,
++  u8 consumed blessing count (0..32), then length-prefixed UTF-8 blessing keys.
++  Consumption is the immutable receipt's before-minus-after, never a comparison
++  of current blessings against an earlier read. Empty means no blessing consumed
++  by that recorded death. Twist of Fate is explicitly displayed as consumed or
++  not consumed for each receipt. No history is distinct from an empty consumption.
++- u8 timer count (0..16), keys strictly sorted. Each: length-prefixed UTF-8
++  production/effect key, u64 positive remaining milliseconds, u8 online-only flag.
++  Wealth Duplex uses the existing online clock and latest activation. Other timed
++  potions use active source-qualified installed conditions. Instant Antidote and
++  Kooldown Aid have no active duration; their reuse cooldown is not an effect timer.
++- u8 party member count (0..50). Each: 16-byte Character identity, UTF-8 name,
++  u8 known flag. If known: u16 condition-payload byte length and an unchanged
++  condition-status-v1 payload (including permanent -1 and exact sub-identities).
++  Each member then carries five u32 remaining milliseconds (Train, Protect,
++  Enchant, Heal, Enlighten Party). Then five u32 values: damage reduction, auto attack, spell damage, healing
++  percentages, and additive Guiding Presence Mantra points. Unknown members have
++  zero in all ten words.
++  Unknown means no qualified live owner in this Channel, not no effects. An empty
++  known condition list means no active effects. Empty roster means no party.
++
++Text has a u8 byte length, 1..128, valid UTF-8 and no control characters. Flags
++are exactly 0/1. Duplicate members, unsorted/duplicate consumed keys or timers,
++zero timers, invalid condition payloads, dust above limit, future death timestamps,
++truncation and trailing bytes are rejected. The limits bound all allocations.
++Client state changes only after accepted, fully decoded replies; refresh errors
++retain confirmed data with an error. Every session end clears the panel.
++
++## Existing owners and observation boundary
++
++Own durable values use the existing recovered authority, node and current item
++fence in a bounded semantic transaction. Dust reads the actual balance owner,
++including its documented absent-row default, never Forge history. Deaths read
++committed receipts. Wealth Duplex reuses game_character_online_us.
++Party membership comes from the World party owner's shared observation, under its
++World advisory lock; no viewport, cached party shield or client-supplied target
++confers membership. Live member sessions are qualified by current admission and
++Character lease/scope, then resolved again under the actual runtime owner. Runtime
++and spell-state guards are released before database awaits. Member conditions and
++local potion conditions are sampled under their locks after the durable observation;
++this is a bounded composition of owner observations, not a cross-owner transaction.
++Remote/offline members retain their names but their conditions are unknown.
++
++## Donor evidence and presentation differences
++
++Crystal 201189f871d23597b82caf88fd611454a2ddefb8, OTS_HYPOTHESIS_ONLY:
++
++- src/creatures/players/player.cpp:4212-4248: regular versus Twist of Fate
++  consumption; src/server/network/protocol/protocolgame.cpp:5411-5480: blessings.
++- src/server/network/protocol/protocolgame.cpp:5305-5314: active concoction IDs
++  and time; data/libs/systems/concoctions.lua:126-152,179-199 and config.lua.dist:
++  310-312: existing Wealth Duplex online clock and instantaneous Kooldown Aid.
++- data/scripts/actions/items/potions.lua:1-31,52-63,125-147: installed timed potion
++  conditions. Oteryn's existing condition_potions owner records exact source keys.
++- data/scripts/spells/party/protect_party.lua:6-10,26-38 and sibling party spell
++  scripts: existing member conditions. The accepted Enlighten Party duration
++  difference remains documented in party-effects-v1.md; no duration is changed.
++- src/creatures/monsters/monster.cpp:2765-2773: influenced 1..5, fiendish 15 with
++  hidden stack count; protocolgame.cpp:3657-3676: actual dust and dust limit reads.
++
++Canary 47dfd51f45280a59a1d3e50ba7edd573d7234446 is the companion audit donor;
++its party.cpp:308-350 documents the separately owned Guiding Presence bonus.
++The new wire groups existing observations in one bounded native query. Native
++monster labels use original text glyphs (Influenced N / Fiendish) instead of
++redistributing proprietary icons; fiendish never displays 15. TibiaWiki MediaWiki
++Criaturas Modificadas revision400948 independently confirms both classifications.
++No missing source or wiki check is used to infer a gameplay rule.
+diff --git a/docs/contracts/protocol-oteryn/v1/registry/capabilities/0195-weapon-proficiency-v1.json b/docs/contracts/protocol-oteryn/v1/registry/capabilities/0195-weapon-proficiency-v1.json
+index d1077d718..62a3d5220 100644
+--- a/docs/contracts/protocol-oteryn/v1/registry/capabilities/0195-weapon-proficiency-v1.json
++++ b/docs/contracts/protocol-oteryn/v1/registry/capabilities/0195-weapon-proficiency-v1.json
+@@ -4,7 +4,7 @@
+   "owner_decision": "P08",
+   "owner": "Game Character proficiency owner",
+   "requires": [4],
+-  "command_types": [378, 379, 380, 392, 393, 394, 395],
++  "command_types": [378, 379, 380, 392, 393, 394, 395, 641],
+   "state_domains": [],
+   "offered": false,
+   "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES: bundle Worlds with the promoted proficiency catalogue and the fenced Character proficiency writer."
+diff --git a/docs/contracts/protocol-oteryn/v1/registry/capabilities/0384-mechanics-status-v1.json b/docs/contracts/protocol-oteryn/v1/registry/capabilities/0384-mechanics-status-v1.json
+new file mode 100644
+index 000000000..0d08352bd
+--- /dev/null
++++ b/docs/contracts/protocol-oteryn/v1/registry/capabilities/0384-mechanics-status-v1.json
+@@ -0,0 +1,13 @@
++{
++  "id": 384,
++  "name": "MECHANICS_STATUS_V1",
++  "owner_decision": "CL6 owner authorization 2026-11-06",
++  "owner": "Game existing death, potion, party and Forge owners",
++  "requires": [],
++  "command_types": [
++    669
++  ],
++  "state_domains": [],
++  "offered": false,
++  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES; filtered without native gameplay owners."
++}
+diff --git a/docs/contracts/protocol-oteryn/v1/registry/command_types/0641-proficiency-browse.json b/docs/contracts/protocol-oteryn/v1/registry/command_types/0641-proficiency-browse.json
+new file mode 100644
+index 000000000..e61d3080f
+--- /dev/null
++++ b/docs/contracts/protocol-oteryn/v1/registry/command_types/0641-proficiency-browse.json
+@@ -0,0 +1,10 @@
++{
++  "id": 641,
++  "name": "PROFICIENCY_BROWSE",
++  "owner_decision": "CL7-P08",
++  "capability": 195,
++  "payload_schema": "weapon-proficiency-v1.md#browse-request",
++  "result_schema": "weapon-proficiency-v1.md#browse-reply",
++  "max_payload_bytes": 4,
++  "max_result_payload_bytes": 2929
++}
+diff --git a/docs/contracts/protocol-oteryn/v1/registry/command_types/0669-mechanics-status-query.json b/docs/contracts/protocol-oteryn/v1/registry/command_types/0669-mechanics-status-query.json
+new file mode 100644
+index 000000000..fdc9fa704
+--- /dev/null
++++ b/docs/contracts/protocol-oteryn/v1/registry/command_types/0669-mechanics-status-query.json
+@@ -0,0 +1,10 @@
++{
++  "id": 669,
++  "name": "MECHANICS_STATUS_QUERY",
++  "owner_decision": "CL6 owner authorization 2026-11-06",
++  "capability": 384,
++  "payload_schema": "docs/contracts/protocol-oteryn/v1/mechanics-status-v1.md#request",
++  "result_schema": "docs/contracts/protocol-oteryn/v1/mechanics-status-v1.md#reply",
++  "max_payload_bytes": 0,
++  "max_result_payload_bytes": 65536
++}
+diff --git a/docs/contracts/protocol-oteryn/v1/weapon-proficiency-v1.md b/docs/contracts/protocol-oteryn/v1/weapon-proficiency-v1.md
+index a588daa35..adc2e6621 100644
+--- a/docs/contracts/protocol-oteryn/v1/weapon-proficiency-v1.md
++++ b/docs/contracts/protocol-oteryn/v1/weapon-proficiency-v1.md
+@@ -90,3 +90,29 @@ and the pending offer's three entry indexes (`255 255 255` = no offer). At most
+   occurrence, so a retry draws the same entries and a restart reseeds nothing.
+ - The occurrence derives from the CommandId, actor and GameSession; a replay never charges or
+   draws again.
++
++## Browse request
++
++CL7 command 641 uses existing capability 195. Four big-endian bytes give a zero-based
++catalogue offset. This read does not checkpoint, spend, or change progression rules.
++The immutable active generation supplies the complete admitted weapon catalogue, sorted
++by production key. An offset beyond its length is rejected. Each page has at most 20 rows.
++Refresh starts at zero; Previous and Next navigate the list. XP is the current session
++track (including uncheckpointed kills); a weapon without a track has zero XP.
++
++## Browse reply
++
++Big-endian u32 offset, u32 total, u8 row count, then each row: nonzero u32
++active-generation item definition reference, u8 UTF-8 display-name byte length (1–128), name,
++u32 XP, u8 attained level (0–9), u8 perk level count (0–7), and selected perk bytes
++(255 means unselected). Reject malformed/trailing bytes and mismatched requested offsets.
++The attained-level bound includes the existing two mastery levels above seven perk levels
++(PROFICIENCY-0; `ProficiencyTrackShape::mastery_level`). No client formula supplies experience. The list is refreshed explicitly; it is not a
++subscription. Generation identity is inherited from the admitted session, like item views.
++
++Donor evidence (OTS_HYPOTHESIS_ONLY): Canary 47dfd51f45280a59a1d3e50ba7edd573d7234446,
++`src/server/network/protocol/protocolgame.cpp:12328-12357`; Crystal
++201189f871d23597b82caf88fd611454a2ddefb8, same path `:11724-11751`, send weapon
++identity, XP and selected perks. Accepted Oteryn transport difference: the native
++server catalogue is paged rather than supplied by proprietary client static data.
++This adds a read projection and changes no gameplay rule. Wiki cross-check: wiki-pending.
+diff --git a/tools/architecture-check/client-unsupported-baseline.d/0195-weapon-proficiency.json b/tools/architecture-check/client-unsupported-baseline.d/0195-weapon-proficiency.json
+deleted file mode 100644
+index 13b32bcfc..000000000
+--- a/tools/architecture-check/client-unsupported-baseline.d/0195-weapon-proficiency.json
++++ /dev/null
+@@ -1 +0,0 @@
+-{"mechanic": "0195-weapon-proficiency"}
+diff --git a/tools/architecture-check/client-unsupported-baseline.json b/tools/architecture-check/client-unsupported-baseline.json
+index b0f90daab..cbe315d4b 100644
+--- a/tools/architecture-check/client-unsupported-baseline.json
++++ b/tools/architecture-check/client-unsupported-baseline.json
+@@ -16,7 +16,6 @@
+   "0051-staff",
+   "0061-item-stack-count",
+   "0066-refusal-detail",
+-  "0082-creature-push",
+   "0091-field-runes",
+   "0092-zones-nologout",
+   "0093-subarea",
+diff --git a/tools/synthetic-client-harness/src/native_map.rs b/tools/synthetic-client-harness/src/native_map.rs
+index 601434eb4..79053d4c3 100644
+--- a/tools/synthetic-client-harness/src/native_map.rs
++++ b/tools/synthetic-client-harness/src/native_map.rs
+@@ -265,6 +265,7 @@ fn native_live_appearance_snapshot_reaches_visible_scene()
+                             incoming,
+                             pending: Vec::new(),
+                             appearances: vec![oteryn_session::VisibleAppearance {
++                                forge_stacks: None,
+                                 entity,
+                                 look: None,
+                                 light: None,

@@ -1,0 +1,84 @@
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32
+    |
+208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+    |                                ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
+    |
+
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)
+   Compiling oteryn-dev-client v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/tools/dev-client)
+   Compiling oteryn-synthetic-assets v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/synthetic-assets)
+   Compiling oteryn-client v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/apps/client)
+   Compiling oteryn-synthetic-client-harness v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/tools/synthetic-client-harness)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.23s
+     Running unittests src/main.rs (/home/mole/oteryn-cache/target-codex/lanes/cl6/debug/deps/oteryn_synthetic_client_harness-ed6cf4050237fd0f)
+live::guild_chat::tests::guild_chat_ranks_and_login_message_render_without_identity_or_location: test
+live::guild_chat::tests::party_chat_cli_and_render_keep_text_and_hide_the_internal_party_destination: test
+live::tests::a_chat_input_without_capability_7_is_a_notice_and_the_help_hides_chat: test
+live::tests::a_click_selects_the_top_entity_creature_then_player_then_corpse_then_item: test
+live::tests::a_committed_use_only_sets_the_notice_and_the_door_event_opens_the_door: test
+live::tests::a_pm_recipient_may_be_quoted_to_hold_spaces: test
+live::tests::a_selected_but_empty_chat_pane_renders_and_an_unselected_one_does_not: test
+live::tests::a_stale_move_result_changes_only_the_notice: test
+live::tests::an_entity_appears_moves_and_disappears_through_pushed_deltas: test
+live::tests::an_unknown_state_key_is_flagged_not_guessed: test
+live::tests::arguments_come_from_flags_then_env_and_the_grant_is_never_a_flag: test
+live::tests::cast_commands_parse_only_supported_targets_and_wire_bounds: test
+live::tests::cast_notice_preserves_the_actual_disposition_without_inventing_world_changes: test
+live::tests::cells_beyond_the_i32_world_alias_no_real_tile: test
+live::tests::character_ids_parse_as_uuid_v7_only: test
+live::tests::chat_input_lines_map_to_every_intent: test
+live::tests::click_on_the_door_tile_is_use_under_the_mirror_revision: test
+live::tests::clicking_a_corpse_with_a_handle_uses_it_only_with_capability_4: test
+live::tests::each_kind_has_its_own_glyph_and_the_own_actor_stays_an_at_sign: test
+live::tests::every_line_kind_renders_in_the_pane_with_the_dropped_marker: test
+live::tests::grant_material_strips_trailing_line_endings_only: test
+live::tests::keys_route_to_steps_and_clicks_need_a_pointer_position: test
+live::tests::line_commands_parse_strictly: test
+live::tests::live_controller_opens_a_corpse_and_loots_one_entry_through_both_deltas: test
+live::tests::live_controller_tls_steps_uses_and_records_successful_and_denied_casts: test
+live::tests::movement_actions_map_to_wire_directions: test
+live::tests::muted_and_exhausted_show_their_wait_and_change_nothing_else: test
+live::tests::native_typing::native_typing_admitted_client_retries_rate_gate_and_stops_on_send: test
+live::tests::pixels_and_tiles_round_trip_around_the_actor: test
+live::tests::pushed_events_apply_in_order_and_the_vitals_line_shows: test
+live::tests::refused_use_leaves_the_door_and_revision_alone: test
+live::tests::render_text_draws_actor_and_door_state: test
+live::tests::scenario_scripts_validate_entire_input_and_bound_waits: test
+live::tests::snapshot_maps_to_actor_and_closed_door: test
+live::tests::snapshot_without_a_door_maps_to_no_door: test
+live::tests::step_delta_moves_the_actor_and_a_blocked_step_does_not: test
+live::tests::the_backpack_and_corpse_panes_render_and_follow_their_deltas: test
+live::tests::the_own_actor_is_not_selectable_and_a_move_recentres_the_view: test
+live::tests::the_pane_keeps_the_last_64_lines: test
+native_context::native_world_context_right_click_actions_and_feedback: test
+native_depot::native_depot_browse_deposit_switch_box_refusal_withdraw_and_logout: test
+native_floor_transition::native_floor_transition_replaces_window_and_keeps_playing: test
+native_light::native_clock_update_reaches_status_and_scene: test
+native_map::native_live_appearance_snapshot_reaches_visible_scene: test
+native_map::native_live_map_snapshot_then_delta_changes_the_scene_and_item_selection: test
+native_market::native_market_returns_to_wares_and_pages_via_public_controls: test
+native_minimap::native_minimap_click_reaches_the_server_walk_path: test
+native_stash::native_stash_picker_stow_refusal_retrieve_refresh_and_logout: test
+native_trade::native_trade_world_selection_wire_settlement_cancel_and_receipt_only_refusal: test
+native_weather::native_weather_update_reaches_scene_and_clears: test
+
+50 tests, 0 benchmarks

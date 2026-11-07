@@ -1,0 +1,304 @@
+   Compiling serde_core v1.0.229
+   Compiling unicode-ident v1.0.24
+   Compiling tokio v1.53.1 (/home/mole/oteryn-cache/rs-wt/cl6/vendor/tokio-1.53.1)
+   Compiling proc-macro2 v1.0.107
+   Compiling syn v3.0.9
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32
+    |
+208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+    |                                ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
+    |
+
+   Compiling serde_json v1.0.154
+   Compiling oteryn-protocol-oteryn v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/protocol-oteryn)
+   Compiling oteryn-client-ui v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/client-ui)
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+   Compiling oteryn-foundation v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/foundation)
+   Compiling oteryn-diagnostics v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/diagnostics)
+   Compiling oteryn-client-domain v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/client-domain)
+   Compiling oteryn-renderer v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/renderer)
+warning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)
+   Compiling oteryn-session v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/session)
+   Compiling oteryn-client-runtime v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/client-runtime)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 13.23s
+     Running unittests src/lib.rs (/home/mole/oteryn-cache/target-codex/lanes/cl6/debug/deps/oteryn_client_ui-4772fce882bbae85)
+account_achievements::tests::input_ignores_repeat_and_requires_the_exact_chord: test
+account_achievements::tests::paging_waits_for_confirmed_data_and_refusal_keeps_it: test
+account_achievements::tests::unavailable_and_mismatched_results_never_replace_confirmed_data: test
+achievement_notices::popup_tests::advancement_log_is_bounded_and_keeps_the_newest_lines: test
+achievement_notices::popup_tests::pushed_achievement_shows_popup_and_one_advancement_line: test
+achievement_notices::tests::achievement_notice_input_requires_exact_chord_and_fresh_press: test
+achievement_notices::tests::pushed_achievement_notices_are_bounded_and_visible: test
+ambient_sound::tests::replacement_and_silence_are_explicit: test
+analyser::tests::confirmed_state_is_visible: test
+animus_mastery::tests::animus_empty_page_and_requested_offset_are_bounded: test
+animus_mastery::tests::animus_hotkey_requires_the_exact_nonrepeating_control_a_chord: test
+animus_mastery::tests::animus_pages_require_selection_and_advance_only_after_confirmed_replies: test
+animus_mastery::tests::animus_refusal_or_malformed_reply_preserves_confirmed_page_and_allows_refresh: test
+appearance::tests::pc01_appearance_shortcut_and_request_gate: test
+arena::tests::arena_catalogue_replay_and_refusal_render_only_valid_server_state: test
+arena::tests::arena_controls_gate_pending_and_never_predict_progress: test
+arena::tests::arena_open_binding_requires_control_shift_z_press: test
+arena::tests::arena_panel_exposes_tibiadrome_alongside_svargrond: test
+arena::tests::drome_native_selection_requires_a_valid_control_and_reward: test
+arena::tests::drome_reply_refuses_malformed_oversized_and_wrong_version_data: test
+arena::tests::drome_requests_are_gated_and_decode_only_the_expected_reply_family: test
+battle::tests::alt_b_toggles_without_claiming_inventory_or_repeats: test
+battle::tests::battle_rows_follow_the_own_actors_floor: test
+battle::tests::mode_controls_preserve_other_server_modes: test
+battle::tests::mode_input_waits_for_the_previous_server_answer: test
+battle::tests::projection_replaces_visible_actors_and_rejects_stale_selection: test
+battle_instinct_status::tests::battle_instinct_panel_requires_a_confirmed_snapshot_and_preserves_it_on_failure: test
+bestiary_charms::tests::protocol::a_full_slot_limit_blocks_assign_and_no_limit_never_does: test
+bestiary_charms::tests::protocol::assign_requests_follow_the_stage_hint_and_never_unassign: test
+bestiary_charms::tests::protocol::every_result_has_a_feedback_line: test
+bestiary_charms::tests::protocol::unlock_requests_carry_the_seen_stage_or_the_servers_answer: test
+bestiary_charms::tests::view::bestiary_rows_derive_stage_and_progress_and_apply_deltas: test
+bestiary_charms::tests::view::charm_rows_show_what_can_be_done: test
+boss_encounter::tests::boss_encounter_gates_pending_and_projects_only_valid_server_data: test
+boss_encounter::tests::boss_encounter_next_uses_earlier_cursor_to_avoid_skipping_either_list: test
+boss_encounter::tests::boss_encounter_open_requires_exact_chord_and_ignores_repeat_release: test
+boss_encounter::tests::pc05_boss_activity_uses_existing_codec_and_keeps_confirmed_state: test
+boss_encounter::tests::pc05_boss_auxiliary_flows_validate_input_and_render_server_results: test
+boss_encounter::tests::pc05_reward_chest_paging_uses_only_last_server_death_id: test
+boss_rewards::tests::requests_encode_every_server_command_with_the_contract_layout: test
+boss_rewards::tests::server_encoded_browse_and_collection_replies_reduce_into_panel_state: test
+browse_field::protocol::tests::controls_encode_reply_and_refusal: test
+channel_list::tests::gap_world_channel_list: test
+character_info::tests::pc03_character_info_shortcut_and_request_gate: test
+character_info::tests::pc03_character_info_view_keeps_confirmed_result_during_refusal: test
+charm_progression::tests::pc01_charm_progression_shortcut_and_request_gate: test
+chat::tests::guild_lines_reach_the_native_chat_projection: test
+chat::tests::guild_lines_require_current_matching_membership_and_preserve_order: test
+chat::tests::local_speech_projection_preserves_mode_and_speaker: test
+chat::tests::open_key_is_an_explicit_non_repeating_play_shortcut: test
+chat::tests::private_lines_and_dropped_delivery_are_visible: test
+chat::tests::speech_and_named_private_input_are_validated_and_serialized: test
+chat_guild_room::tests::guild_composer_requires_live_membership: test
+chat_party_room::tests::pushed_party_line_is_visible_and_send_builds_party_intent: test
+chat_private_channel::tests::private_channel_input_and_server_projection: test
+chat_private_channel::tests::private_channel_leave_label_warns_the_owner_that_it_closes: test
+chat_private_channel::tests::private_channel_refusal_releases_pending_and_shows_server_reason: test
+chat_private_channel::tests::private_channel_refusals_explain_the_requested_action: test
+chat_private_channel::tests::private_channel_rejects_invalid_inputs_and_filters_transcript: test
+chat_private_channel::tests::reused_channel_id_hides_closed_channel_history: test
+chat_public_channels::tests::every_extended_room_builds_the_real_existing_chat_intent: test
+chat_public_channels::tests::public_channel_list_projects_base_and_extended_room_membership: test
+chat_public_channels::tests::public_channel_shortcut_requires_a_fresh_ctrl_c_press: test
+chat_public_channels::tests::server_room_projection_and_lines_replace_panel_state: test
+condition_status::view::tests::condition_status_panel_only_consumes_confirmed_icons_and_duration: test
+container_sort::tests::pc02_container_sort_shortcut_and_request_gate: test
+container_sort::tests::pc02_container_sort_view_keeps_confirmed_result_during_refusal: test
+cyclopedia_character::combat_modifier_tests::combat_modifier_reply_reaches_panel_with_every_field_and_exact_units: test
+cyclopedia_character::combat_modifier_tests::combat_modifier_unknown_is_distinct_from_zero_and_malformed_is_rejected: test
+cyclopedia_character::gap_character_tabs::gap_character_tabs_decode_every_body_and_retain_confirmed_state: test
+cyclopedia_character::gap_character_tabs::gap_character_tabs_reject_invalid_tags_counts_and_text: test
+cyclopedia_character::gap_character_tabs::gap_character_tabs_reject_truncated_general_stats: test
+cyclopedia_character::stamina_tests::stamina_minutes_are_decoded_in_general_panel_for_all_boundaries: test
+cyclopedia_character::stamina_tests::stamina_rejects_truncation_trailing_bytes_and_invalid_option_tag: test
+cyclopedia_character::tests::character_history_rejects_complete_reply_exceeding_requested_page: test
+cyclopedia_character::tests::character_navigation_targets_and_pages_are_bounded_and_frozen_while_pending: test
+cyclopedia_character::tests::character_panel_rejects_malformed_trailing_wrong_tab_and_excess_page_rows: test
+cyclopedia_character::tests::character_remaining_tabs_decode_completely_and_reject_every_truncation: test
+cyclopedia_character::tests::character_reply_renders_stats_deaths_and_pvp_through_panel: test
+cyclopedia_map::tests::pc06_cyclopedia_map_shortcut_and_request_gate: test
+cyclopedia_map::tests::pc06_cyclopedia_map_view_keeps_confirmed_result_during_refusal: test
+daily_boost::protocol::tests::controls_encode_reply_and_refusal: test
+daily_boost::view::tests::loading_hides_previous_daily_selection: test
+daily_reward::tests::claim_refusal_is_visible_and_not_inferred_as_state: test
+daily_reward::tests::confirmed_claim_disables_repeat_claim_and_projects_receipt: test
+daily_reward::tests::shortcut_requires_fresh_control_d: test
+daily_reward::tests::wall_encoded_like_server_reduces_into_panel: test
+depot::tests::committed_reply_replaces_grid_and_stale_selection_cannot_move: test
+depot::tests::container_source_requires_live_handle_capability_and_one_pending_request: test
+depot::tests::deposit_uses_live_inventory_or_container_handles: test
+depot::tests::every_refusal_clears_pending_and_projects_text: test
+depot::tests::open_chord_ignores_repeat_and_extra_modifiers: test
+depot_search::protocol::tests::controls_encode_reply_and_refusal: test
+equipment::state::tests::backpack_slot_is_only_a_drop_target: test
+equipment::state::tests::equip_ammo_sends_the_whole_stack_without_a_count_extension: test
+equipment::state::tests::equip_unequip_and_drop_keep_the_handle_and_wait_for_server: test
+equipment::state::tests::equipment_is_unavailable_without_capability_even_with_an_inventory: test
+equipment::state::tests::equipped_ammo_unequips_whole_without_a_count_prompt: test
+equipment::state::tests::slots_project_live_identity_and_clear_on_delta_or_disconnect: test
+exiva_settings::tests::exiva_editor_requires_selection_and_authoritative_refresh: test
+guild::flow_tests::guild_entry_requires_ctrl_g_pressed_without_repeat: test
+guild::flow_tests::no_next_page_does_not_repeat_the_first_page: test
+guild::tests::requests_and_refusals_are_visible: test
+guild_bank::tests::cp01_guild_bank_shortcut_and_request_gate: test
+guild_war::tests::pc02_guild_war_shortcut_and_request_gate: test
+guild_war::tests::pc02_guild_war_view_keeps_confirmed_result_during_refusal: test
+guildhall::tests::pc04_guildhall_shortcut_and_request_gate: test
+guildhall::tests::pc04_guildhall_view_keeps_confirmed_result_during_refusal: test
+hireling::tests::accepted_status_updates_plain_text: test
+hireling::tests::ctrl_shift_h_opens_panel: test
+hireling::tests::requests_use_the_codec_and_refusals_are_visible: test
+hireling_management::tests::hireling_management_gates_requests_and_handles_refused_and_malformed_results: test
+hireling_management::tests::hireling_management_selects_server_identity_and_sends_outfit: test
+hotkey_equip::protocol::tests::controls_encode_reply_and_refusal: test
+house_move_out::tests::pc04_house_move_out_shortcut_and_request_gate: test
+house_move_out::tests::pc04_house_move_out_view_keeps_confirmed_result_during_refusal: test
+house_podium::tests::cp01_house_podium_shortcut_and_request_gate: test
+house_transfer::tests::pc04_house_transfer_shortcut_and_request_gate: test
+house_transfer::tests::pc04_house_transfer_view_keeps_confirmed_result_during_refusal: test
+imbue::tests::actions_are_built_from_loaded_server_state: test
+imbue::tests::refusal_is_visible_and_success_replaces_the_window: test
+inventory::movement::tests::prompted_count_equal_to_observed_stack_stays_explicit: test
+inventory::movement::tests::short_click_aborts_silently_and_preserves_feedback: test
+inventory::movement::tests::split_requires_valid_count_and_retains_identity: test
+inventory::movement::tests::whole_stack_fallback_and_cancel_do_not_send_counts: test
+inventory::tests::inventory_open_key_is_exact_and_ignores_repeats: test
+inventory::tests::inventory_selection_tracks_handles_instead_of_rows: test
+item_forge::protocol::tests::controls_encode_reply_and_refusal: test
+item_use::tests::source_removal_clears_targeting: test
+loyalty_skills::tests::loyalty_skills_panel_requires_selection_and_a_server_reply: test
+loyalty_skills::tests::loyalty_skills_refusal_and_invalid_reply_preserve_last_confirmed_state: test
+mail::context::tests::combined_menu_preserves_world_npc_trade_party_actions_and_appends_properties_once: test
+mail::context::tests::property_menu_is_capability_and_handle_gated: test
+mail::tests::cp01_mail_shortcut_and_request_gate: test
+market::tests::market_form_validates_without_partial_updates_and_projects_total: test
+market::tests::market_open_and_pages_use_valid_queries: test
+market::tests::market_panel_builds_requests_and_surfaces_refusals: test
+market::tests::market_server_early_refusal_keeps_reason_and_clears_pending: test
+market::tests::wares_returns_from_item_book_and_keeps_refresh_and_paging_on_wares: test
+mechanics_status::tests::cl6_all_owner_projections_reach_native_text_and_refusals_retain_confirmation: test
+minimap::view::tests::center_edges_and_invalid_coordinates: test
+npc_dialogue::tests::capability_pending_refusals_and_target_switching: test
+npc_dialogue::tests::dialogue_shortcut_avoids_altgr: test
+npc_dialogue::tests::farewell_remains_visible_without_an_active_conversation: test
+npc_dialogue::tests::input_requires_exact_chord_and_no_repeat: test
+npc_dialogue::tests::replies_keywords_and_close_follow_server: test
+npc_dialogue::tests::terminal_refusal_survives_the_servers_closed_update: test
+npc_shop::input::tests::amount_requires_a_positive_in_range_integer: test
+npc_shop::live_tests::gold_projection_distinguishes_negotiation_and_live_balances: test
+npc_shop::live_tests::quote_identity_survives_display_order_but_not_revision: test
+npc_shop::live_tests::quote_lookup_uses_item_side_count_and_price_not_a_display_position: test
+npc_shop::live_tests::sellable_counts_aggregate_carried_stacks_by_server_item_identity: test
+npc_shop::live_tests::side_totals_and_backpack_free_slots_follow_server_limits: test
+npc_shop::live_tests::trade_rejects_quantity_101_before_sending: test
+npc_shop::tests::npc_prerequisite_reducer_uses_live_quote_and_clears_closed_window: test
+npc_shop::tests::replies_render_state_and_refusals: test
+npc_shop::tests::request_selects_every_wire_action_and_guards_pending: test
+party::input::tests::shortcut_and_context_use_pressed_events_and_forget_lost_pointer: test
+party::tests::capability_gates_never_send_unavailable_requests: test
+party::tests::failed_refresh_preserves_the_authoritative_refusal: test
+party::tests::leadership_controls_follow_own_character_and_authoritative_role_changes: test
+party::tests::malformed_operation_is_never_reported_as_confirmed: test
+party::tests::party_shortcut_does_not_steal_prey_or_weapon_proficiency: test
+party::tests::request_uses_party_codec_and_requires_selection: test
+party::tests::result_applies_view_and_surfaces_refusal: test
+party::tests::shared_refusal_text_reaches_party_projection_only_for_a_shared_request: test
+party::tests::shared_xp_uses_existing_server_route: test
+party::tests::unknown_own_identity_cannot_manage_party_members: test
+party_effects::tests::party_effects_panel_consumes_only_valid_server_reply_and_retains_on_refusal: test
+party_skull::tests::pc06_party_skull_shortcut_and_request_gate: test
+party_skull::tests::pc06_party_skull_view_keeps_confirmed_result_during_refusal: test
+player_report::tests::pc02_player_report_shortcut_and_request_gate: test
+player_report::tests::pc02_player_report_view_keeps_confirmed_result_during_refusal: test
+player_trade::picker::refusal_keeps_partner_so_another_inventory_item_can_be_offered: test
+player_trade::picker::tests::all_authoritative_refusals_and_terminal_states_reach_text: test
+player_trade::picker::tests::incoming_partner_can_choose_counter_offer_without_trade_id: test
+player_trade::picker::tests::picker_encodes_live_row_and_rejects_removed_item_and_busy_session: test
+player_trade::picker::tests::picker_merges_visible_sources_without_duplicate_handles: test
+player_trade::tests::requests_all_wire_actions_and_applies_refusal: test
+player_typing::tests::composer_coalesces_text_and_stops_even_with_start_in_flight: test
+player_typing::tests::composer_results_preserve_an_in_flight_manual_request: test
+player_typing::tests::initialization_resets_composer_state_and_rate_gate: test
+player_typing::tests::server_wire_updates_add_and_clear_the_exact_actor_generation: test
+player_typing::tests::tick_retries_a_rate_gated_start_and_blur_cancels_it: test
+prey::existing_actions::requests_cover_every_wire_action: test
+prey::existing_actions::result_replaces_state_and_exposes_refusals: test
+prey::tests::accepted_mutation_without_current_projection_requires_refresh_before_more_actions: test
+prey::tests::expansion_changes_only_grid_rows_and_select_supports_twelfth_candidate: test
+prey::tests::locked_and_unselected_slots_cannot_send_actions: test
+prey::tests::offered_creatures_require_explicit_confirmation_and_bind_server_price: test
+prey::tests::offered_pages_replace_a_bounded_page_and_maintain_cursor: test
+prey::tests::prey_shortcut_preserves_main_control_p_and_ignores_repeats: test
+prey::tests::receipt_replay_applies_current_projection_and_exhaustion_explains_no_charge: test
+prey::tests::retained_tier_after_level_loss_is_selected_but_disabled: test
+prey::tests::tiers_use_server_allowance_and_do_not_redraw_or_change_before_confirmation: test
+prey::tests::unsolicited_and_malformed_replies_do_not_replace_confirmed_state: test
+pvp_expert::tests::pc01_pvp_expert_shortcut_and_request_gate: test
+quest_log::tests::quest_open_binding_is_ctrl_j_without_repeat: test
+quest_log::tests::quest_panel_lists_missions_description_completion_and_tracking: test
+quest_log::tests::quest_tracking_toggle_preserves_order_and_obeys_the_wire_limit: test
+raid_schedule::tests::pc03_raid_schedule_shortcut_and_request_gate: test
+raid_schedule::tests::pc03_raid_schedule_view_keeps_confirmed_result_during_refusal: test
+rest_status::tests::rest_status_panel_consumes_server_state_and_clears_on_refusal: test
+server_save_countdown::server_save_replaces_previous_announcement: test
+skill_progress::tests::skill_progress_panel_waits_for_server_then_displays_all_bars: test
+spell_action_bar::input::tests::digit_hotkeys_route_to_spell_book_indices: test
+spell_action_bar::movement::tests::movement_spells_use_local_speech_and_wait_for_the_server: test
+spell_action_bar::view::tests::bars_draw_track_and_fill_per_vital_and_nothing_without_vitals: test
+spell_action_bar::view::tests::fill_clamps_and_survives_zero_max: test
+spell_action_bar::view::tests::hud_clamps_overfull_and_handles_largest_vitals: test
+spell_action_bar::view::tests::hud_shows_current_max_and_bounded_bars: test
+spell_catalog::tests::confirmed_state_is_visible: test
+spell_catalog::tests::filtered_paging_stops_at_the_last_matching_page: test
+stash::tests::browse_and_withdraw_use_server_rows_and_render_refusals: test
+stash::tests::carried_click_rejects_a_changed_projection_and_invalid_row: test
+stash::tests::stow_rejects_handles_not_in_the_visible_carried_picker: test
+stash::tests::visible_carried_selection_stows_the_server_handle_and_blocks_repeated_input: test
+store::protocol::tests::controls_encode_reply_and_refusal: test
+store::protocol::tests::gap_store_catalogue_follows_cursor_and_resets_category: test
+store::protocol::tests::gap_store_hireling_fields_follow_offer_kind: test
+target_move::tests::negotiation_and_pending_gate_world_input_and_refusal_allows_retry: test
+task_board::tests::requests_every_wire_action_and_renders_reply_and_refusal: test
+task_board::tests::weekly_controls_send_full_owner_actions_and_guard_pending: test
+timed_item::tests::pc06_timed_item_shortcut_and_request_gate: test
+timed_item::tests::pc06_timed_item_view_keeps_confirmed_result_during_refusal: test
+training::tests::cp01_training_shortcut_and_request_gate: test
+tutorial_notices::tests::notice_shortcut_requires_exact_modifiers_and_fresh_press: test
+tutorial_notices::tests::notices_are_bounded_and_server_save_is_separate: test
+vip::tests::requests_every_operation_and_displays_refusals: test
+vip_presence::tests::pushed_vip_presence_is_visible_with_online_and_offline_state: test
+wheel_allocation::tests::atelier_controls_send_only_intent_and_current_revision: test
+wheel_allocation::tests::live_queries_replace_historical_receipts_and_restore_current_vessels_and_prices: test
+wheel_allocation::tests::modifier_labels_distinguish_weaknesses_and_paid_spell_variants: test
+wheel_allocation::tests::open_shortcut_requires_a_fresh_control_w_press: test
+wheel_allocation::tests::paid_actions_require_live_quotes_and_unresolved_changes_remain_blocked: test
+wheel_allocation::tests::panel_displays_server_quotes_and_the_matching_modifier_grade: test
+wheel_allocation::tests::refused_changes_show_the_live_state_without_optimistic_commits: test
+wheel_allocation::tests::reset_and_unsocket_use_the_existing_allocation_owner: test
+wheel_allocation::tests::resources::absent_or_malformed_optional_balances_clear_old_values_without_blocking_legacy_controls: test
+wheel_allocation::tests::resources::displayed_balances_never_become_client_payment_authority: test
+wheel_allocation::tests::resources::live_balances_follow_receipt_replay_and_display_all_seven_resources: test
+wheel_allocation::tests::resources::stale_core_projection_cannot_publish_a_partial_resource_refresh: test
+wheel_allocation::tests::stale_or_incomplete_live_queries_never_partially_replace_the_view: test
+wheel_allocation::tests::unavailable_live_views_preserve_confirmed_state_and_explain_eligibility: test
+wheel_allocation::tests::uncertain_outcome_retains_exact_request_across_refresh_and_retry: test
+wheel_allocation::tests::wheel_proposals_preserve_confirmed_state_and_encode_all_four_vessels: test
+wheel_allocation::tests::workshop::workshop_invalid_or_out_of_range_selection_sends_no_upgrade: test
+wheel_allocation::tests::workshop::workshop_legacy_fallback_deduplicates_pairs_and_keeps_gem_details: test
+wheel_allocation::tests::workshop::workshop_query_modifiers_can_be_upgraded_without_any_owned_gem: test
+wheel_allocation::tests::workshop::workshop_selection_survives_gem_changes_and_uses_the_query_after_replay: test
+world_event::tests::world_event_input_ignores_repeats_releases_and_other_modifiers: test
+world_event::tests::world_event_query_and_projection_follow_server_results: test
+world_interaction::menu::feedback_tests::context_feedback_expires_and_title_projection_is_single_line_and_bounded: test
+world_interaction::menu::review_tests::handle_items_do_not_offer_bed_without_base_or_definition_facts: test
+world_interaction::menu::targeting_tests::targeting_can_be_cancelled_and_consumed_only_once: test
+world_interaction::menu::tests::menu_gates_actions_by_identity_and_negotiation: test
+world_interaction::menu::tests::secondary_pointer_routes_menu_and_respects_modal_and_focus: test
+world_interaction::menu::use_with_menu_tests::use_with_requires_negotiation_and_a_handle_source: test
+world_light::tests::midnight_and_white_light: test
+world_weather::tests::weather_replacement_intensity_and_floors: test
+
+260 tests, 0 benchmarks

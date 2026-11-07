@@ -1,0 +1,484 @@
+   Compiling bytes v1.12.1
+   Compiling pin-project-lite v0.2.17
+   Compiling itoa v1.0.18
+   Compiling serde_json v1.0.154
+   Compiling libc v0.2.191
+   Compiling memchr v2.8.3
+   Compiling stable_deref_trait v1.2.1
+   Compiling zmij v1.0.23
+   Compiling serde_core v1.0.229
+   Compiling futures-core v0.3.34
+   Compiling zeroize v1.9.0
+   Compiling syn v2.0.119
+   Compiling typenum v1.20.1
+   Compiling once_cell v1.21.4
+   Compiling rustls-pki-types v1.15.1
+   Compiling writeable v0.6.4
+   Compiling smallvec v1.15.2
+   Compiling litemap v0.8.3
+   Compiling utf8_iter v1.0.4
+   Compiling http v1.5.0
+   Compiling untrusted v0.9.0
+   Compiling percent-encoding v2.3.2
+   Compiling rustls v0.23.46
+   Compiling icu_normalizer_data v2.3.0
+   Compiling jobserver v0.1.35
+   Compiling mio v1.2.2
+   Compiling socket2 v0.6.5
+   Compiling icu_properties_data v2.3.0
+   Compiling cc v1.4.4
+   Compiling cpufeatures v0.3.0
+   Compiling cfg-if v1.0.4
+   Compiling hybrid-array v0.4.14
+   Compiling http-body v1.1.0
+   Compiling slab v0.4.12
+   Compiling futures-task v0.3.34
+   Compiling tokio v1.53.1 (/home/mole/oteryn-cache/rs-wt/cl6/vendor/tokio-1.53.1)
+   Compiling serde v1.0.229
+   Compiling subtle v2.6.1
+   Compiling crypto-common v0.2.2
+   Compiling cmake v0.1.58
+   Compiling block-buffer v0.12.1
+   Compiling zstd-sys v2.1.2+zstd.1.5.7
+   Compiling futures-util v0.3.34
+   Compiling tower-service v0.3.3
+   Compiling try-lock v0.2.5
+   Compiling httparse v1.10.1
+   Compiling aws-lc-sys v0.47.0
+   Compiling digest v0.11.3
+   Compiling form_urlencoded v1.2.2
+   Compiling want v0.3.1
+   Compiling sha2 v0.11.1
+   Compiling tracing-core v0.1.36
+   Compiling futures-channel v0.3.34
+   Compiling atomic-waker v1.1.2
+   Compiling sync_wrapper v1.0.2
+   Compiling openssl-probe v0.2.1
+   Compiling tracing v0.1.44
+   Compiling ipnet v2.12.1
+   Compiling base64 v0.22.1
+   Compiling either v1.18.0
+   Compiling tower-layer v0.3.3
+   Compiling rustls-native-certs v0.8.4
+   Compiling deranged v0.5.8
+   Compiling log v0.4.34
+   Compiling futures-sink v0.3.34
+   Compiling time-core v0.1.9
+   Compiling itertools v0.14.0
+   Compiling ryu v1.0.23
+   Compiling powerfmt v0.2.0
+   Compiling bitflags v2.13.1
+   Compiling num-conv v0.2.2
+   Compiling crc-catalog v2.5.0
+   Compiling http-body-util v0.1.5
+   Compiling crc v3.4.0
+   Compiling time v0.3.55
+   Compiling byteorder v1.5.0
+   Compiling base64 v0.23.1
+   Compiling oteryn-input-actions v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/input-actions)
+   Compiling lzma-rs v0.3.0
+   Compiling yasna v0.6.0
+   Compiling oteryn-input-platform v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/input-platform)
+   Compiling synstructure v0.13.2
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32
+    |
+208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+    |                                ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
+    |
+
+   Compiling prost-derive v0.14.4
+   Compiling zerofrom-derive v0.1.7
+   Compiling yoke-derive v0.8.2
+   Compiling serde_urlencoded v0.7.1
+   Compiling zerofrom v0.1.8
+   Compiling oteryn-protocol-oteryn v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/protocol-oteryn)
+   Compiling oteryn-client-ui v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/client-ui)
+   Compiling oteryn-client v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/apps/client)
+   Compiling yoke v0.8.3
+   Compiling prost v0.14.4
+   Compiling zerovec v0.11.8
+   Compiling zerotrie v0.2.5
+   Compiling tinystr v0.8.4
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+   Compiling potential_utf v0.1.6
+   Compiling icu_collections v2.3.0
+   Compiling icu_locale_core v2.3.0
+   Compiling zstd-safe v8.2.0
+   Compiling zstd v0.14.3
+   Compiling oteryn-world-bundle v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/world-bundle)
+   Compiling oteryn-foundation v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/foundation)
+   Compiling hyper v1.11.0
+   Compiling tower v0.5.3
+   Compiling tokio-util v0.7.19
+   Compiling oteryn-client-domain v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/client-domain)
+   Compiling oteryn-diagnostics v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/diagnostics)
+   Compiling oteryn-platform-contracts v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/platform-contracts)
+   Compiling oteryn-renderer v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/renderer)
+   Compiling oteryn-client-simulation v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/client-simulation)
+   Compiling oteryn-identity v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/identity)
+   Compiling icu_provider v2.3.1
+   Compiling oteryn-client-assets v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/client-assets)
+   Compiling icu_normalizer v2.3.0
+   Compiling icu_properties v2.3.0
+   Compiling hyper-util v0.1.20
+warning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)
+   Compiling idna_adapter v1.2.2
+   Compiling idna v1.1.0
+   Compiling url v2.5.8
+   Compiling tower-http v0.6.11
+   Compiling oteryn-session v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/session)
+   Compiling oteryn-client-runtime v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/client-runtime)
+   Compiling aws-lc-rs v1.19.0
+   Compiling rustls-webpki v0.103.16
+   Compiling rcgen v0.14.10
+   Compiling tokio-rustls v0.26.6
+   Compiling rustls-platform-verifier v0.7.0
+   Compiling hyper-rustls v0.27.9
+   Compiling oteryn-session-tcp v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/session-tcp)
+   Compiling reqwest v0.13.5
+   Compiling oteryn-platform-client v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/crates/platform-client)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 34.83s
+     Running unittests src/lib.rs (/home/mole/oteryn-cache/target-codex/lanes/cl6/debug/deps/oteryn_client-af6e8668acf6fb84)
+build_info::tests::release_id_and_client_build_are_compiled_in: test
+build_info::tests::release_id_format_is_enforced: test
+character_selection::tests::worlds_join_by_id_and_unavailable_rows_cannot_play: test
+input::tests::a_held_unrelated_key_does_not_block_the_click_but_contexts_still_suppress: test
+input::tests::a_new_click_replaces_the_goal_and_cancel_clears_it: test
+input::tests::a_paced_walk_waits_each_moved_step_duration: test
+input::tests::a_step_moves_one_tile_north_is_y_minus_one: test
+input::tests::arrow_keys_map_to_steps_and_other_keys_to_none: test
+input::tests::click_maps_pixels_to_tiles_and_rejects_outside: test
+input::tests::click_needs_a_fresh_pointer_after_startup_and_after_loss: test
+input::tests::ctrl_l_and_ctrl_q_ask_for_logout_once: test
+input::tests::focus_loss_drops_a_held_click: test
+input::tests::pick_prefers_entities_then_objects_then_nothing: test
+input::tests::primary_click_becomes_a_gameplay_action_at_the_pointer: test
+input::tests::step_toward_prefers_the_longer_axis_and_stops_on_arrival: test
+input::tests::text_and_modal_contexts_suppress_the_click_action: test
+input::tests::the_embedded_step_speed_table_matches_the_server_and_canary: test
+input::tests::walk_steps_one_tile_at_a_time_until_arrival: test
+input::tests::walk_stops_on_refusal: test
+map::live_map::tests::dense_visible_floors_keep_deepest_draws_within_one_batch: test
+map::live_map::tests::live_appearance_uses_native_floor_and_server_placements_only: test
+map::tests::a_manifest_off_the_pin_is_refused: test
+map::tests::a_region_that_does_not_match_its_digest_is_refused: test
+map::tests::the_builtin_world_has_only_the_builtin_cells: test
+map::tests::the_legacy_facade_keeps_the_composed_world_type_and_constants: test
+map::tests::the_temple_area_resolves_to_real_cells_inside_the_atlas: test
+map::tutorial_notice_tests::tutorial_map_window_is_decoded_at_the_real_join_position: test
+native_entry::tests::an_unreachable_first_address_falls_through_to_the_next: test
+native_entry::tests::capacity_exceeded_retries_once: test
+native_entry::tests::configuration_is_read_only_when_the_platform_is_set: test
+native_entry::tests::configured_character_is_only_a_preselect: test
+native_entry::tests::empty_account_create_and_refresh_never_issue_a_ticket: test
+native_entry::tests::login_form_drives_existing_browser_gateway_and_admission: test
+native_entry::tests::not_yet_valid_retries_the_same_grant_three_times: test
+native_entry::tests::reconciliation_repeats_the_gateway_login_with_the_same_attempt: test
+native_entry::tests::same_client_enters_again_after_server_drops_the_session: test
+native_entry::tests::selection_cannot_enter_an_unowned_character_or_channel: test
+native_entry::tests::temporarily_unavailable_entry_can_be_repeated_on_the_same_runtime: test
+native_entry::tests::terminal_refusal_is_its_public_class_without_retry: test
+play::refusal_details::tests::every_server_detail_reaches_the_native_status_without_rewording: test
+play::tests::a_hotkey_reaches_the_session_task_in_press_order_and_its_answer_reaches_the_view: test
+play::tests::a_liveness_error_while_idle_returns_to_login: test
+play::tests::a_refused_logout_shows_its_line_and_an_accepted_one_ends_play: test
+play::tests::a_step_error_ends_the_task_with_its_public_class: test
+play::tests::a_tick_sends_a_step_and_applies_its_outcome_without_waiting: test
+play::tests::an_idle_session_keeps_servicing_liveness: test
+play::tests::an_undrained_mailbox_stays_bounded_and_keeps_the_latest_state: test
+play::tests::any_session_error_returns_to_login_with_its_public_class: test
+play::tests::feature_0003_npc_service::dialogue_selection_requires_visible_npc_and_current_floor: test
+play::tests::feature_0003_npc_service::npc_context_misses_preserve_selection_and_hits_resolve_without_selecting: test
+play::tests::feature_0003_npc_service::npc_context_without_capability_leaves_selection_untouched: test
+play::tests::feature_0003_npc_service::npc_pointer_resets_on_focus_and_device_loss: test
+play::tests::feature_0004_item_view_move::drag_projection_requires_live_handle_and_follows_map_removals: test
+play::tests::feature_0004_item_view_move::ground_entity_projection_preserves_handle_definition_and_quantity: test
+play::tests::feature_0004_item_view_move::ground_item_projection_keeps_stack_origin_and_floor: test
+play::tests::feature_0004_item_view_move::live_ground_item_identity_reaches_click_and_is_removed_with_tile: test
+play::tests::feature_0006_world_spatial_entities::echo_portal_click_walks_and_reward_remains_in_native_container: test
+play::tests::feature_0006_world_spatial_entities::generated_dispatch_keeps_spatial_event_order_and_ignores_undrawn_domains: test
+play::tests::feature_0006_world_spatial_entities::live_names_reach_scene_and_disappear_with_visibility: test
+play::tests::feature_0006_world_spatial_entities::live_presentations_keep_target_clock_and_light_through_rebuilds: test
+play::tests::feature_0006_world_spatial_entities::own_identity_draws_once_between_step_and_appearance_publish: test
+play::tests::feature_0006_world_spatial_entities::snapshot_builds_a_view_centred_on_the_own_position_with_overlay_markers: test
+play::tests::feature_0007_chat::local_chat_input_reaches_session_and_received_private_message_is_visible: test
+play::tests::feature_0007_chat::npc_voice::nx4_source_npc_say_and_yell_decode_into_native_chat_panel: test
+play::tests::feature_0008_achievement_notices::achievement_notices_play_input_live_push_reopen_and_session_cleanup: test
+play::tests::feature_0008_achievement_notices::nx6_wayfarer_server_payload_reaches_native_notice_panel: test
+play::tests::feature_0009_highscores::shell_input_queries_live_highscores_and_projects_reply: test
+play::tests::feature_0010_analyser::analyser_push_reaches_closed_panel_and_end_clears_totals: test
+play::tests::feature_0011_world_interaction::click_on_empty_ground_queues_a_server_target: test
+play::tests::feature_0011_world_interaction::creature_click_dispatches_attack_and_reduces_the_report: test
+play::tests::feature_0011_world_interaction::only_a_creature_click_queues_an_attack: test
+play::tests::feature_0011_world_interaction::world_context_creature_look_keeps_generation_without_attack: test
+play::tests::feature_0011_world_interaction::world_context_live_map_target_dispatch_and_stale_dismissal: test
+play::tests::feature_0011_world_interaction::world_context_npc_is_inspectable_without_becoming_attackable: test
+play::tests::feature_0011_world_interaction::world_context_own_tile_item_and_reset_binding: test
+play::tests::feature_0013_paced_movement::arrow_key_steps_without_a_goal: test
+play::tests::feature_0013_paced_movement::arrow_step_outcome_moves_the_view_and_refusal_keeps_the_position: test
+play::tests::feature_0013_paced_movement::one_step_is_in_flight_until_its_outcome: test
+play::tests::feature_0013_paced_movement::sending_a_step_redraws_the_new_facing: test
+play::tests::feature_0014_container_tree::ground_container_projection_uses_only_the_selected_live_handle: test
+play::tests::feature_0014_container_tree::inventory_browser_opens_only_when_an_intent_was_sent: test
+play::tests::feature_0015_item_use::escape_cancels_only_active_targeting_and_shutdown_clears_it: test
+play::tests::feature_0015_item_use::native_inventory_targeting_keeps_other_panels_alive: test
+play::tests::feature_0015_item_use::pending_and_self_targets_preserve_targeting_and_send_nothing: test
+play::tests::feature_0015_item_use::published_source_removal_cancels_targeting: test
+play::tests::feature_0015_item_use::rune_uses_position_on_item_tiles_including_own_tile_and_tools_keep_items: test
+play::tests::feature_0015_item_use::self_target_keeps_mode_and_inventory_destination_consumes_once: test
+play::tests::feature_0015_item_use::targeting_click_sends_one_command_without_walking_or_attacking: test
+play::tests::feature_0016_quest_log::quest_replacement_resets_cached_list_and_revision_before_new_base_delta: test
+play::tests::feature_0017_attack::failed_panel_send_releases_pending_controls: test
+play::tests::feature_0017_attack::feedback_matches_both_panel_origin_and_command_kind: test
+play::tests::feature_0017_attack::world_click_report_does_not_unlock_a_pending_panel_command: test
+play::tests::feature_0019_world_light::clock_and_light_survive_scene_rebuilds: test
+play::tests::feature_0019_world_light::clxa_character_light_reaches_native_scene_and_expires_on_update: test
+play::tests::feature_0021_logout::the_in_fight_line_rounds_the_wait_up_to_whole_seconds: test
+play::tests::feature_0023_presentation::audio_controls_preserve_volume_across_mute_and_ignore_repeat: test
+play::tests::feature_0023_presentation::audio_mapping_rejects_unsafe_paths_and_catalog_verifies_audio_bytes: test
+play::tests::feature_0023_presentation::audio_synthetic_flow_keeps_sources_secondary_cues_and_bounds_pending_events: test
+play::tests::feature_0023_presentation::combat_presentation_synthetic_flow_reaches_scene_and_expires: test
+play::tests::feature_0023_presentation::combat_review_overflow_keeps_newest_in_mailbox_and_view: test
+play::tests::feature_0023_presentation::combat_review_same_tile_values_reserve_separate_lines_in_order: test
+play::tests::feature_0023_presentation::combat_values_float_keep_secondary_and_cull_other_floors: test
+play::tests::feature_0023_presentation::combat_visual_queues_are_bounded_across_mailbox_coalescing: test
+play::tests::feature_0023_presentation::combat_visuals_keep_world_position_when_camera_moves_and_cull_offscreen: test
+play::tests::feature_0025_appearance::pc01_appearance_scenario: test
+play::tests::feature_0026_world_weather::weather_replaces_clears_and_tracks_floor_without_losing_light: test
+play::tests::feature_0031_tutorial_notices::pushed_notices_are_reachable_from_play_and_refresh_while_open: test
+play::tests::feature_0031_tutorial_notices::synthetic_idle_session_publishes_both_notices_to_play: test
+play::tests::feature_0036_chat_guild_room::guild_panel_opens_chat_and_send_reaches_session_and_transcript: test
+play::tests::feature_0036_chat_guild_room::non_member_cannot_open_guild_composer: test
+play::tests::feature_0036_chat_guild_room::session_end_and_logout_clear_guild_chat_membership: test
+play::tests::feature_0037_depot::depot_commands_require_authoritative_town_and_one_pending_request: test
+play::tests::feature_0037_depot::depot_visible_panel_receives_authoritative_refusal: test
+play::tests::feature_0039_timed_item::pc06_timed_item_scenario: test
+play::tests::feature_0040_guild::guild_controls_use_real_codecs_and_apply_server_state: test
+play::tests::feature_0042_party::party_does_not_consume_non_player_context_or_unrelated_batch_events: test
+play::tests::feature_0042_party::world_party_target_uses_live_player_kind_floor_and_generation: test
+play::tests::feature_0043_vip::vip_management_projects_named_rows_and_hides_handles: test
+play::tests::feature_0043_vip::vip_query_uses_the_wire_codec_and_applies_the_server_view: test
+play::tests::feature_0043_vip::vip_refreshes_only_successful_mutations_and_gates_pending_requests: test
+play::tests::feature_0043_vip::vip_shell_shortcut_runs_through_the_session_loop: test
+play::tests::feature_0043_vip::vip_window_closes_when_the_play_link_is_dropped: test
+play::tests::feature_0053_world_event::world_event_shell_query_crosses_the_session_loop: test
+play::tests::feature_0054_training::cp01_training_scenario: test
+play::tests::feature_0055_guild_bank::cp01_guild_bank_scenario: test
+play::tests::feature_0057_cyclopedia_map::pc06_cyclopedia_map_scenario: test
+play::tests::feature_0059_house_move_out::pc04_house_move_out_scenario: test
+play::tests::feature_0060_player_trade::player_trade_controls_encode_requests_and_apply_real_wire_state: test
+play::tests::feature_0060_player_trade::player_trade_inventory_push_reaches_visible_picker: test
+play::tests::feature_0060_player_trade::player_trade_secondary_click_uses_pointer_and_focus_loss_clears_it: test
+play::tests::feature_0060_player_trade::player_trade_unsolicited_incoming_and_terminal_updates_reach_panel_and_reset_selection: test
+play::tests::feature_0060_player_trade::player_trade_world_context_only_targets_visible_players_on_this_floor: test
+play::tests::feature_0062_stash::stash_panel_request_uses_codec_and_applies_encoded_reply: test
+play::tests::feature_0063_market::depot_market_open_preserves_panels_and_ctrl_m_can_reopen: test
+play::tests::feature_0063_market::market_controls_reach_session_and_apply_encoded_reply: test
+play::tests::feature_0064_target_move::an_unselected_walk_sends_nothing_and_leaves_arrows_usable: test
+play::tests::feature_0064_target_move::ground_click_does_not_generate_client_side_steps: test
+play::tests::feature_0064_target_move::ground_click_uses_session_floor_and_waits_for_the_previous_receipt: test
+play::tests::feature_0064_target_move::native_follow_uses_the_selected_generation_and_decodes_the_reply: test
+play::tests::feature_0064_target_move::native_turn_stop_and_follow_send_target_move_without_a_step: test
+play::tests::feature_0067_bestiary_charm_progression::pc01_charm_progression_scenario: test
+play::tests::feature_0068_imbue::imbuement_panel_queries_and_sends_every_wire_action: test
+play::tests::feature_0072_task_board::full_board_bounds_pending_and_invalid_replies_preserve_server_state: test
+play::tests::feature_0072_task_board::full_task_board_reply_reaches_the_play_panel: test
+play::tests::feature_0072_task_board::input_tests::task_board_open_requires_exact_ctrl_o_press: test
+play::tests::feature_0072_task_board::input_tests::task_board_unavailable_projection_explains_capability: test
+play::tests::feature_0072_task_board::native_task_board_shortcut_opens_and_queues_full_query: test
+play::tests::feature_0072_task_board::talisman_purchase_uses_full_owner_and_displays_refusal: test
+play::tests::feature_0072_task_board::task_board_controls_use_the_real_codec_and_show_refusals: test
+play::tests::feature_0076_player_report::pc02_player_report_scenario: test
+play::tests::feature_0080_chat_private_channel::private_channel_commands_and_live_state_reach_the_chat_panel: test
+play::tests::feature_0081_npc_shop::closed_server_shop_retains_inline_refusal_and_removes_tradeable_quotes: test
+play::tests::feature_0081_npc_shop::npc_shop_actions_reach_the_session_and_render_real_encoded_replies: test
+play::tests::feature_0082_creature_push::creature_pointer_preserves_cl1_ground_clicks_and_cl2_cursor_targeting: test
+play::tests::feature_0082_creature_push::death_discards_queued_cl3_controls_without_discarding_logout: test
+play::tests::feature_0082_creature_push::native_drag_cancels_on_focus_loss_or_stale_target_and_decodes_refusal: test
+play::tests::feature_0082_creature_push::native_drag_sends_push_once_without_attacking_or_walking: test
+play::tests::feature_0083_channel_list::gap_world_channel_list: test
+play::tests::feature_0086_house_transfer::pc04_house_transfer_scenario: test
+play::tests::feature_0087_pvp_expert::pc01_pvp_expert_scenario: test
+play::tests::feature_0092_zones_nologout::raids_global_client_dispatch_preserves_messages_across_step_and_renders_each_kind: test
+play::tests::feature_0092_zones_nologout::raids_global_client_history_is_bounded_and_new_connection_starts_empty: test
+play::tests::feature_0092_zones_nologout::raids_global_client_undrained_messages_fail_closed_at_the_existing_event_budget: test
+play::tests::feature_0092_zones_nologout::raids_global_client_warning_is_visible_alongside_combat_feedback: test
+play::tests::feature_0097_character_info::pc03_character_info_scenario: test
+play::tests::feature_0098_quick_loot::cp02_0098_quick_loot_scenario: test
+play::tests::feature_0098_quick_loot::cp02_clear_uses_selected_filter_list: test
+play::tests::feature_0098_quick_loot::cp02_destination_controls_encode_existing_wire_and_reject_invalid_ids: test
+play::tests::feature_0098_quick_loot::cp02_quick_loot_native_session_scenario: test
+play::tests::feature_0098_quick_loot::cp02_shortcuts_are_exclusive_and_session_end_clears_all_panels: test
+play::tests::feature_0099_guildhall::pc04_guildhall_scenario: test
+play::tests::feature_0103_guild_war::pc02_guild_war_scenario: test
+play::tests::feature_0115_mail::cp01_mail_scenario: test
+play::tests::feature_0117_boss_encounter::activity::pc05_boss_activity_refusal_and_reconnect_scenario: test
+play::tests::feature_0117_boss_encounter::boss_encounter_play_input_queries_and_displays_server_snapshot: test
+play::tests::feature_0132_inspection::cp02_0132_inspection_scenario: test
+play::tests::feature_0132_inspection::cp02_inspection_native_session_scenario: test
+play::tests::feature_0134_party_skull::pc06_party_skull_scenario: test
+play::tests::feature_0134_party_skull::pushed_party_icons_reach_the_panel_and_entity_leaves_remove_them: test
+play::tests::feature_0140_prey::existing_actions::prey_actions_use_real_codecs_and_apply_the_server_projection: test
+play::tests::feature_0140_prey::prey_controls_reach_session_queue_and_apply_confirmed_difficulty_and_paid_pick: test
+play::tests::feature_0146_container_sort::pc02_container_sort_scenario: test
+play::tests::feature_0147_exiva_settings::exiva_native_input_runs_edits_and_server_refresh_through_the_session_queue: test
+play::tests::feature_0148_wheel_allocation::wheel_panel_controls_reach_the_session_queue_and_apply_live_server_views: test
+play::tests::feature_0149_raid_schedule::pc03_raid_schedule_scenario: test
+play::tests::feature_0150_house_podium::cp01_house_podium_scenario: test
+play::tests::feature_0151_daily_boost::cl25j_feature_commands_cross_the_session_loop: test
+play::tests::feature_0151_daily_boost::daily_boost_maps_supported_command: test
+play::tests::feature_0151_daily_boost::daily_boost_shell_input_queries_selected_session: test
+play::tests::feature_0152_item_forge::forge_native_flow_decodes_result_and_history: test
+play::tests::feature_0152_item_forge::item_forge_panel_opens_and_sends: test
+play::tests::feature_0152_item_forge::native_controls_submit_and_restore: test
+play::tests::feature_0153_depot_search::depot_search_panel_opens_and_sends: test
+play::tests::feature_0153_depot_search::native_controls_submit_and_restore: test
+play::tests::feature_0154_store::gap_store_confirmation_retry_keeps_transaction_and_quote: test
+play::tests::feature_0154_store::native_store_confirmation_and_server_quote: test
+play::tests::feature_0154_store::store_panel_opens_and_sends: test
+play::tests::feature_0165_hireling::hireling_controls_use_real_codec_requests_and_apply_replies: test
+play::tests::feature_0168_animus_mastery::animus_closed_command_queue_releases_pending_request: test
+play::tests::feature_0168_animus_mastery::animus_native_input_pages_and_replay_use_the_session_queue_and_clear_on_logout: test
+play::tests::feature_0168_animus_mastery::animus_refused_and_malformed_pages_keep_confirmed_species_and_allow_retry: test
+play::tests::feature_0168_animus_mastery::animus_unselected_session_never_receives_a_mastery_command: test
+play::tests::feature_0170_arena::arena_controls_cross_the_session_loop: test
+play::tests::feature_0170_arena::arena_pending_controls_close_on_disconnect_and_logout: test
+play::tests::feature_0170_arena::tibiadrome_controls_cross_session_and_preserve_server_authority: test
+play::tests::feature_0179_hotkey_equip::assigned_item_key_sends_the_definition_and_waits_for_the_server: test
+play::tests::feature_0179_hotkey_equip::hotkey_equip_panel_opens_and_sends: test
+play::tests::feature_0179_hotkey_equip::native_hotkey_configuration_and_visible_refusal: test
+play::tests::feature_0182_daily_reward::daily_reward_query_and_claim_drive_the_panel: test
+play::tests::feature_0195_weapon_proficiency::controls_encode_exact_request_and_reply_and_refusal_are_visible: test
+play::tests::feature_0195_weapon_proficiency::native_proficiency_actions_and_input_gates: test
+play::tests::feature_0195_weapon_proficiency::native_proficiency_browse_decodes_experience_and_pages_the_complete_list: test
+play::tests::feature_0195_weapon_proficiency::native_proficiency_rejects_invalid_fields_and_clears_perks: test
+play::tests::feature_0195_weapon_proficiency::proficiency_page_rejects_truncation_trailing_and_oversized_rows: test
+play::tests::feature_0197_cyclopedia_tracker::controls_encode_exact_request_and_reply_and_refusal_are_visible: test
+play::tests::feature_0199_cyclopedia_character::character_statistics_decode_real_general_and_combat_results: test
+play::tests::feature_0199_cyclopedia_character::controls_encode_exact_request_and_reply_and_refusal_are_visible: test
+play::tests::feature_0199_cyclopedia_character::gap_character_tabs_render_and_reject_malformed_replies: test
+play::tests::feature_0199_cyclopedia_character::gap_cl1_session_loop_delivers_combat_modifiers_and_stamina: test
+play::tests::feature_0199_cyclopedia_character::gap_cl6_native_character_paging_preserves_cl5_controls_and_pending_fence: test
+play::tests::feature_0199_cyclopedia_character::native_character_navigation_and_input_gates: test
+play::tests::feature_0199_cyclopedia_character::native_character_target_and_page_validation: test
+play::tests::feature_0199_cyclopedia_character::statistics_reject_malformed_results_and_keep_unknown_distinct_from_zero: test
+play::tests::feature_0224_boss_rewards::boss_reward_actions_emit_exact_payloads_and_apply_server_projection: test
+play::tests::feature_0225_boss_difficulty::boss_difficulty_native_actions_use_admitted_commands: test
+play::tests::feature_0225_boss_difficulty::boss_difficulty_native_controls_validate_and_send: test
+play::tests::feature_0225_boss_difficulty::controls_encode_exact_request_and_reply_and_refusal_are_visible: test
+play::tests::feature_0230_browse_field::browse_field_native_controls_and_results: test
+play::tests::feature_0230_browse_field::browse_field_native_item_controls_preserve_move_and_up_routes: test
+play::tests::feature_0230_browse_field::browse_field_native_moves_use_session_item_commands: test
+play::tests::feature_0230_browse_field::browse_field_panel_opens_and_sends: test
+play::tests::feature_0230_browse_field::browse_field_selects_the_first_visible_server_window: test
+play::tests::feature_0230_browse_field::browse_field_up_keeps_the_ground_container_view_id: test
+play::tests::feature_0232_team_finder_members::cp02_0232_team_finder_members_scenario: test
+play::tests::feature_0232_team_finder_members::cp02_team_finder_native_session_scenario: test
+play::tests::feature_0233_player_typing::composer_typing_and_push_reach_the_panel: test
+play::tests::feature_0233_player_typing::sending_chat_queues_stop_behind_an_in_flight_start: test
+play::tests::feature_0233_player_typing::typing_initialization_resets_the_composer_start_gate: test
+play::tests::feature_0240_chat_party_room::chat_snapshot_clears_retained_lines_before_later_party_messages: test
+play::tests::feature_0240_chat_party_room::panel_reports_selection: test
+play::tests::feature_0250_hireling_management::hireling_management_crosses_the_real_session_loop: test
+play::tests::feature_0258_vip_presence::panel_reports_selection: test
+play::tests::feature_0259_chat_public_channels::public_channel_commands_leave_the_outbox_and_server_state_updates_the_panel: test
+play::tests::feature_0274_loyalty_skills::loyalty_skills_closed_command_queue_releases_pending_request: test
+play::tests::feature_0274_loyalty_skills::loyalty_skills_native_input_refresh_and_replay_use_the_queue_and_clear_on_logout: test
+play::tests::feature_0274_loyalty_skills::loyalty_skills_refusal_and_malformed_reply_keep_confirmed_values_and_allow_retry: test
+play::tests::feature_0274_loyalty_skills::loyalty_skills_unselected_session_receives_no_skills_command: test
+play::tests::feature_0285_store_purchase_history::cp02_0285_store_purchase_history_scenario: test
+play::tests::feature_0285_store_purchase_history::cp02_store_history_native_session_scenario: test
+play::tests::feature_0287_actor_spell_catalog::catalog_replacement_reaches_panel_and_disconnect_clears_it: test
+play::tests::feature_local_account_achievements::achievements_shell_input_pages_refusal_retry_and_logout: test
+play::tests::feature_local_cursor_spells::cursor_spell_click_reaches_native_combat_queue_without_walking_or_attacking: test
+play::tests::feature_local_cursor_spells::cursor_spell_escape_and_focus_loss_cancel_and_repeats_do_not_arm: test
+play::tests::feature_local_cursor_spells::cursor_spell_selects_entries_beyond_the_four_slot_bar: test
+play::tests::feature_local_death_respawn::coalesced_death_resets_targets_and_both_input_queues: test
+play::tests::feature_local_death_respawn::coalesced_respawn_before_reset_drain_cannot_leave_movement_pending: test
+play::tests::feature_local_death_respawn::death_blocks_input_and_respawn_does_not_replay_pending_actions: test
+play::tests::feature_local_death_respawn::death_notice_preserves_logout_feedback_and_server_warning: test
+play::tests::feature_local_death_respawn::default_vitals_are_not_death_and_death_clears_target_walk: test
+play::tests::feature_local_death_respawn::queued_world_actions_are_discarded_while_logout_remains_available: test
+play::tests::feature_local_minimap::minimap_autowalk_obeys_capability_gate: test
+play::tests::feature_local_minimap::minimap_click_is_centered_consumed_and_queued_on_current_floor: test
+play::tests::feature_local_minimap::minimap_projects_live_tiles_creatures_floor_changes_and_reset: test
+play::tests::feature_local_minimap::minimap_rectangle_captures_clicks_before_world_selection: test
+play::tests::feature_local_movement_spells::movement_spell_controls_clear_on_logout: test
+play::tests::feature_local_movement_spells::movement_spell_controls_reach_session_and_decode_refusal_without_public_rooms: test
+play::tests::feature_local_reference_preferences::every_registered_binding_conflicts_and_invalid_saves_leave_preferences_unchanged: test
+play::tests::feature_local_reference_preferences::moved_logout_suppresses_all_original_modifier_variants: test
+play::tests::feature_local_reference_preferences::preferences_are_restored_when_scene_rebuild_fails: test
+play::tests::feature_local_reference_preferences::rebound_spell_releases_after_modifier_and_preference_changes: test
+play::tests::feature_local_reference_preferences::reference_preferences_are_local_and_reject_unknown_panel_ids: test
+play::tests::feature_local_reference_preferences::settings_rebind_conflicts_routes_and_survives_restart: test
+play::tests::feature_local_reference_preferences::unregistered_and_sibling_chords_are_reserved: test
+play::tests::feature_local_spell_action_bar::clxa_soul_and_monk_vitals_reach_native_hud: test
+play::tests::feature_local_spell_action_bar::configured_slot_dispatches_server_index_and_invalid_edit_is_atomic: test
+play::tests::feature_local_spell_action_bar::native_bar_cast_uses_binding_and_obeys_death_gate: test
+play::tests::feature_local_spell_action_bar::nx7_battle_instinct_reply_reaches_hud_beside_harmony: test
+play::tests::feature_local_spell_action_bar::undrained_vitals_keep_only_the_latest_value: test
+play::tests::feature_local_spell_action_bar::vitals_reach_the_play_projection_and_a_new_connection_starts_empty: test
+play::tests::feature_local_status_flows::battle_instinct_status_native_queue_refusal_replay_logout: test
+play::tests::feature_local_status_flows::cl6_mechanics_status_native_queue_refusal_replay_logout: test
+play::tests::feature_local_status_flows::condition_status_native_queue_refusal_replay_logout: test
+play::tests::feature_local_status_flows::nx7_complete_skills_native_play_queue_decode_and_display: test
+play::tests::feature_local_status_flows::party_effects_native_queue_refusal_replay_logout: test
+play::tests::feature_local_status_flows::rest_status_native_queue_refusal_replay_logout: test
+play::tests::feature_local_status_flows::skill_progress_native_queue_refusal_replay_logout: test
+play::tests::feature_local_world_object_overlay::markers_are_refiltered_when_the_floor_changes: test
+play::tests::feature_local_world_object_overlay::overlay_delta_adds_a_marker: test
+play::tests::feature_local_world_object_overlay::overlay_snapshot_clears_stale_markers_and_keeps_later_deltas: test
+play::tests::feature_local_world_object_overlay::the_entry_door_semantic_placement_draws_a_marker: test
+play::tests::feature_local_world_view::failed_live_map_install_preserves_position_world_scene_and_walk: test
+play::tests::feature_local_world_view::floor_replacement_follows_origin_and_draws_visible_floors: test
+play::tests::feature_local_world_view::floor_replacement_preserves_ground_item_targets_without_extra_glyphs: test
+play::tests::feature_local_world_view::floor_transition_cancels_the_previous_floor_click_walk: test
+play::tests::feature_local_world_view::live_map_push_reaches_the_rendered_scene: test
+play::tests::feature_local_world_view::live_snapshot_replaces_local_geometry_and_a_new_join_replaces_old_tiles: test
+play::tests::feature_local_world_view::map_mailbox_retains_unchanged_tiles_and_coalesces_replacement_and_clear: test
+play::tests::feature_local_world_view::pushed_domain_1_and_2_deltas_move_the_view: test
+play::tests::feature_local_world_view::pushed_maps_stay_ordered_around_step_outcomes: test
+play::tests::feature_local_world_view::replacement_snapshot_discards_overlapping_old_tiles_before_later_deltas: test
+play::tests::feature_local_world_view::slow_shell_map_reduction_evicts_departed_tiles_even_after_returning: test
+play::tests::feature_local_world_view::surface_and_deep_windows_draw_every_server_visible_floor: test
+play::tests::feature_local_world_view::the_map_is_drawn_only_on_the_join_floor: test
+play::tests::inputs_keep_their_order_and_a_repeated_cast_is_one: test
+play::tests::pushed_events_are_drained_so_the_queue_never_overflows: test
+play::tests::pushes_older_than_a_step_outcome_are_delivered_before_it: test
+reentry::tests::login_requires_an_unmodified_fresh_enter_press: test
+reentry::tests::offline_entering_admitted_end_and_repeat: test
+reentry::tests::refusal_returns_offline_and_allows_another_attempt: test
+scene::live_entities::tests::cl6_forge_marks_reach_native_name_glyphs_and_clear_with_visibility: test
+scene::live_entities::tests::live_outfit_uses_server_look_and_empty_outfit_suppresses_pixels: test
+scene::live_entities::tests::other_actor_keeps_object_marker_and_local_player: test
+scene::live_entities::tests::play_view_rebuild_retains_the_same_cached_image: test
+scene::live_entities::tests::recenter_reuses_loaded_assets_outfits_glyphs_and_packed_atlas: test
+scene::tests::a_displaced_sprite_two_tiles_past_the_view_is_drawn: test
+scene::tests::a_view_at_the_edge_of_the_coordinate_space_builds: test
+scene::tests::a_visible_entity_is_drawn_and_a_click_selects_it_with_its_reference: test
+scene::tests::clicking_an_entity_or_an_object_targets_it_and_draws_a_highlight: test
+scene::tests::scene_builds_one_quad_per_tile_and_one_per_sprite: test
+scene::tests::scene_view_fits_the_default_window_and_maps_clicks_to_tiles: test
+scene::tests::the_start_area_draws_real_sprites_around_the_player: test
+tests::gameplay_entry_fails_before_any_route_or_credential: test
+tests::migrated_input_contract_remains_available: test
+
+323 tests, 0 benchmarks

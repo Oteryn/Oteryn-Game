@@ -1,0 +1,86 @@
+diff --git a/apps/client/src/features/0384-mechanics-status/protocol.rs b/apps/client/src/features/0384-mechanics-status/protocol.rs
+new file mode 100644
+index 000000000..ffccfd22f
+--- /dev/null
++++ b/apps/client/src/features/0384-mechanics-status/protocol.rs
+@@ -0,0 +1,63 @@
++//! Native admitted query flow for Character effects.
++use crate::combat_input::PlayCommand;
++use crate::play::{Outbox, PlayLink, mailbox::lock};
++use oteryn_client_runtime::raw_feature::FeatureCommand;
++use oteryn_input_actions::NormalizedInputEvent;
++impl PlayLink {
++    pub fn mechanics_status_request(&self) {
++        let mut mailbox = lock(&self.mailbox);
++        if let Some(payload) =
++            oteryn_client_ui::mechanics_status::request(&mut mailbox.mechanics_status)
++            && self
++                .commands
++                .send(PlayCommand::Feature(FeatureCommand {
++                    capability: 384,
++                    kind: 669,
++                    payload,
++                }))
++                .is_err()
++        {
++            mailbox.mechanics_status.pending = false;
++            mailbox.mechanics_status.error = Some("Session ended");
++        }
++    }
++    pub fn mechanics_status_input(&self, events: &[NormalizedInputEvent]) -> bool {
++        if !oteryn_client_ui::mechanics_status::open_key(events) {
++            return false;
++        }
++        self.mechanics_status_request();
++        #[cfg(windows)]
++        crate::play::status_window::open_window(self, "Character effects — Ctrl+Alt+Shift+U", |mailbox| {
++            &mut mailbox.mechanics_status
++        });
++        #[cfg(not(windows))]
++        {
++            lock(&self.mailbox).mechanics_status.open = true;
++        }
++        true
++    }
++    #[cfg(test)]
++    pub(in crate::play) fn mechanics_status_panel(
++        &self,
++    ) -> oteryn_client_ui::mechanics_status::MechanicsStatusPanel {
++        lock(&self.mailbox).mechanics_status.clone()
++    }
++}
++impl Outbox {
++    pub(in crate::play) fn mechanics_status_initialize(&self, selected: bool) {
++        lock(&self.0).mechanics_status.selected = selected;
++    }
++    pub(in crate::play) fn mechanics_status_result(
++        &self,
++        result: &oteryn_session::GatedCommandResult,
++    ) {
++        let accepted = matches!(
++            result.status,
++            oteryn_session::CommandStatus::Accepted
++                | oteryn_session::CommandStatus::DuplicateReplay
++        );
++        lock(&self.0)
++            .mechanics_status
++            .finish(accepted, &result.payload);
++    }
++}
+diff --git a/crates/session/src/session_tests_chat.rs b/crates/session/src/session_tests_chat.rs
+index fb5f01b94..584ed6d71 100644
+--- a/crates/session/src/session_tests_chat.rs
++++ b/crates/session/src/session_tests_chat.rs
+@@ -142,9 +142,9 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
+         &[
+             3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 28, 30,
+             31, 36, 37, 39, 40, 42, 43, 49, 51, 53, 54, 55, 57, 59, 60, 61, 62, 63, 64, 66, 67, 68,
+-            72, 75, 80, 81, 83, 86, 87, 91, 92, 97, 98, 99, 115, 117, 132, 134, 140, 147, 148, 149,
+-            150, 151, 152, 153, 154, 165, 168, 179, 182, 199, 200, 224, 230, 232, 233, 240, 258,
+-            259, 272, 274, 275, 276, 277, 278, 279, 280, 285, 286, 287, 288, 370
++            72, 75, 80, 81, 82, 83, 86, 87, 91, 92, 97, 98, 99, 115, 117, 132, 134, 140, 147, 148,
++            149, 150, 151, 152, 153, 154, 165, 168, 179, 180, 182, 195, 199, 200, 224, 230, 232,
++            233, 240, 258, 259, 272, 274, 275, 276, 277, 278, 279, 280, 285, 286, 287, 288, 370, 384
+         ]
+     );
+ }

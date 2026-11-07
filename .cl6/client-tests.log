@@ -1,0 +1,60 @@
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32
+    |
+208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+    |                                ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
+    |
+
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)
+   Compiling oteryn-client v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl6/apps/client)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 11.96s
+     Running unittests src/lib.rs (/home/mole/oteryn-cache/target-codex/lanes/cl6/debug/deps/oteryn_client-af6e8668acf6fb84)
+
+running 26 tests
+test play::tests::feature_0006_world_spatial_entities::snapshot_builds_a_view_centred_on_the_own_position_with_overlay_markers ... ok
+test play::tests::feature_0082_creature_push::death_discards_queued_cl3_controls_without_discarding_logout ... ok
+test play::tests::feature_0006_world_spatial_entities::generated_dispatch_keeps_spatial_event_order_and_ignores_undrawn_domains ... ok
+test play::tests::feature_0082_creature_push::creature_pointer_preserves_cl1_ground_clicks_and_cl2_cursor_targeting ... ok
+test play::tests::feature_0019_world_light::clock_and_light_survive_scene_rebuilds ... ok
+test play::tests::feature_0179_hotkey_equip::hotkey_equip_panel_opens_and_sends ... ok
+test play::tests::feature_0006_world_spatial_entities::own_identity_draws_once_between_step_and_appearance_publish ... ok
+test play::tests::feature_0082_creature_push::native_drag_cancels_on_focus_loss_or_stale_target_and_decodes_refusal ... ok
+test play::tests::feature_0195_weapon_proficiency::controls_encode_exact_request_and_reply_and_refusal_are_visible ... ok
+test play::tests::feature_0179_hotkey_equip::native_hotkey_configuration_and_visible_refusal ... ok
+test play::tests::feature_0019_world_light::clxa_character_light_reaches_native_scene_and_expires_on_update ... ok
+test play::tests::feature_0006_world_spatial_entities::live_presentations_keep_target_clock_and_light_through_rebuilds ... ok
+test play::tests::feature_0082_creature_push::native_drag_sends_push_once_without_attacking_or_walking ... ok
+test play::tests::feature_0179_hotkey_equip::assigned_item_key_sends_the_definition_and_waits_for_the_server ... ok
+test play::tests::feature_0195_weapon_proficiency::native_proficiency_actions_and_input_gates ... ok
+test play::tests::feature_0006_world_spatial_entities::live_names_reach_scene_and_disappear_with_visibility ... ok
+test play::tests::feature_0195_weapon_proficiency::native_proficiency_rejects_invalid_fields_and_clears_perks ... ok
+test play::tests::feature_0195_weapon_proficiency::native_proficiency_browse_decodes_experience_and_pages_the_complete_list ... ok
+test play::tests::feature_0195_weapon_proficiency::proficiency_page_rejects_truncation_trailing_and_oversized_rows ... ok
+test scene::live_entities::tests::other_actor_keeps_object_marker_and_local_player ... ok
+test scene::live_entities::tests::cl6_forge_marks_reach_native_name_glyphs_and_clear_with_visibility ... ok
+test scene::live_entities::tests::play_view_rebuild_retains_the_same_cached_image ... ok
+test play::tests::feature_0006_world_spatial_entities::echo_portal_click_walks_and_reward_remains_in_native_container ... ok
+test play::tests::feature_local_status_flows::cl6_mechanics_status_native_queue_refusal_replay_logout ... ok
+test scene::live_entities::tests::live_outfit_uses_server_look_and_empty_outfit_suppresses_pixels ... ok
+test scene::live_entities::tests::recenter_reuses_loaded_assets_outfits_glyphs_and_packed_atlas ... ok
+
+test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 297 filtered out; finished in 0.30s
+

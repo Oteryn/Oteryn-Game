@@ -1,0 +1,15 @@
+....F..
+======================================================================
+FAIL: test_split_of_the_aggregate_is_the_committed_tree (test_registry_fragments.RegistryFragmentsTests.test_split_of_the_aggregate_is_the_committed_tree) [docs/contracts/protocol-oteryn/v1/registry/registry.json]
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/mole/oteryn-cache/rs-wt/cl6/tools/contracts/tests/test_registry_fragments.py", line 37, in test_split_of_the_aggregate_is_the_committed_tree
+    self.assertEqual({k: sorted(v) for k, v in fragments.items()}, committed(registry))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'cap[121367 chars]0383-bestiary-tracker.json', '{\n  "id": 383,\[51886 chars]n')]} != {'cap[121367 chars]0383-cyclopedia-bestiary-tracker.json', '{\n  [51908 chars]n')]}
+Diff is 307636 characters long. Set self.maxDiff to None to see it.
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.511s
+
+FAILED (failures=1)
