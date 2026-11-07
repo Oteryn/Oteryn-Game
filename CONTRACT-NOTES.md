@@ -680,3 +680,16 @@ Read-only donor evidence fetched successfully:
 - https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/lua/creature/raids.cpp
 
 Fury Gates selects/realizes at startup; donor content is not an accepted Game realization receipt or an advance prediction window. Wiki checks: **wiki-pending**. NEED-FETCH: none.
+
+## CLCAST S17a — native caster control
+
+Existing command 502 and capability 290 are reused; no migration, command,
+capability, mechanic ordinal or registry number is allocated (lane +30;
+reserved migrations 1130–1139 remain unused).
+Canary `src/creatures/players/livestream/livestream.cpp:237,249,260,281`
+provides explicit start/settings/stop and access rotation evidence. The native
+Cast settings form (Ctrl+Alt+Shift+S) sends bounded delay/cap/password-required
+and saved access revision through the existing fenced command dispatcher.
+Platform retains account preference/password storage; Game still verifies the
+saved settings before every start/update. The client never sends a password.
+Confirmed revisions drive stop/update and disconnect clears the native panel.

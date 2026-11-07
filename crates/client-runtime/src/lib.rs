@@ -49,6 +49,9 @@ pub mod player_report;
 #[path = "features/0039-timed-item/protocol.rs"]
 pub mod timed_item;
 
+/// Cast wire values pass through the session boundary.
+pub use oteryn_session::cast;
+
 pub mod connection;
 mod cursor_spell;
 #[path = "features/0037-depot/protocol.rs"]

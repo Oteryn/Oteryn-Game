@@ -19,6 +19,10 @@
 /// Account achievement query and typed result.
 pub mod account_achievements;
 
+/// Display and control vocabulary for S17.
+pub use oteryn_protocol_oteryn::cast;
+
+
 #[path = "achievement_notices.rs"]
 mod achievement_notices_transport;
 pub use oteryn_protocol_oteryn::achievement_notices;

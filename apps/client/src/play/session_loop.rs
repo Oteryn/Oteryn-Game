@@ -83,6 +83,7 @@ pub async fn run_session<T: Stepper>(
     outbox.arena_initialize(session.feature_selected(170));
     outbox.boss_encounter_initialize(session.feature_selected(117));
     outbox.boss_difficulty_initialize(session.feature_selected(225));
+    outbox.cast_control_initialize(session.server_mechanic_selected(290));
     outbox.browse_field_initialize(session.server_mechanic_selected(230));
     if let Some(payload) = session.feature_snapshot(14) {
         outbox.browse_field_views(&payload);
@@ -163,6 +164,7 @@ pub async fn run_session<T: Stepper>(
                 match session.server_mechanic(&request).await {
                     Ok(response) => {
                         match request.capability {
+                            290 => outbox.cast_control_result(&response),
                             64 => outbox.target_move_result(&request, &response),
                             82 => outbox.creature_push_result(&response),
                             98 | 132 | 200 | 232 | 285 => outbox.discovery_result(request.capability, &response),

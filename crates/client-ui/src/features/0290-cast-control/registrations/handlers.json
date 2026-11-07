@@ -3,16 +3,8 @@
   "kind": "handlers",
   "id": "0290-cast-control-unsupported",
   "status": "unsupported",
-  "reason": "S17-A is server phase 1; native client is a later task.",
+  "reason": "Native caster moderation is delivered in S17c.",
   "commands": [
-    502,
     505
-  ],
-  "not_applicable": {
-    "state": "Native cast UI is a later task.",
-    "protocol": "Native cast UI is a later task.",
-    "view": "Native cast UI is a later task.",
-    "input": "Native cast UI is a later task.",
-    "settings": "Native cast UI is a later task."
-  }
+  ]
 }
