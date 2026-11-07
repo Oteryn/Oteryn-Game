@@ -35,6 +35,7 @@ fn scenario_case(
             | "authored-venore"
             | "authored-venore-supplies"
             | "authored-winterlight"
+            | "authored-wrath-opening"
             | "catalogue-npc-father"
             | "fathers-burden-handins"
             | "catalogue-npc-hero"
@@ -96,7 +97,9 @@ fn scenario_case(
         if stateless_destination.is_some() {
             assert_eq!(callback.selector.position, Some(trigger));
         }
-        let world = if name == "authored-winterlight" {
+        let world = if name == "authored-wrath-opening" {
+            super::super::questpc8_wrath_opening::world()?
+        } else if name == "authored-winterlight" {
             super::super::questpc8_winterlight::world()?
         } else if name == "authored-venore" {
             super::super::questpc8_venore::world()?
@@ -466,6 +469,8 @@ fn scenario_case(
                 &authority,
             )
             .await?;
+        } else if name == "authored-wrath-opening" {
+            super::super::questpc8_wrath_opening::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "authored-winterlight" {
             super::super::questpc8_winterlight::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "authored-venore" {

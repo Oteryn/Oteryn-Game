@@ -1,3 +1,21 @@
+# Wrath opening native RED checkpoint21:03UTC
+
+Current work is a supported opening slice, not full quest completion. Added native
+source-map Zalamon NPC_TALK test for exact3nails953+1wood5901 ->crate11328,
+missing-input atomic refusal, replay and cold reload. Actual PG RED101.964s at
+first greeting: Rejected vsAccepted. Workspacealltargets PASS5m56s;fmt PASS.
+Push the compiling qualification scaffold under owner's30-minute rule; full quest
+remainsUNFINISHED. No existing test weakened or removed. Source code unchanged
+outside the new mounted test and its scenario routing hooks.
+
+IN-FLIGHT production data authoring is deliberately outside this scaffold commit:
+chosen callbacks/greeting and Zalamon placement scope. Generation session91926
+runs convert_placements ->world_project_v2_to_tree ->register_spell_families,
+logs/tmp/questpc8-wrath-{npc,tree,profile}-generation.log. Wait for completion before
+runtime GREEN reads its manifest; do not start another regeneration. Then native
+opening GREEN rerun and check/fmt, final pins, push that slice. Item-look disguise
+remains an explicit QENGINE2 request; do not bypass it or qualify full Wrath.
+
 # Main1138720b1 QWORLD integration green20:37UTC
 
 AUTHORING: merged QWORLD#3026, migrations1320-1322, from origin/main1138720b1.

@@ -1,0 +1,16 @@
+{
+  "state": "WIP: native RED recorded, opening authoring underway",
+  "scope": "Opening hand-in only; full Wrath remains unqualified",
+  "test": "questpc8_wrath_native_opening_exact_materials_crate_and_replay",
+  "red": {
+    "postgres": true,
+    "duration_seconds": 101.964201091,
+    "point": "First Zalamon NPC_TALK greeting rejected; left Rejected, expected Accepted",
+    "log_sha256": "7d7519ff96b4f0cfd73548a0b073802285a95155da08b1d1ffb172515f1f0cf3"
+  },
+  "compile_gate": {
+    "workspace_all_targets": "PASS5m56s",
+    "fmt": "PASS"
+  },
+  "remaining": "Admit source NPC/greeting and exact crate output, then run GREEN; subsequent item-look disguise still QENGINE2-owned"
+}

@@ -1684,6 +1684,12 @@
         "qengine2": "a1ea4e48d",
         "result": "Authored binding envelope exists; requested carried-output/peer or item-look capability still absent."
       }
+    },
+    "active_validation": {
+      "scope": "Opening hand-in native qualification in progress; no whole-quest qualification",
+      "proof": "wrath-opening-validation.json",
+      "red": "Actual PostgreSQL101.964s, first Zalamon greeting Rejected",
+      "engine_boundary": "Item-look disguise remains assigned to qengine2; no generic feature implemented locally"
     }
   },
   {
