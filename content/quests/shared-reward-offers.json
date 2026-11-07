@@ -2,6 +2,25 @@
   "schema": 1,
   "offers": [
     {
+      "npc": "oteryn:npc.amanda",
+      "keywords": [
+        "stake"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_blessed_stake",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "reply": [
+        "Yes, I was informed what to do. Are you prepared to receive my line of the prayer?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.an_old_dragonlord",
       "keywords": [
         "hi",
@@ -19,6 +38,25 @@
       ],
       "reply": [
         "LEAVE THE DRAGONS' CEMETERY AT ONCE!"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.brewster",
+      "keywords": [
+        "stake"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_blessed_stake",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10
+        }
+      ],
+      "reply": [
+        "Yes, I have been informed and haven't yet drunk enough to forget, so you can count yourself lucky. Are you prepared to <hicks> receive my line of the prayer?"
       ]
     },
     {
@@ -463,6 +501,25 @@
       ]
     },
     {
+      "npc": "oteryn:npc.isimov",
+      "keywords": [
+        "stake"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_blessed_stake",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "reply": [
+        "Yes, I was informed what to do. Are you prepared to receive my line of the prayer?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.jorge",
       "keywords": [
         "souvenir"
@@ -480,6 +537,44 @@
       ],
       "reply": [
         "All listed souvenirs are at 20 silver raid tokens each. Which one of them do you want?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.kasmir",
+      "keywords": [
+        "stake"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_blessed_stake",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        }
+      ],
+      "reply": [
+        "Yes, I was informed what to do. Are you prepared to receive my line of the prayer?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.maealil",
+      "keywords": [
+        "stake"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_blessed_stake",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Yes, I was informed what to do. Are you prepared to receive my line of the prayer?"
       ]
     },
     {
@@ -734,6 +829,44 @@
       ]
     },
     {
+      "npc": "oteryn:npc.quentin",
+      "keywords": [
+        "stake"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_blessed_stake",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Ah, I see you brought a stake with you. Are you ready to receive my line of the prayer then?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rahkem",
+      "keywords": [
+        "stake"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_blessed_stake",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        }
+      ],
+      "reply": [
+        "Yes, I was informed what to do. Are you prepared to receive my line of the prayer?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.sam",
       "keywords": [
         "old backpack",
@@ -751,6 +884,63 @@
           "maximum": 0,
           "set": 1
         }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.tibra",
+      "keywords": [
+        "stake"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_blessed_stake",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Yes, I was informed what to do. Are you prepared to receive my line of the prayer?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.tyrias",
+      "keywords": [
+        "stake"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_blessed_stake",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        }
+      ],
+      "reply": [
+        "Brewster sent me a strange message about some strange hocus-pocus. I think it's nonsense, but since you have come that far, I'll play along. Are you ready?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.yberius",
+      "keywords": [
+        "stake"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_blessed_stake",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "reply": [
+        "Yes, I was informed what to do. Are you prepared to receive my line of the prayer?"
       ]
     }
   ]

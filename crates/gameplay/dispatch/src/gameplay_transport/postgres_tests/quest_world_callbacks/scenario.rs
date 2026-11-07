@@ -154,6 +154,8 @@ fn scenario_case(
             // These two cases keep five source NPCs and one player alive.
             if matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped") {
                 6
+            } else if name == "qengine-rewards-paid-stake-priests" {
+                12
             } else if classic_npc {
                 5
             } else if monk {
@@ -171,7 +173,12 @@ fn scenario_case(
             .map_err(debug)?;
         deps.actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
         let origin = local(Position {
-            x: trigger.x - 1,
+            // The source NPC corridor starts past the unrelated fixture lever.
+            x: if name == "qengine-rewards-paid-stake-priests" {
+                trigger.x + 1
+            } else {
+                trigger.x - 1
+            },
             ..trigger
         });
         runtime

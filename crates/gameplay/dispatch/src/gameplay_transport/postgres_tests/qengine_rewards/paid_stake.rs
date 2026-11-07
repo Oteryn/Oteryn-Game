@@ -3,19 +3,35 @@
 //! No mission progress is seeded: Quentin issues the actual source introduction.
 use super::*;
 
-async fn cash(h: &Harness) -> TestResult<i64> {
+pub(super) async fn cash(h: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce(sum(quantity*CASE definition_production_key WHEN 'oteryn:item.tibia.i3031' THEN 1 WHEN 'oteryn:item.tibia.i3035' THEN 100 WHEN 'oteryn:item.tibia.i3043' THEN 10000 ELSE 0 END),0)::bigint FROM game_item_instances WHERE lifecycle=1").fetch_one(&h.pool).await?)
 }
-async fn stakes(h: &Harness) -> TestResult<i64> {
+pub(super) async fn stakes(h: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i5941'").fetch_one(&h.pool).await?)
 }
-async fn stage(h: &Harness) -> TestResult<Option<i64>> {
+pub(super) async fn stage(h: &Harness) -> TestResult<Option<i64>> {
     Ok(sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u7_8/friends_and_traders/the_blessed_stake'").fetch_optional(&h.pool).await?)
 }
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+) -> TestResult {
+    let [quentin, gamon] = super::super::classic_quests::install(
+        owner,
+        admitted,
+        ["oteryn:npc.quentin", "oteryn:npc.gamon"],
+    )
+    .await?;
+    exercise_with_npcs(owner, admitted, h, quentin, gamon).await
+}
+
+pub(super) async fn exercise_with_npcs(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    quentin: EntityRef,
+    gamon: EntityRef,
 ) -> TestResult {
     let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
         .fetch_one(&h.pool)
@@ -31,12 +47,6 @@ pub(super) async fn exercise(
         .iter()
         .find(|c| c.key.ends_with("exchange-gamon-stake"))
         .ok_or("Gamon purchase binding")?;
-    let [quentin, gamon] = super::super::classic_quests::install(
-        owner,
-        admitted,
-        ["oteryn:npc.quentin", "oteryn:npc.gamon"],
-    )
-    .await?;
     let mut selected = admitted
         .continuity
         .selected_capabilities

@@ -1,9 +1,10 @@
 """Source-backed L2 exchanges using QENGINE-2's existing transaction owner."""
 import hashlib
 import re
+import questl2_exchange_prayers as prayers
 
 
-NPCS = ('an_old_dragon_lord', 'dorian', 'gamon', 'hairycles', 'jorge', 'kroox', 'quentin')
+NPCS = tuple(sorted({'an_old_dragon_lord', 'dorian', 'gamon', 'hairycles', 'jorge', 'kroox', *prayers.PRIESTS}))
 NPC_FILES = {'oteryn:npc.an_old_dragonlord': 'an_old_dragon_lord'}
 
 def source_path(npc):
@@ -74,6 +75,8 @@ def append(callbacks, offers, inputs, pin):
         "Argh... my heart aches! Alright... a promise is a promise. Here - take this wooden stake, and now get lost.",
         give=(5941, 1), topic=1, repeatable=True, fee={'gold':5000, 'include_bank':True},
         offer=(['stake'], "Making a stake from a chair? Are you insane??! I won't waste my chairs on you for free! You will have to pay for it, but since I consider your plan a blasphemy, it will cost 5000 gold pieces. Okay?"))
+
+    prayers.append(add, state, callbacks, inputs)
 
     dragon_npc = 'oteryn:npc.an_old_dragonlord'
     dragon_track = 'oteryn:quest-progress/dragonfetish'

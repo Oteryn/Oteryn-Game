@@ -442,7 +442,40 @@
     {
       "title": "Exchange Quests",
       "status": "PENDING",
-      "evidence": []
+      "evidence": [
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-paid-stake-priests",
+          "duration_seconds": 79.129433842,
+          "postgresql": "18.6",
+          "passed": true,
+          "path": "Wooden Stake: Quentin, Gamon and the ten priests"
+        }
+      ],
+      "completed_paths": [
+        "Wooden Stake: mission issue, paid wooden stake, ordered prayers, atomic blessed-stake hand-in and replay"
+      ],
+      "wooden_stake_journey": [
+        "No seeded quest progress",
+        "Actual wire movement into range of the eleven source NPCs",
+        "Quentin issues the mission",
+        "Gamon refuses unfunded purchase and charges exactly 5000 for each issued stake",
+        "Out-of-order Tyrias confirmation does not advance or grant",
+        "All nine intermediate prayers retain both original wooden-stake instance IDs",
+        "Tyrias consumes exactly one wooden stake, grants exactly one blessed stake and writes stage 11",
+        "Final confirmation replay and fresh repeated conversation do not duplicate the reward"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amanda.lua:129:sha256:ce09851af74f62f12b43b9cddea4717113f97f5240669306482020734e96fdef",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/brewster.lua:114:sha256:87af89081d39013a27efa93e35bb1006cf46ff19e051d865151e847a1b0e8bc4",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/isimov.lua:98:sha256:83fc7dd789475bdc5cb3c49c04141c49469cb674537bac2d33343a221f8a4d10",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/kasmir.lua:99:sha256:9ed3bb0bed0fc1b7e573b3a0e60e40bebb43eb270db997f97e5a6c5225721f62",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/maealil.lua:94:sha256:5513bfbb4b666300a1a51ba229698aac401a68021b1388b7b4170fca74957786",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/quentin.lua:73:sha256:ec847fd5847361ac4ac7e278426fa284712ffd50f77b1b00cc38cc5c4ff480e9",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rahkem.lua:130:sha256:5a3cbb6ed0041da27bbfc8b15b5ef0f203a256e0cde50c584fb1d64a17956174",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tibra.lua:61:sha256:ac4aa101390c470c2fb3881d2a1aedb1916620676d9abed2f4ea82412398c30f",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tyrias.lua:99:sha256:d940a44e911493aa8091f8c8331220036f364288df05eb830b741f2b82d312c6",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yberius.lua:98:sha256:6a82e568681ecb911d988b30626f415ea07cb6cf2193c73246b8380e2a4363f5"
+      ]
     },
     {
       "title": "Hidden Threats",
@@ -759,12 +792,12 @@
     "world_pins": {
       "regenerated": true,
       "checked": true,
-      "digest": "7edac45215ec0cf12aba0f382ad398f78d99671fbed77a6a1597006691398d2f",
-      "bytes": 31102012,
-      "reason": "Includes the admitted Global An Old Dragonlord deployment alongside the existing L2 placements.",
-      "tool": "regenerate_content.py --resolve --no-stage --skip-checks; world-bundle-compiler pin-check",
-      "log": "/tmp/l2-foundation-merge-pin-check.log",
-      "regeneration_log": "/tmp/l2-foundation-merge-regenerate.log"
+      "digest": "79e05438deffce66c1bf92339f80ca164a87046f3eda02146a79e0ff30b056d7",
+      "bytes": 31102184,
+      "reason": "Includes all ten Wooden Stake priests and Gamon at their pinned source cells",
+      "tool": "world-bundle-compiler pin-refresh and pin-check",
+      "log": "/tmp/l2-priests-pin-check.log",
+      "regeneration_log": "/tmp/l2-priests-pin-refresh.log"
     },
     "formatting": "cargo fmt --all --check and explicit mounted-file rustfmt --check passed",
     "content_tests": {
@@ -1056,6 +1089,47 @@
       "clippy_deny_warnings": true,
       "all_targets": true,
       "all_features": true
+    },
+    "wooden_stake_slice": {
+      "red": {
+        "marker": "POSTGRES_CASE_FAILED qengine-rewards-paid-stake-priests",
+        "duration_seconds": 80.187572706,
+        "failure": "Tyrias final prayer binding absent after the full paid-issue journey"
+      },
+      "confirmation_red": {
+        "marker": "POSTGRES_CASE_FAILED qengine-rewards-paid-stake-priests",
+        "duration_seconds": 78.215140291,
+        "failure": "Out-of-order confirmation acknowledged by ordinary NPC fallback"
+      },
+      "green": [
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-paid-stake",
+          "duration_seconds": 78.147778879,
+          "postgresql": "18.6",
+          "passed": true
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-paid-stake-priests",
+          "duration_seconds": 79.129433842,
+          "postgresql": "18.6",
+          "passed": true
+        }
+      ],
+      "reward_authoring_tests": 42,
+      "npc_placement_tests": 11,
+      "native_registration_files": 42,
+      "new_source_npcs": 9,
+      "clippy": {
+        "packages": [
+          "oteryn-gameplay-quests",
+          "oteryn-gameplay-dispatch"
+        ],
+        "all_targets": true,
+        "deny_warnings": true,
+        "exit_code": 0,
+        "log": "/tmp/l2-priests-clippy-guard.log"
+      },
+      "formatting": "cargo fmt --all --check and explicit mounted-file rustfmt --check passed"
     }
   },
   "cross_lane_inspection": {
