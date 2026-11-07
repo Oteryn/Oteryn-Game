@@ -253,3 +253,20 @@ or boss mechanisms. Source NPC identities: flickering_soul.lua:1-6 SHA256
 67a704c084d2490ea37ad337d472a7f3075375f0a3a043b1a615be12d5ac2405;
 bloodshade_rotten.lua:1-6 SHA256
 153105638eeaa55321f4e30caf4f5796291c89329092b32b3d4e6d6f9103df7c.
+
+L13 restart reuse audit: questpc7 1f47892721766f4317426ee8445fea5e3f125818
+crates/gameplay/durability/src/durability/quest_state/writer.rs:493 supplies the
+existing root-locked read-only completed-character-revision query pattern.
+Apply it to bounded requires_completed_quests in the shared reward participant;
+no invented parent track or parent progress writer. Native parent bases still
+come from original Soul War/Rotten Blood flows in the new PG variants.
+All four source accessory items already have active physical custody profiles
+in content/items/definitions/spell-native-profiles.json, from the existing
+event-item profile producer. Reuse these; the older Canary XML lacks43899/43900
+and is not evidence for replacing or inventing their physical facts.
+
+L13 chosen numeric requirements: Rift recipe requires Premium and completed
+Ferumbras but explicitly min_level0; omit its minimum_level predicate and qualify
+its token story at creation level. The two parent-earned accessory programmes
+retain their explicitly chosen min250. Rift's chosen stage sequence first/second
+is preserved even though Cledwyn's original source permits either addon order.

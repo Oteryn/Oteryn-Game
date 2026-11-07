@@ -130,6 +130,8 @@ pub struct RewardCallback {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub minimum_level: Option<u32>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub requires_completed_quests: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub requires_outfits: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub requires_addons: Vec<OutfitReward>,
@@ -398,6 +400,15 @@ fn parse_document(text: &str) -> Result<Document, String> {
                 !slug(&r.outfit, "oteryn:outfit.", b"_", 128) || !(1..=3).contains(&r.addons)
             })
             || c.minimum_level == Some(0)
+            || c.requires_completed_quests.len() > 8
+            || c.requires_completed_quests
+                .iter()
+                .collect::<BTreeSet<_>>()
+                .len()
+                != c.requires_completed_quests.len()
+            || c.requires_completed_quests
+                .iter()
+                .any(|key| key == &c.quest || !slug(key, "oteryn:quest.", b"._", 128))
             || c.requires_addons.len() > 8
             || c.requires_addons
                 .iter()
@@ -640,6 +651,32 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn completed_parent_requirements_are_bounded_unique_and_read_only() -> Result<(), String> {
+        let original = super::load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-reward/l13-rift-base")
+            .ok_or("Rift base")?;
+        assert_eq!(
+            original.requires_completed_quests,
+            ["oteryn:quest.ferumbras_ascension_quest"]
+        );
+        for parents in [
+            vec![original.quest.clone()],
+            vec!["oteryn:quest.INVALID".into()],
+            vec!["oteryn:quest.parent".into(); 2],
+            (0..9).map(|i| format!("oteryn:quest.parent_{i}")).collect(),
+        ] {
+            let mut row = serde_json::to_value(&original).map_err(|e| e.to_string())?;
+            row["requires_completed_quests"] = serde_json::json!(parents);
+            assert!(
+                super::parse(&serde_json::json!({"schema":1,"callbacks":[row]}).to_string())
+                    .is_err()
+            );
+        }
+        Ok(())
+    }
+
     #[test]
     fn level_and_positive_addon_guards_preserve_one_shot_bases() -> Result<(), String> {
         let original = super::load()?

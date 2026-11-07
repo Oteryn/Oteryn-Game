@@ -7,6 +7,21 @@ import qengine_rewards as q
 
 
 class QuestRewards(unittest.TestCase):
+    def test_endgame_native_bits_and_completed_parent_contract(self):
+        rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
+        for family,items,bits in [('revenant',[34075,34076],[2,1]),('decaying_defender',[43899,43900],[1,2])]:
+            for index,stage in enumerate(['first','second']):
+                row=rows[f'l13-{family}-{stage}']
+                self.assertEqual(row['take'],[{'item':f'oteryn:item.tibia.i{items[index]}','count':1}])
+                self.assertEqual(row['outfit']['addons'],bits[index])
+                self.assertEqual(row['requires_outfits'],['oteryn:outfit.'+family])
+        base=rows['l13-rift-base']
+        self.assertEqual(base['requires_completed_quests'],['oteryn:quest.ferumbras_ascension_quest'])
+        for parents in [[base['quest']],['oteryn:quest.INVALID'],['oteryn:quest.parent']*2,[f'oteryn:quest.parent_{i}' for i in range(9)]]:
+            bad=copy.deepcopy(self.callbacks)
+            next(c for c in bad['callbacks'] if c['key']==base['key'])['requires_completed_quests']=parents
+            with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(bad)
+
     def test_native_trial_bindings_require_full_goals_and_one_shot_grants(self):
         document=json.loads(q.build()['content/quests/shared-reward-callbacks.json'])
         rows={c['key'].split('/')[-1]:c for c in document['callbacks']}
@@ -305,9 +320,9 @@ class QuestRewards(unittest.TestCase):
 
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
-        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-','l11-','l12-'))},
+        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-','l11-','l12-','l13-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),81)
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),88)  # Seven L13 grants.
         self.assertEqual(sum(c['outfit'] is None for c in callbacks),114)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))

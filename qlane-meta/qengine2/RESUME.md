@@ -658,3 +658,43 @@ proof path and PG RED/GREEN durations; no duplicate implementation imported.
 Counts39/66 QUALIFIED,27 UNFINISHED. Local L13 remains AUTHORING: new parent-flow
 variants and Rift RED fixture only; no production L13 changes or qualification.
 Focused RED log /tmp/qengine2-restart13-red2.log; compile in progress.
+
+L13 restart verification: actual fresh PG RED3/3,303.40s; Rift114.999723584s,
+Revenant196.830992721s,Decaying303.398925428s all at missing callbacks after
+original native parent bases for the accessory variants. Log restart13-red2.
+Seven callbacks and reusable requires_completed_quests root-locked predicate
+implemented; no parent track invented, all four existing event profiles reused.
+All-feature3-crate check5m04 passed; strict all-target/all-feature3-crate clippy
+6m52 passed;10 reward Rust units4.38s passed. Authoring28 passed in the full run,
+then exact inventory count corrected81->88 for seven new grants and the sole
+affected test passed17.970s. Added final achievement assertions after clippy;
+final dispatch clippy still required after PG fixes. Pin-refresh running via repo
+wrapper, session51432, /tmp/qengine2-restart13-pinrefresh.log. After it completes,
+run fresh focused3-case PG GREEN, final clippy/pincheck/content-world checks.
+All logs /tmp/qengine2-restart13-*.log. Counts39/27/0, no local L13 qualification.
+No L14 production edits. Preserve uncommitted/staged L13 work; new mounted test
+qengine_endgame_stories.rs is staged. Last push9c581fd10 (external qualification
+audit only); qengpr untouched. Continue until66/66, no checkpoint final response.
+
+Additional owner scope received during L13 verification: S06 complete population
+of outfit/addon/mount acquisition and taming rules; W15b generic multi-item
+reward chests and all variants, each with real-dispatch PG RED/GREEN and green
+step pushes. Audit branch aud1107 SHA d531f725dc25c70c268c85c40ad14e63a7a9c7cd,
+docs/architecture/reviews/MECHANICS-STATUS-2026-11-07.md. Read exact S06/W15b rows.
+Social interaction/chest_use.rs:253 explicitly destructures one reward; taming
+has an existing real-dispatch engine and test matrix to reuse/extend. Additional
+mechanics are tracked separately from the66-entry count. No scope dropped.
+Rift chosen recipe min_level0 discovered during final review; source corrected
+to omit minimum_level on all3 Rift callbacks and test uses creation level.
+Fresh targeted authoring test passed17.525s. Current green1 PG compile started
+before this correction; use it for diagnostics only and rerun the final candidate.
+Pin-refresh passed with unchanged24ab digest. Current PG session46619 log
+/tmp/qengine2-restart13-green1.log. No L13 entry qualified yet.
+
+OWNER15-minute push rule now applies. Immediate WIP push uses the already
+compiled staged candidate (test profile7m31; check5m04/clippy6m52). Exact RED:
+Revenant34075 Rejected instead ofCommitted206.1045s; Decay43899command2 EOF
+216.7652s; Rift base no earned catalogue221.3498s. No qualification claimed.
+Min0/Premium/quest-session corrections remain unstaged and green2 is compiling;
+follow with that compiling/fixed candidate within15minutes. Final completion
+requires66/66 plus the added S06 andW15b scope qualified and pushed.

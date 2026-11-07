@@ -32,8 +32,8 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander')]
-    paths += ['data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander', 'flickering_soul', 'bloodshade_rotten', 'cledwyn')]
+    paths += ['data/scripts/actions/items/usable_outfit_items.lua', 'data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
               'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua']
@@ -867,6 +867,29 @@ def build():
                 forbids_addons=[{'outfit':'oteryn:outfit.'+family,'addons':bit}])
             if bit==2:callbacks[-1]['requires_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':1}]
             callbacks[-1]['sources'].append(provenance)
+    # L13: original native parent bases remain with their existing reward owners.
+    for family,npc,items,bits,achievement in [
+            ('revenant','flickering_soul',[34075,34076],[2,1],'unleash_the_beast'),
+            ('decaying_defender','bloodshade_rotten',[43899,43900],[1,2],'fully_decayed')]:
+        for index,(item,bit) in enumerate(zip(items,bits)):
+            add('l13-'+family+'-'+('first' if index==0 else 'second'),family+'_outfits_quest',npc,['accessory'],[],
+                take=[(item,1)],outfit=(family,bit),achievement='oteryn:achievement/'+achievement if index==1 else None)
+            callbacks[-1].update(carried_item=f'oteryn:item.tibia.i{item}',minimum_level=250,requires_premium=True,
+                requires_outfits=['oteryn:outfit.'+family],forbids_addons=[{'outfit':'oteryn:outfit.'+family,'addons':bit}])
+            if index==1:callbacks[-1]['requires_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':bits[0]}]
+            path='data/scripts/actions/items/usable_outfit_items.lua'
+            callbacks[-1]['sources'].append(f'crystal:{PIN}:{path}:26-31:sha256:{sha(inputs[path])}')
+    add('l13-rift-base','rift_warrior_outfits_quest','cledwyn',['rift warrior outfit'],[],outfit=('rift_warrior',0))
+    callbacks[-1].update(minimum_level=250,requires_premium=True,forbids_outfits=['oteryn:outfit.rift_warrior'],
+        requires_completed_quests=['oteryn:quest.ferumbras_ascension_quest'])
+    callbacks[-1]['sources'].append('owner:chosen-Cledwyn-completed-Ferumbras-base-attestation:read-only-parent')
+    for bit,stage in [(1,'first'),(2,'second')]:
+        add('l13-rift-'+stage,'rift_warrior_outfits_quest','cledwyn',[stage],[],take=[(22516,100)],outfit=('rift_warrior',bit),
+            topic=3,achievement='oteryn:achievement/rift_warrior' if bit==2 else None)
+        callbacks[-1].update(minimum_level=250,requires_premium=True,requires_outfits=['oteryn:outfit.rift_warrior'],
+            forbids_addons=[{'outfit':'oteryn:outfit.rift_warrior','addons':bit}])
+        if bit==2:callbacks[-1]['requires_addons']=[{'outfit':'oteryn:outfit.rift_warrior','addons':1}]
+    source_offer('cledwyn',['addon'],0,3,[])
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
@@ -964,6 +987,8 @@ def validate_callbacks(document):
         declared.add(track['key'])
     keys=set()
     for callback in document['callbacks']:
+        if callback['quest'] in callback.get('requires_completed_quests',[]):
+            raise ValueError('self-dependent reward completion '+callback['key'])
         storage=callback['storage']
         if callback.get('carried_item') is not None and (
                 callback['take']!=[{'item':callback['carried_item'],'count':1}]

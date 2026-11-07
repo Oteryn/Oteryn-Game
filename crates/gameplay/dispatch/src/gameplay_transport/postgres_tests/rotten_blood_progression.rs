@@ -27,10 +27,21 @@ fn rotten_blood_postgres_native_chain_final_reward_replay_and_cleanse() -> TestR
     super::kill_reward_e2e::scenario_thread::run("rotten-blood-progression", scenario)
 }
 
-fn scenario() -> TestResult {
+fn scenario() -> TestResult { scenario_with_outfit(false) }
+
+#[test]
+fn qengine_l13_decaying_defender_parent_and_accessories() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
+    let started=std::time::Instant::now();
+    let result=super::kill_reward_e2e::scenario_thread::run("qengine-l13-decaying_defender", || scenario_with_outfit(true));
+    eprintln!("POSTGRES_CASE_COMPLETED qengine-l13-decaying_defender duration={:?} success={}",started.elapsed(),result.is_ok());
+    result
+}
+
+fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
     run(async |admin| {
         reset();
-        let h = Harness::create_with_admission_seed(admin, "rotten_blood_progression", false, false).await?;
+        let h = if qualify_outfit { Harness::create_quest_reward(admin,"rotten_blood_progression_outfit",true).await? } else { Harness::create_with_admission_seed(admin, "rotten_blood_progression", false, false).await? };
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
@@ -147,6 +158,11 @@ fn scenario() -> TestResult {
         let addons: i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_appearance_unlocks WHERE unlock_key LIKE '%rotten-blood%addon%'")
             .fetch_one(&h.pool).await?;
         assert_eq!(addons, 0);
+        if qualify_outfit {
+            admitted.runtime_actor=Some(deps.actor);
+            super::qengine_endgame_stories::accessories(&mut owner,&mut admitted,&h,&authority,"decaying_defender").await?;
+            drop(owner); drop(authority); drop(seal); return h.cleanup().await;
+        }
 
         // A later failed final attempt is decided once by the shared owner.
         // Earn a fresh chain through real native kills so the reset must retain
