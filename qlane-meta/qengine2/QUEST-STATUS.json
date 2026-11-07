@@ -91,7 +91,7 @@
     {
       "canonical": "oteryn:quest.assassin_outfit",
       "title": "Assassin Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc",
@@ -106,7 +106,13 @@
           "matched_statuses": []
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "qualification": {
+        "batch": "L1-07",
+        "scope": "Complete19stage Vescu7ingredients/base,Erayo6cloth+yarn/ownedbase/Shipwrecked2,Atradclaw+ring. NativeDrunk/Fireabsence refuses fundedhand-ins,partialrecipes/freshparent/refusals/replay/3facts/normalappearance. Nooutfitstagesseeded.",
+        "native_owner_canonical": "oteryn:quest.outfit_and_addon_quests",
+        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l7-assassin-story duration=92.810090059s success=true",
+        "assumptions": "CONTRACT-NOTES.md:source-backed missingGeneralflags initial0/min-1;native actor conditions conservatively sampledatvaluecommandadmission."
+      }
     },
     {
       "canonical": "oteryn:quest.battle_mage_outfits_quest",
@@ -2263,7 +2269,7 @@
     "entries": [
       "oteryn:quest.knight_outfits_quest",
       "oteryn:quest.druid_outfits_quest",
-      "oteryn:quest.assassin_outfits_quest"
+      "oteryn:quest.assassin_outfit"
     ],
     "phase": "QUALIFIED all3entries realPostgreSQL3passed0failed169.73s;commit/push now,then targetedcontent/world/pin checks and nextbatch.",
     "reuse_audit": "git fetch origin --no-tags refreshed branches;questpc6 3bfd856061e5aa89668747ec7405af8c2b8cf7f5 Druid UNFINISHED;questpc8 fced2532a67ec03571d21c2bdb244ac2f0017737 Knight BLOCKED;older questpc branch has no qlane-meta status tree. No newer matched QUALIFIED found. Reuse native timer/counter/owned-outfit/premium owners already delivered.",
@@ -2293,6 +2299,7 @@
       "POSTGRES_CASE_COMPLETED qengine-rewards-l7-assassin-story duration=92.810090059s success=true"
     ],
     "result": "3passed;0failed;0ignored;169.73s;actualPostgreSQL18.6",
-    "follow_on_verification": "PENDING after immediate source push"
+    "follow_on_verification": "PENDING after immediate source push",
+    "identity_correction": "Original L1 Assassin scope URI is oteryn:quest.assassin_outfit (singular),not inferred assassin_outfits_quest. Preserve original URI;native state remains General. Qualification attached to existing original entry;no new record fabricated."
   }
 }

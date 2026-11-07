@@ -519,3 +519,9 @@ accountunowned lock,replay/3facts/normalappearance. No outfit stages seeded.
 Diskrecovery strategy retaineddispatchtestincremental0clhrjm82foyu andremoved
 inactiveotherincrementalcaches;now15GBfree. Source/binaries/evidenceintact.
 Do not redo finishedwork;continue nextbatch afterfollowonchecks.
+Identity correction:original L1 Assassin scope key is oteryn:quest.assassin_outfit
+(singular),not inferred assassin_outfits_quest. Attach actual92.810090059s
+qualification to original existingentry and retain General nativeowner.
+Countsrecomputedfromactualstatuses:21QUALIFIED45UNFINISHED0BLOCKED. No new
+questrecord invented and no source/PG work repeated. Source2a27f66f4 pushed;
+followon content/world/pin session40286 stillrunning.
