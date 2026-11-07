@@ -4,7 +4,7 @@ use crate::durability::character_progression::{
     CurrentCharacterGameplayFence, assert_gameplay_fence,
 };
 use oteryn_gameplay_world_change::timed::MINUTE;
-pub use oteryn_gameplay_world_change::timed::{EventKind, EventState, Input};
+pub use oteryn_gameplay_world_change::timed::{EventKind, EventState, Input, Phase};
 
 /// Internal semantic input. Transport payloads must never supply clock/draw or credited kills.
 #[derive(Debug, Clone, Copy)]

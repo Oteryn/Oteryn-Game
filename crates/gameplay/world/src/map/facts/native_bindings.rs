@@ -74,6 +74,27 @@ impl Source {
     }
 }
 
+/// Resolve declared event projection items even when no base tile places them.
+pub(super) fn projection_appearances() -> Vec<u16> {
+    let Ok(policy) = serde_json::from_str::<serde_json::Value>(include_str!(
+        "../../../../../../content/quests/world-event-object-policy.json"
+    )) else {
+        return Vec::new();
+    };
+    policy["projections"]
+        .as_array()
+        .filter(|rows| rows.len() <= 64)
+        .into_iter()
+        .flatten()
+        .filter_map(|row| {
+            row["appearance"]
+                .as_u64()
+                .and_then(|id| u16::try_from(id).ok())
+                .filter(|id| *id > 0)
+        })
+        .collect()
+}
+
 pub(super) fn load() -> Result<&'static Bindings, FactsRefusal> {
     static DATA: OnceLock<Option<Bindings>> = OnceLock::new();
     DATA.get_or_init(|| {
@@ -293,6 +314,52 @@ mod tests {
         )?;
         let facts = world.facts();
         assert_eq!(facts.event_objects.len(), 5);
+        let object = crate::map::facts::EventObjectProjection {
+            position: TilePos {
+                x: 32941,
+                y: 32754,
+                floor: -12,
+            },
+            appearance: 1603,
+            sub_type: 0,
+            visible: true,
+        };
+        assert!(facts.project_event_objects(world.base(), "test-a", &[object]));
+        assert!(facts.project_event_objects(world.base(), "test-b", &[object]));
+        assert_eq!(
+            facts
+                .callbacks
+                .lock()
+                .map_err(|_| "projection lock")?
+                .movement_items
+                .values()
+                .map(Vec::len)
+                .sum::<usize>(),
+            2
+        );
+        assert!(facts.project_event_objects(world.base(), "test-a", &[]));
+        assert_eq!(
+            facts
+                .callbacks
+                .lock()
+                .map_err(|_| "projection lock")?
+                .movement_items
+                .values()
+                .map(Vec::len)
+                .sum::<usize>(),
+            1
+        );
+        assert!(facts.project_event_objects(world.base(), "test-b", &[]));
+        assert!(
+            facts
+                .callbacks
+                .lock()
+                .map_err(|_| "projection lock")?
+                .movement_items
+                .values()
+                .all(Vec::is_empty)
+        );
+
         assert!(facts.project_mummy_objects(world.base(), 5, false, false));
         for &(aid, key) in &facts.event_objects {
             assert!(facts.quest_callback_matches(key, None, Some(aid), None));

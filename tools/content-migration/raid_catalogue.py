@@ -450,7 +450,7 @@ def spring_raids(root: Path, creatures: dict, placements: dict) -> list[dict]:
     source = {"path": "data/items/items.xml", "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
               "repository": REPOSITORY, "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"}
     result = []
-    for member, row in enumerate(policy["bindings"], 1):
+    for member, row in enumerate((row for row in policy["bindings"] if row["action"] in (52601, 52602)), 1):
         x, y, z = row["position"]
         area = {"from": {"x": x-2, "y": y-2, "floor": z},
                 "to": {"x": x+2, "y": y+2, "floor": z}}
@@ -498,6 +498,17 @@ def authored_event_raids(root: Path, creatures: dict, placements: dict) -> list[
                     "source_name": rule["source_name"], "amount": {"min": rule["count"], "max": rule["count"]},
                     "area": area, "area_anchor": area_anchor(area), "spawn_mode": "area", "boss": rule.get("boss", False),
                     "source": source}]}]}]}
+        if "points" in rule:
+            points = rule["points"]
+            if not points or len(points) > 32 or len(points) != rule["count"]:
+                raise ValueError("WEVENTS_FIXED_POPULATION")
+            entries = []
+            for point in points:
+                fixed = {"from": dict(point), "to": dict(point)}
+                entry = copy.deepcopy(record["variants"][0]["waves"][0]["entries"][0])
+                entry.update(area=fixed, area_anchor=area_anchor(fixed), spawn_mode="single", amount={"min": 1, "max": 1})
+                entries.append(entry)
+            record["variants"][0]["waves"][0]["entries"] = entries
         qualify(record, creatures, placements)
         records.append(record)
     return records

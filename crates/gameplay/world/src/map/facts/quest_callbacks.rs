@@ -28,6 +28,16 @@ pub enum QuestCallbackProjection {
     },
 }
 
+/// A bounded, source-authored visual owned by a synchronized World event.
+/// Interaction authority remains on the native selector and durable World row.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct EventObjectProjection {
+    pub position: TilePos,
+    pub appearance: u16,
+    pub sub_type: u16,
+    pub visible: bool,
+}
+
 #[derive(Clone, Debug, Default)]
 pub(super) struct CallbackStates {
     pub(super) changed: BTreeMap<u64, (u64, EntryFacts)>,
@@ -40,6 +50,8 @@ pub(super) struct CallbackStates {
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
     event_items: BTreeMap<(TilePos, u16), super::super::overlay::EntryId>,
     mummy_projection: Option<(u8, bool, bool)>,
+    event_projections: BTreeMap<String, Vec<EventObjectProjection>>,
+    owned_event_items: BTreeMap<(String, TilePos, u16), super::super::overlay::EntryId>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
 }
@@ -159,6 +171,122 @@ impl CallbackStates {
 }
 
 impl BundleFacts {
+    /// Install or remove a whole event projection atomically. Repeated reads
+    /// preserve entry identities; reset and victory remove only this owner's items.
+    pub fn project_event_objects(
+        &self,
+        base: &super::super::WorldBase,
+        owner: &str,
+        objects: &[EventObjectProjection],
+    ) -> bool {
+        if owner.is_empty()
+            || owner.len() > 128
+            || objects.len() > 64
+            || objects.iter().any(|object| object.appearance == 0)
+            || objects
+                .iter()
+                .map(|object| (object.position, object.appearance))
+                .collect::<BTreeSet<_>>()
+                .len()
+                != objects.len()
+        {
+            return false;
+        }
+        let Ok(mut guard) = self.callbacks.lock() else {
+            return false;
+        };
+        if guard
+            .event_projections
+            .get(owner)
+            .is_some_and(|old| old == objects)
+        {
+            return true;
+        }
+        if !guard.has_capacity(objects.len().saturating_mul(2)) {
+            return false;
+        }
+        if !guard.event_projections.contains_key(owner) && guard.event_projections.len() >= 32 {
+            return false;
+        }
+        let mut staged = (**guard).clone();
+        let desired: BTreeSet<_> = objects
+            .iter()
+            .filter(|object| object.visible)
+            .map(|object| (owner.to_owned(), object.position, object.appearance))
+            .collect();
+        let removed: Vec<_> = staged
+            .owned_event_items
+            .iter()
+            .filter(|(key, _)| key.0 == owner && !desired.contains(*key))
+            .map(|(key, id)| (key.clone(), *id))
+            .collect();
+        for (key, id) in removed {
+            staged.owned_event_items.remove(&key);
+            if let Some(entries) = staged.movement_items.get_mut(&key.1) {
+                entries.retain(|entry| entry.source != view::EntrySource::Added(id));
+            }
+        }
+        for object in objects {
+            let position = object.position;
+            if self.house_tile(position)
+                || base.tile(position.x, position.y, position.floor).is_none()
+            {
+                return false;
+            }
+            let tag = (owner.to_owned(), position, object.appearance);
+            if !object.visible {
+                if let Some(id) = staged.owned_event_items.remove(&tag)
+                    && let Some(entries) = staged.movement_items.get_mut(&position)
+                {
+                    entries.retain(|entry| entry.source != view::EntrySource::Added(id));
+                }
+                continue;
+            }
+            let Some(mut facts) = self.movement_item_facts(object.appearance) else {
+                return false;
+            };
+            facts.bound = true;
+            facts.pickupable = false;
+            facts.sub_type = u32::from(object.sub_type);
+            if let Some(id) = staged.owned_event_items.get(&tag).copied() {
+                let Some(entry) = staged
+                    .movement_items
+                    .get_mut(&position)
+                    .and_then(|entries| {
+                        entries
+                            .iter_mut()
+                            .find(|entry| entry.source == view::EntrySource::Added(id))
+                    })
+                else {
+                    return false;
+                };
+                entry.facts = facts;
+            } else {
+                let Some(sequence) = staged.movement_sequence.checked_add(1) else {
+                    return false;
+                };
+                let Some(id) = super::super::overlay::EntryId::callback(sequence) else {
+                    return false;
+                };
+                staged.movement_sequence = sequence;
+                staged.owned_event_items.insert(tag, id);
+                staged
+                    .movement_items
+                    .entry(position)
+                    .or_default()
+                    .push(view::ComposedEntry {
+                        source: view::EntrySource::Added(id),
+                        facts,
+                    });
+            }
+        }
+        staged
+            .event_projections
+            .insert(owner.to_owned(), objects.to_vec());
+        *guard = Arc::new(staged);
+        true
+    }
+
     /// Rebuild the donor tomb projection from committed World state after boot or a retry.
     /// Dynamic walls are named by source position/item, so periodic projection never duplicates them.
     pub fn project_mummy_objects(

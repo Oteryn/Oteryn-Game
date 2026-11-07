@@ -49,6 +49,7 @@ fn parse_rules(
                 (EventKind::SpringIntoLife, "hatch", 1..=2)
                     | (EventKind::Kingsday, "hourly", 0)
                     | (EventKind::BankRobbery, "recovery", 0)
+                    | (EventKind::InsectoidInvasion, "population", 0)
             );
             if !supported
                 || rule.key.len() > 160
@@ -80,6 +81,11 @@ pub(crate) fn admits(state: &EventState, rule: &EventRaidRule, now: i64) -> bool
         "recovery" => {
             state.phase == oteryn_gameplay_world_change::timed::Phase::Active
                 && !state.lifecycle.firing_versions.contains_key(&rule.member)
+        }
+        "population" => {
+            state.phase == oteryn_gameplay_world_change::timed::Phase::Active
+                && state.wave > 0
+                && state.lifecycle.firing_versions.get(&rule.member) != Some(&u64::from(state.wave))
         }
         "hourly" => {
             state.wave > 0
@@ -234,7 +240,10 @@ pub(crate) async fn origin_current(
     };
     if !matches!(
         origin.kind,
-        EventKind::SpringIntoLife | EventKind::Kingsday | EventKind::BankRobbery
+        EventKind::SpringIntoLife
+            | EventKind::Kingsday
+            | EventKind::BankRobbery
+            | EventKind::InsectoidInvasion
     ) {
         return Ok(true);
     }
@@ -249,8 +258,10 @@ pub(crate) async fn origin_current(
         state.phase,
         oteryn_gameplay_world_change::timed::Phase::Active
             | oteryn_gameplay_world_change::timed::Phase::Victory
-    ) && (origin.kind != EventKind::BankRobbery
-        || state.phase == oteryn_gameplay_world_change::timed::Phase::Active)
+    ) && (!matches!(
+        origin.kind,
+        EventKind::BankRobbery | EventKind::InsectoidInvasion
+    ) || state.phase == oteryn_gameplay_world_change::timed::Phase::Active)
         && state.lifecycle.generation == origin.generation
         && state.lifecycle.firing_versions.get(&origin.member) == Some(&origin.version))
 }
@@ -261,7 +272,7 @@ pub(crate) async fn retire_stale(
     world: WorldId,
     now: i64,
 ) -> Result<(), DurabilityError> {
-    sqlx::query("WITH stale AS (SELECT f.firing_id FROM game_world_raid_firings f JOIN game_world_timed_raid_origins o USING(firing_id) LEFT JOIN game_world_timed_events e ON e.world_id=f.world_id AND e.event_key=o.origin->>'kind' AND e.cycle_id=(o.origin->>'cycle')::bigint WHERE f.world_id=encode($1,'hex')::uuid AND f.state IN(1,2) AND NOT EXISTS(SELECT 1 FROM game_world_raid_retirements r WHERE r.firing_id=f.firing_id) AND o.origin->>'kind' IN('spring_into_life','kingsday','bank_robbery') AND (e.state IS NULL OR e.state->>'phase'='Failure' OR (o.origin->>'kind'='bank_robbery' AND e.state->>'phase'<>'Active') OR (e.state->>'end_ms')::bigint <= $2 OR e.state->'lifecycle'->'generation' IS DISTINCT FROM o.origin->'generation' OR e.state->'lifecycle'->'firing_versions'->(o.origin->>'member') IS DISTINCT FROM o.origin->'version') ORDER BY f.firing_id LIMIT 32), retired AS (INSERT INTO game_world_raid_retirements SELECT firing_id,$2,'world_event_stale' FROM stale ON CONFLICT DO NOTHING RETURNING firing_id) UPDATE game_world_raid_firings f SET state=3 FROM retired WHERE f.firing_id=retired.firing_id AND f.state=1")
+    sqlx::query("WITH stale AS (SELECT f.firing_id FROM game_world_raid_firings f JOIN game_world_timed_raid_origins o USING(firing_id) LEFT JOIN game_world_timed_events e ON e.world_id=f.world_id AND e.event_key=o.origin->>'kind' AND e.cycle_id=(o.origin->>'cycle')::bigint WHERE f.world_id=encode($1,'hex')::uuid AND f.state IN(1,2) AND NOT EXISTS(SELECT 1 FROM game_world_raid_retirements r WHERE r.firing_id=f.firing_id) AND o.origin->>'kind' IN('spring_into_life','kingsday','bank_robbery','insectoid_invasion') AND (e.state IS NULL OR e.state->>'phase'='Failure' OR (o.origin->>'kind' IN('bank_robbery','insectoid_invasion') AND e.state->>'phase'<>'Active') OR (e.state->>'end_ms')::bigint <= $2 OR e.state->'lifecycle'->'generation' IS DISTINCT FROM o.origin->'generation' OR e.state->'lifecycle'->'firing_versions'->(o.origin->>'member') IS DISTINCT FROM o.origin->'version') ORDER BY f.firing_id LIMIT 32), retired AS (INSERT INTO game_world_raid_retirements SELECT firing_id,$2,'world_event_stale' FROM stale ON CONFLICT DO NOTHING RETURNING firing_id) UPDATE game_world_raid_firings f SET state=3 FROM retired WHERE f.firing_id=retired.firing_id AND f.state=1")
         .bind(world.as_bytes().as_slice()).bind(now).execute(&mut **tx).await?;
     Ok(())
 }

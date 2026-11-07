@@ -6,6 +6,7 @@ use super::{
 };
 mod effects;
 mod encounter;
+mod event_objects;
 mod event_reward;
 mod execute;
 mod mummy;

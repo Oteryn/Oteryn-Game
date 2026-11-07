@@ -415,7 +415,13 @@ pub fn table_activation_spawns(
         for point in &source.points {
             let index = usize::try_from(point.creature).ok()?;
             let creature = table.creatures.get(index)?;
-            if creature.period != Period::All || point.boss_policy.is_some() {
+            if creature.period != Period::All
+                || point.boss_policy.is_some()
+                || crate::durability::world_event::changes::reserved_static_spawn(
+                    &source.key,
+                    &creature.key,
+                )
+            {
                 continue;
             }
             let resolved = profiles.get_mut(index)?;

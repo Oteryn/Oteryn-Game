@@ -480,3 +480,44 @@ The native NPC greeting/service admission unit passed (**1 / 46.59 s**), the
 focused World lifecycle/cost/catalogue run passed **15 tests**, and the full
 content registration reproducibility check passed (**42 generated files**).
 Logs: `/tmp/wevents-bank-{npc-unit,model-final,registration-check}.log`.
+
+## Greenshore shared restoration and population binding
+
+The existing daily World selection owns Insectoid Invasion. Two exact retained
+Scout memberships are reserved before ordinary activation and admitted through
+one event-owned raid. Synchronized 90-second slots replace superseded populations;
+shared bucket revisions cannot create extra waves. Victory and reset retire the
+population through the existing LOST cleanup path. The conservative restoration
+rule and retained placement/spawn SHA256 evidence are in `CONTRACT-NOTES.md`.
+
+Four native ground USE selectors bind the shared bucket and three fires.
+Declarative projections resolve served item definitions independently of base
+placements, preserve stable entry identities, and atomically remove only the
+named owner's objects. A missing/house tile cannot publish partial state.
+The existing Mummy projection uses separate ownership.
+
+The focused model first failed both new cases (`wevents-insect-model-red.log`),
+then passed all four cases (`wevents-insect-model-final.log`): full/completed
+interaction no-ops, 90-second synchronization/replay, fresh reset, and exact
+source membership reservation. The focused world projection test passed
+(`wevents-insect-projection-test.log`, one test, 0.01 s), including overlapping
+owners and removal of omitted objects. Raid producer tests: 15 passed in 20.593 s.
+The selector tool verified all 22 bound native objects against B3 placements.
+Compiler `pin-refresh` and `pin-check` both passed; source-world digest remains
+`d5e52c7a0ef24bf6aa7b78926fd0806e43eb731ac69b10783f20c9f10dcd88e5`.
+
+The focused real PostgreSQL restoration case passed: marker
+`WEVENTS PG EXECUTED: insect restoration duration=5.948852685s`, one test,
+5.95 s (`wevents-insect-owner-pg-green.log`). It runs current-session/runtime-role
+World interactions, rejects extinguishing without water, fills to capacity,
+refuses overflow, extinguishes all three fires, preserves completed-state no-ops,
+reads committed Victory and refuses the next population slot. The preceding
+combined run exposed a test-clock mismatch on its final read; all interaction
+assertions had passed. The corrected case installs the existing owner test clock.
+
+Checkpoint checks passed: locked crate check; strict `--all-features --lib`
+clippy with `-D warnings` for world-change, durability, world, dispatch,
+game-server and quests; workspace fmt check, explicit mounted-source rustfmt and
+staged whitespace check. Logs: `wevents-insect-check-final.log`,
+`wevents-insect-clippy.log`, `wevents-insect-quests-clippy-final.log` and
+`wevents-insect-fmt-final.log`.

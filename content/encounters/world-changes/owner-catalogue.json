@@ -751,7 +751,7 @@
       "key": "insectoid_invasion",
       "title": "Insectoid Invasion World Change",
       "quest": "oteryn:quest.authored.insectoid_invasion_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -784,10 +784,35 @@
           "url": "https://tibia.fandom.com/index.php?curid=55050&oldid=1160735"
         }
       ],
-      "reason": "Greenshore invasion/restoration state, credited restoration threshold and active spawn membership are not bound.",
-      "missing_facts": [
-        "Greenshore invasion/restoration state, credited restoration threshold and active spawn membership are not bound."
-      ]
+      "reason": "Native Greenshore invasion, reserved source Scouts, synchronized bounded population and shared restoration/reset.",
+      "missing_facts": [],
+      "trigger": {
+        "kind": "timed",
+        "event": "insectoid_invasion",
+        "owner": "world_event::changes::timed",
+        "activation": {
+          "chance_permille": 100
+        }
+      },
+      "binding": {
+        "raids": [
+          {
+            "key": "raid:world-events.greenshore-invasion",
+            "member": 0,
+            "condition": "population"
+          }
+        ],
+        "static_spawns": [
+          {
+            "key": "oteryn:spawn.x32210_y32056_z7",
+            "creature": "oteryn:creature.insectoid_scout"
+          },
+          {
+            "key": "oteryn:spawn.x32210_y32063_z7",
+            "creature": "oteryn:creature.insectoid_scout"
+          }
+        ]
+      }
     },
     {
       "key": "jungle_camp",

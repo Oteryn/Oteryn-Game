@@ -359,3 +359,5 @@ pub async fn tally(
         .transpose()
         .map(|v| v.unwrap_or(0))
 }
+
+pub use oteryn_gameplay_world_change::owner::reserved_static_spawn;

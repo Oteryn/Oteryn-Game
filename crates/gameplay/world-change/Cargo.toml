@@ -12,6 +12,7 @@ category = "gameplay"
 release-role = "production"
 
 [dependencies]
+serde_json.workspace = true
 serde = { workspace = true, features = ["derive"] }
 
 [dev-dependencies]

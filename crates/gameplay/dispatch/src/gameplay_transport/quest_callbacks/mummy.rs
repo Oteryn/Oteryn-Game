@@ -150,6 +150,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(map) = self.bundle_map() else {
             return;
         };
+        self.project_shared_event_objects(map).await;
         if let Ok(Some(state)) = self
             .root
             .timed_world_event(self.world_id, self.reset_epoch, EventKind::MummysCurse)

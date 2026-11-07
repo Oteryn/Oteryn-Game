@@ -598,6 +598,178 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/items/items.xml:32647-32650:sha256:c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
         "oteryn-policy:CONTRACT-NOTES.md#spring-into-life-implementation-policy"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/insect-restoration-water",
+      "quest": "oteryn:quest.authored.insectoid_invasion_world_change",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32206,
+          "y": 32057,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 52670,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/insectoid-invasion/restoration",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The shared bucket is full or the invasion has ended.",
+      "success_message": "You add water to the shared bucket.",
+      "effects": {
+        "world_event": {
+          "event": "insectoid_invasion",
+          "action": {
+            "Fill": 0
+          }
+        }
+      },
+      "sources": [
+        "oteryn-policy:CONTRACT-NOTES.md#insectoid-invasion-implementation-policy"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/insect-restoration-1",
+      "quest": "oteryn:quest.authored.insectoid_invasion_world_change",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32205,
+          "y": 32059,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 52671,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/insectoid-invasion/restoration",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "This fire is already out, the bucket is empty, or the invasion has ended.",
+      "success_message": "You extinguish the blaze.",
+      "effects": {
+        "world_event": {
+          "event": "insectoid_invasion",
+          "action": {
+            "Extinguish": 1
+          }
+        }
+      },
+      "sources": [
+        "oteryn-policy:CONTRACT-NOTES.md#insectoid-invasion-implementation-policy"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/insect-restoration-2",
+      "quest": "oteryn:quest.authored.insectoid_invasion_world_change",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32206,
+          "y": 32060,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 52672,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/insectoid-invasion/restoration",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "This fire is already out, the bucket is empty, or the invasion has ended.",
+      "success_message": "You extinguish the blaze.",
+      "effects": {
+        "world_event": {
+          "event": "insectoid_invasion",
+          "action": {
+            "Extinguish": 2
+          }
+        }
+      },
+      "sources": [
+        "oteryn-policy:CONTRACT-NOTES.md#insectoid-invasion-implementation-policy"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/insect-restoration-3",
+      "quest": "oteryn:quest.authored.insectoid_invasion_world_change",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32206,
+          "y": 32061,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 52673,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/insectoid-invasion/restoration",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "This fire is already out, the bucket is empty, or the invasion has ended.",
+      "success_message": "You extinguish the blaze.",
+      "effects": {
+        "world_event": {
+          "event": "insectoid_invasion",
+          "action": {
+            "Extinguish": 3
+          }
+        }
+      },
+      "sources": [
+        "oteryn-policy:CONTRACT-NOTES.md#insectoid-invasion-implementation-policy"
+      ]
     }
   ]
 }

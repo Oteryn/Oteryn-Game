@@ -284,7 +284,7 @@
       "unique": null,
       "source": {
         "policy": "content/quests/world-event-object-policy.json",
-        "sha256": "9d3a3d4ac2e84badb6b3dd3260ee497d29c6347e6746b3c3d756c42207e6e2b3",
+        "sha256": "5a3dde385c4c8b29c106b7494d39ed0a32c07ca27b219ebea7d2b0ca87982c3b",
         "region": "content/world/placements/region-z06-x126-y123.b3",
         "region_sha256": "1d806e1732b6f958c33bf75e8981a730603fda4959c2bea4b0fa9b90a9d9c4ac"
       }
@@ -300,9 +300,73 @@
       "unique": null,
       "source": {
         "policy": "content/quests/world-event-object-policy.json",
-        "sha256": "9d3a3d4ac2e84badb6b3dd3260ee497d29c6347e6746b3c3d756c42207e6e2b3",
+        "sha256": "5a3dde385c4c8b29c106b7494d39ed0a32c07ca27b219ebea7d2b0ca87982c3b",
         "region": "content/world/placements/region-z06-x132-y127.b3",
         "region_sha256": "4e1ea1caa375784daad020cad4d706fed1bb4c832585316962a2e790ab54ce04"
+      }
+    },
+    {
+      "position": [
+        32206,
+        32057,
+        7
+      ],
+      "item": null,
+      "action": 52670,
+      "unique": null,
+      "source": {
+        "policy": "content/quests/world-event-object-policy.json",
+        "sha256": "5a3dde385c4c8b29c106b7494d39ed0a32c07ca27b219ebea7d2b0ca87982c3b",
+        "region": "content/world/placements/region-z07-x125-y125.b3",
+        "region_sha256": "268c6b75fad682c6d9baeadc6563c2cace27d8414caa66ca538b49687a6dc262"
+      }
+    },
+    {
+      "position": [
+        32205,
+        32059,
+        7
+      ],
+      "item": null,
+      "action": 52671,
+      "unique": null,
+      "source": {
+        "policy": "content/quests/world-event-object-policy.json",
+        "sha256": "5a3dde385c4c8b29c106b7494d39ed0a32c07ca27b219ebea7d2b0ca87982c3b",
+        "region": "content/world/placements/region-z07-x125-y125.b3",
+        "region_sha256": "268c6b75fad682c6d9baeadc6563c2cace27d8414caa66ca538b49687a6dc262"
+      }
+    },
+    {
+      "position": [
+        32206,
+        32060,
+        7
+      ],
+      "item": null,
+      "action": 52672,
+      "unique": null,
+      "source": {
+        "policy": "content/quests/world-event-object-policy.json",
+        "sha256": "5a3dde385c4c8b29c106b7494d39ed0a32c07ca27b219ebea7d2b0ca87982c3b",
+        "region": "content/world/placements/region-z07-x125-y125.b3",
+        "region_sha256": "268c6b75fad682c6d9baeadc6563c2cace27d8414caa66ca538b49687a6dc262"
+      }
+    },
+    {
+      "position": [
+        32206,
+        32061,
+        7
+      ],
+      "item": null,
+      "action": 52673,
+      "unique": null,
+      "source": {
+        "policy": "content/quests/world-event-object-policy.json",
+        "sha256": "5a3dde385c4c8b29c106b7494d39ed0a32c07ca27b219ebea7d2b0ca87982c3b",
+        "region": "content/world/placements/region-z07-x125-y125.b3",
+        "region_sha256": "268c6b75fad682c6d9baeadc6563c2cace27d8414caa66ca538b49687a6dc262"
       }
     }
   ]

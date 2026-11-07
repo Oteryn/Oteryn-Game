@@ -49,6 +49,43 @@
       },
       "policy": "CONTRACT-NOTES.md#bank-robbery-implementation-policy",
       "boss": true
+    },
+    {
+      "key": "raid:world-events.greenshore-invasion",
+      "event": "insectoid_invasion",
+      "member": 0,
+      "condition": "population",
+      "name": "Greenshore Insectoid invasion",
+      "creature": "oteryn:creature.insectoid_scout",
+      "source_name": "Insectoid Scout",
+      "count": 2,
+      "interval_ms": 90000,
+      "area_name": "Greenshore",
+      "area": {
+        "from": {
+          "x": 32208,
+          "y": 32058,
+          "floor": 7
+        },
+        "to": {
+          "x": 32209,
+          "y": 32060,
+          "floor": 7
+        }
+      },
+      "points": [
+        {
+          "x": 32208,
+          "y": 32058,
+          "floor": 7
+        },
+        {
+          "x": 32209,
+          "y": 32060,
+          "floor": 7
+        }
+      ],
+      "policy": "CONTRACT-NOTES.md#insectoid-invasion-implementation-policy"
     }
   ]
 }

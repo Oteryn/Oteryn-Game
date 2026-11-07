@@ -41817,7 +41817,7 @@
           "evidence": "OTERYN_AUTHORED_POLICY",
           "line": 1,
           "policy": "content/quests/world-event-raid-policy.json",
-          "sha256": "bdc634e5b294a728e83c1eb61ae3fbfd6b8c69451bc42a5466513cd9510abd4f"
+          "sha256": "36b9487b4012ba1821ca3daf538706e306ce466e2a32288c24395341c3aa56ca"
         }
       ],
       "variant_group": null,
@@ -41830,7 +41830,7 @@
               "evidence": "OTERYN_AUTHORED_POLICY",
               "line": 1,
               "policy": "content/quests/world-event-raid-policy.json",
-              "sha256": "bdc634e5b294a728e83c1eb61ae3fbfd6b8c69451bc42a5466513cd9510abd4f"
+              "sha256": "36b9487b4012ba1821ca3daf538706e306ce466e2a32288c24395341c3aa56ca"
             }
           ],
           "unresolved": [],
@@ -41871,7 +41871,7 @@
                     "evidence": "OTERYN_AUTHORED_POLICY",
                     "line": 1,
                     "policy": "content/quests/world-event-raid-policy.json",
-                    "sha256": "bdc634e5b294a728e83c1eb61ae3fbfd6b8c69451bc42a5466513cd9510abd4f"
+                    "sha256": "36b9487b4012ba1821ca3daf538706e306ce466e2a32288c24395341c3aa56ca"
                   },
                   "source_name": "Jesse the Wicked",
                   "spawn_mode": "area"
@@ -41882,6 +41882,143 @@
         }
       ],
       "wiki_area": "Thais",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
+      "boss_names": [],
+      "end": {
+        "despawn_after_ms": null,
+        "kind": "until_reset"
+      },
+      "inactive_reasons": [],
+      "key": "raid:world-events.greenshore-invasion",
+      "kind": "calendar",
+      "name": "Greenshore Insectoid invasion",
+      "schedule": {
+        "interval_ms": 90000,
+        "kind": "calendar",
+        "repeat_persistent": true,
+        "start_immediately": true,
+        "window": {
+          "end_day": 31,
+          "end_month": 12,
+          "start_day": 1,
+          "start_month": 1
+        }
+      },
+      "source_conflicts": [
+        "CONTRACT-NOTES.md#insectoid-invasion-implementation-policy"
+      ],
+      "sources": [
+        {
+          "evidence": "OTERYN_AUTHORED_POLICY",
+          "line": 1,
+          "policy": "content/quests/world-event-raid-policy.json",
+          "sha256": "36b9487b4012ba1821ca3daf538706e306ce466e2a32288c24395341c3aa56ca"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "world-events.greenshore-invasion",
+          "sources": [
+            {
+              "evidence": "OTERYN_AUTHORED_POLICY",
+              "line": 1,
+              "policy": "content/quests/world-event-raid-policy.json",
+              "sha256": "36b9487b4012ba1821ca3daf538706e306ce466e2a32288c24395341c3aa56ca"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 0,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32208,
+                      "y": 32058
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x125-y125.b3",
+                        "sha256": "268c6b75fad682c6d9baeadc6563c2cace27d8414caa66ca538b49687a6dc262"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32208,
+                      "y": 32058
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32208_32058_7-32208_32058_7",
+                  "boss": false,
+                  "creature": "oteryn:creature.insectoid_scout",
+                  "source": {
+                    "evidence": "OTERYN_AUTHORED_POLICY",
+                    "line": 1,
+                    "policy": "content/quests/world-event-raid-policy.json",
+                    "sha256": "36b9487b4012ba1821ca3daf538706e306ce466e2a32288c24395341c3aa56ca"
+                  },
+                  "source_name": "Insectoid Scout",
+                  "spawn_mode": "single"
+                },
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32209,
+                      "y": 32060
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x125-y125.b3",
+                        "sha256": "268c6b75fad682c6d9baeadc6563c2cace27d8414caa66ca538b49687a6dc262"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32209,
+                      "y": 32060
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32209_32060_7-32209_32060_7",
+                  "boss": false,
+                  "creature": "oteryn:creature.insectoid_scout",
+                  "source": {
+                    "evidence": "OTERYN_AUTHORED_POLICY",
+                    "line": 1,
+                    "policy": "content/quests/world-event-raid-policy.json",
+                    "sha256": "36b9487b4012ba1821ca3daf538706e306ce466e2a32288c24395341c3aa56ca"
+                  },
+                  "source_name": "Insectoid Scout",
+                  "spawn_mode": "single"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Greenshore",
       "wiki_records": [],
       "wiki_sources": []
     },
@@ -42022,7 +42159,7 @@
           "evidence": "OTERYN_AUTHORED_POLICY",
           "line": 1,
           "policy": "content/quests/world-event-raid-policy.json",
-          "sha256": "bdc634e5b294a728e83c1eb61ae3fbfd6b8c69451bc42a5466513cd9510abd4f"
+          "sha256": "36b9487b4012ba1821ca3daf538706e306ce466e2a32288c24395341c3aa56ca"
         }
       ],
       "variant_group": null,
@@ -42035,7 +42172,7 @@
               "evidence": "OTERYN_AUTHORED_POLICY",
               "line": 1,
               "policy": "content/quests/world-event-raid-policy.json",
-              "sha256": "bdc634e5b294a728e83c1eb61ae3fbfd6b8c69451bc42a5466513cd9510abd4f"
+              "sha256": "36b9487b4012ba1821ca3daf538706e306ce466e2a32288c24395341c3aa56ca"
             }
           ],
           "unresolved": [],
@@ -42076,7 +42213,7 @@
                     "evidence": "OTERYN_AUTHORED_POLICY",
                     "line": 1,
                     "policy": "content/quests/world-event-raid-policy.json",
-                    "sha256": "bdc634e5b294a728e83c1eb61ae3fbfd6b8c69451bc42a5466513cd9510abd4f"
+                    "sha256": "36b9487b4012ba1821ca3daf538706e306ce466e2a32288c24395341c3aa56ca"
                   },
                   "source_name": "Orc Warlord",
                   "spawn_mode": "area"
@@ -42681,8 +42818,8 @@
       "total": 86
     },
     "calendar": {
-      "active": 6,
-      "total": 10
+      "active": 7,
+      "total": 11
     },
     "city": {
       "active": 2,

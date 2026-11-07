@@ -207,3 +207,25 @@ All four native profiles are Ground-only and reuse the existing durable
 absolute-deadline/decay owner. Their legacy reference-only identities remain
 unchanged. Native loot admission now derives the corpse capacities from those
 exact profiles, alongside the stolen-gold bag's portable admission.
+
+### WEVENTS: Greenshore restoration policy
+
+Insectoid Invasion uses the existing 100-permille daily World selection. Its two
+Scouts are reserved from ordinary activation and projected through the timed raid
+owner at their retained positions (32208,32058,7), (32209,32060,7).
+Evidence: `content/world/spawns/spawns-10000-11999.json:1`, SHA256
+`a74b7da322bba5ebea20c772dae368d1337ec4caf9cd146f89b1bb9b8419b051`;
+the source respawn interval is 90 seconds. Oteryn policy replaces the preceding
+population at each synchronized 90-second slot, bounding the event to two Scouts.
+
+No complete donor restoration script was retained. The conservative authored
+rule is one shared bucket with capacity three and three shared fires: filling
+adds one water unit, extinguishing consumes one, and extinguishing all three
+ends the invasion. Full buckets and repeated/completed actions are no-ops.
+The four native ground USE selectors and decorative, nonpickupable projections
+are explicitly authored in `content/quests/world-event-object-policy.json`.
+The selected public tiles are verified against
+`content/world/placements/region-z07-x125-y125.b3:1`, SHA256
+`268c6b75fad682c6d9baeadc6563c2cace27d8414caa66ca538b49687a6dc262`.
+Victory removes the event population and projections; reset starts fresh state.
+These restoration details are Oteryn policy, not claimed donor behavior.

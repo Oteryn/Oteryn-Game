@@ -37,7 +37,7 @@ use std::sync::{Arc, Mutex};
 mod native_bindings;
 mod quest_callbacks;
 use quest_callbacks::CallbackStates;
-pub use quest_callbacks::QuestCallbackProjection;
+pub use quest_callbacks::{EventObjectProjection, QuestCallbackProjection};
 
 type RotationStates = BTreeMap<u64, (u64, EntryFacts)>;
 
@@ -166,6 +166,7 @@ impl BundleFacts {
         ]
         .into_iter()
         .chain(6594..=6608)
+        .chain(native_bindings::projection_appearances())
         .filter_map(|id| {
             let definition = item(&format!("oteryn:item.tibia.i{id}"))?;
             Some((

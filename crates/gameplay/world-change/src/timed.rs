@@ -335,6 +335,15 @@ impl EventState {
                 Ok(true)
             }
             (EventKind::BankRobbery, Input::Recover) => Ok(false),
+            (EventKind::InsectoidInvasion, Input::Tick) if self.phase == Phase::Active => {
+                let changed =
+                    self.clock
+                        .check(self.start_ms, self.end_ms, now, 90_000, 1000, draw)?;
+                if changed {
+                    self.wave = self.wave.checked_add(1).ok_or("wave exhausted")?;
+                }
+                Ok(changed)
+            }
             (EventKind::InsectoidInvasion, Input::Extinguish(member))
                 if self.phase == Phase::Active =>
             {
@@ -378,6 +387,7 @@ impl EventState {
                 .get_mut(&0)
                 .ok_or("missing bucket")?
                 .add(1, 3),
+            (EventKind::InsectoidInvasion, Input::Fill(0) | Input::Extinguish(1..=3)) => Ok(false),
             (EventKind::DevovorgasEssence, Input::Enter(0..=4)) if self.phase == Phase::Active => {
                 Ok(true)
             }

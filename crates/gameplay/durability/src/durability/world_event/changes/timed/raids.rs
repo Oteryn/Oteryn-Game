@@ -26,11 +26,15 @@ impl RaidOrigin {
             cycle: cycle(kind, epoch, state.start_ms)?,
             generation: state.lifecycle.generation,
             member,
-            version: state
-                .lifecycle
-                .objects
-                .get(&member)
-                .map_or(u64::from(state.wave), |o| o.revision()),
+            version: if matches!(kind, EventKind::SpringIntoLife | EventKind::BankRobbery) {
+                state
+                    .lifecycle
+                    .objects
+                    .get(&member)
+                    .map_or(u64::from(state.wave), |o| o.revision())
+            } else {
+                u64::from(state.wave)
+            },
         })
     }
     fn valid(&self) -> bool {
@@ -205,8 +209,10 @@ async fn credit(
         // A late death may expire the shared attempt, but cannot win it.
         save(tx, world, origin.kind, &state, origin.cycle).await?;
     }
-    if (origin.kind == EventKind::BankRobbery
-        && state.phase != oteryn_gameplay_world_change::timed::Phase::Active)
+    if (matches!(
+        origin.kind,
+        EventKind::BankRobbery | EventKind::InsectoidInvasion
+    ) && state.phase != oteryn_gameplay_world_change::timed::Phase::Active)
         || state.lifecycle.generation != origin.generation
         || !matches!(
             state.phase,

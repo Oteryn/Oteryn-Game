@@ -29,6 +29,7 @@ fn wevents_postgres_first_title_bindings() -> fixture::TestResult {
                     if spring_published { cases.push("spring"); }
                     if catalogue["entries"].as_array().ok_or("owner entries")?.iter().any(|entry|entry["key"]=="kingsday" && entry["status"]=="QUALIFIED") { cases.push("kingsday"); }
                     if catalogue["entries"].as_array().ok_or("owner entries")?.iter().any(|entry|entry["key"]=="bank_robbery" && entry["status"]=="QUALIFIED") { cases.push("bank"); }
+                    cases.push("insect");
                     for case in cases {
                         let started = std::time::Instant::now();
                         let h = fixture::Harness::create(
@@ -43,7 +44,8 @@ fn wevents_postgres_first_title_bindings() -> fixture::TestResult {
                             "mummy" => mummy(&h).await,
                             "spring" => spring(&h).await,
                             "kingsday" => kingsday(&h).await,
-                            _ => bank(&h).await,
+                            "bank" => bank(&h).await,
+                            _ => insect(&h).await,
                         };
                         h.cleanup().await?;
                         result?;
@@ -1559,5 +1561,133 @@ async fn bank(h: &fixture::Harness) -> fixture::TestResult {
         )
         .await
         .map_err(fixture::debug)?;
+    Ok(())
+}
+
+async fn insect(h: &fixture::Harness) -> fixture::TestResult {
+    let at = 1_934_078_400_000_i64;
+    let world = fixture::scope()?.world_id();
+    let epoch = (1..=4095)
+        .find(|e| {
+            crate::durability::world_event::changes::roll(world, *e, at)
+                .is_ok_and(|d| d.timed.insectoid)
+                && crate::durability::world_event::changes::roll(world, e + 1, at)
+                    .is_ok_and(|d| !d.timed.insectoid)
+        })
+        .ok_or("selected celebration followed by inactive reset")?;
+    for e in [epoch, epoch + 1] {
+        sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2,$3,'kingsday-map',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp($4::double precision/1000),'2031-04')")
+            .bind(world.as_bytes().as_slice()).bind(i64::try_from(e)?).bind([7u8;32].as_slice()).bind(at).execute(&h.pool).await?;
+    }
+    sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,$2)")
+        .bind(world.as_bytes().as_slice())
+        .bind(i64::try_from(epoch)?)
+        .execute(&h.pool)
+        .await?;
+    let seal = h.recovery.seal_current().map_err(fixture::debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(fixture::debug)?;
+    let selected = candidate("raid:world-events.greenshore-invasion", 97)?;
+    let mut req = request(selected.clone(), at)?;
+    req.reset_epoch = epoch;
+    assert_eq!(
+        h.root
+            .check_raid_schedules(&authority, &h.node, req.clone())
+            .await?
+            .firings
+            .len(),
+        1
+    );
+    sqlx::query("INSERT INTO game_durability_fresh_admission_receipts SELECT decode('01'||repeat('00',32),'hex'),game_session_id,account_id,character_id,world_id,runtime_scope_channel_id,character_lease_generation,scope_ownership_generation,1,current_transport_ref,1,'{}',1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid ON CONFLICT DO NOTHING")
+        .bind(fixture::id(fixture::SESSION).as_slice()).execute(&h.pool).await?;
+    sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=2,control_loss_epoch=NULL,original_grace_deadline=NULL,predecessor_generation=NULL,fresh_replay_key=decode('01'||repeat('00',32),'hex') WHERE game_session_id=encode($1,'hex')::uuid")
+        .bind(fixture::id(fixture::SESSION).as_slice()).execute(&h.pool).await?;
+    let recovery = authority.record_for(&h.root).map_err(fixture::debug)?;
+    for (id, input, expected) in [
+        (111, Input::Extinguish(1), Some(false)),
+        (112, Input::Fill(0), Some(true)),
+        (113, Input::Fill(0), Some(true)),
+        (114, Input::Fill(0), Some(true)),
+        (115, Input::Fill(0), Some(false)),
+        (116, Input::Extinguish(1), Some(true)),
+        (117, Input::Extinguish(2), Some(true)),
+        (118, Input::Extinguish(3), Some(true)),
+        (119, Input::Fill(0), Some(false)),
+    ] {
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
+        assert_eq!(
+            timed::interact(
+                &mut tx,
+                TimedActor {
+                    recovery: &recovery,
+                    node: &h.node,
+                    fence: fixture::fence(1)?
+                },
+                TimedRequest {
+                    world,
+                    epoch,
+                    kind: EventKind::InsectoidInvasion,
+                    now_ms: at,
+                    operation: fixture::id(id),
+                    input
+                }
+            )
+            .await?,
+            expected
+        );
+        tx.commit().await?;
+    }
+    h.root
+        .set_world_event_clock_for_test(Some(at))
+        .map_err(fixture::debug)?;
+    let state = h
+        .root
+        .timed_world_event(world, epoch, EventKind::InsectoidInvasion)
+        .await?
+        .ok_or("insect state")?;
+    assert_eq!(state.phase, Phase::Victory);
+    req.now_ms = at + 90_000;
+    assert!(
+        h.root
+            .check_raid_schedules(&authority, &h.node, req)
+            .await?
+            .firings
+            .is_empty()
+    );
+    Ok(())
+}
+
+#[test]
+fn wevents_postgres_insect_restoration() -> fixture::TestResult {
+    let Some(admin) = fixture::configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || {
+            fixture::runtime()
+                .map_err(fixture::debug)?
+                .block_on(async {
+                    let started = std::time::Instant::now();
+                    let h = fixture::Harness::create(admin, "wevents_insect_only", false).await?;
+                    let result = insect(&h).await;
+                    h.cleanup().await?;
+                    result?;
+                    eprintln!(
+                        "WEVENTS PG EXECUTED: insect restoration duration={:?}",
+                        started.elapsed()
+                    );
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                })
+                .map_err(fixture::debug)
+        })?
+        .join()
+        .map_err(|_| "insect thread")??;
     Ok(())
 }
