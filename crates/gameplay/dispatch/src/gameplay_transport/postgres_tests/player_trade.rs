@@ -343,12 +343,18 @@ async fn scenario(h: &Harness, inspection: bool) -> TestResult {
                     )
                     .await?;
                 assert_eq!(inspect::decode_reply(&reply).map_err(debug)?.status, 8);
-                let reply = a
-                    .command(
+                // A peer's background staff refresh shares the single DB holder.
+                // Inspection must keep its reads on the same gameplay lane.
+                let (refreshed, reply) = join_two(
+                    owner.refresh_staff(b_admitted),
+                    a.command(
                         inspect::COMMAND_TYPE_INSPECTION,
                         &inspect::encode_request(Request::Player(targets[1])).map_err(debug)?,
-                    )
-                    .await?;
+                    ),
+                )
+                .await;
+                assert!(refreshed);
+                let reply = reply?;
                 let inspected = inspect::decode_reply(&reply).map_err(debug)?;
                 assert_eq!(inspected.status, expected);
                 if expected == 1 {

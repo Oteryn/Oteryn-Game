@@ -59,6 +59,9 @@ def full_charge_leaf(item, pilot_key, position, key, raw_count):
     Missing native timed state means full definition values; this does not
     authorize partial source charges or make a held Item materializable.
     """
+    from itemhold_charge_precedence import qualifies
+    if qualifies(item, pilot_key, position, key, raw_count):
+        return True
     if (pilot_key != 'canary:reward-claim/kv/madmageroom3'
             or key != 'oteryn:item.tibia.i3081' or raw_count != 5
             or not item or item.get('identity', {}).get('key') != key

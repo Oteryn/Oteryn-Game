@@ -61,6 +61,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// One owner pass over every held target: at most one swing per attacker (`DEADLINE_STATE`
     /// catch-up), never a backlog.
     pub(in crate::gameplay_transport) async fn drain_auto_attacks(&self) {
+        self.drain_auto_attacks_at_time(None).await;
+    }
+
+    #[cfg(test)]
+    pub(in crate::gameplay_transport) async fn drain_auto_attacks_at(
+        &self,
+        now: SemanticTimeMicros,
+    ) {
+        self.drain_auto_attacks_at_time(Some(now)).await;
+    }
+
+    async fn drain_auto_attacks_at_time(&self, now: Option<SemanticTimeMicros>) {
         let Some(room) = self.rooms.gate_auto_attack() else {
             return;
         };
@@ -92,7 +104,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             talismans.insert(session, snapshot);
         }
-        let now = self.owner_now();
+        let now = now.unwrap_or_else(|| self.owner_now());
         let mut runtime = self.runtime.lock().await;
         let digest = runtime.content_pin().server_artifact_digest();
         if runtime.owner_fence().is_err()
