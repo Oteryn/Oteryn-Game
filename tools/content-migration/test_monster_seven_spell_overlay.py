@@ -34,8 +34,10 @@ class AcceptedOverlayTests(unittest.TestCase):
     def test_registration_replays_all_current_outputs(self):
         actual=registration.outputs(ROOT)
         # PREY-DIFF registers the generated tier and slot-value tables below;
-        # C1 registers the Newhaven starting-loadout item profiles.
-        self.assertEqual(len(actual),41)
+        # C1 registers the Newhaven starting-loadout item profiles; SRX-1
+        # registers the pinned item-profile supplement.
+        self.assertEqual(len(actual),43)
+        self.assertIn('content/items/definitions/srx1-item-updates.json',actual)
         self.assertIn('content/items/definitions/starting-loadout-profiles.json',actual)
         self.assertIn('content/creatures/prey-tiers.json',actual)
         self.assertIn('content/creatures/prey-slot-values.json',actual)

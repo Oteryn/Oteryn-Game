@@ -223,6 +223,14 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     }
                     _ => None,
                 };
+                if admitted.item_fence.is_some_and(|fence| matches!(fence.runtime_scope,
+                    crate::foundation::RuntimeScopeRefV1::Instance{..}))
+                    && let Some(outcome)=tokio::time::timeout(std::time::Duration::from_secs(10),
+                        authority.use_dispenser_action(actor,UseCommand{game_session_id:admitted.game_session_id,
+                            command_id:command.command_id,item_fence:admitted.item_fence},intent.clone(),source,target))
+                        .await.ok()?.ok()? {
+                    return Some(Dispatch::Use(outcome));
+                }
                 // Carried targets otherwise enter the pick owner directly. Probe W07
                 // here, including historical receipts whose source handle was retired.
                 if let Some(outcome) = tokio::time::timeout(

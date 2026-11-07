@@ -2,6 +2,9 @@
 //! trusted time, chain successor, effect and audit share the semantic transaction.
 pub use oteryn_gameplay_social_rules::staff as rules;
 mod executor;
+mod extended;
+mod tools;
+pub use tools::{StaffLiveStatus, StaffWorldEffectState, StaffWorldEffectTarget};
 mod expiry;
 mod retained;
 mod trust;
@@ -24,6 +27,8 @@ pub type TrustedStaffClock = fn() -> Option<(u64, u64)>;
 static VERIFIERS: OnceLock<Arc<Semaphore>> = OnceLock::new();
 #[derive(Clone)]
 struct Authenticated {
+    tools: bool,
+    role: rules::StaffRole,
     envelope: SignedEnvelope,
     roster: String,
     fingerprint: String,
@@ -92,6 +97,7 @@ impl StaffTrust {
         self: Arc<Self>,
         envelope: SignedEnvelope,
         receipt: bool,
+        tools: bool,
     ) -> Option<Authenticated> {
         let permit = VERIFIERS
             .get_or_init(|| Arc::new(Semaphore::new(4)))
@@ -138,6 +144,8 @@ impl StaffTrust {
             } else {
                 let r: rules::Request = decode(&envelope.canonical).ok()?;
                 if !r.valid(role)
+                    || (!tools && r.action.is_extended())
+                    || (tools && r.issuer_character_id.is_none())
                     || r.environment != self.environment()
                     || r.roster_sha256 != roster
                 {
@@ -146,6 +154,8 @@ impl StaffTrust {
                 Message::Request(r)
             };
             let auth = Authenticated {
+                tools,
+                role,
                 envelope,
                 roster,
                 fingerprint,
@@ -213,12 +223,53 @@ impl DurabilityRoot {
         receipt: bool,
         clock: TrustedStaffClock,
     ) -> Result<Option<Vec<u8>>, DurabilityError> {
+        self.submit_staff_mode(authority, node, fence, envelope, receipt, clock, false)
+            .await
+    }
+    pub async fn submit_staff_tools(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        envelope: SignedEnvelope,
+        receipt: bool,
+        clock: TrustedStaffClock,
+    ) -> Result<Option<Vec<u8>>, DurabilityError> {
+        self.submit_staff_mode(authority, node, fence, envelope, receipt, clock, true)
+            .await
+    }
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "Legacy and tools share the exact fenced signed transaction"
+    )]
+    async fn submit_staff_mode(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        envelope: SignedEnvelope,
+        receipt: bool,
+        clock: TrustedStaffClock,
+        tools: bool,
+    ) -> Result<Option<Vec<u8>>, DurabilityError> {
         let Some(trust) = self.staff_trust() else {
             return Ok(None);
         };
-        let Some(auth) = trust.clone().authenticate_message(envelope, receipt).await else {
+        let Some(auth) = trust
+            .clone()
+            .authenticate_message(envelope, receipt, tools)
+            .await
+        else {
             return Ok(None);
         };
+        if let Message::Request(request) = &auth.message
+            && request
+                .issuer_character_id
+                .as_deref()
+                .is_some_and(|issuer| issuer != executor::hex_id(fence.character_id.as_bytes()))
+        {
+            return Ok(None);
+        }
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::InvalidStoredState)?;

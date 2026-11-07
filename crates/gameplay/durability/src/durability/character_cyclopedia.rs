@@ -28,6 +28,10 @@ pub struct MapRequest {
     pub occurrence: [u8; 16],
     pub bundle: [u8; 32],
     pub epoch: u64,
+    pub area: u32,
+    pub legacy_area: u32,
+    pub subarea: Option<u32>,
+    pub subareas: Vec<(u32, u32)>,
     pub pool: Vec<Point>,
     pub at: Point,
     pub fee: Option<FeeChangeFacts>,
@@ -60,7 +64,7 @@ impl DurabilityRoot {
             let mut tx = begin_type2_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
-            if request.command.game_session_id() != fence.game_session_id || request.pool.len() > 128 || request.pool.len() < 8 || request.now <= 0 {
+            if request.command.game_session_id() != fence.game_session_id || !(1..=1024).contains(&request.area) || !(1..=1024).contains(&request.legacy_area) || request.subarea.is_none_or(|id| !request.subareas.contains(&(request.area,id))) || request.subareas.len() > 512 || request.pool.len() > 128 || request.pool.len() < 7 || request.now <= 0 {
                 return Ok(Err(CharacterProgressionError::InvalidInput));
             }
             // Current authority is checked even on replay; a retained receipt grants no custody.
@@ -97,32 +101,32 @@ impl DurabilityRoot {
                 Ok(changed)=>changed,
                 Err(reason)=> {
                     let code=match reason { MapRefusal::Invalid=>1, MapRefusal::PremiumRequired=>2, MapRefusal::AlreadyDiscovered=>3, MapRefusal::NoExploration=>4, MapRefusal::InsufficientPool=>5 };
-                    let (pool,improved)=storage::world(&mut tx,fence.runtime_scope.world_id(),request.bundle,request.epoch).await?;
-                    return Ok(Ok((root.revision,projection(code,root.revision,&progress,pool,improved,&request)?)));
+                    let (pool,improved)=storage::world(&mut tx,fence.runtime_scope.world_id(),request.bundle,request.epoch,request.area,request.legacy_area).await?;
+                    return Ok(Ok((root.revision,projection(code,root.revision,&progress,pool,improved,&request,storage::percentage(&mut tx,&fence,&request,&progress).await?)?)));
                 }
             };
             // Gold owner locks root, eligible coins, bank in that order, before the pool.
             let donation=if let MapAction::Donate(amount)=request.action {
                 if crate::domain::cyclopedia::DonationAmount::new(i64::from(amount)).is_err() { return Ok(Err(CharacterProgressionError::InvalidInput)); }
                 let Some(change)=request.fee.clone() else { return Ok(Err(CharacterProgressionError::InvalidInput)); };
-                let fee=FeeBurnRequest { cause:FeeBurnCause::AreaDonation {world:fence.runtime_scope.world_id(),area:area.area,occurrence:request.occurrence},fee_gold_units:u64::from(amount),transaction_id:request.transaction,event_id:request.event,occurred_at_unix_ms:request.now,server_build_id:"oteryn-game-server".into(),change };
+                let fee=FeeBurnRequest { cause:FeeBurnCause::AreaDonation {world:fence.runtime_scope.world_id(),area:request.area,occurrence:request.occurrence},fee_gold_units:u64::from(amount),transaction_id:request.transaction,event_id:request.event,occurred_at_unix_ms:request.now,server_build_id:"oteryn-game-server".into(),change };
                 match burn_fee_in_transaction(&mut tx,&fence,&fee).await {
                     Ok(FeeBurnOutcome::Burned(_))=>(),
                     Ok(FeeBurnOutcome::AlreadyBurned(_))=>return Err(DurabilityError::InvalidStoredState),
                     Err(FeeBurnError::InsufficientFunds|FeeBurnError::ChangeDoesNotFit|FeeBurnError::CapacityExceeded)=> {
-                        let (pool,improved)=storage::world(&mut tx,fence.runtime_scope.world_id(),request.bundle,request.epoch).await?;
-                        return Ok(Ok((root.revision,projection(6,root.revision,&progress,pool,improved,&request)?)));
+                        let (pool,improved)=storage::world(&mut tx,fence.runtime_scope.world_id(),request.bundle,request.epoch,request.area,request.legacy_area).await?;
+                        return Ok(Ok((root.revision,projection(6,root.revision,&progress,pool,improved,&request,storage::percentage(&mut tx,&fence,&request,&progress).await?)?)));
                     }
                     Err(FeeBurnError::Unavailable(e))=>return Err(e),
                     Err(_)=>return Ok(Err(CharacterProgressionError::InvalidInput)),
                 }
                 u64::from(amount)
             } else {0};
-            let (pool,improved)=storage::world(&mut tx,fence.runtime_scope.world_id(),request.bundle,request.epoch).await?;
+            let (pool,improved)=storage::world(&mut tx,fence.runtime_scope.world_id(),request.bundle,request.epoch,request.area,request.legacy_area).await?;
             let pool_after=pool.checked_add(donation).filter(|v|*v<=i64::MAX as u64).ok_or(DurabilityError::InvalidStoredState)?;
             let advanced=changed || donation>0;
             let revision=root.revision.checked_add(u64::from(advanced)).ok_or(DurabilityError::InvalidStoredState)?;
-            let bytes=projection(0,revision,&progress,pool_after,improved,&request)?;
+            let bytes=projection(0,revision,&progress,pool_after,improved,&request,storage::percentage(&mut tx,&fence,&request,&progress).await?)?;
             if request.action != MapAction::Query {
                 storage::save(&mut tx,&fence,&request,&progress,advanced,donation,pool,pool_after,&bytes).await?;
             }
@@ -131,6 +135,7 @@ impl DurabilityRoot {
         })).await?
     }
 }
+#[allow(clippy::too_many_arguments, reason = "fixed bounded wire projection")]
 fn projection(
     code: u8,
     revision: u64,
@@ -138,6 +143,7 @@ fn projection(
     pool: u64,
     improved: bool,
     request: &MapRequest,
+    area_percent: u8,
 ) -> Result<Vec<u8>, DurabilityError> {
     let found = if progress.discovered {
         7
@@ -171,9 +177,7 @@ fn projection(
         revision,
         discovered: progress.discovered,
         found,
-        area_percent: BasicArea::embedded()
-            .ok_or(DurabilityError::InvalidStoredState)?
-            .discovery_percent(progress),
+        area_percent,
         pool,
         epoch: request.epoch,
         improved,

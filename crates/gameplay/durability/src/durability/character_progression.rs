@@ -676,15 +676,22 @@ async fn assert_fenced_root(
     let Some(current) = current else {
         return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
     };
-    for column in [
-        "profile_revision",
-        "ruleset_revision",
-        "content_revision",
-        "starter_template_revision",
-    ] {
+    for column in ["profile_revision", "ruleset_revision", "content_revision"] {
         if root.try_get::<String, _>(column)? != current.try_get::<String, _>(column)? {
             return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
         }
+    }
+    let starter: String = root.try_get("starter_template_revision")?;
+    let current_starter: String = current.try_get("starter_template_revision")?;
+    if !super::character_authority::starter_revision_is_current_or_registered(
+        tx,
+        world_id.as_bytes(),
+        &starter,
+        &current_starter,
+    )
+    .await?
+    {
+        return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
     }
     Ok(Ok(FencedCharacterRoot {
         revision: root_revision,

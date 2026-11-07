@@ -1,13 +1,130 @@
 //! Charm consumers at the existing attack, leech and source damage seams.
 use super::*;
+use sha2::{Digest, Sha256};
+pub(in crate::gameplay_transport) mod source_vitals;
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 use oteryn_gameplay_progression::charm_effects::{
     CharmCatalogueRead, CharmDamageKind, CharmEffectOutcome, CharmElement, CharmHookEvent,
     CharmOutcome, CharmResult,
 };
 
+#[derive(Debug)]
+pub(super) struct DeathCharmSnapshot {
+    pub(super) actor: ExactActorRef,
+    pub(super) session: GameSessionId,
+    stamp: crate::foundation::RuntimeWorkStamp,
+    loss: crate::durability::character_death::promotion::DeathCharmLoss,
+}
+
+impl ChannelAttackStates {
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the exact lethal source, actor/session and death occurrence are independently retained"
+    )]
+    pub(in crate::gameplay_transport) fn capture_death_charm(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &ChannelSpellStates,
+        catalogue: &dyn CharmCatalogueRead,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        source: ExactActorRef,
+        death: [u8; 16],
+        root: &GameplayDecisionRoot,
+    ) {
+        if self
+            .death_charms
+            .iter()
+            .any(|entry| entry.actor == actor && entry.session == session)
+            || self.death_charms.len() >= runtime.actor_slot_capacity()
+        {
+            return;
+        }
+        // The already admitted hit still lands if Parry killed its source in this
+        // owner turn. The exact incarnation's retained policy remains its race proof.
+        let Ok(snapshot) = runtime.companion_snapshot_including_dead(source) else {
+            return;
+        };
+        if snapshot.state.master.is_some() || snapshot.state.policy.is_familiar {
+            return;
+        }
+        let race = &snapshot.state.policy.definition_key;
+        let outcome = evaluate(
+            states,
+            runtime,
+            catalogue,
+            actor,
+            session,
+            race,
+            root,
+            DecisionOccurrenceId::from_bytes(death),
+            CharmHookEvent::CharacterDeath,
+        )
+        .into_iter()
+        .find_map(|outcome| match effect(&outcome) {
+            Some(CharmEffectOutcome::DeathLossReduction { percent }) => {
+                u8::try_from(percent.hundredths() / 100)
+                    .ok()
+                    .map(|percent| (outcome.stage, percent))
+            }
+            _ => None,
+        });
+        let Some((stage, percent)) = outcome else {
+            return;
+        };
+        let Ok(stamp) = runtime.issue_owner_work() else {
+            return;
+        };
+        if self.death_charms.try_reserve(1).is_err() {
+            return;
+        }
+        self.death_charms.push(DeathCharmSnapshot {
+            actor,
+            session,
+            stamp,
+            loss: crate::durability::character_death::promotion::DeathCharmLoss {
+                death_occurrence: death,
+                source_actor: source.placement_identity(),
+                race_key: race.clone(),
+                stage,
+                percent,
+            },
+        });
+    }
+
+    pub(in crate::gameplay_transport) fn death_charm(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        session: GameSessionId,
+        death: [u8; 16],
+    ) -> Option<crate::durability::character_death::promotion::DeathCharmLoss> {
+        let entry = self
+            .death_charms
+            .iter()
+            .find(|entry| entry.session == session && entry.loss.death_occurrence == death)?;
+        runtime
+            .player_control_facts(entry.actor, session)
+            .ok()
+            .filter(|facts| facts.control_loss.is_none())?;
+        runtime
+            .owner_fence()
+            .ok()
+            .filter(|fence| fence.accepts_stamp(entry.stamp))?;
+        Some(entry.loss.clone())
+    }
+
+    pub(in crate::gameplay_transport) fn clear_death_charm(
+        &mut self,
+        session: GameSessionId,
+        death: [u8; 16],
+    ) {
+        self.death_charms
+            .retain(|entry| entry.session != session || entry.loss.death_occurrence != death);
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
-pub(super) fn evaluate(
+pub(in crate::gameplay_transport) fn evaluate(
     states: &ChannelSpellStates,
     runtime: &ChannelRuntimeV1,
     catalogue: &dyn CharmCatalogueRead,
@@ -38,7 +155,7 @@ pub(super) fn evaluate(
 
 // The pure evaluator still identifies historically unavailable systems. Only these consumers
 // discharge that marker locally; all other FailedClosed outcomes stay unapplied.
-pub(super) fn effect(outcome: &CharmOutcome) -> Option<CharmEffectOutcome> {
+pub(in crate::gameplay_transport) fn effect(outcome: &CharmOutcome) -> Option<CharmEffectOutcome> {
     match outcome.result {
         CharmResult::Applied(effect)
         | CharmResult::FailedClosed {
@@ -145,6 +262,211 @@ pub(super) fn damage_amount(
         .ok()?;
     }
     Some(amount)
+}
+
+/// Cripple/Numb use the existing native actor condition owner and its immunity/CAS rules.
+/// Canary 47dfd51f iobestiary.cpp:105-109,149-153; condition.cpp:2542-2553.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "native source, target, session and deterministic occurrence remain explicit"
+)]
+pub(super) fn paralyse_creature(
+    runtime: &mut ChannelRuntimeV1,
+    source: ExactActorRef,
+    session: GameSessionId,
+    target: ExactActorRef,
+    duration_ms: u32,
+    root: &GameplayDecisionRoot,
+    occurrence: DecisionOccurrenceId,
+    now: u64,
+) -> bool {
+    use crate::foundation::{
+        ActorConditionTransition, ApplicationFacts, ConditionDefinition, ConditionSource,
+        ConditionSourceKind, ConditionValues, SpeedRange,
+    };
+    let Ok(snapshot) = runtime.companion_snapshot(target) else {
+        return false;
+    };
+    if snapshot.health <= 0 || snapshot.state.master.is_some() || snapshot.state.policy.is_familiar
+    {
+        return false;
+    }
+    let Ok(base_speed) = u16::try_from(snapshot.state.policy.base_speed) else {
+        return false;
+    };
+    let Some(definition) = ConditionDefinition::new(
+        "oteryn:charm.paralysis",
+        1,
+        ConditionValues::Speed {
+            paralysis: true,
+            range: SpeedRange {
+                a_min: -1000,
+                a_max: -1000,
+                b_min: 0,
+                b_max: 0,
+            },
+            duration_ms,
+        },
+    ) else {
+        return false;
+    };
+    let facts = ApplicationFacts {
+        now,
+        base_speed,
+        mana_shield_capacity: 0,
+        target_reentry_protected: false,
+        source_reentry_protected: false,
+        target_is_player: false,
+        decision_root: root,
+        occurrence,
+    };
+    let time = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now);
+    let Ok(plan) = runtime.prepare_actor_condition(
+        target,
+        None,
+        ActorConditionTransition::Apply {
+            definition: &definition,
+            source: ConditionSource {
+                actor: source,
+                session: Some(session),
+                kind: ConditionSourceKind::Player,
+            },
+            immunities: &snapshot.state.policy.condition_immunities,
+            facts,
+        },
+        time,
+    ) else {
+        return false;
+    };
+    matches!(runtime.commit_actor_condition(&plan, time), Ok(true))
+}
+
+/// Committed native source damage; caller suppresses receipt replay before entering.
+#[allow(clippy::too_many_arguments)]
+pub(in crate::gameplay_transport) fn incoming_conditions(
+    states: &mut ChannelSpellStates,
+    runtime: &mut ChannelRuntimeV1,
+    catalogue: &dyn CharmCatalogueRead,
+    root: &GameplayDecisionRoot,
+    source: ExactActorRef,
+    target: ExactActorRef,
+    session: GameSessionId,
+    magnitude: u32,
+    source_revision: u64,
+    occurrence_text: &str,
+    now: u64,
+    mana: bool,
+) {
+    let Ok(creature) = runtime.companion_snapshot(source) else {
+        return;
+    };
+    if magnitude == 0 || creature.state.master.is_some() || creature.state.policy.is_familiar {
+        return;
+    }
+    let digest = Sha256::new()
+        .chain_update(b"oteryn.charm.source.v1")
+        .chain_update(occurrence_text.as_bytes())
+        .finalize();
+    let mut bytes = [0; 16];
+    bytes.copy_from_slice(&digest[..16]);
+    let occurrence = DecisionOccurrenceId::from_bytes(bytes);
+    let event = if mana {
+        CharmHookEvent::IncomingManaDrain {
+            mana_drained: u64::from(magnitude),
+        }
+    } else {
+        CharmHookEvent::IncomingCreatureHit {
+            base_damage: u64::from(magnitude),
+        }
+    };
+    let outcomes = evaluate(
+        states,
+        runtime,
+        catalogue,
+        target,
+        session,
+        &creature.state.policy.definition_key,
+        root,
+        occurrence,
+        event,
+    );
+    for outcome in &outcomes {
+        match effect(outcome) {
+            Some(CharmEffectOutcome::ReflectDamage { damage, amount }) if !mana => {
+                let Ok(draw) = oteryn_simulation_determinism::deterministic_decision_u64(
+                    root,
+                    occurrence,
+                    "charm.parry-armor",
+                    0,
+                ) else {
+                    continue;
+                };
+                let Some(amount) = damage_amount(runtime, source, damage, amount, draw)
+                    .filter(|amount| *amount > 0)
+                else {
+                    continue;
+                };
+                let Ok(lease) = runtime.bound_attacker_lease(target, session) else {
+                    continue;
+                };
+                // One bounded stream per source/reflector/session. The native HP successor
+                // revision is strictly increasing, independently fencing this exact receipt.
+                let mut stream = b"charm-parry-source:".to_vec();
+                stream.extend_from_slice(session.as_bytes());
+                if let Ok(result) = runtime.commit_source_damage(
+                    source,
+                    target,
+                    session,
+                    &stream,
+                    source_revision,
+                    amount,
+                    now / 1000,
+                ) && result.applied
+                {
+                    states.analyser.impact_amount(
+                        target,
+                        session,
+                        u64::try_from(result.health_before.saturating_sub(result.health_after))
+                            .unwrap_or(0),
+                        Some(super::super::analyser::charm_element(damage.element)),
+                    );
+                    if result.health_after == 0 {
+                        states.equipment_reflection_kills.push((
+                            source,
+                            crate::combat::CapturedRewardPrincipal {
+                                character: lease.character_id(),
+                                lease_generation: lease.generation(),
+                                actor: target,
+                                session,
+                            },
+                            now,
+                        ));
+                    }
+                }
+            }
+            Some(CharmEffectOutcome::ParalyseCreature { duration_ms }) => {
+                paralyse_creature(
+                    runtime,
+                    target,
+                    session,
+                    source,
+                    duration_ms,
+                    root,
+                    occurrence,
+                    now,
+                );
+            }
+            Some(
+                effect @ (CharmEffectOutcome::Haste { .. }
+                | CharmEffectOutcome::CleanseOneNegativeCondition),
+            ) => {
+                states.apply_player_charm_condition(
+                    runtime, target, session, effect, root, occurrence, now,
+                );
+            }
+            _ => {}
+        }
+    }
 }
 
 #[cfg(test)]

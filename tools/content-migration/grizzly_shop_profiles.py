@@ -9,6 +9,7 @@ import copy
 import hashlib
 import json
 import sys
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -199,11 +200,42 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     generated[manifest_path] = canonical(manifest)
 
 
+def refresh_canonical_input_pins(root, baseline, *, packet_path=PATH, keys=None):
+    """Repin shared shards only when every selected Item definition is unchanged."""
+    path = root / packet_path
+    packet = json.loads(path.read_bytes())
+    if keys is None:
+        keys, _ = selected(root)
+    def selected_definitions(raw):
+        return [row for row in json.loads(raw)['records']
+                if row['definition']['identity']['key'] in keys]
+    for descriptor in packet['canonical_inputs']:
+        current = (root / descriptor['path']).read_bytes()
+        digest = hashlib.sha256(current).hexdigest()
+        if digest == descriptor['sha256']:
+            continue
+        previous = subprocess.check_output(
+            ['git', '-C', str(root), 'show', f"{baseline}:{descriptor['path']}"])
+        if (hashlib.sha256(previous).hexdigest() != descriptor['sha256']
+                or selected_definitions(previous) != selected_definitions(current)):
+            raise ValueError('GRIZZLY_SHOP_REPIN_SELECTED_DEFINITION_CHANGED')
+        descriptor['sha256'] = digest
+    path.write_bytes(encode(packet))
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--source-root', type=Path, required=True)
+    parser.add_argument('--source-root', type=Path)
+    parser.add_argument('--refresh-canonical-inputs-from', metavar='GIT_REF')
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
+    if args.refresh_canonical_inputs_from:
+        if args.source_root or args.check:
+            parser.error('canonical repinning is a separate operation')
+        refresh_canonical_input_pins(ROOT, args.refresh_canonical_inputs_from)
+        raise SystemExit(0)
+    if args.source_root is None:
+        parser.error('--source-root is required for capture')
     raw = encode(capture(args.source_root))
     target = ROOT / PATH
     if args.check:

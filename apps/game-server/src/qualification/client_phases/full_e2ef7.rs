@@ -2131,12 +2131,14 @@ mod continuation_tests {
                 name: "Caster".into(),
                 leader: true,
                 expires_at: 0,
+                party_spell_remaining_ms: None,
             },
             parties::PartyEntry {
                 handle: 2,
                 name: "Peer".into(),
                 leader: false,
                 expires_at: 0,
+                party_spell_remaining_ms: None,
             },
         ];
         let mut b = a.clone();

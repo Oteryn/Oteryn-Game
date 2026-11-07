@@ -139,6 +139,10 @@ pub use crate::content::world_reward_claims::UniqueEntry;
 /// ground item, walkable flag and ground speed. It holds no overlay and is never mutated.
 #[derive(Debug)]
 pub struct WorldBase {
+    active_layers: Vec<String>,
+    layer_epoch: Option<u64>,
+    exit_layers: Vec<String>,
+    admitted_layers: Vec<String>,
     pub subareas: oteryn_world_bundle::subarea::Table,
     digest: [u8; 32],
     content_revision: String,
@@ -261,7 +265,65 @@ impl<'a> TileView<'a> {
 }
 
 impl WorldBase {
-    /// The verified bundle digest.
+    /// Rebuild a pinned base with its admitted immutable epoch composition.
+    pub(super) fn composed(
+        bundle: &bundle::Bundle,
+        keys: &[&str],
+        exits: &[&str],
+    ) -> Result<Self, LoadError> {
+        let mut builder = Builder {
+            palette: Some(palette(&bundle.manifest)),
+            ..Builder::default()
+        };
+        for sector in &bundle.sectors {
+            builder.push(sector)?;
+        }
+        builder.shrink();
+        let rows = (0..=SECTOR_ROWS)
+            .map(|row| {
+                builder
+                    .keys
+                    .partition_point(|key| ((key >> 11) as usize) < row) as u32
+            })
+            .collect();
+        Ok(Self {
+            active_layers: keys.iter().map(|key| (*key).to_owned()).collect(),
+            layer_epoch: None,
+            exit_layers: exits.iter().map(|key| (*key).to_owned()).collect(),
+            admitted_layers: bundle
+                .layers
+                .iter()
+                .map(|layer| layer.key.clone())
+                .collect(),
+            subareas: bundle.manifest.subareas.clone(),
+            digest: bundle.digest,
+            content_revision: bundle.manifest.identity.content_revision.clone(),
+            keys: builder.keys,
+            rows,
+            sectors: builder.sectors,
+            tiles: builder.tiles,
+            ids: builder.ids,
+            depths: builder.depths,
+            uniques: builder.uniques,
+        })
+    }
+
+    /// Immutable names selected from this bundle's admitted layer table at epoch boot.
+    pub fn active_layers(&self) -> &[String] {
+        &self.active_layers
+    }
+
+    /// The boot reset epoch of this immutable composition; generic fixtures stay undated.
+    pub fn layer_epoch(&self) -> Option<u64> {
+        self.layer_epoch
+    }
+
+    /// Compiler-admitted return choices. These never activate entrance geometry.
+    pub fn exit_layers(&self) -> &[String] {
+        &self.exit_layers
+    }
+
+    /// The verified bundle digest, covering every optional layer.
     pub fn digest(&self) -> [u8; 32] {
         self.digest
     }
@@ -433,6 +495,14 @@ fn load_daily_spawns(
     let spawns = visited.spawns;
     Ok((
         WorldBase {
+            active_layers: Vec::new(),
+            layer_epoch: None,
+            exit_layers: Vec::new(),
+            admitted_layers: visited
+                .layers
+                .iter()
+                .map(|layer| layer.key.clone())
+                .collect(),
             subareas: visited.manifest.subareas,
             digest: visited.digest,
             content_revision: visited.manifest.identity.content_revision,

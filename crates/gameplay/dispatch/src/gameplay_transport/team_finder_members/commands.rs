@@ -119,6 +119,18 @@ pub(in crate::gameplay_transport) async fn execute(
     let fence = admitted.item_fence?;
     let actor = admitted.runtime_actor?;
     let permit = owner.spell_lane_permit().await?;
+    // A background read can own the single ready holder. Retry only checkout;
+    // once a transaction starts, its unknown outcome must never be re-executed.
+    let retry = crate::gameplay_transport::AdmissionRetryBudget::for_command(owner.root);
+    let pass = retry
+        .retry_unavailable(async || {
+            owner
+                .root
+                .try_issue_semantic_pass()
+                .map_err(|_| crate::gameplay_transport::connection::AdmissionRefusal::Unavailable)
+        })
+        .await
+        .ok()?;
     let runtime = owner.runtime.lock().await;
     if !actor_is_current(&runtime, admitted) {
         return Some((false, Vec::new()));
@@ -141,7 +153,6 @@ pub(in crate::gameplay_transport) async fn execute(
     hash.update(command_type.to_be_bytes());
     hash.update(payload);
     let binding = hash.finalize().into();
-    let pass = owner.root.try_issue_semantic_pass().ok()?;
     let mut context = (owner, runtime.as_deref());
     let outcome = pass.run_with_context(&mut context, move |holder, deadline, context| {
         Box::pin(async move {

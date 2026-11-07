@@ -49,6 +49,7 @@ def claim_catalogue(root):
         key = claim['identity']['key']
         if key in {
                 'oteryn:reward-claim.kv.madmageroom3',
+                'oteryn:reward-claim.kv.powerring2',
                 'oteryn:reward-claim.kv.timering3',
                 'oteryn:reward-claim.kv.trollcave1',
                 'oteryn:reward-claim.kv.weddingring1'}:
@@ -65,6 +66,16 @@ def claim_catalogue(root):
             claim['data_holds'] = [{'category': 'item', 'code': 'ITEM_SEMANTICS_MISSING',
                 'item': f'oteryn:item.tibia.i{item}', 'placement_index': 0, 'reason': 'waiting',
                 'reward_field': 'items', 'reward_index': 0}]
+        # completion242 records the historical SOURCE frame, independently of
+        # ITEMHOLD-Q's live Item/charge admissions. Keep canonical holds and native
+        # contents intact; only the SOURCE compiler consumes this private view.
+        historical = {
+            'oteryn:reward-claim.kv.ornamentedshield': ['item', 'source'],
+            'oteryn:reward-claim.kv.present_box': ['item'],
+            'oteryn:reward-claim.kv.triangletower': ['item'],
+        }.get(claim['identity']['key'])
+        if historical is not None:
+            claim['_source_hold_categories'] = historical
     return claims
 
 
@@ -124,7 +135,9 @@ def build_records(quests, claims, readiness_reports=None, gates=None, gate_check
             canonical.append({'family': 'RewardClaim', **copy.deepcopy(claim['identity'])})
             if claim.get('definition_profile') == 'authored_variant_v1':
                 issues.append({'code': 'claim_native_lowering_missing', 'source_key': ref['key']})
-                for category in sorted({hold['category'] for hold in claim['data_holds']}):
+                categories = {hold['category'] for hold in claim['data_holds']}
+                categories.update(claim.get('_source_hold_categories', []))
+                for category in sorted(categories):
                     code = {'source': 'claim_source_data_missing', 'item': 'claim_item_semantics_missing'}[category]
                     issues.append({'code': code, 'source_key': ref['key']})
             elif claim['readiness'] != 'ready':

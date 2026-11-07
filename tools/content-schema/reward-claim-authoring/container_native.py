@@ -127,6 +127,9 @@ def full_charge_leaf(item, pilot_key, position, key, raw_count):
     Missing native timed state means full definition values; this does not
     authorize partial source charges or make a held Item materializable.
     """
+    from itemhold_charge_precedence import qualifies
+    if qualifies(item, pilot_key, position, key, raw_count):
+        return True
     binding = FULL_CHARGE_LEAVES.get(pilot_key)
     if binding is None:
         return False

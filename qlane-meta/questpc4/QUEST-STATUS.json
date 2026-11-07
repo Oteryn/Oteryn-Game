@@ -10287,7 +10287,7 @@
     "merge_validation": "Resolved two scenario fixture overlaps by retaining both native tower and native Tomb switch branches; formatting and diff checks only. Combined PG/check/clippy not rerun because owner requires immediate push and stop; r2 owns subsequent validation."
   },
   "full_dependent_validation": {
-    "status": "AUTHORING_MAIN_MERGE_THEN_FULL_NEXTEST",
+    "status": "MAIN_MERGE_REGENERATED_FULL_NEXTEST_STARTING",
     "owner_rule_at": "2026-11-07 15:47 UTC",
     "direct_packages": [
       "oteryn-game-server",
@@ -10324,6 +10324,50 @@
     ],
     "rule": "Before every push: nextest all touched crates plus reverse normal workspace dependencies with PG. Collect all failures, group/fix all, rerun full set, then one push. Merge main every few hours.",
     "source": "Owner standing instruction supersedes earlier focused-only/no-full-suite/push-before-full-green exceptions.",
-    "pending_slice": "paradox_upper_batch_27 provenance fix compiled run stopped in favor of full merged-head validation; no new PG result claimed."
+    "pending_slice": "paradox_upper_batch_27 provenance fix compiled run stopped in favor of full merged-head validation; no new PG result claimed.",
+    "main_merge_target": "bbb3e06d04875fc1e63f024b853194f7580cc875",
+    "nextest_command_script": "/tmp/questpc4-full-dependent-nextest.sh",
+    "regeneration_log": "/tmp/questpc4-main-regen.log",
+    "push_gate": "All 20 packages must complete full nextest with PostgreSQL; collect every failure, repair by cause, rerun entire package set before one push.",
+    "merged_closure_verification": {
+      "packages": 20,
+      "direct_packages_unchanged": true,
+      "proof": "/tmp/questpc4-merged-dependent-crates.txt",
+      "command": "cargo tree -i <each direct crate> -e normal --workspace --prefix none | awk {print $1} | sort -u"
+    },
+    "additional_authoring_red": {
+      "command": "python3 tools/content-schema/quest-authoring/test_qengine_rewards.py",
+      "tests": 22,
+      "failures": 2,
+      "duration_seconds": 8.587,
+      "log": "/tmp/questpc4-main-qengine-authoring-red.log",
+      "root_causes": [
+        "main NX5 catalogue versus lane quest catalogue merge",
+        "i133 materializable assertion before provider regeneration"
+      ]
+    },
+    "latest_owner_exception": "REVOKED by latest owner correction: automated push reminder predates full-dependent rule; no WIP push. Finish all tests, grouped repairs, rerun, then one push.",
+    "compile_proof": "cargo run --locked -q -p oteryn-game-server --example materialize_content_world_project_v2 reached runtime and produced corpse/cheese/consumable/ranged/npc presence manifests; merged production dependencies compiled.",
+    "red_points": [
+      "test_qengine_rewards_outputs_reproduce_and_validate: content/cosmetics/outfits/authoring.json differs from generated quest catalogue",
+      "test_every_exchange_item_has_native_custody_facts: AssertionError: False is not true : oteryn:item.tibia.i133"
+    ],
+    "cosmetics_authoring": {
+      "tests": 23,
+      "failures": 0,
+      "seconds": 10.16,
+      "log": "/tmp/questpc4-main-qengine-authoring-green.log",
+      "outfits": 77,
+      "mounts": 8,
+      "grants": 232,
+      "descriptor_bytes": 408
+    },
+    "world_pin": {
+      "digest": "b2400c60f3a08b751ce3edee7a1ea7979c0fcc94a9cb2fefcab9d6a558d125e6",
+      "log": "/tmp/questpc4-main-pin-refresh.log",
+      "generated_with": "cargo +1.99.1 run --locked --release -p oteryn-world-bundle-compiler -- pin-refresh ."
+    },
+    "content_check_collection_log": "/tmp/questpc4-main-content-checks.log",
+    "nextest_log": "/tmp/questpc4-dependent-nextest-main-1.log"
   }
 }

@@ -44,7 +44,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         // One hold across the attempts of an epoch, so a retry is counted once.
         let mut settled_death = None;
-        for _ in 0..EXPIRY_ATTEMPTS {
+        let mut attempts = 0;
+        while attempts < EXPIRY_ATTEMPTS {
             // Timeout/defeat may return an offline actor while its original
             // grace timer sleeps. Retry through the shared registry, retaining
             // the original deadline and never releasing the terminal source.
@@ -57,6 +58,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 *held = None;
                 return GraceExpiryResult::Unknown;
+            }
+            // Poll captured staff decisions while the original grace is held.
+            // A forced release owns the same exact epoch; it does not expire it early.
+            match Box::pin(self.release_staff_session(admitted)).await {
+                GraceExpiryResult::NotApplicable => {}
+                result => return result,
             }
             let facts = {
                 let runtime = self.runtime.lock().await;
@@ -104,11 +111,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.wait_grace(
                     actor,
                     session,
-                    Duration::from_secs(ahead).saturating_add(EXPIRY_SLACK),
+                    Duration::from_secs(ahead)
+                        .saturating_add(EXPIRY_SLACK)
+                        .min(Duration::from_secs(1)),
                 )
                 .await;
                 continue;
             }
+            // Observing the same fixed grace is not a semantic release attempt.
+            // Keep the existing bounded retry budget for actual expiry work.
+            attempts += 1;
             // ATTACK0-RL-03: a closed client stays in the world until its in-fight deadline ends.
             // Each hold step runs the melee pass; the whole hold counts as one attempt.
             if self.hold_while_in_fight(actor, session).await {

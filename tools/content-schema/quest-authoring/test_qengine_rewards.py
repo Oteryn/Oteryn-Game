@@ -102,7 +102,9 @@ class QuestRewards(unittest.TestCase):
             self.assertEqual((row['female']['id'],row['male']['id']),looks)
             self.assertEqual(row['addon_count'],2)
         mappings=self.author['document']['grant_mappings']
-        for row in outfits.values():
+        quest_outfits = [row for key, row in outfits.items() if key.startswith('oteryn:outfit.')]
+        self.assertEqual(len(quest_outfits), 63)
+        for row in quest_outfits:
             for addon in range(row['addon_count']+1):
                 self.assertEqual(sum(m['grant_key']==f"{row['key']}/quest-grant/{addon}" for m in mappings),1)
 
@@ -110,6 +112,20 @@ class QuestRewards(unittest.TestCase):
         gameplay=json.loads(self.outputs['content/spells.manifest.json'])
         self.assertEqual(self.author['document']['content_revision'],
                          gameplay['build_training']['content_revision'])
+
+    def test_maintained_legacy_grants_reject_changed_provenance_or_effect(self):
+        cosmetics = q.load_module('qengine_merge_guard_cosmetics',
+            'tools/content-schema/cosmetics-authoring/cosmetics_authoring.py')
+        for field, value in [('compatible_provenance', ['untrusted']),
+                ('target', {'kind': 'Addon',
+                    'outfit_key': 'oteryn:content.outfit.revenant_outfits', 'addon': 1})]:
+            with self.subTest(field=field):
+                changed = copy.deepcopy(self.author)
+                grant = next(row for row in changed['document']['grant_mappings']
+                    if row['grant_key'] == 'oteryn:appearance-grant/quest/soul-war/revenant-base')
+                grant[field] = value
+                with self.assertRaisesRegex(ValueError, 'conflicting maintained quest grant'):
+                    q.preserve_maintained_cosmetics(changed, cosmetics)
 
     def test_unknown_fields_and_invalid_masks_counts_are_rejected(self):
         validator=Draft202012Validator(self.schema)
@@ -267,7 +283,7 @@ class QuestRewards(unittest.TestCase):
             ('soul-war/revenant-base','revenant','crystal-201189f-soul-war-revenant-v1'),
             ('rotten-blood/decaying-defender-base','decaying_defender','owner-pr2784-decaying-defender-base-v1')]:
             row=mappings['oteryn:appearance-grant/quest/'+path]
-            self.assertEqual(row['target'],{'kind':'Outfit','outfit_key':'oteryn:outfit.'+outfit})
+            self.assertEqual(row['target'],{'kind':'Outfit','outfit_key':'oteryn:content.outfit.'+outfit+'_outfits'})
             self.assertEqual(row['compatible_provenance'],[provenance])
         promotion=next(p for p in self.author['promotions'] if p['path']=='/grant_mappings')
         self.assertEqual(promotion['source_kind'],'OWNER_DECISION')

@@ -139,6 +139,7 @@ fn replacement_snapshot_is_atomic_and_poisoned_on_invalid_transfer_or_domain()
             block_on(async {
                 for fault in 0..4 {
                     let (client, mut server) = tokio::io::duplex(256 * 1024);
+                    let (frames_sent, frames_ready) = tokio::sync::oneshot::channel();
                     let peer = tokio::spawn(async move {
                         let initial =
                             encode_world_map_snapshot(&map(0, 1)).map_err(|e| format!("{e:?}"))?;
@@ -183,7 +184,11 @@ fn replacement_snapshot_is_atomic_and_poisoned_on_invalid_transfer_or_domain()
                         }
                         for frame in frames {
                             write_frame(&mut server, &frame).await?;
+                            tokio::task::yield_now().await;
                         }
+                        frames_sent
+                            .send(())
+                            .map_err(|_| "replacement receiver ended")?;
                         let mut rest = vec![];
                         let _ = server.read_to_end(&mut rest).await;
                         Ok::<(), BoxError>(())
@@ -198,6 +203,9 @@ fn replacement_snapshot_is_atomic_and_poisoned_on_invalid_transfer_or_domain()
                         session.step(StepDirection::North).await,
                         Err(SessionError::SessionUnusable)
                     ));
+                    // Begin or Chunk can be rejected before the peer writes Commit.
+                    // Keep the reader alive until the complete invalid transfer is sent.
+                    frames_ready.await?;
                     drop(session);
                     peer.await??;
                 }

@@ -5,6 +5,7 @@ producer promotes the requested quest catalogue; it never contacts a donor host.
 """
 from __future__ import annotations
 import argparse
+import copy
 import hashlib
 import importlib.util
 import json
@@ -54,6 +55,67 @@ def load_module(name, path):
     sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
+
+
+def preserve_maintained_cosmetics(generated, cosmetics):
+    """Extend tree-first authoring without replacing accepted Item grants or Mounts."""
+    path = ROOT / 'content/cosmetics/outfits/authoring.json'
+    if not path.exists():
+        return generated
+    maintained = json.loads(path.read_bytes())
+    cosmetics.validate(maintained)
+    merged = copy.deepcopy(maintained)
+    document = merged['document']
+    document['content_revision'] = generated['document']['content_revision']
+    existing = {row['key']: row for row in document['outfits']}
+    origins = {}
+    for index, row in enumerate(generated['document']['outfits']):
+        key = row['key']
+        if key in existing:
+            if existing[key] != row:
+                raise ValueError('conflicting maintained quest Outfit: ' + key)
+            continue
+        target = len(document['outfits'])
+        document['outfits'].append(copy.deepcopy(row))
+        existing[key] = row
+        origins[target] = index
+    mappings = {row['grant_key']: row for row in document['grant_mappings']}
+    def appearance(target):
+        row = existing[target['outfit_key']]
+        return target['kind'], row['female']['id'], row['male']['id'], target.get('addon')
+    for row in generated['document']['grant_mappings']:
+        previous = mappings.get(row['grant_key'])
+        if previous is not None:
+            if (appearance(previous['target']) != appearance(row['target'])
+                    or previous['compatible_provenance'] != row['compatible_provenance']):
+                raise ValueError('conflicting maintained quest grant: ' + row['grant_key'])
+        else:
+            document['grant_mappings'].append(copy.deepcopy(row))
+            mappings[row['grant_key']] = row
+    retained = {row['path']: row for row in maintained['promotions']}
+    authored = {row['path']: row for row in generated['promotions']}
+    promotions = []
+    for pointer in sorted(cosmetics.promotion_paths(document)):
+        value = cosmetics.pointer(document, pointer)
+        previous = retained.get(pointer)
+        if previous is not None and previous['value'] == value:
+            promotions.append(copy.deepcopy(previous))
+            continue
+        source_pointer = pointer
+        if pointer.startswith('/outfits/'):
+            _, family, index, field = pointer.split('/')
+            source_pointer = f'/{family}/{origins[int(index)]}/{field}'
+        promotion = copy.deepcopy(authored[source_pointer])
+        promotion.update(path=pointer, value=value)
+        if pointer == '/grant_mappings':
+            note = 'content/quests/authoring/shared-cosmetics.md'
+            promotion.update(decision='owner:questpc4:preserve-published-cosmetics:2026-11-07',
+                source={'reference': note, 'revision': '2026-11-07',
+                        'sha256': sha((ROOT / note).read_bytes())})
+        promotions.append(promotion)
+    merged['promotions'] = promotions
+    cosmetics.validate(merged)
+    return merged
 
 
 def build():
@@ -138,6 +200,7 @@ def build():
             'state': 'PROMOTED', 'decision': DECISION,
             'source_kind': 'OWNER_DECISION' if path.startswith('/fallbacks/') or path=='/grant_mappings' else 'STRUCTURED_REFERENCE_DATA',
             'source': citation})
+    author = preserve_maintained_cosmetics(author, cosmetics)
     callbacks = []
     def storage(track, before, after, maximum=None, preserve=False):
         return {'track': track, 'minimum': before, 'maximum': before if maximum is None else maximum,
@@ -524,7 +587,9 @@ def build():
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
-    native_cosmetics=cosmetics.build(author, appearance/'manifest.json')
+    native_cosmetics=cosmetics.provisioning_input(
+        ROOT/'content/cosmetics/outfits/authoring.json', appearance/'manifest.json',
+        ROOT/'content/cosmetics/outfits/native-cosmetics.json', authoring_bytes=encoded(author))
     gameplay['schema']='OTERYN_NATIVE_GAMEPLAY_MANIFEST/v6'
     gameplay['cosmetics']={'path':'cosmetics/outfits/native-cosmetics.json','sha256':sha(native_cosmetics)}
     generated = {'content/cosmetics/outfits/authoring.json': encoded(author),

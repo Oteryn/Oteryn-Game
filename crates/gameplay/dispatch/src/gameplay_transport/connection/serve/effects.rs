@@ -33,6 +33,17 @@ where
     {
         return Err(ServeEnd::Disconnected);
     }
+    refresh_newhaven_inventory(
+        stream,
+        authority,
+        session.actor,
+        &mut session.admitted,
+        session.item_view.as_mut(),
+        session.container_views.as_mut(),
+        &mut session.sequence,
+    )
+    .await
+    .ok_or(ServeEnd::Disconnected)?;
     if tutorial_notices_transport::emit(
         stream,
         authority,

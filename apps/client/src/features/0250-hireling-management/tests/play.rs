@@ -86,7 +86,23 @@ fn hireling_management_crosses_the_real_session_loop()
                     use oteryn_client_ui::hireling_management::{Intent, select};
                     let (link, commands, outbox) = play_channel();
                     outbox.hireling_management_initialize(true);
-                    link.hireling_management_request(Intent::List);
+                    // The ordinary Ctrl+Shift+H entry point must choose owned identity
+                    // management when capability 250 is admitted, before outfit submission.
+                    use oteryn_input_actions::{
+                        ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent,
+                    };
+                    assert!(link.hireling_input(&[NormalizedInputEvent::Key {
+                        code: KeyCode::new(11)?,
+                        state: ButtonState::Pressed,
+                        modifiers: Modifiers::one(Modifier::Control).with(Modifier::Shift),
+                        repeat: false,
+                    }]));
+                    assert!(link.hireling_management_panel().open);
+                    assert!(!link.hireling_panel().open);
+                    assert_eq!(
+                        link.hireling_management_panel().pending,
+                        Some(oteryn_client_ui::hireling_management::wire::Request::List),
+                    );
                     let task = tokio::spawn(run_session(Features, commands, outbox));
                     async fn ready(link: &crate::play::PlayLink) -> Result<(), tokio::time::error::Elapsed> {
                         tokio::time::timeout(std::time::Duration::from_secs(3), async {
@@ -100,6 +116,10 @@ fn hireling_management_crosses_the_real_session_loop()
                     assert_eq!(panel.entries.len(), 1);
                     assert_eq!(panel.entries[0].name, "Alice");
                     assert_eq!(panel.entries[0].colors, [1, 2, 3, 4]);
+                    let text = oteryn_client_ui::hireling_management::panel_text(&panel);
+                    assert!(
+                        text.contains("Alice") && text.contains("Hireling identity and outfits")
+                    );
                     assert!(select(&mut crate::play::mailbox::lock(&link.mailbox).hireling_management, 0));
                     link.hireling_management_request(Intent::Outfit { look_type: 1109, colors: [5, 6, 7, 8] });
                     ready(&link).await?;
