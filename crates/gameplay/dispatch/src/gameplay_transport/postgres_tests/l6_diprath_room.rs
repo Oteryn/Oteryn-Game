@@ -108,11 +108,6 @@ pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot
     use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_scene};
     let start = start()?;
     let mut crops = super::l6_native_signs::crops()?;
-    let source13 = include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../../content/world/placements/region-z13-x129-y127.b3"
-    ))
-    .as_slice();
     let source15 = include_bytes!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../content/world/placements/region-z15-x129-y127.b3"
@@ -120,9 +115,10 @@ pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot
     .as_slice();
     for s in SWITCHES {
         for (p, ids) in [(s.at, vec![s.ground, 2772]), (s.start, vec![s.ground])] {
+            let (bytes, region) = super::l6_shared_gate_native::region((p.0, p.1, 13))?;
             crops.push(NativeCrop {
-                bytes: source13,
-                region: (13, 129, 127),
+                bytes,
+                region,
                 bounds: (p.0, p.1, p.0 + 1, p.1 + 1),
                 start: (start.x, start.y),
                 expected: vec![ExpectedTile {

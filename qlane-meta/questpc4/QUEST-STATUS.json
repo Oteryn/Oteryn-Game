@@ -7254,10 +7254,10 @@
       "reuse": "No shared-count/personal OR implementation found. PC3 conditional effects concern already-locked Quest operands rather than shared World leases, and published enum tags conflict; retain local published tags unchanged.",
       "tests": "Three composed native cases: 6 switches+7 ordered signs refuse; 7 switches alone open; 8 ordered signs alone open. All USE/STEP real; sealed pocket setup only, no SQL-seeded flags/counts; source landing11/Rootprogress/replay. Existing native threshold gate regression and source-expiry regression.",
       "scope": "Exact interaction pockets only, not complete maze or whole quest qualification. Do not implement until batch24 green pushed.",
-      "status": "COMPILED_FIXTURE_RED_WIP_CHECKPOINT",
+      "status": "COMPILED_BEHAVIORAL_RED_WIP_CHECKPOINT",
       "previous_pushed_head": "806b8370e13c9fcb9eef8445c98ca8a173dba903",
-      "red_session": 38516,
-      "red_log": "/tmp/questpc4-diprath-room-red.log",
+      "red_session": 56106,
+      "red_log": "/tmp/questpc4-diprath-room-red3.log",
       "whole_entries_remaining": 17,
       "next_sql": 1259,
       "red": {
@@ -7268,6 +7268,27 @@
         "error": "l6_world_pickups/world.rs:213 every expected source tile is present:0 vs1",
         "cause": "Selected switches at y32507 belong to adjacent source region y126, not y127. Correct per-tile source region; preserve original tile presence assertion.",
         "log": "/tmp/questpc4-diprath-room-red.log"
+      },
+      "checkpoint_head": "c6cc06e20",
+      "fixture_correction": {
+        "status": "SOURCE_VERIFIED_RERUN_COMPILING",
+        "resolver": "Reuse l6_shared_gate_native::region by full (z,x/256,y/256), exposed to sibling fixture. No duplicate region routing.",
+        "source_validation": "All14 original switch/approach tiles independently decoded: exact IDs, no House, no attrs.",
+        "regions": {
+          "13/128/127": "5ce2873287152822e9aa7bdef0860e65b40d12d31ac796e0cd9652340f25594a",
+          "13/129/126": "a8e60bc6f11a952be424f06e3c1b5b468580afe30ab2068284abbe06936ba6b1",
+          "13/129/127": "bb2e90d7e09824f6404e9aaab3d28c46219e110e3d7bea2df4b2a495ee9db768"
+        },
+        "obsolete_build": "red2 stopped only owned Cargo151849 and rustc151885 before final compile; no result claimed."
+      },
+      "behavioral_red": {
+        "postgres_version": "18.6",
+        "marker": "POSTGRES_DATABASE_READY l6_diprath_room",
+        "seconds": 57.36,
+        "compiled": "4m31s",
+        "actual": "Eight real ordered native sign USEs commit; native STEP remains33093,32589,z15",
+        "expected": "Literal source goal33092,32590,z15 via personal completion alternative",
+        "log": "/tmp/questpc4-diprath-room-red3.log"
       }
     }
   },

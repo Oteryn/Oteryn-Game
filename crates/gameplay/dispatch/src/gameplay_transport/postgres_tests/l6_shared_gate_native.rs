@@ -239,7 +239,7 @@ fn spec(name: &str) -> TestResult<GateCase> {
         _ => return Err("unselected native threshold transport".into()),
     })
 }
-fn region(pos: Point) -> TestResult<RegionSource> {
+pub(super) fn region(pos: Point) -> TestResult<RegionSource> {
     Ok(match (pos.2, pos.0 / 256, pos.1 / 256) {
         (11, 129, 128) => (
             include_bytes!(concat!(
