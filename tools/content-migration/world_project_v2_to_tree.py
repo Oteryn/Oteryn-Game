@@ -171,6 +171,9 @@ def apply_encounter_corpse_admissions(definitions, root=ROOT):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     module.apply_admissions(definitions, root)
+    sys.path.insert(0, str(root / "tools/content-schema/native-gameplay"))
+    import questpc2_soul_loot_items
+    questpc2_soul_loot_items.apply_admissions(definitions, root)
 
 
 def main() -> int:
@@ -704,6 +707,8 @@ def main() -> int:
     # ITEMHOLD-Q changes shared shards, but no selected shop/potion record.
     # Repin only after proving the old digest and every selected row against
     # the exact pre-change base; ordinary source-capture validation stays strict.
+    import questpc2_soul_loot_items
+    questpc2_soul_loot_items.refresh_input_pins(ROOT)
     from grizzly_shop_profiles import refresh_canonical_input_pins
     refresh_canonical_input_pins(ROOT, 'ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb')
     import condition_potion_profiles

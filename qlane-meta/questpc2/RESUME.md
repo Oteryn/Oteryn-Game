@@ -1,3 +1,30 @@
+# COMPILING WIP20:45: push immediately; source Item generation not complete
+
+Latest owner HARD rule: push compiling state; nofullsuite; checkworkspacealltargets
+PASS21.16s,fmtPASS. Commit/pushcurrentWIP now. Lastpushc8b42aba3 at20:00.
+Batch BATCH-soul-loot-authoring-checkpoint-2026-11-07.json lists exact4REDpoints:
+Native/canonical weights33921 229vs230,33952 101vs110,34109 1500vs150; and
+frozen14canonical-record hashdiff. Do NOT retune existing admitted nativephysics
+or weaken tests. Existing Source guardchecks remain unchanged; newtest isRED.
+Newlocaladapter33lines selects43/44SoulWarlootitems, protects49271 sourcepotion
+canonicalfalse/nativeTrue. Planned30newcanonical admissions. Reuses nativegoal
+importer via optional caller selector; no newruntimeengine. Shared bigfeatures
+requestedqengine2 (templatehooks/privatebossloot/alternateXML/nativeSOURCEbridge).
+
+GEN: unchangedWorldmaterialization cancelled; committedWorldProject reused.
+Canonicaltree nowwritten and protected shop/potion receipts rebound fromexactc8
+baseline afterselected-record byteequality. FullGEN thenfailedat prey_difficulty
+cargo prey_time_sim dueENOSPC; allcompilererrorsdiskonly, no newOOM. Retired5.6GB
+inactiveowncaches, root~4.9GBfree. ResumefromPrey+spell_outputs+remainingrepo
+AUTHORING_TOOLS; don'trepeat completedWorldProjection/treegeneration. Logs
+/tmp/questpc2-soul-loot-generation-complete.log. Source testlog
+/tmp/questpc2-soul-loot-checkpoint-focused.log. Newfrozen14 digest mayreflect
+legitimate source-generator output; inspect exactfielddiffbeforefixing. Strong
+newtestpartitions all44sourceitems andprotectsheld49271 andexistingknownfacts.
+Noexistingtestsmodified. Fullscope3qualified2activelyinprogress24notstarted6skip.
+Asyncownershipquestionpending; all12newlaneremoteheads main1ae, no packetsto
+compare. Awaitcoordinator transfers. wpkgcollectsbranch,noPR. Continueafterpush.
+
 # GREEN19:59: publishing six Soul War source entry configurations
 
 Lastpushc0f2c94f73e226668b10eff8d421d9fd6096bca8 at19:51. Small sourcehelper

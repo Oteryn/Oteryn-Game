@@ -22,9 +22,10 @@ def importer(root):
     return encounter_loot_item_admissions
 
 
-def selected(root=ROOT):
-    goals = json.loads((root / 'tools/content-schema/quest-authoring/samples/native-kill-goals.json').read_bytes())
-    creatures = {o['creature'] for g in goals['goals'] for o in g['origins']}
+def selected(root=ROOT, creatures=None):
+    if creatures is None:
+        goals = json.loads((root / 'tools/content-schema/quest-authoring/samples/native-kill-goals.json').read_bytes())
+        creatures = {o['creature'] for g in goals['goals'] for o in g['origins']}
     document = json.loads((root / 'tools/content-schema/native-gameplay/loot-tables.json').read_bytes())
     tables = {r['identity']['key']: r for r in document['tables']}
     keys, found = set(), set()
@@ -94,8 +95,8 @@ def apply_admissions(definitions, root=ROOT):
             definition.update(replacement)
 
 
-def admit_native(root, generated, profile_path, manifest_path, order, canonical):
-    keys = {f'oteryn:item.tibia.i{i}' for i in selected(root)}
+def admit_native(root, generated, profile_path, manifest_path, order, canonical, *, item_ids=None):
+    keys = {f'oteryn:item.tibia.i{i}' for i in (selected(root) if item_ids is None else item_ids)}
     definitions = {}
     for path in (root / 'content/items/definitions').glob('items-*.json'):
         for row in json.loads(path.read_bytes())['records']:
