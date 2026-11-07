@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "scope": "Five exact Devil Helmet acquisitions: keys3610/3667 and three once treasures. Whole utility/grate/combat route remains active.",
+  "red": {
+    "postgres_server_version": "18.6",
+    "test_seconds": 3.69,
+    "error": "missing exact source acquisition selector5016"
+  },
+  "green": {
+    "filter": "questpc5_devil_helmet_five_source_acquisitions_and_cold_replay",
+    "postgres_server_version": "18.6",
+    "test_seconds": 82.96,
+    "registration_seconds": 3.707207587,
+    "assertions": "Every exact claim executes real USE, atomic/stale-fence refusals, key bindings or exact quantities, custody, duplicate replay and cold reconnect."
+  },
+  "checks": {
+    "physical_source_tests": 3,
+    "source_reproduction": "PASS",
+    "cargo_fmt": "PASS",
+    "cargo_check_dispatch": "PASS14.47s",
+    "strict_clippy_dispatch_all_targets_all_features": "PASS39.36s",
+    "repository_pin_refresh_and_check": "PASS"
+  },
+  "world_digest": "3fe4f02d9c01f2933270d2871b6f20095341a22c5a180dabbf93dfc27e5523f9"
+}

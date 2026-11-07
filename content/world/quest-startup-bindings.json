@@ -165,6 +165,42 @@
     },
     {
       "position": [
+        32459,
+        32144,
+        15
+      ],
+      "item": 2472,
+      "attribute": "unique",
+      "value": 6139,
+      "source": "data-global/startup/tables/chest.lua",
+      "line": 1659
+    },
+    {
+      "position": [
+        32465,
+        32148,
+        15
+      ],
+      "item": 2480,
+      "attribute": "unique",
+      "value": 6140,
+      "source": "data-global/startup/tables/chest.lua",
+      "line": 1666
+    },
+    {
+      "position": [
+        32466,
+        32148,
+        15
+      ],
+      "item": 2480,
+      "attribute": "unique",
+      "value": 6141,
+      "source": "data-global/startup/tables/chest.lua",
+      "line": 1673
+    },
+    {
+      "position": [
         32468,
         32119,
         14
@@ -186,6 +222,30 @@
       "value": 30034,
       "source": "data-global/startup/tables/lever.lua",
       "line": 1022
+    },
+    {
+      "position": [
+        32576,
+        32216,
+        15
+      ],
+      "item": 4240,
+      "attribute": "unique",
+      "value": 5016,
+      "source": "data-global/startup/tables/chest.lua",
+      "line": 492
+    },
+    {
+      "position": [
+        32589,
+        32100,
+        14
+      ],
+      "item": 387,
+      "attribute": "unique",
+      "value": 5017,
+      "source": "data-global/startup/tables/chest.lua",
+      "line": 500
     },
     {
       "position": [
