@@ -219,7 +219,7 @@
     "title": "Nomads Mini World Change",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "The exact southern-camp reward needs Silver Amulet3054, which is canonically nonmaterializable. Ham/Fish are still ambiguous in the selected recipe; splitting the Fur Bag into independent rewards would also change the source container.",
+    "blocker": "Active shared-engine reuse: fresh questpc8 implements atomic independent backpack outputs (eb196696c, canonical shared migration1300). Actual PostgreSQL RED3.70s confirms current ItemReward rejects backpack_outputs. Reuse engine first, then author selected three-camp once route with separate rewards; global daily camp state belongs to world lanes.",
     "from_lanes": [
       "questpc2"
     ],
@@ -241,6 +241,13 @@
       "evidence": "content/encounters/world-changes/owner-catalogue.json",
       "reviewed_wvar_sha": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34",
       "variant_status_elsewhere": "QUALIFIED; nomads variant recipe in wvar"
+    },
+    "independent_outputs_progress": {
+      "source_commit": "eb196696c7d2606656f07cc72bf850ecdec81e10",
+      "source_current_branch": "origin/claude/happy-davinci-ijz3wy-questpc8@4724cec37",
+      "shared_migration": "1300_questpc8_reward_backpack_outputs.sql",
+      "red_log": "/tmp/questpc5-backpack-outputs-red.log",
+      "whole_recipe_qualified": false
     }
   },
   {
