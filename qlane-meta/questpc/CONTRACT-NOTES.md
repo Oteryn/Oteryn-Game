@@ -355,3 +355,11 @@ no personal claim or additional party counter is substituted. Primary URLs:
 https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/movements/others/remove-create_item.lua
 https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/movements/others/teleport.lua
 This checkpoint publishes provenance only; route implementation remains uncommitted.
+
+Route verification correction: portal38003 alone already retains its exact native
+teleport attribute. Portal38004 and the two internal portals lack startup selectors.
+Preserve38003 as a native regression; restore five anchors/seven callbacks only.
+StepOut map effects require the existing reversible flag; authored departures now
+use it without relaxing validation. Pin compiler and dispatch test rustc must run
+serially in the16GiB environment after an observed OOM kill. Pre-PG registry/setup/
+compile failures are explicitly excluded from PostgreSQL proof counts.

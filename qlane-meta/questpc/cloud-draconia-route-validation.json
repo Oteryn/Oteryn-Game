@@ -1,0 +1,51 @@
+{
+  "result": "FIVE_ACTUAL_PG_RED_GREEN_BUILD_RETRY",
+  "parent": "fe6f732a7",
+  "new_entries": [
+    29002,
+    29003,
+    38004,
+    38005,
+    38006
+  ],
+  "native_regression": 38003,
+  "pg_red": {
+    "version": "18.6",
+    "failed": 5,
+    "passed": 0,
+    "case_seconds": {
+      "29002": 47.84,
+      "29003": 46.84,
+      "38004": 46.22,
+      "38005": 46.41,
+      "38006": 47.05
+    },
+    "total_seconds": 234.36,
+    "reason": "Two real admitted players: closed wall refuses guest but plate fails to open it. Three portals: real STEP remains at source instead of destination."
+  },
+  "excluded_probes": "Initial ground palette pre-PG failure, initial party MovementNonCardinal setup failures, and portal38003 synthetic missing-attribute probe are not counted. Corrected party initialization uses pinned test spawn plus real admission/lease; native38003 retains its actual teleport attribute. A first GREEN attempt rejected missing reversible-map flags before PG (0.04s); corrected data uses the existing guard. A subsequent dispatch compile was OOM-killed while the pin compiler ran; cgroup16GiB,oom_kill1. Heavy jobs are now serialized. Neither is counted as PG execution.",
+  "generation": "PASS seven callbacks/five bindings; original four bindings preserved; exactly28 quest provenance hash leaves changed; approval scope/core/admission unchanged",
+  "logs": {
+    "29002": {
+      "log": "qlane-meta/questpc/cloud-draconia-route-red-29002.log",
+      "sha256": "b33e6dac80ab59adc05d5581cdae58e84f5ef23114a192ec0b6ecfb6554ddfc1"
+    },
+    "29003": {
+      "log": "qlane-meta/questpc/cloud-draconia-route-red-29003.log",
+      "sha256": "35aba60987f3479711be5db7e188fe6e80dd517eba6b555ae0349d0cab0e3ab6"
+    },
+    "38004": {
+      "log": "qlane-meta/questpc/cloud-draconia-route-red-38004.log",
+      "sha256": "8ce135d74b8e3efb4cf40bf95049e4105a01f7222d44db2ac2728eb02aae946f"
+    },
+    "38005": {
+      "log": "qlane-meta/questpc/cloud-draconia-route-red-38005.log",
+      "sha256": "6e0066fc92a2f60aa2dc1a72ec4363a311ed7e57e8fe3faf2ccbb3ed039ff1a2"
+    },
+    "38006": {
+      "log": "qlane-meta/questpc/cloud-draconia-route-red-38006.log",
+      "sha256": "7d20aea858dc2f2a55f3d217a9dee9aac9c5aa32df14ef04ef9cf9a3576f852b"
+    }
+  },
+  "source_validation": "qlane-meta/questpc/cloud-draconia-route-source-validation.json"
+}

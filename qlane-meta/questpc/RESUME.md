@@ -1,3 +1,47 @@
+## Verified RED proof checkpoint — route implementation still uncommitted
+Five intended PostgreSQL18.6 RED cases234.36s are retained in
+cloud-draconia-route-validation.json and cloud-draconia-route-red-{UID}.log.
+New implementation/generation remains in the working tree, not this checkpoint.
+Native38003 is an existing teleport regression; only five new anchors/seven
+callbacks are needed. Departure data now sets the existing reversible-map flag;
+no validator weakening. First GREEN0.04s registry failure was pre-PG, excluded.
+
+Current fresh pin refresh session65877 is still running; wait to exit0, then
+rebuild dispatch test binary ALONE. Previous concurrent test compile was SIGKILL;
+cgroup memory.max17179869184,oom_kill1. Do not overlap pin compiler (~8GiB) with
+dispatch test rustc (~11GiB). Preserve CARGO_INCREMENTAL=0 to avoid disk exhaustion.
+Sessions55344/98922 ended101/1; do NOT reuse them. Log/tmp/questpc-draconia-route-green.log
+currently shows compile failure, not PG. Preserve candidate if useful, restart
+cargo test filter draconia_route_native_ after pins, then focused units/fmt/check/
+strict Clippy. Last pin success on identical world inputs was9865615f...; current
+run must complete before claiming fresh success. Actual new source files and
+checkpoint metadata are separate; no title/implementation qualification claimed.
+
+Then finish this slice, fetch/merge remote and push immediately; continue level25,
+NPC acquisition/fetish and shared container stock. Never end while entries remain.
+
+## Draconia route: five actual PG RED; GREEN verification running
+Five intended PostgreSQL18.6 RED cases234.36s: plates29002=47.84s/29003=46.84s,
+portals38004=46.22s/38005=46.41s/38006=47.05s. Proper admitted guest now reaches
+closed-wall Blocked, then missing plate effect fails. Earlier setup probes are
+excluded. Portal38003 already has the correct native teleport attribute; its
+fixture now retains it and it is a regression, not a new callback/binding.
+
+Production changes generated: seven movement callbacks, five exact native bindings
+(nine total including prior four). Producer validates native roots/nonhouses and
+pinned Lua; 28 source-provenance hash leaves only in quest shards. Approval scope,
+core digests, immutable inputs and native admission unchanged. Source doc:
+cloud-draconia-route-source-validation.json; batch:cloud-draconia-route-validation.json.
+
+GREEN compile/test session21194, log/tmp/questpc-draconia-route-green.log; pin
+refresh session88825 completed with unchanged world9865615f... . Ready marker
+/tmp/questpc-draconia-route-pins.ready gates actual PG until pins finish.
+Focused quests/world units + fmt/check/strict Clippy session96217 waits for test
+binary build; no concurrent Cargo builds. Latest pushed checkpointfe6f732a7 (~07:27UTC).
+Do not publish mechanic green until actual six-case PG and strict checks pass.
+Then continue level25 gate, NPC key acquisition/fetish exchange, shared container
+key3001 and final route composition. Do not end while actual entries remain.
+
 ## Draconia route provenance checkpoint — implementation still in progress
 Verified primary201189f sources against retained9f5a72 corpus: three entire files
 identical; portal rows38003-38006 semantically identical despite other table edits.

@@ -124,5 +124,92 @@
   ],
   "boundary": "No raw source copied into repository. Existing pinned corpus supports offline binding regeneration; four newer primary teleport rows are exactly equivalent. Route implementation and six-case verification remain in progress; no mechanic or title qualification claimed.",
   "result": "SOURCE_FACTS_VERIFIED",
-  "implementation_published": false
+  "implementation_published": false,
+  "native_existing_portals": [
+    {
+      "uid": 38003,
+      "position": [
+        32675,
+        31646,
+        10
+      ],
+      "destination": [
+        32725,
+        31589,
+        12
+      ]
+    }
+  ],
+  "native_unbound_anchors": [
+    {
+      "position": [
+        32669,
+        31653,
+        10
+      ],
+      "item": 1949,
+      "attribute": "unique",
+      "value": 38004,
+      "source": "data-global/startup/tables/teleport.lua",
+      "source_line": 654,
+      "map_path": "content/world/placements/region-z10-x127-y123.b3",
+      "map_sha256": "7331baedcd476d3bfefe37fc3e9b90529b69a549c096cc779314e4b9f7a15b30"
+    },
+    {
+      "position": [
+        32794,
+        31576,
+        5
+      ],
+      "item": 1949,
+      "attribute": "unique",
+      "value": 38005,
+      "source": "data-global/startup/tables/teleport.lua",
+      "source_line": 660,
+      "map_path": "content/world/placements/region-z05-x128-y123.b3",
+      "map_sha256": "bffd22fa63bda99acec4e01f745cc889f5921beb89b1697a4e6c9dec1dcef903"
+    },
+    {
+      "position": [
+        32794,
+        31595,
+        5
+      ],
+      "item": 431,
+      "attribute": "unique",
+      "value": 29003,
+      "source": "data-global/startup/tables/tile.lua",
+      "source_line": 2280,
+      "map_path": "content/world/placements/region-z05-x128-y123.b3",
+      "map_sha256": "bffd22fa63bda99acec4e01f745cc889f5921beb89b1697a4e6c9dec1dcef903"
+    },
+    {
+      "position": [
+        32810,
+        31595,
+        5
+      ],
+      "item": 431,
+      "attribute": "unique",
+      "value": 29002,
+      "source": "data-global/startup/tables/tile.lua",
+      "source_line": 2274,
+      "map_path": "content/world/placements/region-z05-x128-y123.b3",
+      "map_sha256": "bffd22fa63bda99acec4e01f745cc889f5921beb89b1697a4e6c9dec1dcef903"
+    },
+    {
+      "position": [
+        32812,
+        31576,
+        5
+      ],
+      "item": 1949,
+      "attribute": "unique",
+      "value": 38006,
+      "source": "data-global/startup/tables/teleport.lua",
+      "source_line": 666,
+      "map_path": "content/world/placements/region-z05-x128-y123.b3",
+      "map_sha256": "bffd22fa63bda99acec4e01f745cc889f5921beb89b1697a4e6c9dec1dcef903"
+    }
+  ]
 }

@@ -9209,10 +9209,11 @@
       "next": "Source pressure gates and four route portals, then level/NPC/container stock composition."
     },
     "draconia_source_route": {
-      "state": "source_equivalence_verified_portal_red_observed_party_probe_pending",
-      "source_validation": "qlane-meta/questpc/cloud-draconia-route-source-validation.json",
-      "implementation_published": false,
-      "next": "Finish six actual RED cases; pressure setup has been corrected. Then add eight source movement callbacks and six exact bindings, regenerate source proofs, run GREEN and strict checks."
+      "state": "five_intended_pg_red_verified_green_compile_retry_after_oom",
+      "validation": "qlane-meta/questpc/cloud-draconia-route-validation.json",
+      "native_regression": "38003 preserves existing native teleport; no duplicate callback",
+      "next": "Finish six-case GREEN and focused strict checks; commit/fetch/merge/push, then continue level/NPC/container stock.",
+      "scheduling": "16GiB cgroup: finish pin compiler before dispatch test compilation; CARGO_INCREMENTAL=0 retained"
     }
   },
   "cross_lane_qualified_elsewhere": {
