@@ -703,6 +703,9 @@ impl DurabilityRoot {
                     if !current {
                         return Ok(Err(NpcTradeError::AuthorityRejected));
                     }
+                    if !super::npc_travel::rank_admission::trade(&mut tx, fence.character_id, &request.cause.npc_key).await? {
+                        return Ok(Err(NpcTradeError::RequirementNotMet));
+                    }
                     let house_key=if hireling.is_some() {Some(super::house_hireling::audit::read_key(&mut tx,&fence).await?)} else {None};
 
                     if !grizzly::permitted(&mut tx, fence.character_id, &request).await? {

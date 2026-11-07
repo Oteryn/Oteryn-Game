@@ -27,6 +27,56 @@ class ConvertPlacementsTest(unittest.TestCase):
             self.assertEqual((cp.OUT / name).read_text(), text, name)
         self.assertEqual({p.name for p in cp.OUT.glob("*.json")}, set(self.files))
 
+    def test_l1_reward_npcs_use_only_the_global_source_cells(self):
+        expected = {
+            'oteryn:npc.cael': {'x':33028,'y':31513,'floor':10},
+            'oteryn:npc.cranky_lizard_crone': {'x':33192,'y':31044,'floor':6},
+            'oteryn:npc.palimuth': {'x':32801,'y':31223,'floor':7},
+            'oteryn:npc.yalahari': {'x':32801,'y':31188,'floor':7},
+        }
+        actual=[r['declaration'] for r in self.records if r['declaration']['npc'] in expected]
+        self.assertEqual(len(actual),4)
+        self.assertEqual({r['npc']:r['cell'] for r in actual},expected)
+        self.assertTrue(all(r['provenance'] for r in actual))
+
+    def test_wcontrib_dialogue_and_travel_actors_have_source_cells(self):
+        expected = {
+            'alaistar': (33619, 31884, 4),
+            'appaloosa': (32852, 32124, 7),
+            'asralius': (32096, 32219, 5),
+            'captain_gulliver': (33479, 31986, 7),
+            'captain_seahorse': (33175, 31763, 6),
+            'chavis': (33548, 31948, 7),
+            'flint': (33635, 31882, 6),
+            'junkar_mines': (32556, 32069, 10),
+            'junkar_robsons': (32525, 32038, 14),
+            'junkar_thais': (32368, 32181, 13),
+            'king_tibianus': (32311, 32172, 6),
+            'marvin': (33662, 31878, 5),
+            'ottokar': (32883, 32113, 6),
+            'palomino': (32450, 32226, 7),
+            'yawno': (32614, 32651, 7),
+        }
+        declarations = {r['declaration']['npc']: r['declaration'] for r in self.records}
+        for name, (x, y, floor) in expected.items():
+            with self.subTest(npc=name):
+                declaration = declarations[f'oteryn:npc.{name}']
+                self.assertEqual(declaration['cell'], {'x': x, 'y': y, 'floor': floor})
+                self.assertTrue(any(p['origin'] in {'canary', 'crystal'}
+                                    and p['revision'] and p['definition_sha256']
+                                    for p in declaration['provenance']))
+        # These identities are the exact services used by the paid travel owner;
+        # a source alias with a different actor name cannot expose the route.
+        routes = json.loads((cp.ROOT / 'crates/gameplay/content/src/content/npc_catalogue/travel_routes.json').read_text())
+        if isinstance(routes, dict):
+            routes = routes['routes']
+        keys = {r['key'] for r in routes}
+        for name in ('junkar_mines', 'junkar_robsons', 'junkar_thais',
+                     'marvin', 'palomino', 'appaloosa',
+                     'captain_gulliver', 'captain_seahorse'):
+            self.assertTrue(any(key.startswith(f'oteryn:service.travel.{name}/')
+                                for key in keys), name)
+
     def test_only_scoped_admitted_npcs(self):
         scope = set(json.loads(cp.SCOPE.read_text())["npcs"])
         self.assertEqual({r["declaration"]["npc"] for r in self.records}, scope - {h["npc"] for h in self.held})

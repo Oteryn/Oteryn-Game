@@ -26,6 +26,14 @@ pub struct Recipe {
 }
 
 pub fn recipe(key: &str) -> Option<Recipe> {
+    if super::rathleton::ballot_for_transition(key).is_some() {
+        return Some(Recipe {
+            kind: Kind::Votes,
+            amount: 1,
+            item_key: None,
+            points_track: Some(super::rathleton::POINTS_TRACK),
+        });
+    }
     let (kind, amount, item) = match key {
         COAL_ONE => (Kind::Coal, 1, "oteryn:item.tibia.i12600"),
         COAL_HUNDRED => (Kind::Coal, 100, "oteryn:item.tibia.i12600"),
@@ -66,6 +74,7 @@ pub(crate) fn corpse_callback() -> super::world_callbacks::Callback {
         failure_message:Some("You need an owned Swamp Troll corpse to deposit here.".into()),
         success_message:Some("The lake receives your corpse contribution.".into()),
         native_rule:None,
+        effects: Default::default(),
         sources:vec![
             "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/actions/other/fishing.lua:43-49".into(),
             "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/actions/other/fishing.lua#L43-L49".into(),
@@ -83,6 +92,12 @@ pub struct Dialogue {
 /// Named NPC identity and a private topic jointly bind every confirmation.
 /// Ordinary Ottokar medicine/exchange keywords continue through their existing route.
 pub fn dialogue(npc: &str, message: &str, topic: u16) -> Option<Dialogue> {
+    if let Some(choice) = super::horse_station::dialogue(npc, message, topic) {
+        return Some(choice);
+    }
+    if let Some(choice) = super::rathleton::dialogue(npc, message, topic) {
+        return Some(choice);
+    }
     let text = message.trim().to_ascii_lowercase();
     let (first, second) = match npc {
         "oteryn:npc.junkar_mines" | "oteryn:npc.junkar_robsons" | "oteryn:npc.junkar_thais" => {

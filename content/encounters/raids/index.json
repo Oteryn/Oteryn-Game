@@ -1,7 +1,7 @@
 {
-  "active_count": 135,
+  "active_count": 145,
   "apply_plan_sha256": "968ac099fa52114bcb2c80754d19128d811a8e028a8fdeceba238df4c0b53093",
-  "catalogue_sha256": "cc4346529768b8143c54af6e88ec7aba12f5c1b0fb980908e9f26de535cdd548",
+  "catalogue_sha256": "59756b8757c976e24603bf78fe57ebfba87fc4709d932f43f6e9da3a0596a586",
   "evidence_record_count": 122,
   "evidence_shards": [
     "content/encounters/raids/evidence-00000-00121.json"
@@ -9,7 +9,7 @@
   "family": "Encounter.Raid",
   "generator": "tools/content-migration/raid_catalogue.py",
   "population_state": "POPULATED",
-  "record_count": 239,
+  "record_count": 249,
   "schema": "OTERYN_FAMILY_INDEX/v1",
   "shards": [
     "content/encounters/raids/catalogue.json"
@@ -17,8 +17,8 @@
   "source_capture_sha256": "902319f52a2825e1f7722b919d44526377657e8201139b512e4b9bb178f9b720",
   "totals": {
     "area": {
-      "active": 34,
-      "total": 102
+      "active": 44,
+      "total": 112
     },
     "boss": {
       "active": 70,

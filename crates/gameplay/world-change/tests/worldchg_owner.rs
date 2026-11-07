@@ -58,12 +58,16 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
                     assert_eq!(entry["binding"]["raid_key"], "raid:porthope.stampede");
                     assert!(is_active(&all, key));
                 }
-                "steamship" | "twisted_waters" => {
+                "steamship" | "twisted_waters" | "rathleton" => {
                     assert_eq!(entry["binding"]["kind"], "contribution");
                     assert!(
                         !is_active(&all, key),
                         "a daily draw cannot authorize a tally transition"
                     );
+                }
+                "horse_station" | "noodles_is_gone" => {
+                    assert_eq!(entry["binding"]["kind"], "live_world_action");
+                    assert!(!is_active(&all, key));
                 }
                 "swamp_fever" => {
                     assert_eq!(entry["binding"]["raid_key"], "raid:venore.feverishcitizens");
@@ -77,7 +81,7 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
         }
     }
     assert_eq!(ready, 4);
-    assert_eq!(qualified, 4);
+    assert_eq!(qualified, 7);
     for key in [
         "river_runs_deep",
         "spider_nest",

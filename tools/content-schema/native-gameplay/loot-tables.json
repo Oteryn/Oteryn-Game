@@ -3869,7 +3869,7 @@
 {"charges":2,"container_capacity":null,"item":{"family":"Item","key":"oteryn:item.tibia.i21178","revision":"definition-r1"},"materializable":false},
 {"charges":2,"container_capacity":null,"item":{"family":"Item","key":"oteryn:item.tibia.i21179","revision":"definition-r1"},"materializable":false},
 {"charges":2,"container_capacity":null,"item":{"family":"Item","key":"oteryn:item.tibia.i21180","revision":"definition-r1"},"materializable":false},
-{"container_capacity":null,"creature_product":true,"item":{"family":"Item","key":"oteryn:item.tibia.i21182","revision":"definition-r1"},"materializable":false},
+{"container_capacity":null,"creature_product":true,"item":{"family":"Item","key":"oteryn:item.tibia.i21182","revision":"definition-r1"},"materializable":true},
 {"charges":20,"container_capacity":null,"item":{"family":"Item","key":"oteryn:item.tibia.i21183","revision":"definition-r1"},"materializable":false},
 {"container_capacity":null,"creature_product":true,"item":{"family":"Item","key":"oteryn:item.tibia.i21193","revision":"definition-r1"},"materializable":false},
 {"container_capacity":null,"creature_product":true,"item":{"family":"Item","key":"oteryn:item.tibia.i21194","revision":"definition-r1"},"materializable":false},

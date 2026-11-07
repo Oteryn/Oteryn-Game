@@ -13,6 +13,8 @@ use oteryn_simulation_determinism::{
 use sha2::{Digest, Sha256};
 
 pub(crate) mod custody;
+pub mod actions;
+pub mod elections;
 mod shared;
 pub use shared::load as shared;
 /// The day after the reset `reset_epoch` of `world`, on the UTC calendar at `unix_ms`.
@@ -64,7 +66,7 @@ fn authored_candidates() -> Result<DailyCandidates, DurabilityError> {
     {
         let index = match entry["key"].as_str() {
             // Shared contribution states are chosen from retiring tallies, never daily RNG.
-            Some("steamship" | "swamp_fever" | "twisted_waters") => continue,
+            Some("steamship" | "swamp_fever" | "twisted_waters" | "rathleton" | "horse_station" | "noodles_is_gone") => continue,
             Some("stampede") if stampede.is_none() && entry["trigger"]["kind"] == "at_reset" => {
                 stampede = entry["trigger"]["chance_permille"]
                     .as_u64()

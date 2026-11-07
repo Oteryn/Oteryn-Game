@@ -36,6 +36,19 @@
     "carpet": false
   },
   {
+    "key": "oteryn:service.travel.appaloosa/thais",
+    "keyword": "transport",
+    "price": 125,
+    "premium": false,
+    "x": 32449,
+    "y": 32226,
+    "floor": 7,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true
+  },
+  {
     "key": "oteryn:service.travel.brodrosch/gnomprona",
     "keyword": "gnomprona",
     "price": 200,
@@ -1971,6 +1984,58 @@
     "carpet": false
   },
   {
+    "key": "oteryn:service.travel.marvin/dungeon_golems",
+    "keyword": "dungeon golems",
+    "price": 0,
+    "premium": true,
+    "x": 31061,
+    "y": 32605,
+    "floor": 9,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.marvin/dungeon_minotaurs",
+    "keyword": "dungeon minotaurs",
+    "price": 0,
+    "premium": true,
+    "x": 31254,
+    "y": 32604,
+    "floor": 9,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.marvin/dungeon_wrathofevil",
+    "keyword": "dungeon wrathofevil",
+    "price": 0,
+    "premium": true,
+    "x": 33459,
+    "y": 31715,
+    "floor": 9,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.marvin/hero_of_rathleton",
+    "keyword": "hero of rathleton",
+    "price": 0,
+    "premium": true,
+    "x": 33533,
+    "y": 31951,
+    "floor": 14,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true
+  },
+  {
     "key": "oteryn:service.travel.melian/darama",
     "keyword": "darama",
     "price": 60,
@@ -2149,6 +2214,19 @@
     "postman": false,
     "held": false,
     "carpet": false
+  },
+  {
+    "key": "oteryn:service.travel.palomino/venore",
+    "keyword": "transport",
+    "price": 125,
+    "premium": false,
+    "x": 32850,
+    "y": 32124,
+    "floor": 7,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true
   },
   {
     "key": "oteryn:service.travel.pemaret/edron",

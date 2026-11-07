@@ -128,12 +128,12 @@ mod tests {
         let evidence: serde_json::Value = serde_json::from_slice(&std::fs::read(
             root.join("admission-evidence/evidence-00000-00194.json"),
         )?)?;
-        assert_eq!(corrections.len(), 227);
+        assert_eq!(corrections.len(), 233);
         let keys = corrections
             .iter()
             .map(|row| &row.key)
             .collect::<std::collections::BTreeSet<_>>();
-        assert_eq!(keys.len(), 227);
+        assert_eq!(keys.len(), 233);
         let sources = source["rows"].as_array().ok_or("source rows")?;
         let evidence = evidence["records"].as_array().ok_or("evidence rows")?;
         let corrected = corrections
@@ -161,6 +161,68 @@ mod tests {
             {
                 assert!(row.held, "{}", row.key);
             }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn wcontrib_native_rank_and_horse_routes_have_exact_source_arrivals()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let rows: Vec<super::Correction> =
+            serde_json::from_str(include_str!("travel_routes.json"))?;
+        for (key, keyword, fare, premium, destination) in [
+            (
+                "marvin/dungeon_golems",
+                "dungeon golems",
+                0,
+                true,
+                (31061, 32605, 9),
+            ),
+            (
+                "marvin/dungeon_minotaurs",
+                "dungeon minotaurs",
+                0,
+                true,
+                (31254, 32604, 9),
+            ),
+            (
+                "marvin/dungeon_wrathofevil",
+                "dungeon wrathofevil",
+                0,
+                true,
+                (33459, 31715, 9),
+            ),
+            (
+                "marvin/hero_of_rathleton",
+                "hero of rathleton",
+                0,
+                true,
+                (33533, 31951, 14),
+            ),
+            (
+                "palomino/venore",
+                "transport",
+                125,
+                false,
+                (32850, 32124, 7),
+            ),
+            (
+                "appaloosa/thais",
+                "transport",
+                125,
+                false,
+                (32449, 32226, 7),
+            ),
+        ] {
+            let route = rows
+                .iter()
+                .find(|row| row.key == format!("oteryn:service.travel.{key}"))
+                .ok_or(key)?;
+            assert_eq!(route.keyword, keyword);
+            assert_eq!(route.price, fare);
+            assert_eq!(route.premium, premium);
+            assert_eq!((route.x, route.y, route.floor), destination);
+            assert!(route.native_addition && !route.held && !route.postman && !route.carpet);
         }
         Ok(())
     }

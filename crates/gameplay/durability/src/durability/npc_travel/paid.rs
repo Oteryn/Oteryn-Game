@@ -58,6 +58,29 @@ async fn quote(
     {
         return Ok(Err(TravelRefusal::UnavailableRoute));
     }
+    if !super::rank_admission::travel(tx, fence, route).await? {
+        return Ok(Err(TravelRefusal::UnavailableRoute));
+    }
+    if matches!(
+        route.service.as_str(),
+        "oteryn:service.travel.palomino" | "oteryn:service.travel.appaloosa"
+    ) {
+        let world = fence.runtime_scope.world_id();
+        let Some(epoch) = super::rank_admission::epoch(tx, world).await? else {
+            return Ok(Err(TravelRefusal::UnavailableRoute));
+        };
+        let now_ms: i64 = sqlx::query_scalar(
+            "SELECT floor(extract(epoch FROM transaction_timestamp())*1000)::bigint",
+        )
+        .fetch_one(&mut ***tx)
+        .await?;
+        let state =
+            crate::durability::world_event::changes::actions::horse_state(tx, world, epoch, now_ms)
+                .await?;
+        if state.is_none_or(|state| state.stable_horses == 0 || state.raid_active(now_ms)) {
+            return Ok(Err(TravelRefusal::UnavailableRoute));
+        }
+    }
     if matches!(
         route.service.as_str(),
         "oteryn:service.travel.junkar_mines"

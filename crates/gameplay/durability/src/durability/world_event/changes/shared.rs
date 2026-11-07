@@ -2,6 +2,7 @@
 use super::{ContributionKind, DurabilityError, DurabilityRoot, WorldId};
 use oteryn_gameplay_world_change::contribution::{SaveContributions, SharedChanges};
 use sqlx::{Postgres, Transaction};
+use sha2::Digest;
 
 pub(super) async fn record(
     tx: &mut Transaction<'_, Postgres>,
@@ -26,8 +27,11 @@ pub(super) async fn record(
         let previous_epoch = previous_epoch
             .parse()
             .map_err(|_| DurabilityError::InvalidStoredState)?;
-        let previous: SharedChanges =
+        let mut previous: SharedChanges =
             serde_json::from_value(state).map_err(|_| DurabilityError::InvalidStoredState)?;
+        if let Some(live) = super::actions::for_save(tx, world, previous_epoch).await? {
+            previous = live.overlay(previous);
+        }
         let contributions = SaveContributions {
             coal: super::tally(tx, world, previous_epoch, ContributionKind::Coal).await?,
             medicine: super::tally(tx, world, previous_epoch, ContributionKind::Medicine).await?,
@@ -38,7 +42,19 @@ pub(super) async fn record(
     } else {
         (SharedChanges::default(), SaveContributions::default())
     };
-    let next = previous.at_save(&contributions);
+    let mut next = previous.at_save(&contributions);
+    next.election_winners = super::elections::at_save(tx, world, epoch).await?;
+    // Shared immutable World/reset selection; neither Channel nor process entropy
+    // can choose another dog location. Source probability: retained W15 92/1000.
+    let draw = sha2::Sha256::digest([b"oteryn.noodles.daily.v1\0".as_slice(),
+        world.as_bytes().as_slice(), &epoch.to_be_bytes()].concat());
+    // A disappearance is a saved-day selection. Unreturned escorts are released
+    // at reset; a successful return earns the following day with Dog Lady.
+    next.noodles.missing = false;
+    if !next.noodles.dog_lady && u64::from_be_bytes([draw[0],draw[1],draw[2],draw[3],draw[4],draw[5],draw[6],draw[7]]) % 1000 < 92 {
+        next.noodles.disappear();
+        next.noodles.roaming_index = (u64::from_be_bytes([draw[8],draw[9],draw[10],draw[11],draw[12],draw[13],draw[14],draw[15]]) % 13) as u8;
+    }
     let state = serde_json::to_value(&next).map_err(|_| DurabilityError::InvalidStoredState)?;
     sqlx::query(
         "INSERT INTO game_world_change_states(world_id,reset_epoch,state) \

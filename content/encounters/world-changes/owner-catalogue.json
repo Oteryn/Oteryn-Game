@@ -669,7 +669,7 @@
       "key": "horse_station",
       "title": "Horse Station World Change",
       "quest": "oteryn:quest.horse_station_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00100-00199.json",
@@ -682,6 +682,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "CONTRACT-NOTES.md",
+          "locator": "WCONTRIB source contracts and conservative rules; focused PostgreSQL execution markers in WORLDCHG-Q"
         }
       ],
       "source_refs": [
@@ -702,10 +706,15 @@
           "url": "https://tibia.fandom.com/index.php?curid=54702&oldid=502074"
         }
       ],
-      "reason": "Startup horse anchors/counts and stable handler are known. Escape, three-hour/zero-horse raid activation/expiry and native stable transition are not composed; donor stable script references an unassigned waveEvent.",
-      "missing_facts": [
-        "Startup horse anchors/counts and stable handler are known. Escape, three-hour/zero-horse raid activation/expiry and native stable transition are not composed; donor stable script references an unassigned waveEvent."
-      ]
+      "reason": "Custody/current-generation receipts, shared transition and native admission/projection are implemented; conservative source decisions are recorded in CONTRACT-NOTES.md.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "live_world_action",
+        "owner": "world_event::changes::actions",
+        "raid_key": "raid:horsestation.wild",
+        "stable_keys": "raid:horsestation.stable.1..9",
+        "replay_owner": "Quest receipt"
+      }
     },
     {
       "key": "insectoid_invasion",
@@ -1001,7 +1010,7 @@
       "key": "noodles_is_gone",
       "title": "Noodles is Gone Mini World Change",
       "quest": "oteryn:quest.authored.noodles_is_gone_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -1018,6 +1027,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "CONTRACT-NOTES.md",
+          "locator": "WCONTRIB source contracts and conservative rules; focused PostgreSQL execution markers in WORLDCHG-Q"
         }
       ],
       "source_refs": [
@@ -1038,14 +1051,19 @@
           "url": "https://tibia.fandom.com/index.php?curid=76254&oldid=1122443"
         }
       ],
-      "reason": "W 15 fixes 92 permille. Retained Noodles mutations are PostmanMission 06; Dog Collar escort, disappearance/return and next-save Dog Lady transition are absent.",
-      "missing_facts": [
-        "W 15 fixes 92 permille. Retained Noodles mutations are PostmanMission 06; Dog Collar escort, disappearance/return and next-save Dog Lady transition are absent."
-      ],
+      "reason": "Custody/current-generation receipts, shared transition and native admission/projection are implemented; conservative source decisions are recorded in CONTRACT-NOTES.md.",
+      "missing_facts": [],
       "trigger": {
         "kind": "at_reset",
         "chance_permille": 92,
         "duration": "until_next_reset"
+      },
+      "binding": {
+        "kind": "live_world_action",
+        "owner": "world_event::changes::actions",
+        "item": 14156,
+        "save_projection": "Dog Lady on the following saved day",
+        "replay_owner": "Quest receipt"
       }
     },
     {
@@ -1184,7 +1202,7 @@
       "key": "rathleton",
       "title": "Rathleton Quest",
       "quest": "oteryn:quest.authored.rathleton_quest",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -1197,6 +1215,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "CONTRACT-NOTES.md",
+          "locator": "WCONTRIB source contracts and conservative rules; focused PostgreSQL execution markers in WORLDCHG-Q"
         }
       ],
       "source_refs": [
@@ -1225,10 +1247,20 @@
           "url": "https://www.tibiawiki.com.br/index.php?curid=33732&oldid=386889"
         }
       ],
-      "reason": "50/150/300/500 spent-vote rank thresholds are known. Ballot identity, election period, eligibility/point debit, winner transition and native rank admission are absent.",
-      "missing_facts": [
-        "50/150/300/500 spent-vote rank thresholds are known. Ballot identity, election period, eligibility/point debit, winner transition and native rank admission are absent."
-      ]
+      "reason": "Custody/current-generation receipts, shared transition and native admission/projection are implemented; conservative source decisions are recorded in CONTRACT-NOTES.md.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "contribution",
+        "resource": "votes",
+        "owner": "world_event::changes::elections",
+        "ballots": 12,
+        "rank_thresholds": [
+          50,
+          150,
+          300,
+          500
+        ]
+      }
     },
     {
       "key": "rise_of_devovorga",

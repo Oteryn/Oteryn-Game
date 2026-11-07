@@ -43,6 +43,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         visible_target: bool,
     ) -> Result<Option<UseOutcome>, ()> {
         if let Some(outcome) = self
+            .use_noodles_collar(actor, command, &intent, source, visible_target)
+            .await?
+        {
+            return Ok(Some(outcome));
+        }
+        if let Some(outcome) = self
             .use_map_harvest_handle(actor, command, &intent, source)
             .await?
         {

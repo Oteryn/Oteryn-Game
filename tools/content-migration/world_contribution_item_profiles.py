@@ -17,7 +17,7 @@ import build_source_item_profiles as source
 
 PATH = 'tools/content-schema/native-gameplay/world-contribution-item-profiles.json'
 SCHEMA = 'OTERYN_NATIVE_WORLD_CONTRIBUTION_ITEM_PROFILES/v1'
-IDS = (3111, 4176, 4177, 4178, 6018, 12517, 12557, 12558, 12559, 12560, 12561, 12562, 12563)
+IDS = (3111, 4176, 4177, 4178, 6018, 12413, 12517, 12557, 12558, 12559, 12560, 12561, 12562, 12563, 14156, 21182, 21291)
 REVISION = '9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d'
 XML_SHA = 'c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb'
 APPEARANCES_SHA = '6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1'
@@ -70,10 +70,14 @@ def capture(appearances):
                              '4177': 'data/items/items.xml:12912-12916',
                              '4178': 'data/items/items.xml:12917-12921',
                              '6018': 'data/items/items.xml:16535-16540',
+                             '12413': 'data/items/items.xml:30161-30165',
                              '12517': 'data/items/items.xml:30366-30369',
                              '12557': 'data/items/items.xml:30559-30563',
                              '12558-12560': 'data/items/items.xml:30564-30586',
-                             '12561-12563': 'data/items/items.xml:30588-30592'},
+                             '12561-12563': 'data/items/items.xml:30588-30592',
+                             '14156': 'data/items/items.xml:32686-32690',
+                             '21182': 'data/items/items.xml:42216-42220',
+                             '21291': 'data/items/items.xml:42390-42393'},
             'canonical_inputs': canonical_inputs,
             'records': bound['records']}
 

@@ -1,0 +1,307 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/chavis-food-first",
+      "quest": "oteryn:quest.oramond_quest",
+      "npc": "oteryn:npc.chavis",
+      "keywords": [
+        "food"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "increments": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i21291",
+          "count": 5
+        }
+      ],
+      "present": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Five harvested roots earn one voting right. Spend it wisely."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/chavis.lua:84-95:sha256:944e89b3178858c4bb8f8986ea1b6bfd4c79702f818d21aa6e041199edaac5fb",
+        "https://tibia.fandom.com/wiki/Oramond_Quest/Spoiler",
+        "owner policy: explicit food exchange confirmation; the existing Item custody participant debits five roots atomically"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chavis-food-repeat",
+      "quest": "oteryn:quest.oramond_quest",
+      "npc": "oteryn:npc.chavis",
+      "keywords": [
+        "food"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points",
+          "minimum": 0,
+          "maximum": 9223372036854775806,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "increments": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points",
+          "amount": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i21291",
+          "count": 5
+        }
+      ],
+      "present": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Five harvested roots earn one voting right. Spend it wisely."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/chavis.lua:84-95:sha256:944e89b3178858c4bb8f8986ea1b6bfd4c79702f818d21aa6e041199edaac5fb",
+        "https://tibia.fandom.com/wiki/Oramond_Quest/Spoiler",
+        "owner policy: explicit food exchange confirmation; the existing Item custody participant debits five roots atomically"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/noodles-leashes",
+      "quest": "oteryn:quest.authored.noodles_is_gone_mini_world_change",
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "leashes"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/noodles/collar_earned",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i14156",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Take this collar and bring Noodles back to the castle. Use it on Noodles to escort him, then on me when you return."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/items/items.xml:32686-32690:sha256:c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "https://github.com/Lavovskii/grimorio/blob/dbeee0138a54b30a74dd690c4a7e6fab514c8db0/quests/data/quests/noodles-is-gone-mini-world-change.json",
+        "policy:WCONTRIB-owner-reusable-collar-once-per-character"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/ottokar-medicine-first",
+      "quest": "oteryn:quest.authored.swamp_fever_world_change",
+      "npc": "oteryn:npc.ottokar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 71,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/swamp-fever/ottokar-exchanges",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "increments": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i12517",
+          "count": 1
+        }
+      ],
+      "present": [],
+      "claim_scope": "per_command",
+      "give": {
+        "item": "oteryn:item.tibia.i12413",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here you are."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ottokar.lua:61-77:sha256:fe8c4a6740a75448c3af035f27c3b2783b9fe91ecad7ba4d255544003370a951",
+        "Donor addAchievementProgress Doctor! Doctor! threshold100; character deliveries accumulate and the existing account achievement owner grants once.",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/scripts/lib/register_achievements.lua:696-717:sha256:24ca189087f6403ab994720763b69ee04eab0397ff917ff7700edb9063d6de37"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/ottokar-medicine-repeat",
+      "quest": "oteryn:quest.authored.swamp_fever_world_change",
+      "npc": "oteryn:npc.ottokar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 71,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/swamp-fever/ottokar-exchanges",
+          "minimum": 1,
+          "maximum": 98,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "increments": [
+        {
+          "track": "oteryn:quest-progress/swamp-fever/ottokar-exchanges",
+          "amount": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i12517",
+          "count": 1
+        }
+      ],
+      "present": [],
+      "claim_scope": "per_command",
+      "give": {
+        "item": "oteryn:item.tibia.i12413",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here you are."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ottokar.lua:61-77:sha256:fe8c4a6740a75448c3af035f27c3b2783b9fe91ecad7ba4d255544003370a951",
+        "Donor addAchievementProgress Doctor! Doctor! threshold100; character deliveries accumulate and the existing account achievement owner grants once.",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/scripts/lib/register_achievements.lua:696-717:sha256:24ca189087f6403ab994720763b69ee04eab0397ff917ff7700edb9063d6de37"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/ottokar-medicine-hundredth",
+      "quest": "oteryn:quest.authored.swamp_fever_world_change",
+      "npc": "oteryn:npc.ottokar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 71,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/swamp-fever/ottokar-exchanges",
+          "minimum": 99,
+          "maximum": 99,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "increments": [
+        {
+          "track": "oteryn:quest-progress/swamp-fever/ottokar-exchanges",
+          "amount": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i12517",
+          "count": 1
+        }
+      ],
+      "present": [],
+      "claim_scope": "per_command",
+      "give": {
+        "item": "oteryn:item.tibia.i12413",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": "oteryn:achievement/doctor_doctor",
+      "reply": [
+        "Here you are."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ottokar.lua:61-77:sha256:fe8c4a6740a75448c3af035f27c3b2783b9fe91ecad7ba4d255544003370a951",
+        "Donor addAchievementProgress Doctor! Doctor! threshold100; character deliveries accumulate and the existing account achievement owner grants once.",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/scripts/lib/register_achievements.lua:696-717:sha256:24ca189087f6403ab994720763b69ee04eab0397ff917ff7700edb9063d6de37"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/ottokar-medicine-afterwards",
+      "quest": "oteryn:quest.authored.swamp_fever_world_change",
+      "npc": "oteryn:npc.ottokar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 71,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/swamp-fever/ottokar-exchanges",
+          "minimum": 100,
+          "maximum": 9223372036854775806,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "increments": [
+        {
+          "track": "oteryn:quest-progress/swamp-fever/ottokar-exchanges",
+          "amount": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i12517",
+          "count": 1
+        }
+      ],
+      "present": [],
+      "claim_scope": "per_command",
+      "give": {
+        "item": "oteryn:item.tibia.i12413",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here you are."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ottokar.lua:61-77:sha256:fe8c4a6740a75448c3af035f27c3b2783b9fe91ecad7ba4d255544003370a951",
+        "Donor addAchievementProgress Doctor! Doctor! threshold100; character deliveries accumulate and the existing account achievement owner grants once.",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/scripts/lib/register_achievements.lua:696-717:sha256:24ca189087f6403ab994720763b69ee04eab0397ff917ff7700edb9063d6de37"
+      ]
+    }
+  ]
+}

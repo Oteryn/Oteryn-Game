@@ -73,9 +73,17 @@ impl DurabilityRoot {
                 .definition
                 .validate()
                 .map_err(|_| DurabilityError::InvalidStoredState)?;
+            let horse_projection =
+                crate::durability::world_event::changes::actions::horse_projection(
+                    candidate.key.as_str(),
+                );
             if !keys.insert(candidate.key.as_str())
                 || (candidate.lua.is_some() && candidate.calendar_window.is_some())
-                || ((candidate.lua.is_some() || candidate.calendar_window.is_some())
+                || (horse_projection
+                    && (candidate.lua.is_some() || candidate.calendar_window.is_some()))
+                || ((candidate.lua.is_some()
+                    || candidate.calendar_window.is_some()
+                    || horse_projection)
                     != (candidate.definition.policy == RaidPolicy::SourceScheduled))
             {
                 return Err(DurabilityError::InvalidStoredState);
@@ -143,10 +151,27 @@ impl DurabilityRoot {
             }) {
                 crate::durability::world_event::changes::shared(&mut tx, request.world, request.reset_epoch).await?
             } else { None };
+            let live_changes = if request.candidates.iter().any(|candidate| {
+                crate::durability::world_event::changes::actions::horse_projection(candidate.key.as_str())
+            }) {
+                crate::durability::world_event::changes::actions::tick(
+                    &mut tx,request.world,request.reset_epoch,&node,request.channel,request.generation,request.now_ms,
+                ).await?
+            } else { None };
             let mut fired = Vec::new();
             let mut retry_activity = false;
             for candidate in request.candidates {
-                if let Some(required) = requirements.get(candidate.key.as_str()) {
+                let horse_projection = crate::durability::world_event::changes::actions::horse_projection(candidate.key.as_str());
+                if horse_projection && (candidate.definition.policy!=RaidPolicy::SourceScheduled
+                    || candidate.lua.is_some() || candidate.calendar_window.is_some()) {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                if horse_projection && !candidate.eligible { continue; }
+                if horse_projection && !super::horse::selected(&mut tx,request.world,request.reset_epoch,
+                    candidate.key.as_str(),live_changes.as_ref(),request.now_ms).await? {
+                    continue;
+                }
+                if let Some(required) = requirements.get(candidate.key.as_str()).filter(|_| !horse_projection) {
                     let active = if required == "swamp_fever" {
                         shared_changes.as_ref().is_some_and(|state| state.swamp_epidemic)
                     } else {
@@ -155,7 +180,9 @@ impl DurabilityRoot {
                     if !active { continue; }
                 }
                 let source_kind: i16 = if candidate.lua.is_some() { 2 }
-                    else if candidate.calendar_window.is_some() { 3 } else { 1 };
+                    else if candidate.calendar_window.is_some() { 3 }
+                    else if candidate.definition.policy==RaidPolicy::SourceScheduled { 4 } else { 1 };
+                if source_kind==4 && !horse_projection { return Err(DurabilityError::InvalidStoredState); }
                 if (source_kind == 1 && legacy_running)
                     || (source_kind != 1 && !candidate.eligible)
                 { continue; }
@@ -165,7 +192,10 @@ impl DurabilityRoot {
                     .map_err(|_| DurabilityError::InvalidStoredState)? {
                     Some(before) => before,
                     None => {
-                        let initial = RaidSchedule::initial(request.reset_epoch, request.now_ms)
+                        let initial_at=if source_kind==4 {
+                            request.now_ms.saturating_sub(oteryn_gameplay_encounter_rules::raid::CHECK_INTERVAL_MS).max(0)
+                        } else { request.now_ms };
+                        let initial = RaidSchedule::initial(request.reset_epoch, initial_at)
                             .map_err(|_| DurabilityError::InvalidStoredState)?;
                         storage::insert_schedule(&mut tx, request.world, &candidate.key, &initial).await
                             .map_err(|_| DurabilityError::Unavailable)?;
@@ -186,7 +216,11 @@ impl DurabilityRoot {
                     before = reset.after().clone();
                 }
                 if before.retired { continue; }
-                let action = if let Some(lua_candidate) = &candidate.lua {
+                let action = if source_kind==4 {
+                    RaidAction::ResolvedCheck {
+                        now_ms:request.now_ms,selected:true,firing_id:candidate.firing_id,bundle_digest:request.bundle_digest,
+                    }
+                } else if let Some(lua_candidate) = &candidate.lua {
                     let running = before.latest_firing.as_ref()
                         .is_some_and(|firing| firing.state == FiringState::Running);
                     let selected = match lua::selected(&mut tx, request.world, &candidate.key,

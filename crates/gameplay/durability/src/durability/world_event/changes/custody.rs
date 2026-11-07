@@ -192,8 +192,12 @@ pub(crate) async fn contribute_quest(
             }
         }
     }
-    Ok(matches!(
+    let applied = matches!(
         contribute(tx, recovery, world, epoch, operation, kind, recipe.amount).await?,
         ContributionWrite::Applied(_)
-    ))
+    );
+    if applied && let Some(ballot) = oteryn_gameplay_quests::quest::rathleton::ballot_for_transition(&request.transition_key) {
+        super::elections::vote(tx, world, epoch, operation, ballot).await?;
+    }
+    Ok(applied)
 }

@@ -40,7 +40,7 @@
     },
     "Encounter.Raid": {
       "index": "content/encounters/raids/index.json",
-      "records": 239
+      "records": 249
     },
     "Formula": {
       "index": "content/abilities/formulas/index.json",
@@ -290,6 +290,12 @@
     },
     {
       "path": "content/cosmetics/mounts/mounts-00000-00251.json"
+    },
+    {
+      "path": "content/cosmetics/outfits/authoring.json"
+    },
+    {
+      "path": "content/cosmetics/outfits/native-cosmetics.json"
     },
     {
       "path": "content/craft/index.json"
@@ -839,6 +845,9 @@
     },
     {
       "path": "rulesets/progression/wheel-of-destiny/spell-profile.json"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
     }
   ],
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -924,7 +933,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "06b0bee295bf0d09d5b3c87827d66cc276771bc79a3c0a05cf8cfebf4c1282a5"
+          "sha256": "1d93dce16392a222187e10dd8149e2246f4b5ea67a2b0a8bd916be0c88eebba9"
         },
         {
           "creates_canonical_identities": false,
@@ -995,7 +1004,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3579,
+          "record_count": 3591,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1003,7 +1012,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "413e43688c610f5d32ccab60dc8c22fc84d936e6437c89111f0d61ef78feb99b"
+          "sha256": "b338429aab567b38ea81eec88b0f81fc43f09289beecb3448f0e3f9681ee7857"
         },
         {
           "creates_canonical_identities": false,

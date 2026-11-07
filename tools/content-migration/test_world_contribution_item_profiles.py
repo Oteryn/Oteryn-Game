@@ -13,7 +13,7 @@ class WorldContributionItemProfiles(unittest.TestCase):
     def test_native_provider_materializes_medicine_and_corpse(self):
         document = json.loads((ROOT / 'content/items/definitions/spell-native-profiles.json').read_bytes())
         rows = {row['production_definition']['production_key']: row for row in document['records']}
-        for identifier in (3111, 4176, 4177, 4178, 6018, 12517, 12557, 12558, 12559, 12560, 12561, 12562, 12563):
+        for identifier in (3111, 4176, 4177, 4178, 6018, 12413, 12517, 12557, 12558, 12559, 12560, 12561, 12562, 12563, 14156, 21182, 21291):
             key = f'oteryn:item.tibia.i{identifier}'
             self.assertTrue(key in rows, key)
             self.assertTrue(rows[key]['admission']['materializable'])
@@ -23,7 +23,7 @@ class WorldContributionItemProfiles(unittest.TestCase):
     def test_corpse_decay_chain_preserves_source_flags_and_timers(self):
         packet = json.loads((ROOT / 'tools/content-schema/native-gameplay/world-contribution-item-profiles.json').read_bytes())
         rows = {int(row['production_binding']['external_id']): row for row in packet['records']}
-        self.assertEqual(sorted(rows), [3111, 4176, 4177, 4178, 6018, 12517, 12557, 12558, 12559, 12560, 12561, 12562, 12563])
+        self.assertEqual(sorted(rows), [3111, 4176, 4177, 4178, 6018, 12413, 12517, 12557, 12558, 12559, 12560, 12561, 12562, 12563, 14156, 21182, 21291])
         self.assertEqual(rows[6018]['admission']['legal_destinations'], ['Ground'])
         for identifier in (4176, 4177, 4178, 12517):
             self.assertEqual(rows[identifier]['admission']['legal_destinations'], ['CharacterInventory', 'Ground'])
@@ -42,7 +42,7 @@ class WorldContributionItemProfiles(unittest.TestCase):
         canonical = lambda value: (json.dumps(value, sort_keys=True) + '\n').encode()
         order = lambda row: row['production_definition']['production_key']
         tool.admit(ROOT, generated, 'profiles', 'manifest', order, canonical)
-        self.assertEqual(len(json.loads(generated['profiles'])['records']), 13)
+        self.assertEqual(len(json.loads(generated['profiles'])['records']), 17)
         self.assertEqual(json.loads(generated['manifest'])['item_profiles']['sha256'], hashlib.sha256(generated['profiles']).hexdigest())
         with self.assertRaisesRegex(ValueError, 'WCONTRIB_PROFILE_DUPLICATE'):
             tool.admit(ROOT, generated, 'profiles', 'manifest', order, canonical)
@@ -72,7 +72,7 @@ class WorldContributionItemProfiles(unittest.TestCase):
         rows = {row['production_definition']['production_key']: row for row in profiles['records']}
         loot = json.loads((ROOT / 'tools/content-schema/native-gameplay/loot-tables.json').read_bytes())
         items = {row['item']['key']: row for row in loot['items']}
-        for identifier in (6018, 12517, 3111, 12557):
+        for identifier in (6018, 12517, 3111, 12557, 21182):
             key = f'oteryn:item.tibia.i{identifier}'
             self.assertTrue(items[key]['materializable'])
             self.assertTrue(rows[key]['admission']['materializable'])

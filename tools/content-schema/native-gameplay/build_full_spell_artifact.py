@@ -421,7 +421,7 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
     # WCONTRIB admits only this sourced native cohort, preserving the canonical
     # reference definitions while allowing their real creature loot/corpse mint.
     native_path = item_definitions / 'spell-native-profiles.json'
-    contribution_keys = {f'oteryn:item.tibia.i{identifier}' for identifier in (3111, 4176, 4177, 4178, 6018, 12517, 12557, 12558, 12559, 12560, 12561, 12562, 12563)}
+    contribution_keys = {f'oteryn:item.tibia.i{identifier}' for identifier in (3111, 4176, 4177, 4178, 6018, 12413, 12517, 12557, 12558, 12559, 12560, 12561, 12562, 12563, 14156, 21182, 21291)}
     if native_path.is_file():
         _, native_items = read(native_path)
         for row in native_items['records']:

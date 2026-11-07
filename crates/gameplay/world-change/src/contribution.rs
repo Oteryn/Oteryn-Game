@@ -34,6 +34,7 @@ pub struct SharedChanges {
     pub swamp_epidemic: bool,
     pub lake_state: LakeState,
     pub elected_candidate: Option<String>,
+    pub election_winners: std::collections::BTreeMap<String, String>,
     pub horse: HorseStationState,
     pub noodles: NoodlesState,
 }
@@ -45,6 +46,7 @@ impl Default for SharedChanges {
             swamp_epidemic: true,
             lake_state: LakeState::Clean,
             elected_candidate: None,
+            election_winners: std::collections::BTreeMap::new(),
             horse: HorseStationState::default(),
             noodles: NoodlesState::default(),
         }
@@ -183,6 +185,8 @@ pub struct NoodlesState {
     pub missing: bool,
     pub returned: bool,
     pub dog_lady: bool,
+    /// One of the thirteen sourced Thais peninsula spawn anchors.
+    pub roaming_index: u8,
 }
 
 impl NoodlesState {
@@ -203,7 +207,8 @@ impl NoodlesState {
     }
 
     pub fn at_save(&mut self) {
-        self.dog_lady |= self.returned;
+        self.dog_lady = self.returned;
+        self.returned = false;
     }
 }
 

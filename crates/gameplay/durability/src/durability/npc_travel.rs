@@ -29,6 +29,7 @@ use crate::foundation::{RuntimeScopeRefV1, WorldId};
 use sqlx::Row;
 
 mod paid;
+pub(in crate::durability) mod rank_admission;
 pub use paid::{NpcTravelGate, PaidTravelRequest, TravelRefusal};
 
 /// The confirming command's occurrence. Construction checks representation only; the

@@ -289,6 +289,17 @@ pub(super) async fn prepare_channel(
         daily.flower_month,
     ));
     let timed_npcs = bundle_npcs::TimedNpcSpawns::from_boot(npc_boot);
+    if timed_npcs.has_noodles()
+        && let Some(live) = root
+            .live_world_changes(material.world, reset_epoch)
+            .await
+            .map_err(|_| BootError::Readiness("current Noodles world phase"))?
+        && let Err(error) = timed_npcs.project_noodles(&mut channel_runtime, &live, &movement_cells)
+    {
+        event(&format!(
+            "event=noodles_npc_boot state=retry reason={error:?}"
+        ));
+    }
     // W05c: the day/night NPCs of the current world minute; one that cannot stand yet is
     // retried by the world tick (`supervision.rs` `timed_npc_loop`).
     if let Some(Err(error)) =
