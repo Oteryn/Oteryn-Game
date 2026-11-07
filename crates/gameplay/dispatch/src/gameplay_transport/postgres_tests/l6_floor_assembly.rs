@@ -19,6 +19,26 @@ fn l6_floor_assembly_final_drop_consumes_seven_and_creates_one_helmet() -> TestR
 }
 
 #[test]
+fn l6_floor_ruby_preserves_helmet_and_starts_exact_deadline() -> TestResult {
+    run_case("l6-floor-assembly-ruby")
+}
+
+#[test]
+fn l6_floor_ruby_missing_target_keeps_input() -> TestResult {
+    run_case("l6-floor-assembly-ruby-missing-target")
+}
+
+#[test]
+fn l6_floor_ruby_stack_consumes_exactly_one() -> TestResult {
+    run_case("l6-floor-assembly-ruby-stack")
+}
+
+#[test]
+fn l6_floor_ruby_unbound_tile_keeps_input() -> TestResult {
+    run_case("l6-floor-assembly-ruby-unbound")
+}
+
+#[test]
 fn l6_floor_assembly_missing_part_keeps_every_other_item() -> TestResult {
     run_case("l6-floor-assembly-missing")
 }
@@ -284,6 +304,9 @@ pub(super) async fn exercise(
             ],
         )
         .ok_or("floor drop capabilities")?;
+    if name.contains("-ruby") {
+        return ruby_exercise(owner, admitted, harness, fence, name).await;
+    }
     for id in 3222_u64..=3228 {
         if name.ends_with("-missing") && id == 3223 {
             continue;
@@ -373,5 +396,144 @@ pub(super) async fn exercise(
     .await?;
     *admitted = next;
     assert_eq!(replay, result);
+    Ok(())
+}
+
+async fn ruby_exercise(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    harness: &Harness,
+    fence: CurrentCharacterGameplayFence,
+    name: &str,
+) -> TestResult {
+    let missing = name.ends_with("-missing-target");
+    let unbound = name.ends_with("-unbound");
+    let ruby_count = if name.ends_with("-stack") { 2 } else { 1 };
+    for (id, command, carried) in [(3229, 60, false), (3030, 61, true)] {
+        if id == 3229 && missing {
+            continue;
+        }
+        super::quest_world_callbacks::input_item(
+            owner,
+            fence.item_fence(),
+            &Offering {
+                position: ALTAR,
+                item: format!("oteryn:item.tibia.i{id}"),
+                count: if id == 3030 { ruby_count } else { 1 },
+            },
+            command,
+            carried,
+        )
+        .await?;
+    }
+    let before: Option<(String,String)> = sqlx::query_as("SELECT item_instance_id::text,state_revision::text FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3229' AND lifecycle=1")
+        .fetch_optional(&harness.pool).await?;
+    let native = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native")?;
+    let reference = native
+        .item_index()
+        .and_then(|i| i.definition_ref("Item", "oteryn:item.tibia.i3030", "definition-r1"))
+        .ok_or("ruby reference")?;
+    let destination = oteryn_protocol_oteryn::item_view::WorldTilePosition {
+        x: 7,
+        y: 1,
+        floor: -7,
+    };
+    let (next, result, payload) = super::map_seed_planting::drop_exchange_at(
+        owner,
+        *admitted,
+        1,
+        None,
+        reference,
+        u8::try_from(ruby_count)?,
+        false,
+        destination,
+    )
+    .await?;
+    *admitted = next;
+    assert_eq!(
+        result,
+        Some(oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved)
+    );
+    let ruby_remaining: i64 = sqlx::query_scalar("SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3030' AND lifecycle=1")
+        .fetch_one(&harness.pool).await?;
+    let receipt_count: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM game_floor_transform_receipts")
+            .fetch_one(&harness.pool)
+            .await?;
+    if missing || unbound {
+        assert_eq!(ruby_remaining, i64::from(ruby_count));
+        assert_eq!(receipt_count, 0);
+        if let Some((id, revision)) = &before {
+            let unchanged: (String,String)=sqlx::query_as("SELECT definition_production_key,state_revision::text FROM game_item_instances WHERE item_instance_id=$1::uuid")
+                .bind(id).fetch_one(&harness.pool).await?;
+            assert_eq!(
+                unchanged,
+                ("oteryn:item.tibia.i3229".into(), revision.clone())
+            );
+        } else {
+            assert!(missing);
+        }
+    } else {
+        let before = before.as_ref().ok_or("original physical helmet")?;
+        let after: (String,String) = sqlx::query_as("SELECT definition_production_key,state_revision::text FROM game_item_instances WHERE item_instance_id=$1::uuid AND lifecycle=1")
+            .bind(&before.0).fetch_one(&harness.pool).await?;
+        assert_eq!(
+            after.0, "oteryn:item.tibia.i3230",
+            "the exact existing helmet must transform when ruby is dropped"
+        );
+        assert_eq!(after.1.parse::<u64>()?, before.1.parse::<u64>()? + 1);
+        assert_eq!(ruby_remaining, i64::from(ruby_count) - 1);
+        assert_eq!(receipt_count, 1);
+        let timer: (i64,String,Vec<u8>) = sqlx::query_as("SELECT duration_millis,target_production_key,content_digest FROM game_floor_transform_deadlines WHERE item_instance_id=$1::uuid")
+            .bind(&before.0).fetch_one(&harness.pool).await?;
+        assert_eq!(timer.0, 1_800_000);
+        assert_eq!(timer.1, "oteryn:item.tibia.i3229");
+        assert_eq!(timer.2, native.source_digest());
+        let (wire,atomic,exact_deadline): (Vec<u8>,bool,bool)=sqlx::query_as("SELECT a.envelope,a.created_xact_id=r.created_xact_id AND m.created_xact_id=r.created_xact_id,r.expires_at_unix_ms=r.occurred_at+p.duration_millis FROM game_floor_transform_receipts r JOIN game_floor_transform_recipes p USING(recipe) JOIN game_item_audit_outbox a USING(transaction_id) JOIN game_item_loop_move_receipts m ON m.transaction_id=r.move_transaction_id")
+            .fetch_one(&harness.pool).await?;
+        assert!(atomic && exact_deadline);
+        use crate::durability::item_mint_audit::{
+            EventEnvelopeV1, OneItemOperationV1, OneItemTransactionV1,
+        };
+        let envelope = EventEnvelopeV1::decode(wire.as_slice())?;
+        assert!(
+            envelope.payload.len() <= crate::durability::item_mint_audit::RL07_PAYLOAD_BYTES_MAX
+        );
+        let event = OneItemTransactionV1::decode(envelope.payload.as_slice())?;
+        let Some(OneItemOperationV1::Craft(craft)) = event.operation else {
+            return Err("ruby audit operation".into());
+        };
+        let proof: serde_json::Value = serde_json::from_slice(&craft.proof)?;
+        assert_eq!(
+            proof["target"]["item"]["item_instance_id"].as_str(),
+            Some(before.0.as_str())
+        );
+        assert_eq!(
+            proof["input"]["item"]["quantity"].as_u64(),
+            Some(u64::from(ruby_count))
+        );
+        assert_eq!(proof["output_key"], "oteryn:item.tibia.i3230");
+    }
+    let (next, replay, _) = super::map_seed_planting::drop_exchange_at(
+        owner,
+        *admitted,
+        1,
+        Some(payload),
+        reference,
+        u8::try_from(ruby_count)?,
+        false,
+        destination,
+    )
+    .await?;
+    *admitted = next;
+    assert_eq!(replay, result);
+    let replay_count: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM game_floor_transform_receipts")
+            .fetch_one(&harness.pool)
+            .await?;
+    assert_eq!(replay_count, receipt_count);
     Ok(())
 }

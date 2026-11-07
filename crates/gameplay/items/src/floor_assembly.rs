@@ -28,3 +28,42 @@ pub const RECIPES: &[FloorRecipe] = &[FloorRecipe {
 pub fn recipe(action: u16) -> Option<&'static FloorRecipe> {
     RECIPES.iter().find(|recipe| recipe.action == action)
 }
+
+#[derive(Debug)]
+pub struct FloorTransformRecipe {
+    pub key: &'static str,
+    pub action: u16,
+    pub input: &'static str,
+    pub input_count: u16,
+    pub target: &'static str,
+    pub output: &'static str,
+    pub duration_millis: u32,
+    pub decay_target: &'static str,
+}
+
+// Same pinned handler:5-15; items.xml:8079-8087 fixes the original deadline.
+pub const TRANSFORMS: &[FloorTransformRecipe] = &[FloorTransformRecipe {
+    key: "oteryn:floor-transform.ancient-helmet-ruby",
+    action: 40040,
+    input: "oteryn:item.tibia.i3030",
+    input_count: 1,
+    target: "oteryn:item.tibia.i3229",
+    output: "oteryn:item.tibia.i3230",
+    duration_millis: 1_800_000,
+    decay_target: "oteryn:item.tibia.i3229",
+}];
+
+pub fn transform(action: u16, input: &str) -> Option<&'static FloorTransformRecipe> {
+    TRANSFORMS
+        .iter()
+        .find(|recipe| recipe.action == action && recipe.input == input)
+}
+
+pub fn actions() -> impl Iterator<Item = u16> {
+    RECIPES
+        .iter()
+        .map(|recipe| recipe.action)
+        .chain(TRANSFORMS.iter().map(|recipe| recipe.action))
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+}

@@ -3164,7 +3164,7 @@
     },
     "scope_note": "All LANE-L6 input source blockers remain obligations. Differences from selected recipe approximations are not authority to drop a blocker. Historical qengine ownership language is not treated as a reason to defer work now owned by L6.",
     "publication_branch": "claude/happy-davinci-ijz3wy-questpc4",
-    "latest_batch": "cloud-ruby-native-profile-05",
+    "latest_batch": "cloud-floor-transform-06",
     "mechanisms": {
       "reusable_tools_and_atomic_counters": {
         "status": "QUALIFIED",
@@ -3393,6 +3393,62 @@
           "removed": [],
           "provider": "PASS write and --check,42 import files; native-only regeneration includes freshness checks"
         }
+      },
+      "floor_transform_and_original_deadline": {
+        "status": "QUALIFIED",
+        "scope": "Atomic exact-count input debit, same-instance target transform and immutable original per-cycle deadline only; current Channel/non-House physical AddItem. Automatic expiry, source presentation, native altar and whole Ancient Tombs remain consecutive work.",
+        "source": {
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/the_ancient_tombs/movements_craft_helmet.lua",
+          "lines": "5-15",
+          "sha256": "1c7ea8ca397cb6bff7b0ac59a6b0d2514820cc2556cfe0de677527f83182da84"
+        },
+        "red": {
+          "marker": "POSTGRES_DATABASE_READY l6_floor_assembly",
+          "duration_seconds": 53.77,
+          "actual": "same existing helmet remains3229",
+          "expected": "same helmet3230 with1800000ms original deadline",
+          "result": "0 passed / 1 failed"
+        },
+        "green": {
+          "result": "4 passed / 0 failed",
+          "total_seconds": 107.9,
+          "log": "/tmp/questpc4-floor-ruby-cases-green.log",
+          "cases": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby",
+              "duration_seconds": 54.378315188
+            },
+            {
+              "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-missing-target",
+              "duration_seconds": 54.367553574
+            },
+            {
+              "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-stack",
+              "duration_seconds": 53.528149466
+            },
+            {
+              "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-unbound",
+              "duration_seconds": 53.490228767
+            }
+          ],
+          "proofs": [
+            "same physical helmet identity/revision",
+            "exactly1 ruby consumed even from dropped stack2",
+            "no debit on missing target or unbound tile",
+            "original1800000ms deadline and decay target3229",
+            "same-XID original move, source receipt and bounded Craft audit",
+            "full input/target snapshots in audit",
+            "original wire replay creates no second receipt"
+          ]
+        },
+        "regression": {
+          "test": "l6_floor_assembly_final_drop_consumes_seven_and_creates_one_helmet",
+          "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly",
+          "duration_seconds": 53.710418986,
+          "result": "1 passed / 0 failed",
+          "log": "/tmp/questpc4-floor-ruby-assembly-regression.log"
+        }
       }
     },
     "active_counts": {
@@ -3403,92 +3459,120 @@
     },
     "latest_batch_checks": {
       "result": "PASS",
-      "profile_postgres": {
-        "test": "l6_ruby_profile_admits_exact_helmet_absolute_policy",
-        "marker": "POSTGRES_CASE_COMPLETED l6-ruby-profile",
-        "result": "1 passed / 0 failed",
-        "duration_seconds": 53.116194692,
-        "log": "/tmp/questpc4-ruby-profile-green.log",
-        "scope": "Native policy only, exact identity3230,1800000ms absolute deadline to3229, no charges and actual active PostgreSQL content digest"
+      "ruby_postgres": {
+        "result": "4 passed / 0 failed",
+        "total_seconds": 107.9,
+        "log": "/tmp/questpc4-floor-ruby-cases-green.log",
+        "cases": [
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby",
+            "duration_seconds": 54.378315188
+          },
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-missing-target",
+            "duration_seconds": 54.367553574
+          },
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-stack",
+            "duration_seconds": 53.528149466
+          },
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-unbound",
+            "duration_seconds": 53.490228767
+          }
+        ],
+        "proofs": [
+          "same physical helmet identity/revision",
+          "exactly1 ruby consumed even from dropped stack2",
+          "no debit on missing target or unbound tile",
+          "original1800000ms deadline and decay target3229",
+          "same-XID original move, source receipt and bounded Craft audit",
+          "full input/target snapshots in audit",
+          "original wire replay creates no second receipt"
+        ]
       },
-      "provider_and_capture": "PASS source capture check and native provider write/check42 files",
-      "cargo_check": "PASS content+dispatch all targets/features32.07s",
-      "clippy": "PASS content+dispatch all targets/features-D warnings45.91s",
-      "fmt": "PASS all and explicit mounted leaves",
-      "pin_refresh": "PASS unchanged World cb078e3d34c1440b2c7c9f35206ae3158d5341e507a87424f4959ccb66da7298; inputs12ba3d59676cac791a83eb85559de28fbab079275bf15dc987412f75aab83616",
-      "pin_check": "PASS exit0; unchanged World cb078e3d34c1440b2c7c9f35206ae3158d5341e507a87424f4959ccb66da7298"
+      "assembly_regression": {
+        "test": "l6_floor_assembly_final_drop_consumes_seven_and_creates_one_helmet",
+        "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly",
+        "duration_seconds": 53.710418986,
+        "result": "1 passed / 0 failed",
+        "log": "/tmp/questpc4-floor-ruby-assembly-regression.log"
+      },
+      "cargo_check": "items+durability+dispatch all targets/features2m59s",
+      "clippy": "same crates/all targets/features-D warnings3m13s",
+      "fmt_and_diff": "PASS all and explicit mounted leaf",
+      "migration_claims": "1061 unclaimed on main/open PRs, reserved lane range, no local duplicates",
+      "content_and_pins": "Unchanged in this runtime slice"
     },
     "current_attempt": {
-      "name": "cloud-ruby-native-profile-05",
+      "name": "cloud-floor-transform-06",
       "state": "GREEN",
       "published": false,
+      "base_sha": "a18dba296decc316049240f748884750335fc2b7",
       "whole_entries_newly_qualified": 0,
-      "base_sha": "516de7b0d",
-      "ruby_transform_red": {
+      "red": {
         "marker": "POSTGRES_DATABASE_READY l6_floor_assembly",
-        "result": "0 passed / 1 failed",
         "duration_seconds": 53.77,
-        "actual_same_helmet_definition": "oteryn:item.tibia.i3229",
-        "expected_same_helmet_definition": "oteryn:item.tibia.i3230",
-        "log": "/tmp/questpc4-floor-ruby-red.log"
+        "actual": "same existing helmet remains3229",
+        "expected": "same helmet3230 with1800000ms original deadline",
+        "result": "0 passed / 1 failed"
       },
-      "profile_red": {
-        "test": "l6_ruby_profile_admits_exact_helmet_absolute_policy",
-        "marker": "POSTGRES_DATABASE_READY l6-ruby-profile",
-        "result": "0 passed / 1 failed",
-        "duration_seconds": 53.29,
-        "error": "full helmet3230 native policy missing",
-        "log": "/tmp/questpc4-ruby-profile-red.log"
-      },
-      "decision": "Admit exactly source3230 absolute1800000ms decay policy before implementing generic identity-preserving floor transform. No whole Ancient Tombs qualification.",
-      "generated_delta": {
-        "before": 3606,
-        "after": 3607,
-        "added": [
-          "oteryn:item.tibia.i3230"
+      "implementation": [
+        "Generic exact-source floor transforms share triggering move transaction, replay and lock ordering",
+        "Immutable recipe/2 full before snapshots/same-identity target/quantity-limited input retirement+atomic Craft audit+per-cycle original deadline in migration1061",
+        "Native output policy must match exact registry key,duration,target,no charge",
+        "Deduplicated AddItem action resolver supports both fresh assembly and existing-instance transform recipes"
+      ],
+      "qualification_scope": "Atomic transform and original deadline recording only; automatic per-cycle expiry and source presentation are next engine slices, whole Ancient Tombs still in progress.",
+      "next_action": "Commit/fetch/merge/push immediately, then add automatic per-cycle expiry to existing fenced timer drain; whole Ancient Tombs stays in progress.",
+      "validation": "PASS Ruby PG4/0 and original assembly PG1/0; check2m59s; all-target/all-feature clippy-D warnings3m13s; final fmt/diff, PG syntax parse and migration allocation/duplicates pass.",
+      "ruby_postgres": {
+        "result": "4 passed / 0 failed",
+        "total_seconds": 107.9,
+        "log": "/tmp/questpc4-floor-ruby-cases-green.log",
+        "cases": [
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby",
+            "duration_seconds": 54.378315188
+          },
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-missing-target",
+            "duration_seconds": 54.367553574
+          },
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-stack",
+            "duration_seconds": 53.528149466
+          },
+          {
+            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-ruby-unbound",
+            "duration_seconds": 53.490228767
+          }
         ],
-        "changed_existing": [],
-        "removed": [],
-        "provider": "PASS write and --check,42 import files; native-only regeneration includes freshness checks"
+        "proofs": [
+          "same physical helmet identity/revision",
+          "exactly1 ruby consumed even from dropped stack2",
+          "no debit on missing target or unbound tile",
+          "original1800000ms deadline and decay target3229",
+          "same-XID original move, source receipt and bounded Craft audit",
+          "full input/target snapshots in audit",
+          "original wire replay creates no second receipt"
+        ]
       },
-      "source": {
-        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-        "path": "data/items/items.xml",
-        "line": 8079,
-        "sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
-        "duration_ms": 1800000,
-        "decay_target": 3229,
-        "stop_duration": false,
-        "charges": "NOT_APPLICABLE"
-      },
-      "validation": "All bounded profile checks passed; commit/push immediately. Runtime RED stays unstaged.",
-      "reuse_check": "qengine2 a89547fd8 and available questpc3/8 have no physical3230/floor-transform runtime implementation",
-      "profile_green": {
-        "test": "l6_ruby_profile_admits_exact_helmet_absolute_policy",
-        "marker": "POSTGRES_CASE_COMPLETED l6-ruby-profile",
+      "assembly_regression": {
+        "test": "l6_floor_assembly_final_drop_consumes_seven_and_creates_one_helmet",
+        "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly",
+        "duration_seconds": 53.710418986,
         "result": "1 passed / 0 failed",
-        "duration_seconds": 53.116194692,
-        "log": "/tmp/questpc4-ruby-profile-green.log",
-        "scope": "Native policy only, exact identity3230,1800000ms absolute deadline to3229, no charges and actual active PostgreSQL content digest"
-      },
-      "checks": {
-        "provider_and_capture": "PASS source capture check and native provider write/check42 files",
-        "cargo_check": "PASS content+dispatch all targets/features32.07s",
-        "clippy": "PASS content+dispatch all targets/features-D warnings45.91s",
-        "fmt": "PASS all and explicit mounted leaves",
-        "pin_refresh": "PASS unchanged World cb078e3d34c1440b2c7c9f35206ae3158d5341e507a87424f4959ccb66da7298; inputs12ba3d59676cac791a83eb85559de28fbab079275bf15dc987412f75aab83616",
-        "pin_check": "PASS exit0; unchanged World cb078e3d34c1440b2c7c9f35206ae3158d5341e507a87424f4959ccb66da7298"
-      },
-      "environment_recovery": "Sandbox failed No space left on device after all checks had exited0. Deleted only25GB disposable Rust incremental compiler cache via approved escalation; source and PostgreSQL untouched;25GB now free. No test weakened or skipped.",
-      "next_action": "After immediate profile push, implement same-instance floor transform and repeatable per-cycle deadlines through existing fenced timer owner; no deferral to another lane."
+        "log": "/tmp/questpc4-floor-ruby-assembly-regression.log"
+      }
     },
     "authoring_state": "AUTHORING",
     "last_pushed_batch": {
-      "name": "cloud-floor-assembly-04",
-      "sha": "516de7b0d",
-      "branch": "claude/happy-davinci-ijz3wy-questpc4",
+      "name": "cloud-ruby-native-profile-05",
+      "sha": "a18dba296decc316049240f748884750335fc2b7",
       "published": true,
-      "checks": "PG3/0; check3m20s; clippy3m02s all targets/features; fmt/diff; migration allocation and duplicates"
+      "branch": "claude/happy-davinci-ijz3wy-questpc4",
+      "checks": "Real PG1/0,53.116194692s; check32.07s; clippy45.91s; capture/provider/fmt/pin-refresh/pin-check all PASS"
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",

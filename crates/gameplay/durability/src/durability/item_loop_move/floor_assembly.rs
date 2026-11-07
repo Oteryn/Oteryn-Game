@@ -43,7 +43,8 @@ impl DurabilityRoot {
                 if let Some(replay) = committed_loop_move(&mut tx, command, fence.character_id, &intent).await? {
                     return replay.map_err(LoopError::Refused);
                 }
-                let Some(recipe) = recipe(target.action) else { return refuse(LoopMoveRefusal::Rejected); };
+                let assembly_recipe = recipe(target.action);
+                if !oteryn_gameplay_items::floor_assembly::actions().any(|action| action == target.action) { return refuse(LoopMoveRefusal::Rejected); }
                 let LoopDestination::Ground(ground) = &request.destination else { return refuse(LoopMoveRefusal::Rejected); };
                 if target.scope.content_generation != content.loop_content_digest()
                     || native.source_digest() != content.loop_content_digest()
@@ -60,7 +61,8 @@ impl DurabilityRoot {
                 // operands below use NOWAIT, so a concurrent pickup cannot form a cycle.
                 let source = lock_live_item(&mut tx, request.item, *world.as_bytes()).await?
                     .ok_or(LoopError::Refused(LoopMoveRefusal::Stale))?;
-                let eligible = recipe.inputs.iter().any(|(key, _)| *key == source.0.production_key);
+                let transform = oteryn_gameplay_items::floor_assembly::transform(target.action, &source.0.production_key);
+                let eligible = transform.is_some() || assembly_recipe.is_some_and(|recipe| recipe.inputs.iter().any(|(key, _)| *key == source.0.production_key));
                 if eligible {
                     // Keep the source Item before the original Ground-owner lock. Never
                     // wait for Ground while holding additional destination Items.
@@ -75,7 +77,12 @@ impl DurabilityRoot {
                         .fetch_all(&mut **tx).await?;
                 }
                 let moved = apply_loop_move(&mut tx, permit, &record, &node, &fence, command, content, &request, &intent, None, None, None).await?;
+                if let Some(recipe) = transform {
+                    super::floor_transform::apply(&mut tx, &fence, command, native, &moved, &target, ground, recipe).await?;
+                    return Ok(moved);
+                }
                 if !eligible { return Ok(moved); }
+                let Some(recipe) = assembly_recipe else { return Ok(moved); };
                 let mut inputs = Vec::new();
                 for (key, count) in recipe.inputs {
                     let row = sqlx::query("SELECT to_jsonb(i) AS item,to_jsonb(g) AS ground FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.spatial_position=$3 AND g.map_revision=$4 AND g.content_revision=$5 AND g.native_room_placement_context=$6 AND g.runtime_scope_ownership_generation=$7::text::numeric AND game_item_loop_drop_ref(g.corpse_ref) AND g.stack_ordinal IS NOT NULL AND i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=$8 AND i.definition_revision_ref='definition-r1' AND i.quantity=$9 ORDER BY g.stack_ordinal,i.item_instance_id LIMIT 1 FOR UPDATE OF i NOWAIT")

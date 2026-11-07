@@ -25,15 +25,15 @@ pub(super) fn target(
         let crate::map::view::MapEntryKey::Base(key) = entry.source.key() else {
             continue;
         };
-        for recipe in oteryn_gameplay_items::floor_assembly::RECIPES {
+        for action in oteryn_gameplay_items::floor_assembly::actions() {
             if map
                 .facts
-                .quest_callback_matches(key, None, Some(recipe.action), None)
+                .quest_callback_matches(key, None, Some(action), None)
             {
                 if selected.is_some() {
                     return None;
                 }
-                selected = Some((key, recipe.action));
+                selected = Some((key, action));
             }
         }
     }
