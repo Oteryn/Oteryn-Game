@@ -32,7 +32,7 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald')]
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella')]
     paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua']
@@ -330,6 +330,35 @@ def build():
     for words,before,after in [(['outfit','addon','royal'],0,14),(['yes'],14,15)]:
         offers.append({'npc':'oteryn:npc.percybald','keywords':words,'topic':before,'next_topic':after,
             'storage':[],'reply':['Choose armor, shield or crown for a token donation.']})
+    pirate=prefix+'u7_8/pirate_outfits/'
+    shattered=prefix+'u7_8/the_shattered_isles/'
+    pirate_owner='outfit_and_addon_quests'  # retain the admitted shared source track owner
+    add('l4-pirate-base',pirate_owner,'raymond_striker',['pirate outfit'],
+        [storage(pirate+'pirate_base_outfit',-1,1,0)],outfit=('pirate',0),requires=[
+            requirement(shattered+'access_to_laguna_island',1),requirement(shattered+'rays_mission4',5)])
+    sabre=pirate+'pirate_sabre_addon'
+    start=[storage(sabre,-1,1,0),storage('oteryn:quest-progress/outfit_quest/default_start',-1,1,1)]
+    add('l4-pirate-sabre-start',pirate_owner,'duncan',['yes'],start,topic=2)
+    for words,before,after in [(['task'],0,1),(['yes'],1,2)]:
+        offers.append({'npc':'oteryn:npc.duncan','keywords':words,'topic':before,'next_topic':after,
+            'storage':[storage(sabre,-1,0,0,preserve=True)],'reply':['Bring 100 eye patches, 100 peg legs and 100 hooks in that order.']})
+    for name,before,after,item,topic,word in [
+        ('eye-patches',1,2,6098,3,'eye patches'),('peg-legs',2,3,6126,4,'peg legs'),('hooks',3,4,6097,5,'hooks')]:
+        states=[storage(sabre,before,after)]
+        add('l4-pirate-'+name,pirate_owner,'duncan',['yes'],states,take=[(item,100)],topic=topic)
+        offers.append({'npc':'oteryn:npc.duncan','keywords':[word],'topic':0,'next_topic':topic,
+            'storage':states,'reply':['Have you gathered 100 '+word+'?']})
+    # Morgan's existing firebird callback owns the only sabre grant; do not duplicate it.
+    hat=pirate+'pirate_hat_addon'
+    hat_start=[storage(pirate+'pirate_base_outfit',1,1,preserve=True),storage(hat,-1,1,0)]
+    add('l4-pirate-hat-start',pirate_owner,'ariella',['yes'],hat_start,topic=4)
+    for words,before,after in [(['addon'],0,2),(['task'],2,3),(['yes'],3,4)]:
+        offers.append({'npc':'oteryn:npc.ariella','keywords':words,'topic':before,'next_topic':after,
+            'storage':hat_start,'reply':['Bring proof from the four pirate leaders.']})
+    add('l4-pirate-hat',pirate_owner,'ariella',['yes'],[storage(hat,1,2)],
+        take=[(6101,1),(6102,1),(6100,1),(6099,1)],outfit=('pirate',2),topic=5)
+    offers.append({'npc':'oteryn:npc.ariella','keywords':['task'],'topic':0,'next_topic':5,
+        'storage':[storage(hat,1,2)],'reply':['Did you bring the shirt, sabre, hat and eye patch?']})
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})

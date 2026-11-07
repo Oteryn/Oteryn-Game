@@ -2,6 +2,17 @@
   "schema": 1,
   "npcs": [
     {
+      "npc": "oteryn:npc.ariella",
+      "greet": "Hi there.",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ariella.lua:187:sha256:90cd51edf9d8829e054e2bfa38cbf61aa3bece945b56ceb60e9cb9a346c95a56",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
       "npc": "oteryn:npc.avar_tar",
       "greet": "Greetings, traveller |PLAYERNAME|!",
       "farewell": "See you later, |PLAYERNAME|.",
@@ -79,6 +90,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.duncan",
+      "greet": "Hi, come closer. Have a look at my wares.",
+      "farewell": "Good bye.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/duncan.lua:184:sha256:292f86b5b453474645ce9f13955af7e4efc29cdb12e9d0cc5f7fd2115502815f",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/duncan.lua:185:sha256:292f86b5b453474645ce9f13955af7e4efc29cdb12e9d0cc5f7fd2115502815f",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
       "npc": "oteryn:npc.ezebeth",
       "greet": "Hello! I guess you are here for a {mission}.",
       "farewell": "Good bye, |PLAYERNAME|.",
@@ -153,6 +175,17 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/percybald.lua:232:sha256:b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.raymond_striker",
+      "greet": "Be greeted. Is there anything I can {do for you}?",
+      "farewell": "Good bye.",
+      "walkaway": "Oh well.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/raymond_striker.lua:217:sha256:9788635e604e865c0b06091cc9c4bff3c58aa5bc0c752e433790e00f52d4fab8",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/raymond_striker.lua:218:sha256:9788635e604e865c0b06091cc9c4bff3c58aa5bc0c752e433790e00f52d4fab8",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/raymond_striker.lua:219:sha256:9788635e604e865c0b06091cc9c4bff3c58aa5bc0c752e433790e00f52d4fab8"
       ]
     },
     {

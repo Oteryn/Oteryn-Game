@@ -159,6 +159,12 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l4-royal-costume-base" => &["outfit", "yes", "armor"],
         "l4-royal-costume-shield" => &["outfit", "yes", "shield"],
         "l4-royal-costume-crown" => &["outfit", "yes", "crown"],
+        "l4-pirate-sabre-start" => &["task", "yes"],
+        "l4-pirate-eye-patches" => &["eye patches"],
+        "l4-pirate-peg-legs" => &["peg legs"],
+        "l4-pirate-hooks" => &["hooks"],
+        "l4-pirate-hat-start" => &["addon", "task", "yes"],
+        "l4-pirate-hat" => &["task"],
         "hallowed-holy-water" => &["holy water"],
         "sam-backpack" => &["old backpack"],
         "deepling-helmet" => &[

@@ -50,3 +50,10 @@ or binaries are added. QUEST-STATUS.json retains exact tests and case markers.
   30000/25000 dialogue number as the base-only price. Source Crystal9f5a72c,
   data-global/npc/percybald.lua:149-228,
   sha256b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc.
+
+- Pirate keeps the existing shared OutfitAndAddon quest ownership of its source
+  base/sabre/hat and DefaultStart tracks. Do not reassign them to the title alias.
+  Reuse Morgan's already-delivered firebird stage4->5; implement Duncan's exact
+  three100-item hand-ins and both NPC introductions before claiming the whole
+  outfit story. Only the Shattered Isles parent objective flags are arranged as
+  external prerequisites in the test; no internal outfit stages are seeded.

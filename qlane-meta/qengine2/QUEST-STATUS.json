@@ -3,8 +3,8 @@
   "lifecycle": "AUTHORING; owner-authorized local commits and fast-forward pushes to claude/happy-davinci-ijz3wy-qengine2 after each green batch",
   "qualification_boundary": "Whole L1 entry, not an isolated seeded reward stage. No entry is promoted before all of its required stages and relevant PG cases pass.",
   "counts": {
-    "qualified": 11,
-    "unfinished": 55,
+    "qualified": 12,
+    "unfinished": 54,
     "blocked": 0
   },
   "quests": [
@@ -1136,7 +1136,7 @@
     {
       "canonical": "unresolved:questpc2:pirate_outfits_quest",
       "title": "Pirate Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc2",
@@ -1147,7 +1147,13 @@
           "matched_path": "prior_rounds/N-Q-before-L3/quests"
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral.",
+      "qualification": {
+        "batch": "L1-04C",
+        "resolved_canonical": "oteryn:quest.pirate_outfits_quest",
+        "scope": "Complete source base, Duncan introductions and three100-item hand-ins, original Morgan sabre, Ariella introduction and four-item hat exchange. Only external Shattered Isles prerequisites seeded;partial recipe refuses atomically;replay,three immutable account facts and ordinary final appearance selection pass.",
+        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-pirate-story duration=81.775046751s success=true"
+      }
     },
     {
       "canonical": "unresolved:questpc2:podzilla_quest",
@@ -1897,10 +1903,10 @@
       "oteryn:quest.royal_costume_outfits_quest",
       "unresolved:questpc2:pirate_outfits_quest"
     ],
-    "current_slice": "Generic native monetary fee participant + complete Nobleman source story; push this slice immediately after focused PG GREEN. Remaining entries follow with separate green commits.",
+    "current_slice": "L1-04C complete Pirate source story",
     "reuse_audit": "Primary questpc2..8 branches refreshed; none of the matched current entries is QUALIFIED. Latest questpc8 npc_program still calls plan_storage (line130); no native fee/outfit participant exists there. Reuse existing item_fee_burn owner and Type2 gate here.",
     "source": "Crystal9f5a72c data-global/npc/irmana.lua:50-135 and corresponding male branches. Carried-only150000 per addon; no10000 payment implementation despite dialogue.",
-    "phase": "Pirate whole-source PG RED authored before production additions. Reuse original Morgan pirate-sabre callback, keep shared OutfitAndAddon track ownership. Complete Duncan3 hand-ins,Raymond base,Ariella intro+hat;only Shattered Isles external parent flags seeded.",
+    "phase": "All three source outfit entries QUALIFIED;Pirate focused PG GREEN;immediate slice push. Follow-on content/world/pin-check session30485.",
     "red": {
       "result": "1 failed in44.66s: missing Nobleman first-start binding",
       "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-nobleman-story duration=44.661348814s success=false",
@@ -1960,6 +1966,28 @@
         "follow_on_verification": "COMPLETE:123 content tests2.12s;5 world repository tests46.20s;pin-check passed6989e9ea9b9b48dafa8bff6295f0b20aa8786916893dadd5aa2962e7e953b125.",
         "commit": "059364f38",
         "push": "fast-forward confirmed"
+      },
+      {
+        "id": "L1-04C",
+        "status": "QUALIFIED",
+        "entries": [
+          "unresolved:questpc2:pirate_outfits_quest"
+        ],
+        "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-pirate-story duration=43.849494574s success=false",
+        "green": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-pirate-story duration=81.775046751s success=true",
+        "result": "1 passed;0failed;0ignored;81.78s;actualPostgreSQL18.6",
+        "scope": "Complete source base, Duncan introductions and three100-item hand-ins, original Morgan sabre, Ariella introduction and four-item hat exchange. Only external Shattered Isles prerequisites seeded;partial recipe refuses atomically;replay,three immutable account facts and ordinary final appearance selection pass.",
+        "sources": [
+          "duncan.lua:61-134 sha256292f86b5b453474645ce9f13955af7e4efc29cdb12e9d0cc5f7fd2115502815f",
+          "raymond_striker.lua:144-152 sha2569788635e604e865c0b06091cc9c4bff3c58aa5bc0c752e433790e00f52d4fab8",
+          "ariella.lua:91-130 pinned corpus;all output callbacks retain exact file hash"
+        ],
+        "checks": [
+          "17 authoring tests6.005s;callback/placement reproduction",
+          "cargo fmt --all --check;check59.16s;2 unit tests1.14s;strict clippy1m23s",
+          "repo pin-refresh passed;actual PostgreSQL GREEN81.775046751s"
+        ],
+        "follow_on_verification": "Running30485;not claimed complete."
       }
     ],
     "debug_evidence": [
@@ -1978,6 +2006,12 @@
       "duncan.lua:61-134 sha256292f86b5b453474645ce9f13955af7e4efc29cdb12e9d0cc5f7fd2115502815f",
       "raymond_striker.lua:144-152 sha2569788635e604e865c0b06091cc9c4bff3c58aa5bc0c752e433790e00f52d4fab8",
       "ariella.lua:91-130 pinned corpus;all output callbacks retain exact file hash"
+    ],
+    "pirate_red": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-pirate-story duration=43.849494574s success=false",
+    "pirate_checks": [
+      "17 authoring tests6.005s;callback/placement reproduction",
+      "cargo fmt --all --check;check59.16s;2 unit tests1.14s;strict clippy1m23s",
+      "repo pin-refresh passed;actual PostgreSQL GREEN81.775046751s"
     ]
   }
 }

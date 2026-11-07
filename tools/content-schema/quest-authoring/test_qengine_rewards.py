@@ -112,12 +112,24 @@ class QuestRewards(unittest.TestCase):
             self.assertEqual(c['outfit']['addons'],bit)
             self.assertEqual(c['present'] if 'present' in c else [],[])
 
+    def test_pirate_full_source_stages_retain_the_original_firebird_owner(self):
+        callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}
+        self.assertNotIn('l4-pirate-sabre',callbacks)
+        self.assertEqual(callbacks['pirate-sabre']['storage'][0]['minimum'],4)
+        for name,item,before,after in [('eye-patches',6098,1,2),('peg-legs',6126,2,3),('hooks',6097,3,4)]:
+            c=callbacks['l4-pirate-'+name]
+            self.assertEqual(c['take'],[{'item':f'oteryn:item.tibia.i{item}','count':100}])
+            self.assertEqual((c['storage'][0]['minimum'],c['storage'][0]['set']),(before,after))
+            self.assertEqual(c['quest'],'oteryn:quest.outfit_and_addon_quests')
+        self.assertEqual([r['item'] for r in callbacks['l4-pirate-hat']['take']],
+                         ['oteryn:item.tibia.i6101','oteryn:item.tibia.i6102','oteryn:item.tibia.i6100','oteryn:item.tibia.i6099'])
+
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
         self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),32)
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),8)
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),34)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),13)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 

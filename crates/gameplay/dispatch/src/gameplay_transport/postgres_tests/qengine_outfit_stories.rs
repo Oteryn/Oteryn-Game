@@ -56,6 +56,13 @@ fn qengine_l4_royal_costume_full_token_exchange_story() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-l4-royal-costume-story")
 }
 
+#[test]
+fn qengine_l4_pirate_full_source_outfit_story() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-l4-pirate-story")
+}
+
+const SHATTERED: &str = "oteryn:quest-progress/quest/u7_8/the_shattered_isles/";
+
 const ANNIHILATOR: &str = "oteryn:quest-progress/quest/u7_24/the_annihilator/reward";
 const DEMON_HELMET: &str = "oteryn:quest-progress/quest/u6_4/demon_helmet/rewards/demon_helmet";
 const DEMON_OAK: &str = "oteryn:quest-progress/quest/u8_2/the_demon_oak/done";
@@ -337,6 +344,20 @@ pub(super) async fn exercise(
             ],
             1456,
         ),
+        "qengine-rewards-l4-pirate-story" => (
+            "pirate",
+            &[
+                ("base", None, None, Some(0)),
+                ("sabre-start", None, None, None),
+                ("eye-patches", Some((6098, 100)), None, None),
+                ("peg-legs", Some((6126, 100)), None, None),
+                ("hooks", Some((6097, 100)), None, None),
+                ("sabre", None, None, Some(1)),
+                ("hat-start", None, None, None),
+                ("hat", None, None, Some(2)),
+            ],
+            155,
+        ),
         _ => return Err("unknown outfit story".into()),
     };
     let all = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
@@ -349,7 +370,11 @@ pub(super) async fn exercise(
         } else {
             "l2"
         };
-        let key = format!("oteryn:quest-reward/{batch}-{family}-{suffix}");
+        let key = if family == "pirate" && *suffix == "sabre" {
+            "oteryn:quest-reward/pirate-sabre".into()
+        } else {
+            format!("oteryn:quest-reward/{batch}-{family}-{suffix}")
+        };
         let callback = all
             .iter()
             .find(|c| c.key == key)
@@ -361,6 +386,12 @@ pub(super) async fn exercise(
                 count: item.1,
             };
         let mut expected_take = take.iter().map(amount).collect::<Vec<_>>();
+        if family == "pirate" && *suffix == "hat" {
+            expected_take = [(6101, 1), (6102, 1), (6100, 1), (6099, 1)]
+                .iter()
+                .map(amount)
+                .collect();
+        }
         if family == "royal-costume" {
             expected_take.extend(present.iter().map(amount));
         }
@@ -406,6 +437,19 @@ pub(super) async fn exercise(
                 minimum: 2,
                 maximum: 2,
             }]
+        } else if family == "pirate" && *suffix == "base" {
+            vec![
+                Requirement {
+                    track: format!("{SHATTERED}access_to_laguna_island"),
+                    minimum: 1,
+                    maximum: 1,
+                },
+                Requirement {
+                    track: format!("{SHATTERED}rays_mission4"),
+                    minimum: 5,
+                    maximum: 5,
+                },
+            ]
         } else if family == "glooth-engineer" {
             if *suffix == "base" {
                 vec![Requirement {
@@ -494,6 +538,11 @@ pub(super) async fn exercise(
         .collect()
     } else if family == "festive" {
         vec![(FEATHERS.into(), 1)]
+    } else if family == "pirate" {
+        vec![
+            (format!("{SHATTERED}access_to_laguna_island"), 1),
+            (format!("{SHATTERED}rays_mission4"), 5),
+        ]
     } else if family == "demon" {
         vec![
             (ANNIHILATOR.into(), 1),
@@ -599,7 +648,7 @@ pub(super) async fn exercise(
             .ok_or("capabilities")?;
     // Earn ordinary carrying capacity through the real progression owner for
     // the largest source recipes, preserving every native weight check.
-    if matches!(family, "battle-mage" | "royal-costume") {
+    if matches!(family, "battle-mage" | "royal-costume" | "pirate") {
         let carrying_level = if family == "royal-costume" { 200 } else { 50 };
         use crate::durability::character_progression::{
             ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
@@ -655,7 +704,18 @@ pub(super) async fn exercise(
         assert!(matches!(outcome, ExperienceCommitOutcome::Committed(_)));
     }
     let mut npcs = BTreeMap::new();
-    if family == "festive" {
+    if family == "pirate" {
+        let keys = [
+            "oteryn:npc.raymond_striker",
+            "oteryn:npc.duncan",
+            "oteryn:npc.morgan",
+            "oteryn:npc.ariella",
+        ];
+        let actors = super::classic_quests::install(owner, admitted, keys).await?;
+        for (key, actor) in keys.into_iter().zip(actors) {
+            npcs.insert(key.to_owned(), actor);
+        }
+    } else if family == "festive" {
         let keys = ["oteryn:npc.the_first_dragon", "oteryn:npc.muriel"];
         let actors = super::classic_quests::install(owner, admitted, keys).await?;
         for (key, actor) in keys.into_iter().zip(actors) {
@@ -704,7 +764,9 @@ pub(super) async fn exercise(
             if quantity(h, &item.item).await? < i64::from(item.count) {
                 supply(owner, admitted, h, item, &mut bags, &mut occurrence).await?;
             }
-            if family == "royal-costume" && index == 0 {
+            if (family == "royal-costume" || (family == "pirate" && callback.key.ends_with("-hat")))
+                && index == 0
+            {
                 let before = counts(h).await?;
                 let silver = quantity(h, &item.item).await?;
                 let (result, _, _) =
@@ -713,13 +775,13 @@ pub(super) async fn exercise(
                 assert_eq!(
                     result,
                     NpcIntentDisposition::Rejected,
-                    "missing second token must refuse the entire exchange"
+                    "missing later ingredient must refuse the entire exchange"
                 );
                 assert_eq!(counts(h).await?, before);
                 assert_eq!(
                     quantity(h, &item.item).await?,
                     silver,
-                    "first token cannot be consumed before second token is proven"
+                    "first ingredient cannot be consumed before the complete recipe is proven"
                 );
             }
         }

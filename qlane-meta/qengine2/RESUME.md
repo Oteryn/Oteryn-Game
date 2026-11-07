@@ -188,3 +188,17 @@ and sets base1. Ariella addon/task/yes/yes sets hat1;task/yes consumes one each
 6101/6102/6100/6099 and sets hat2/addon2. All pirate/default-start tracks retain
 existing OutfitAndAddon quest owner. New source models/placements are not yet
 authored: actual PG RED build15963 /tmp/qengine2-batch4-pirate-red.log first.
+
+Pirate actual PG RED43.849494574s,false. Seven missing stages now authored;
+original Morgan callback unchanged;five item profiles promoted,four NPCs placed
+with no held records.17 Python tests6.005s,check59.16s,2 Rust tests1.14s,
+strict clippy1m23s pass. Pin-refresh running71727;then qengine_l4_pirate GREEN.
+Logs /tmp/qengine2-batch4-pirate-*.log. Source data/generation only production
+changes;no backend owner duplicated. Push complete Pirate slice as soon as green.
+
+Pirate L1-04C QUALIFIED: actual PG GREEN81.775046751s,1passed,0failed,0ignored.
+RED43.849494574s. Complete eight-stage source story,source guards and exact
+100/100/100 deliveries,four-item hat atomic refusal,replay,3immutable facts,
+normal appearance pass. No internal stages seeded;existing Morgan unchanged.
+Counts12/66qual,54remaining. Immediate commit/push;follow-on content/world/pin
+checks running30485. Continue next batch after push;do not stop.
