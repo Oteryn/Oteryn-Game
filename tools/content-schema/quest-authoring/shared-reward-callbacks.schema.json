@@ -251,6 +251,14 @@
             "$ref": "#/$defs/input"
           }
         },
+        "experience": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 100000000
+        },
         "blessing": {
           "type": [
             "string",

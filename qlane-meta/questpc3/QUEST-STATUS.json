@@ -20,7 +20,7 @@
       ],
       "status": "IN_PROGRESS",
       "implementation_owner": "questpc3",
-      "next_actions": "Native first greeting and six source NPC program callbacks implemented; source Item/XP hand-in, damage/food/chest and remaining Zirella/Carlos operations remain our implementation work. Reuse merged generic reward engine; do not redo qualified slices."
+      "next_actions": "Three-leg/100XP hand-in, native fish and Zirella50XP rewards implemented with PG proof; greeting/shared scalar program and source fallback implemented. Complete occurrences, chest/equipment/health/cart/wood/Carlos mechanisms; whole quest remains in progress."
     },
     {
       "canonical": "oteryn:quest.the_first_dragon_quest",
@@ -65,6 +65,7 @@
       "status": "IN_PROGRESS",
       "implementation_owner": "questpc3",
       "next_actions": "Admit the regular blessing Services and implement the ordered journey, exact quotes/debits, held blessings/progress and guide rewards through reusable fenced Service/Quest composition.",
+      "lane_inventory_key": "unresolved:questpc2:pilgrimage_of_ashes_quest",
       "original_identity": "unresolved:questpc2:pilgrimage_of_ashes_quest",
       "identity_evidence": "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/identity @ 5e72a3f0b0e16803bc5cd999298e4ec83f05eed9"
     },
@@ -838,31 +839,41 @@
       }
     ],
     "current_batch": {
-      "id": "beginning-greet-01",
-      "status": "PG, unit and cargo check GREEN; immediate publication with Clippy running under owner cadence",
+      "id": "cockroach-goal-01",
+      "phase": "GREEN",
+      "whole_entry_qualifications": 0,
       "entries": [
         "oteryn:quest.the_beginning_quest"
       ],
-      "mechanism": "Native Santiago greeting and atomic source quest/greeting flags using existing common NPC executor",
-      "whole_entry_qualifications": 0,
-      "source": "Crystal 9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/santiago.lua:63-73,250-251; SHA256 e83d14b26fb9e6bca12cd3ec50abe34daaeb56f2719b5a1dee3d8efc4402a1bd in retained corpus.tar.gz",
-      "clippy": "GREEN on pre-merge slice, 1m38s",
-      "integration": {
-        "incoming": "9d3330e59a1ce0f3de439d27f26ad760fb5dbe72",
-        "status": "Three local focused PG cases GREEN; Clippy RUNNING",
-        "rule": "Shared reward callback precedes state-only tutorial fallback; preserve both NPC template flags, walkaway behavior and all catalogue revision material. Own greeting receipt test now asserts the integrated shared callback key."
+      "scope": "Reusable conditional set over original locked effect values; configurable native kill gate value/completion; authored three-Cockroach5to6 bridge, preserving separate physical3legs/100XP.",
+      "assumption": "Pinned donor investigation did not recover the5to6 hook. Count three existing eligible native kill-credit occurrences at stage5; open stage6 only on third. No hand-in log, items or XP granted by deaths.",
+      "test_changes": "Two new sequential/burst cases share native lethal queue fixture. Existing unstarted negative assertion retained after draining any known-empty queue, with explicit zero physical leg instances.",
+      "red_log": "/tmp/questpc3-cockroach-goal-red.log",
+      "red_process_session": 32400,
+      "implementation": "Generic SetWhenAtLeast (bounded, hashed, original locked snapshot) plus configured native gate value and optional final-occurrence gate advancement. Cockroach stage5 becomes6 on exactly the third eligible native kill; no physical legs, hand-in log or XP manufactured.",
+      "reuse_check": "Latest qengine2 and refreshed questpc2/4/5/6/7/8/questl2 checked; no reusable conditional effect found. Existing sum references provide the bounded original-snapshot/hash pattern.",
+      "red": {
+        "duration_seconds": 53.63,
+        "postgres_marker_ms": 53526,
+        "failure": "the lethal event must enter the real queue"
       },
-      "publication": {
-        "commit": "025936c3d8b4ff07d6cb57d60c0c8afb23a6cd7e",
-        "remote_verified": true
-      }
+      "green": {
+        "duration_seconds": 55.11,
+        "cases": 2,
+        "completion_ms": [
+          55085,
+          55100
+        ]
+      },
+      "qualification": "No whole quest qualified by this mechanism batch.",
+      "publication": "Commit and fast-forward push after these recorded checks."
     },
     "effective_entries": [
       "oteryn:quest.the_beginning_quest",
       "oteryn:quest.the_first_dragon_quest",
       "oteryn:quest.the_tainted_soul",
       "oteryn:quest.threatened_dreams_quest",
-      "oteryn:quest.pilgrimage_of_ashes"
+      "unresolved:questpc2:pilgrimage_of_ashes_quest"
     ],
     "excluded_world_owner_entries": [
       {
@@ -1063,132 +1074,6 @@
         },
         "review": "Reviewed complete owned diff against CODEX-CHECKLIST: bounded capture/reads; same World party owner and source snapshot; exact receipt binding; locked mission epoch; stale lease/USE refusal; unchanged ordinary XP/loot and legacy Stampede; no schema/protocol/capability additions; no diagnostics or forbidden paths."
       },
-      "sum_guards_01": {
-        "red": {
-          "log": "/tmp/questpc3-sum-red-fixture.log",
-          "sha256": "b1a339ad61fd98cc25c69f28cf07d3327acfb7959055bf9aa0a56dec51206549",
-          "evidence": [
-            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 3m 15s",
-            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=0 duration_ms=69020",
-            "  left: Refused(NotSupported)",
-            " right: Refused(StageMismatch)",
-            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2550 filtered out; finished in 69.18s"
-          ]
-        },
-        "postgres_green": {
-          "log": "/tmp/questpc3-sum-green.log",
-          "sha256": "b3ed5119fb7a9ff94dd1bbc050a5fd5676befae4345e3b434e948b46ffa37ad2",
-          "evidence": [
-            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 55s",
-            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=0 duration_ms=75422",
-            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=1 duration_ms=75462",
-            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=2 duration_ms=75607",
-            "QUEST_L4_SUM POSTGRES_CASE_COMPLETED duration_ms=75874 success=true",
-            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2550 filtered out; finished in 75.88s"
-          ]
-        },
-        "sum_units": {
-          "log": "/tmp/questpc3-sum-units.log",
-          "sha256": "e1f4d887f0fd6b69ca7c859ece7f581e349e43227d95b0178fc5070a131d17bc",
-          "evidence": [
-            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.73s",
-            "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 254 filtered out; finished in 0.00s"
-          ]
-        },
-        "selector": {
-          "log": "/tmp/questpc3-sum-selector.log",
-          "sha256": "4f3f801307e2d138b9030eee34f941bace15eb7f1f5c318fa8e230094074ff45",
-          "evidence": [
-            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.39s",
-            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 255 filtered out; finished in 1.15s"
-          ]
-        },
-        "cargo_check": {
-          "log": "/tmp/questpc3-sum-check.log",
-          "sha256": "0816c5768e5ca62bb30038365b16b02f02c5973b7c2fb8ac59f21d27bd9eaf38",
-          "evidence": [
-            "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 19s"
-          ]
-        },
-        "clippy": {
-          "status": "GREEN",
-          "log": "/tmp/questpc3-sum-clippy.log",
-          "sha256": "84c66e967428e66a1618285f51c4c3f50efb6a5ec66d2819fdf23b718d58977b",
-          "evidence": [
-            "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7m 47s"
-          ]
-        },
-        "fmt": "cargo fmt --all and cargo fmt --all -- --check passed; auto-mounted test formatted explicitly with rustfmt --edition 2024",
-        "invalid_red_attempts": "Connection refused before local PostgreSQL startup, then MissingProgressionState before fixture generation admission; neither counted as RED. Valid RED reached SQL after 69020ms and returned NotSupported rather than StageMismatch.",
-        "source": "Crystal npc/maelyrra.lua:94-100, blob SHA256 16acd67b566785af18a6a5cfce6d03a7a41a9f66717596774a3c309eca0eea88; retained tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz#/source_records/492 and content/dialogues/quests-2/threatened-dreams-source.json (201189f871d23597b82caf88fd611454a2ddefb8); OTS_HYPOTHESIS_ONLY",
-        "core_regression": {
-          "status": "GREEN",
-          "log": "/tmp/questpc3-sum-core.log",
-          "sha256": "c5432e39623d708f4dc3caebe49c358704f74cf1d910baf020f4f8bd5fb3b1af",
-          "evidence": [
-            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.59s",
-            "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 249 filtered out; finished in 0.02s"
-          ]
-        },
-        "npc_regression": {
-          "status": "GREEN",
-          "log": "/tmp/questpc3-sum-npc-regression.log",
-          "sha256": "a96f340aa098a3d7c6fc2d900e5be1be63721d058d15b75be5ab29a0c68ac5fd",
-          "evidence": [
-            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 3m 19s",
-            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2550 filtered out; finished in 172.64s"
-          ]
-        }
-      },
-      "beginning_greet_01": {
-        "red": {
-          "log": "/tmp/questpc3-beginning-greet-red.log",
-          "sha256": "5bf159af34940e8e69507519a5f2481e87cfc7abac86036ec1d1f702421493f2",
-          "evidence": [
-            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 5m 34s",
-            "  left: NoConversation",
-            "QUEST_L4_BEGINNING POSTGRES_CASE_COMPLETED duration_ms=123336 success=false",
-            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2551 filtered out; finished in 123.34s"
-          ]
-        },
-        "green": {
-          "log": "/tmp/questpc3-beginning-greet-green.log",
-          "sha256": "54c0a625dcf782efc58da62c4ab5cc85d5b13e0baee882eeb25d5007b575c044",
-          "evidence": [
-            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 27s",
-            "QUEST_L4_BEGINNING POSTGRES_ASSERTION_REACHED greeting_value=1",
-            "QUEST_L4_BEGINNING POSTGRES_CASE_COMPLETED duration_ms=115161 success=true",
-            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2551 filtered out; finished in 115.16s"
-          ]
-        },
-        "unit": {
-          "log": "/tmp/questpc3-beginning-greet-units.log",
-          "sha256": "c093aa6ff27e8fcc37807ff1a7f6cc8aea7fd5bfcf33a74568fbeef49faa2bfa",
-          "evidence": [
-            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.30s",
-            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 256 filtered out; finished in 1.07s"
-          ]
-        },
-        "cargo_check": {
-          "log": "/tmp/questpc3-beginning-greet-check.log",
-          "sha256": "09122be9cc97c421e1a39967cb101ae1d0337c243e63d3cc048d1f318af6cd23",
-          "evidence": [
-            "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 36.68s"
-          ]
-        },
-        "clippy": {
-          "status": "GREEN_PRE_MERGE",
-          "log": "/tmp/questpc3-beginning-greet-clippy.log",
-          "duration": "1m38s"
-        },
-        "review": "Reviewed full owned diff: source NPC identity, native production route, current-context and session fencing, one atomic source write, repeat guard, source templates and catalogue revision; no value grant or fee in this slice. No schema or generated content inputs changed.",
-        "merged_check": {
-          "status": "GREEN",
-          "log": "/tmp/questpc3-greeting-merge-check.log",
-          "sha256": "5cdf72c9ca247d5cdbd09c2131bee71c9a2dbaeed508c65800af67df701b77f7",
-          "duration": "2m42s"
-        }
-      },
       "npc_programs_01": {
         "source_red": {
           "path": "/tmp/questpc3-npc-greet-red-positioned.log",
@@ -1308,6 +1193,62 @@
           "tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json": "ae149a7eb9d3737b8cff2eabffee032a4200d4716f37dd257ed79e1baf89d78f"
         }
       },
+      "sum_guards_01": {
+        "red": {
+          "log": "/tmp/questpc3-sum-red-fixture.log",
+          "sha256": "b1a339ad61fd98cc25c69f28cf07d3327acfb7959055bf9aa0a56dec51206549",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 3m 15s",
+            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=0 duration_ms=69020",
+            "  left: Refused(NotSupported)",
+            " right: Refused(StageMismatch)",
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2550 filtered out; finished in 69.18s"
+          ]
+        },
+        "postgres_green": {
+          "log": "/tmp/questpc3-sum-green.log",
+          "sha256": "b3ed5119fb7a9ff94dd1bbc050a5fd5676befae4345e3b434e948b46ffa37ad2",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 55s",
+            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=0 duration_ms=75422",
+            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=1 duration_ms=75462",
+            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=2 duration_ms=75607",
+            "QUEST_L4_SUM POSTGRES_CASE_COMPLETED duration_ms=75874 success=true",
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2550 filtered out; finished in 75.88s"
+          ]
+        },
+        "sum_units": {
+          "log": "/tmp/questpc3-sum-units.log",
+          "sha256": "e1f4d887f0fd6b69ca7c859ece7f581e349e43227d95b0178fc5070a131d17bc",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.73s",
+            "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 254 filtered out; finished in 0.00s"
+          ]
+        },
+        "selector": {
+          "log": "/tmp/questpc3-sum-selector.log",
+          "sha256": "4f3f801307e2d138b9030eee34f941bace15eb7f1f5c318fa8e230094074ff45",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.39s",
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 255 filtered out; finished in 1.15s"
+          ]
+        },
+        "cargo_check": {
+          "log": "/tmp/questpc3-sum-check.log",
+          "sha256": "0816c5768e5ca62bb30038365b16b02f02c5973b7c2fb8ac59f21d27bd9eaf38",
+          "evidence": [
+            "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 19s"
+          ]
+        },
+        "clippy": {
+          "status": "RUNNING",
+          "log": "/tmp/questpc3-sum-clippy.log",
+          "command": "cargo clippy --locked -p oteryn-gameplay-quests -p oteryn-gameplay-dispatch --all-features --all-targets -- -D warnings"
+        },
+        "fmt": "cargo fmt --all and cargo fmt --all -- --check passed; auto-mounted test formatted explicitly with rustfmt --edition 2024",
+        "invalid_red_attempts": "Connection refused before local PostgreSQL startup, then MissingProgressionState before fixture generation admission; neither counted as RED. Valid RED reached SQL after 69020ms and returned NotSupported rather than StageMismatch.",
+        "source": "Crystal npc/maelyrra.lua:94-100, blob SHA256 16acd67b566785af18a6a5cfce6d03a7a41a9f66717596774a3c309eca0eea88; retained tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz#/source_records/492 and content/dialogues/quests-2/threatened-dreams-source.json (201189f871d23597b82caf88fd611454a2ddefb8); OTS_HYPOTHESIS_ONLY"
+      },
       "npc_sum_integration": {
         "logs": {
           "check": {
@@ -1352,6 +1293,318 @@
           "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_l4_sum.rs": "6e18451e6a76582748cb24ea40a3767d16f4d1bcd71e21763256b35a35c6acb8",
           "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc3_npc_programs.rs": "5316fa4183a42dc51f850fc60f0dcc424de350e367f6b3efd1a5515c58cda883"
         }
+      },
+      "tutorial_rewards_01": {
+        "logs": {
+          "red": {
+            "path": "/tmp/questpc3-beginning-rewards-red-valid-context.log",
+            "sha256": "af0fc50f48619a1aaf9c0b969282dcd68632bb5dffec5da85a85bc224d9a8b50"
+          },
+          "green": {
+            "path": "/tmp/questpc3-beginning-rewards-green-final.log",
+            "sha256": "99397df2ddb97be3dc332346b9b86f9bd32f0518c8fe08a0059c5d2cc2bbc2e8"
+          },
+          "dialogue": {
+            "path": "/tmp/questpc3-beginning-rewards-dialogue-regression.log",
+            "sha256": "7932f334cfcb0258bd76ebe11334387ff6f4d7b9b59946199223e937d59251c6"
+          },
+          "npc_book": {
+            "path": "/tmp/questpc3-beginning-rewards-npc-book.log",
+            "sha256": "ace29935408b71b9a026c12f17cd8f158d98cb54113a2397dd0e9d4628d531bc"
+          },
+          "parser": {
+            "path": "/tmp/questpc3-beginning-rewards-parser.log",
+            "sha256": "f50709473b92358e55ad24b8cc37b11ab8e7f5a2147fe866e9ec02f73667c940"
+          },
+          "check": {
+            "path": "/tmp/questpc3-beginning-rewards-check.log",
+            "sha256": "088c8d26dcbd683486235ecccfcf1a1287693717d274fdb8a1f17f51f7e11c4b"
+          },
+          "clippy": {
+            "path": "/tmp/questpc3-beginning-rewards-clippy-final.log",
+            "sha256": "a339183c52d0e53d4e4f0c9debe9bc54b1cc92574f4440c4570ce578f1fa5266"
+          },
+          "fmt": {
+            "path": "/tmp/questpc3-beginning-rewards-fmt.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "regeneration": {
+            "path": "/tmp/questpc3-beginning-rewards-regen.log",
+            "sha256": "b9cfaee5c12a30f2088b432476ec22d3e5d21fdd0776edd716d8812480dce754"
+          },
+          "pin_check": {
+            "path": "/tmp/questpc3-beginning-rewards-pin-check.log",
+            "sha256": "b07bdff1b9ba6c4706c27a74e2ed7abb08deb3ca632b58077b23830a0b578a70"
+          },
+          "content_integration": {
+            "path": "/tmp/questpc3-beginning-rewards-content-integration.log",
+            "sha256": "7e6f73c4a583b3d9e8c492a5bcdeaf59b4cf1a9d56adbf7355d36f4f185429f5"
+          },
+          "content_world": {
+            "path": "/tmp/questpc3-beginning-rewards-content-world.log",
+            "sha256": "27cc4b8412e1856e4bd568890452d7f2793c48e88cc6091118c752c7cd42ddb1"
+          }
+        },
+        "results": {
+          "postgres": "18.6, selected PG cases not skipped",
+          "red_seconds": 96.32,
+          "red_marker_ms": 96086,
+          "green_seconds": 141.87,
+          "green_complete_ms": 141867,
+          "dialogue_seconds": 131.46,
+          "dialogue_complete_ms": 131460,
+          "source_rewards": 3,
+          "native_fish": 1,
+          "physical_legs_debited": 3,
+          "total_xp": 150,
+          "exact_replays": 3,
+          "substituted_xp_rejected": "InvalidInput before value",
+          "npc_book": 1,
+          "npc_book_seconds": 40.24,
+          "parser": 1,
+          "content_integration": 123,
+          "content_integration_seconds": 4.02,
+          "content_world": 5,
+          "content_world_seconds": 89.44,
+          "cargo_check": "PASS4crates/all features",
+          "clippy": "PASS4crates/all features/all targets -D warnings",
+          "fmt": "PASS cargo fmt all/check and four explicit changed Rust files",
+          "schema_producer_pin_and_native_regeneration": "PASS; pin unchanged; no unexpected native diffs"
+        },
+        "input_sha256": {
+          "content/dialogues/quests/shared-reward-greetings.json": "ff2ed02cdbdbac768262c88af93619130ea131355d707078968a574d1ff41ea8",
+          "content/quests/shared-reward-callbacks.json": "de1948837f9fff7b880e87ae607f17ba1b710d679a58a4e81558669e844e03f8",
+          "content/quests/shared-reward-offers.json": "b2aec9e8a79654fcfed366b96b45322ffe707b2b5ac75f8d556417dc5cab2bdf",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc3_beginning_rewards.rs": "c02165b58846a38d167fbcb2392d628862513c2e689f2de08ffdb22c2629891d",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc3_npc_programs.rs": "268d473a6ecb34e2ef9accf63d02fab8d8f6ae1c0bc6060a26cd70254750e1dd",
+          "crates/gameplay/durability/src/durability/quest_state/writer.rs": "c5f735f1bfb8b3775f6c701766f36b2d239189b993bc9eb4209346ab93a23f8c",
+          "crates/gameplay/quests/src/quest/reward_callbacks.rs": "dfef254b9e3c9ea7b35a6590e31d26e2ba0f624b649d908de352fa79e623bfb0",
+          "tools/content-schema/quest-authoring/questpc3_npc_programs.py": "5f7d4597577471781895e6b6f3f5939d5b5be8f4db327beed5ba69db95c99112",
+          "tools/content-schema/quest-authoring/shared-reward-callbacks.md": "12e360527059858e0e9e2e39e6e78d20feb8dfb7b54f21c50951e2c4db2288d1",
+          "tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json": "a3a426042d92ab96b8c044de0f49d5b9012167baa6aba4fa16fdced014ac1929"
+        }
+      },
+      "beginning_greet_01": {
+        "red": {
+          "log": "/tmp/questpc3-beginning-greet-red.log",
+          "sha256": "5bf159af34940e8e69507519a5f2481e87cfc7abac86036ec1d1f702421493f2",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 5m 34s",
+            "  left: NoConversation",
+            "QUEST_L4_BEGINNING POSTGRES_CASE_COMPLETED duration_ms=123336 success=false",
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2551 filtered out; finished in 123.34s"
+          ]
+        },
+        "green": {
+          "log": "/tmp/questpc3-beginning-greet-green.log",
+          "sha256": "54c0a625dcf782efc58da62c4ab5cc85d5b13e0baee882eeb25d5007b575c044",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 27s",
+            "QUEST_L4_BEGINNING POSTGRES_ASSERTION_REACHED greeting_value=1",
+            "QUEST_L4_BEGINNING POSTGRES_CASE_COMPLETED duration_ms=115161 success=true",
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2551 filtered out; finished in 115.16s"
+          ]
+        },
+        "unit": {
+          "log": "/tmp/questpc3-beginning-greet-units.log",
+          "sha256": "c093aa6ff27e8fcc37807ff1a7f6cc8aea7fd5bfcf33a74568fbeef49faa2bfa",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.30s",
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 256 filtered out; finished in 1.07s"
+          ]
+        },
+        "cargo_check": {
+          "log": "/tmp/questpc3-beginning-greet-check.log",
+          "sha256": "09122be9cc97c421e1a39967cb101ae1d0337c243e63d3cc048d1f318af6cd23",
+          "evidence": [
+            "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 36.68s"
+          ]
+        },
+        "clippy": {
+          "status": "GREEN_PRE_MERGE",
+          "log": "/tmp/questpc3-beginning-greet-clippy.log",
+          "duration": "1m38s"
+        },
+        "review": "Reviewed full owned diff: source NPC identity, native production route, current-context and session fencing, one atomic source write, repeat guard, source templates and catalogue revision; no value grant or fee in this slice. No schema or generated content inputs changed.",
+        "merged_check": {
+          "status": "GREEN",
+          "log": "/tmp/questpc3-greeting-merge-check.log",
+          "sha256": "5cdf72c9ca247d5cdbd09c2131bee71c9a2dbaeed508c65800af67df701b77f7",
+          "duration": "2m42s"
+        }
+      },
+      "tutorial_rewards_merge": {
+        "logs": {
+          "check": {
+            "path": "/tmp/questpc3-rewards-merge-check.log",
+            "sha256": "3cc72549b67aea380fcf1ceef8d6c95562a39436ac7338debbe3960a6296d04d"
+          },
+          "clippy": {
+            "path": "/tmp/questpc3-rewards-merge-clippy.log",
+            "sha256": "72b713c284507d9c2a0157aeb02b2f7f7c5bb1e59ba40d292602c3fea51c4de1"
+          },
+          "start_unit": {
+            "path": "/tmp/questpc3-rewards-merge-start-unit.log",
+            "sha256": "118e7d5a3baad9a09a4f796b92ba3e0ddb01a0338428259d46907c961d2d45f5"
+          },
+          "parser": {
+            "path": "/tmp/questpc3-rewards-merge-parser.log",
+            "sha256": "cb0ecc657b0d5b10dcd84c1034f1cbba2a68ffc4795101e2aee096a492447264"
+          },
+          "greeting_pg": {
+            "path": "/tmp/questpc3-rewards-merge-greeting-pg.log",
+            "sha256": "9ef9a791842b0843d2284523726425ced2ea542b5aebae68e3ee5bca7af3ee51"
+          },
+          "dialogue_pg": {
+            "path": "/tmp/questpc3-rewards-merge-dialogue-pg.log",
+            "sha256": "6b4efa23174c7bb5154d05c2c29453bac830ebcccb6d7e589f4bb5508f0c3c67"
+          },
+          "rewards_pg": {
+            "path": "/tmp/questpc3-rewards-merge-rewards-pg.log",
+            "sha256": "532294c42ef8349f6c8326f50749c4a57778d4f3875e739be21748879235ff77"
+          }
+        },
+        "results": {
+          "check": "PASS4crates/all features",
+          "clippy": "PASS4crates/all features/all targets -D warnings",
+          "start_unit": 1,
+          "parser": 1,
+          "postgres": "18.6 no selected skips",
+          "greeting_pg_seconds": 130.44,
+          "greeting_complete_ms": 130437,
+          "dialogue_pg_seconds": 117.08,
+          "dialogue_complete_ms": 117080,
+          "rewards_pg_seconds": 101.3,
+          "rewards_complete_ms": 101296
+        },
+        "source_sha256": {
+          "crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs": "2b8e8a8f29244c15b8882db8e0a2ca377785f5590d1eac6a648c8da1b39d136d",
+          "crates/gameplay/dispatch/src/gameplay_transport/npc_command/beginning.rs": "db86defa1109e1b13ec9ef300ed2d0cf36d0eaeb15b46b6d0830b33a1ef5fd23",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_l4_beginning.rs": "6fa82dfec605cc4a19e10d7598213b804ca113d6d67117f6e967fffe3310e824",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs": "c1964a6d0452defa639345a704216078c61973ac9e948eaecf19004e2829f1d5",
+          "crates/gameplay/npc/src/npc_talk.rs": "a69856e346c6140665d6fd7f6feddf74da13a568c9cc51504f7957dd67b87fc1",
+          "crates/gameplay/quests/src/quest/beginning.rs": "76874f67910a0712269e253c100dd645a11afc89ac8560705627c699551598e1",
+          "crates/gameplay/quests/src/quest/loader.rs": "b7ffac34197442b75912f2b3d05f0eb5a51aa7720bd0580c0dd485b281b632f1",
+          "crates/gameplay/quests/src/quest/mod.rs": "ed1a016dea2c235271e3e6601e088ea770d67fa151e148f4734eb1683b205a1f"
+        }
+      },
+      "cockroach_goal_01": {
+        "logs": {
+          "red": {
+            "log": "/tmp/questpc3-cockroach-goal-red.log",
+            "sha256": "4d494db7cf260392577feb866c39923dd0d7f8f96f44a06a4e41671b853fcb3a",
+            "evidence": [
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED creature=oteryn:creature.cockroach phase=native_capture duration_ms=53526",
+              "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2555 filtered out; finished in 53.63s"
+            ]
+          },
+          "green": {
+            "log": "/tmp/questpc3-cockroach-goal-green.log",
+            "sha256": "a7d570753578b3c5bb4863cccfe8df0882bfc9d187929436ac2af7b381011db2",
+            "evidence": [
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED kill=1 duration_ms=53721",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED creature=oteryn:creature.cockroach phase=native_capture duration_ms=53762",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED kill=2 duration_ms=53825",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED creature=oteryn:creature.cockroach phase=native_capture duration_ms=53862",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED kill=3 duration_ms=53919",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED creature=oteryn:creature.cockroach phase=native_capture duration_ms=54278",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED creature=oteryn:creature.cockroach phase=native_capture duration_ms=54278",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED creature=oteryn:creature.cockroach phase=native_capture duration_ms=54278",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED kill=3 duration_ms=54541",
+              "QUEST_L4_COUNTERS POSTGRES_CASE_COMPLETED creature=oteryn:creature.cockroach mode=TutorialBurst duration_ms=55085",
+              "QUEST_L4_COUNTERS POSTGRES_CASE_COMPLETED creature=oteryn:creature.cockroach mode=Tutorial duration_ms=55100",
+              "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 2554 filtered out; finished in 55.11s"
+            ]
+          },
+          "check": {
+            "log": "/tmp/questpc3-cockroach-goal-check.log",
+            "sha256": "4674a21211913621148b507303ee8d888a8596d39fa421004b8af1644a653050",
+            "evidence": [
+              "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 31.99s"
+            ]
+          },
+          "clippy": {
+            "log": "/tmp/questpc3-cockroach-goal-clippy.log",
+            "sha256": "59ff44379329014dc44c59f45ab23fce54b2974abca7b5376f37eedc063442c4",
+            "evidence": [
+              "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3m 08s"
+            ]
+          },
+          "conditional-units": {
+            "log": "/tmp/questpc3-cockroach-goal-conditional-units.log",
+            "sha256": "22530b5caaca155529367ef199d9dc7e363a483a278a76bcc5792d59c88e2db5",
+            "evidence": [
+              "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 257 filtered out; finished in 0.00s"
+            ]
+          },
+          "native-units": {
+            "log": "/tmp/questpc3-cockroach-goal-native-units.log",
+            "sha256": "b5c93af2729628ea6263a7d23bf737a9d1dffc405dc2cd67bbd26529fabb3701",
+            "evidence": [
+              "test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 245 filtered out; finished in 2.23s"
+            ]
+          },
+          "sum-units": {
+            "log": "/tmp/questpc3-cockroach-goal-sum-units.log",
+            "sha256": "9f50701cd0838ad3e3965c7362ef55cc3579be8504a0bb6a38b2271e90ce3341",
+            "evidence": [
+              "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 258 filtered out; finished in 0.01s"
+            ]
+          },
+          "negative": {
+            "log": "/tmp/questpc3-cockroach-goal-negative.log",
+            "sha256": "8b4620bfd477c198325e9461b3177d2a8ba0b8a399a810f2dbd2ec2b46c39850",
+            "evidence": [
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED creature=oteryn:creature.cockroach phase=native_capture duration_ms=55086",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED creature=oteryn:creature.cockroach phase=native_capture duration_ms=55102",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED creature=oteryn:creature.cockroach phase=native_capture duration_ms=55116",
+              "QUEST_L4_COUNTERS POSTGRES_CASE_COMPLETED creature=oteryn:creature.cockroach mode=Normal duration_ms=55461",
+              "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2555 filtered out; finished in 55.47s"
+            ]
+          },
+          "dragon-regression": {
+            "log": "/tmp/questpc3-cockroach-goal-dragon-regression.log",
+            "sha256": "552f3084d090d6c14f76fab40adf26e41ff36fdb042a5683942864404952382c",
+            "evidence": [
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED creature=oteryn:creature.dragon phase=native_capture duration_ms=49501",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED creature=oteryn:creature.dragon phase=native_capture duration_ms=49501",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED creature=oteryn:creature.dragon phase=native_capture duration_ms=49501",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED kill=3 duration_ms=49674",
+              "QUEST_L4_COUNTERS POSTGRES_CASE_COMPLETED creature=oteryn:creature.dragon mode=Burst duration_ms=50096",
+              "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2555 filtered out; finished in 50.10s"
+            ]
+          },
+          "sum-regression": {
+            "log": "/tmp/questpc3-cockroach-goal-sum-regression.log",
+            "sha256": "f8a3aa052eeae9d5fbd8dab81b770832a793a57e4baa3eb7dcf7e5b662c26236",
+            "evidence": [
+              "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=0 duration_ms=53190",
+              "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=1 duration_ms=53215",
+              "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=2 duration_ms=53293",
+              "QUEST_L4_SUM POSTGRES_CASE_COMPLETED duration_ms=53417 success=true",
+              "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2555 filtered out; finished in 53.42s"
+            ]
+          }
+        },
+        "fmt": "cargo fmt --all/check and explicit mounted test rustfmt passed",
+        "content": "Rust-only bridge; no content/native inputs/pins changed. No unrelated regeneration.",
+        "regressions": "All selected regressions GREEN: inactive Cockroach1/55.47s; original Dragon burst1/50.10s; Maelyrra sum1/53.42s. PostgreSQL completion markers55461/50096/53417ms.",
+        "review": "Bounded indices validated before access, all conditional parameters hashed, original values retained, old-counter changes preserve definition hashes, existing frozen membership/epoch/fence and exact replay checks retained. No new reward writer.",
+        "inputs": {
+          "crates/gameplay/quests/src/quest/mod.rs": "b3d10e6f8d4b4e0a240e33cc81600e535cc29c43b9762e0948abe694d65176e1",
+          "crates/gameplay/quests/src/quest/native_kills.rs": "7e382318e88a02c10ef598d6c374b21e0552b1224e726c1f6b9745ef7e034508",
+          "crates/gameplay/durability/src/durability/quest_state/native_kills.rs": "b011d0285853e01d797e5cfae685c7398e15c0271f06b964494d9f8f97d0d5ab",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_l4_counters.rs": "e9b5388e30da8378a00bc12c54ec82b7982a17774db6d8d559e948e516a3fd1c",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_l4_counters/tutorial.rs": "e291456944848fe99cbd8e99f51fe9fa7e9293f478e30b6680a176fb5ab8a1fb",
+          "crates/gameplay/quests/src/quest/conditional_tests.rs": "1602bb65e6843c0506cf7c4852eef8213460e7879234db167aada8b6d3492c02"
+        }
+      },
+      "greeting_merge_clippy_completion": {
+        "status": "PASS",
+        "duration": "5m56s",
+        "log": "/tmp/questpc3-merged-greet-clippy.log",
+        "validated_source_commit": "025936c3d8b4ff07d6cb57d60c0c8afb23a6cd7e",
+        "scope": "quests/npc/durability/dispatch all features and targets; completed before Pilgrimage changes"
       },
       "greeting_merge_02": {
         "own_greeting": {
@@ -1413,6 +1666,19 @@
           "inputs_digest": "e8b3c1e823b5aa1df054ba86f7659cf9895c830d3b5f1717da103ac06efbad36",
           "world_digest": "1aaf5e3b5400be0098e441e20a92ef55e1a222d210f87f640743ef3f4af4b2aa"
         }
+      },
+      "pilgrimage_merge_02": {
+        "status": "GREEN_CHECKED_COMPOSITION",
+        "incoming": "54b7759e64e8feeec3dd3d48a8df39f8a1c6e363",
+        "check": "PASS changed4crates allfeatures/tests 6m36s /tmp/questpc3-pilgrimage-merge-check-fixed.log",
+        "unit": "PASS 1 tag separation +2 reward binding tests /tmp/questpc3-effect-tag-merge-unit.log /tmp/questpc3-reward-merge-units.log",
+        "pin": "PASS all17 declared input paths identical to f673adfeb; /tmp/questpc3-merge-pin-inputs-unchanged.log",
+        "effect_tags": {
+          "published_conditional": 7,
+          "new_bound_reward": 8
+        },
+        "postgres": "Premerge blessing participant GREEN327.03s; next full-route test reruns the merged path. Whole quests remain IN_PROGRESS.",
+        "clippy": "Premerge blessing implementation passed allfeatures/alltargets 13m56s; repeat after next production slice."
       }
     },
     "source_corrections": [
@@ -1426,63 +1692,21 @@
       "fix": "Native receipts contain actual counter changes after locked guard evaluation; preserve SQL invariants and the original mission epoch."
     },
     "refreshed_dependency_heads": {
-      "qengine2": "9d3c3869f03a523601d5567cdb352d40854f3517",
-      "questl2": "7e16b64ee099c8e81cabf3b4e420531269bb4c1a",
+      "qengine2": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+      "questl2": "e5a4d6e7e46e7bf3a6754b563fd8647900de7680",
       "questpc2": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
       "questpc4": "db95b72d3d8659a9f0a884f8169ea9da3a39c9fe",
       "questpc5": "f78cf159d8a2eef2703091197ea661d26537137a",
       "questpc6": "be812420e3c20d9dd8ae6c3c23a9c4acb942ceda",
-      "questpc7": "96b478e86678c7607a9a2154f72fe6c91d354188"
+      "questpc7": "96b478e86678c7607a9a2154f72fe6c91d354188",
+      "qengine2_latest": "aae647c63b9022860699a5e2d31764881f38c472",
+      "wcontrib": "7422e385994bcb84f23272de77ada1ed45d70002",
+      "wevents": "e0745b57a94aca0ccd95b8382270ff673415d534",
+      "worldchg": "318ab59d200ad2030ca7c829566b88175cb7e2dc",
+      "wvar": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
     },
     "shared_feature_owner": "questpc3: reuse existing implementations; implement every remaining engine, binding, NPC, Item and world-mechanic gap locally. No external dependency wait.",
-    "updated_at": "2026-11-07T00:51:38.843468+00:00",
-    "previous_publication": {
-      "batch": "native-counters-01",
-      "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
-      "remote_verified": true
-    },
-    "completed_batches": [
-      {
-        "id": "sum-guards-01",
-        "status": "PUBLISHED at 73a106fc5035885a844c81e8618900f80c028116; all selected verification completed",
-        "entries": [
-          "oteryn:quest.threatened_dreams_quest"
-        ],
-        "mechanism": "Reusable bounded sum guard; atomic Maelyrra kill report through existing quest writer and NPC selector",
-        "whole_entry_qualifications": 0,
-        "publication": {
-          "commit": "73a106fc5035885a844c81e8618900f80c028116",
-          "remote_verified": true
-        }
-      },
-      {
-        "id": "npc-programs-01",
-        "phase": "GREEN",
-        "scope": "Selectively reused qengine2 NPC reward engine; six Santiago source callbacks and return greetings. Whole Beginning remains in progress.",
-        "red": {
-          "path": "/tmp/questpc3-npc-greet-red-positioned.log",
-          "failure": "NoConversation versus Ok",
-          "postgres_marker_ms": 86938,
-          "duration_seconds": 87.08
-        },
-        "first_green": {
-          "path": "/tmp/questpc3-npc-greet-green.log",
-          "scope": "Initial atomic source greeting and regreet only",
-          "postgres_marker_ms": 90144,
-          "completed_ms": 90482
-        },
-        "fixture_correction": "Expanded scenario initially installed prerequisite transitions after initial receipt; definition-hash pin correctly refused. Install fixture catalogue before first receipt; retain immutable definition guard. This fixture failure is not missing-mechanism RED evidence.",
-        "reuse_source": "origin/claude/happy-davinci-ijz3wy-qengine2 be6db5edd^..5a6de28c1; NPC-only composition. Existing multi-stack world inputs, Rookgaard messages and native counters retained. No unrelated outfit/world data or world binaries imported.",
-        "proof": "checks.npc_programs_01",
-        "publication": {
-          "mode": "commit and fast-forward push immediately after metadata update",
-          "parent": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
-          "branch": "claude/happy-davinci-ijz3wy-questpc3",
-          "local_commit": "a4f1f4a21"
-        },
-        "environment_recovery": "Content repository linker hit signal7/bus error with137MB free. Removed only obsolete unlocked incremental snapshots, retained newest caches and all build settings; retry5tests passed84.49s."
-      }
-    ],
+    "updated_at": "2026-11-07T01:39:02.972216+00:00",
     "publication_native_counters_01": {
       "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
       "pushed": true,
@@ -1562,6 +1786,11 @@
       "id": "native-counters-01",
       "whole_entry_qualifications": 0
     },
+    "previous_publication": {
+      "batch": "native-counters-01",
+      "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
+      "remote_verified": true
+    },
     "integrating_remote_batch": {
       "commit": "73a106fc5035885a844c81e8618900f80c028116",
       "batch": {
@@ -1632,12 +1861,341 @@
       "status": "GREEN combined validation; strict Clippy confirmed here, superseding remote pending-Clippy note.",
       "combined_proof": "checks.npc_sum_integration"
     },
-    "next_batch": {
-      "id": "pilgrimage-blessings-01",
-      "phase": "RED",
-      "failure": "Real Norf NPC_TALK returns NoConversation; PostgreSQL case151.21s",
-      "log": "/tmp/questpc3-pilgrimage-red.log",
-      "implementation": "Reuse game_quest_reward_sources and existing blessing owner; add canonical regular Services and current-Premium-gated free grant participant. Choices recorded in CONTRACT-NOTES.md."
+    "completed_mechanism_batches": {
+      "npc-programs-01": {
+        "id": "npc-programs-01",
+        "phase": "GREEN",
+        "scope": "Selectively reused qengine2 NPC reward engine; six Santiago source callbacks and return greetings. Whole Beginning remains in progress.",
+        "red": {
+          "path": "/tmp/questpc3-npc-greet-red-positioned.log",
+          "failure": "NoConversation versus Ok",
+          "postgres_marker_ms": 86938,
+          "duration_seconds": 87.08
+        },
+        "first_green": {
+          "path": "/tmp/questpc3-npc-greet-green.log",
+          "scope": "Initial atomic source greeting and regreet only",
+          "postgres_marker_ms": 90144,
+          "completed_ms": 90482
+        },
+        "fixture_correction": "Expanded scenario initially installed prerequisite transitions after initial receipt; definition-hash pin correctly refused. Install fixture catalogue before first receipt; retain immutable definition guard. This fixture failure is not missing-mechanism RED evidence.",
+        "reuse_source": "origin/claude/happy-davinci-ijz3wy-qengine2 be6db5edd^..5a6de28c1; NPC-only composition. Existing multi-stack world inputs, Rookgaard messages and native counters retained. No unrelated outfit/world data or world binaries imported.",
+        "proof": "checks.npc_programs_01",
+        "publication": {
+          "local_commit": "a4f1f4a21c60772ee53c6d16e2f9b167ff2c6f8a",
+          "merge_commit": "9d3330e59a1ce0f3de439d27f26ad760fb5dbe72",
+          "remote_verified": true,
+          "integrated_remote": "73a106fc5035885a844c81e8618900f80c028116"
+        },
+        "environment_recovery": "Content repository linker hit signal7/bus error with137MB free. Removed only obsolete unlocked incremental snapshots, retained newest caches and all build settings; retry5tests passed84.49s."
+      },
+      "tutorial-rewards-01": {
+        "id": "tutorial-rewards-01",
+        "phase": "GREEN",
+        "whole_entry_qualifications": 0,
+        "entries": [
+          "oteryn:quest.the_beginning_quest"
+        ],
+        "source_callbacks": [
+          "legs-handin:3physical7882+100XP, both flags7/5",
+          "food-grant:3578x1, both flags11/9",
+          "zirella-reward:50XP, both flags8/8"
+        ],
+        "generic_feature": "Optional bounded NPC callback XP uses the existing Quest XP obligation/transfer owner; common writer requires callback and executable transition XP amounts to match. No new XP writer or schema.",
+        "red": {
+          "log": "/tmp/questpc3-beginning-rewards-red-valid-context.log",
+          "sha256": "af0fc50f48619a1aaf9c0b969282dcd68632bb5dffec5da85a85bc224d9a8b50",
+          "postgres_marker_ms": 96086,
+          "duration_seconds": 96.32,
+          "failure": "Ok versus required Rejected: source hand-in branch absent"
+        },
+        "excluded_fixture_runs": [
+          "Missing FreshAdmissionAuthority trait import: compile failure, not RED.",
+          "initialized=true seeded another progression profile: no valid fence; changed to fresh admission initialized=false, not RED.",
+          "First positive run proved legs/100XP/replay and native fish, then AlreadyPlaced at a second NPC installation. Place Santiago+Zirella once; rerun all three."
+        ],
+        "validation_so_far": {
+          "cargo_check": "PASS four changed crates/all features",
+          "parser": "PASS1 including invalid XP bounds",
+          "schema": "PASS",
+          "native_regeneration": "PASS no unexpected native inputs",
+          "clippy": "PASS final4crates/all features/all targets after both-NPC fixture correction."
+        },
+        "proof_pending": [],
+        "proof": "checks.tutorial_rewards_01",
+        "publication": {
+          "local_commit": "023219279",
+          "source_merge": "8b4ef8e01",
+          "published_merge": "32d004db14a6758620659e608681f2d4d5f52c48",
+          "remote_verified": true
+        }
+      },
+      "cockroach-goal-01": {
+        "id": "cockroach-goal-01",
+        "phase": "GREEN",
+        "whole_entry_qualifications": 0,
+        "entries": [
+          "oteryn:quest.the_beginning_quest"
+        ],
+        "scope": "Reusable conditional set over original locked effect values; configurable native kill gate value/completion; authored three-Cockroach5to6 bridge, preserving separate physical3legs/100XP.",
+        "assumption": "Pinned donor investigation did not recover the5to6 hook. Count three existing eligible native kill-credit occurrences at stage5; open stage6 only on third. No hand-in log, items or XP granted by deaths.",
+        "test_changes": "Two new sequential/burst cases share native lethal queue fixture. Existing unstarted negative assertion retained after draining any known-empty queue, with explicit zero physical leg instances.",
+        "red_log": "/tmp/questpc3-cockroach-goal-red.log",
+        "red_process_session": 32400,
+        "implementation": "Generic SetWhenAtLeast (bounded, hashed, original locked snapshot) plus configured native gate value and optional final-occurrence gate advancement. Cockroach stage5 becomes6 on exactly the third eligible native kill; no physical legs, hand-in log or XP manufactured.",
+        "reuse_check": "Latest qengine2 and refreshed questpc2/4/5/6/7/8/questl2 checked; no reusable conditional effect found. Existing sum references provide the bounded original-snapshot/hash pattern.",
+        "red": {
+          "duration_seconds": 53.63,
+          "postgres_marker_ms": 53526,
+          "failure": "the lethal event must enter the real queue"
+        },
+        "green": {
+          "duration_seconds": 55.11,
+          "cases": 2,
+          "completion_ms": [
+            55085,
+            55100
+          ]
+        },
+        "qualification": "No whole quest qualified by this mechanism batch.",
+        "publication": "Commit and fast-forward push after these recorded checks."
+      }
+    },
+    "completed_batches": [
+      {
+        "id": "sum-guards-01",
+        "status": "PUBLISHED at 73a106fc5035885a844c81e8618900f80c028116; all selected verification completed",
+        "entries": [
+          "oteryn:quest.threatened_dreams_quest"
+        ],
+        "mechanism": "Reusable bounded sum guard; atomic Maelyrra kill report through existing quest writer and NPC selector",
+        "whole_entry_qualifications": 0,
+        "publication": {
+          "commit": "73a106fc5035885a844c81e8618900f80c028116",
+          "remote_verified": true
+        }
+      },
+      {
+        "id": "npc-programs-01",
+        "phase": "GREEN",
+        "scope": "Selectively reused qengine2 NPC reward engine; six Santiago source callbacks and return greetings. Whole Beginning remains in progress.",
+        "red": {
+          "path": "/tmp/questpc3-npc-greet-red-positioned.log",
+          "failure": "NoConversation versus Ok",
+          "postgres_marker_ms": 86938,
+          "duration_seconds": 87.08
+        },
+        "first_green": {
+          "path": "/tmp/questpc3-npc-greet-green.log",
+          "scope": "Initial atomic source greeting and regreet only",
+          "postgres_marker_ms": 90144,
+          "completed_ms": 90482
+        },
+        "fixture_correction": "Expanded scenario initially installed prerequisite transitions after initial receipt; definition-hash pin correctly refused. Install fixture catalogue before first receipt; retain immutable definition guard. This fixture failure is not missing-mechanism RED evidence.",
+        "reuse_source": "origin/claude/happy-davinci-ijz3wy-qengine2 be6db5edd^..5a6de28c1; NPC-only composition. Existing multi-stack world inputs, Rookgaard messages and native counters retained. No unrelated outfit/world data or world binaries imported.",
+        "proof": "checks.npc_programs_01",
+        "publication": {
+          "mode": "commit and fast-forward push immediately after metadata update",
+          "parent": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
+          "branch": "claude/happy-davinci-ijz3wy-questpc3",
+          "local_commit": "a4f1f4a21"
+        },
+        "environment_recovery": "Content repository linker hit signal7/bus error with137MB free. Removed only obsolete unlocked incremental snapshots, retained newest caches and all build settings; retry5tests passed84.49s."
+      }
+    ],
+    "remote_integrations": {
+      "025936c3d": {
+        "commit": "025936c3d8b4ff07d6cb57d60c0c8afb23a6cd7e",
+        "batch": {
+          "id": "beginning-greet-01",
+          "status": "PG, unit and cargo check GREEN; immediate publication with Clippy running under owner cadence",
+          "entries": [
+            "oteryn:quest.the_beginning_quest"
+          ],
+          "mechanism": "Native Santiago greeting and atomic source quest/greeting flags using existing common NPC executor",
+          "whole_entry_qualifications": 0,
+          "source": "Crystal 9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/santiago.lua:63-73,250-251; SHA256 e83d14b26fb9e6bca12cd3ec50abe34daaeb56f2719b5a1dee3d8efc4402a1bd in retained corpus.tar.gz",
+          "clippy": "GREEN on pre-merge slice, 1m38s",
+          "integration": {
+            "incoming": "9d3330e59a1ce0f3de439d27f26ad760fb5dbe72",
+            "status": "Combined cargo check GREEN (2m42s); focused composition PG validation pending after immediate owner-authorized push",
+            "rule": "Shared reward callback precedes state-only tutorial fallback; preserve both NPC template flags, walkaway behavior and all catalogue revision material. Own greeting receipt test now asserts the integrated shared callback key."
+          }
+        },
+        "status": "GREEN combined check/strict Clippy, unit/parser and3focusedPG cases; source merged without conflict.",
+        "proof": {
+          "red": {
+            "log": "/tmp/questpc3-beginning-greet-red.log",
+            "sha256": "5bf159af34940e8e69507519a5f2481e87cfc7abac86036ec1d1f702421493f2",
+            "evidence": [
+              "    Finished `test` profile [unoptimized + debuginfo] target(s) in 5m 34s",
+              "  left: NoConversation",
+              "QUEST_L4_BEGINNING POSTGRES_CASE_COMPLETED duration_ms=123336 success=false",
+              "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2551 filtered out; finished in 123.34s"
+            ]
+          },
+          "green": {
+            "log": "/tmp/questpc3-beginning-greet-green.log",
+            "sha256": "54c0a625dcf782efc58da62c4ab5cc85d5b13e0baee882eeb25d5007b575c044",
+            "evidence": [
+              "    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 27s",
+              "QUEST_L4_BEGINNING POSTGRES_ASSERTION_REACHED greeting_value=1",
+              "QUEST_L4_BEGINNING POSTGRES_CASE_COMPLETED duration_ms=115161 success=true",
+              "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2551 filtered out; finished in 115.16s"
+            ]
+          },
+          "unit": {
+            "log": "/tmp/questpc3-beginning-greet-units.log",
+            "sha256": "c093aa6ff27e8fcc37807ff1a7f6cc8aea7fd5bfcf33a74568fbeef49faa2bfa",
+            "evidence": [
+              "    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.30s",
+              "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 256 filtered out; finished in 1.07s"
+            ]
+          },
+          "cargo_check": {
+            "log": "/tmp/questpc3-beginning-greet-check.log",
+            "sha256": "09122be9cc97c421e1a39967cb101ae1d0337c243e63d3cc048d1f318af6cd23",
+            "evidence": [
+              "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 36.68s"
+            ]
+          },
+          "clippy": {
+            "status": "GREEN_PRE_MERGE",
+            "log": "/tmp/questpc3-beginning-greet-clippy.log",
+            "duration": "1m38s"
+          },
+          "review": "Reviewed full owned diff: source NPC identity, native production route, current-context and session fencing, one atomic source write, repeat guard, source templates and catalogue revision; no value grant or fee in this slice. No schema or generated content inputs changed.",
+          "merged_check": {
+            "status": "GREEN",
+            "log": "/tmp/questpc3-greeting-merge-check.log",
+            "sha256": "5cdf72c9ca247d5cdbd09c2131bee71c9a2dbaeed508c65800af67df701b77f7",
+            "duration": "2m42s"
+          }
+        },
+        "combined_proof": "checks.tutorial_rewards_merge"
+      }
+    },
+    "remote_metadata_proofs": {
+      "b7f139977": {
+        "commit": "b7f1399770ea27b4232c973cb3c0dd3f19684c87",
+        "checks": {
+          "sum_guards_01": {
+            "red": {
+              "log": "/tmp/questpc3-sum-red-fixture.log",
+              "sha256": "b1a339ad61fd98cc25c69f28cf07d3327acfb7959055bf9aa0a56dec51206549",
+              "evidence": [
+                "    Finished `test` profile [unoptimized + debuginfo] target(s) in 3m 15s",
+                "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=0 duration_ms=69020",
+                "  left: Refused(NotSupported)",
+                " right: Refused(StageMismatch)",
+                "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2550 filtered out; finished in 69.18s"
+              ]
+            },
+            "postgres_green": {
+              "log": "/tmp/questpc3-sum-green.log",
+              "sha256": "b3ed5119fb7a9ff94dd1bbc050a5fd5676befae4345e3b434e948b46ffa37ad2",
+              "evidence": [
+                "    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 55s",
+                "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=0 duration_ms=75422",
+                "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=1 duration_ms=75462",
+                "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=2 duration_ms=75607",
+                "QUEST_L4_SUM POSTGRES_CASE_COMPLETED duration_ms=75874 success=true",
+                "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2550 filtered out; finished in 75.88s"
+              ]
+            },
+            "sum_units": {
+              "log": "/tmp/questpc3-sum-units.log",
+              "sha256": "e1f4d887f0fd6b69ca7c859ece7f581e349e43227d95b0178fc5070a131d17bc",
+              "evidence": [
+                "    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.73s",
+                "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 254 filtered out; finished in 0.00s"
+              ]
+            },
+            "selector": {
+              "log": "/tmp/questpc3-sum-selector.log",
+              "sha256": "4f3f801307e2d138b9030eee34f941bace15eb7f1f5c318fa8e230094074ff45",
+              "evidence": [
+                "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.39s",
+                "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 255 filtered out; finished in 1.15s"
+              ]
+            },
+            "cargo_check": {
+              "log": "/tmp/questpc3-sum-check.log",
+              "sha256": "0816c5768e5ca62bb30038365b16b02f02c5973b7c2fb8ac59f21d27bd9eaf38",
+              "evidence": [
+                "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 19s"
+              ]
+            },
+            "clippy": {
+              "status": "GREEN",
+              "log": "/tmp/questpc3-sum-clippy.log",
+              "sha256": "84c66e967428e66a1618285f51c4c3f50efb6a5ec66d2819fdf23b718d58977b",
+              "evidence": [
+                "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7m 47s"
+              ]
+            },
+            "fmt": "cargo fmt --all and cargo fmt --all -- --check passed; auto-mounted test formatted explicitly with rustfmt --edition 2024",
+            "invalid_red_attempts": "Connection refused before local PostgreSQL startup, then MissingProgressionState before fixture generation admission; neither counted as RED. Valid RED reached SQL after 69020ms and returned NotSupported rather than StageMismatch.",
+            "source": "Crystal npc/maelyrra.lua:94-100, blob SHA256 16acd67b566785af18a6a5cfce6d03a7a41a9f66717596774a3c309eca0eea88; retained tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz#/source_records/492 and content/dialogues/quests-2/threatened-dreams-source.json (201189f871d23597b82caf88fd611454a2ddefb8); OTS_HYPOTHESIS_ONLY",
+            "core_regression": {
+              "status": "GREEN",
+              "log": "/tmp/questpc3-sum-core.log",
+              "sha256": "c5432e39623d708f4dc3caebe49c358704f74cf1d910baf020f4f8bd5fb3b1af",
+              "evidence": [
+                "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.59s",
+                "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 249 filtered out; finished in 0.02s"
+              ]
+            },
+            "npc_regression": {
+              "status": "GREEN",
+              "log": "/tmp/questpc3-sum-npc-regression.log",
+              "sha256": "a96f340aa098a3d7c6fc2d900e5be1be63721d058d15b75be5ab29a0c68ac5fd",
+              "evidence": [
+                "    Finished `test` profile [unoptimized + debuginfo] target(s) in 3m 19s",
+                "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2550 filtered out; finished in 172.64s"
+              ]
+            }
+          },
+          "greeting_merge_02": {
+            "own_greeting": {
+              "log": "/tmp/questpc3-merged-own-greet-pg.log",
+              "sha256": "432b578a75c90b43ae74865f1a46cf3a6b4170b26b2b1272f10c3cc6532928e6",
+              "proof": [
+                "QUEST_L4_BEGINNING POSTGRES_ASSERTION_REACHED greeting_value=1",
+                "QUEST_L4_BEGINNING POSTGRES_CASE_COMPLETED duration_ms=114538 success=true",
+                "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2552 filtered out; finished in 114.54s"
+              ]
+            },
+            "six_programs": {
+              "log": "/tmp/questpc3-merged-npc-programs-pg.log",
+              "sha256": "f8178e70a1d99bf11df16a6d982ddd67ebd5d4b9fa6cc9ffc221597638a18da4",
+              "proof": [
+                "QUESTPC3_NPC POSTGRES_ASSERTION_REACHED phase=before_source_greet duration_ms=128339",
+                "QUESTPC3_NPC POSTGRES_ASSERTION_REACHED beginning_greet duration_ms=128832",
+                "QUESTPC3_NPC POSTGRES_CASE_COMPLETED beginning_greet duration_ms=130503",
+                "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2552 filtered out; finished in 130.51s"
+              ]
+            },
+            "sum": {
+              "log": "/tmp/questpc3-merged-sum-pg.log",
+              "sha256": "17c1130fcec1cb2c5dc74914ca7384d652a344129ebcd3fbc8e3a00cbdbf66a6",
+              "proof": [
+                "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=0 duration_ms=80746",
+                "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=1 duration_ms=80802",
+                "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=2 duration_ms=80944",
+                "QUEST_L4_SUM POSTGRES_CASE_COMPLETED duration_ms=81697 success=true",
+                "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2553 filtered out; finished in 81.71s"
+              ]
+            },
+            "clippy": {
+              "status": "RUNNING",
+              "log": "/tmp/questpc3-merged-greet-clippy.log",
+              "sha256": null
+            }
+          }
+        },
+        "rule": "Metadata-only delta from025936c3d; no source/data or validation inputs changed."
+      }
     }
   }
 }

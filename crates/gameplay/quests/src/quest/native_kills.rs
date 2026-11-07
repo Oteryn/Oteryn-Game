@@ -1,7 +1,9 @@
 //! Source death counters, consumed by the existing lethal queue and quest writer.
 //! Canary 666a60f6: the_first_dragon/creaturescripts_kill_dragon.lua:3-9;
 //! threatened_dreams/nightmare_monsters_kills.lua:16-27. Both use onDeathForParty.
-use super::{QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition};
+use super::{
+    QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition,
+};
 use std::collections::BTreeMap;
 
 pub const PREFIX: &str = "oteryn:quest-transition/native-kills/";
@@ -13,6 +15,8 @@ pub struct Counter {
     pub quest: &'static str,
     pub track: &'static str,
     pub gate: &'static str,
+    pub gate_value: i64,
+    pub advance_gate_to: Option<i64>,
     pub maximum: i64,
 }
 
@@ -25,6 +29,8 @@ pub const COUNTERS: &[Counter] = &[
         // The historical lowered counter starts at zero rather than source -1.
         // Require the source quest start so that an unstarted task cannot count.
         gate: "oteryn:quest-progress/quest/u11_02/the_first_dragon/questline",
+        gate_value: 1,
+        advance_gate_to: None,
         maximum: 200,
     },
     Counter {
@@ -33,6 +39,8 @@ pub const COUNTERS: &[Counter] = &[
         quest: "oteryn:quest.threatened_dreams_quest",
         track: "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/enfeebled_count",
         gate: super::threatened_dreams::NIGHTMARE,
+        gate_value: 1,
+        advance_gate_to: None,
         maximum: 2_147_483_647,
     },
     Counter {
@@ -41,6 +49,8 @@ pub const COUNTERS: &[Counter] = &[
         quest: "oteryn:quest.threatened_dreams_quest",
         track: "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/frazzlemaws_count",
         gate: super::threatened_dreams::NIGHTMARE,
+        gate_value: 1,
+        advance_gate_to: None,
         maximum: 2_147_483_647,
     },
     Counter {
@@ -49,7 +59,22 @@ pub const COUNTERS: &[Counter] = &[
         quest: "oteryn:quest.threatened_dreams_quest",
         track: "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/kroazur_kill",
         gate: super::threatened_dreams::NIGHTMARE,
+        gate_value: 1,
+        advance_gate_to: None,
         maximum: 1,
+    },
+    // Authored conservative bridge: the pinned Santiago source consumes three
+    // legs at stage6, but no donor hook writing stage5->6 was recovered. Count
+    // three eligible deaths; never grant the physical hand-in, its log or XP.
+    Counter {
+        transition: "oteryn:quest-transition/native-kills/beginning",
+        creature: "oteryn:creature.cockroach",
+        quest: "oteryn:quest.the_beginning_quest",
+        track: "oteryn:quest-progress/native-kills/beginning/cockroaches",
+        gate: super::beginning::GREET,
+        gate_value: 5,
+        advance_gate_to: Some(6),
+        maximum: 3,
     },
 ];
 
@@ -70,7 +95,7 @@ pub fn active(tracks: &BTreeMap<String, i64>) -> Vec<&'static str> {
     COUNTERS
         .iter()
         .filter(|counter| {
-            tracks.get(counter.gate) == Some(&1)
+            tracks.get(counter.gate) == Some(&counter.gate_value)
                 && (0..counter.maximum).contains(&tracks.get(counter.track).copied().unwrap_or(0))
         })
         .map(|counter| counter.transition)
@@ -79,19 +104,45 @@ pub fn active(tracks: &BTreeMap<String, i64>) -> Vec<&'static str> {
 
 pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let mut transitions: Vec<_> = catalogue.transitions.into_values().collect();
+    let mut tracks = catalogue.tracks;
     for counter in COUNTERS {
+        let ceiling = counter
+            .maximum
+            .checked_sub(1)
+            .filter(|_| counter.maximum > 0)
+            .ok_or_else(|| format!("invalid native counter bound {}", counter.transition))?;
+        let track = tracks
+            .entry(counter.track.into())
+            .or_insert_with(|| QuestTrack {
+                key: counter.track.into(),
+                quest: counter.quest.into(),
+                initial: 0,
+                min: 0,
+                max: counter.maximum,
+            });
+        if track.quest != counter.quest {
+            return Err(format!("foreign native counter {}", counter.track));
+        }
         transitions.push(QuestTransition {
             key: counter.transition.into(),
             quest: counter.quest.into(),
             effects: vec![
                 QuestEffect {
                     track: counter.gate.into(),
-                    from: QuestComparison::Eq(1),
-                    effect: QuestEffectKind::Add(0),
+                    from: QuestComparison::Eq(counter.gate_value),
+                    effect: counter
+                        .advance_gate_to
+                        .map_or(QuestEffectKind::Add(0), |value| {
+                            QuestEffectKind::SetWhenAtLeast {
+                                other_effect: 1,
+                                minimum: ceiling,
+                                value,
+                            }
+                        }),
                 },
                 QuestEffect {
                     track: counter.track.into(),
-                    from: QuestComparison::Between(0, counter.maximum - 1),
+                    from: QuestComparison::Between(0, ceiling),
                     effect: QuestEffectKind::Add(1),
                 },
             ],
@@ -101,7 +152,7 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
     }
     QuestStateCatalogue::new(
         catalogue.content_revision,
-        catalogue.tracks.into_values().collect(),
+        tracks.into_values().collect(),
         transitions,
     )
     .map_err(|error| format!("{error:?}"))
@@ -177,7 +228,8 @@ mod tests {
             catalogue.evaluate(transition, &stored, 0),
             Err(QuestRefusal::StageMismatch)
         );
-        assert!(!tracks_creature("oteryn:creature.cockroach"));
+        assert!(tracks_creature("oteryn:creature.cockroach"));
+        assert!(!tracks_creature("oteryn:creature.butterfly"));
         Ok(())
     }
 }

@@ -40,6 +40,47 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/questpc3/beginning/food-grant",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "keywords": [
+        "yes",
+        "right",
+        "ok"
+      ],
+      "topic": 7,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3578",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Take this fish. Use it from your inventory to eat and start recovering health. Easy, yes?"
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L189"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/questpc3/beginning/greet",
       "quest": "oteryn:quest.the_beginning_quest",
       "npc": "oteryn:npc.santiago",
@@ -154,6 +195,50 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/questpc3/beginning/legs-handin",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "keywords": [
+        "hi",
+        "hello",
+        "greetings"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5,
+          "preserve": false
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7882",
+          "count": 3
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You brought three cockroach legs. Here are 100 experience points. Did you see your level advance?"
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L88"
+      ],
+      "experience": 100
+    },
+    {
       "key": "oteryn:quest-reward/questpc3/beginning/level-explained",
       "quest": "oteryn:quest.the_beginning_quest",
       "npc": "oteryn:npc.santiago",
@@ -228,6 +313,45 @@
       "sources": [
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L216"
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/beginning/zirella-reward",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "keywords": [
+        "yes",
+        "quest",
+        "ok"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_quest_log",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for the firewood. You earned 50 experience points, and may take what is in the chest beside my bed."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zirella.lua#L153"
+      ],
+      "experience": 50
     },
     {
       "key": "oteryn:quest-reward/questpc3/pilgrimage/edala",

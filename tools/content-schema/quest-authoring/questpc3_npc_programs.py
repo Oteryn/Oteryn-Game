@@ -6,24 +6,33 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 SOURCE = "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua"
+ZIRELLA_SOURCE = SOURCE.rsplit("/", 1)[0] + "/zirella.lua"
 BASE = "oteryn:quest-progress/quest/u8_2/the_beginning_quest/"
 GREET = BASE + "santiago_npc_greet_storage"
 LOG = BASE + "santiago_quest_log"
+ZIRELLA_GREET = BASE + "zirella_npc_greet_storage"
+ZIRELLA_LOG = BASE + "zirella_quest_log"
+OWNED_NPCS = {"oteryn:npc.santiago", "oteryn:npc.zirella"}
 
 
 def storage(track, low, high, value):
     return {"track": track, "minimum": low, "maximum": high, "set": value, "preserve": False}
 
 
-def callback(name, keywords, topic, next_topic, before, after, old_log, new_log, line, reply):
-    return {
+def callback(name, keywords, topic, next_topic, before, after, old_log, new_log, line, reply,
+             *, npc="oteryn:npc.santiago", greet=GREET, log=LOG, source=SOURCE,
+             experience=None, take=(), give=None):
+    result = {
         "key": "oteryn:quest-reward/questpc3/beginning/" + name,
-        "quest": "oteryn:quest.the_beginning_quest", "npc": "oteryn:npc.santiago",
+        "quest": "oteryn:quest.the_beginning_quest", "npc": npc,
         "keywords": keywords, "topic": topic, "next_topic": next_topic,
-        "storage": [storage(GREET, before[0], before[1], after), storage(LOG, old_log[0], old_log[1], new_log)],
-        "take": [], "give": None, "outfit": None, "achievement": None,
-        "reply": [reply], "sources": [f"{SOURCE}#L{line}"],
+        "storage": [storage(greet, before[0], before[1], after), storage(log, old_log[0], old_log[1], new_log)],
+        "take": list(take), "give": give, "outfit": None, "achievement": None,
+        "reply": [reply], "sources": [f"{source}#L{line}"],
     }
+    if experience is not None:
+        result["experience"] = experience
+    return result
 
 
 def documents():
@@ -40,6 +49,16 @@ def documents():
                  "You can find food on creatures in the forest. Have you seen Zirella nearby?"),
         callback("refer-zirella", ["yes", "right", "ok"], 9, 0, (12, 12), 13, (10, 10), 11, 216,
                  "Zirella lives east of here, down the mountain. Please visit her and ask whether she needs help."),
+        callback("legs-handin", ["hi", "hello", "greetings"], 0, 4, (6, 6), 7, (4, 4), 5, 88,
+                 "You brought three cockroach legs. Here are 100 experience points. Did you see your level advance?",
+                 take=[{"item": "oteryn:item.tibia.i7882", "count": 3}], experience=100),
+        callback("food-grant", ["yes", "right", "ok"], 7, 8, (10, 10), 11, (8, 8), 9, 189,
+                 "Take this fish. Use it from your inventory to eat and start recovering health. Easy, yes?",
+                 give={"item": "oteryn:item.tibia.i3578", "count": 1}),
+        callback("zirella-reward", ["yes", "quest", "ok"], 8, 0, (7, 7), 8, (7, 7), 8, 153,
+                 "Thank you for the firewood. You earned 50 experience points, and may take what is in the chest beside my bed.",
+                 npc="oteryn:npc.zirella", greet=ZIRELLA_GREET, log=ZIRELLA_LOG,
+                 source=ZIRELLA_SOURCE, experience=50),
     ]
     offers = [{"npc": "oteryn:npc.santiago", "keywords": ["yes", "right", "ok"],
                "topic": 0, "next_topic": 1, "storage": [storage(GREET, 1, 1, 1)],
@@ -57,10 +76,18 @@ def documents():
         offers.append({"npc": "oteryn:npc.santiago", "keywords": ["hi", "hello", "greetings"],
                        "topic": 0, "next_topic": topic,
                        "storage": [storage(GREET, stage, stage, stage)], "reply": [reply]})
+    offers.append({"npc": "oteryn:npc.zirella", "keywords": ["hi", "hello", "greetings"],
+                   "topic": 0, "next_topic": 8,
+                   "storage": [storage(ZIRELLA_GREET, 7, 7, 7)],
+                   "reply": ["That is enough firewood for my oven. Are you ready for your reward?"]})
     greetings = {"schema": 1, "npcs": [{"npc": "oteryn:npc.santiago",
                   "greet": "Welcome to Rookgaard, |PLAYERNAME|. Can you help me?",
                   "farewell": "Take care, |PLAYERNAME|.",
-                  "walkaway": "Enjoy your stay on Rookgaard."}]}
+                  "walkaway": "Enjoy your stay on Rookgaard."},
+                 {"npc": "oteryn:npc.zirella",
+                  "greet": "Hello, |PLAYERNAME|. Can you help me with a quest?",
+                  "farewell": "Thank you, dear. Take care.",
+                  "walkaway": "Come back if you need help with the firewood."}]}
     return {"content/quests/shared-reward-callbacks.json": {"schema": 1, "callbacks": callbacks},
             "content/quests/shared-reward-offers.json": {"schema": 1, "offers": offers},
             "content/dialogues/quests/shared-reward-greetings.json": greetings}
@@ -75,13 +102,16 @@ def main():
         target = ROOT / relative
         # This shared registry may receive independently authored lane records.
         # Replace only our NPC programs and retain all foreign entries.
-        field = "callbacks" if "callbacks" in document else "offers" if "offers" in document else "npcs"
         if target.exists():
             existing = json.loads(target.read_text())
+            field = "callbacks" if "callbacks" in document else "offers" if "offers" in document else "npcs"
             foreign = [record for record in existing[field]
                        if (not record["key"].startswith("oteryn:quest-reward/questpc3/beginning/")
-                           if field == "callbacks" else record["npc"] != "oteryn:npc.santiago")]
+                           if field == "callbacks" else record["npc"] not in OWNED_NPCS)]
             document[field].extend(foreign)
+            for key, value in existing.items():
+                if key not in document:
+                    document[key] = value
         if field == "callbacks":
             document[field].sort(key=lambda record: record["key"])
         text = json.dumps(document, indent=2) + "\n"

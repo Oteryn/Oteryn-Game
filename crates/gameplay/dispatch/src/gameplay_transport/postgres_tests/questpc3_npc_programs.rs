@@ -83,6 +83,7 @@ fn beginning_greet() -> TestResult {
         let mut transitions = oteryn_gameplay_quests::quest::reward_callbacks::load()
             .map_err(debug)?
             .iter()
+            .filter(|c| c.npc == "oteryn:npc.santiago")
             .filter(|callback| callback.quest == "oteryn:quest.the_beginning_quest")
             .map(|c| original.transition(&c.key).cloned().ok_or("transition"))
             .collect::<Result<Vec<_>, _>>()?;

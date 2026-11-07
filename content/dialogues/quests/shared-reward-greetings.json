@@ -8,6 +8,12 @@
       "walkaway": "Enjoy your stay on Rookgaard."
     },
     {
+      "npc": "oteryn:npc.zirella",
+      "greet": "Hello, |PLAYERNAME|. Can you help me with a quest?",
+      "farewell": "Thank you, dear. Take care.",
+      "walkaway": "Come back if you need help with the firewood."
+    },
+    {
       "npc": "oteryn:npc.edala",
       "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
       "farewell": "Safe travels, |PLAYERNAME|.",
