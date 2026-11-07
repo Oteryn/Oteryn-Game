@@ -930,3 +930,34 @@ independent prototype PG evidence with explicit non-shipping disposition.
 Peer programme uses Lava Lurkers and NPC outfit exchanges; do not attribute
 prototype Fire Elemental/actual-item-USE assertions to peer qualification.
 Ten ACTIVE entries remain. Continue next selected whole route immediately.
+
+
+## Hero route implementation and real PostgreSQL RED
+
+Latest pushed ee0f48730;10 ACTIVE. Hero RED41.471928342s on actual PG18.6
+proves selected entry missing. Native route now authored on existing physical
+placements, with ten Glooth Golems gating native Professor Maxxen. First
+expanded PG50.474679451s proves all stage/kill gates, then exposes missing
+native blueprint21897 admission at final USE. Existing source-pinned generic
+qengine item qualifier now admits its portable100-weight profile; no new
+mechanism, item effect, fake quest seed or global-machine write.
+Run updated full PG and required focused gates, then mark QUALIFIED/push.
+Final Premium refusal must mint nothing; duplicate completion must not mint
+again. Next entry after Hero push: choose the next remaining complete recipe.
+
+Hero final review also binds the real same-quest dungeon-door entitlement to
+completion. Updated full native PG GREEN52.375250585s, no quest-state seeds.
+Post-correction validation rerun is active; loader9/world21/author23/item3 and
+both repository generators already pass. Finish check/clippy/pins/content/fmt,
+update status/proof, commit/push immediately. Still10 ACTIVE pending checks.
+Fresh peer fetch qengine2e7867e061/questpc8ec811acb7 adds no externally
+QUALIFIED overlap among these ten entries. Do not redo Fire prototype.
+
+## Thirty-minute push checkpoint while pin validation runs
+
+Hero full selected programme PG52.375250585s, focused units/generators,
+cargo check and strict all-target/all-feature clippy are GREEN. Repository
+pin refresh/check and content/world/fmt are still running. Keep Hero ACTIVE;
+this checkpoint publishes metadata only, with staged product retained locally.
+Do not stop or repeat the finished investigations. Finish remaining gates,
+mark QUALIFIED and push source immediately, then continue the other9 entries.

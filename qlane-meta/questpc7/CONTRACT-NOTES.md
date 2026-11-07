@@ -288,3 +288,49 @@ Fire-Fighter disposition: the preceding local prototype choices are superseded
 by external qengine2 qualification6738c1da7. Duplicate product code discarded
 before commit under owner's skip rule. Its actual PG results remain an audit
 of the discarded prototype, not a claim that this branch ships those choices.
+
+
+## Hero of Rathleton selected native programme
+
+Canonical chosen recipe is definitions/quests-00100-00199.json:1#/records/58,
+seven stages, min0/current Premium, no prerequisite. The original global
+machines, delayed source callbacks and FastWay unknown remain unchanged.
+Use existing workshop machinery20476 at(33567,31950,-14) as chosen plot
+evidence, ground20536 at(33564,31951,-14) as the voice investigation,
+ground20545 at(33568,31951,-14) as earned dungeon investigation access,
+and existing1855 at(33571,31952,-14) as chosen reward container.
+These are explicit finite-programme approximations, not invented donor IDs.
+Source region-z14-x131-y124.b3:1; retain its digest in generated callbacks.
+Native species Glooth Golem and Professor Maxxen already have admitted
+policies; Jaccus Maxxen's boss binding uses Professor Maxxen's canonical
+identity. Ten constructs unlock the boss via the existing stage-track owner;
+no new party/global-machine semantics or direct kill writer is introduced.
+Frozen lethal principal receives credit once; no inferred party entitlement.
+Final atomic direct-backpack plan is blueprint21897x1, four individual
+Glooth Bags21203 and platinum3035x5. Completion grants this investigation
+access milestone, not the unresolved original global transport/FastWay route.
+
+Hero first expanded PG run50.474679451s reached all native kills but final
+USE ended without a result because blueprint21897 lacked native physical
+admission. Extend the existing qengine_reward_item_profiles qualifier's exact
+cohort; no custom blueprint USE is inferred. Native admission source is
+imports/canary/items-xml/items.xml:43242, sha256
+1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2;
+plain quest item, weight100. Independent Crystal201189 evidence is
+items.xml:43440, sha2568a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509.
+Glooth Bag21203 is an existing stackable ingredient, not an inventory
+container; the selected four units retain that native policy unchanged.
+The programme's required kills and reward intents do not certify optional
+ordinary corpse loot; original corpse-admission refusal remains unchanged.
+
+Hero validation exposed an exact published callback-count assertion10→14,
+accounting for the four added Hero callbacks. Update that exact count only;
+all malformed-requirement/read-only refusal assertions remain unchanged.
+
+Hero review correction: final completion also writes the already typed, same-
+quest native door entitlement oteryn:quest-progress/hero_rathleton/access_door
+from[-1,1] to1 in the reward transaction. Existing owner mapping is
+content/dialogues/quest-rules/quest-batch3-b-hero_of_rathleton.json:1;
+Crystal201189 strange_pipe.lua:62/storage declaration:195. Preserve already
+earned1 and all original gate/transport callbacks; no guessed numeric alias.
+PG now asserts the real entitlement absent initially and1 after completion.
