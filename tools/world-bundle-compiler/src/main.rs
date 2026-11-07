@@ -18,6 +18,7 @@
 
 mod cargo_inputs;
 mod entry_start;
+mod npc_anchor_resolution;
 mod pin_refresh;
 
 use std::collections::BTreeMap;
@@ -511,6 +512,9 @@ fn run_pin_check(root: &Path, out: &Path) -> Result<Value, Error> {
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().collect();
     let result = match args.as_slice() {
+        [_, command, root, keys @ ..] if command == "npc-anchors" => {
+            npc_anchor_resolution::run(Path::new(root), keys)
+        }
         [_, command, root] if command == "parity" => run_parity(Path::new(root)),
         [_, command, root, identity, out, class] if command == "compile" => run_compile(
             Path::new(root),
@@ -562,7 +566,8 @@ fn main() -> ExitCode {
         [_, command, root] if command == "pin-refresh" => pin_refresh::run(Path::new(root)),
         _ => {
             eprintln!(
-                "usage: oteryn-world-bundle-compiler parity <repository root>\n       \
+                "usage: oteryn-world-bundle-compiler npc-anchors <repository root> <one to six NPC keys>\n       \
+                 oteryn-world-bundle-compiler parity <repository root>\n       \
                  oteryn-world-bundle-compiler compile <repository root> <identity.json> <out> \
                  <production|non-production>\n       \
                  oteryn-world-bundle-compiler derive-identity <repository root> <world slug>\n       \

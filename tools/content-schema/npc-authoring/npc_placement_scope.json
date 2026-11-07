@@ -445,14 +445,40 @@
     {
       "npc": "oteryn:npc.a_restless_soul",
       "position": {
-        "x": 32257,
+        "x": 32255,
         "y": 31101,
         "z": 10
       },
       "wiki": {
         "title": "A Restless Soul",
         "revid": 1114439
-      }
+      },
+      "audited_roaming_position": {
+        "x": 32257,
+        "y": 31101,
+        "z": 10
+      },
+      "origin": "native",
+      "native_source": {
+        "repository": "Oteryn/Oteryn-Game",
+        "revision": "d65d7dc7a8aa525c73733094fe6eeb2666f60eba",
+        "path": "tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json",
+        "sha256": "1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+        "record_pointer": "/candidates/31/placements/0/position",
+        "donor_npc_sha256": "a0a3272d20cda4c5f4cb7f14107bd49fc55f40e9f9a983c9399e193cd8878ac9",
+        "audited_roaming_position": {
+          "x": 32257,
+          "y": 31101,
+          "z": 10
+        },
+        "note": "Use nearest strictly admitted cell within captured walk radius; retain exact captured anchor and audited roaming observation. Compiler protections unchanged."
+      },
+      "captured_spawn_anchor": {
+        "x": 32256,
+        "y": 31101,
+        "z": 10
+      },
+      "walk_radius": 2
     },
     {
       "npc": "oteryn:npc.a_sleeping_dragon",
@@ -1015,14 +1041,40 @@
     {
       "npc": "oteryn:npc.chemar",
       "position": {
-        "x": 33270,
-        "y": 32439,
+        "x": 33269,
+        "y": 32438,
         "z": 6
       },
       "wiki": {
         "title": "Chemar",
         "revid": 908419
-      }
+      },
+      "audited_roaming_position": {
+        "x": 33270,
+        "y": 32439,
+        "z": 6
+      },
+      "origin": "native",
+      "native_source": {
+        "repository": "Oteryn/Oteryn-Game",
+        "revision": "d65d7dc7a8aa525c73733094fe6eeb2666f60eba",
+        "path": "tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json",
+        "sha256": "1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+        "record_pointer": "/candidates/230/placements/0/position",
+        "donor_npc_sha256": "9a14d8ec93aca02cae8b70bfd153bb77cf20c52472a35af695cbcb2d9e8fd109",
+        "audited_roaming_position": {
+          "x": 33270,
+          "y": 32439,
+          "z": 6
+        },
+        "note": "Use nearest strictly admitted cell within captured walk radius; retain exact captured anchor and audited roaming observation. Compiler protections unchanged."
+      },
+      "captured_spawn_anchor": {
+        "x": 33269,
+        "y": 32440,
+        "z": 6
+      },
+      "walk_radius": 2
     },
     {
       "npc": "oteryn:npc.chief_grarkharok",
@@ -1197,14 +1249,40 @@
     {
       "npc": "oteryn:npc.eclesius",
       "position": {
-        "x": 32291,
-        "y": 32291,
+        "x": 32293,
+        "y": 32292,
         "z": 7
       },
       "wiki": {
         "title": "Eclesius",
         "revid": 1116703
-      }
+      },
+      "audited_roaming_position": {
+        "x": 32291,
+        "y": 32291,
+        "z": 7
+      },
+      "origin": "native",
+      "native_source": {
+        "repository": "Oteryn/Oteryn-Game",
+        "revision": "d65d7dc7a8aa525c73733094fe6eeb2666f60eba",
+        "path": "tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json",
+        "sha256": "1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+        "record_pointer": "/candidates/315/placements/0/position",
+        "donor_npc_sha256": "5986ade6ce2e749981c41d4886ef3b4011dd04fe6af0fc52ea0df220a0cd726b",
+        "audited_roaming_position": {
+          "x": 32291,
+          "y": 32291,
+          "z": 7
+        },
+        "note": "Use nearest strictly admitted cell within captured walk radius; retain exact captured anchor and audited roaming observation. Compiler protections unchanged."
+      },
+      "captured_spawn_anchor": {
+        "x": 32291,
+        "y": 32292,
+        "z": 7
+      },
+      "walk_radius": 2
     },
     {
       "npc": "oteryn:npc.eddy",
@@ -1475,14 +1553,40 @@
     {
       "npc": "oteryn:npc.eshaya",
       "position": {
-        "x": 33915,
-        "y": 31498,
+        "x": 33913,
+        "y": 31497,
         "z": 6
       },
       "wiki": {
         "title": "Eshaya",
         "revid": 1116928
-      }
+      },
+      "audited_roaming_position": {
+        "x": 33915,
+        "y": 31498,
+        "z": 6
+      },
+      "origin": "native",
+      "native_source": {
+        "repository": "Oteryn/Oteryn-Game",
+        "revision": "d65d7dc7a8aa525c73733094fe6eeb2666f60eba",
+        "path": "tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json",
+        "sha256": "1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+        "record_pointer": "/candidates/352/placements/0/position",
+        "donor_npc_sha256": "0b84914661498605630d5e98bfb74579760e035d280e5395862c14b975e749db",
+        "audited_roaming_position": {
+          "x": 33915,
+          "y": 31498,
+          "z": 6
+        },
+        "note": "Use nearest strictly admitted cell within captured walk radius; retain exact captured anchor and audited roaming observation. Compiler protections unchanged."
+      },
+      "captured_spawn_anchor": {
+        "x": 33913,
+        "y": 31497,
+        "z": 6
+      },
+      "walk_radius": 2
     },
     {
       "npc": "oteryn:npc.esrik",
@@ -2051,14 +2155,40 @@
     {
       "npc": "oteryn:npc.hagor",
       "position": {
-        "x": 32654,
-        "y": 32151,
+        "x": 32652,
+        "y": 32150,
         "z": 10
       },
       "wiki": {
         "title": "Hagor",
         "revid": 1114105
-      }
+      },
+      "audited_roaming_position": {
+        "x": 32654,
+        "y": 32151,
+        "z": 10
+      },
+      "origin": "native",
+      "native_source": {
+        "repository": "Oteryn/Oteryn-Game",
+        "revision": "d65d7dc7a8aa525c73733094fe6eeb2666f60eba",
+        "path": "tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json",
+        "sha256": "1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+        "record_pointer": "/candidates/497/placements/0/position",
+        "donor_npc_sha256": "f144c08022f16e87b2de61119814ee2b6b075f4910036ffc9b7d1b5f06ba1e9b",
+        "audited_roaming_position": {
+          "x": 32654,
+          "y": 32151,
+          "z": 10
+        },
+        "note": "Use nearest strictly admitted cell within captured walk radius; retain exact captured anchor and audited roaming observation. Compiler protections unchanged."
+      },
+      "captured_spawn_anchor": {
+        "x": 32652,
+        "y": 32151,
+        "z": 10
+      },
+      "walk_radius": 2
     },
     {
       "npc": "oteryn:npc.hanna",
@@ -2691,14 +2821,40 @@
     {
       "npc": "oteryn:npc.malor",
       "position": {
-        "x": 33044,
-        "y": 32621,
+        "x": 33043,
+        "y": 32624,
         "z": 1
       },
       "wiki": {
         "title": "Malor",
         "revid": 1114123
-      }
+      },
+      "audited_roaming_position": {
+        "x": 33044,
+        "y": 32621,
+        "z": 1
+      },
+      "origin": "native",
+      "native_source": {
+        "repository": "Oteryn/Oteryn-Game",
+        "revision": "d65d7dc7a8aa525c73733094fe6eeb2666f60eba",
+        "path": "tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json",
+        "sha256": "1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+        "record_pointer": "/candidates/663/placements/0/position",
+        "donor_npc_sha256": "abcae4a2c7ba46ea369355a0c31e905189a3489c18bba843d06f9a0310cc09ec",
+        "audited_roaming_position": {
+          "x": 33044,
+          "y": 32621,
+          "z": 1
+        },
+        "note": "Use nearest strictly admitted cell within captured walk radius; retain exact captured anchor and audited roaming observation. Compiler protections unchanged."
+      },
+      "captured_spawn_anchor": {
+        "x": 33044,
+        "y": 32622,
+        "z": 1
+      },
+      "walk_radius": 2
     },
     {
       "npc": "oteryn:npc.maria",

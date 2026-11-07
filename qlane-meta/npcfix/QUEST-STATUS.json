@@ -102,10 +102,16 @@
       "npc": "Malor",
       "town": "Ankrahmun",
       "audit_status": "DIFF",
-      "work": "Retail placement authored.",
+      "work": "Source-backed placement admitted by the unmodified real map compiler; exact native actor identity and runtime map position proven against PostgreSQL.",
       "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/210",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "test_reviewed_spawn_anchors_preserve_roaming_observations_and_source_hashes; npcfix_anchor_postgres_real_map_admission_and_named_runtime_actors",
+      "status": "QUALIFIED",
+      "qualification": {
+        "postgres": "POSTGRES_STARTED NPCFIX real source anchors six NPCs; PASS106.18s",
+        "content": "123 integration checks and5 repository checks pass",
+        "pin": "fbc730aa6e986b2efb0949d610235fc1d6e12fd7d3c9f5acbb37ce35f8dfb2a9",
+        "placement_policy": "Nearest strictly admitted same-floor cell within captured walk radius; original anchor and retail observation retained."
+      }
     },
     {
       "npc": "Enpa Rudra",
@@ -209,7 +215,12 @@
       "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
       "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/64; content/services/trade/trade-00000-00326.json:1#/records/60",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "status": "AUTHORED; QUALIFICATION PENDING",
+      "physical_admission": {
+        "state": "QUALIFIED",
+        "postgres": "same six-NPC test,106.18s",
+        "note": "Postal economics remain to be qualified separately; no whole-NPC claim."
+      }
     },
     {
       "npc": "Elyen Ravenlock",
@@ -947,10 +958,16 @@
       "npc": "Eshaya",
       "town": "Issavi",
       "audit_status": "DIFF",
-      "work": "Retail placement authored.",
+      "work": "Source-backed placement admitted by the unmodified real map compiler; exact native actor identity and runtime map position proven against PostgreSQL.",
       "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/106",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "test_reviewed_spawn_anchors_preserve_roaming_observations_and_source_hashes; npcfix_anchor_postgres_real_map_admission_and_named_runtime_actors",
+      "status": "QUALIFIED",
+      "qualification": {
+        "postgres": "POSTGRES_STARTED NPCFIX real source anchors six NPCs; PASS106.18s",
+        "content": "123 integration checks and5 repository checks pass",
+        "pin": "fbc730aa6e986b2efb0949d610235fc1d6e12fd7d3c9f5acbb37ce35f8dfb2a9",
+        "placement_policy": "Nearest strictly admitted same-floor cell within captured walk radius; original anchor and retail observation retained."
+      }
     },
     {
       "npc": "Eustacio's Spy Rat",
@@ -1879,15 +1896,21 @@
       "npc": "A Restless Soul",
       "town": "Svargrond",
       "audit_status": "DIFF",
-      "work": "State story and spirit-language greeting/focus gate implemented and PG-proven. Resolve actual SpawnPoint collision at (32257,31101,10); then qualify complete NPC.",
+      "work": "Source-backed placement admitted by the unmodified real map compiler; exact native actor identity and runtime map position proven against PostgreSQL. Spirit-language greeting/focus and guarded story already proven by guarded NPC state stories batch.",
       "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/5",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "PENDING",
+      "test": "test_reviewed_spawn_anchors_preserve_roaming_observations_and_source_hashes; npcfix_anchor_postgres_real_map_admission_and_named_runtime_actors",
+      "status": "QUALIFIED",
       "source": {
         "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_restless_soul.lua",
         "sha256": "a0a3272d20cda4c5f4cb7f14107bd49fc55f40e9f9a983c9399e193cd8878ac9",
         "class": "OTS_HYPOTHESIS_ONLY",
         "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
+      },
+      "qualification": {
+        "postgres": "POSTGRES_STARTED NPCFIX real source anchors six NPCs; PASS106.18s",
+        "content": "123 integration checks and5 repository checks pass",
+        "pin": "fbc730aa6e986b2efb0949d610235fc1d6e12fd7d3c9f5acbb37ce35f8dfb2a9",
+        "placement_policy": "Nearest strictly admitted same-floor cell within captured walk radius; original anchor and retail observation retained."
       }
     },
     {
@@ -2162,10 +2185,16 @@
       "npc": "Eclesius",
       "town": "Thais",
       "audit_status": "DIFF",
-      "work": "Retail placement authored.",
+      "work": "Source-backed placement admitted by the unmodified real map compiler; exact native actor identity and runtime map position proven against PostgreSQL.",
       "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/82",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "test_reviewed_spawn_anchors_preserve_roaming_observations_and_source_hashes; npcfix_anchor_postgres_real_map_admission_and_named_runtime_actors",
+      "status": "QUALIFIED",
+      "qualification": {
+        "postgres": "POSTGRES_STARTED NPCFIX real source anchors six NPCs; PASS106.18s",
+        "content": "123 integration checks and5 repository checks pass",
+        "pin": "fbc730aa6e986b2efb0949d610235fc1d6e12fd7d3c9f5acbb37ce35f8dfb2a9",
+        "placement_policy": "Nearest strictly admitted same-floor cell within captured walk radius; original anchor and retail observation retained."
+      }
     },
     {
       "npc": "Eddy",
@@ -2708,10 +2737,16 @@
       "npc": "Hagor",
       "town": "Venore",
       "audit_status": "DIFF",
-      "work": "Retail placement authored.",
+      "work": "Source-backed placement admitted by the unmodified real map compiler; exact native actor identity and runtime map position proven against PostgreSQL.",
       "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/155",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "test_reviewed_spawn_anchors_preserve_roaming_observations_and_source_hashes; npcfix_anchor_postgres_real_map_admission_and_named_runtime_actors",
+      "status": "QUALIFIED",
+      "qualification": {
+        "postgres": "POSTGRES_STARTED NPCFIX real source anchors six NPCs; PASS106.18s",
+        "content": "123 integration checks and5 repository checks pass",
+        "pin": "fbc730aa6e986b2efb0949d610235fc1d6e12fd7d3c9f5acbb37ce35f8dfb2a9",
+        "placement_policy": "Nearest strictly admitted same-floor cell within captured walk radius; original anchor and retail observation retained."
+      }
     },
     {
       "npc": "Jack The Worker",
@@ -3132,6 +3167,52 @@
       "red": "Two fresh-checkout producer cases failed with missing output files; /tmp/npcfix-evidence/authoring-red.log",
       "green": "Two producer tests pass: all three pinned recipes/cooldown, preserving unrelated lane records, deterministic reproduction; --check PASS. /tmp/npcfix-evidence/authoring-green.log",
       "runtime_evidence": "Runtime unchanged in this commit; prior unchanged atomic PG proof remains28.02s. New economic PG RED: three markers and three missing-callback failures39.578s; GREEN runtime work remains separate and unpublished."
+    },
+    {
+      "name": "Six source-roaming physical admissions",
+      "state": "QUALIFIED_PHYSICAL_SCOPE",
+      "entries": [
+        "A Restless Soul",
+        "Chemar",
+        "Eclesius",
+        "Eshaya",
+        "Hagor",
+        "Malor"
+      ],
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX real source anchors six NPCs",
+        "duration_seconds": 29.95,
+        "failure": "Original Restless Soul cell rejected SpawnPoint"
+      },
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX real source anchors six NPCs",
+        "duration_seconds": 106.18,
+        "command": "cargo test -p oteryn-gameplay-dispatch --lib npcfix_anchor_postgres -- --nocapture",
+        "result": "Six exact compiled admissions and named runtime actors; bundle negative floor explicitly converted to runtime map z",
+        "log": "/tmp/npcfix-evidence/anchor-green-final.log"
+      },
+      "placement_policy": "Nearest strictly admitted cell inside captured walk radius; preserve captured anchor and retail observation. No compiler guard or map edit.",
+      "whole_npcs_qualified": [
+        "A Restless Soul",
+        "Eclesius",
+        "Eshaya",
+        "Hagor",
+        "Malor"
+      ],
+      "component_only": [
+        "Chemar physical placement; postal economics remain active"
+      ],
+      "checks": {
+        "authoring": "11 passed",
+        "fmt": "PASS workspace and mounted test formatting",
+        "check": "PASS changed crates all targets/features7m59s",
+        "clippy": "PASS changed crates all targets/features -D warnings8m08s",
+        "content_integration": "123 passed4.67s",
+        "content_repository": "5 passed79.16s",
+        "regeneration": "PASS repository tooling",
+        "pin_check": "PASS fbc730aa6e986b2efb0949d610235fc1d6e12fd7d3c9f5acbb37ce35f8dfb2a9",
+        "self_review": "No findings; original captured anchors and retail observations retained; strict map/compiler limits unchanged; no binary, workflow or repository-tool edits."
+      }
     }
   ],
   "owner_constraints": {
@@ -3146,7 +3227,7 @@
     "grants": "charge only on an exact match",
     "publication": "commit as blakinio with required trailers; fetch and fast-forward push each green batch; no main, force push or PR"
   },
-  "next_batch": "Reuse qengine2 reward engine and questl2 reward capacity; resolve actual NPC admission and continue remaining entries.",
+  "next_batch": "Continue generic shared reward support and Fading Memory cooldown; Chemar postal economics still active. Remaining physical admission rows continue in focused3-6 entry batches.",
   "shared_engine_lookup": {
     "owner_rule": "Shared engine features are this lane\u2019s responsibility when required. Never leave an entry unfinished for missing engine support.",
     "qengine2": {
@@ -3184,11 +3265,9 @@
     "caller_draft": "Preserved in git stash; superseded by remote implementation, not part of publication."
   },
   "active_batch": {
-    "name": "Fading Memory cooldown and independent physical admission repairs",
-    "state": "AUTHORING",
-    "ownership": "Active delivery in ACTIVE-REWARD-DELIVERY.md owns Al Dee, Wandering Soul and Weakened Forest Fury. Preserve/reuse it; do not duplicate these callers. Replacement source producer now owns Fading Memory only; two earlier input rows remain reference facts, not output bindings.",
-    "next": "Use the existing source anchor32256,31101,10 to resolve Restless Soul physical admission; retain strict compiler holds. Apply only the Fading Memory cooldown additions to the incoming reward core after delivery. No waiting or final engine blockers.",
-    "preserved_draft": "Latest git stash contains the unused reward-engine draft and three PG RED cases; use only cooldown-specific additions, never apply the whole superseded engine."
+    "name": "Next shared reward/cooldown slice",
+    "state": "READY_TO_START",
+    "next": "Fetch reward delivery; reuse incoming generic engine if present. If absent continue selective qengine2/questl2 reuse now. Fading Memory requires locked72000-second cooldown and exact source topics. No engine deferral."
   },
   "active_reward_delivery": {
     "entries": [
