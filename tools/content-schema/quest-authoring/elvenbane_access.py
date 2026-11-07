@@ -10,9 +10,9 @@ NAMES = ('dragon', 'elf-arcanist', 'demon-skeleton-east', 'demon-skeleton-west',
 
 def callbacks(factory, position):
     sources = [
-        'crystal:201189f871d23597b82caf88fd611454a2ddefb8:'
-        'data-global/startup/tables/chest.lua:2553-2584'
-        '#sha256:7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4',
+        'crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:'
+        'data-global/startup/tables/chest.lua:2551-2580'
+        '#sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca',
         'owner:questpc2:authored68-elvenbane-personal-defender-route:2026-11-07',
         'https://tibia.fandom.com/index.php?curid=8007&oldid=265159',
     ]
@@ -33,5 +33,10 @@ def callbacks(factory, position):
             row['storage'] += [dict(track='oteryn:quest-progress/elvenbane/native-defenders/' + name,
                                     minimum=1, maximum=1, set=1, preserve=True)
                                for name in NAMES]
+            row['storage'].append(dict(track='oteryn:quest-progress/elvenbane/phase',
+                                       minimum=3, maximum=3, set=4))
+            row['effects']['quest_completion'] = dict(claimed_rewards=[
+                'oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.' + name
+                for name in ('bp1', 'bp2', 'dwarven_shield', 'morning_star')])
         rows.append(row)
     return rows

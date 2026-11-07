@@ -540,3 +540,14 @@ roots and five exact nested children/custody sharing root receipt xmin; native
 four-floor descent passes. Still RED on proposed south-east exit path, so
 whole quest not qualified. Existing canonical return marker32597,31642,z7
 is the documented next exit endpoint to exercise, preserving source geometry.
+
+Canonical source return at32597,31642,z7 is real-route reachable: PG104.46s
+passes all Native6/four-source claims/replays/atomic containers/descent/return,
+then ownphase3!=4. Implement generic bounded claim-guarded callback completion,
+using family/key once identity (0012 later revisions do not reopen claims).
+Read same-character game_reward_claims under current fence/physical transaction,
+after original receipt replay and before offering consumption. One terminal
+8track write also sets completed journal state. No newSQLmigration. Pure
+completion unit validates distinct<=8keys, terminal storage and exact current
+Elvenbane source SHA; qengine_access/Native43write+check passed. FullPG remains
+pending with zero/partial claims refusal and allfour positive finish.

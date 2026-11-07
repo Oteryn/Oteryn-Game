@@ -2136,7 +2136,7 @@
     "world_digest": "56275a3ba06db4611a016821d1c0194c261e320ef983fcb215631911b56bc306"
   },
   "treasure_completion_authoring": {
-    "state": "WIP_FOUR_SOURCE_TREASURES_PROVEN_EXIT_ENDPOINT_RED",
+    "state": "WIP_GENERIC_CLAIM_GUARDED_COMPLETION_COMPILES",
     "server_version_num": 180006,
     "red_postgres_seconds": 95.95,
     "red_log": "/tmp/questpc2-treasure-source-corrected-red-pg.log",
@@ -2151,7 +2151,7 @@
       "native descent to source entry",
       "phase4 and completed admitted journal"
     ],
-    "next": "Reuse existing quest_chest_bindings startup UID restoration, capture exact four declarations from committed corpus, preserve binder UID/position/appearance checks. Then source exit/journal completion.",
+    "next": "Full PG with zero-claim and partial3claim returns refused, all4claim completion/journal; final clippy. Do not qualify whole quest before proof.",
     "latest_postgres_seconds": 100.4,
     "latest_log": "/tmp/questpc2-treasure-uids-green-pg.log",
     "latest_point": "Native6, four source chests, once/replay, four roots and five nested children samexmin, four native descending floor transitions all pass. No source walk floor7(32593,31644) to proposed south-east endpoint32599,31652. Next use existing canonical return marker32597,31642 then finish phase4/journal generically.",
@@ -2166,6 +2166,13 @@
     ],
     "source_geometry_unchanged": true,
     "world_digest": "c700212c39ed833e72e73f579cab6f35a625a6de7a7d0a488b895acf43ef7701",
-    "pins": "repo refresh/check PASS"
+    "pins": "repo refresh/check PASS",
+    "canonical_return_postgres_seconds": 104.46,
+    "canonical_return_log": "/tmp/questpc2-treasure-canonical-exit-red-pg.log",
+    "canonical_return_point": "Actual canonical return32597,31642,z7 passes; ownphase3 expected4 is exact PG RED.",
+    "completion": "Reusable bounded completion effect with distinct durable once-claim identities; same fenced transaction, after replay recovery and before consumption. Terminal8-track write marks journal completed.",
+    "completion_unit": "PASS bounded/duplicate/wrongkey/read-only/exact current provenance rejection",
+    "check_three_crates": "1m 05s",
+    "generation": "qengine_access write/check and Native43write/check PASS"
   }
 }

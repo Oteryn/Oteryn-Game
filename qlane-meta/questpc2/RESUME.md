@@ -1,3 +1,22 @@
+# WIP generic completion compiles: push, then full negative/positive PG
+
+Canonical source return32597,31642,z7 succeeds; actualPG104.46s exact RED
+ownphase3 expected4 after Native6/four source treasures/replay/atomic contents/
+native exit. Log /tmp/questpc2-treasure-canonical-exit-red-pg.log.
+Implemented CallbackEffects.quest_completion with bounded unique claimed_reward
+identities. Generic quest writer reads durable once claims under same fenced
+transaction after original receipt recovery and before consumption; Nativephase
+0->1 plus6preserve counters plusown3->4 = one8track write, completes=true.
+Completion requires terminal advancing storage; bad/duplicate/>8keys rejected.
+Actual corpus citation fixed; parser accepts exact Elvenbane9f5/path/lines/SHA,
+corrupt citation still rejected. Pure unitPASS. Three changed cratescheckPASS.
+qengine_access write/check + Native43write/check PASS; no Nativeprofile/World
+input changes since verifiedc700 pin. New fullcase tests zero andpartial3
+claims cannot close eitherphase, reascends actual source route, thenall4claims
+must finishphase4/completed journal. Compile+PG/final clippy remainpending.
+Push compiling checkpoint now per15min cadence, continue no final. Owned27
+wholeunfinished. Medium reasoning perowner. Generic requires no newmigration.
+
 # WIP four source claims/atomic bags proven PG100.40s; exit endpoint RED
 
 Log /tmp/questpc2-treasure-uids-green-pg.log: Native6; all four actual chests;

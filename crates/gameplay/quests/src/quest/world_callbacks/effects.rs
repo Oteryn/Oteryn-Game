@@ -14,6 +14,8 @@ pub enum Facing {
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub quest_completion: Option<QuestCompletion>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub party_transfer: Option<PartyTransfer>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reward_door: Option<RewardDoor>,
@@ -25,6 +27,14 @@ pub struct CallbackEffects {
     pub portals: Option<PortalPair>,
     pub item_cycle: Option<ItemCycle>,
     pub encounter: Option<Encounter>,
+}
+
+/// Durable once-claim identities required by a terminal world transition.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct QuestCompletion {
+    #[serde(default)]
+    pub claimed_rewards: Vec<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -193,6 +203,26 @@ pub(super) fn valid(callback: &Callback) -> bool {
         + usize::from(effects.encounter.is_some())
         + usize::from(effects.reward_door.is_some())
         + usize::from(effects.party_transfer.is_some());
+    if let Some(completion) = &effects.quest_completion {
+        let unique: std::collections::BTreeSet<_> = completion.claimed_rewards.iter().collect();
+        if completion.claimed_rewards.len() > 8
+            || unique.len() != completion.claimed_rewards.len()
+            || completion.claimed_rewards.iter().any(|key| {
+                !super::super::valid_quest_key(key) || !key.starts_with("oteryn:reward-claim.")
+            })
+            || callback.storage.is_empty()
+            || callback.storage.iter().all(|storage| {
+                storage.preserve || (storage.minimum..=storage.maximum).contains(&storage.set)
+            })
+            || callback.reversible
+            || callback.native_rule.is_some()
+            || operations > 0
+            || effects.outfit_reward.is_some()
+            || callback.monk_reward.is_some()
+        {
+            return false;
+        }
+    }
     if operations > 1
         || (operations > 0
             && (!lever

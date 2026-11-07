@@ -31,7 +31,7 @@ pub enum Trigger {
 mod effects;
 pub use effects::{
     CallbackEffects, Encounter, EncounterMonster, EncounterPlayer, Facing, ItemCycle, MagicEffect,
-    PartyStation, PartyTransfer, Portal, PortalPair, RewardDoor,
+    PartyStation, PartyTransfer, Portal, PortalPair, QuestCompletion, RewardDoor,
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -248,6 +248,8 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
                     || source.starts_with("canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:")
                     || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
+                    || (callback.quest == super::kill_objectives::QUEST
+                        && source == "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:2551-2580#sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca")
                     || (callback.effects.outfit_reward.is_some()
                         && source.starts_with("crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:"))
             })
@@ -349,7 +351,7 @@ fn extend_callbacks(
                     },
                 })
                 .collect(),
-            completes: false,
+            completes: callback.effects.quest_completion.is_some(),
             experience: callback.experience,
         });
     }
@@ -362,6 +364,71 @@ mod batch4_tests;
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn completion_is_bounded_terminal_and_requires_unique_claim_identities() -> Result<(), String> {
+        let document: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/shared-access-callbacks.json"
+        ))
+        .map_err(|error| error.to_string())?;
+        let callback = document["callbacks"]
+            .as_array()
+            .ok_or("callbacks")?
+            .iter()
+            .find(|row| row["key"] == "oteryn:quest-callback/elvenbane-return-after-defenders")
+            .ok_or("completion")?
+            .clone();
+        let input = serde_json::json!({"schema":1,"callbacks":[callback]});
+        let parsed = super::parse(&input.to_string())?;
+        assert_eq!(
+            parsed[0]
+                .effects
+                .quest_completion
+                .as_ref()
+                .ok_or("completion gate")?
+                .claimed_rewards
+                .len(),
+            4
+        );
+        assert_eq!(
+            parsed[0].storage.len(),
+            8,
+            "one atomic terminal phase and source counter write"
+        );
+        for bad in [
+            serde_json::json!(["invalid"]),
+            serde_json::json!(["oteryn:reward-claim.x", "oteryn:reward-claim.x"]),
+            serde_json::json!(
+                (0..9)
+                    .map(|i| format!("oteryn:reward-claim.x{i}"))
+                    .collect::<Vec<_>>()
+            ),
+        ] {
+            let mut changed = input.clone();
+            changed["callbacks"][0]["effects"]["quest_completion"]["claimed_rewards"] = bad;
+            assert!(super::parse(&changed.to_string()).is_err());
+        }
+        let mut changed_source = input.clone();
+        changed_source["callbacks"][0]["sources"][0] = serde_json::json!(
+            "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:2551-2580#sha256:changed"
+        );
+        assert!(
+            super::parse(&changed_source.to_string()).is_err(),
+            "current donor citation remains exact"
+        );
+        let mut changed = input;
+        for storage in changed["callbacks"][0]["storage"]
+            .as_array_mut()
+            .ok_or("storage")?
+        {
+            storage["preserve"] = serde_json::json!(true);
+        }
+        assert!(
+            super::parse(&changed.to_string()).is_err(),
+            "read-only storage cannot finish a quest"
+        );
+        Ok(())
+    }
+
     #[test]
     fn bounded_position_aliases_share_one_step_callback() -> Result<(), String> {
         let document: serde_json::Value = serde_json::from_str(include_str!(

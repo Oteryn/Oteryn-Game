@@ -377,6 +377,11 @@ impl DurabilityRoot {
                         Ok(root) => root,
                         Err(error) => return Ok(Err(error)),
                     };
+                    if let Some(callback) = &callback
+                        && !super::super::quest_world_callback::completion_claims_are_current(&mut tx, fence, callback).await?
+                    {
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    }
                     if let (Some(callback), Some((_, context, _))) = (&callback, &context)
                         && !super::super::quest_world_callback::party_is_current(&mut tx, &node, fence, callback, context).await?
                     {

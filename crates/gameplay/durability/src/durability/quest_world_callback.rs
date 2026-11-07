@@ -542,3 +542,20 @@ pub(super) async fn party_is_current(
     }
     Ok(true)
 }
+
+/// Read consumed once claims under the same Character fence and physical quest transaction.
+/// The once identity is family/key; a later definition revision never reopens a claim.
+pub(super) async fn completion_claims_are_current(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: CurrentCharacterGameplayFence,
+    callback: &Callback,
+) -> Result<bool, DurabilityError> {
+    let Some(completion) = &callback.effects.quest_completion else {
+        return Ok(true);
+    };
+    let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_reward_claims WHERE character_id=encode($1,'hex')::uuid AND claim_family='RewardClaim' AND claim_production_key=ANY($2::text[])")
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(&completion.claimed_rewards)
+        .fetch_one(&mut **tx).await?;
+    Ok(usize::try_from(count).ok() == Some(completion.claimed_rewards.len()))
+}
