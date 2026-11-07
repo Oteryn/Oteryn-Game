@@ -355,7 +355,7 @@
     "qualified_elsewhere_candidate": "qengine2 proves Wayfarer Outfits Quest QUALIFIED. Reuse its Cranky Lizard Crone callbacks and run affected integration PG before recording native NPC qualification."
   },
   "recovered_from": "95accb923",
-  "next_batch": "Run changed-source fmt/check/strict clippy and targeted PG proof; publish green reconciliation and actor19 immediately. Continue every owned entry.",
+  "next_batch": "Push independent green reconciliation/actor19 now. Refresh checks for unpublished exact-item postal test against the complete merged engine, then commit its five qualifications and continue all scope.",
   "batches": [
     {
       "name": "atomic quest/NPC state prerequisite",
@@ -1502,13 +1502,16 @@
     "normal_profile": "This checkout retained normal unoptimized+debuginfo profiles and existing env.sh. Only stopped-build incremental caches were removed."
   },
   "continuation_merge": {
-    "state": "MERGED_SOURCE_REVALIDATION_ACTIVE",
+    "state": "GREEN_INDEPENDENT_SOURCE_PROOFS",
     "incoming": "4d34d0efd61a86036688129af45ddeed4bf9f3ba",
     "placement_batch": "retail-population-qualification-19; actual PG RED46.17s/current113 actor GREEN112.11s",
     "postal_component": "All5 revised exact-item cases PASS456.20s; source compare retains every original assertion. Unpublished test remains outside this source merge until its fresh checks pass.",
     "scope_review": "Reuse incoming generic native backpack peer outputs, immutable bulk draw plan and source Cyclops composition. Both forward migrations1146/1147 retain1144/1145. All prior qualifications, current evidence pointers and both branch histories retained.",
     "integration_note": "Concurrent merge changed social constructor before clippy rebuilt durability metadata: E0560 backpack_outputs. Complete source already contains the field. Refresh focused merged-source checks and PG; never weaken assertions.",
-    "next": "Run changed-source fmt/check/strict clippy and targeted PG proof; publish green reconciliation and actor19 immediately. Continue every owned entry."
+    "next": "Push independent green reconciliation/actor19 now. Refresh checks for unpublished exact-item postal test against the complete merged engine, then commit its five qualifications and continue all scope.",
+    "upstream_checks": "Incoming50b514259 source (identical production bytes): all5 changed crates alltargets/allfeatures check2m34s and strict clippy5m17s; quest263/12.34s; MINT10 units; authoring13/profile9/native42 and pin-check568fe0 PASS.",
+    "upstream_postgres": "Bulk97.976s; native peer outputs4.698s (PG18.6/server_version_num180006); paid Altar115.184s; atomic Father11/22.89s. Actual DB markers retained upstream.",
+    "physical_source_equivalence": "All existing native physical/admission groups unchanged. Only6528 temporal changed; other profiles byte-identical. Physical fixture and server placement sources byte-identical. Actual own113-actor PG GREEN112.11s retained."
   },
   "last_publication": "Merge latest green placement qualifications with canonical L2 fixed smithing integration; fast-forward push in progress.",
   "independent_workshop_review": {
