@@ -6,7 +6,7 @@ use super::{
 };
 use oteryn_protocol_oteryn::cast::Message;
 #[path = "s17_client/settings_host.rs"]
-mod settings_host;
+pub(super) mod settings_host;
 #[test]
 fn s17a_client_start_stop_dispatch_commits_audit_and_rejects_stale_revision() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
