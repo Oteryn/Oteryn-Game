@@ -229,6 +229,41 @@
         "An unpaid repeat refuses without receipts or items",
         "The Abacus supports multiple independently paid occurrences"
       ],
+      "npc_placement": {
+        "npc": "oteryn:npc.jorge",
+        "cell": {
+          "x": 32204,
+          "y": 32292,
+          "floor": 6
+        },
+        "source": "tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:110762-110773:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+        "validation": "test_quest_reward_npcs_use_only_the_global_source_cells; test_committed_family_is_the_conversion",
+        "tool": "convert_placements.py",
+        "scope": "Production NPC.Placement family, in addition to wire-dispatch player journeys"
+      },
+      "verification_after_merge": [
+        {
+          "test": "questl2_token_menu_first_thirteen",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-token-menu-0",
+          "duration_seconds": 172.07414667,
+          "passed": true,
+          "postgresql": "18.6"
+        },
+        {
+          "test": "questl2_token_menu_middle_thirteen",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-token-menu-1",
+          "duration_seconds": 138.585645288,
+          "passed": true,
+          "postgresql": "18.6"
+        },
+        {
+          "test": "questl2_token_menu_last_eleven",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-token-menu-2",
+          "duration_seconds": 161.881875602,
+          "passed": true,
+          "postgresql": "18.6"
+        }
+      ],
       "post_merge_regression": {
         "postgres_test": "questl2_repeatable_token_exchange",
         "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-token-abacus",
@@ -419,9 +454,9 @@
   ],
   "validation": {
     "quest_unit_tests": {
-      "filter": "npc_rules",
       "passed": 25,
-      "failed": 0
+      "failed": 0,
+      "filter": "npc_rules"
     },
     "reward_authoring_tests": {
       "passed": 39,
@@ -462,7 +497,10 @@
     "world_pins": {
       "regenerated": true,
       "checked": true,
-      "digest": "03dc19c5c053c939e0f4ab40c9e353a6488e7e453c82255039df65391d9edf99"
+      "digest": "03dc19c5c053c939e0f4ab40c9e353a6488e7e453c82255039df65391d9edf99",
+      "bytes": 31101960,
+      "reason": "Merged all souvenir profiles and included Jorge in the production NPC placement family",
+      "tool": "regenerate_content.py --resolve --no-stage --skip-checks; world-bundle-compiler pin-check"
     },
     "formatting": "cargo fmt --all --check and explicit mounted-file rustfmt --check passed",
     "content_tests": {
@@ -518,9 +556,44 @@
       ],
       "removed": []
     },
+    "merged_engine_clippy": {
+      "packages": [
+        "oteryn-gameplay-quests",
+        "oteryn-gameplay-dispatch",
+        "oteryn-gameplay-durability"
+      ],
+      "all_targets": true,
+      "deny_warnings": true,
+      "exit_code": 0
+    },
+    "merge_refresh_before_remote": {
+      "regenerated": true,
+      "checked": true,
+      "digest": "d5e52c7a0ef24bf6aa7b78926fd0806e43eb731ac69b10783f20c9f10dcd88e5",
+      "unchanged": false,
+      "reason": "Merged QENGINE2 reviewed NPC placements and world outfit callbacks",
+      "tool": "regenerate_content.py --resolve --no-stage --skip-checks; world-bundle-compiler pin-check",
+      "bytes": 31101950
+    },
     "npc_placement_tests": {
       "passed": 11,
       "failed": 0
+    },
+    "build_resource_settings": {
+      "incremental": false,
+      "debug_symbols": false,
+      "test_assertions": "unchanged",
+      "reason": "Rebuildable incremental artifacts exhausted the filesystem; the test compiler approached the 16 GiB memory limit."
+    },
+    "focused_postgres": {
+      "passed": 4,
+      "failed": 0,
+      "selected_skipped": 0,
+      "unselected": 2554,
+      "duration_seconds": 310.902,
+      "log": "/tmp/l2-remote-merged-pg.log",
+      "atomic_eleven_seconds": 92.249054197,
+      "scope": "All37 souvenirs, independent paid repeats, replay/refusal, and eleven-track atomicity after integrating the remote branch."
     },
     "provider_composition_tests": {
       "passed": 11,
@@ -547,6 +620,35 @@
     "reused": [
       "QENGINE2 possession predicates and world outfit reward composition",
       "PC5 source NPC programmes, material/XP composition and claim-progress bindings"
-    ]
+    ],
+    "qengine2_reuse": {
+      "commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+      "features": [
+        "Carried evidence without consumption under reward transaction locks",
+        "World callback outfit rewards via the existing wardrobe owner",
+        "Source-backed native NPC placement and item admission tooling"
+      ],
+      "postgresql_18_6": [
+        {
+          "test": "qengine_l1_world_warmaster_base_wardrobe",
+          "seconds": 92.443194833
+        },
+        {
+          "test": "qengine_l1_yalaharian_addon_sage",
+          "seconds": 157.907860049
+        },
+        {
+          "test": "questl2_eleven_tracks_commit_atomically",
+          "seconds": 78.645381535
+        },
+        {
+          "test": "questl2_repeatable_token_exchange",
+          "seconds": 118.9159973
+        }
+      ],
+      "passed": 4,
+      "failed": 0,
+      "qualification_scope": "Shared mechanisms only; no L2 entry becomes qualified from these primitive tests."
+    }
   }
 }

@@ -38,12 +38,12 @@ fn scenario(name: &'static str) -> TestResult {
             started.elapsed()
         );
     }
+    outcome?;
     eprintln!(
-        "POSTGRES_CASE_COMPLETED {name} duration={:?} success={}",
-        started.elapsed(),
-        outcome.is_ok()
+        "POSTGRES_CASE_COMPLETED {name} duration={:?}",
+        started.elapsed()
     );
-    outcome
+    Ok(())
 }
 
 #[test]
