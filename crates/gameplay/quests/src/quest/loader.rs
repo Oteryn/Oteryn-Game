@@ -158,6 +158,8 @@ struct Track {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Transition {
+    #[serde(default)]
+    world_change: Option<String>,
     key: String,
     quest: String,
     completes: bool,
@@ -219,6 +221,10 @@ pub fn load_embedded_quest_state(
         super::dark_trails::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::isle_of_evil::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::native_kills::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.source_tracks.insert(
         super::rotten_blood::ACCESS_TRACK.into(),
         "kv:rotten-blood-quest:access".into(),
@@ -304,6 +310,7 @@ pub fn parse_quest_state(
                     .any(|effect| effect.effect == QuestEffectKind::Computed),
             );
             transitions.push(QuestTransition {
+                world_change: transition.world_change,
                 key: transition.key,
                 quest: transition.quest,
                 effects,

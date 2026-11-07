@@ -249,3 +249,9 @@ and architecture checks passed. Repository fixture generators ran; World
 pin-refresh and pin-check passed after G-12 removal, with their inputs unchanged
 by the subsequent SQL/runtime/test repairs. Full-suite results are delegated
 to CI under the owner's replacement speed rule.
+
+### PR 3031 main integration
+
+Merged main 1138720b1 after owner request. Main has no migration in 1350–1355;
+PUBPROJ retains 1350–1352 and 1354–1355 with 1353 free. QENGINE2/QBASE use
+0999–1008; no 1200–1205 copies are present. Duplicate migration checking passed.

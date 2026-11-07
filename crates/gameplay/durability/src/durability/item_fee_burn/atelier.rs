@@ -1,5 +1,5 @@
 //! Crystal 201189f game.cpp:2862-2969: carried coins, smaller denominations/stacks first,
-//! then the bank. This child is reachable only from the three Atelier fee causes.
+//! then the bank. The same bounded native carried reader also serves source-bound Quest payments.
 use super::*;
 use crate::domain::currency::FeeBurnLine;
 use serde_json::{Value, json};
@@ -11,7 +11,7 @@ const COIN_INPUTS_MAX: usize = 508;
 pub(super) fn is_cause(cause: &FeeBurnCause) -> bool {
     matches!(
         cause,
-        FeeBurnCause::GemReveal { .. }
+        FeeBurnCause::QuestRewardPayment { .. } | FeeBurnCause::GemReveal { .. }
             | FeeBurnCause::GemSwitchDomain { .. }
             | FeeBurnCause::GemGradeUp { .. }
     )
@@ -185,6 +185,7 @@ impl CarriedInputs {
             FeeBurnCauseV1::GemReveal(value)
             | FeeBurnCauseV1::GemSwitchDomain(value)
             | FeeBurnCauseV1::GemGradeUp(value) => value,
+            FeeBurnCauseV1::QuestRewardPayment(value) => value.purchase.as_mut().ok_or(FeeBurnError::InvalidInput)?,
             _ => return Err(FeeBurnError::InvalidInput),
         };
         let mut proof: Value = if value.atelier_proof.is_empty() {

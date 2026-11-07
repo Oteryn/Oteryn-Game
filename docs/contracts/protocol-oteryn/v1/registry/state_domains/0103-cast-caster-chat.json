@@ -11,6 +11,12 @@
       "name": "CAST_CASTER_CHAT_LINE_V1",
       "payload_schema": "docs/contracts/protocol-oteryn/v1/cast/cast-v1.md#Message",
       "max_payload_bytes": 512
+    },
+    {
+      "id": 32,
+      "name": "CAST_CASTER_ROSTER_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/cast/cast-v1.md#Message",
+      "max_payload_bytes": 1024
     }
   ],
   "snapshot_types": [
