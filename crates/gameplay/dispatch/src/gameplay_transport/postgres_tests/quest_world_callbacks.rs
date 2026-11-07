@@ -313,6 +313,23 @@ pub(super) fn world_with_palette(
     )
 }
 
+pub(super) fn source_route_world(
+    callback: &Callback,
+    trigger: Position,
+    cells: &[Position],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    world_ordinal_palette(
+        callback,
+        trigger,
+        callback.selector.appearance.ok_or("route appearance")?,
+        1,
+        &[(430, oteryn_world_bundle::bundle::TerrainKind::Ground)],
+        cells,
+        false,
+        &[],
+    )
+}
+
 #[allow(
     clippy::too_many_arguments,
     reason = "one native scene builder owns explicit palette and root geometry"
@@ -360,9 +377,19 @@ fn world_ordinal_palette(
         family: bundle::Family::Terrain,
         id: 1,
         terrain: Some(bundle::Terrain {
-            kind: bundle::TerrainKind::Common,
-            walkable: None,
-            ground_speed: None,
+            kind: if appearance == 431
+                && super::draconia_route::native_anchor(callback, trigger, appearance)
+            {
+                bundle::TerrainKind::Ground
+            } else {
+                bundle::TerrainKind::Common
+            },
+            walkable: (appearance == 431
+                && super::draconia_route::native_anchor(callback, trigger, appearance))
+            .then_some(true),
+            ground_speed: (appearance == 431
+                && super::draconia_route::native_anchor(callback, trigger, appearance))
+            .then_some(150),
         }),
     });
     for &(appearance, kind) in extra {
@@ -372,8 +399,8 @@ fn world_ordinal_palette(
             id: u32::try_from(data.manifest.palette.len())?,
             terrain: Some(bundle::Terrain {
                 kind,
-                walkable: None,
-                ground_speed: None,
+                walkable: matches!(kind, bundle::TerrainKind::Ground).then_some(true),
+                ground_speed: matches!(kind, bundle::TerrainKind::Ground).then_some(150),
             }),
         });
     }
@@ -410,13 +437,30 @@ fn world_ordinal_palette(
             palette: 1,
             depth: 0,
             attrs: sector::Attrs {
-                unique: if callback.key == "oteryn:quest-callback/giant-smithhammer" {
-                    // The exact native lever at32778,32232,z8 has no UID.
+                unique: if callback.key == "oteryn:quest-callback/giant-smithhammer"
+                    || super::draconia_route::native_anchor(callback, trigger, appearance)
+                    || matches!(
+                        (callback.key.as_str(), trigger.x, trigger.y, trigger.floor),
+                        (
+                            "oteryn:quest-callback/draconia-lever-30006",
+                            32792,
+                            31595,
+                            -7
+                        ) | (
+                            "oteryn:quest-callback/draconia-lever-30035",
+                            32792,
+                            31579,
+                            -7
+                        ) | ("oteryn:quest-callback/behemoth", 32805, 31587, -1)
+                            | ("oteryn:quest-callback/behemoth", 32815, 31599, -9)
+                    ) {
+                    // These exact native roots have no script attributes.
                     None
                 } else {
                     callback.selector.unique
                 },
                 action: callback.selector.action,
+                teleport: super::draconia_route::native_teleport(callback),
                 ..Default::default()
             },
         });
@@ -575,11 +619,15 @@ fn world_ordinal_palette(
     };
     let mut sectors: BTreeMap<(i8, u16, u16), Vec<sector::Tile>> = BTreeMap::new();
     for ((floor, x, y), mut items) in cells {
-        if !ground_passages
-            || !callback
-                .passages
-                .iter()
-                .any(|p| (p.position.floor, p.position.x, p.position.y) == (floor, x, y))
+        let source_ground = appearance == 431
+            && super::draconia_route::native_anchor(callback, trigger, appearance)
+            && (floor, x, y) == (trigger.floor, trigger.x, trigger.y);
+        if !source_ground
+            && (!ground_passages
+                || !callback
+                    .passages
+                    .iter()
+                    .any(|p| (p.position.floor, p.position.x, p.position.y) == (floor, x, y)))
         {
             items.insert(
                 0,

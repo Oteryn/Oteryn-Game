@@ -1,3 +1,158 @@
+GREEN integration: Corym retained-key door batch099836485 plus Draconia route b37aa848a. Combined fmt/check/strict clippy, source-binding/history units, source generation/tree, pins and actual PostgreSQL WorksDoor01 saved-definition regression passed. Evidence: cloud-hidden-doors-integration-validation.json. Both parents retained; no whole-title promotion. Next: native NPC door composition and reusable Cave Spider timed-room admission, four creature spawns and cleanup.
+
+Next room implementation source check: Canary04b83b51 tile.cpp1685–1704 runs native teleport before STEP_IN on the original tile; movement.cpp290 binds that original tile position. Preserve the native first-entry teleport to33056/32004/z11 and route the original entrance event using the final fenced actor snapshot. Second entry33039/32103/z12 lies inside occupancy bounds and counts its own entrant. Source: https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/items/tile.cpp#L1685-L1704 . Draft normalized room facts and implementation notes are in /tmp/questpc-hidden-room-capsule-draft.json and /tmp/questpc-hidden-room-implementation-plan.md; temporary source originals must not be committed. Runtime positions use legacy positive floors; native callback/map positions use signed negative floors.
+
+## Dragonlord evidence checkpoint — 2026-11-07
+Three actual PostgreSQL18.6 RED probes retained (83.05/83.99/84.14s).
+No whole-title promotion. Implementation remains uncommitted pending GREEN.
+Source-bound four-rule greeting, atomic existing item-exchange owner, closed
+source custody and reviewed native placement authored. Check and strict Clippy
+PASS; source-substitution unit PASS. PG GREEN binary compiling in session68527,
+log /tmp/questpc-dragonlord-green.log. NPC unit queued in session85167.
+Push runtime slice immediately after GREEN, then level25/Elathriel/sharedstock.
+
+## Draconia pressure/portal slice fully GREEN — 2026-11-07
+Five new native anchors and seven source movement callbacks now compose two
+pressure gates and three missing portals. Native38003 retains its real teleport
+attribute through the existing floor owner; no duplicate callback. Nine callback
+bindings total, original four unchanged; stock5/door10 captures preserved.
+Actual PostgreSQL18.6 intended RED5=234.36s. New mechanics GREEN5, plus native
+regression1 in a separate run; actual PG6passes/0failures, harness281.98s. Raw
+combined command5pass/1pre-PG fixture failure and corrected native1pass are both
+retained honestly. Two real admitted characters prove blocked/open/cross/replay/
+departure-restored for each plate. Quest units19/19,world5/5,fmt, final check1m49s,
+strict Clippy1m53s and generation/pins PASS. Quests/world/dispatch alltargets/features.
+Only28 source-provenance hash leaves changed; approval/core/admission unchanged.
+Full evidence:cloud-draconia-route-validation.json; review no findings. Counts
+remain60QUALIFIED/117UNFINISHED/1excludedDawnportBLOCKED; no whole-title promotion.
+
+NEXT three-entry source work: level25 gate at32804,31583,z2 (AID1025,5102->5103),
+Elathriel5000 money/bank ->copper2970 number3012, Dragonlord3723->3206+flag1 when
+flag!=1. Reuse existing generic owners and qpc6 paid-key implementatione30938891;
+check freshqengine2 first. Items3723/3206 alreadyNative;5102 profile missing.
+Then shared skeleton5972 stockkey3001 at32794,31572,z7 and final route composition.
+Sources/plans:/tmp/questpc-dragonlord-next-plan.md,/tmp/questpc-elathriel.lua,
+/tmp/questpc-draconia-pressure-next-plan.md. Own every missing generic feature.
+
+Resource rule:16GiB cgroup; never overlap pin compiler(~8GiB) and dispatch test
+rustc(~11GiB). Pin complete before test compile; checks can overlap actual PG.
+CARGO_INCREMENTAL=0. Fetch/merge before every push, never force/rebase published.
+Push each green slice and at least30min; do not end while actionable entries remain.
+
+## Draconia route: all six intended actual PG cases verified; final checks running
+Five new mechanics PASS: plate29002=48.764709994s,29003=47.353137678s,
+portal38004=46.350093563s,38005=46.665295174s,38006=46.315036803s. Actual RED5
+234.36s retained. Native38003 regression PASS46.519933797s in a separate final run.
+Initial six-case invocation reports5pass/1pre-PG fixture failure; final38003 rerun
+corrects signed bundle floor-byte encoding and passes. Do not claim one six-pass
+command. Combined actual PG:6passes/0failures after fixes; total harness281.98s.
+Quest units19/19,3.25s; world binder units5/5,0.05s; final fmt PASS. Pin command65877
+exited0, unchanged world9865615f... . Review no code findings; scope/core/admission
+rechecked unchanged. Annotation-only fix restores existing allow to original builder.
+
+Current final Clippy then check session96354: /tmp/questpc-draconia-route-{clippy,
+check-final}.log. Prior30425/34416 exited on displaced lint annotation; superseded.
+No code changes/retest needed after annotation restoration. Once96354passes, archive
+logs, finalize cloud-draconia-route-validation.json and status, commit/push immediately
+(fetch+merge if remote moved). Latest pushed583c321a3 (~07:53UTC); product code still
+uncommitted. Do not end. Avoid pin compiler/test rustc overlap in16GiB; incremental0.
+
+NEXT: level25 door plus NPC acquisition/fetish and shared container stock. Native
+5102->5103 level-door owner exists;5102 profile missing. NPC items3723/3206 already
+Native. Elathriel confirmed5000 money/bank ->copper key2970 with exact number3012;
+source/tmp/questpc-elathriel.lua. Reuse qpc6@e30938891 paid-key owner and checkqengine2.
+Dragonlord greet consumes3723x1, grants3206x1/flag1 only whenflag!=1; source plan
+/tmp/questpc-dragonlord-next-plan.md. Shared first key3001 is skeleton5972 container
+stock at32794,31572,z7, never a personal claim or invented loose pickup. Complete
+all remaining actionable entries; externally qualified titles stay excluded.
+
+## Verified RED proof checkpoint — route implementation still uncommitted
+Five intended PostgreSQL18.6 RED cases234.36s are retained in
+cloud-draconia-route-validation.json and cloud-draconia-route-red-{UID}.log.
+New implementation/generation remains in the working tree, not this checkpoint.
+Native38003 is an existing teleport regression; only five new anchors/seven
+callbacks are needed. Departure data now sets the existing reversible-map flag;
+no validator weakening. First GREEN0.04s registry failure was pre-PG, excluded.
+
+Current fresh pin refresh session65877 is still running; wait to exit0, then
+rebuild dispatch test binary ALONE. Previous concurrent test compile was SIGKILL;
+cgroup memory.max17179869184,oom_kill1. Do not overlap pin compiler (~8GiB) with
+dispatch test rustc (~11GiB). Preserve CARGO_INCREMENTAL=0 to avoid disk exhaustion.
+Sessions55344/98922 ended101/1; do NOT reuse them. Log/tmp/questpc-draconia-route-green.log
+currently shows compile failure, not PG. Preserve candidate if useful, restart
+cargo test filter draconia_route_native_ after pins, then focused units/fmt/check/
+strict Clippy. Last pin success on identical world inputs was9865615f...; current
+run must complete before claiming fresh success. Actual new source files and
+checkpoint metadata are separate; no title/implementation qualification claimed.
+
+Then finish this slice, fetch/merge remote and push immediately; continue level25,
+NPC acquisition/fetish and shared container stock. Never end while entries remain.
+
+## Draconia route: five actual PG RED; GREEN verification running
+Five intended PostgreSQL18.6 RED cases234.36s: plates29002=47.84s/29003=46.84s,
+portals38004=46.22s/38005=46.41s/38006=47.05s. Proper admitted guest now reaches
+closed-wall Blocked, then missing plate effect fails. Earlier setup probes are
+excluded. Portal38003 already has the correct native teleport attribute; its
+fixture now retains it and it is a regression, not a new callback/binding.
+
+Production changes generated: seven movement callbacks, five exact native bindings
+(nine total including prior four). Producer validates native roots/nonhouses and
+pinned Lua; 28 source-provenance hash leaves only in quest shards. Approval scope,
+core digests, immutable inputs and native admission unchanged. Source doc:
+cloud-draconia-route-source-validation.json; batch:cloud-draconia-route-validation.json.
+
+GREEN compile/test session21194, log/tmp/questpc-draconia-route-green.log; pin
+refresh session88825 completed with unchanged world9865615f... . Ready marker
+/tmp/questpc-draconia-route-pins.ready gates actual PG until pins finish.
+Focused quests/world units + fmt/check/strict Clippy session96217 waits for test
+binary build; no concurrent Cargo builds. Latest pushed checkpointfe6f732a7 (~07:27UTC).
+Do not publish mechanic green until actual six-case PG and strict checks pass.
+Then continue level25 gate, NPC key acquisition/fetish exchange, shared container
+key3001 and final route composition. Do not end while actual entries remain.
+
+## Draconia route provenance checkpoint — implementation still in progress
+Verified primary201189f sources against retained9f5a72 corpus: three entire files
+identical; portal rows38003-38006 semantically identical despite other table edits.
+Source hashes/URLs/line mappings:cloud-draconia-route-source-validation.json.
+This checkpoint publishes no route implementation and claims no mechanic/title green.
+
+Working tree contains new draconia_route.rs plus quest_world_callbacks.rs/scenario.rs
+fixture changes. Six-case RED loop session40842: portal38003/38004 actual PG RED
+45.92s/46.22s, expected source-not-destination. Cases38005/38006 still running after
+rebuild. Pressure29002/29003 first probes reached PG but failed setup
+MovementNonCardinal; do NOT count these as intended RED. Guest setup now creates
+and pins the second admitted actor directly at the gate, preserving proper lease.
+Rerun those two actual PG probes after session40842 finishes, then add production
+six-anchor capture/eight movement callbacks. No production route fix applied yet.
+Source plans:/tmp/questpc-draconia-pressure-next-plan.md. Corrected extra ground
+palette metadata (required walkable/speed); no test assertion weakened. Continue
+through GREEN, source-proof rebind/generation, strict checks, commit/fetch/merge/push.
+
+## Anchor/craft merge fully checked — 2026-11-07
+Preserved local289804c01 four native Draconia anchors and remote22eab7c56 Corym
+forging. Only metadata conflicted; both evidence records and ownership exclusions
+retained. Combined world/dispatch all-target/all-feature check3m06s and strict
+Clippy3m09s, fmt, three source captures and pin refresh PASS. World9865615f...
+unchanged. Existing source cohorts retain their actual RED/GREEN PG proofs;
+no fresh merge PG run or title promotion claimed. Evidence:
+cloud-anchor-craft-merge-validation.json. Push immediately, then continue six-entry
+Draconia source pressure/portal batch. Observer fixture supports a second real
+admitted player: appearance_change_postgres::observer_visibility_tests::{admit,
+initialize}, used by pvp_live after Harness::seed_pvp_target. Reuse it for party
+wire proof. Generic object effects already remove-if-present/create-if-absent.
+Generator for quests-2 callback shards:tools/content-migration/quests_2_content.py.
+Source plans and remaining scope are retained below. Do not end while entries remain.
+
+## Active anchor/craft merge — checks running
+Local anchor slice289804c01 is fully green but NOT pushed yet. Pre-push fetch found
+remote22eab7c56 (Corym craft); only metadata conflicted. Resolved retaining both.
+Combined world/dispatch check+strict Clippy session86191, pin refresh session55124;
+logs /tmp/questpc-anchor-craft-merge-*.log. Finish checks, archive evidence/update
+this note and QUEST-STATUS, commit merge with owner trailers, fetch/merge again if
+remote moved and push HEAD:claude/happy-davinci-ijz3wy-questpc-pc2 immediately.
+Last published local checkpoint886ac871c (~06:40UTC); target next push by07:10UTC.
+Then continue source pressure/portal batch; do not end. Source plans retained below.
+
 ## Three Corym WorksDoor unlocks GREEN — 2026-11-07
 
 Actual PG18.6: all3 exact source doors unlock with retained key and oldNPC13
@@ -48,6 +203,45 @@ Fresh qengine2 check before generic feature implementation; skip17 overlapping
 QUALIFIED titles per the exact list/sha in QUEST-STATUS. Continue without ending.
 
 ---
+
+## Four native Draconia callback anchors fully GREEN — 2026-11-07
+Exact native source levers30006/30035 and portals35011/35012 now acquire startup
+UIDs at boot through the existing bounded binder. Capture verifies pinned source
+SHA256/git-blob and native region hashes; original stock/door captures unchanged.
+Actual PostgreSQL18.6 RED4/4 failures187.16s; GREEN4/4 passes187.26s. Durations:
+escape47.874087529s, exit47.055772562s, lever30006=46.185858053s,
+lever30035=46.138378075s. Real wire reversal/replay and source offering/flag behavior.
+Ten pure units, fmt, all-target/all-feature world/dispatch check2m39s, strict Clippy
+2m48s, captures and pin refresh PASS. World digest unchanged9865615f... . Native
+stone1282 and crate1772 targets also match source exactly. Self-review no findings.
+Full evidence: cloud-draconia-anchors-validation.json. No title promotion.
+
+NEXT six-entry batch: two source pressure plates and four route portals. Primary
+source facts/plan: /tmp/questpc-draconia-pressure-next-plan.md. Existing StepIn/Out,
+pressure transforms and stateless world-object effects should compose the gates;
+implement any missing generic behavior here. Then level25/NPC acquisition/exchange
+and first shared container stock. NPC source plan:/tmp/questpc-dragonlord-next-plan.md.
+Fresh cross-lane exclusions record34 distinct externally QUALIFIED titles,27 still
+locally unfinished; these are skipped without claiming an unmerged implementation.
+Counts remain60QUALIFIED/117UNFINISHED/1excludedDawnportBLOCKED (90 actionable local
+unfinished titles after owner exclusions). Use sourceenv,CARGO_INCREMENTAL=0.
+Push every green slice and at least30min; never end while actual entries remain.
+
+## Four native Draconia callback anchors PG GREEN; strict checks running
+Actual PostgreSQL18.6 RED4/4 failures187.16s; GREEN4/4 passes187.26s. Exact native
+levers30006/30035 and portals35011/35012 have no injected UIDs. Pinned source capture
+restores exact selectors through the existing bounded boot binder. Ten pure units
+and fmt pass. Strict crate checks/Clippy and pins still running in session47011;
+logs /tmp/questpc-draconia-anchors-{check,clippy,pins}.log. Do not publish this slice
+as fully green until they pass. No whole-title promotion. Final evidence goes in
+cloud-draconia-anchors-validation.json. Latest pushed head886ac871c.
+
+Next sources: /tmp/questpc-dragonlord-next-plan.md and
+/tmp/questpc-draconia-pressure-next-plan.md. Four source portal selectors and two
+party plates form a six-entry route batch using existing movement/world owners.
+Level25 gate, NPC acquisition/exchange and first shared container key also remain.
+Fresh owner scan excludes27 locally unfinished titles QUALIFIED elsewhere; no
+local qualifications or merges are claimed by that exclusion. Counts remain60/117/1.
 
 ## Upper-door and concurrent NPC merge checked — 2026-11-07
 Preserved remote4c2056aa8 Corym NPC work and local upper-door batch7c3d513fe.

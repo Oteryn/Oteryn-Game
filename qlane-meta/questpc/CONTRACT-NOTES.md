@@ -334,6 +334,57 @@ same-owner retry; no transport or ownership guard is relaxed.
 
 Latest reuse audit before Corym door support: qengine2 `a0100244c6f7a72573630aebd19acaff21a383fa` has25QUALIFIED,17 overlap here (exact list in QUEST-STATUS). Its new reward exchanges/target sets do not provide retained world-item tools or additive world-callback catalogue compatibility; no such implementation to merge. Existing local fenced callback/item owners remain the reuse base.
 
+Draconia native callback anchors use pinned startup LeverUnique30006/30035 and
+TeleportUnique35011/35012, with exact source position/item and no proximity aliases.
+Native roots have no attributes and no house. Existing bounded binder preserves
+native attributes and rejects ambiguous capture unions. Source capture verifies
+both SHA256/git-blob custody and actual native region hashes:
+https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/lever.lua
+https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/teleport.lua
+Fresh owner-lane scan finds34 distinct locally listed titles QUALIFIED elsewhere;
+27 remain locally UNFINISHED but are explicitly excluded from implementation here.
+Local counts are not promoted by an unmerged external implementation.
+
+Draconia route provenance checkpoint: three primary files at Crystal201189f are
+byte-identical to retained9f5a72 corpus blobs (pressure handler, teleport handler,
+plate table). The teleport table differs elsewhere; its four owned UID38003-38006
+rows are semantically identical, including destination/effect. Hashes, URLs and
+line mappings are retained in cloud-draconia-route-source-validation.json.
+Pressure source is player-only remove-if-present on entry, create-if-absent on exit;
+no personal claim or additional party counter is substituted. Primary URLs:
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/movements/others/remove-create_item.lua
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/movements/others/teleport.lua
+This checkpoint publishes provenance only; route implementation remains uncommitted.
+
+Route verification correction: portal38003 alone already retains its exact native
+teleport attribute. Portal38004 and the two internal portals lack startup selectors.
+Preserve38003 as a native regression; restore five anchors/seven callbacks only.
+StepOut map effects require the existing reversible flag; authored departures now
+use it without relaxing validation. Pin compiler and dispatch test rustc must run
+serially in the16GiB environment after an observed OOM kill. Pre-PG registry/setup/
+compile failures are explicitly excluded from PostgreSQL proof counts.
+
+Draconia route slice GREEN: two source pressure plates use existing player-only
+StepIn/StepOut object effects; the existing reversible-map tag admits departures
+without storage/reward guard changes. Guest has real admission/lease and initialized
+pinned position. Native38003 keeps its teleport; bundle floor byte is signed native
+i8 reinterpreted asu8, distinct from B3 legacy z. Five new source PG cases and the
+native regression pass separately; initial fixture/registry/OOM failures are not PG
+proof. Final strict checks pass; no full-suite run or whole-title promotion.
+
+### Draconia Dragonlord greeting exchange (2026-11-07)
+Primary: https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/an_old_dragon_lord.lua#L59-L78
+SHA256: 85016cc08856f49d94c507f43bc84f54801d3a2844946ae391015a0d8c84a052.
+The offline corpus contains byte-identical source (Git blob
+1edc28f6c6bbbb9e5ea2ef74b836151a8a21ead4), verified by the producer.
+Only exact Dragonfetish value 1 refuses another mushroom exchange. A qualifying
+hi/hello consumes one white mushroom3723 and grants dragonfetish3206 together
+with flag1. Every source greeting exits without retaining focus. Other admitted
+greeting words receive the source's LEAVE response. No new item definitions or
+NPC-specific transactional owner are necessary. The reviewed agreeing native
+placement is32796,31558,z2; PG transport uses a controlled scene separately.
+The original frozen NPC programme and greeting cohorts retain their boundaries.
+
 ## Active Corym WorksDoor source contract — 2026-11-07
 
 Canonical source is Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b:

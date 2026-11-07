@@ -334,7 +334,7 @@
           "Ludicrous Piece of Cloth"
         ]
       },
-      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Against the Spider Cult Quest",
@@ -686,7 +686,7 @@
           "Demon Dust"
         ]
       },
-      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Asura Palace Quest",
@@ -1056,7 +1056,7 @@
         ]
       },
       "execution_disposition": "SKIP_QUALIFIED_ELSEWHERE",
-      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Bear Room Quest",
@@ -1210,7 +1210,7 @@
           "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
         ]
       },
-      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Behemoth Quest",
@@ -1849,7 +1849,8 @@
           "restart12-standalone-native-units.log:2/2pass1.085s",
           "restart12-standalone-fmt-final.log: pinned1.99.1 rustfmt check exit0"
         ]
-      }
+      },
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Brotherhood Outfits Quest",
@@ -1887,7 +1888,7 @@
           "Document of the Leader"
         ]
       },
-      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Captain Iglues Treasure Quest",
@@ -2267,7 +2268,7 @@
           "Chicken Feather"
         ]
       },
-      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Citizen of Issavi Outfits Quest",
@@ -2303,7 +2304,8 @@
         "targets": [
           "Eye-Embroidered Veil"
         ]
-      }
+      },
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Combat Knife Quest",
@@ -2460,7 +2462,7 @@
           "Major Crystalline Token"
         ]
       },
-      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Cults of Tibia Quest",
@@ -2667,7 +2669,7 @@
         ]
       },
       "execution_disposition": "SKIP_QUALIFIED_ELSEWHERE",
-      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Dawnport Quest",
@@ -2949,7 +2951,8 @@
           "native_dispatch_binding": null,
           "runtime_enabled": false
         }
-      }
+      },
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Deeplings World Change",
@@ -3040,7 +3043,8 @@
         "other_unfinished_composition": "No complete real-dispatch PG qualification for s1 (explore: Edron Hero Cave) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage."
       },
       "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
-      "active_batch": "Source world-object composition; stateless StepOut foundation implemented and PG exercised. No whole-title promotion."
+      "active_batch": "Source world-object composition; stateless StepOut foundation implemented and PG exercised. No whole-title promotion.",
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Demon Outfits Quest",
@@ -3077,7 +3081,7 @@
         ]
       },
       "execution_disposition": "SKIP_QUALIFIED_ELSEWHERE",
-      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Demon Wars World Change",
@@ -3548,7 +3552,7 @@
         ]
       },
       "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
-      "active_batch": "All ten native source key-door entries and stock3003-3007 PG/strict green. Next exact native callback anchors, source level gate, party, first shared container key and NPC exchange; then full reward/route composition."
+      "active_batch": "Pressure gates29002/29003 and portals38004-38006 now native PG/strict green; native38003 regression retained. Earlier stock3003-3007, all ten key doors and four lever/exit anchors green. Finish level25/NPC/container stock, then compose complete source route."
     },
     {
       "title": "Dragon Corpse Quest",
@@ -3763,7 +3767,7 @@
           "Mend What's Broken"
         ]
       },
-      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Dream Warrior Outfits Quest",
@@ -3798,7 +3802,8 @@
         "targets": [
           "Pomegranate"
         ]
-      }
+      },
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Dreamer's Challenge Quest",
@@ -3882,7 +3887,7 @@
           "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
         ]
       },
-      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Druid Outfits Quest on Rook",
@@ -3918,7 +3923,7 @@
           "Bear Paw"
         ]
       },
-      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Edron Goblin Quest",
@@ -4090,7 +4095,7 @@
         ]
       },
       "execution_disposition": "SKIP_QUALIFIED_ELSEWHERE",
-      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Elephant Tusk Quest",
@@ -4344,7 +4349,8 @@
         "targets": [
           "Bast Skirt"
         ]
-      }
+      },
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Explorer Brooch Quest",
@@ -4650,7 +4656,7 @@
         ]
       },
       "execution_disposition": "SKIP_QUALIFIED_ELSEWHERE",
-      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Fiend Slayer Outfits Quest",
@@ -4685,7 +4691,8 @@
         "targets": [
           "Demon Claws"
         ]
-      }
+      },
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Fire Axe Quest",
@@ -5006,7 +5013,8 @@
         "targets": [
           "25 Years of Tibia exhibition"
         ]
-      }
+      },
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Formorgar Mines Hoist Quest",
@@ -5054,7 +5062,8 @@
           "Traced execute teleport preparation: a lane-local choice based on a separate lever would lack a checked read-set at commit. Holding a runtime lock across durable guard awaits is forbidden. Did not substitute a fixed destination or qualify only the two implemented siblings."
         ]
       },
-      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff"
+      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Formorgar Mines Quest",
@@ -5100,7 +5109,7 @@
         ]
       },
       "execution_disposition": "SKIP_QUALIFIED_ELSEWHERE",
-      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Frost Dragon Quest",
@@ -5423,7 +5432,8 @@
             "log_sha256": "54e0f29256dee2ec0f9c955c970c9da32dd6006f30e6ebef73d08420df3ba12f"
           }
         ]
-      }
+      },
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Glooth Engineer Outfits Quest",
@@ -5460,7 +5470,7 @@
         ]
       },
       "execution_disposition": "SKIP_QUALIFIED_ELSEWHERE",
-      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Goblin Merchant Quest",
@@ -5618,7 +5628,7 @@
           "Gold Coin"
         ]
       },
-      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Grave Danger Quest",
@@ -5855,7 +5865,8 @@
         "targets": [
           "Final Judgement"
         ]
-      }
+      },
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Heart of Destruction Quest",
@@ -6300,7 +6311,7 @@
           "Elane's Crossbow"
         ]
       },
-      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Hunting for Tokens Quest",
@@ -6359,7 +6370,8 @@
           ],
           "boundary": "Native CRAFT1 C8 NPC_TALK producer through the original NPC trade writer; no raid-kill requirement invented, no trade-window capability added. AUTHORING only; no frozen-head independent-review, CI or deployed-World claim."
         }
-      ]
+      ],
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Hydra Egg Quest",
@@ -7064,7 +7076,8 @@
         "targets": [
           "Crocodile"
         ]
-      }
+      },
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Kilmaresh Quest",
@@ -7131,7 +7144,8 @@
         "targets": [
           "Thais Ancient Temple"
         ]
-      }
+      },
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Kingsday Mini World Change",
@@ -7229,7 +7243,7 @@
           "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
         ]
       },
-      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Koshei the Deathless Quest",
@@ -7442,7 +7456,8 @@
           "evidence": "qlane-meta/questpc/cloud-source-world-validation.json",
           "world_route_certification": false
         }
-      ]
+      ],
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Lion Trophy Quest",
@@ -7617,7 +7632,8 @@
             "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
           ]
         }
-      }
+      },
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Longsword Quest",
@@ -7967,7 +7983,7 @@
           "Winning Lottery Ticket"
         ]
       },
-      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Magic Sword Quest",
@@ -8090,7 +8106,8 @@
         "targets": [
           "Gnome Deep Hub"
         ]
-      }
+      },
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Marlin Trophy Quest",
@@ -8181,7 +8198,8 @@
         "targets": [
           "Formorgar Mines first cache route"
         ]
-      }
+      },
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Measuring Tibia Quest",
@@ -8548,7 +8566,8 @@
           ],
           "evidence": "qlane-meta/questpc/cloud-source-world-validation.json"
         }
-      ]
+      ],
+      "current_lane_action": "SKIP: QUALIFIED in recorded owner-lane snapshot; preserve local evidence without redoing this entry."
     },
     {
       "title": "Mystery of the Valley Quest",
@@ -8587,13 +8606,21 @@
     }
   ],
   "latest_pg": {
-    "log": "qlane-meta/questpc/cloud-mintwallin-green-2.log",
-    "log_sha256": "5a5b2c746369056b19946df02823bb3c09164a0e88e11ba46eae4e2f56a87ebf",
-    "filters": [
-      "mintwallin_source_asymmetric_lever_and_reward_once_replay_and_refusal"
+    "log": "qlane-meta/questpc/cloud-draconia-route-green-mechanics.log",
+    "log_sha256": "a6ca68764e67082c47dbc4596a649de0a1b20515ca2028a2b9e542c537b05c43",
+    "additional_logs": [
+      {
+        "log": "qlane-meta/questpc/cloud-draconia-route-green-native38003.log",
+        "sha256": "30faadac974233b4adf756066bf8a25e62094b261ab0a69caa5c610b025d5725"
+      }
     ],
-    "result": "1 passed; 0 failed",
-    "duration_seconds": 90.529083079
+    "filters": [
+      "draconia_route_native_"
+    ],
+    "actual_pg_result": "6 passed; 0 failed after fixes",
+    "command_boundary": "Five new PG passes plus separately corrected native38003 regression; original combined command had a pre-PG fixture failure, not counted.",
+    "duration_seconds": 281.98,
+    "server_version": "18.6"
   },
   "owner_execution_override": "Shared quest-engine, reward/binding, NPC, Item and callback features are owned here when needed. Check and reuse origin/claude/happy-davinci-ijz3wy-qengine2 first; historical outside-lane blockers are active implementation obligations, not final dispositions.",
   "latest_cloud_batch": {
@@ -9225,41 +9252,574 @@
       "state": "all_ten_native_access_entries_pg_green",
       "validation": "qlane-meta/questpc/cloud-draconia-upper-door-validation.json",
       "next": "Complete native source access/party/NPC/container-stock route; no whole-title promotion."
+    },
+    "draconia_native_callbacks": {
+      "state": "four_native_anchors_pg_and_strict_green",
+      "validation": "qlane-meta/questpc/cloud-draconia-anchors-validation.json",
+      "anchors": [
+        30006,
+        30035,
+        35011,
+        35012
+      ],
+      "next": "Source pressure gates and four route portals, then level/NPC/container stock composition."
+    },
+    "draconia_source_route": {
+      "state": "five_new_native_mechanics_and_one_native_regression_pg_strict_green",
+      "validation": "qlane-meta/questpc/cloud-draconia-route-validation.json",
+      "next": "Level25 gate, Elathriel exact paid copper key3012, Dragonlord mushroom/fetish exchange and shared skeleton stock key3001, then final route composition."
     }
   },
   "cross_lane_qualified_elsewhere": {
     "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
-    "sha": "d44f015c12e29f6ffa16f3de2e220b0dac232716",
+    "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
     "titles": [
       "Afflicted Outfits Quest",
       "Assassin Outfits Quest",
       "Battle Mage Outfits Quest",
       "Beggar Outfits Quest",
+      "Braindeath Quest",
       "Brotherhood Outfits Quest",
       "Citizen Outfits Quest on Rook",
+      "Citizen of Issavi Outfits Quest",
       "Crystal Warlord Outfits Quest",
       "Dark Trails Quest",
+      "Deeper Fibula Quest",
+      "Demon Helmet Quest",
       "Demon Outfits Quest",
       "Dream Warden Outfits Quest",
+      "Dream Warrior Outfits Quest",
       "Druid Outfits Quest",
       "Druid Outfits Quest on Rook",
       "Elementalist Outfits Quest",
+      "Exchange Quests",
       "Festive Outfits Quest",
+      "Fiend Slayer Outfits Quest",
+      "Formal Dress Outfits Quest",
+      "Formorgar Mines Hoist Quest",
       "Formorgar Mines Quest",
+      "Giant Smithhammer Quest",
       "Glooth Engineer Outfits Quest",
       "Golden Outfits Quest",
+      "Hand of the Inquisition Outfits Quest",
       "Hunter Outfits Quest",
+      "Hunting for Tokens Quest",
+      "Killing in the Name of... Quest",
+      "Kingdom of Kormarak Quest",
       "Knight Outfits Quest",
-      "Mage Outfits Quest"
+      "Life Ring Quest",
+      "Lone Medusa Quest",
+      "Mage Outfits Quest",
+      "Makeshift Warrior Outfits Quest",
+      "Mastermind Potion Quest",
+      "Mintwallin Cyclops Quest",
+      "Nightmare Outfits Quest",
+      "Nobleman Outfits Quest",
+      "Norseman Outfits Quest",
+      "Oriental Outfits Quest",
+      "Pirate Outfits Quest",
+      "Royal Costume Outfits Quest",
+      "Soil Guardian Outfits Quest",
+      "Warmaster Outfits Quest",
+      "Wayfarer Outfits Quest",
+      "Yalaharian Outfits Quest"
     ],
-    "rule": "Skip per current owner; this does not claim those implementations are merged here.",
-    "qualified_count": 30,
-    "local_overlap_count": 20
+    "rule": "Skip QUALIFIED titles in every recorded owner snapshot; this records ownership and does not claim implementations merged here.",
+    "qualified_count": 49,
+    "local_overlap_count": 39,
+    "sources": {
+      "Demon Helmet Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-questpc5",
+        "sha": "e9a84f787b037bfa4e2bbde2695e9352ffd9ee0d",
+        "path": "qlane-meta/questpc5/QUEST-STATUS.json"
+      },
+      "Formorgar Mines Hoist Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-questpc5",
+        "sha": "e9a84f787b037bfa4e2bbde2695e9352ffd9ee0d",
+        "path": "qlane-meta/questpc5/QUEST-STATUS.json"
+      },
+      "Deeper Fibula Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-questpc6",
+        "sha": "53d5648b88e48bed2b9f27545334c21ea6f37028",
+        "path": "qlane-meta/questpc6/QUEST-STATUS.json"
+      },
+      "Exchange Quests": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-questpc7",
+        "sha": "5f567f798aa5f7ac91b868fc3e8a4dd1fe4d06b3",
+        "path": "qlane-meta/questpc7/QUEST-STATUS.json"
+      },
+      "Festive Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Fiend Slayer Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-questpc7",
+        "sha": "5f567f798aa5f7ac91b868fc3e8a4dd1fe4d06b3",
+        "path": "qlane-meta/questpc7/QUEST-STATUS.json"
+      },
+      "Formal Dress Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-questpc7",
+        "sha": "5f567f798aa5f7ac91b868fc3e8a4dd1fe4d06b3",
+        "path": "qlane-meta/questpc7/QUEST-STATUS.json"
+      },
+      "Formorgar Mines Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Giant Smithhammer Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-questpc8",
+        "sha": "805a061415355a68a924b3b32d02023fe608fc97",
+        "path": "qlane-meta/questpc8/QUEST-STATUS.json"
+      },
+      "Glooth Engineer Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Golden Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Hand of the Inquisition Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-questpc7",
+        "sha": "5f567f798aa5f7ac91b868fc3e8a4dd1fe4d06b3",
+        "path": "qlane-meta/questpc7/QUEST-STATUS.json"
+      },
+      "Hunter Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Hunting for Tokens Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-questpc7",
+        "sha": "5f567f798aa5f7ac91b868fc3e8a4dd1fe4d06b3",
+        "path": "qlane-meta/questpc7/QUEST-STATUS.json"
+      },
+      "Killing in the Name of... Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-questpc8",
+        "sha": "805a061415355a68a924b3b32d02023fe608fc97",
+        "path": "qlane-meta/questpc8/QUEST-STATUS.json"
+      },
+      "Kingdom of Kormarak Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-questpc8",
+        "sha": "805a061415355a68a924b3b32d02023fe608fc97",
+        "path": "qlane-meta/questpc8/QUEST-STATUS.json"
+      },
+      "Life Ring Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-questpc8",
+        "sha": "805a061415355a68a924b3b32d02023fe608fc97",
+        "path": "qlane-meta/questpc8/QUEST-STATUS.json"
+      },
+      "Lone Medusa Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-questpc8",
+        "sha": "805a061415355a68a924b3b32d02023fe608fc97",
+        "path": "qlane-meta/questpc8/QUEST-STATUS.json"
+      },
+      "Mastermind Potion Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-questpc8",
+        "sha": "805a061415355a68a924b3b32d02023fe608fc97",
+        "path": "qlane-meta/questpc8/QUEST-STATUS.json"
+      },
+      "Mintwallin Cyclops Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-questpc8",
+        "sha": "805a061415355a68a924b3b32d02023fe608fc97",
+        "path": "qlane-meta/questpc8/QUEST-STATUS.json"
+      },
+      "Braindeath Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-questpc8",
+        "sha": "805a061415355a68a924b3b32d02023fe608fc97",
+        "path": "qlane-meta/questpc8/QUEST-STATUS.json"
+      },
+      "Afflicted Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Assassin Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Battle Mage Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Beggar Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Citizen Outfits Quest on Rook": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Dark Trails Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Demon Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Dream Warden Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Druid Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Druid Outfits Quest on Rook": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Elementalist Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Knight Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Mage Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Brotherhood Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Citizen of Issavi Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Crystal Warlord Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Dream Warrior Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Makeshift Warrior Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Nightmare Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Nobleman Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Norseman Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Oriental Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Pirate Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Royal Costume Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Soil Guardian Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Warmaster Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Wayfarer Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      },
+      "Yalaharian Outfits Quest": {
+        "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+        "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+        "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+      }
+    },
+    "additional_owner_snapshot": {
+      "rule": "Skip current owner-lane QUALIFIED titles; this does not claim their implementations are merged here or promote local status.",
+      "titles": [
+        "Afflicted Outfits Quest",
+        "Assassin Outfits Quest",
+        "Battle Mage Outfits Quest",
+        "Beggar Outfits Quest",
+        "Braindeath Quest",
+        "Citizen Outfits Quest on Rook",
+        "Dark Trails Quest",
+        "Deeper Fibula Quest",
+        "Demon Helmet Quest",
+        "Demon Outfits Quest",
+        "Dream Warden Outfits Quest",
+        "Druid Outfits Quest",
+        "Druid Outfits Quest on Rook",
+        "Elementalist Outfits Quest",
+        "Exchange Quests",
+        "Festive Outfits Quest",
+        "Fiend Slayer Outfits Quest",
+        "Formal Dress Outfits Quest",
+        "Formorgar Mines Hoist Quest",
+        "Formorgar Mines Quest",
+        "Giant Smithhammer Quest",
+        "Glooth Engineer Outfits Quest",
+        "Golden Outfits Quest",
+        "Hand of the Inquisition Outfits Quest",
+        "Hunter Outfits Quest",
+        "Hunting for Tokens Quest",
+        "Killing in the Name of... Quest",
+        "Kingdom of Kormarak Quest",
+        "Knight Outfits Quest",
+        "Life Ring Quest",
+        "Lone Medusa Quest",
+        "Mage Outfits Quest",
+        "Mastermind Potion Quest",
+        "Mintwallin Cyclops Quest"
+      ],
+      "locally_unfinished_excluded": [
+        "Afflicted Outfits Quest",
+        "Assassin Outfits Quest",
+        "Battle Mage Outfits Quest",
+        "Beggar Outfits Quest",
+        "Citizen Outfits Quest on Rook",
+        "Dark Trails Quest",
+        "Demon Helmet Quest",
+        "Demon Outfits Quest",
+        "Dream Warden Outfits Quest",
+        "Druid Outfits Quest",
+        "Druid Outfits Quest on Rook",
+        "Elementalist Outfits Quest",
+        "Exchange Quests",
+        "Festive Outfits Quest",
+        "Fiend Slayer Outfits Quest",
+        "Formal Dress Outfits Quest",
+        "Formorgar Mines Hoist Quest",
+        "Formorgar Mines Quest",
+        "Glooth Engineer Outfits Quest",
+        "Golden Outfits Quest",
+        "Hand of the Inquisition Outfits Quest",
+        "Hunter Outfits Quest",
+        "Killing in the Name of... Quest",
+        "Kingdom of Kormarak Quest",
+        "Knight Outfits Quest",
+        "Mage Outfits Quest",
+        "Mastermind Potion Quest"
+      ],
+      "sources": {
+        "Demon Helmet Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-questpc5",
+          "sha": "e9a84f787b037bfa4e2bbde2695e9352ffd9ee0d",
+          "path": "qlane-meta/questpc5/QUEST-STATUS.json"
+        },
+        "Formorgar Mines Hoist Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-questpc5",
+          "sha": "e9a84f787b037bfa4e2bbde2695e9352ffd9ee0d",
+          "path": "qlane-meta/questpc5/QUEST-STATUS.json"
+        },
+        "Deeper Fibula Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-questpc6",
+          "sha": "53d5648b88e48bed2b9f27545334c21ea6f37028",
+          "path": "qlane-meta/questpc6/QUEST-STATUS.json"
+        },
+        "Exchange Quests": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-questpc7",
+          "sha": "5f567f798aa5f7ac91b868fc3e8a4dd1fe4d06b3",
+          "path": "qlane-meta/questpc7/QUEST-STATUS.json"
+        },
+        "Festive Outfits Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+          "sha": "a0100244c6f7a72573630aebd19acaff21a383fa",
+          "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+        },
+        "Fiend Slayer Outfits Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-questpc7",
+          "sha": "5f567f798aa5f7ac91b868fc3e8a4dd1fe4d06b3",
+          "path": "qlane-meta/questpc7/QUEST-STATUS.json"
+        },
+        "Formal Dress Outfits Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-questpc7",
+          "sha": "5f567f798aa5f7ac91b868fc3e8a4dd1fe4d06b3",
+          "path": "qlane-meta/questpc7/QUEST-STATUS.json"
+        },
+        "Formorgar Mines Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+          "sha": "a0100244c6f7a72573630aebd19acaff21a383fa",
+          "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+        },
+        "Giant Smithhammer Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-questpc8",
+          "sha": "805a061415355a68a924b3b32d02023fe608fc97",
+          "path": "qlane-meta/questpc8/QUEST-STATUS.json"
+        },
+        "Glooth Engineer Outfits Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+          "sha": "a0100244c6f7a72573630aebd19acaff21a383fa",
+          "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+        },
+        "Golden Outfits Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-questpc7",
+          "sha": "5f567f798aa5f7ac91b868fc3e8a4dd1fe4d06b3",
+          "path": "qlane-meta/questpc7/QUEST-STATUS.json"
+        },
+        "Hand of the Inquisition Outfits Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-questpc7",
+          "sha": "5f567f798aa5f7ac91b868fc3e8a4dd1fe4d06b3",
+          "path": "qlane-meta/questpc7/QUEST-STATUS.json"
+        },
+        "Hunter Outfits Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+          "sha": "a0100244c6f7a72573630aebd19acaff21a383fa",
+          "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+        },
+        "Hunting for Tokens Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-questpc7",
+          "sha": "5f567f798aa5f7ac91b868fc3e8a4dd1fe4d06b3",
+          "path": "qlane-meta/questpc7/QUEST-STATUS.json"
+        },
+        "Killing in the Name of... Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-questpc8",
+          "sha": "805a061415355a68a924b3b32d02023fe608fc97",
+          "path": "qlane-meta/questpc8/QUEST-STATUS.json"
+        },
+        "Kingdom of Kormarak Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-questpc8",
+          "sha": "805a061415355a68a924b3b32d02023fe608fc97",
+          "path": "qlane-meta/questpc8/QUEST-STATUS.json"
+        },
+        "Life Ring Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-questpc8",
+          "sha": "805a061415355a68a924b3b32d02023fe608fc97",
+          "path": "qlane-meta/questpc8/QUEST-STATUS.json"
+        },
+        "Lone Medusa Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-questpc8",
+          "sha": "805a061415355a68a924b3b32d02023fe608fc97",
+          "path": "qlane-meta/questpc8/QUEST-STATUS.json"
+        },
+        "Mastermind Potion Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-questpc8",
+          "sha": "805a061415355a68a924b3b32d02023fe608fc97",
+          "path": "qlane-meta/questpc8/QUEST-STATUS.json"
+        },
+        "Mintwallin Cyclops Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-questpc8",
+          "sha": "805a061415355a68a924b3b32d02023fe608fc97",
+          "path": "qlane-meta/questpc8/QUEST-STATUS.json"
+        },
+        "Braindeath Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-questpc8",
+          "sha": "805a061415355a68a924b3b32d02023fe608fc97",
+          "path": "qlane-meta/questpc8/QUEST-STATUS.json"
+        },
+        "Afflicted Outfits Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+          "sha": "a0100244c6f7a72573630aebd19acaff21a383fa",
+          "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+        },
+        "Assassin Outfits Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+          "sha": "a0100244c6f7a72573630aebd19acaff21a383fa",
+          "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+        },
+        "Battle Mage Outfits Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+          "sha": "a0100244c6f7a72573630aebd19acaff21a383fa",
+          "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+        },
+        "Beggar Outfits Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+          "sha": "a0100244c6f7a72573630aebd19acaff21a383fa",
+          "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+        },
+        "Citizen Outfits Quest on Rook": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+          "sha": "a0100244c6f7a72573630aebd19acaff21a383fa",
+          "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+        },
+        "Dark Trails Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+          "sha": "a0100244c6f7a72573630aebd19acaff21a383fa",
+          "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+        },
+        "Demon Outfits Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+          "sha": "a0100244c6f7a72573630aebd19acaff21a383fa",
+          "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+        },
+        "Dream Warden Outfits Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+          "sha": "a0100244c6f7a72573630aebd19acaff21a383fa",
+          "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+        },
+        "Druid Outfits Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+          "sha": "a0100244c6f7a72573630aebd19acaff21a383fa",
+          "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+        },
+        "Druid Outfits Quest on Rook": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+          "sha": "a0100244c6f7a72573630aebd19acaff21a383fa",
+          "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+        },
+        "Elementalist Outfits Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+          "sha": "a0100244c6f7a72573630aebd19acaff21a383fa",
+          "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+        },
+        "Knight Outfits Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+          "sha": "a0100244c6f7a72573630aebd19acaff21a383fa",
+          "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+        },
+        "Mage Outfits Quest": {
+          "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+          "sha": "a0100244c6f7a72573630aebd19acaff21a383fa",
+          "path": "qlane-meta/qengine2/QUEST-STATUS.json"
+        }
+      }
+    },
+    "latest_qengine_qualified_count": 33
   },
   "latest_cloud_integration": {
-    "state": "combined_tree_checks_pass",
-    "remote": "4c2056aa8",
-    "validation": "qlane-meta/questpc/cloud-upper-door-merge-validation.json"
+    "state": "anchor_craft_combined_checks_pass",
+    "remote": "22eab7c56",
+    "validation": "qlane-meta/questpc/cloud-anchor-craft-merge-validation.json"
   },
   "concurrent_cloud_batch": {
     "name": "Draconia exit six-scene PG proof; implementation checks running",
@@ -9368,5 +9928,81 @@
     "incoming_evidence": "qlane-meta/questpc/cloud-draconia-upper-door-validation.json",
     "scope": "Preserve five additive native upper-door selectors and qualified crafting. Only latest-batch JSON conflicted; retained both evidence cohorts.",
     "evidence": "qlane-meta/questpc/cloud-craft-upper-merge-validation.json"
+  },
+  "concurrent_craft_metadata_preserved": [
+    {
+      "path": "/cross_lane_qualified_elsewhere/titles",
+      "remote_value": [
+        "Afflicted Outfits Quest",
+        "Assassin Outfits Quest",
+        "Battle Mage Outfits Quest",
+        "Beggar Outfits Quest",
+        "Citizen Outfits Quest on Rook",
+        "Dark Trails Quest",
+        "Demon Outfits Quest",
+        "Dream Warden Outfits Quest",
+        "Druid Outfits Quest",
+        "Druid Outfits Quest on Rook",
+        "Elementalist Outfits Quest",
+        "Festive Outfits Quest",
+        "Formorgar Mines Quest",
+        "Glooth Engineer Outfits Quest",
+        "Hunter Outfits Quest",
+        "Knight Outfits Quest",
+        "Mage Outfits Quest"
+      ]
+    }
+  ],
+  "concurrent_hidden_craft_batch": {
+    "scope": [
+      "both source filing operations with unchanged file and full backpack",
+      "four lava stations and all four source-allowed hot-half combinations",
+      "anvil and water finishing with exact once-only replay"
+    ],
+    "status": "GREEN",
+    "evidence": "qlane-meta/questpc/cloud-hidden-craft-validation.json",
+    "qualification_boundary": "Three crafting components qualified; complete source door and room composition continues."
+  },
+  "concurrent_craft_qualification_record": {
+    "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+    "sha": "a0100244c6f7a72573630aebd19acaff21a383fa",
+    "titles": [
+      "Afflicted Outfits Quest",
+      "Assassin Outfits Quest",
+      "Battle Mage Outfits Quest",
+      "Beggar Outfits Quest",
+      "Citizen Outfits Quest on Rook",
+      "Dark Trails Quest",
+      "Demon Outfits Quest",
+      "Dream Warden Outfits Quest",
+      "Druid Outfits Quest",
+      "Druid Outfits Quest on Rook",
+      "Elementalist Outfits Quest",
+      "Festive Outfits Quest",
+      "Formorgar Mines Quest",
+      "Glooth Engineer Outfits Quest",
+      "Hunter Outfits Quest",
+      "Knight Outfits Quest",
+      "Mage Outfits Quest"
+    ],
+    "rule": "Skip per current owner; this does not claim those implementations are merged here."
+  },
+  "cloud_dragonlord_progress": {
+    "phase": "actual PostgreSQL RED retained; implementation GREEN probes running",
+    "evidence": "qlane-meta/questpc/cloud-dragonlord-red-validation.json",
+    "whole_title_promoted": false
+  },
+  "concurrent_draconia_batch": {
+    "slice": "draconia_source_pressure_gates_and_route_portals",
+    "result": "PASS",
+    "validation": "qlane-meta/questpc/cloud-draconia-route-validation.json",
+    "qualified_titles_added": 0
+  },
+  "merge_validation": {
+    "status": "GREEN",
+    "local_batch": "099836485",
+    "incoming": "b37aa848ae16d63f23ca4942fcbca4e4227e2720",
+    "scope": "Corym retained-key doors plus native Draconia gates and portals",
+    "evidence": "qlane-meta/questpc/cloud-hidden-doors-integration-validation.json"
   }
 }

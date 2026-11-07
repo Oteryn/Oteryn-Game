@@ -1,0 +1,26 @@
+   Compiling oteryn-gameplay-quests v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/quests)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 9.68s
+     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_quests-83ac356503a3a145)
+
+running 19 tests
+test quest::world_callbacks::batch4_tests::native_callback_rejects_incomplete_or_foreign_authoring ... ok
+test quest::world_callbacks::batch4_tests::preserve_guard_does_not_reset_later_progress ... ok
+test quest::world_callbacks::batch4_tests::cults_tenth_symbol_and_repeat_use_the_catalogue_rule ... ok
+test quest::world_callbacks::conditions::tests::world_object_conditions_are_bounded_stateless_and_source_positions ... ok
+test quest::world_callbacks::objects::tests::object_effects_are_closed_bounded_and_stateless ... ok
+test quest::world_callbacks::tests::conditional_failure_destination_requires_returning_step_and_native_floor ... ok
+test quest::world_callbacks::tests::conditional_storage_compiles_exact_value_effect_and_rejects_guard_overloading ... ok
+test quest::world_callbacks::tests::departure_callbacks_restore_only_stateless_map_effects ... ok
+test quest::world_callbacks::tests::dryad_garden_uses_source_unique_ids_in_both_directions ... ok
+test quest::world_callbacks::batch4_tests::dance_final_step_uses_one_complete_locked_snapshot ... ok
+test quest::world_callbacks::tests::quest_world_callbacks_accept_only_pinned_donor_revisions ... ok
+test quest::world_callbacks::tests::quest_world_callbacks_reject_ambiguous_and_unbounded_authoring ... ok
+test quest::world_callbacks::batch4_tests::preserve_guard_never_widens_an_existing_track_domain ... ok
+test quest::world_callbacks::tests::read_only_world_callback_has_no_quest_write_transition ... ok
+test quest::world_callbacks::tests::read_only_world_callbacks_reject_mixed_mutations ... ok
+test quest::world_callbacks::tests::w15_crystal_world_callback_parity ... ok
+test quest::world_callbacks::tests::quest_world_callbacks_shortcut_preserves_the_source_storage_gate ... ok
+test quest::world_callbacks::batch4_tests::source_world_binding_reuses_the_existing_hidden_threats_transition ... ok
+test quest::world_callbacks::tests::quest_world_callbacks_three_bounded_action_classes_are_source_witnessed ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 252 filtered out; finished in 3.25s

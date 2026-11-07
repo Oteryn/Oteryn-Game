@@ -1,0 +1,42 @@
+{
+  "result": "PASS",
+  "parents": [
+    "289804c01",
+    "22eab7c56"
+  ],
+  "scope": "Four native Draconia callback anchors and disjoint Corym crafting work; metadata conflicts preserve both records.",
+  "checks": {
+    "check": "PASS world/dispatch all targets/all features3m06s",
+    "fmt": "PASS",
+    "generation": "PASS all three exact binding captures",
+    "pins": "PASS unchanged world9865615ff643553f07bccfc4f76c0f05919939c751cd35f0a87f92d82591e8f7",
+    "clippy": "PASS world/dispatch all targets/all features -D warnings3m09s"
+  },
+  "postgres_evidence": [
+    "qlane-meta/questpc/cloud-draconia-anchors-validation.json",
+    "qlane-meta/questpc/cloud-hidden-craft-validation.json"
+  ],
+  "postgres_boundary": "Each unchanged source cohort retains actual RED/GREEN PG proof. No fresh merge PG run or whole-title qualification claimed. Incoming crafting changes do not alter callback binding or execution owners.",
+  "logs": {
+    "fmt": {
+      "log": "qlane-meta/questpc/cloud-anchor-craft-merge-fmt.log",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    "check": {
+      "log": "qlane-meta/questpc/cloud-anchor-craft-merge-check.log",
+      "sha256": "7584869f32e38482156a91e069d629853fa8185f530bbafbb60cd3e34876085a"
+    },
+    "generation": {
+      "log": "qlane-meta/questpc/cloud-anchor-craft-merge-generation.log",
+      "sha256": "a045382f6a54a2f5006ca0615dd8a6982c61417c93caa06a9cd61c10be9deb67"
+    },
+    "pins": {
+      "log": "qlane-meta/questpc/cloud-anchor-craft-merge-pins.log",
+      "sha256": "6bb5ba726fa361bf0785c52f36d8f9f1c70e69b7e69ec4b8a6f7939d6c23ea89"
+    },
+    "clippy": {
+      "log": "qlane-meta/questpc/cloud-anchor-craft-merge-clippy.log",
+      "sha256": "e5251226990234272239331695bc04122d1df81757fd18e1797676b582bad3f2"
+    }
+  }
+}
