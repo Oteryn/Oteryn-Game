@@ -1,3 +1,35 @@
+## Three Corym WorksDoor unlocks GREEN — 2026-11-07
+
+Actual PG18.6: all3 exact source doors unlock with retained key and oldNPC13
+immutable saves; unknown saved definition remains closed. Replay, handledrepeat,
+unchanged key, conditional message, sourceflag and immediate ordinarydoor access
+all pass. Evidence: cloud-hidden-doors-validation.json (actual durations/hashes).
+FullCorymNPC and classic nativeKey3004 PG regressions, source/history/NPC units,
+fmt/check/strictClippy3crates, deterministic generation and pinrefresh/check pass.
+No whole-title promotion; counts remain60QUALIFIED/117UNFINISHED/1excluded unless
+incoming remote title qualifications change them. Cross-lane exact skip list/sha
+is authoritative (last checked qengine2 30QUALIFIED/20localoverlap).
+
+Generic support now exists: explicit source-track bindings, bounded source-cohort
+loader, strict append-only definition history/defaults, retained exactItemID
+callbacks, shared heldSpellLanePermit, progress-only projection and coherent
+session copy refresh outside locks (normal use and recovery). No DBguard weakening,
+repinning or BURN/MINT. Canonical repeats return handledsuccess; only bookkeeping
+receipt repeats, never flag/key/success text. CurrentTibiaHashd88cf742...5f2d;
+known savedNPC13hash8c649465...e084. Source worlds/maps exactpinned capsule.
+
+Next batch: Ratter/Servant actualdoor USE gates plus CaveSpider room entry,
+occupancy/spawns, five-minute cleanup and actual boss/loot path. Known source
+facts /tmp/questpc-hidden-next-plan.md and /tmp/questpc-hidden-source (use fresh/
+prefixed Canary door Lua; old unprefixed door script is Crystal). Room helper
+false means ANY creature occupancy including entrant. Rescue9->10 on entry,
+no invented killflag. Reuse/refactor grizzly room owner; all shared support ours.
+Fetch qengine2 before a new generic feature, skip QUALIFIED elsewhere. Publish
+this batch as prescribed now, merge concurrent pc2 changes, FFpush/readback;
+continue without ending while owned entries remain.
+
+---
+
 ## Craft and native upper doors merged GREEN — 2026-11-07
 
 Preserved craft fb96a650e and remote886ac871c. Combined world/dispatch all-target

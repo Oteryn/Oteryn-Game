@@ -642,7 +642,7 @@ pub(super) fn extend(
     Ok(active)
 }
 
-/// Only an exact pre-activation definition can retain its old absent-track values.
+/// Only an exact registered predecessor retains its old absent-track values.
 /// Existing rows, their values, pins and receipts are never rewritten.
 pub fn legacy_defaults<'a>(
     catalogue: &'a super::QuestStateCatalogue,
@@ -654,6 +654,14 @@ pub fn legacy_defaults<'a>(
         .get(quest)
         .filter(|(hash, _)| hash == stored_hash)
         .map(|(_, defaults)| defaults)
+        .or_else(|| {
+            catalogue
+                .predecessors
+                .get(quest)?
+                .iter()
+                .find(|entry| &entry.hash == stored_hash)
+                .map(|entry| &entry.defaults)
+        })
 }
 
 #[cfg(test)]

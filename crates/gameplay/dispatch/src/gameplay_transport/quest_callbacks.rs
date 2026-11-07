@@ -424,6 +424,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Some(&mut slot),
                     optional_pvp,
                     None,
+                    pending
+                        .context
+                        .as_ref()
+                        .and_then(|context| context.carried_tool),
                 )
                 .await;
             if result != UseDisposition::Committed {
@@ -451,6 +455,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if !self.resume_departure_entry(&permit, &pending).await {
                     return false;
                 }
+            } else if result == UseDisposition::Committed && callback.is_progress_only_tool() {
+                drop(states);
+                drop(runtime);
+                drop(slot);
+                self.refresh_quest_session(pending.session, false).await;
             }
         }
         true
@@ -484,6 +493,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(outcome) = self.use_soul_war_reward(actor, command, map, target).await {
             return Some(outcome);
         }
+        self.use_quest_callback_tool(actor, command, map, target, None, None)
+            .await
+    }
+
+    /// Bind a retained source tool to an exact current carried definition. Plain
+    /// map USE never selects these callbacks merely because the player owns a key.
+    pub(super) async fn use_quest_callback_tool(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        map: &BundleMap,
+        target: &WorldObjectTarget,
+        tool: Option<([u8; 16], &crate::durability::item_mint::TypedDefinitionRef)>,
+        provided_permit: Option<&SpellLanePermit>,
+    ) -> Option<UseOutcome> {
         let source = super::world_map::MapViewSource {
             overlay: &map.overlay,
             facts: &map.facts,
@@ -496,12 +520,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .callback_content()
             .iter()
             .filter(|c| c.trigger == Trigger::Use && matches(map, c, resolved.placement_key))
+            .filter(|callback| match (tool, callback.item_on_target.as_ref()) {
+                (Some((_, tool)), Some(required)) => {
+                    required.retain && tool.family == "Item" && tool.production_key == required.item
+                }
+                (Some(_), None) => false,
+                (None, Some(required)) => !required.retain,
+                (None, None) => true,
+            })
             .collect::<Vec<_>>();
         let [callback] = selected.as_slice() else {
             return None;
         };
         let result = tokio::time::timeout(std::time::Duration::from_secs(10), async {
-            let Some(permit) = self.spell_lane_permit().await else {
+            let owned_permit = if provided_permit.is_none() { self.spell_lane_permit().await } else { None };
+            let Some(permit) = provided_permit.or(owned_permit.as_ref()) else {
                 return UseDisposition::Rejected;
             };
             let fence = if callback.storage.is_empty() {
@@ -520,7 +553,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 None => None,
             };
             let optional_pvp = self
-                .special_movement_policy(&permit, actor, command.game_session_id)
+                .special_movement_policy(permit, actor, command.game_session_id)
                 .await;
             let read_only_gate = if callback.is_read_only() {
                 let (Some(fence), Some(catalogue)) = (fence, self.quest_catalogue.as_ref()) else {
@@ -543,6 +576,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         return UseDisposition::Exhausted;
                     }
                     let context = QuestWorldContext {
+                        carried_tool: None,
                         map_revision: crate::map::overlay::map_revision(map.overlay.base()),
                         content_revision: format!("sha256:{}", hex(&runtime.content_pin().server_artifact_digest())),
                         placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
@@ -554,7 +588,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 let allowed = self.root.check_character_world_callback(
                     self.character, self.holder, fence, &callback.key,
-                    std::sync::Arc::clone(catalogue), &permit, context,
+                    std::sync::Arc::clone(catalogue), permit, context,
                 ).await;
                 if !matches!(allowed, Ok(true)) {
                     if let Some(message) = &callback.failure_message {
@@ -591,7 +625,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             let result = self.execute_quest_callback(
-                &permit,
+                permit,
                 &mut runtime,
                 &mut states,
                 actor,
@@ -605,11 +639,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 slot.as_mut(),
                 optional_pvp,
                 read_only_gate.as_ref(),
+                tool.map(|(instance, _)| instance),
             )
             .await;
             drop(states);
             drop(runtime);
             drop(slot);
+            if result == UseDisposition::Committed && callback.is_progress_only_tool() {
+                // The next ordinary door USE reads this coherent session copy.
+                self.refresh_quest_session(command.game_session_id, false).await;
+            }
             if matches!(result, UseDisposition::Committed | UseDisposition::Rejected)
                 && let Some(fence) = fence
                 && let Some(delivery) = self.deliver_monk_reward(actor, command, callback, fence).await
@@ -740,6 +779,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     fence,
                     slot.as_mut(),
                     optional_pvp,
+                    None,
                     None,
                 )
                 .await;

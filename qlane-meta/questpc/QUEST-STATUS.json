@@ -334,7 +334,7 @@
           "Ludicrous Piece of Cloth"
         ]
       },
-      "current_lane_action": "SKIP \u2014 QUALIFIED on a0100244c6f7a72573630aebd19acaff21a383fa in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
     },
     {
       "title": "Against the Spider Cult Quest",
@@ -686,7 +686,7 @@
           "Demon Dust"
         ]
       },
-      "current_lane_action": "SKIP \u2014 QUALIFIED on a0100244c6f7a72573630aebd19acaff21a383fa in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
     },
     {
       "title": "Asura Palace Quest",
@@ -1056,7 +1056,7 @@
         ]
       },
       "execution_disposition": "SKIP_QUALIFIED_ELSEWHERE",
-      "current_lane_action": "SKIP \u2014 QUALIFIED on a0100244c6f7a72573630aebd19acaff21a383fa in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
     },
     {
       "title": "Bear Room Quest",
@@ -1210,7 +1210,7 @@
           "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
         ]
       },
-      "current_lane_action": "SKIP \u2014 QUALIFIED on a0100244c6f7a72573630aebd19acaff21a383fa in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
     },
     {
       "title": "Behemoth Quest",
@@ -1886,7 +1886,8 @@
           "Document of the Officer",
           "Document of the Leader"
         ]
-      }
+      },
+      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
     },
     {
       "title": "Captain Iglues Treasure Quest",
@@ -2266,7 +2267,7 @@
           "Chicken Feather"
         ]
       },
-      "current_lane_action": "SKIP \u2014 QUALIFIED on a0100244c6f7a72573630aebd19acaff21a383fa in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
     },
     {
       "title": "Citizen of Issavi Outfits Quest",
@@ -2458,7 +2459,8 @@
         "targets": [
           "Major Crystalline Token"
         ]
-      }
+      },
+      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
     },
     {
       "title": "Cults of Tibia Quest",
@@ -2665,7 +2667,7 @@
         ]
       },
       "execution_disposition": "SKIP_QUALIFIED_ELSEWHERE",
-      "current_lane_action": "SKIP \u2014 QUALIFIED on a0100244c6f7a72573630aebd19acaff21a383fa in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
     },
     {
       "title": "Dawnport Quest",
@@ -3075,7 +3077,7 @@
         ]
       },
       "execution_disposition": "SKIP_QUALIFIED_ELSEWHERE",
-      "current_lane_action": "SKIP \u2014 QUALIFIED on a0100244c6f7a72573630aebd19acaff21a383fa in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
     },
     {
       "title": "Demon Wars World Change",
@@ -3761,7 +3763,7 @@
           "Mend What's Broken"
         ]
       },
-      "current_lane_action": "SKIP \u2014 QUALIFIED on a0100244c6f7a72573630aebd19acaff21a383fa in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
     },
     {
       "title": "Dream Warrior Outfits Quest",
@@ -3880,7 +3882,7 @@
           "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
         ]
       },
-      "current_lane_action": "SKIP \u2014 QUALIFIED on a0100244c6f7a72573630aebd19acaff21a383fa in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
     },
     {
       "title": "Druid Outfits Quest on Rook",
@@ -3916,7 +3918,7 @@
           "Bear Paw"
         ]
       },
-      "current_lane_action": "SKIP \u2014 QUALIFIED on a0100244c6f7a72573630aebd19acaff21a383fa in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
     },
     {
       "title": "Edron Goblin Quest",
@@ -4088,7 +4090,7 @@
         ]
       },
       "execution_disposition": "SKIP_QUALIFIED_ELSEWHERE",
-      "current_lane_action": "SKIP \u2014 QUALIFIED on a0100244c6f7a72573630aebd19acaff21a383fa in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
     },
     {
       "title": "Elephant Tusk Quest",
@@ -4648,7 +4650,7 @@
         ]
       },
       "execution_disposition": "SKIP_QUALIFIED_ELSEWHERE",
-      "current_lane_action": "SKIP \u2014 QUALIFIED on a0100244c6f7a72573630aebd19acaff21a383fa in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
     },
     {
       "title": "Fiend Slayer Outfits Quest",
@@ -5098,7 +5100,7 @@
         ]
       },
       "execution_disposition": "SKIP_QUALIFIED_ELSEWHERE",
-      "current_lane_action": "SKIP \u2014 QUALIFIED on a0100244c6f7a72573630aebd19acaff21a383fa in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
     },
     {
       "title": "Frost Dragon Quest",
@@ -5458,7 +5460,7 @@
         ]
       },
       "execution_disposition": "SKIP_QUALIFIED_ELSEWHERE",
-      "current_lane_action": "SKIP \u2014 QUALIFIED on a0100244c6f7a72573630aebd19acaff21a383fa in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
     },
     {
       "title": "Goblin Merchant Quest",
@@ -5615,7 +5617,8 @@
         "targets": [
           "Gold Coin"
         ]
-      }
+      },
+      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
     },
     {
       "title": "Grave Danger Quest",
@@ -6088,12 +6091,35 @@
           "test": "hidden_threats_craft_anvil_and_water_finish_the_forged_key_once",
           "evidence": "qlane-meta/questpc/cloud-hidden-craft-validation.json",
           "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+        },
+        {
+          "key": "hidden-threats-works-door01",
+          "status": "QUALIFIED",
+          "scope": "WorksDoor01 action45974 retained-key unlock",
+          "test": "hidden_threats_doors_works01_retains_key_and_unlocks_exact_source_door",
+          "evidence": "qlane-meta/questpc/cloud-hidden-doors-validation.json",
+          "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+        },
+        {
+          "key": "hidden-threats-works-door02",
+          "status": "QUALIFIED",
+          "scope": "WorksDoor02 action45975 retained-key unlock",
+          "test": "hidden_threats_doors_works02_retains_key_and_unlocks_exact_source_door",
+          "evidence": "qlane-meta/questpc/cloud-hidden-doors-validation.json",
+          "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+        },
+        {
+          "key": "hidden-threats-works-door03",
+          "status": "QUALIFIED",
+          "scope": "WorksDoor03 action45976 retained-key unlock",
+          "test": "hidden_threats_doors_works03_retains_key_and_unlocks_exact_source_door",
+          "evidence": "qlane-meta/questpc/cloud-hidden-doors-validation.json",
+          "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
         }
       ],
       "blocker": {
-        "missing_piece": "Continue five Corym source doors (two NPC storage gates and three retained forged-key unlocks) and Cave Spider room/ending. This lane owns any needed generic catalogue compatibility, callback or encounter support.",
+        "missing_piece": "Continue two NPC storage-gate USE compositions and Cave Spider source room/ending, including generic encounter/loot/timer support owned here.",
         "evidence": [
-          "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/hidden_threats/action-corym_works_doors.lua",
           "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/hidden_threats/movement-cave_spider_room.lua"
         ]
       }
@@ -6274,7 +6300,7 @@
           "Elane's Crossbow"
         ]
       },
-      "current_lane_action": "SKIP \u2014 QUALIFIED on a0100244c6f7a72573630aebd19acaff21a383fa in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
     },
     {
       "title": "Hunting for Tokens Quest",
@@ -7203,7 +7229,7 @@
           "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
         ]
       },
-      "current_lane_action": "SKIP \u2014 QUALIFIED on a0100244c6f7a72573630aebd19acaff21a383fa in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
     },
     {
       "title": "Koshei the Deathless Quest",
@@ -7941,7 +7967,7 @@
           "Winning Lottery Ticket"
         ]
       },
-      "current_lane_action": "SKIP \u2014 QUALIFIED on a0100244c6f7a72573630aebd19acaff21a383fa in qengine2; ownership rule, not a claim merged here."
+      "current_lane_action": "SKIP \u2014 QUALIFIED on d44f015c12e29f6ffa16f3de2e220b0dac232716 in qengine2; ownership rule, not a claim merged here."
     },
     {
       "title": "Magic Sword Quest",
@@ -8572,20 +8598,20 @@
   "owner_execution_override": "Shared quest-engine, reward/binding, NPC, Item and callback features are owned here when needed. Check and reuse origin/claude/happy-davinci-ijz3wy-qengine2 first; historical outside-lane blockers are active implementation obligations, not final dispositions.",
   "latest_cloud_batch": {
     "scope": [
-      "both source filing operations with unchanged file and full backpack",
-      "four lava stations and all four source-allowed hot-half combinations",
-      "anvil and water finishing with exact once-only replay"
+      "WorksDoor01 action45974 retained-key unlock",
+      "WorksDoor02 action45975 retained-key unlock",
+      "WorksDoor03 action45976 retained-key unlock"
     ],
     "status": "GREEN",
-    "evidence": "qlane-meta/questpc/cloud-hidden-craft-validation.json",
-    "qualification_boundary": "Three crafting components qualified; complete source door and room composition continues."
+    "evidence": "qlane-meta/questpc/cloud-hidden-doors-validation.json",
+    "qualification_boundary": "Three unlock components and exact saved-pin regression qualified; no whole-title promotion yet."
   },
   "continuation": {
     "base": "9bf74b42d",
     "earlier_snapshot_merged": "6c09e0365110db6683f938dd08d5d584744cbf37",
     "merge_resolution": "Retained the current newer tree in all 86 overlapping paths. Earlier snapshot retained in ancestry.",
     "owner_rule": "All shared engine features remain in scope; historical outside-lane engine blockers are nonterminal and must be implemented or reused.",
-    "active": "Publish merged craft and upper-door work fast-forward; continue three retained forged-key WorksDoor unlocks, followed by NPC flag gates and Cave Spider room/ending.",
+    "active": "Publish retained-key door GREEN batch fast-forward, merging remote advancement; then two NPC gates and Cave Spider room/ending. Reuse existing grizzly room/native creature owners and own missing generic support.",
     "concurrent_remote_head": "4e12ac30e",
     "validation": {
       "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal -- --nocapture",
@@ -9203,13 +9229,15 @@
   },
   "cross_lane_qualified_elsewhere": {
     "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
-    "sha": "a0100244c6f7a72573630aebd19acaff21a383fa",
+    "sha": "d44f015c12e29f6ffa16f3de2e220b0dac232716",
     "titles": [
       "Afflicted Outfits Quest",
       "Assassin Outfits Quest",
       "Battle Mage Outfits Quest",
       "Beggar Outfits Quest",
+      "Brotherhood Outfits Quest",
       "Citizen Outfits Quest on Rook",
+      "Crystal Warlord Outfits Quest",
       "Dark Trails Quest",
       "Demon Outfits Quest",
       "Dream Warden Outfits Quest",
@@ -9219,11 +9247,14 @@
       "Festive Outfits Quest",
       "Formorgar Mines Quest",
       "Glooth Engineer Outfits Quest",
+      "Golden Outfits Quest",
       "Hunter Outfits Quest",
       "Knight Outfits Quest",
       "Mage Outfits Quest"
     ],
-    "rule": "Skip per current owner; this does not claim those implementations are merged here."
+    "rule": "Skip per current owner; this does not claim those implementations are merged here.",
+    "qualified_count": 30,
+    "local_overlap_count": 20
   },
   "latest_cloud_integration": {
     "state": "combined_tree_checks_pass",

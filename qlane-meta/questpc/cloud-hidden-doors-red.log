@@ -1,0 +1,72 @@
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32
+    |
+208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+    |                                ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
+    |
+
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)
+warning: `tokio` (lib) generated 2 warnings (2 duplicates)
+warning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14
+    |
+260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |              ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |
+
+warning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)
+warning: `sqlx-core` (lib) generated 1 warning (1 duplicate)
+   Compiling oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5m 20s
+     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-b4f5a8b0ba0b5a59)
+
+running 1 test
+test gameplay_transport::monk_save::postgres_tests::hidden_threats_doors::hidden_threats_doors_works01_retains_key_and_unlocks_exact_source_door ... POSTGRES_CASE_STARTED hidden_threats_doors case=Works01 version=180006
+oteryn-game-server progression_unbound reason=progression_context_mismatch
+oteryn-game-server quest_experience_deferred reason=no_progression_binding
+QUESTPC_DEFINITION_BEFORE_WORKS_DOORS=8c6494650b3d22ccd66d6893c77f8b0ad16b06dfcd69725316150c1be49ee084
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=1
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=3 server_sequence=2
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=4 server_sequence=3
+
+thread 'hidden-threats-craft' (86270) panicked at /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hidden_threats_doors.rs:392:5:
+assertion `left == right` failed: source forged key must unlock exact door
+  left: NothingToUse
+ right: Committed
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+POSTGRES_CASE_FAILED hidden_threats_doors case=Works01 duration=47.567291714s
+Error: "composed PostgreSQL scenario thread panicked"
+FAILED
+
+failures:
+
+failures:
+    gameplay_transport::monk_save::postgres_tests::hidden_threats_doors::hidden_threats_doors_works01_retains_key_and_unlocks_exact_source_door
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2585 filtered out; finished in 47.57s
+
+error: test failed, to rerun pass `-p oteryn-gameplay-dispatch --lib`
