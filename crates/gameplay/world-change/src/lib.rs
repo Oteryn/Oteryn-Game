@@ -2,5 +2,7 @@
 pub mod content;
 pub mod counter;
 pub mod daily;
+pub mod decision;
+pub mod rules;
 pub mod owner;
 pub mod scheduled;

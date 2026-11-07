@@ -87,7 +87,7 @@ pub(super) async fn prepare_channel(
     // carries its map view in the movement cells and has no entry room: no door, chest, spell
     // or field qualification of the fixture room applies to it (§1.2).
     // SP02 projects the committed reset day's physical map before any map owner is built.
-    let daily = match root
+    let mut daily = match root
         .world_changes(material.world, reset_epoch)
         .await
         .map_err(|_| BootError::ContentActivation("durable world changes"))?
@@ -96,6 +96,15 @@ pub(super) async fn prepare_channel(
         None if reset_epoch == 0 => bootstrap_world_changes(),
         None => return Err(BootError::Readiness("current world-change epoch")),
     };
+    if reset_epoch != 0 {
+        root.world_change_calendar(material.world, reset_epoch)
+            .await.map_err(|_| BootError::Readiness("world change calendar"))?;
+        let occurrence = root.world_change_snapshot(material.world, reset_epoch)
+            .await.map_err(|_| BootError::Readiness("world change snapshot"))?;
+        daily.fury_gates = occurrence.fury_gates;
+        daily.grimvale_full_moon = occurrence.grimvale_full_moon;
+        daily.their_masters_voice = occurrence.their_masters_voice;
+    }
     let bundle = bundle
         .map(|checked| {
             let checked = daily_world_changes::bind_layers(checked, &daily)

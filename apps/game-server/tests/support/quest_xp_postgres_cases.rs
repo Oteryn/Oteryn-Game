@@ -46,6 +46,7 @@ fn catalogue() -> TestResult<Arc<QuestStateCatalogue>> {
 /// [`catalogue`] with `again` awarding `again` experience.
 fn catalogue_with_again(again: i64) -> TestResult<Arc<QuestStateCatalogue>> {
     let transition = |name: &str, from, experience| QuestTransition {
+        world_change: None,
         key: transition_key(name),
         quest: QUEST.into(),
         effects: vec![QuestEffect {
