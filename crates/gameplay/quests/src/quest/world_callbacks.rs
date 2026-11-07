@@ -29,7 +29,7 @@ pub enum Trigger {
 }
 
 mod scene;
-pub use scene::{SceneEdit, SceneEdits};
+pub use scene::{SceneEdit, SceneEdits, SceneRelocation};
 
 mod effects;
 pub use effects::{

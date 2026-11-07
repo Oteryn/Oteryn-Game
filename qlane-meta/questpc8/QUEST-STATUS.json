@@ -749,7 +749,7 @@
       "runtime_enabled": false
     },
     "blocker": {
-      "missing_piece": "Six drawbridge tiles still need one atomic close/occupant-relocation operation and a real-dispatch PostgreSQL proof."
+      "missing_piece": "Bridge and bounded multi-actor relocation qualified through real PostgreSQL dispatch; implementing the chosen explore/pick/cache/completion programme next."
     },
     "first_unqualified_stage": {
       "key": "s1",
@@ -762,7 +762,10 @@
     "disposition": "authoring",
     "qualified_elsewhere": [],
     "mechanism": "asymmetric_map_effects_multi_actor_moves",
-    "round": "L7"
+    "round": "L7",
+    "qualified_components": [
+      "Native reversible six-cell bridge with atomic player/creature evacuation; cloud-life-ring-bridge-proof.json"
+    ]
   },
   {
     "title": "Lion's Rock Quest",

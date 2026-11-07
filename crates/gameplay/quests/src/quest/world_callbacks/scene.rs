@@ -15,9 +15,19 @@ pub struct SceneEdit {
     pub allow_missing: bool,
 }
 
+/// Bounded source occupants transported to one safe, shared landing.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct SceneRelocation {
+    pub from: Vec<Position>,
+    pub to: Position,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct SceneEdits {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub relocations: Vec<SceneRelocation>,
     pub open: Vec<SceneEdit>,
     pub close: Vec<SceneEdit>,
     #[serde(default)]
@@ -44,6 +54,28 @@ pub(super) fn valid_scene(callback: &Callback, scene: &SceneEdits) -> bool {
                     && (!edit.allow_missing || edit.remove.is_some())
             })
     };
+    let origins: Vec<_> = scene
+        .relocations
+        .iter()
+        .flat_map(|relocation| relocation.from.iter())
+        .collect();
+    let edited: BTreeSet<_> = scene
+        .open
+        .iter()
+        .chain(&scene.close)
+        .map(|edit| edit.position)
+        .collect();
+    let relocation_valid = scene.relocations.len() <= MAX_SCENE_EDITS
+        && origins.len() <= MAX_SCENE_EDITS
+        && origins.iter().copied().collect::<BTreeSet<_>>().len() == origins.len()
+        && scene.relocations.iter().all(|relocation| {
+            !relocation.from.is_empty()
+                && (-15..=0).contains(&relocation.to.floor)
+                && !edited.contains(&relocation.to)
+                && relocation.from.iter().all(|position| {
+                    position.floor == relocation.to.floor && edited.contains(position)
+                })
+        });
     callback.trigger == Trigger::Use
         && callback.lever.is_some()
         && callback.storage.is_empty()
@@ -64,6 +96,7 @@ pub(super) fn valid_scene(callback: &Callback, scene: &SceneEdits) -> bool {
         && (!scene.open.is_empty() || scene.remove_self)
         && (!scene.remove_self || (!callback.reversible && scene.close.is_empty()))
         && (!callback.reversible || !scene.close.is_empty())
+        && relocation_valid
         && valid(&scene.open)
         && valid(&scene.close)
 }

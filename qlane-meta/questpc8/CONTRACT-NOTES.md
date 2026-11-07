@@ -211,3 +211,31 @@ chosen recipe adaptation requiring one consolidated final payout. Mastermind
 cold-cache replay coverage is preserved in the local exercise, and both named
 Mastermind regressions use that stronger shared exercise. No duplicate callback
 keys or alternative personal progress routes remain.
+
+## Life Ring bridge native adaptation (2026-11-07)
+
+Pinned Crystal `9f5a72c6` source:
+https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua
+The six native cells x32410..32412, y32231..32232, z10 contain water4598,
+not donor4610. Preserve columns4788 on the left column. Bind native lever2772
+at32413,32230,z10 by ordinal1 without introducing donor AID30007. Both lever
+directions evacuate the bounded set of current occupants to source landing
+32409,32231,z10 (ground351). Shared landing occupancy is intentional in this
+forced transport, matching the source loop. Movement, summon lifecycle and map
+projection publish under one runtime guard with rollback on any late refusal.
+
+Native cache32443,32238,z11 is2469 ordinal1, without donor UID6131; flags9,
+house0. Pinned chest source selects3052 and3085 subtype200. Existing3085 timed
+policy must prove exactly200 full charges before any default-charge grant;
+never substitute a guessed charge state. Chosen recipe additionally requires
+the pick interaction and once-only final named rewards. The bridge mechanic
+alone does not qualify the whole quest.
+
+Life Ring pick lookup completed from the pinned corpus without a network guess:
+https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/tile_pick.lua
+names32437,32239,z10. Actual native tile is355 ordinal0 without AID101;
+adjacent32436/32438,32239 are351. Source reusable pick3456 is registered in
+`data/scripts/actions/tools/pick.lua`; `data-global/scripts/lib/register_actions.lua`
+changes354/355 with AID101 to394 and decays it. Native binding must use actual
+position/ordinal, retain the carried pick and use the existing floor-change
+owner for descent. This fact lookup does not certify a completed route.

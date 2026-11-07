@@ -780,6 +780,220 @@
         }
       },
       "success_message": "You recovered the second potion cache."
+    },
+    {
+      "key": "oteryn:quest-callback/authored-life-ring-bridge",
+      "quest": "oteryn:quest.life_ring_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32413,
+          "y": 32230,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772,
+        "ordinal": 1
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:retained-source-native-life-ring-bridge:r1",
+        "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua",
+        "Native six bridge ground appearances4598; actual lever ordinal1 has no retained AID30007."
+      ],
+      "effects": {
+        "scene": {
+          "open": [
+            {
+              "position": {
+                "x": 32410,
+                "y": 32231,
+                "floor": -10
+              },
+              "remove": 4598,
+              "create": 5770,
+              "passable": true,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32411,
+                "y": 32231,
+                "floor": -10
+              },
+              "remove": 4598,
+              "create": 5770,
+              "passable": true,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32412,
+                "y": 32231,
+                "floor": -10
+              },
+              "remove": 4598,
+              "create": 5770,
+              "passable": true,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32410,
+                "y": 32232,
+                "floor": -10
+              },
+              "remove": 4598,
+              "create": 5770,
+              "passable": true,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32411,
+                "y": 32232,
+                "floor": -10
+              },
+              "remove": 4598,
+              "create": 5770,
+              "passable": true,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32412,
+                "y": 32232,
+                "floor": -10
+              },
+              "remove": 4598,
+              "create": 5770,
+              "passable": true,
+              "allow_missing": false
+            }
+          ],
+          "close": [
+            {
+              "position": {
+                "x": 32410,
+                "y": 32231,
+                "floor": -10
+              },
+              "remove": 5770,
+              "create": 4598,
+              "passable": false,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32411,
+                "y": 32231,
+                "floor": -10
+              },
+              "remove": 5770,
+              "create": 4598,
+              "passable": false,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32412,
+                "y": 32231,
+                "floor": -10
+              },
+              "remove": 5770,
+              "create": 4598,
+              "passable": false,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32410,
+                "y": 32232,
+                "floor": -10
+              },
+              "remove": 5770,
+              "create": 4598,
+              "passable": false,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32411,
+                "y": 32232,
+                "floor": -10
+              },
+              "remove": 5770,
+              "create": 4598,
+              "passable": false,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32412,
+                "y": 32232,
+                "floor": -10
+              },
+              "remove": 5770,
+              "create": 4598,
+              "passable": false,
+              "allow_missing": false
+            }
+          ],
+          "remove_self": false,
+          "relocations": [
+            {
+              "from": [
+                {
+                  "x": 32410,
+                  "y": 32231,
+                  "floor": -10
+                },
+                {
+                  "x": 32411,
+                  "y": 32231,
+                  "floor": -10
+                },
+                {
+                  "x": 32412,
+                  "y": 32231,
+                  "floor": -10
+                },
+                {
+                  "x": 32410,
+                  "y": 32232,
+                  "floor": -10
+                },
+                {
+                  "x": 32411,
+                  "y": 32232,
+                  "floor": -10
+                },
+                {
+                  "x": 32412,
+                  "y": 32232,
+                  "floor": -10
+                }
+              ],
+              "to": {
+                "x": 32409,
+                "y": 32231,
+                "floor": -10
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }

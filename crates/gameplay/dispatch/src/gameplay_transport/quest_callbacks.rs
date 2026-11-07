@@ -9,6 +9,7 @@ mod encounter;
 mod execute;
 mod rewards;
 mod scene;
+mod scene_actors;
 mod soul_war_reward;
 
 use super::paced_movement::underwater_drown::underwater;
@@ -130,7 +131,14 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
                                 .nth(usize::from(ordinal))
                         })
                         .and_then(|(id, _)| map.facts.base_entry(pos, ordinal, *id))
-                        .is_some_and(|facts| facts.appearance_id == appearance)
+                        .is_some_and(|facts| {
+                            facts.appearance_id == appearance
+                                || (callback.reversible
+                                    && callback.lever.is_some_and(|pair| {
+                                        pair.contains(&appearance)
+                                            && pair.contains(&facts.appearance_id)
+                                    }))
+                        })
                 })))
 }
 

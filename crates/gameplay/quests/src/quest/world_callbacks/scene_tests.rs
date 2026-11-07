@@ -70,3 +70,32 @@ fn source_scenes_refuse_ambiguous_unbounded_and_value_bearing_edits() -> Result<
     assert!(parse(&legacy.to_string()).is_err());
     Ok(())
 }
+
+#[test]
+fn scene_relocations_reject_unedited_duplicate_and_changed_landings() -> Result<(), String> {
+    let source = include_str!("../../../../../../content/quests/authored-world-callbacks.json");
+    let valid: serde_json::Value =
+        serde_json::from_str(source).map_err(|error| error.to_string())?;
+    parse_with_provenance(source, true)?;
+    let index = valid["callbacks"]
+        .as_array()
+        .ok_or("callbacks")?
+        .iter()
+        .position(|callback| callback["key"] == "oteryn:quest-callback/authored-life-ring-bridge")
+        .ok_or("bridge")?;
+    for case in 0..4 {
+        let mut bad = valid.clone();
+        let relocation = &mut bad["callbacks"][index]["effects"]["scene"]["relocations"][0];
+        match case {
+            0 => relocation["from"][1] = relocation["from"][0].clone(),
+            1 => relocation["to"] = relocation["from"][0].clone(),
+            2 => relocation["from"][0]["x"] = 1.into(),
+            _ => relocation["to"]["floor"] = (-11).into(),
+        }
+        assert!(
+            parse_with_provenance(&bad.to_string(), true).is_err(),
+            "invalid relocation {case}"
+        );
+    }
+    Ok(())
+}

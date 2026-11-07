@@ -1,3 +1,15 @@
+# Current Life Ring bridge slice — GREEN
+
+Native six-cell reversible bridge, ordinal lever matching and bounded player/
+creature evacuation are qualified through real PostgreSQL dispatch. Both scene
+and actor positions roll back on late refusal. Landing uses verified351 source
+facts; production qualification guards are unchanged. See
+cloud-life-ring-bridge-proof.json for RED/GREEN markers, durations, rollback
+units, Mintwallin regression, schema units and required checks. This is a
+mechanic slice, not full Life Ring qualification. Next implement the chosen
+explore/pick/cache/completion programme and retain the reusable pick. Source
+facts and native bindings are in CONTRACT-NOTES.md. No shared-feature handoff.
+
 # Current merged retrieval/NPC slice — AUTHORING
 
 Merged0f5cb0a62 native NPC placements, live UTC Rashid schedule and Voodoo/
@@ -15,7 +27,7 @@ proof where code changed in this merge. Keep all incoming NPC/runtime changes.
 World digest noweef8f279e03d6ca5944d1ea5986b7364d95e1f82eba36f8c30a8db2be1af4012.
 
 Next work owned by this session: Life Ring atomic scene/actor relocation, then
-its chosen reward programme. No Life Ring code applied yet; avoid overlapping
+its chosen reward programme. Life Ring bridge code is applied; avoid overlapping
 this work. Existing bundle collision already reads scene overlays dynamically.
 Pinned Lua teleports each bridge tile's top creature in both lever directions.
 All six actual bridge cells x32410..12,y32231/32232,z10 contain water4598; the

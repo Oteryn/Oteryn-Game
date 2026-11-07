@@ -72,7 +72,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let projection = match self.prepare_quest_projection(map, callback, close, &mut after) {
             Ok(projection) => projection,
-            Err(result) => return result,
+            Err(result) => {
+                #[cfg(test)]
+                if callback.effects.scene.is_some() {
+                    eprintln!("QUEST_SCENE_REFUSED projection close={close} result={result:?}");
+                }
+                return result;
+            }
         };
         if let Some(appearance) = callback
             .item_on_target
@@ -175,6 +181,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let closed = crate::map::floor::BundleDoors(map.facts.doors());
         let blocked = super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
+        let scene_moves = match self.prepare_quest_scene_moves(runtime, states, map, callback) {
+            Ok(proof) => proof,
+            Err(disposition) => {
+                #[cfg(test)]
+                eprintln!("QUEST_SCENE_REFUSED prepare close={close} result={disposition:?}");
+                return disposition;
+            }
+        };
+        let scene_observations = scene_moves
+            .as_ref()
+            .map(|proof| proof.observations())
+            .unwrap_or_default();
         let teleport = match callback.teleport {
             Some(to) => match crate::map::floor::prepare_quest_callback_teleport_facing(
                 runtime,
@@ -369,15 +387,53 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 after,
             );
         }
-        if !map.facts.apply_quest_callback(
-            key,
-            expected_revision,
-            after,
-            &passages,
-            &replacements,
-            close,
-            projection.as_ref(),
-        ) {
+        let apply_scene = || {
+            map.facts.apply_quest_callback(
+                key,
+                expected_revision,
+                after,
+                &passages,
+                &replacements,
+                close,
+                projection.as_ref(),
+            )
+        };
+        if let Some(proof) = scene_moves {
+            let committed = match runtime.commit_source_scene_relocations(proof, apply_scene) {
+                Ok(committed) => committed,
+                Err(error) => {
+                    #[cfg(test)]
+                    eprintln!("QUEST_SCENE_REFUSED commit close={close} error={error:?}");
+                    let _ = error;
+                    return UseDisposition::Rejected;
+                }
+            };
+            let now = self.owner_now().get();
+            for ((moved_actor, moved_session, before), after) in
+                scene_observations.into_iter().zip(committed)
+            {
+                if let Some(moved_session) = moved_session {
+                    states.stage_special_movement_step(
+                        runtime,
+                        map,
+                        moved_actor,
+                        moved_session,
+                        now,
+                        Some(before.position()),
+                        after.position(),
+                        optional_pvp,
+                    );
+                    states.stage_underwater_step(
+                        runtime,
+                        moved_actor,
+                        moved_session,
+                        now,
+                        underwater(map, before.position()),
+                        underwater(map, after.position()),
+                    );
+                }
+            }
+        } else if !apply_scene() {
             return UseDisposition::Rejected;
         }
         if callback

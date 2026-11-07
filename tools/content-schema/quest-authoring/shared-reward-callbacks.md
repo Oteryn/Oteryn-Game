@@ -125,3 +125,16 @@ slot. Refresh cannot duplicate a living guardian, and pinned corpse projection
 prevents retirement. This creates no quest credit; native death capture and the
 existing fenced progress writer remain authoritative. Omit `guardian` to retain
 an existing world spawn without changing its sealed definition.
+
+Bounded scene edits may include `relocations: [{from: [Position], to: Position}]`.
+At most32 distinct origin cells and32 current actors may participate. Origins
+must be edited scene cells on the landing floor; the landing must remain outside
+the edited cells. The World movement owner qualifies a known walkable landing
+without a house, protection zone, teleport or floor change. A shared landing
+may already contain actors, as required by forced source bridge transport.
+Exact actor identity, position revision and existing summon-lifecycle checks
+remain in the movement owner. A late refusal or rejected map projection restores
+all carrier state; players receive the usual movement/environment updates.
+Omitting relocations preserves existing source scene definitions. Native ordinal
+lever bindings accept both declared lever appearances only when reversible,
+while position, ordinal and any source attributes remain mandatory.

@@ -30,6 +30,7 @@
 use super::floor_catalogue::{OBJECT, TERRAIN};
 mod house;
 mod quest_callback;
+mod quest_callback_scene;
 mod rope;
 use super::overlay::TilePos;
 use super::palette_appearance;
@@ -41,6 +42,7 @@ use crate::movement::{CardinalStep, MovementError};
 pub use house::resolve_house_step;
 use oteryn_world_bundle::bundle::Family;
 pub use quest_callback::{prepare_quest_callback_teleport, prepare_quest_callback_teleport_facing};
+pub use quest_callback_scene::{PreparedSceneRelocations, prepare_scene_relocations};
 pub use rope::prepare_bundle_rope;
 use std::collections::{BTreeMap, BTreeSet};
 use {

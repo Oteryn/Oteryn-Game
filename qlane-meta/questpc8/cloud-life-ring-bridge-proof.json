@@ -1,0 +1,64 @@
+{
+  "scope": "Source six-cell bridge scene and bounded atomic native occupant relocation",
+  "red": {
+    "duration_seconds": 36.52,
+    "marker": "POSTGRES_CASE_STARTED authored-life-ring-bridge after PostgreSQL fixture initialization",
+    "failure": "second native ordinal lever USE returned NothingToUse after2772->2773; bridge relocation absent",
+    "log_sha256": "c43884c9f4302a381f6f2301460d934736a31b90cd99c3c0c053a525e2c6a308"
+  },
+  "core_units": {
+    "passed": 3,
+    "kind": "pure units, not PostgreSQL;0.00s execution after40.72s compile",
+    "coverage": [
+      "later stale actor restores earlier position and never publishes scene",
+      "rejected projection restores both positions",
+      "authorized shared landing commits all actors"
+    ],
+    "log_sha256": "5b37b08e05c5e1bfa7118b37060dfeaf7e5fab638f9b9af1cc8fda51dadca62f"
+  },
+  "engine_reuse_check": {
+    "qengine2": "2638a83ca",
+    "questpc2": "8048f1eaf",
+    "questpc3": "a58ff449e",
+    "questpc4": "2599afbed",
+    "questpc5": "3f79d826a",
+    "questpc6": "390e02450",
+    "questpc7": "0fb6b0c75",
+    "result": "no quest callback relocation found; reuse existing scene projection, dynamic collision and per-actor movement/summon lifecycle owners"
+  },
+  "green": {
+    "duration_seconds": 37.2696796,
+    "marker": "POSTGRES_CASE_COMPLETED questpc8_life_ring_bridge_moves_occupants_with_all_six_cells duration=37.2696796s",
+    "log_sha256": "16450ea77f56c1fa7318011b72e6d2dca6b92df0781ff8a96f577035fe59142e"
+  },
+  "validation": {
+    "green": {
+      "duration_seconds": 37.2696796,
+      "marker": "POSTGRES_CASE_COMPLETED questpc8_life_ring_bridge_moves_occupants_with_all_six_cells duration=37.2696796s",
+      "log_sha256": "16450ea77f56c1fa7318011b72e6d2dca6b92df0781ff8a96f577035fe59142e"
+    },
+    "mintwallin_regression": {
+      "duration_seconds": 36.329538055,
+      "marker": "POSTGRES_CASE_COMPLETED questpc8_mintwallin_scene duration=36.329538055s",
+      "log_sha256": "6e86c00c5c85923124c255cf08c8f4b570dcd26ab7c93d71ce84f52915d78586"
+    },
+    "schema_units": {
+      "log_sha256": "32ee5d640eea85b43bbd87d20fd8494d6d55a0517332eaf0f3fa5e4037523e5e"
+    },
+    "check": {
+      "log_sha256": "0504fd89de7a034e5ed701b0ef565ecf09a9bf44b76a39d9c2b44cee8f8abd08"
+    },
+    "clippy": {
+      "log_sha256": "3964aafae6054f21201e831706cac7ae3495b1fbcde6851ea682f3ae66069303"
+    },
+    "pins": {
+      "log_sha256": "e03e653eee38eab4e5f13090f89cf4705bca400813306eb2749f3e2aecd6b603"
+    },
+    "fmt": {
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "generator": {
+      "log_sha256": "e17883c3b904492b5238996447f88597b8e4d46e6c883b4445ed5f1e756d83aa"
+    }
+  }
+}
