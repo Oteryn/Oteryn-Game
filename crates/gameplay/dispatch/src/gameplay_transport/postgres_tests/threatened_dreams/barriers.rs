@@ -24,7 +24,7 @@ const PREFIX: &str = "oteryn:quest-transition/questpc3/threatened-barrier/";
 const SEED: &str = "oteryn:quest-transition/fixture/threatened-barrier-prior-story-and-tools";
 
 #[derive(Clone, Copy)]
-enum ToolSource {
+pub(super) enum ToolSource {
     Handle([u8; 16]),
     Definition(std::num::NonZeroU32),
 }
@@ -477,7 +477,7 @@ fn clock(owner: &ComposedFreshAdmission<'_, '_, '_>, day: bool) {
         std::sync::atomic::Ordering::Relaxed,
     );
 }
-async fn relocate(
+pub(super) async fn relocate(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     to: Position,
@@ -504,7 +504,7 @@ async fn relocate(
     runtime.commit_source_step(proof).map_err(debug)?;
     Ok(())
 }
-async fn use_tool(
+pub(super) async fn use_tool(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     source: ToolSource,
@@ -540,7 +540,7 @@ async fn use_tool(
     };
     Ok(outcome.map_or(UseDisposition::Rejected, |outcome| outcome.disposition))
 }
-async fn source_instance(
+pub(super) async fn source_instance(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     key: &str,
@@ -565,7 +565,7 @@ async fn source_instance(
         .map(|entry| entry.item.item_instance_id)
         .ok_or_else(|| "charged source".into())
 }
-async fn progress(
+pub(super) async fn progress(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
@@ -573,7 +573,7 @@ async fn progress(
 ) -> TestResult<i64> {
     super::super::classic_quests::progress(owner, admitted, authority, track).await
 }
-async fn quantity(h: &Harness, key: &str) -> TestResult<i64> {
+pub(super) async fn quantity(h: &Harness, key: &str) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1").bind(key).fetch_one(&h.pool).await?)
 }
 async fn seed_prior(

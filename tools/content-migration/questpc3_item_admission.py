@@ -88,7 +88,7 @@ def apply_admissions(definitions):
     # Santiago Crystal201189f santiago.lua:145-171 also requires coat3562 and grants club3270.
     # Retained Crystal9f5a72c ikassis.lua:77-85 grants the portable 2 oz talisman25295.
     for ident, weight in ((25731, 1200), (25733, 1200), (25779, 400), (3270, 2500), (3562, 2700), (25730, 200), (25732, 200), (25734, 200), (25780, 800), (25782, 10),
-                          (25975, 200), (25976, 200), (25977, 200), (25295, 200)):
+                          (25975, 200), (25976, 200), (25977, 200), (25295, 200), (3452, 1500)):
         key = f'oteryn:item.tibia.i{ident}'
         candidates = [row for row in definitions if row['identity']['key'] == key]
         if len(candidates) != 1:

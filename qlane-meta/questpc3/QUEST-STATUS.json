@@ -53,7 +53,7 @@
       ],
       "status": "IN_PROGRESS",
       "implementation_owner": "questpc3",
-      "next_actions": "Retain qualified kill-counter/report components, NPC exchanges/maps/final reward contracts, six light transforms, fifteen distinct barrier repairs, and the three Ikassis/Swan/Grumpy Stone exchanges. Finish remaining source encounters, animal/object/timed harvest and full journey; do not redo these completed components. Whole quest remains IN_PROGRESS."
+      "next_actions": "Retain qualified counters/reports, NPC exchanges/maps/final reward contracts, six light transforms, fifteen barrier repairs, three animal/stone exchanges and five retained-rake scratches. Finish remaining source encounters, animal/object/timed harvest and full journey; do not redo completed components."
     },
     {
       "canonical": "oteryn:quest.pilgrimage_of_ashes",
@@ -851,132 +851,78 @@
       }
     ],
     "current_batch": {
-      "id": "sale-barriers-animals-merge",
-      "phase": "GREEN combined deterministic validation; checkpoint merge, integrate pending retained-rake batch, then final review/publication",
-      "local_green": "680d379faaefac08ab9653c96ddaa61ab51c2569",
-      "incoming": "473461206cfec45d974aa6a57bcd01c8cb96cbaf",
-      "scope": "Combine durable eligible Carlos trade continuations with fifteen fenced Threatened barriers, three animal/stone exchanges and the generated preprod pin mirror",
-      "whole_entry_status": "Four owned whole quests remain IN_PROGRESS; component batches only are qualified. Continue Carlos report/bridge, lost coat and ground wood/cart, and remaining FirstDragon/TaintedSoul/ThreatenedDreams after publication.",
-      "guard_hardening": "Migration1109 explicitly sets owning-schema search_path on all three replaced/new obligation functions, preserving0056 convention; recovery PG case asserts three installed schema-bound guards.",
-      "validation_sessions": {
-        "final_rust_and_pg_1109": 90760,
-        "authoring_native_scope": 93238,
-        "superseded_before_pg": 89021
+      "id": "sale-rake-integration",
+      "phase": "GREEN final deterministic gates; commit stable material candidate, then required independent exact-head review before FF push",
+      "local_green": "be4ff11c95e9a5e9e9152d093155716ca65014f3",
+      "incoming": "009f5f9e1f58a09e21e8c1a50a0e1c2d4ce66d8a",
+      "scope": "Preserve qualified durable Carlos trade continuations and fifteen barriers/animal exchanges while integrating five already-qualified retained-rake stone scratches",
+      "whole_entry_status": "Four whole owned quests remain IN_PROGRESS; do not end task after this component publication.",
+      "preserved_green_checkpoint": "be4ff11c9",
+      "pending_validation": "Five-rake actual PG plus carried compatibility units; fmt/check/strict Clippy; authoring/native/pin scope. Prior four actualPG andcontent123 proofs preserved in completed mechanism batches.",
+      "required_independent_review": "One read-only stable exact-head review after final deterministic checks; no reviewer invocation yet.",
+      "sessions": {
+        "final_delta_rust_pg": 55115,
+        "authoring_native_pin_scope": 64873
       },
-      "checks_pending": [
-        "four-crate fmt/check/strict Clippy",
-        "Carlos actual sale recovery plus installed trigger configuration",
-        "old reward-claim coat chest",
-        "fifteen barriers",
-        "three animal/stone exchanges",
-        "content123",
-        "producer checks/authoring/native generation check/World input equality to incoming pin"
-      ],
-      "contracts": [
-        "docs/architecture/reviews/OTERYN_GAME_QUEST_STATE0_QUEST_PROGRESS_STORE_DECISION_2026-09-30.md",
-        "docs/architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md"
-      ],
-      "review_requirement": "apps/game-server/AGENTS.md requires independent exact-head review for persistence/recovery semantics. Bound META3.1.0 high-risk routing and standing repository required-review authorization apply; owner task forbids PR, so review local exact candidate, read-only, once after deterministic checks. No review invoked yet.",
-      "trade_reuse_recheck": {
-        "heads": {
-          "qengine2": "97cb9db791482391e77049c8a27fefd659003669",
-          "questpc2": "5c7d322960c4736874bd6067ee1c86f63c2cb1c6",
-          "questpc4": "bd42f09bb3f56e58c7876a7a4d5069c9cbe68032",
-          "questpc5": "3d15358523c3d0b81ae245814f0a7b7e5311b966",
-          "questpc6": "53d5648b88e48bed2b9f27545334c21ea6f37028",
-          "questpc7": "653feac452d8dbb2cf03edbfc733a1bf59bd77d7",
-          "questpc8": "cd382541ac2ff3e367724bc9454fe18001471563"
-        },
-        "search": "git grep TradeObligation|quest-trade/|quest_trade in crates/gameplay, migrations and content/quests after fresh fetch; no existing implementation",
-        "decision": "Implement in this lane, reusing existing NPC trade owner, quest obligation relation, fenced Quest writer and admission recovery."
-      },
-      "migration_number_correction": {
-        "selected": 1109,
-        "reason": "Main/open PR1097 free, but fresh cross-lane inspection found PC6/PC7 own1097 and PC8 owns1108; select1109 above all inspected reservations. Rename only this never-published new migration; no previously published SQL changed.",
-        "validation": "Stopped orchestration before any combined PG case started; let active Clippy process finish, then rerun deterministic checks and all four focused PG cases with1109.",
-        "cross_lane_proof": "/tmp/questpc3-sale-cross-lane-number-check.log"
-      },
-      "final_log_prefix": "/tmp/questpc3-sale-merge-1109-",
-      "checks": {
-        "fmt": {
-          "log": "/tmp/questpc3-sale-merge-1109-fmt.log",
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "tail": ""
-        },
-        "mounted_fmt": {
-          "log": "/tmp/questpc3-sale-merge-mounted-fmt.log",
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "tail": ""
-        },
-        "check": {
-          "log": "/tmp/questpc3-sale-merge-1109-check.log",
-          "sha256": "addc0bfd87426211598e037d1184b556fed7d7f1683e2f28b8cc151e833f7221",
-          "tail": " (Sender<T>, Receiver<T>) {\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |\nnote: the lint level is defined here\n   --> vendor/tokio-1.53.1/src/lib.rs:9:5\n    |\n  9 |     missing_docs,\n    |     ^^^^^^^^^^^^\n\nwarning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)\nwarning: `tokio` (lib) generated 2 warnings (2 duplicates)\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\nwarning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n    Checking oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)\n   Compiling oteryn-game-server v0.1.0 (/workspace/Oteryn-Game/apps/game-server)\n    Checking oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)\n    Checking oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)\n    Checking oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)\n    Checking oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)\n    Checking oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)\n    Checking oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)\n    Checking oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)\n    Checking oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 22s\n"
-        },
-        "clippy": {
-          "log": "/tmp/questpc3-sale-merge-1109-clippy.log",
-          "sha256": "6f4357e7842a315ee124f1d4edb3e4bdb9bb191b377ac5b839921b77b537fa50",
-          "tail": "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |\nnote: the lint level is defined here\n   --> vendor/tokio-1.53.1/src/lib.rs:9:5\n    |\n  9 |     missing_docs,\n    |     ^^^^^^^^^^^^\n\nwarning: `tokio` (lib) generated 2 warnings (run `cargo clippy --fix --lib -p tokio -- -D warnings` to apply 1 suggestion)\nwarning: `tokio` (lib) generated 2 warnings (2 duplicates)\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\nwarning: `sqlx-core` (lib) generated 1 warning (run `cargo clippy --fix --lib -p sqlx-core -- -D warnings` to apply 1 suggestion)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n    Checking oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)\n   Compiling oteryn-game-server v0.1.0 (/workspace/Oteryn-Game/apps/game-server)\n    Checking oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)\n    Checking oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)\n    Checking oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)\n    Checking oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)\n    Checking oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)\n    Checking oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)\n    Checking oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)\n    Checking oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 57s\n"
-        },
-        "recovery_pg": {
-          "log": "/tmp/questpc3-sale-merge-1109-recovery-pg.log",
-          "sha256": "748e14a5fc2489ef118432d535838c46dcd19a1b05205da3589ecf72626790c3",
-          "tail": "ay/monster-ai)\n   Compiling oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)\n   Compiling oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 8m 13s\n     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-4d705841b583da6d)\n\nrunning 1 test\nQUESTPC3_CARLOS_SALE POSTGRES_TRIGGER_SEARCH_PATH_PROVED functions=3\ntest gameplay_transport::monk_save::postgres_tests::questpc3_beginning_rewards::questpc3_beginning_carlos_sale_obligation_recovers_without_conversation has been running for over 60 seconds\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=1 actual_greet=1 actual_log=1 duration_ms=92737\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=2 actual_greet=2 actual_log=2 duration_ms=92857\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=3 actual_greet=3 actual_log=3 duration_ms=92944\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=4 actual_greet=4 actual_log=4 duration_ms=93032\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=5 actual_greet=5 actual_log=5 duration_ms=93127\nQUESTPC3_CARLOS_FOOD POSTGRES_ASSERTION_REACHED case=0 greet=5 log=5 trade=0 duration_ms=93229\nQUESTPC3_CARLOS_FOOD POSTGRES_ASSERTION_REACHED case=1 greet=5 log=5 trade=0 duration_ms=93296\nQUESTPC3_CARLOS_FOOD POSTGRES_ASSERTION_REACHED case=2 greet=6 log=6 trade=1 duration_ms=93397\nQUESTPC3_CARLOS_SALE POSTGRES_ASSERTION_REACHED committed_ham_sale=true gold_delta=2 greet=6 duration_ms=93573\nQUESTPC3_CARLOS_SALE POSTGRES_COLD_RECOVERY_AND_PROOF_GUARDS_PROVED duration_ms=93629\nQUESTPC3_BEGINNING_REWARDS POSTGRES_CASE_COMPLETED duration_ms=94005\nQUESTPC3_CARLOS_CARLOSSALERECOVERY POSTGRES_CASE_COMPLETED duration_ms=94005 success=true\ntest gameplay_transport::monk_save::postgres_tests::questpc3_beginning_rewards::questpc3_beginning_carlos_sale_obligation_recovers_without_conversation ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2575 filtered out; finished in 94.01s\n\n",
-          "postgres_duration_ms": 94005
-        },
-        "claim_pg": {
-          "log": "/tmp/questpc3-sale-merge-1109-claim-pg.log",
-          "sha256": "0390c4a2db4e22a70762297c0958f39734c4989aae2d4a25963ac5d55f589382",
-          "tail": "arning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)\nwarning: `tokio` (lib) generated 2 warnings (2 duplicates)\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\nwarning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.59s\n     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-4d705841b583da6d)\n\nrunning 1 test\nQUESTPC3_BEGINNING_COAT_CHEST POSTGRES_ASSERTION_REACHED source_uid=50080 appearance=7757\noteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=1\noteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=3 server_sequence=3\noteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=1\nQUESTPC3_BEGINNING_COAT_CHEST POSTGRES_CASE_COMPLETED\nQUESTPC3_BEGINNING_COAT_CHEST POSTGRES_CASE_COMPLETED duration_ms=52462 success=true\ntest gameplay_transport::monk_save::postgres_tests::quest_container_chests::questpc3_beginning_coat_chest_mints_once_and_drains_obligation ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2575 filtered out; finished in 52.46s\n\n",
-          "postgres_duration_ms": 52462
-        },
-        "barriers_pg": {
-          "log": "/tmp/questpc3-sale-merge-1109-barriers-pg.log",
-          "sha256": "2229b47d510742e739bc4f98c158633bbb911c12969ec4744df5be44527a0b87",
-          "tail": "Rel, Acquire, |curr| {\n    |\n\nwarning: missing documentation for a function\n   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1\n    |\n502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |\nnote: the lint level is defined here\n   --> vendor/tokio-1.53.1/src/lib.rs:9:5\n    |\n  9 |     missing_docs,\n    |     ^^^^^^^^^^^^\n\nwarning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)\nwarning: `tokio` (lib) generated 2 warnings (2 duplicates)\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\nwarning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.44s\n     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-4d705841b583da6d)\n\nrunning 1 test\nTHREATENED_BARRIERS POSTGRES_FAMILY_REACHED family=moon counter=0 empty=1\nTHREATENED_BARRIERS POSTGRES_FAMILY_REACHED family=star counter=0 empty=1\nTHREATENED_BARRIERS POSTGRES_FAMILY_REACHED family=sun counter=0 empty=1\nTHREATENED_BARRIERS POSTGRES_ASSERTION_REACHED repairs=15 receipts=15\nTHREATENED_BARRIERS POSTGRES_CASE_COMPLETED duration_ms=52110 success=true\ntest gameplay_transport::monk_save::postgres_tests::threatened_dreams::barriers::threatened_fifteen_distinct_barriers_decrement_exact_carried_tools ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2575 filtered out; finished in 52.11s\n\n",
-          "postgres_duration_ms": 52110
-        },
-        "animals_pg": {
-          "log": "/tmp/questpc3-sale-merge-1109-animals-pg.log",
-          "sha256": "743f5e645bc8e6fea5f51f56b589cd9fb350136c2da6e2ef76693986e4d8e54e",
-          "tail": "rr| {\n208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {\n    |\n\nwarning: missing documentation for a function\n   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1\n    |\n502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |\nnote: the lint level is defined here\n   --> vendor/tokio-1.53.1/src/lib.rs:9:5\n    |\n  9 |     missing_docs,\n    |     ^^^^^^^^^^^^\n\nwarning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)\nwarning: `tokio` (lib) generated 2 warnings (2 duplicates)\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\nwarning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.39s\n     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-4d705841b583da6d)\n\nrunning 1 test\ntest gameplay_transport::monk_save::postgres_tests::threatened_dreams::animals::threatened_animals_three_source_exchanges_are_atomic has been running for over 60 seconds\nTHREATENED_ANIMALS POSTGRES_EVIDENCE talisman=true feathers=true stone_map=true\nTHREATENED_ANIMALS POSTGRES_CASE_COMPLETED duration_ms=90905 success=true\ntest gameplay_transport::monk_save::postgres_tests::threatened_dreams::animals::threatened_animals_three_source_exchanges_are_atomic ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2575 filtered out; finished in 90.91s\n\n",
-          "postgres_duration_ms": 90905
-        },
-        "content": {
-          "log": "/tmp/questpc3-sale-merge-1109-content.log",
-          "sha256": "61a0b93495045f18374d1774455e3aa1c4b682818c62b52876c1ca876f6eb2f1",
-          "tail": "warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32\n    |\n208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {\n    |                                ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {\n208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {\n    |\n\nwarning: missing documentation for a function\n   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1\n    |\n502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |\nnote: the lint level is defined here\n   --> vendor/tokio-1.53.1/src/lib.rs:9:5\n    |\n  9 |     missing_docs,\n    |     ^^^^^^^^^^^^\n\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\n\nrunning 123 tests\n....................................................................................... 87/123\n....................................\ntest result: ok. 123 passed; 0 failed; 0 ignored; 0 measured; 152 filtered out; finished in 3.37s\n\n"
-        },
-        "authoring": {
-          "log": "/tmp/questpc3-sale-merge-authoring.log",
-          "sha256": "840e84954f4a4bcf8b3cf2db061181e09e8937e0f1c8fecf362c81e5f3cce86a",
-          "tail": "....................\n----------------------------------------------------------------------\nRan 20 tests in 13.605s\n\nOK\n"
-        },
-        "native": {
-          "log": "/tmp/questpc3-sale-merge-native.log",
-          "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
-          "tail": "PASS registered spell import files=41 activation=false\n"
-        },
-        "pin_scope": {
-          "log": "/tmp/questpc3-sale-merge-pin-scope.log",
-          "sha256": "7026bbea00972452c1bd7de6cc102207fb6da09f545547e6ba3f8a7683b04349",
-          "tail": "PIN-SCOPE-1: PASS: all compiler inputs/generated World files equal published incoming head 473461206cfec45d974aa6a57bcd01c8cb96cbaf\n{\"content_revision\": \"e06-market-crystal-parity-20261031-r1\", \"digest\": \"0bf8d8c92c222f75cb44ccaaff4f231096629fc47078446277bde055c08b6baf\", \"entry_start\": {\"floor\": -7, \"x\": 32534, \"y\": 32513}, \"production\": false, \"project_format_version\": \"OTERYN_WORLD_PROJECT_ROOT/v2\", \"schema\": \"OTERYN_WORLD_PIN/v2\", \"world_schema_version\": \"reference-schema-v1\"}\n"
-        },
-        "cross_lane_migration_number": {
-          "log": "/tmp/questpc3-sale-cross-lane-number-check.log",
-          "sha256": "8a8d745dfbb128bb026303e6f706589da6beed5cbd09f3434a4c8eaf882aa1a4",
-          "tail": "1109 is unclaimed across all seven freshly fetched dependency lanes; highest inspected reservation1108.\nquestpc6 apps/game-server/migrations/1096_quest_reward_payments.sql\nquestpc6 apps/game-server/migrations/1097_repeatable_quest_reward_claims.sql\nquestpc7 apps/game-server/migrations/1096_npc_quest_item_exchange.sql\nquestpc7 apps/game-server/migrations/1097_fathers_burden_xp_proof_name.sql\nquestpc7 apps/game-server/migrations/1098_quest_reward_callbacks.sql\nquestpc7 apps/game-server/migrations/1099_quest_reward_payments.sql\nquestpc7 apps/game-server/migrations/1100_quest_repeatable_exchanges.sql\nquestpc7 apps/game-server/migrations/1101_quest_world_item_rewards.sql\nquestpc7 apps/game-server/migrations/1102_quest_backpack_outputs.sql\nquestpc8 apps/game-server/migrations/1108_questpc8_reward_backpack_outputs.sql\n"
-        }
-      },
-      "migration": "1109_npc_trade_quest_obligations.sql; only new unpublished migration renumbered above inspected cross-lane reservations; existing migrations untouched",
-      "material_base": "c40fd4fb69bd355ecbf1a2d875a2399aaed45dde",
-      "review": "Whole material diff self-reviewed for root lock/atomic eligibility capture, unchanged legacy binding, typed source/cause and immutable same-transaction SQL provenance, schema-bound guards, fresh current Quest fences, existing recovery, target/source/time bindings and source exchanges. Independent exact-head review required next; none invoked yet.",
-      "pin_scope": "All World compiler inputs/generated files exactly equal incoming published473461206; retain its native41 and pin/mirror proof world0bf8d8c92c222f75cb44ccaaff4f231096629fc47078446277bde055c08b6baf. Local trade callback/migration changes are outside compiler INPUT_PATHS.",
+      "log_prefix": "/tmp/questpc3-sale-rake-",
+      "authoring_result": "22 tests PASS13.041s; Carlos/Santiago/light/barrier/animal/rake producer --check all PASS",
       "next_prepared_not_applied": [
         "/tmp/questpc3-next-carlos-report-test.py",
         "/tmp/questpc3-carlos-report-authoring.py"
       ],
-      "next_order": "After review/FF push apply only next report test script, run actual PG RED; only then apply report authoring script and generate data. Both scripts currently prepared NOT APPLIED."
+      "checks": {
+        "fmt": {
+          "log": "/tmp/questpc3-sale-rake-fmt.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "tail": ""
+        },
+        "check": {
+          "log": "/tmp/questpc3-sale-rake-check.log",
+          "sha256": "b79722fd4d96370543f5465637f99234c6676552c182fecfd3a6853aa1b589d8",
+          "tail": "ering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\nwarning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)\n   Compiling oteryn-error-codes v0.1.0 (/workspace/Oteryn-Game/crates/error-codes)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n    Checking oteryn-gameplay-quests v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/quests)\n   Compiling oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)\n    Checking oteryn-gameplay-native-admission-source v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/native-admission-source)\n    Checking oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)\n    Checking oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)\n    Checking oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)\n    Checking oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)\n    Checking oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)\n    Checking oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)\n    Checking oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)\n    Checking oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)\n    Checking oteryn-game-server v0.1.0 (/workspace/Oteryn-Game/apps/game-server)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 46s\n"
+        },
+        "clippy": {
+          "log": "/tmp/questpc3-sale-rake-clippy.log",
+          "sha256": "fcd6642b8d95ff96be98ceda717baf0fca0e9a7da1cb272bfcabf6b48a5f45e5",
+          "tail": "/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\nwarning: `sqlx-core` (lib) generated 1 warning (run `cargo clippy --fix --lib -p sqlx-core -- -D warnings` to apply 1 suggestion)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n   Compiling oteryn-error-codes v0.1.0 (/workspace/Oteryn-Game/crates/error-codes)\n   Compiling oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)\n    Checking oteryn-gameplay-native-admission-source v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/native-admission-source)\n    Checking oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)\n    Checking oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)\n    Checking oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)\n    Checking oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)\n    Checking oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)\n    Checking oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)\n    Checking oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)\n    Checking oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)\n    Checking oteryn-game-server v0.1.0 (/workspace/Oteryn-Game/apps/game-server)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 44s\n"
+        },
+        "pg": {
+          "log": "/tmp/questpc3-sale-rake-pg.log",
+          "sha256": "b2c7a1a9a206dc4be35ca3767423e5bd445217c855210795395a49176f1506c6",
+          "tail": "o apply 1 suggestion)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n   Compiling oteryn-error-codes v0.1.0 (/workspace/Oteryn-Game/crates/error-codes)\n   Compiling oteryn-gameplay-quests v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/quests)\n   Compiling oteryn-gameplay-native-admission-source v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/native-admission-source)\n   Compiling oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)\n   Compiling oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)\n   Compiling oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)\n   Compiling oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)\n   Compiling oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)\n   Compiling oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)\n   Compiling oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)\n   Compiling oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)\n   Compiling oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 08s\n     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-4d705841b583da6d)\n\nrunning 1 test\nTHREATENED_RAKES POSTGRES_EVIDENCE scratches=5 receipts=5\nTHREATENED_RAKES POSTGRES_CASE_COMPLETED duration_ms=54782 success=true\ntest gameplay_transport::monk_save::postgres_tests::threatened_dreams::rakes::threatened_five_rake_scratches_are_exact_and_work_all_day ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2576 filtered out; finished in 54.79s\n\n",
+          "postgres_duration_ms": 54782
+        },
+        "units": {
+          "log": "/tmp/questpc3-sale-rake-units.log",
+          "sha256": "db43b8f1dc8972d4243b0072f7801e6e3956885b7898b0ff61e38fc62e1b9bae",
+          "tail": "   Compiling oteryn-gameplay-quests v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/quests)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.08s\n     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_quests-c77927d0dc67a44a)\n\nrunning 5 tests\ntest quest::world_callbacks::carried::tests::all_day_and_end_of_day_windows_are_half_open_and_bounded ... ok\ntest quest::world_callbacks::carried::tests::day_night_boundaries_and_midnight_are_exact ... ok\ntest quest::world_callbacks::carried::tests::rectangle_edges_and_floor_are_admission_facts ... ok\ntest quest::world_callbacks::carried::tests::published_self_use_binding_is_unchanged_and_target_terms_are_bound ... ok\ntest quest::world_callbacks::carried::tests::changed_region_or_period_invalidates_the_durable_definition ... ok\n\ntest result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 268 filtered out; finished in 0.01s\n\n"
+        },
+        "content": {
+          "log": "/tmp/questpc3-sale-rake-content.log",
+          "sha256": "0eb5f4eb05d6f52a855f3a2350ffff4f3e7bbe56fc2ede721c63543622bf70dd",
+          "tail": "warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32\n    |\n208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {\n    |                                ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {\n208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {\n    |\n\nwarning: missing documentation for a function\n   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1\n    |\n502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |\nnote: the lint level is defined here\n   --> vendor/tokio-1.53.1/src/lib.rs:9:5\n    |\n  9 |     missing_docs,\n    |     ^^^^^^^^^^^^\n\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\n\nrunning 123 tests\n....................................................................................... 87/123\n....................................\ntest result: ok. 123 passed; 0 failed; 0 ignored; 0 measured; 152 filtered out; finished in 3.16s\n\n"
+        },
+        "authoring": {
+          "log": "/tmp/questpc3-sale-rake-authoring.log",
+          "sha256": "9fdfc44953cec1a36da8c2497830a15bede5b2b8b253f70c52f63fb42f19e5bf",
+          "tail": "......................\n----------------------------------------------------------------------\nRan 22 tests in 13.041s\n\nOK\n"
+        },
+        "native": {
+          "log": "/tmp/questpc3-sale-rake-native.log",
+          "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+          "tail": "PASS registered spell import files=41 activation=false\n"
+        },
+        "pin-scope": {
+          "log": "/tmp/questpc3-sale-rake-pin-scope.log",
+          "sha256": "ae0056466c0bd3c9d388731866f2086b1252d33daba1829117b96073ac296794",
+          "tail": "PIN-SCOPE-1: PASS; all World compiler inputs exactly match qualified incoming 009f5f9e1f58a09e21e8c1a50a0e1c2d4ce66d8a; retain its pin-refresh proof world0bf8d8c92c222f75cb44ccaaff4f231096629fc47078446277bde055c08b6baf inputs2680d94c35cfe335c0bb640059f7a031a6bac8a299ccb31aca1528d849a081df\n"
+        }
+      },
+      "prior_combined_proof": "completed_mechanism_batches/sale-barriers-animals-merge: actualPG recovery94005ms including3schema-bound guards, claim52462ms,15barriers52110ms,3animals90905ms; content123/check/strictClippy4crates/native/authoring allGREEN",
+      "migration": "1109 only; original trade snapshot/cause/source proof and current authority fences unchanged by rake integration",
+      "review": "Self-review confirms incoming five retained-rake source rules and all-day1440 bound reuse existing exact carried-source replacement with same prototype/UUID, preserving old self-use encodings. No source/SQL conflict; previous qualified callbacks intact. Mandatory independent exact-head review pending, no reviewer invocation yet.",
+      "material_base": "c40fd4fb69bd355ecbf1a2d875a2399aaed45dde",
+      "next": "After independent review and verifiedFFpush, apply TESTscript ONLY, run actual PG RED for Carlos post-sale ready and greeting; then apply authoring script, generate data and qualify both reports plus final return offer. Continue bridge/lost-coat/groundwood and remaining3wholequests."
     },
     "effective_entries": [
       "oteryn:quest.the_beginning_quest",
@@ -2569,7 +2515,7 @@
       "wvar": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
     },
     "shared_feature_owner": "questpc3: reuse existing implementations; implement every remaining engine, binding, NPC, Item and world-mechanic gap locally. No external dependency wait.",
-    "updated_at": "2026-11-07T08:50:54.909735+00:00",
+    "updated_at": "2026-11-07T09:04:39.860531+00:00",
     "publication_native_counters_01": {
       "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
       "pushed": true,
@@ -2676,124 +2622,132 @@
       }
     },
     "previous_batch": {
-      "id": "beginning-carlos-sale-01",
-      "phase": "Core deterministic GREEN; local checkpoint, remote integration and schema-bound trigger hardening before final validation/review/publication",
-      "scope": "Actual5NPCintro+foodreadiness, realCarlosSHOPwindow/sellHam1at2gp, requireGreet7throughquestowner/oneoriginalsalequestreceipt/noextraGoldonreplay",
-      "red_log": "/tmp/questpc3-carlos-sale-red.log",
-      "source_rule": "SourceonSellonlyprintsmessage; localonTradeRequestunregistered. Owner-authorized conservative playable repair: actual committed sale>=1meat3577/ham3582at2gp whileTrade1/Greet6 advances7; no report-onlygrant. SourceURLpinnedpreviousCarlosproofs.",
-      "expected_transition": "oteryn:quest-trade/questpc3/beginning/carlos-food-sale",
-      "reuse_research": "Current npc_trade.rs commit_trade632 locks root/admission and replays durable trade. Quest writer commit_quest_inner137 owns all quest receipts/effects; extend generically, never SQL-writequeststatefromdialogue. NeedcaptureeligibilityatSALECOMMIT, notretroactivepostcommitguard(oldpreeligibilitysalereplaymustnotqualify). Generic durable trade->quest obligation/validated source cause can reuse owning quest writer and survive lostack/reconnect; inspect existing queue patterns and refreshed otherlane branches before implement.",
-      "whole_entry_status": "FourwholequestsremainIN_PROGRESS; implementsharedmechanismnow, no deferral",
-      "red_proof": {
-        "log": "/tmp/questpc3-carlos-sale-red.log",
-        "sha256": "0da69a5c0434b633b11c78f88aa4f3a3f07dd7ed96c8736598cb427f1f1663d0",
-        "duration_ms": 105213,
-        "proof": "Actual5intro+HAMreadinessPASS; nativeHamSELL1committedwithfood0/gold+2, marker105023msGreet6vsrequired7. No fixturefailure; productionhookunchanged."
+      "id": "sale-barriers-animals-merge",
+      "phase": "GREEN combined deterministic validation; checkpoint merge, integrate pending retained-rake batch, then final review/publication",
+      "local_green": "680d379faaefac08ab9653c96ddaa61ab51c2569",
+      "incoming": "473461206cfec45d974aa6a57bcd01c8cb96cbaf",
+      "scope": "Combine durable eligible Carlos trade continuations with fifteen fenced Threatened barriers, three animal/stone exchanges and the generated preprod pin mirror",
+      "whole_entry_status": "Four owned whole quests remain IN_PROGRESS; component batches only are qualified. Continue Carlos report/bridge, lost coat and ground wood/cart, and remaining FirstDragon/TaintedSoul/ThreatenedDreams after publication.",
+      "guard_hardening": "Migration1109 explicitly sets owning-schema search_path on all three replaced/new obligation functions, preserving0056 convention; recovery PG case asserts three installed schema-bound guards.",
+      "validation_sessions": {
+        "final_rust_and_pg_1109": 90760,
+        "authoring_native_scope": 93238,
+        "superseded_before_pg": 89021
       },
-      "design_reuse": "Reuse game_character_quest_obligations/admission retry owner; extend typed source for npc_trade, distinct TradeObligation cause and source proof, capturematching ruleeligibilityunderCharacterrootinoriginalNPCtradeTX thenqueueafteractualtradeapply. Rootquestwriterdrainsandconsumesqueuewithreceipt; normal/replay/sharedtrade wrapperrefreshesQuestSession, admissiondrainscold. Keep oldclaimconstraints intact viaadditive migration/source-specific proof. Existingobligation guard/receipt guard definitions only0056; source_kind immutable, tradeproofsameTX. NewRuledata boundedNPC/side/items/unitprice/offercount/minunits/storage; bindterms/newtransitionnamespacequest-trade. No retrospectivequalificationofpreeligibilitysales.",
-      "implementation": [
-        "Reusable strictly validated trade callbacks and versioned binding; unchanged binding for unrelated trades",
-        "Original committed trade captures eligible immutable bounded source state under character lock; same-transaction durable typed obligation",
-        "Existing fenced quest writer and cold admission drain trade obligations; original reward claim guards retained",
-        "Carlos eligible Meat/Ham sale at 2 gold advances Greet 6 to 7; missing donor registered hook repaired conservatively",
-        "Additive migration 1097; 1096 collision caught before application and corrected without editing existing migration"
+      "checks_pending": [
+        "four-crate fmt/check/strict Clippy",
+        "Carlos actual sale recovery plus installed trigger configuration",
+        "old reward-claim coat chest",
+        "fifteen barriers",
+        "three animal/stone exchanges",
+        "content123",
+        "producer checks/authoring/native generation check/World input equality to incoming pin"
       ],
-      "postgres_green": {
-        "green": {
-          "log": "/tmp/questpc3-carlos-sale-green.log",
-          "sha256": "9b96bf02adf88305db4eb3542f3248a6462296f1e79274cc7cf7f6ab0c3ba1eb",
-          "postgres_duration_seconds": 94.05
+      "contracts": [
+        "docs/architecture/reviews/OTERYN_GAME_QUEST_STATE0_QUEST_PROGRESS_STORE_DECISION_2026-09-30.md",
+        "docs/architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md"
+      ],
+      "review_requirement": "apps/game-server/AGENTS.md requires independent exact-head review for persistence/recovery semantics. Bound META3.1.0 high-risk routing and standing repository required-review authorization apply; owner task forbids PR, so review local exact candidate, read-only, once after deterministic checks. No review invoked yet.",
+      "trade_reuse_recheck": {
+        "heads": {
+          "qengine2": "97cb9db791482391e77049c8a27fefd659003669",
+          "questpc2": "5c7d322960c4736874bd6067ee1c86f63c2cb1c6",
+          "questpc4": "bd42f09bb3f56e58c7876a7a4d5069c9cbe68032",
+          "questpc5": "3d15358523c3d0b81ae245814f0a7b7e5311b966",
+          "questpc6": "53d5648b88e48bed2b9f27545334c21ea6f37028",
+          "questpc7": "653feac452d8dbb2cf03edbfc733a1bf59bd77d7",
+          "questpc8": "cd382541ac2ff3e367724bc9454fe18001471563"
         },
-        "recovery": {
-          "log": "/tmp/questpc3-carlos-sale-recovery.log",
-          "sha256": "f29300fd237483849450d2beb8cf7adc50cd1ced6ca9730c5665943a5021de8e",
-          "postgres_duration_seconds": 92.72
-        },
-        "preeligible": {
-          "log": "/tmp/questpc3-carlos-sale-preeligible.log",
-          "sha256": "2b20aa1dab02453d9b9629a597111b17af37806c63933b03910d337343c8453c",
-          "postgres_duration_seconds": 89.03
-        }
+        "search": "git grep TradeObligation|quest-trade/|quest_trade in crates/gameplay, migrations and content/quests after fresh fetch; no existing implementation",
+        "decision": "Implement in this lane, reusing existing NPC trade owner, quest obligation relation, fenced Quest writer and admission recovery."
       },
-      "validation_in_progress": {
-        "session": 23577,
-        "checks": "fmt, strict Clippy four crates, targeted rules/binding/quest units, content, existing coat reward-claim PostgreSQL regression",
-        "corrections": "Removed two Copy-only test clones; recovered disk by removing only obsolete unlocked incremental snapshots. Earlier claim regression could not create PG database due to full disk; not counted as a gameplay result."
+      "migration_number_correction": {
+        "selected": 1109,
+        "reason": "Main/open PR1097 free, but fresh cross-lane inspection found PC6/PC7 own1097 and PC8 owns1108; select1109 above all inspected reservations. Rename only this never-published new migration; no previously published SQL changed.",
+        "validation": "Stopped orchestration before any combined PG case started; let active Clippy process finish, then rerun deterministic checks and all four focused PG cases with1109.",
+        "cross_lane_proof": "/tmp/questpc3-sale-cross-lane-number-check.log"
       },
-      "validation_progress": {
-        "strict_clippy": "PASS four changed crates all features/all targets 3m14s",
-        "authoring": "17 tests PASS10.378s",
-        "rule_units": "1 PASS",
-        "quest_units": "7 PASS",
-        "binding_units": "1 PASS",
-        "governance": "validator PASS;129 tests PASS0.621s",
-        "remaining": "content123 and actualPG existing claim regression; then remote merge and exact-head review"
-      },
+      "final_log_prefix": "/tmp/questpc3-sale-merge-1109-",
       "checks": {
-        "governance": {
-          "log": "/tmp/questpc3-carlos-sale-governance.log",
-          "sha256": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f",
-          "tail": "Governance validation passed for Oteryn/Oteryn-Game.\nValidated 22 required policy documents and 9 project lanes.\n"
-        },
-        "governance_units": {
-          "log": "/tmp/questpc3-carlos-sale-governance-units.log",
-          "sha256": "cfa272fa759e440353d3a56243a1035678e026b3d9065ccc3e324ab3c3bac4b9",
-          "tail": ".................................................................................................................................\n----------------------------------------------------------------------\nRan 129 tests in 0.621s\n\nOK\n"
-        },
-        "authoring": {
-          "log": "/tmp/questpc3-carlos-sale-authoring.log",
-          "sha256": "aa499fddbea0454369362eed5fb209982a91757ea163cc58a911a4cf5ec1bb01",
-          "tail": ".................\n----------------------------------------------------------------------\nRan 17 tests in 10.378s\n\nOK\n"
-        },
         "fmt": {
-          "log": "/tmp/questpc3-carlos-sale-fmt.log",
+          "log": "/tmp/questpc3-sale-merge-1109-fmt.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "tail": ""
+        },
+        "mounted_fmt": {
+          "log": "/tmp/questpc3-sale-merge-mounted-fmt.log",
           "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "tail": ""
         },
         "check": {
-          "log": "/tmp/questpc3-carlos-sale-check.log",
-          "sha256": "fe5fb8dea1b63a593ae66bf2e5a5d9e722fcd984e219ad135a5753007037b8d7",
-          "tail": "consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\nwarning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n    Checking oteryn-gameplay-quests v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/quests)\n   Compiling oteryn-game-server v0.1.0 (/workspace/Oteryn-Game/apps/game-server)\n    Checking oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)\n    Checking oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)\n    Checking oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)\n    Checking oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)\n    Checking oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)\n    Checking oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)\n    Checking oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)\n    Checking oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)\n    Checking oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 30.48s\n"
+          "log": "/tmp/questpc3-sale-merge-1109-check.log",
+          "sha256": "addc0bfd87426211598e037d1184b556fed7d7f1683e2f28b8cc151e833f7221",
+          "tail": " (Sender<T>, Receiver<T>) {\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |\nnote: the lint level is defined here\n   --> vendor/tokio-1.53.1/src/lib.rs:9:5\n    |\n  9 |     missing_docs,\n    |     ^^^^^^^^^^^^\n\nwarning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)\nwarning: `tokio` (lib) generated 2 warnings (2 duplicates)\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\nwarning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n    Checking oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)\n   Compiling oteryn-game-server v0.1.0 (/workspace/Oteryn-Game/apps/game-server)\n    Checking oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)\n    Checking oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)\n    Checking oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)\n    Checking oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)\n    Checking oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)\n    Checking oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)\n    Checking oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)\n    Checking oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 22s\n"
         },
         "clippy": {
-          "log": "/tmp/questpc3-carlos-sale-clippy.log",
-          "sha256": "077dca9d41ea62d70609ad4cf89173e58f841fd6d4fc60cb9c6ef2dbb29aff7b",
-          "tail": "  |\n208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {\n208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {\n    |\n\nwarning: missing documentation for a function\n   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1\n    |\n502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |\nnote: the lint level is defined here\n   --> vendor/tokio-1.53.1/src/lib.rs:9:5\n    |\n  9 |     missing_docs,\n    |     ^^^^^^^^^^^^\n\nwarning: `tokio` (lib) generated 2 warnings (run `cargo clippy --fix --lib -p tokio -- -D warnings` to apply 1 suggestion)\nwarning: `tokio` (lib) generated 2 warnings (2 duplicates)\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\nwarning: `sqlx-core` (lib) generated 1 warning (run `cargo clippy --fix --lib -p sqlx-core -- -D warnings` to apply 1 suggestion)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n   Compiling oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)\n    Checking oteryn-game-server v0.1.0 (/workspace/Oteryn-Game/apps/game-server)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3m 14s\n"
+          "log": "/tmp/questpc3-sale-merge-1109-clippy.log",
+          "sha256": "6f4357e7842a315ee124f1d4edb3e4bdb9bb191b377ac5b839921b77b537fa50",
+          "tail": "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |\nnote: the lint level is defined here\n   --> vendor/tokio-1.53.1/src/lib.rs:9:5\n    |\n  9 |     missing_docs,\n    |     ^^^^^^^^^^^^\n\nwarning: `tokio` (lib) generated 2 warnings (run `cargo clippy --fix --lib -p tokio -- -D warnings` to apply 1 suggestion)\nwarning: `tokio` (lib) generated 2 warnings (2 duplicates)\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\nwarning: `sqlx-core` (lib) generated 1 warning (run `cargo clippy --fix --lib -p sqlx-core -- -D warnings` to apply 1 suggestion)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n    Checking oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)\n   Compiling oteryn-game-server v0.1.0 (/workspace/Oteryn-Game/apps/game-server)\n    Checking oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)\n    Checking oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)\n    Checking oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)\n    Checking oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)\n    Checking oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)\n    Checking oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)\n    Checking oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)\n    Checking oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 57s\n"
         },
-        "trade_rule_units": {
-          "log": "/tmp/questpc3-carlos-sale-rule-units.log",
-          "sha256": "8c68553b0cd06a68c060a7736b244c752e5a61ac79ed9c844206d59da6044ffa",
-          "tail": "   Compiling oteryn-gameplay-quests v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/quests)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.20s\n     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_quests-c77927d0dc67a44a)\n\nrunning 1 test\ntest quest::trade_callbacks::tests::trade_terms_are_bound_and_source_selectors_are_unambiguous ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 270 filtered out; finished in 0.00s\n\n"
+        "recovery_pg": {
+          "log": "/tmp/questpc3-sale-merge-1109-recovery-pg.log",
+          "sha256": "748e14a5fc2489ef118432d535838c46dcd19a1b05205da3589ecf72626790c3",
+          "tail": "ay/monster-ai)\n   Compiling oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)\n   Compiling oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 8m 13s\n     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-4d705841b583da6d)\n\nrunning 1 test\nQUESTPC3_CARLOS_SALE POSTGRES_TRIGGER_SEARCH_PATH_PROVED functions=3\ntest gameplay_transport::monk_save::postgres_tests::questpc3_beginning_rewards::questpc3_beginning_carlos_sale_obligation_recovers_without_conversation has been running for over 60 seconds\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=1 actual_greet=1 actual_log=1 duration_ms=92737\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=2 actual_greet=2 actual_log=2 duration_ms=92857\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=3 actual_greet=3 actual_log=3 duration_ms=92944\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=4 actual_greet=4 actual_log=4 duration_ms=93032\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=5 actual_greet=5 actual_log=5 duration_ms=93127\nQUESTPC3_CARLOS_FOOD POSTGRES_ASSERTION_REACHED case=0 greet=5 log=5 trade=0 duration_ms=93229\nQUESTPC3_CARLOS_FOOD POSTGRES_ASSERTION_REACHED case=1 greet=5 log=5 trade=0 duration_ms=93296\nQUESTPC3_CARLOS_FOOD POSTGRES_ASSERTION_REACHED case=2 greet=6 log=6 trade=1 duration_ms=93397\nQUESTPC3_CARLOS_SALE POSTGRES_ASSERTION_REACHED committed_ham_sale=true gold_delta=2 greet=6 duration_ms=93573\nQUESTPC3_CARLOS_SALE POSTGRES_COLD_RECOVERY_AND_PROOF_GUARDS_PROVED duration_ms=93629\nQUESTPC3_BEGINNING_REWARDS POSTGRES_CASE_COMPLETED duration_ms=94005\nQUESTPC3_CARLOS_CARLOSSALERECOVERY POSTGRES_CASE_COMPLETED duration_ms=94005 success=true\ntest gameplay_transport::monk_save::postgres_tests::questpc3_beginning_rewards::questpc3_beginning_carlos_sale_obligation_recovers_without_conversation ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2575 filtered out; finished in 94.01s\n\n",
+          "postgres_duration_ms": 94005
         },
-        "quest_units": {
-          "log": "/tmp/questpc3-carlos-sale-quest-units.log",
-          "sha256": "ccbc76a556417bd55b8e3eaa484a891a723e94a3b68c6e226a307b0aec1fc7e9",
-          "tail": "yn-Game/crates/gameplay/quests)\n   Compiling oteryn-gameplay-progression v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/progression)\n   Compiling oteryn-gameplay-characters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/characters)\n   Compiling oteryn-gameplay-entities v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/entities)\n   Compiling oteryn-gameplay-encounter-rules v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounter-rules)\n   Compiling oteryn-gameplay-combat-rules v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat-rules)\n   Compiling oteryn-gameplay-items v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/items)\n   Compiling oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 2m 39s\n     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_durability-4c36e2b90120e7e6)\n\nrunning 7 tests\ntest durability::quest_state::tests::a_cause_round_trips_through_its_stored_shape ... ok\ntest durability::quest_state::tests::the_binding_covers_the_request_only ... ok\ntest durability::quest_state::tests::m06q_quest_door_resolves_the_named_durable_quest_track ... ok\ntest durability::quest_state::tests::quest_door_storage_uses_the_durable_track_and_absence_is_minus_one ... ok\ntest durability::quest_state::tests::the_quest_state_api_is_linked ... ok\ntest durability::quest_state::tests::monk_copy_derives_count_once_and_reserves_projection_capacity_atomically ... ok\ntest durability::quest_state::tests::the_copy_applies_receipts_and_settles_obligations ... ok\n\ntest result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 682 filtered out; finished in 0.01s\n\n"
+        "claim_pg": {
+          "log": "/tmp/questpc3-sale-merge-1109-claim-pg.log",
+          "sha256": "0390c4a2db4e22a70762297c0958f39734c4989aae2d4a25963ac5d55f589382",
+          "tail": "arning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)\nwarning: `tokio` (lib) generated 2 warnings (2 duplicates)\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\nwarning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.59s\n     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-4d705841b583da6d)\n\nrunning 1 test\nQUESTPC3_BEGINNING_COAT_CHEST POSTGRES_ASSERTION_REACHED source_uid=50080 appearance=7757\noteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=1\noteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=3 server_sequence=3\noteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=1\nQUESTPC3_BEGINNING_COAT_CHEST POSTGRES_CASE_COMPLETED\nQUESTPC3_BEGINNING_COAT_CHEST POSTGRES_CASE_COMPLETED duration_ms=52462 success=true\ntest gameplay_transport::monk_save::postgres_tests::quest_container_chests::questpc3_beginning_coat_chest_mints_once_and_drains_obligation ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2575 filtered out; finished in 52.46s\n\n",
+          "postgres_duration_ms": 52462
         },
-        "binding_units": {
-          "log": "/tmp/questpc3-carlos-sale-binding-units.log",
-          "sha256": "8b12bfe3fba5dfe5a0ac37ff8fc2b0ac72a590e47a1fc5aeed607e4915cf8d0e",
-          "tail": "ate(AcqRel, Acquire, |curr| {\n    |\n\nwarning: missing documentation for a function\n   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1\n    |\n502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |\nnote: the lint level is defined here\n   --> vendor/tokio-1.53.1/src/lib.rs:9:5\n    |\n  9 |     missing_docs,\n    |     ^^^^^^^^^^^^\n\nwarning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)\nwarning: `tokio` (lib) generated 2 warnings (2 duplicates)\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\nwarning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.41s\n     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_durability-4c36e2b90120e7e6)\n\nrunning 1 test\ntest durability::npc_trade::quest_obligations::tests::unrelated_trades_keep_their_original_request_binding ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 688 filtered out; finished in 0.00s\n\n"
+        "barriers_pg": {
+          "log": "/tmp/questpc3-sale-merge-1109-barriers-pg.log",
+          "sha256": "2229b47d510742e739bc4f98c158633bbb911c12969ec4744df5be44527a0b87",
+          "tail": "Rel, Acquire, |curr| {\n    |\n\nwarning: missing documentation for a function\n   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1\n    |\n502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |\nnote: the lint level is defined here\n   --> vendor/tokio-1.53.1/src/lib.rs:9:5\n    |\n  9 |     missing_docs,\n    |     ^^^^^^^^^^^^\n\nwarning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)\nwarning: `tokio` (lib) generated 2 warnings (2 duplicates)\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\nwarning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.44s\n     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-4d705841b583da6d)\n\nrunning 1 test\nTHREATENED_BARRIERS POSTGRES_FAMILY_REACHED family=moon counter=0 empty=1\nTHREATENED_BARRIERS POSTGRES_FAMILY_REACHED family=star counter=0 empty=1\nTHREATENED_BARRIERS POSTGRES_FAMILY_REACHED family=sun counter=0 empty=1\nTHREATENED_BARRIERS POSTGRES_ASSERTION_REACHED repairs=15 receipts=15\nTHREATENED_BARRIERS POSTGRES_CASE_COMPLETED duration_ms=52110 success=true\ntest gameplay_transport::monk_save::postgres_tests::threatened_dreams::barriers::threatened_fifteen_distinct_barriers_decrement_exact_carried_tools ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2575 filtered out; finished in 52.11s\n\n",
+          "postgres_duration_ms": 52110
+        },
+        "animals_pg": {
+          "log": "/tmp/questpc3-sale-merge-1109-animals-pg.log",
+          "sha256": "743f5e645bc8e6fea5f51f56b589cd9fb350136c2da6e2ef76693986e4d8e54e",
+          "tail": "rr| {\n208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {\n    |\n\nwarning: missing documentation for a function\n   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1\n    |\n502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |\nnote: the lint level is defined here\n   --> vendor/tokio-1.53.1/src/lib.rs:9:5\n    |\n  9 |     missing_docs,\n    |     ^^^^^^^^^^^^\n\nwarning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)\nwarning: `tokio` (lib) generated 2 warnings (2 duplicates)\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\nwarning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.39s\n     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-4d705841b583da6d)\n\nrunning 1 test\ntest gameplay_transport::monk_save::postgres_tests::threatened_dreams::animals::threatened_animals_three_source_exchanges_are_atomic has been running for over 60 seconds\nTHREATENED_ANIMALS POSTGRES_EVIDENCE talisman=true feathers=true stone_map=true\nTHREATENED_ANIMALS POSTGRES_CASE_COMPLETED duration_ms=90905 success=true\ntest gameplay_transport::monk_save::postgres_tests::threatened_dreams::animals::threatened_animals_three_source_exchanges_are_atomic ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2575 filtered out; finished in 90.91s\n\n",
+          "postgres_duration_ms": 90905
         },
         "content": {
-          "log": "/tmp/questpc3-carlos-sale-content.log",
-          "sha256": "f63b44c19717ef98ced849db9cd1eb4ee43ed58bb2a6e073e4292cff3b1bc390",
-          "tail": "Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32\n    |\n208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {\n    |                                ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {\n208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {\n    |\n\nwarning: missing documentation for a function\n   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1\n    |\n502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |\nnote: the lint level is defined here\n   --> vendor/tokio-1.53.1/src/lib.rs:9:5\n    |\n  9 |     missing_docs,\n    |     ^^^^^^^^^^^^\n\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\n\nrunning 123 tests\n....................................................................................... 87/123\n....................................\ntest result: ok. 123 passed; 0 failed; 0 ignored; 0 measured; 152 filtered out; finished in 3.45s\n\n"
+          "log": "/tmp/questpc3-sale-merge-1109-content.log",
+          "sha256": "61a0b93495045f18374d1774455e3aa1c4b682818c62b52876c1ca876f6eb2f1",
+          "tail": "warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32\n    |\n208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {\n    |                                ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {\n208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {\n    |\n\nwarning: missing documentation for a function\n   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1\n    |\n502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |\nnote: the lint level is defined here\n   --> vendor/tokio-1.53.1/src/lib.rs:9:5\n    |\n  9 |     missing_docs,\n    |     ^^^^^^^^^^^^\n\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\n\nrunning 123 tests\n....................................................................................... 87/123\n....................................\ntest result: ok. 123 passed; 0 failed; 0 ignored; 0 measured; 152 filtered out; finished in 3.37s\n\n"
         },
-        "claim_regression": {
-          "log": "/tmp/questpc3-carlos-sale-claim-regression.log",
-          "sha256": "68dcaf7f00df01efb31f4a3f0d9b1768b54300d0aea9f1a15605f1d6992364d3",
-          "tail": "y default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\nwarning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n   Compiling oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 2m 18s\n     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-4d705841b583da6d)\n\nrunning 1 test\nQUESTPC3_BEGINNING_COAT_CHEST POSTGRES_ASSERTION_REACHED source_uid=50080 appearance=7757\noteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=1\noteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=3 server_sequence=3\noteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=1\nQUESTPC3_BEGINNING_COAT_CHEST POSTGRES_CASE_COMPLETED\nQUESTPC3_BEGINNING_COAT_CHEST POSTGRES_CASE_COMPLETED duration_ms=56424 success=true\ntest gameplay_transport::monk_save::postgres_tests::quest_container_chests::questpc3_beginning_coat_chest_mints_once_and_drains_obligation ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2573 filtered out; finished in 56.43s\n\n"
+        "authoring": {
+          "log": "/tmp/questpc3-sale-merge-authoring.log",
+          "sha256": "840e84954f4a4bcf8b3cf2db061181e09e8937e0f1c8fecf362c81e5f3cce86a",
+          "tail": "....................\n----------------------------------------------------------------------\nRan 20 tests in 13.605s\n\nOK\n"
+        },
+        "native": {
+          "log": "/tmp/questpc3-sale-merge-native.log",
+          "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+          "tail": "PASS registered spell import files=41 activation=false\n"
         },
         "pin_scope": {
-          "log": "/tmp/questpc3-carlos-sale-pin-scope.log",
-          "sha256": "c6c7212ce63c155364c3ba78433d311d2fc40bbe89218d35cec7808612c7104c",
-          "tail": "PIN-SCOPE-1: PASS: no changed/untracked World compiler INPUT_PATHS; retain published parent pin proofs\n"
+          "log": "/tmp/questpc3-sale-merge-pin-scope.log",
+          "sha256": "7026bbea00972452c1bd7de6cc102207fb6da09f545547e6ba3f8a7683b04349",
+          "tail": "PIN-SCOPE-1: PASS: all compiler inputs/generated World files equal published incoming head 473461206cfec45d974aa6a57bcd01c8cb96cbaf\n{\"content_revision\": \"e06-market-crystal-parity-20261031-r1\", \"digest\": \"0bf8d8c92c222f75cb44ccaaff4f231096629fc47078446277bde055c08b6baf\", \"entry_start\": {\"floor\": -7, \"x\": 32534, \"y\": 32513}, \"production\": false, \"project_format_version\": \"OTERYN_WORLD_PROJECT_ROOT/v2\", \"schema\": \"OTERYN_WORLD_PIN/v2\", \"world_schema_version\": \"reference-schema-v1\"}\n"
+        },
+        "cross_lane_migration_number": {
+          "log": "/tmp/questpc3-sale-cross-lane-number-check.log",
+          "sha256": "8a8d745dfbb128bb026303e6f706589da6beed5cbd09f3434a4c8eaf882aa1a4",
+          "tail": "1109 is unclaimed across all seven freshly fetched dependency lanes; highest inspected reservation1108.\nquestpc6 apps/game-server/migrations/1096_quest_reward_payments.sql\nquestpc6 apps/game-server/migrations/1097_repeatable_quest_reward_claims.sql\nquestpc7 apps/game-server/migrations/1096_npc_quest_item_exchange.sql\nquestpc7 apps/game-server/migrations/1097_fathers_burden_xp_proof_name.sql\nquestpc7 apps/game-server/migrations/1098_quest_reward_callbacks.sql\nquestpc7 apps/game-server/migrations/1099_quest_reward_payments.sql\nquestpc7 apps/game-server/migrations/1100_quest_repeatable_exchanges.sql\nquestpc7 apps/game-server/migrations/1101_quest_world_item_rewards.sql\nquestpc7 apps/game-server/migrations/1102_quest_backpack_outputs.sql\nquestpc8 apps/game-server/migrations/1108_questpc8_reward_backpack_outputs.sql\n"
         }
       },
-      "review": "Whole-diff self-review: bounded selectors/source snapshots, exact original trade capture, Character root lock, typed causes/schema CHECK, immutable original transaction proof, existing current fences and single quest writer, preserved legacy reward claims, source conservative repair and no tests weakened. Before publication apply prepared schema-bound trigger search_path hardening (all three guards), assert installed PG settings in recovery case, validate merged candidate and obtain independent high-risk review.",
-      "migration_number": "1097: current main max1095; open PRs do not claim1097; checkout already owns1096 blessing grants. Initial duplicate1096 fixture error corrected by renaming only new file before successful PG migrations.",
-      "next": "Continue Carlos source report toGreet8/log7, real bridge/log8, lost-coat replacement and five ground wood/cart occurrences, then remaining FirstDragon/TaintedSoul/ThreatenedDreams. Four whole quests remain."
+      "migration": "1109_npc_trade_quest_obligations.sql; only new unpublished migration renumbered above inspected cross-lane reservations; existing migrations untouched",
+      "material_base": "c40fd4fb69bd355ecbf1a2d875a2399aaed45dde",
+      "review": "Whole material diff self-reviewed for root lock/atomic eligibility capture, unchanged legacy binding, typed source/cause and immutable same-transaction SQL provenance, schema-bound guards, fresh current Quest fences, existing recovery, target/source/time bindings and source exchanges. Independent exact-head review required next; none invoked yet.",
+      "pin_scope": "All World compiler inputs/generated files exactly equal incoming published473461206; retain its native41 and pin/mirror proof world0bf8d8c92c222f75cb44ccaaff4f231096629fc47078446277bde055c08b6baf. Local trade callback/migration changes are outside compiler INPUT_PATHS.",
+      "next_prepared_not_applied": [
+        "/tmp/questpc3-next-carlos-report-test.py",
+        "/tmp/questpc3-carlos-report-authoring.py"
+      ],
+      "next_order": "After review/FF push apply only next report test script, run actual PG RED; only then apply report authoring script and generate data. Both scripts currently prepared NOT APPLIED."
     },
     "previous_publication": {
       "head": "c40fd4fb69bd355ecbf1a2d875a2399aaed45dde",
@@ -4526,7 +4480,7 @@
         "migration_number": "1097: current main max1095; open PRs do not claim1097; checkout already owns1096 blessing grants. Initial duplicate1096 fixture error corrected by renaming only new file before successful PG migrations.",
         "next": "Continue Carlos source report toGreet8/log7, real bridge/log8, lost-coat replacement and five ground wood/cart occurrences, then remaining FirstDragon/TaintedSoul/ThreatenedDreams. Four whole quests remain.",
         "final_migration": 1109,
-        "final_combined_proof": "sale-barriers-animals-merge"
+        "final_combined_proof": "sale-rake-integration"
       },
       "sale-barriers-animals-merge": {
         "id": "sale-barriers-animals-merge",
@@ -4655,6 +4609,80 @@
           "/tmp/questpc3-carlos-report-authoring.py"
         ],
         "next_order": "After review/FF push apply only next report test script, run actual PG RED; only then apply report authoring script and generate data. Both scripts currently prepared NOT APPLIED."
+      },
+      "sale-rake-integration": {
+        "id": "sale-rake-integration",
+        "phase": "GREEN final deterministic gates; commit stable material candidate, then required independent exact-head review before FF push",
+        "local_green": "be4ff11c95e9a5e9e9152d093155716ca65014f3",
+        "incoming": "009f5f9e1f58a09e21e8c1a50a0e1c2d4ce66d8a",
+        "scope": "Preserve qualified durable Carlos trade continuations and fifteen barriers/animal exchanges while integrating five already-qualified retained-rake stone scratches",
+        "whole_entry_status": "Four whole owned quests remain IN_PROGRESS; do not end task after this component publication.",
+        "preserved_green_checkpoint": "be4ff11c9",
+        "pending_validation": "Five-rake actual PG plus carried compatibility units; fmt/check/strict Clippy; authoring/native/pin scope. Prior four actualPG andcontent123 proofs preserved in completed mechanism batches.",
+        "required_independent_review": "One read-only stable exact-head review after final deterministic checks; no reviewer invocation yet.",
+        "sessions": {
+          "final_delta_rust_pg": 55115,
+          "authoring_native_pin_scope": 64873
+        },
+        "log_prefix": "/tmp/questpc3-sale-rake-",
+        "authoring_result": "22 tests PASS13.041s; Carlos/Santiago/light/barrier/animal/rake producer --check all PASS",
+        "next_prepared_not_applied": [
+          "/tmp/questpc3-next-carlos-report-test.py",
+          "/tmp/questpc3-carlos-report-authoring.py"
+        ],
+        "checks": {
+          "fmt": {
+            "log": "/tmp/questpc3-sale-rake-fmt.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "tail": ""
+          },
+          "check": {
+            "log": "/tmp/questpc3-sale-rake-check.log",
+            "sha256": "b79722fd4d96370543f5465637f99234c6676552c182fecfd3a6853aa1b589d8",
+            "tail": "ering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\nwarning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)\n   Compiling oteryn-error-codes v0.1.0 (/workspace/Oteryn-Game/crates/error-codes)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n    Checking oteryn-gameplay-quests v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/quests)\n   Compiling oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)\n    Checking oteryn-gameplay-native-admission-source v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/native-admission-source)\n    Checking oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)\n    Checking oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)\n    Checking oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)\n    Checking oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)\n    Checking oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)\n    Checking oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)\n    Checking oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)\n    Checking oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)\n    Checking oteryn-game-server v0.1.0 (/workspace/Oteryn-Game/apps/game-server)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 46s\n"
+          },
+          "clippy": {
+            "log": "/tmp/questpc3-sale-rake-clippy.log",
+            "sha256": "fcd6642b8d95ff96be98ceda717baf0fca0e9a7da1cb272bfcabf6b48a5f45e5",
+            "tail": "/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\nwarning: `sqlx-core` (lib) generated 1 warning (run `cargo clippy --fix --lib -p sqlx-core -- -D warnings` to apply 1 suggestion)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n   Compiling oteryn-error-codes v0.1.0 (/workspace/Oteryn-Game/crates/error-codes)\n   Compiling oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)\n    Checking oteryn-gameplay-native-admission-source v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/native-admission-source)\n    Checking oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)\n    Checking oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)\n    Checking oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)\n    Checking oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)\n    Checking oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)\n    Checking oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)\n    Checking oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)\n    Checking oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)\n    Checking oteryn-game-server v0.1.0 (/workspace/Oteryn-Game/apps/game-server)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 44s\n"
+          },
+          "pg": {
+            "log": "/tmp/questpc3-sale-rake-pg.log",
+            "sha256": "b2c7a1a9a206dc4be35ca3767423e5bd445217c855210795395a49176f1506c6",
+            "tail": "o apply 1 suggestion)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n   Compiling oteryn-error-codes v0.1.0 (/workspace/Oteryn-Game/crates/error-codes)\n   Compiling oteryn-gameplay-quests v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/quests)\n   Compiling oteryn-gameplay-native-admission-source v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/native-admission-source)\n   Compiling oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)\n   Compiling oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)\n   Compiling oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)\n   Compiling oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)\n   Compiling oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)\n   Compiling oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)\n   Compiling oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)\n   Compiling oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)\n   Compiling oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 08s\n     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-4d705841b583da6d)\n\nrunning 1 test\nTHREATENED_RAKES POSTGRES_EVIDENCE scratches=5 receipts=5\nTHREATENED_RAKES POSTGRES_CASE_COMPLETED duration_ms=54782 success=true\ntest gameplay_transport::monk_save::postgres_tests::threatened_dreams::rakes::threatened_five_rake_scratches_are_exact_and_work_all_day ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2576 filtered out; finished in 54.79s\n\n",
+            "postgres_duration_ms": 54782
+          },
+          "units": {
+            "log": "/tmp/questpc3-sale-rake-units.log",
+            "sha256": "db43b8f1dc8972d4243b0072f7801e6e3956885b7898b0ff61e38fc62e1b9bae",
+            "tail": "   Compiling oteryn-gameplay-quests v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/quests)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.08s\n     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_quests-c77927d0dc67a44a)\n\nrunning 5 tests\ntest quest::world_callbacks::carried::tests::all_day_and_end_of_day_windows_are_half_open_and_bounded ... ok\ntest quest::world_callbacks::carried::tests::day_night_boundaries_and_midnight_are_exact ... ok\ntest quest::world_callbacks::carried::tests::rectangle_edges_and_floor_are_admission_facts ... ok\ntest quest::world_callbacks::carried::tests::published_self_use_binding_is_unchanged_and_target_terms_are_bound ... ok\ntest quest::world_callbacks::carried::tests::changed_region_or_period_invalidates_the_durable_definition ... ok\n\ntest result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 268 filtered out; finished in 0.01s\n\n"
+          },
+          "content": {
+            "log": "/tmp/questpc3-sale-rake-content.log",
+            "sha256": "0eb5f4eb05d6f52a855f3a2350ffff4f3e7bbe56fc2ede721c63543622bf70dd",
+            "tail": "warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32\n    |\n208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {\n    |                                ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {\n208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {\n    |\n\nwarning: missing documentation for a function\n   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1\n    |\n502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |\nnote: the lint level is defined here\n   --> vendor/tokio-1.53.1/src/lib.rs:9:5\n    |\n  9 |     missing_docs,\n    |     ^^^^^^^^^^^^\n\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\n\nrunning 123 tests\n....................................................................................... 87/123\n....................................\ntest result: ok. 123 passed; 0 failed; 0 ignored; 0 measured; 152 filtered out; finished in 3.16s\n\n"
+          },
+          "authoring": {
+            "log": "/tmp/questpc3-sale-rake-authoring.log",
+            "sha256": "9fdfc44953cec1a36da8c2497830a15bede5b2b8b253f70c52f63fb42f19e5bf",
+            "tail": "......................\n----------------------------------------------------------------------\nRan 22 tests in 13.041s\n\nOK\n"
+          },
+          "native": {
+            "log": "/tmp/questpc3-sale-rake-native.log",
+            "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+            "tail": "PASS registered spell import files=41 activation=false\n"
+          },
+          "pin-scope": {
+            "log": "/tmp/questpc3-sale-rake-pin-scope.log",
+            "sha256": "ae0056466c0bd3c9d388731866f2086b1252d33daba1829117b96073ac296794",
+            "tail": "PIN-SCOPE-1: PASS; all World compiler inputs exactly match qualified incoming 009f5f9e1f58a09e21e8c1a50a0e1c2d4ce66d8a; retain its pin-refresh proof world0bf8d8c92c222f75cb44ccaaff4f231096629fc47078446277bde055c08b6baf inputs2680d94c35cfe335c0bb640059f7a031a6bac8a299ccb31aca1528d849a081df\n"
+          }
+        },
+        "prior_combined_proof": "completed_mechanism_batches/sale-barriers-animals-merge: actualPG recovery94005ms including3schema-bound guards, claim52462ms,15barriers52110ms,3animals90905ms; content123/check/strictClippy4crates/native/authoring allGREEN",
+        "migration": "1109 only; original trade snapshot/cause/source proof and current authority fences unchanged by rake integration",
+        "review": "Self-review confirms incoming five retained-rake source rules and all-day1440 bound reuse existing exact carried-source replacement with same prototype/UUID, preserving old self-use encodings. No source/SQL conflict; previous qualified callbacks intact. Mandatory independent exact-head review pending, no reviewer invocation yet.",
+        "material_base": "c40fd4fb69bd355ecbf1a2d875a2399aaed45dde",
+        "next": "After independent review and verifiedFFpush, apply TESTscript ONLY, run actual PG RED for Carlos post-sale ready and greeting; then apply authoring script, generate data and qualify both reports plus final return offer. Continue bridge/lost-coat/groundwood and remaining3wholequests."
       }
     },
     "completed_batches": [
@@ -4756,6 +4784,71 @@
           "pins": {
             "sha256": "999b8f3cc6a5132306b6a8ea00040986e4f15c6151605d9717cb87f6d6a23228",
             "log": "/tmp/questpc3-animals-pins.log",
+            "result": "PASS"
+          }
+        }
+      },
+      {
+        "batch": "threatened_rakes_10",
+        "result": "GREEN",
+        "pg_red_ms": 60730,
+        "pg_green_ms": 62373,
+        "entries": [
+          "Stone1 rake interaction",
+          "Stone2 rake interaction",
+          "Stone3 rake interaction",
+          "Stone4 rake interaction",
+          "Stone5 rake interaction"
+        ],
+        "proofs": {
+          "pg_red": {
+            "sha256": "b75bbdb719e79e36b93b65f114c9f93a720a6ffae991cfc3ee66693ce3d5d93c",
+            "log": "/tmp/questpc3-rakes-red.log",
+            "result": "expected RED"
+          },
+          "pg_green": {
+            "sha256": "b30913812dce6d6254cbcd804c86d6dd6b887e214d1f05d5c9cc5f3c71f2b7e1",
+            "log": "/tmp/questpc3-rakes-green.log",
+            "result": "PASS"
+          },
+          "clippy": {
+            "sha256": "5af1aebcb7f79d1e28ac88e84acbeefc87cf90a8ec86a84f47b23bc3db3bd510",
+            "log": "/tmp/questpc3-rakes-clippy.log",
+            "result": "PASS"
+          },
+          "cargo_check": {
+            "sha256": "dbf6d62665f0f9f01d54f066822bdb4551d7116b4db2fd931606c618f67a0984",
+            "log": "/tmp/questpc3-rakes-check.log",
+            "result": "PASS"
+          },
+          "authoring": {
+            "sha256": "9381d3f87ea1a360432764430e1aeead7e6c7a68cf81c911bce32aaef405f320",
+            "log": "/tmp/questpc3-rakes-authoring.log",
+            "result": "PASS"
+          },
+          "native_generation": {
+            "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+            "log": "/tmp/questpc3-rakes-native.log",
+            "result": "PASS"
+          },
+          "pins": {
+            "sha256": "e5ef1768d888224ee07095b8bc7f22423e3a21857983e2dee06bee1e4a847f68",
+            "log": "/tmp/questpc3-rakes-pins.log",
+            "result": "PASS"
+          },
+          "carried_units": {
+            "sha256": "0a531a1092ce9968a009348b83cb42b6e0a8b4964a4554e34b982a0863f3c178",
+            "log": "/tmp/questpc3-rakes-units.log",
+            "result": "PASS"
+          },
+          "fmt": {
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "log": "/tmp/questpc3-rakes-fmt.log",
+            "result": "PASS"
+          },
+          "potion_witness": {
+            "sha256": "a276230f382009f5516def6a0aaf9e7857f8bc096a3b9192dc49292939561f98",
+            "log": "/tmp/questpc3-rakes-potion-witness.log",
             "result": "PASS"
           }
         }
@@ -7066,6 +7159,413 @@
             "scope": "Both independently PG/Clippy-green slices preserved; carried and NPC input owners merged cleanly. Additional combined strict lint running."
           }
         }
+      },
+      "009f5f9e1f58a09e21e8c1a50a0e1c2d4ce66d8a": {
+        "source_head": "009f5f9e1f58a09e21e8c1a50a0e1c2d4ce66d8a",
+        "scope": "Preserve qualified durable Carlos trade continuations and fifteen barriers/animal exchanges while integrating five already-qualified retained-rake stone scratches",
+        "metadata_delta": {
+          "completed_batches": [
+            {
+              "id": "sum-guards-01",
+              "status": "PUBLISHED at 73a106fc5035885a844c81e8618900f80c028116; all selected verification completed",
+              "entries": [
+                "oteryn:quest.threatened_dreams_quest"
+              ],
+              "mechanism": "Reusable bounded sum guard; atomic Maelyrra kill report through existing quest writer and NPC selector",
+              "whole_entry_qualifications": 0,
+              "publication": {
+                "commit": "73a106fc5035885a844c81e8618900f80c028116",
+                "remote_verified": true
+              }
+            },
+            {
+              "id": "npc-programs-01",
+              "phase": "GREEN",
+              "scope": "Selectively reused qengine2 NPC reward engine; six Santiago source callbacks and return greetings. Whole Beginning remains in progress.",
+              "red": {
+                "path": "/tmp/questpc3-npc-greet-red-positioned.log",
+                "failure": "NoConversation versus Ok",
+                "postgres_marker_ms": 86938,
+                "duration_seconds": 87.08
+              },
+              "first_green": {
+                "path": "/tmp/questpc3-npc-greet-green.log",
+                "scope": "Initial atomic source greeting and regreet only",
+                "postgres_marker_ms": 90144,
+                "completed_ms": 90482
+              },
+              "fixture_correction": "Expanded scenario initially installed prerequisite transitions after initial receipt; definition-hash pin correctly refused. Install fixture catalogue before first receipt; retain immutable definition guard. This fixture failure is not missing-mechanism RED evidence.",
+              "reuse_source": "origin/claude/happy-davinci-ijz3wy-qengine2 be6db5edd^..5a6de28c1; NPC-only composition. Existing multi-stack world inputs, Rookgaard messages and native counters retained. No unrelated outfit/world data or world binaries imported.",
+              "proof": "checks.npc_programs_01",
+              "publication": {
+                "mode": "commit and fast-forward push immediately after metadata update",
+                "parent": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
+                "branch": "claude/happy-davinci-ijz3wy-questpc3",
+                "local_commit": "a4f1f4a21"
+              },
+              "environment_recovery": "Content repository linker hit signal7/bus error with137MB free. Removed only obsolete unlocked incremental snapshots, retained newest caches and all build settings; retry5tests passed84.49s."
+            },
+            {
+              "batch": "threatened_barriers_08",
+              "commit": "651071c21",
+              "published_merge": "aefdf542d",
+              "postgres_red_ms": 104046,
+              "postgres_green_ms": 89087,
+              "self_use_regression_ms": 190131,
+              "result": "GREEN; pushed"
+            },
+            {
+              "batch": "threatened_animals_09",
+              "result": "GREEN",
+              "pg_red_ms": 109688,
+              "pg_green_ms": 111630,
+              "entries": [
+                "Ikassis talisman",
+                "A Swan five feathers",
+                "Grumpy Stone map"
+              ],
+              "proofs": {
+                "pg_red": {
+                  "sha256": "4a40e497a0d3bd11fbf1e6c9d480b632ffeab0a650efa559b66812c918a10ab7",
+                  "log": "/tmp/questpc3-animals-red.log",
+                  "result": "expected RED"
+                },
+                "pg_green": {
+                  "sha256": "34ffb7d3bcc94bdd4448d47b7eed32c5baad7d117ecc295cec39e4ac6a13252a",
+                  "log": "/tmp/questpc3-animals-green.log",
+                  "result": "PASS"
+                },
+                "clippy": {
+                  "sha256": "d870144065736f0da63ff107d550b182c3205dca3f3632e761c02e23b0a5d330",
+                  "log": "/tmp/questpc3-animals-clippy.log",
+                  "result": "PASS"
+                },
+                "cargo_check": {
+                  "sha256": "fe1d9cbfb9bcaf73b419095bff14b6a428170ea6b13d5fb6795d09ca33314fa4",
+                  "log": "/tmp/questpc3-animals-check.log",
+                  "result": "PASS"
+                },
+                "authoring": {
+                  "sha256": "c806509c2c244f151bef2cc65e328c4ea48d3440930dff1162c0528db8ae294c",
+                  "log": "/tmp/questpc3-animals-authoring.log",
+                  "result": "PASS"
+                },
+                "native_generation": {
+                  "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+                  "log": "/tmp/questpc3-animals-native.log",
+                  "result": "PASS"
+                },
+                "native_check": {
+                  "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+                  "log": "/tmp/questpc3-animals-native-check.log",
+                  "result": "PASS"
+                },
+                "pins": {
+                  "sha256": "999b8f3cc6a5132306b6a8ea00040986e4f15c6151605d9717cb87f6d6a23228",
+                  "log": "/tmp/questpc3-animals-pins.log",
+                  "result": "PASS"
+                }
+              }
+            },
+            {
+              "batch": "threatened_rakes_10",
+              "result": "GREEN",
+              "pg_red_ms": 60730,
+              "pg_green_ms": 62373,
+              "entries": [
+                "Stone1 rake interaction",
+                "Stone2 rake interaction",
+                "Stone3 rake interaction",
+                "Stone4 rake interaction",
+                "Stone5 rake interaction"
+              ],
+              "proofs": {
+                "pg_red": {
+                  "sha256": "b75bbdb719e79e36b93b65f114c9f93a720a6ffae991cfc3ee66693ce3d5d93c",
+                  "log": "/tmp/questpc3-rakes-red.log",
+                  "result": "expected RED"
+                },
+                "pg_green": {
+                  "sha256": "b30913812dce6d6254cbcd804c86d6dd6b887e214d1f05d5c9cc5f3c71f2b7e1",
+                  "log": "/tmp/questpc3-rakes-green.log",
+                  "result": "PASS"
+                },
+                "clippy": {
+                  "sha256": "5af1aebcb7f79d1e28ac88e84acbeefc87cf90a8ec86a84f47b23bc3db3bd510",
+                  "log": "/tmp/questpc3-rakes-clippy.log",
+                  "result": "PASS"
+                },
+                "cargo_check": {
+                  "sha256": "dbf6d62665f0f9f01d54f066822bdb4551d7116b4db2fd931606c618f67a0984",
+                  "log": "/tmp/questpc3-rakes-check.log",
+                  "result": "PASS"
+                },
+                "authoring": {
+                  "sha256": "9381d3f87ea1a360432764430e1aeead7e6c7a68cf81c911bce32aaef405f320",
+                  "log": "/tmp/questpc3-rakes-authoring.log",
+                  "result": "PASS"
+                },
+                "native_generation": {
+                  "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+                  "log": "/tmp/questpc3-rakes-native.log",
+                  "result": "PASS"
+                },
+                "pins": {
+                  "sha256": "e5ef1768d888224ee07095b8bc7f22423e3a21857983e2dee06bee1e4a847f68",
+                  "log": "/tmp/questpc3-rakes-pins.log",
+                  "result": "PASS"
+                },
+                "carried_units": {
+                  "sha256": "0a531a1092ce9968a009348b83cb42b6e0a8b4964a4554e34b982a0863f3c178",
+                  "log": "/tmp/questpc3-rakes-units.log",
+                  "result": "PASS"
+                },
+                "fmt": {
+                  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "log": "/tmp/questpc3-rakes-fmt.log",
+                  "result": "PASS"
+                },
+                "potion_witness": {
+                  "sha256": "a276230f382009f5516def6a0aaf9e7857f8bc096a3b9192dc49292939561f98",
+                  "log": "/tmp/questpc3-rakes-potion-witness.log",
+                  "result": "PASS"
+                }
+              }
+            }
+          ],
+          "current_batch": {
+            "batch": "threatened_rakes_10",
+            "entries": [
+              "Stone1 rake interaction",
+              "Stone2 rake interaction",
+              "Stone3 rake interaction",
+              "Stone4 rake interaction",
+              "Stone5 rake interaction"
+            ],
+            "phase": "GREEN; ready to commit and fast-forward publish",
+            "checks": {
+              "authoring": "PASS2 tests2.048s",
+              "cargo_check": "PASS1m02s",
+              "pin_refresh": {
+                "inputs_digest": "2680d94c35cfe335c0bb640059f7a031a6bac8a299ccb31aca1528d849a081df",
+                "pins": [
+                  {
+                    "digest": "0bf8d8c92c222f75cb44ccaaff4f231096629fc47078446277bde055c08b6baf",
+                    "previous": "0bf8d8c92c222f75cb44ccaaff4f231096629fc47078446277bde055c08b6baf",
+                    "world": "oteryn"
+                  }
+                ]
+              },
+              "strict_clippy": "PASS2m22s; quests/durability/dispatch allfeatures/alltargets -Dwarnings",
+              "fmt": "PASS",
+              "carried_units": "PASS5 tests0.01s including unchanged published self bindings",
+              "potion_shard_witness": "PASS all selected definitions/source terms unchanged"
+            },
+            "postgres_green": {
+              "duration_ms": 62373,
+              "scratches": 5,
+              "receipts": 5,
+              "retained_rake_uuid_and_quantity": true
+            },
+            "proofs": {
+              "pg_red": {
+                "sha256": "b75bbdb719e79e36b93b65f114c9f93a720a6ffae991cfc3ee66693ce3d5d93c",
+                "log": "/tmp/questpc3-rakes-red.log"
+              },
+              "pg_green": {
+                "sha256": "b30913812dce6d6254cbcd804c86d6dd6b887e214d1f05d5c9cc5f3c71f2b7e1",
+                "log": "/tmp/questpc3-rakes-green.log"
+              },
+              "clippy": {
+                "sha256": "5af1aebcb7f79d1e28ac88e84acbeefc87cf90a8ec86a84f47b23bc3db3bd510",
+                "log": "/tmp/questpc3-rakes-clippy.log"
+              },
+              "cargo_check": {
+                "sha256": "dbf6d62665f0f9f01d54f066822bdb4551d7116b4db2fd931606c618f67a0984",
+                "log": "/tmp/questpc3-rakes-check.log"
+              },
+              "authoring": {
+                "sha256": "9381d3f87ea1a360432764430e1aeead7e6c7a68cf81c911bce32aaef405f320",
+                "log": "/tmp/questpc3-rakes-authoring.log"
+              },
+              "native_generation": {
+                "log": "/tmp/questpc3-rakes-native.log"
+              },
+              "pins": {
+                "sha256": "e5ef1768d888224ee07095b8bc7f22423e3a21857983e2dee06bee1e4a847f68",
+                "log": "/tmp/questpc3-rakes-pins.log"
+              },
+              "carried_units": {
+                "sha256": "0a531a1092ce9968a009348b83cb42b6e0a8b4964a4554e34b982a0863f3c178",
+                "log": "/tmp/questpc3-rakes-units.log",
+                "result": "PASS"
+              },
+              "fmt": {
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "log": "/tmp/questpc3-rakes-fmt.log",
+                "result": "PASS"
+              },
+              "potion_witness": {
+                "sha256": "a276230f382009f5516def6a0aaf9e7857f8bc096a3b9192dc49292939561f98",
+                "log": "/tmp/questpc3-rakes-potion-witness.log",
+                "result": "PASS"
+              }
+            },
+            "review": "Exactly5 positional callbacks; all previous callbacks and published self bindings preserved. Only3452 canonical materializable/stack_class changed. All-day interval explicitly0..1440; wrong mission/tool/target, exact replay, repeat refusal, unchanged target revisions and retained rake UUID/quantity pass. Potion shard metadata refreshed only after all selected rows/source terms proved unchanged. No whole-quest completion claimed.",
+            "previous_published": [
+              "73067a442",
+              "473461206"
+            ],
+            "source": "data-global/scripts/actions/tools/rake.lua:17-44 git-blob fccb45af39905199322583cadeefbaf36282374d SHA256 c3a636bdb1ed7a1ed0670692eab4d6c3e74f5239581c5cd2411f15a17f37fd61",
+            "pending_implementation": [
+              "TimeWindow end boundary1440 allows all-day [0,1440) without changing existing values or hashes",
+              "strict existing-facts admission of rake3452, weight1500, portable/nonstackable",
+              "5 positional callback rows, retained tool, unique player flags"
+            ],
+            "reuse_check": {
+              "qengine2": "97cb9db791482391e77049c8a27fefd659003669",
+              "questpc5": "3d15358523c3d0b81ae245814f0a7b7e5311b966",
+              "questpc6": "53d5648b88e48bed2b9f27545334c21ea6f37028",
+              "questl2": "0c74b25ccd342e964ec8c37497f6e718eb9d0dfa",
+              "result": "No carried target/all-day time-window implementation found there. Reuse current fenced carried-target owner and map/clock helpers. qengine2 newer carried_item document+physical exchange support must be reused for later book/map steps; do not duplicate that owner."
+            },
+            "test_priors": "Carried rake and wrong tool fixtures; GrumpyStone0 then1. No scratch flags, successful receipts or replacement tool seeded.",
+            "pg_red": {
+              "duration_ms": 60730,
+              "marker": "THREATENED_RAKES POSTGRES_CASE_COMPLETED",
+              "evidence": "scratches=0 receipts=0",
+              "sha256": "b75bbdb719e79e36b93b65f114c9f93a720a6ffae991cfc3ee66693ce3d5d93c"
+            },
+            "retained_tool_review": "Existing durability quest_world_callback.rs apply_input preserves UUID/quantity with replacement=source prototype; only audits last_transaction_id. No new read-only owner, physical debit or mint needed. PG strengthened after RED to assert same UUID after every positive scratch.",
+            "resolved_checks": [
+              "World callback provenance required canonical quest-state anchor; retained exact rake witness preserved, no validator weakened.",
+              "Rake shares canonical Item shard with condition-potion profiles. Repo refresh_native_profile_shards.py proved every selected potion definition and term unchanged, refreshed only whole-shard digest. Other metadata formats left unchanged."
+            ]
+          }
+        },
+        "retained_incoming_qualification": {
+          "head": "009f5f9e1f58a09e21e8c1a50a0e1c2d4ce66d8a",
+          "scope": "Five Threatened stone scratches with retained canonical rake, preserved self-use bindings; no new trade or SQL change",
+          "qualified_batch": {
+            "batch": "threatened_rakes_10",
+            "entries": [
+              "Stone1 rake interaction",
+              "Stone2 rake interaction",
+              "Stone3 rake interaction",
+              "Stone4 rake interaction",
+              "Stone5 rake interaction"
+            ],
+            "phase": "GREEN; ready to commit and fast-forward publish",
+            "previous_published": [
+              "73067a442",
+              "473461206"
+            ],
+            "source": "data-global/scripts/actions/tools/rake.lua:17-44 git-blob fccb45af39905199322583cadeefbaf36282374d SHA256 c3a636bdb1ed7a1ed0670692eab4d6c3e74f5239581c5cd2411f15a17f37fd61",
+            "pending_implementation": [
+              "TimeWindow end boundary1440 allows all-day [0,1440) without changing existing values or hashes",
+              "strict existing-facts admission of rake3452, weight1500, portable/nonstackable",
+              "5 positional callback rows, retained tool, unique player flags"
+            ],
+            "reuse_check": {
+              "qengine2": "97cb9db791482391e77049c8a27fefd659003669",
+              "questpc5": "3d15358523c3d0b81ae245814f0a7b7e5311b966",
+              "questpc6": "53d5648b88e48bed2b9f27545334c21ea6f37028",
+              "questl2": "0c74b25ccd342e964ec8c37497f6e718eb9d0dfa",
+              "result": "No carried target/all-day time-window implementation found there. Reuse current fenced carried-target owner and map/clock helpers. qengine2 newer carried_item document+physical exchange support must be reused for later book/map steps; do not duplicate that owner."
+            },
+            "test_priors": "Carried rake and wrong tool fixtures; GrumpyStone0 then1. No scratch flags, successful receipts or replacement tool seeded.",
+            "pg_red": {
+              "duration_ms": 60730,
+              "marker": "THREATENED_RAKES POSTGRES_CASE_COMPLETED",
+              "evidence": "scratches=0 receipts=0",
+              "sha256": "b75bbdb719e79e36b93b65f114c9f93a720a6ffae991cfc3ee66693ce3d5d93c"
+            },
+            "retained_tool_review": "Existing durability quest_world_callback.rs apply_input preserves UUID/quantity with replacement=source prototype; only audits last_transaction_id. No new read-only owner, physical debit or mint needed. PG strengthened after RED to assert same UUID after every positive scratch.",
+            "resolved_checks": [
+              "World callback provenance required canonical quest-state anchor; retained exact rake witness preserved, no validator weakened.",
+              "Rake shares canonical Item shard with condition-potion profiles. Repo refresh_native_profile_shards.py proved every selected potion definition and term unchanged, refreshed only whole-shard digest. Other metadata formats left unchanged."
+            ],
+            "checks": {
+              "cargo_check": "PASS1m02s",
+              "strict_clippy": "PASS2m22s; quests/durability/dispatch allfeatures/alltargets -Dwarnings",
+              "fmt": "PASS",
+              "carried_units": "PASS5 tests0.01s including unchanged published self bindings",
+              "authoring": "PASS2 tests2.048s",
+              "native_generation": "PASS41 files",
+              "potion_shard_witness": "PASS all selected definitions/source terms unchanged",
+              "pin_refresh": {
+                "inputs_digest": "2680d94c35cfe335c0bb640059f7a031a6bac8a299ccb31aca1528d849a081df",
+                "pins": [
+                  {
+                    "digest": "0bf8d8c92c222f75cb44ccaaff4f231096629fc47078446277bde055c08b6baf",
+                    "previous": "0bf8d8c92c222f75cb44ccaaff4f231096629fc47078446277bde055c08b6baf",
+                    "world": "oteryn"
+                  }
+                ]
+              }
+            },
+            "review": "Exactly5 positional callbacks; all previous callbacks and published self bindings preserved. Only3452 canonical materializable/stack_class changed. All-day interval explicitly0..1440; wrong mission/tool/target, exact replay, repeat refusal, unchanged target revisions and retained rake UUID/quantity pass. Potion shard metadata refreshed only after all selected rows/source terms proved unchanged. No whole-quest completion claimed.",
+            "postgres_green": {
+              "duration_ms": 62373,
+              "scratches": 5,
+              "receipts": 5,
+              "retained_rake_uuid_and_quantity": true
+            },
+            "proofs": {
+              "pg_red": {
+                "sha256": "b75bbdb719e79e36b93b65f114c9f93a720a6ffae991cfc3ee66693ce3d5d93c",
+                "log": "/tmp/questpc3-rakes-red.log",
+                "result": "expected RED"
+              },
+              "pg_green": {
+                "sha256": "b30913812dce6d6254cbcd804c86d6dd6b887e214d1f05d5c9cc5f3c71f2b7e1",
+                "log": "/tmp/questpc3-rakes-green.log",
+                "result": "PASS"
+              },
+              "clippy": {
+                "sha256": "5af1aebcb7f79d1e28ac88e84acbeefc87cf90a8ec86a84f47b23bc3db3bd510",
+                "log": "/tmp/questpc3-rakes-clippy.log",
+                "result": "PASS"
+              },
+              "cargo_check": {
+                "sha256": "dbf6d62665f0f9f01d54f066822bdb4551d7116b4db2fd931606c618f67a0984",
+                "log": "/tmp/questpc3-rakes-check.log",
+                "result": "PASS"
+              },
+              "authoring": {
+                "sha256": "9381d3f87ea1a360432764430e1aeead7e6c7a68cf81c911bce32aaef405f320",
+                "log": "/tmp/questpc3-rakes-authoring.log",
+                "result": "PASS"
+              },
+              "native_generation": {
+                "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+                "log": "/tmp/questpc3-rakes-native.log",
+                "result": "PASS"
+              },
+              "pins": {
+                "sha256": "e5ef1768d888224ee07095b8bc7f22423e3a21857983e2dee06bee1e4a847f68",
+                "log": "/tmp/questpc3-rakes-pins.log",
+                "result": "PASS"
+              },
+              "carried_units": {
+                "sha256": "0a531a1092ce9968a009348b83cb42b6e0a8b4964a4554e34b982a0863f3c178",
+                "log": "/tmp/questpc3-rakes-units.log",
+                "result": "PASS"
+              },
+              "fmt": {
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "log": "/tmp/questpc3-rakes-fmt.log",
+                "result": "PASS"
+              },
+              "potion_witness": {
+                "sha256": "a276230f382009f5516def6a0aaf9e7857f8bc096a3b9192dc49292939561f98",
+                "log": "/tmp/questpc3-rakes-potion-witness.log",
+                "result": "PASS"
+              }
+            }
+          },
+          "next": "Finish current four focused PG cases and content, checkpoint merge, then merge this existing GREEN component and validate only new integration delta plus required fmt/check/Clippy before independent review/push."
+        }
       }
     },
     "remote_metadata_proofs": {
@@ -7214,130 +7714,7 @@
       "entry": "oteryn:quest.pilgrimage_of_ashes",
       "qualification_commit": "c23eddfc8",
       "scope": "Complete native route/MINT/NPCplacement proof alreadyQUALIFIED remotely. Do not redo; integrate after this green native corpse slice. Net11files inclplacements18new, classic_quests helper/fullPilgrimagePG, pins andmetadata. Remote sparse-index restoration is net-normal source tree; inspect netdiff, preserve all ours.",
-      "remaining_owned_after_integration": 4,
-      "009f5f9e1f58a09e21e8c1a50a0e1c2d4ce66d8a": {
-        "head": "009f5f9e1f58a09e21e8c1a50a0e1c2d4ce66d8a",
-        "scope": "Five Threatened stone scratches with retained canonical rake, preserved self-use bindings; no new trade or SQL change",
-        "qualified_batch": {
-          "batch": "threatened_rakes_10",
-          "entries": [
-            "Stone1 rake interaction",
-            "Stone2 rake interaction",
-            "Stone3 rake interaction",
-            "Stone4 rake interaction",
-            "Stone5 rake interaction"
-          ],
-          "phase": "GREEN; ready to commit and fast-forward publish",
-          "previous_published": [
-            "73067a442",
-            "473461206"
-          ],
-          "source": "data-global/scripts/actions/tools/rake.lua:17-44 git-blob fccb45af39905199322583cadeefbaf36282374d SHA256 c3a636bdb1ed7a1ed0670692eab4d6c3e74f5239581c5cd2411f15a17f37fd61",
-          "pending_implementation": [
-            "TimeWindow end boundary1440 allows all-day [0,1440) without changing existing values or hashes",
-            "strict existing-facts admission of rake3452, weight1500, portable/nonstackable",
-            "5 positional callback rows, retained tool, unique player flags"
-          ],
-          "reuse_check": {
-            "qengine2": "97cb9db791482391e77049c8a27fefd659003669",
-            "questpc5": "3d15358523c3d0b81ae245814f0a7b7e5311b966",
-            "questpc6": "53d5648b88e48bed2b9f27545334c21ea6f37028",
-            "questl2": "0c74b25ccd342e964ec8c37497f6e718eb9d0dfa",
-            "result": "No carried target/all-day time-window implementation found there. Reuse current fenced carried-target owner and map/clock helpers. qengine2 newer carried_item document+physical exchange support must be reused for later book/map steps; do not duplicate that owner."
-          },
-          "test_priors": "Carried rake and wrong tool fixtures; GrumpyStone0 then1. No scratch flags, successful receipts or replacement tool seeded.",
-          "pg_red": {
-            "duration_ms": 60730,
-            "marker": "THREATENED_RAKES POSTGRES_CASE_COMPLETED",
-            "evidence": "scratches=0 receipts=0",
-            "sha256": "b75bbdb719e79e36b93b65f114c9f93a720a6ffae991cfc3ee66693ce3d5d93c"
-          },
-          "retained_tool_review": "Existing durability quest_world_callback.rs apply_input preserves UUID/quantity with replacement=source prototype; only audits last_transaction_id. No new read-only owner, physical debit or mint needed. PG strengthened after RED to assert same UUID after every positive scratch.",
-          "resolved_checks": [
-            "World callback provenance required canonical quest-state anchor; retained exact rake witness preserved, no validator weakened.",
-            "Rake shares canonical Item shard with condition-potion profiles. Repo refresh_native_profile_shards.py proved every selected potion definition and term unchanged, refreshed only whole-shard digest. Other metadata formats left unchanged."
-          ],
-          "checks": {
-            "cargo_check": "PASS1m02s",
-            "strict_clippy": "PASS2m22s; quests/durability/dispatch allfeatures/alltargets -Dwarnings",
-            "fmt": "PASS",
-            "carried_units": "PASS5 tests0.01s including unchanged published self bindings",
-            "authoring": "PASS2 tests2.048s",
-            "native_generation": "PASS41 files",
-            "potion_shard_witness": "PASS all selected definitions/source terms unchanged",
-            "pin_refresh": {
-              "inputs_digest": "2680d94c35cfe335c0bb640059f7a031a6bac8a299ccb31aca1528d849a081df",
-              "pins": [
-                {
-                  "digest": "0bf8d8c92c222f75cb44ccaaff4f231096629fc47078446277bde055c08b6baf",
-                  "previous": "0bf8d8c92c222f75cb44ccaaff4f231096629fc47078446277bde055c08b6baf",
-                  "world": "oteryn"
-                }
-              ]
-            }
-          },
-          "review": "Exactly5 positional callbacks; all previous callbacks and published self bindings preserved. Only3452 canonical materializable/stack_class changed. All-day interval explicitly0..1440; wrong mission/tool/target, exact replay, repeat refusal, unchanged target revisions and retained rake UUID/quantity pass. Potion shard metadata refreshed only after all selected rows/source terms proved unchanged. No whole-quest completion claimed.",
-          "postgres_green": {
-            "duration_ms": 62373,
-            "scratches": 5,
-            "receipts": 5,
-            "retained_rake_uuid_and_quantity": true
-          },
-          "proofs": {
-            "pg_red": {
-              "sha256": "b75bbdb719e79e36b93b65f114c9f93a720a6ffae991cfc3ee66693ce3d5d93c",
-              "log": "/tmp/questpc3-rakes-red.log",
-              "result": "expected RED"
-            },
-            "pg_green": {
-              "sha256": "b30913812dce6d6254cbcd804c86d6dd6b887e214d1f05d5c9cc5f3c71f2b7e1",
-              "log": "/tmp/questpc3-rakes-green.log",
-              "result": "PASS"
-            },
-            "clippy": {
-              "sha256": "5af1aebcb7f79d1e28ac88e84acbeefc87cf90a8ec86a84f47b23bc3db3bd510",
-              "log": "/tmp/questpc3-rakes-clippy.log",
-              "result": "PASS"
-            },
-            "cargo_check": {
-              "sha256": "dbf6d62665f0f9f01d54f066822bdb4551d7116b4db2fd931606c618f67a0984",
-              "log": "/tmp/questpc3-rakes-check.log",
-              "result": "PASS"
-            },
-            "authoring": {
-              "sha256": "9381d3f87ea1a360432764430e1aeead7e6c7a68cf81c911bce32aaef405f320",
-              "log": "/tmp/questpc3-rakes-authoring.log",
-              "result": "PASS"
-            },
-            "native_generation": {
-              "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
-              "log": "/tmp/questpc3-rakes-native.log",
-              "result": "PASS"
-            },
-            "pins": {
-              "sha256": "e5ef1768d888224ee07095b8bc7f22423e3a21857983e2dee06bee1e4a847f68",
-              "log": "/tmp/questpc3-rakes-pins.log",
-              "result": "PASS"
-            },
-            "carried_units": {
-              "sha256": "0a531a1092ce9968a009348b83cb42b6e0a8b4964a4554e34b982a0863f3c178",
-              "log": "/tmp/questpc3-rakes-units.log",
-              "result": "PASS"
-            },
-            "fmt": {
-              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-              "log": "/tmp/questpc3-rakes-fmt.log",
-              "result": "PASS"
-            },
-            "potion_witness": {
-              "sha256": "a276230f382009f5516def6a0aaf9e7857f8bc096a3b9192dc49292939561f98",
-              "log": "/tmp/questpc3-rakes-potion-witness.log",
-              "result": "PASS"
-            }
-          }
-        },
-        "next": "Finish current four focused PG cases and content, checkpoint merge, then merge this existing GREEN component and validate only new integration delta plus required fmt/check/Clippy before independent review/push."
-      }
+      "remaining_owned_after_integration": 4
     },
     "active_entries": [
       "oteryn:quest.the_beginning_quest",

@@ -31,7 +31,7 @@ pub struct TimeWindow {
 }
 impl TimeWindow {
     pub fn valid(&self) -> bool {
-        self.from_minute < 1440 && self.to_minute < 1440 && self.from_minute != self.to_minute
+        self.from_minute < 1440 && self.to_minute <= 1440 && self.from_minute != self.to_minute
     }
     pub fn contains(&self, minute: u32) -> bool {
         if !self.valid() || minute >= 1440 {
@@ -112,6 +112,38 @@ mod tests {
         level.minimum_level = Some(30);
         assert_ne!(definition(level)?, original);
         Ok(())
+    }
+    #[test]
+    fn all_day_and_end_of_day_windows_are_half_open_and_bounded() {
+        let all_day = TimeWindow {
+            from_minute: 0,
+            to_minute: 1440,
+        };
+        assert!(all_day.valid());
+        assert!((0..1440).all(|minute| all_day.contains(minute)));
+        assert!(!all_day.contains(1440));
+        let last_minute = TimeWindow {
+            from_minute: 1439,
+            to_minute: 1440,
+        };
+        assert!(last_minute.valid());
+        assert!(!last_minute.contains(0));
+        assert!(!last_minute.contains(1438));
+        assert!(last_minute.contains(1439));
+        assert!(
+            !TimeWindow {
+                from_minute: 0,
+                to_minute: 1441
+            }
+            .valid()
+        );
+        assert!(
+            !TimeWindow {
+                from_minute: 1440,
+                to_minute: 1440
+            }
+            .valid()
+        );
     }
     #[test]
     fn day_night_boundaries_and_midnight_are_exact() {
