@@ -824,6 +824,73 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-13",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.amra",
+          "name": "Amra",
+          "expected": {
+            "x": 33800,
+            "y": 32755,
+            "floor": -5
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.asphota",
+          "name": "Asphota",
+          "expected": {
+            "x": 33778,
+            "y": 32844,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.captain_corsarah",
+          "name": "Captain Corsarah",
+          "expected": {
+            "x": 34010,
+            "y": 32475,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.giri",
+          "name": "Giri",
+          "expected": {
+            "x": 33820,
+            "y": 32768,
+            "floor": -4
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.haani",
+          "name": "Haani",
+          "expected": {
+            "x": 33811,
+            "y": 32772,
+            "floor": -4
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.isika",
+          "name": "Isika",
+          "expected": {
+            "x": 33773,
+            "y": 32840,
+            "floor": -6
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }
