@@ -10393,5 +10393,10 @@
     "file_list": "MIGRATION-REGISTRY.md",
     "pr3020": "OPEN at final validation; consume shared files as-is until main merge",
     "runtime_published": true
+  },
+  "stock_wire_progress": {
+    "state": "initial realPG3 RED; opener implementation makes opening/withdrawal GREEN, final replay assertion and strict validation running",
+    "evidence": "cloud-stock-wire-progress.json",
+    "runtime_published": false
   }
 }

@@ -1,3 +1,20 @@
+## Native stock wire checkpoint — 2026-11-07
+Runtime client-opener changes remain local pending final3PG/strict. Original real
+PG3 RED~47s: snapshot-derived base-ordinal skeleton USE returnsNothingToUse.
+New typed authority bridge uses existingresolve_map_target before source
+observe_container; otherWorldObject USE preservesoldfallback. cargoCheckPASS.
+Intermediate actualPG2PASS(open49.380863782s,pickup49.422652871s); replay test
+wrongly expectedAccepted instead of correctDuplicateReplay. Corrected exact
+status expectation; Moved/single-key/stale-handle assertions unchanged. Added
+assertion that withdrawal publishes one still-open empty pane. Clippy test
+needlessQuestionMark fixed. Final3PG+strict/check nowrunning.
+Proof cloud-stock-wire-progress.json; source runtime NOTpublished yet.
+Need final personal crystal-key3002 chest regression, compose all retained
+Draconia source mechanics, qualifyonlycompletepath, push immediately green.
+Migration registry alreadyGREEN/pushed6c1533c4cd261543ed681c64aee52c5a702636e0.
+QENGINE shared8 exact current1b6001748; PR3020 OPEN. Aftermerge merge main.
+Everypush fetch exacttarget and mergeFETCH_HEAD, no force/rebase/mainpush/PR.
+
 ## Owner migration registry GREEN — 2026-11-07
 Applied exactQENGINE0999-1006; QBASErenames1200-1205; lane1290-1296.
 All21file names/SHA256/SQLxSHA384 in cloud-migration-registry-validation.json;

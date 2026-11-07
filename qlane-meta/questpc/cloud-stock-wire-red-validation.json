@@ -1,0 +1,29 @@
+{
+  "scope": "native base-ordinal source-container framed USE",
+  "cases": [
+    {
+      "case": "draconia_container_stock_wire-pickup",
+      "postgres": "18.6",
+      "duration_seconds": 47.398096286,
+      "result": "RED"
+    },
+    {
+      "case": "draconia_container_stock_wire-open",
+      "postgres": "18.6",
+      "duration_seconds": 47.475389421,
+      "result": "RED"
+    },
+    {
+      "case": "draconia_container_stock_wire-replay",
+      "postgres": "18.6",
+      "duration_seconds": 47.51940273,
+      "result": "RED"
+    }
+  ],
+  "reason": "shown native skeleton USE returns NothingToUse instead of opening container",
+  "raw_sha256": "a3b49c5eb1a9ba5ebabd5462a6fb335893bf96a484a0405d608ffbd0cd7a7037",
+  "sha256": "a3b49c5eb1a9ba5ebabd5462a6fb335893bf96a484a0405d608ffbd0cd7a7037",
+  "normalization": "EOF only",
+  "excluded": "Initial missing trait import and unavailable Tokio macros were compile setup failures, not PG execution; corrected tests use existing poll pattern",
+  "reuse": "QENGINE2 and questpc2-8 current routes still dispatch base WorldObject targets directly; reuse existing resolve_map_target and container observer here"
+}

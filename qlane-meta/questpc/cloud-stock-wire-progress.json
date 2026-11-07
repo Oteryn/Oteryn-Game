@@ -1,0 +1,17 @@
+{
+  "state": "runtime opener local; final framed/strict validation pending",
+  "red": "cloud-stock-wire-red-validation.json",
+  "initial_after_implementation": {
+    "passed": 2,
+    "failed": 1,
+    "open_seconds": 49.380863782,
+    "pickup_seconds": 49.422652871,
+    "replay_failure": "Harness expected Accepted, actual protocol correctly returned DuplicateReplay; corrected exact expected-status assertion, payload-Moved and single-key assertions retained"
+  },
+  "additional_assertion": "Withdrawn stock must publish one still-open empty pane",
+  "raw_sha256": "fbcaa90f449f698878f6062fb6beb6ef2e2f78227bb3f92672cbfa57659490e8",
+  "sha256": "fbcaa90f449f698878f6062fb6beb6ef2e2f78227bb3f92672cbfa57659490e8",
+  "normalization": "EOF only",
+  "runtime_published": false,
+  "qualification": "No title promoted until final3 PG, personal-chest fallback regression and strict checks pass"
+}
