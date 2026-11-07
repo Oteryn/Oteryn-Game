@@ -574,7 +574,7 @@
         "questpc4"
       ],
       "blocker": {
-        "missing_piece": "Native tomb assembly counterpart, full native route composition and remaining conditional room/NPC/finale behavior are active obligations. Qualified components include generic assembly/lifetimes, seven native carried routes, shared lease activation/count gates, physical/personal expiry, exact native shared-switch USE counterparts and selected native8/7/5 threshold transports. Do not redo finished components; whole quest remains IN_PROGRESS.",
+        "missing_piece": "Full native route composition and remaining conditional room/NPC/finale behavior are active obligations. Qualified components include generic assembly/lifetimes, seven native carried routes, shared lease activation/count gates, physical/personal expiry, exact native shared-switch USE counterparts, selected native8/7/5 threshold transports and exact native altar assembly/ruby counterpart. Do not redo finished components; whole quest remains IN_PROGRESS.",
         "source": ".questpc4/evidence/wiki/The Ancient Tombs Quest_Spoiler.wiki:8",
         "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
         "canonical_json_pointer": "/records/15/definition",

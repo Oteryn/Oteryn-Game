@@ -6252,7 +6252,7 @@
       "remote_verified": true
     },
     "native_altar_batch_18": {
-      "status": "COMPILED_PG_GREEN_WIP_PUBLICATION",
+      "status": "GREEN_READY_TO_FF_PUSH",
       "previous_pushed_head": "864b66a511beb9a9a2ba28249d478459d11cbdf0",
       "scope": [
         "seven physical parts actualnativefloor atomic assembly/replay/FIREAREA",
@@ -6357,10 +6357,14 @@
       "checks": {
         "fmt": "PASS",
         "check": "PASS items/dispatch alltargets/allfeatures7m32s includes buildlock wait",
-        "clippy": "RUNNING"
+        "clippy": "PASS items/dispatch alltargets/allfeatures -Dwarnings2m58s",
+        "duplicates_diff": "PASS"
       },
       "generated": "No content/native/world/pin/tool inputs changed; retain3647nativeprofiles/f970pin exact.",
-      "publication_note": "Owner immediatepush/15min rule: cargo checkPASS and7actualPGGREEN; publish compiled WIP now while finalclippy is pending. No remaining PGRED. Exact priorRED7parts/0helmets fixed; gatepending not called greenbatch."
+      "publication_note": "AllfinalgatesGREEN after compiledWIP checkpoint. Commitverification and exactfreshfetch/FFpush immediately. Qualifies native selected interaction only; wholeTombs/17wholeentries remain IN_PROGRESS.",
+      "compiled_checkpoint_pushed_head": "bb2fdb7ca4f2b95737d982e29baad706686ed70a",
+      "compiled_checkpoint_remote_verified": true,
+      "qualification_scope": "Exact native assembly and ruby interaction, source quantity/lifetime/identity/audit/replay/refusal/FIREAREA. Not full native quest traversal."
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",
