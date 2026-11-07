@@ -60,6 +60,20 @@ def documents():
                  npc="oteryn:npc.zirella", greet=ZIRELLA_GREET, log=ZIRELLA_LOG,
                  source=ZIRELLA_SOURCE, experience=50),
     ]
+    for stage in (3, 4):
+        check = callback(f"coat-check-{stage}", ["yes", "right", "ok", "clearer"],
+                         2, 3, (stage, stage), 4, (-1, 3), 2, 145,
+                         "Your coat is with you and your armor slot is occupied. Ready for action?")
+        check["storage"][1]["preserve"] = True
+        check["present"] = [{"item": "oteryn:item.tibia.i3562", "count": 1}]
+        check["equipped_slots"] = [2]  # GAME-ITEM-01 durable TORSO, not donor/wire numbering
+        if stage == 4:
+            check["repeatable_check"] = True
+        callbacks.append(check)
+    callbacks.append(callback("club-grant", ["yes", "right", "ok", "action"],
+                              3, 0, (4, 4), 5, (-1, 3), 4, 165,
+                              "Take this club, then go downstairs in my house. Bring three cockroach legs as proof.",
+                              give={"item": "oteryn:item.tibia.i3270", "count": 1}))
     for stage, line, reply in [
         (1, 107, "I need firewood for my oven. Will you help me?"),
         (2, 112, "Find a dead tree without leaves in the forest to the south."),

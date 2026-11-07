@@ -85,9 +85,8 @@ def apply_admissions(definitions):
     # Retained Crystal NPC sources: aurita.lua:81-88, taegen.lua:174-188,
     # valindara.lua:75-90 at tree9f5a72c6. Existing canonical physical and
     # nonstacking facts are complete; preserve all other semantics verbatim.
-    for ident, weight in ((25731, 1200), (25733, 1200), (25779, 400),
-                          (25730, 200), (25732, 200), (25734, 200),
-                          (25780, 800), (25782, 10)):
+    # Santiago Crystal201189f santiago.lua:145-171 also requires coat3562 and grants club3270.
+    for ident, weight in ((25731, 1200), (25733, 1200), (25779, 400), (3270, 2500), (3562, 2700), (25730, 200), (25732, 200), (25734, 200), (25780, 800), (25782, 10)):
         key = f'oteryn:item.tibia.i{ident}'
         candidates = [row for row in definitions if row['identity']['key'] == key]
         if len(candidates) != 1:

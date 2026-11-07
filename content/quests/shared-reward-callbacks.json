@@ -2,6 +2,145 @@
   "schema": 1,
   "callbacks": [
     {
+      "key": "oteryn:quest-reward/questpc3/beginning/club-grant",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "keywords": [
+        "yes",
+        "right",
+        "ok",
+        "action"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 4,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3270",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Take this club, then go downstairs in my house. Bring three cockroach legs as proof."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L165"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/beginning/coat-check-3",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "keywords": [
+        "yes",
+        "right",
+        "ok",
+        "clearer"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your coat is with you and your armor slot is occupied. Ready for action?"
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L145"
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i3562",
+          "count": 1
+        }
+      ],
+      "equipped_slots": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/beginning/coat-check-4",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "keywords": [
+        "yes",
+        "right",
+        "ok",
+        "clearer"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your coat is with you and your armor slot is occupied. Ready for action?"
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L145"
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i3562",
+          "count": 1
+        }
+      ],
+      "equipped_slots": [
+        2
+      ],
+      "repeatable_check": true
+    },
+    {
       "key": "oteryn:quest-reward/questpc3/beginning/food-explained",
       "quest": "oteryn:quest.the_beginning_quest",
       "npc": "oteryn:npc.santiago",

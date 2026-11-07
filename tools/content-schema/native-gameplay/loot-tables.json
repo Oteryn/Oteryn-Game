@@ -5060,7 +5060,7 @@
 {"container_capacity":null,"creature_product":true,"item":{"family":"Item","key":"oteryn:item.tibia.i35612","revision":"definition-r1"},"materializable":false},
 {"container_capacity":null,"creature_product":true,"item":{"family":"Item","key":"oteryn:item.tibia.i35613","revision":"definition-r1"},"materializable":false},
 {"container_capacity":null,"creature_product":true,"item":{"family":"Item","key":"oteryn:item.tibia.i35614","revision":"definition-r1"},"materializable":false},
-{"container_capacity":null,"item":{"family":"Item","key":"oteryn:item.tibia.i3562","revision":"definition-r1"},"materializable":false},
+{"container_capacity":null,"item":{"family":"Item","key":"oteryn:item.tibia.i3562","revision":"definition-r1"},"materializable":true},
 {"container_capacity":null,"item":{"family":"Item","key":"oteryn:item.tibia.i3563","revision":"definition-r1"},"materializable":true},
 {"container_capacity":null,"item":{"family":"Item","key":"oteryn:item.tibia.i3565","revision":"definition-r1"},"materializable":false},
 {"container_capacity":null,"item":{"family":"Item","key":"oteryn:item.tibia.i3566","revision":"definition-r1"},"materializable":true},

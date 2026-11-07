@@ -24,13 +24,35 @@ fn questpc3_beginning_physical_rewards_and_xp_are_atomic() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(|| scenario(false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "Beginning rewards scenario panicked")??;
     Ok(())
 }
 
-fn scenario() -> TestResult {
+#[test]
+fn questpc3_beginning_coat_equipment_and_club_are_atomic() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("QUESTPC3_BEGINNING_EQUIPMENT POSTGRES_SKIPPED no_admin_url");
+        return Ok(());
+    }
+    std::thread::Builder::new().stack_size(256 << 20).spawn(|| {
+        let started = std::time::Instant::now();
+        match std::panic::catch_unwind(|| scenario(true)) {
+            Ok(result) => {
+                eprintln!("QUESTPC3_BEGINNING_EQUIPMENT POSTGRES_CASE_COMPLETED duration_ms={} success={}", started.elapsed().as_millis(), result.is_ok());
+                result.map_err(|error| error.to_string())
+            }
+            Err(panic) => {
+                eprintln!("QUESTPC3_BEGINNING_EQUIPMENT POSTGRES_CASE_COMPLETED duration_ms={} success=false assertion_panicked=true", started.elapsed().as_millis());
+                std::panic::resume_unwind(panic)
+            }
+        }
+    })?.join().map_err(|_| "Beginning equipment scenario panicked")??;
+    Ok(())
+}
+
+fn scenario(equipment: bool) -> TestResult {
     let started = std::time::Instant::now();
     run(async |admin| {
         let h =
@@ -110,6 +132,7 @@ fn scenario() -> TestResult {
             })
             .collect::<Result<Vec<_>, _>>()?;
         for (phase, npc, greet, log) in [
+            ("equipment", "santiago", 3, 2),
             ("legs", "santiago", 6, 4),
             ("fish", "santiago", 10, 8),
             ("zirella", "zirella", 7, 7),
@@ -154,6 +177,234 @@ fn scenario() -> TestResult {
             ["oteryn:npc.santiago", "oteryn:npc.zirella"],
         )
         .await?;
+        if equipment {
+            let armor_slot = oteryn_protocol_oteryn::item_view::durable_slot(
+                oteryn_protocol_oteryn::item_view::EquipmentSlot::Armor,
+            )
+            .ok_or("canonical armor slot")?;
+            let clothing =
+                oteryn_gameplay_quests::quest::reward_callbacks::load().map_err(debug)?;
+            for name in ["coat-check-3", "coat-check-4"] {
+                let key = format!("oteryn:quest-reward/questpc3/beginning/{name}");
+                let callback = clothing
+                    .iter()
+                    .find(|callback| callback.key == key)
+                    .ok_or("clothing callback")?;
+                assert_eq!(
+                    callback.equipped_slots,
+                    vec![armor_slot],
+                    "use canonical durable TORSO slot"
+                );
+            }
+            let fence = owner
+                .current_quest_fence(admitted.game_session_id)
+                .await
+                .map_err(|()| "fence")?
+                .ok_or("fence")?;
+            let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+            let prepared = slot
+                .commit_quest_transition(
+                    owner.root,
+                    owner.character,
+                    owner.holder,
+                    fence,
+                    QuestTransitionRequest {
+                        transition_key:
+                            "oteryn:quest-transition/fixture/beginning-reward/equipment".into(),
+                        cause: QuestCause::Command(CommandRef::new(
+                            admitted.game_session_id,
+                            CommandId::new(4300).map_err(debug)?,
+                        )),
+                    },
+                    owner.quest_catalogue.clone().ok_or("catalogue")?,
+                )
+                .await
+                .map_err(debug)?;
+            assert!(matches!(prepared, QuestTransitionOutcome::Committed(_)));
+            drop(slot);
+            owner
+                .refresh_quest_session(admitted.game_session_id, false)
+                .await;
+            super::classic_quests::talk(&mut owner, &admitted, santiago, 4301, "hi").await?;
+            // No armor and no coat cannot advance the source clothing check.
+            owner.clock_origin = owner
+                .clock_origin
+                .checked_sub(std::time::Duration::from_secs(2))
+                .ok_or("clock")?;
+            let fence = owner
+                .current_quest_fence(admitted.game_session_id)
+                .await
+                .map_err(|()| "fence")?
+                .ok_or("fence")?;
+            let refused = owner
+                .npc_talk(
+                    admitted.runtime_actor.ok_or("actor")?,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: 4302,
+                        item_fence: Some(fence.item_fence()),
+                    },
+                    NpcTalkIntent {
+                        npc_actor: santiago,
+                        text: "yes".into(),
+                    },
+                )
+                .await;
+            eprintln!(
+                "QUESTPC3_BEGINNING_EQUIPMENT POSTGRES_ASSERTION_REACHED missing_gear_reply={:?} duration_ms={}",
+                refused.disposition,
+                started.elapsed().as_millis()
+            );
+            assert_eq!(refused.disposition, NpcIntentDisposition::Rejected);
+            assert_eq!(
+                super::classic_quests::progress(
+                    &owner,
+                    &admitted,
+                    &authority,
+                    &format!("{BASE}santiago_npc_greet_storage")
+                )
+                .await?,
+                3
+            );
+            eprintln!(
+                "QUESTPC3_BEGINNING_EQUIPMENT POSTGRES_ASSERTION_REACHED missing_gear duration_ms={}",
+                started.elapsed().as_millis()
+            );
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            for (ident, instance, ordinal) in [(3562, 84, 3), (3567, 85, 4)] {
+                sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($4,'hex')::uuid)")
+                    .bind(id(instance).as_slice()).bind(id(42).as_slice()).bind(format!("oteryn:item.tibia.i{ident}")).bind(id(81).as_slice()).execute(&mut *tx).await?;
+                if ident == 3562 {
+                    sqlx::query("INSERT INTO game_item_container_entries(character_id,world_id,parent_item_instance_id,item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,encode($6,'hex')::uuid)")
+                        .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(70).as_slice()).bind(id(instance).as_slice()).bind(ordinal.to_string()).bind(id(81).as_slice()).execute(&mut *tx).await?;
+                    tx.commit().await?;
+                    owner.clock_origin = owner
+                        .clock_origin
+                        .checked_sub(std::time::Duration::from_secs(2))
+                        .ok_or("clock")?;
+                    let fence = owner
+                        .current_quest_fence(admitted.game_session_id)
+                        .await
+                        .map_err(|()| "fence")?
+                        .ok_or("fence")?;
+                    let refused = owner
+                        .npc_talk(
+                            admitted.runtime_actor.ok_or("actor")?,
+                            UseCommand {
+                                game_session_id: admitted.game_session_id,
+                                command_id: 4303,
+                                item_fence: Some(fence.item_fence()),
+                            },
+                            NpcTalkIntent {
+                                npc_actor: santiago,
+                                text: "yes".into(),
+                            },
+                        )
+                        .await;
+                    assert_eq!(
+                        refused.disposition,
+                        NpcIntentDisposition::Rejected,
+                        "carrying the coat alone is insufficient"
+                    );
+                    assert_eq!(quantity(&h, "oteryn:item.tibia.i3562").await?, 1);
+                    assert_eq!(
+                        super::classic_quests::progress(
+                            &owner,
+                            &admitted,
+                            &authority,
+                            &format!("{BASE}santiago_npc_greet_storage")
+                        )
+                        .await?,
+                        3
+                    );
+                    tx = h.pool.begin().await?;
+                    sqlx::query("SET LOCAL session_replication_role=replica")
+                        .execute(&mut *tx)
+                        .await?;
+                } else {
+                    // Source checks ANY armor-slot item, not that the coat itself is worn.
+                    sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,$5,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
+                        .bind(id(41).as_slice()).bind(id(instance).as_slice()).bind(id(42).as_slice()).bind(id(81).as_slice()).bind(i16::from(armor_slot)).execute(&mut *tx).await?;
+                }
+            }
+            tx.commit().await?;
+            super::classic_quests::talk(&mut owner, &admitted, santiago, 4304, "bye").await?;
+            super::classic_quests::talk(&mut owner, &admitted, santiago, 4305, "hi").await?;
+            super::classic_quests::talk(&mut owner, &admitted, santiago, 4306, "yes").await?;
+            assert_eq!(
+                super::classic_quests::progress(
+                    &owner,
+                    &admitted,
+                    &authority,
+                    &format!("{BASE}santiago_npc_greet_storage")
+                )
+                .await?,
+                4
+            );
+            assert_eq!(quantity(&h, "oteryn:item.tibia.i3562").await?, 1);
+            assert_eq!(quantity(&h, "oteryn:item.tibia.i3270").await?, 0);
+            // A fresh conversation at stage four repeats only the clothing check.
+            super::classic_quests::talk(&mut owner, &admitted, santiago, 4307, "bye").await?;
+            super::classic_quests::talk(&mut owner, &admitted, santiago, 4308, "hi").await?;
+            super::classic_quests::talk(&mut owner, &admitted, santiago, 4309, "yes").await?;
+            assert_eq!(quantity(&h, "oteryn:item.tibia.i3270").await?, 0);
+            super::classic_quests::talk(&mut owner, &admitted, santiago, 4310, "action").await?;
+            assert_eq!(
+                super::classic_quests::progress(
+                    &owner,
+                    &admitted,
+                    &authority,
+                    &format!("{BASE}santiago_npc_greet_storage")
+                )
+                .await?,
+                5
+            );
+            assert_eq!(
+                super::classic_quests::progress(
+                    &owner,
+                    &admitted,
+                    &authority,
+                    &format!("{BASE}santiago_quest_log")
+                )
+                .await?,
+                4
+            );
+            assert_eq!(quantity(&h, "oteryn:item.tibia.i3270").await?, 1);
+            assert_eq!(quantity(&h, "oteryn:item.tibia.i3562").await?, 1);
+            super::classic_quests::talk(&mut owner, &admitted, santiago, 4311, "bye").await?;
+            owner.clock_origin = owner
+                .clock_origin
+                .checked_sub(std::time::Duration::from_secs(2))
+                .ok_or("clock")?;
+            let fence = owner
+                .current_quest_fence(admitted.game_session_id)
+                .await
+                .map_err(|()| "fence")?
+                .ok_or("fence")?;
+            let _reminder = owner
+                .npc_talk(
+                    admitted.runtime_actor.ok_or("actor")?,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: 4312,
+                        item_fence: Some(fence.item_fence()),
+                    },
+                    NpcTalkIntent {
+                        npc_actor: santiago,
+                        text: "hi".into(),
+                    },
+                )
+                .await;
+            assert_eq!(
+                quantity(&h, "oteryn:item.tibia.i3270").await?,
+                1,
+                "source greeting cannot duplicate the weapon"
+            );
+            return Ok(());
+        }
         let mut npc = santiago;
         let initial_fish = quantity(&h, FISH).await?;
         let initial_xp = experience(&h).await?;
