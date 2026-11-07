@@ -1275,13 +1275,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) {
+        self.refresh_attack_weapon_at_time(actor, session, None)
+            .await;
+    }
+
+    #[cfg(test)]
+    pub(in crate::gameplay_transport) async fn refresh_attack_weapon_at(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: SemanticTimeMicros,
+    ) {
+        self.refresh_attack_weapon_at_time(actor, session, Some(now))
+            .await;
+    }
+
+    async fn refresh_attack_weapon_at_time(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: Option<SemanticTimeMicros>,
+    ) {
         let Some(content) = self
             .active_generation
             .and_then(|active| active.native_gameplay())
         else {
             return;
         };
-        let now = self.owner_now();
+        let now = now.unwrap_or_else(|| self.owner_now());
         let digest = self
             .runtime
             .lock()

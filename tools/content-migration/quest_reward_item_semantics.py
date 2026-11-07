@@ -385,6 +385,12 @@ def main():
                     raise ValueError("DUPLICATE_ITEM_KEY")
                 enrich(row["definition"], *admissions[key])
                 seen.add(key)
+        # Later bounded owner qualifications supersede only their exact cohort;
+        # check the final tree, retaining all other admission holds unchanged.
+        import itemhold_q
+        if any(row['definition']['identity']['key'] in
+               {f'oteryn:item.tibia.i{i}' for i in itemhold_q.IDS} for row in shard['records']):
+            itemhold_q.apply_admissions([row['definition'] for row in shard['records']], args.repo_root)
         payload = canonical(shard)
         if payload != path.read_bytes():
             relative = path.relative_to(args.repo_root)

@@ -5,7 +5,7 @@ Owning design: S17-CAST-DESIGN, accepted section 6, revision
 Capabilities 289 VIEW, 290 CONTROL, 291 CHAT and 292 CONSENT are **unoffered**.
 SPECTATE1 capability 33, commands 34/35, domain 25 and family 15 are unchanged.
 Player controls use commands 502 CONTROL, 503 CONSENT and 505 MODERATE.
-504 CHAT / kind 10 CasterReply is reserved; caster replies are not implemented.
+504 CHAT / kind 10 CasterReply carries isolated caster replies.
 Domain 102 carries replacement scenes; domain 103 carries live caster chat. No client UI is implemented here.
 
 ## Message
@@ -23,7 +23,7 @@ are refused. Each variant starts with field 1 (varint kind).
 | 6 | Join | 2 one-time observer material, 1–4096 bytes |
 | 7 / 8 | Leave / Keepalive | none |
 | 9 / 10 | Chat / CasterReply | 2 plain UTF-8 text, 1–256 bytes |
-| 11 | Moderate | 2 expected revision, 3 opaque 16-byte subject, 4 action (1 mute, 2 unmute, 3 kick), 5 nonzero 16-byte idempotency key |
+| 11 | Moderate | 2 expected revision, 3 opaque 16-byte subject, 4 action (1 mute, 2 unmute, 3 kick, 4 ban), 5 nonzero 16-byte idempotency key |
 | 12 | State | 2 revision, 3 positive epoch, 4 delay, 5 viewer count 0–50 |
 | 13 | Slate | 2 positive epoch, 3 positive sequence |
 | 14 | Clear | 2 positive epoch |
@@ -73,10 +73,7 @@ scenes, immediately clears the viewer scene and requires a fresh eligible
 baseline. Release rechecks revision/freshness. Final synchronous nonblocking
 writes serialize with the consent barrier under the cast owner, outside the tick.
 
-The phase-1 native producer emits neutral numeric player glyphs with coarse
-health and no map tiles, NPCs or creatures. This intentionally bounded producer
-is not a full game renderer; client presentation is a later task. It runs at
-one committed capture per second outside database/network waits.
+The SRV11 producer uses the existing native map planner and committed entity interest; see the completion schema below.
 
 All viewer content, including chat and metadata, follows selected D (default 0).
 Accepted viewer chat reaches the separate caster queue live even at D=300.
@@ -110,7 +107,7 @@ is installed. Policy announcements alone cannot remove an installed password.
 Viewer chat has per-account and room limits, plain-text bounds and selected-chat
 checks. It reaches the playing caster live through domain 103; viewer copies
 follow D. Moderation uses opaque handles from those live chat lines. Mute affects
-the account in that cast; kick removes one session, without a permanent ban.
+the account in that cast; kick removes one session; ban persists for the caster account.
 
 Global consent withdrawal uses the 0966 durable invalidation/worker-lease barrier
 and capture permits documented in `S17_CAST_CONSENT_PERSISTENCE.md`. Revocation
@@ -127,3 +124,61 @@ before starts/joins. Viewer delivery waits for its audit prefix; a storage error
 or invalid receipt closes casts, purges queues and retains reserved terminals.
 Consent writes audit atomically with the preference. Runtime cannot delete audit;
 Control has a bounded expiry-only routine. Export/GM composition is still pending.
+
+## SRV11 viewer and moderation completion
+
+Kind **21 Media** is the next free kind after base kind 20. It adds no
+capability, command, family or state domain. Required fields: 2 positive epoch,
+3 positive sequence, 4 PublicMedia (at most 8192 bytes). It is server-only and
+uses the existing consent, delay, sequence and revocation barrier.
+
+PublicMedia has required field 1 discriminant:
+
+- 1 Map: fields 2 reset bool, 3 last bool, repeated 4 DisplayTile (max 32).
+  Each tile has 1 x, 2 y (u16, relative to caster +16), 3 floor+15 (0–15),
+  repeated 4 appearance IDs (u16, max 10, ordered ground-first). Map chunks
+  replace the previous map from reset through last, covering all visible
+  floors. They contain no item targets, handles or object revisions.
+- 2 Effects: field 2 strict presentation batch, restricted to MagicEffect and
+  Missile. Coordinates are relative to caster +16; floors use the existing presentation wire’s positive 0–15 convention (the inverse of map floors). No value text, spell words, entity references or sounds are accepted.
+- 3 Speech: fields 2 x, 3 y (u16, relative to caster +16), 4 floor+15, 5 local speech
+  mode (1–4), 6 text (1–256 bytes). No speaker identity/name or private/room
+  routing can be represented. Only local speech actually delivered to the
+  caster from a currently visible speaker is eligible.
+
+Actor scene x is relative+16; y is relative+16 plus `(floor+15)*32` so floors
+remain distinct. The normal native appearance and health representation is
+preserved, including its existing placeholder appearance limitation. Map
+appearances come from the real caster map planner and include creatures/NPCs
+through committed interest. Every media packet carries the same visible-player
+consent bindings as the accompanying replacement scene. Missing map authority
+produces a slate. Full map captures remain at one per second.
+
+504 CasterReply now reaches the isolated room, with per-sender and room limits.
+Chat output text is bounded to 320 bytes to include a server-generated
+`Viewer-<opaque handle>` or `Caster` prefix around the original 256-byte text.
+Input bounds remain 256. Names expose no account/character identity.
+Moderate action **4** bans the authenticated account for that caster account.
+Migration **1095** stores owner/subject account pairs, capped at 512 per owner.
+Ban and kind-12 immutable audit event commit atomically. Active same-account
+sessions leave immediately; admission and two-second renewal query the durable
+ban, including after cast/node restart. Mute/unmute remain cast-account scoped,
+kick remains session scoped. The normal player command idempotency boundary
+covers moderation retries; an already stored ban emits no duplicate audit.
+
+The preference adapter and Platform handoff are documented in
+`docs/contracts/S17_SRV11_GAME_PLATFORM_HANDOFF.md`. Offer/consumer qualification
+remains independently gated as in S17-A; this server package does not activate
+an unsupported native client.
+
+The caster camera normalizes runtime `z` to native negative map floors before
+joining entity and map captures. Actor floor planes and public speech use that
+native convention; presentation effects retain their existing positive wire
+floor convention. The map's `first_visible_floor` and window filter apply to
+all projected tiles, actors, local speech and effects. Roof-hidden floors are
+removed server-side, before any cast bytes are queued.
+
+The production scene preserves committed interest's own-actor-first ordering:
+public handle 1 is the caster camera anchor. Its relative x/y is (16,16), with
+the native floor packed into y as above. Floor perspective uses that anchor;
+map chunks never expose the caster's absolute world coordinates.

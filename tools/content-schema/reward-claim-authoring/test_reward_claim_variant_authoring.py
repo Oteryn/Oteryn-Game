@@ -31,12 +31,12 @@ class CanonicalVariantTests(unittest.TestCase):
                         self.assertTrue(q['item']['key'].startswith('oteryn:item.tibia.i'))
                         self.assertEqual(q['item'], self.items[q['item']['key']]['identity'])
 
-    def test_plain_231_definition_records_remain_exact_and_readiness_220_11(self):
+    def test_plain_231_definition_records_remain_exact_and_readiness_221_10(self):
         outputs = plain.generate(); index = json.loads(outputs[plain.INDEX_PATH])
         self.assertEqual(index['plain_record_count'], 231)
         self.assertEqual(index['record_count'], 336)
-        self.assertEqual(index['readiness']['ready'], 220)
-        self.assertEqual(index['readiness']['waiting_item_semantics'], 11)
+        self.assertEqual(index['readiness']['ready'], 221)
+        self.assertEqual(index['readiness']['waiting_item_semantics'], 10)
         for path in index['shards'][:3]:
             self.assertEqual(outputs[path], (self.root / path).read_text())
         self.assertEqual(index['native_admission']['variants'], 'WAITING_IMPLEMENTATION')
@@ -62,7 +62,11 @@ class CanonicalVariantTests(unittest.TestCase):
                     self.assertEqual(p['reward'][charge['reward_field']][charge['reward_index']]['count'], 1)
                 if charge['data_status'] == 'CONFLICT':
                     found += 1
-                    self.assertTrue(any(g['code'] == 'SOURCE_CHARGE_MISMATCH' for g in d['data_holds']))
+                    if d['identity']['key'] == 'oteryn:reward-claim.kv.ornamentedshield':
+                        self.assertFalse(any(g['code'] == 'SOURCE_CHARGE_MISMATCH' for g in d['data_holds']))
+                        self.assertTrue(d['native_contents']['placements'])
+                    else:
+                        self.assertTrue(any(g['code'] == 'SOURCE_CHARGE_MISMATCH' for g in d['data_holds']))
                     self.assertNotEqual(charge['source_raw_argument'], charge['definition_charges']['value'])
         self.assertEqual(found, 3)
 
@@ -125,10 +129,10 @@ class CanonicalVariantTests(unittest.TestCase):
 
     def test_compiler_boundary_keeps_unimplemented_shapes_closed(self):
         errors = variants.native_lowering_errors(self.records)
-        # W15b admits 67 exact container/leaf recipes without rewriting
-        # the immutable source dispositions of the105 original variant records.
-        self.assertEqual(sum('native_contents' in r['definition'] for r in self.records), 67)
-        self.assertEqual(len(errors), 38)
+        # ITEMHOLD-Q adds Triangle Tower and Ornamented Shield to W15b's 67;
+        # the 105 immutable source dispositions still retain their raw witnesses.
+        self.assertEqual(sum('native_contents' in r['definition'] for r in self.records), 69)
+        self.assertEqual(len(errors), 36)
         self.assertTrue(all(e['code'] == 'REWARD_CLAIM_NATIVE_LOWERING_NOT_IMPLEMENTED' and e['pending'] for e in errors))
 
     def test_committed_family_reproduces_with_separate_holds(self):

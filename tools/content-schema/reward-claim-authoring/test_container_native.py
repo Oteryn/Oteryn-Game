@@ -99,9 +99,9 @@ class ContainerNativeTests(unittest.TestCase):
             row = recipe['placements'][0]
             self.assertLessEqual(len(row['contents']), min(row['capacity'], 20))
         native = [d for d in self.rows if container_native.derive(d, self.items, plain.stack_problem)]
-        self.assertEqual(len(native), 67)
+        self.assertEqual(len(native), 69)
         self.assertEqual(sum(any('container' in p['reward'] for p in d['placements'])
-                             for d in native), 54)
+                             for d in native), 56)
 
     def test_all_twelve_text_leaves_keep_the_established_lf_normalization(self):
         evidence, _ = container_native.source()
