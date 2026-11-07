@@ -5,7 +5,7 @@
 //! source hook. Unknown map cells or custom hooks never become a vanilla boss.
 use crate::content::{
     ActiveGeneration, ContentActivationController, LogicalCell, QualifiedNativeEntryRoom,
-    channel_content_pin::ChannelContentPin, digest::sha256, project::ProjectV2AuthoringProfileData,
+    channel_content_pin::ChannelContentPin, project::ProjectV2AuthoringProfileData,
 };
 use serde::{Deserialize, Serialize};
 
@@ -319,15 +319,21 @@ impl ContentActivationController {
         let source = room.source_world();
         let frame = if source.is_some() {
             let frame: SourceFrameDocument = serde_json::from_slice(
-                active.native_source_world().ok_or(R::SourceMapUnavailable)?,
-            ).map_err(|_| R::SourceMapUnavailable)?;
+                active
+                    .native_source_world()
+                    .ok_or(R::SourceMapUnavailable)?,
+            )
+            .map_err(|_| R::SourceMapUnavailable)?;
             if frame.native_frame.floor_transform != "native_floor=-source_z"
                 || parent.frame_binding().digest() != room.frame_binding().digest()
             {
                 return Err(R::SourceMapUnavailable);
             }
             Some(frame.native_frame)
-        } else if matches!(room.movement_cells().index(), crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)) {
+        } else if matches!(
+            room.movement_cells().index(),
+            crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)
+        ) {
             None
         } else {
             return Err(R::SourceMapUnavailable);
@@ -338,8 +344,10 @@ impl ContentActivationController {
         let project = |[x, y, z]: [i32; 3]| -> Result<LogicalCell, R> {
             let cell = if let Some(frame) = &frame {
                 LogicalCell {
-                    x: x.checked_sub(frame.origin_x).ok_or(R::OutsideQualifiedMap)?,
-                    y: y.checked_sub(frame.origin_y).ok_or(R::OutsideQualifiedMap)?,
+                    x: x.checked_sub(frame.origin_x)
+                        .ok_or(R::OutsideQualifiedMap)?,
+                    y: y.checked_sub(frame.origin_y)
+                        .ok_or(R::OutsideQualifiedMap)?,
                     z: z.checked_neg().ok_or(R::OutsideQualifiedMap)?,
                 }
             } else {
@@ -354,7 +362,14 @@ impl ContentActivationController {
         };
         let from = project(low)?;
         let to = project(high)?;
-        let bounds = [from.x, from.y, to.x, to.y, from.z.min(to.z), from.z.max(to.z)];
+        let bounds = [
+            from.x,
+            from.y,
+            to.x,
+            to.y,
+            from.z.min(to.z),
+            from.z.max(to.z),
+        ];
         let boss = project(boss)?;
         let exit = project(exit)?;
         let levers = candidate
@@ -386,7 +401,11 @@ impl ContentActivationController {
             .copied()
             .chain([boss, exit])
         {
-            if room.movement_cells().index().lookup(room.movement_cells().scope(), position).ok()
+            if room
+                .movement_cells()
+                .index()
+                .lookup(room.movement_cells().scope(), position)
+                .ok()
                 != Some(crate::content::CollisionClass::Walkable)
             {
                 return Err(R::UnknownPlacement);
@@ -410,8 +429,9 @@ impl ContentActivationController {
             .iter()
             .find(|record| record.profile.target.key == creature)
             .ok_or(R::CreatureClosureUnavailable)?;
-        let value = serde_json::to_value(record).map_err(|_| R::SourceProfileChanged)?;
-        let fingerprint = sha256(&serde_json::to_vec(&value).map_err(|_| R::SourceProfileChanged)?);
+        let fingerprint = native
+            .creature_profile_fingerprint(creature)
+            .ok_or(R::SourceProfileChanged)?;
         let fingerprint: String = fingerprint
             .iter()
             .map(|byte| format!("{byte:02x}"))
@@ -468,10 +488,16 @@ impl ContentActivationController {
             floor: i16::try_from(first.z).map_err(|_| R::IncompleteLayout)?,
         };
         let view = if let Some(source) = source {
-            room.activity_view(source.activity_region(bounds).ok_or(R::OutsideQualifiedMap)?, start)
+            room.activity_view(
+                source
+                    .activity_region(bounds)
+                    .ok_or(R::OutsideQualifiedMap)?,
+                start,
+            )
         } else {
             room.bundle_activity_view(bounds, start)
-        }.ok_or(R::SourceMapUnavailable)?;
+        }
+        .ok_or(R::SourceMapUnavailable)?;
         let suffix = creature
             .strip_prefix("oteryn:creature.")
             .ok_or(R::InvalidSourceCapture)?;
@@ -652,7 +678,12 @@ mod tests {
             .clone();
         forged.boss_position = Some([5854, 5298, 5]);
         assert!(matches!(
-            controller.qualify_activity_template(pin.qualified_room(), pin.qualified_room(), "rev-1", &forged),
+            controller.qualify_activity_template(
+                pin.qualified_room(),
+                pin.qualified_room(),
+                "rev-1",
+                &forged
+            ),
             Err(ActivityTemplateRefusal::InvalidSourceCapture)
         ));
         Ok(())

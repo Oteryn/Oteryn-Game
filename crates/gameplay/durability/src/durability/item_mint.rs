@@ -67,7 +67,7 @@ pub const CORPSE_MATERIALIZATION_PURPOSE_KEY: &str = "CORPSE_MATERIALIZATION";
 /// corpse projections per scope (`COMBAT01-CORPSES-PER-SCOPE`), enforced only
 /// at the corpse's own MINT commit under the per-scope `oteryn:corpse-cap:`
 /// advisory lock -- never re-decided here.
-const COMBAT01_CORPSES_PER_SCOPE_MAX: i64 = 64;
+pub(super) const COMBAT01_CORPSES_PER_SCOPE_MAX: i64 = 64;
 
 /// Equality on the full cause tuple, parameters `$1..$10`; never a hash.
 macro_rules! cause_key {

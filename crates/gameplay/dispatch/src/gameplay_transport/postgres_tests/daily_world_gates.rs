@@ -52,6 +52,7 @@ fn world(
             kind: bundle::TerrainKind::Common,
             walkable: None,
             ground_speed: None,
+            blocks_projectile: None,
         }),
     });
     let mut cells = BTreeMap::new();
@@ -154,7 +155,13 @@ fn world(
         palette: data.manifest.palette.clone(),
         sectors: vec![gate_sector],
     }];
-    let bytes = oteryn_world_bundle::writer::write_with_layers(&data.manifest, &sectors, &Default::default(), &Default::default(), &data.layers)?;
+    let bytes = oteryn_world_bundle::writer::write_with_layers(
+        &data.manifest,
+        &sectors,
+        &Default::default(),
+        &Default::default(),
+        &data.layers,
+    )?;
     pins.digest = bundle::read(&bytes)?.digest;
     let base = crate::map::load(&bytes, &pins).map_err(debug)?;
     let checked = boot::check(

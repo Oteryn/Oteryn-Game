@@ -368,6 +368,7 @@ mod tests {
                     kind: TerrainKind::Ground,
                     walkable: Some(id != 486),
                     ground_speed: Some(150),
+                    blocks_projectile: None,
                 }),
             })
             .collect();

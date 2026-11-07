@@ -44,6 +44,7 @@ pub(super) fn bundle(trap: Option<u16>) -> TestResult<(Vec<u8>, crate::map::Bund
             kind,
             walkable,
             ground_speed: walkable.map(|_| 150),
+            blocks_projectile: None,
         }),
     };
     let manifest = Manifest {
@@ -631,7 +632,10 @@ async fn relocation_tiles_scenario(
         .iter()
         .find(|resistance| resistance.damage_type == "earth")
         .ok_or("Troll Earth resistance")?;
-    assert_eq!((earth.percent.numerator, earth.percent.denominator), (-10, 1));
+    assert_eq!(
+        (earth.percent.numerator, earth.percent.denominator),
+        (-10, 1)
+    );
     // Crystal trap 3944 deals 15..30 Earth damage. The pinned Troll's 0.32%
     // mitigation truncates each positive raw hit to raw - 1; its 10% Earth
     // weakness then rounds that result. Check the exact possible one-hit set.

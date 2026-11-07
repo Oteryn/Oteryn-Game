@@ -967,3 +967,21 @@ Native filters, existing response decoding and row presentation pass all4
 client-ui Highscores integration tests (1.742s); the new case first failed
 with "Drome category filter unavailable" (3.322s). No new command/capability.
 This is a compiled UI checkpoint; server projection and full row remain WIP.
+
+## W02 compiled source and physical projection checkpoint
+
+The original Sugar lever geometry, unchanged canonical Creature profile and
+complete22-entry personal loot are admitted through the shared ENCX publisher
+and isolated owned Instance factory. Native corpse projection now requires its
+committed scoped MINT/audit/reservation proof, uses native +z and pinned map ABI,
+and invalidates cached Ground on committed/replayed corpse outcomes. Historical
+corpse generation remains provenance, while current reads remain fenced.
+
+Validation: dispatch allfeatures/alltargets check PASS181.391s;9Content/World
+identity/isolation/projectile cases PASS5.967s (144.292s build+test);6compiler
+terrain cases PASS0.02s (5.654s total). Full owning content regeneration
+PASS1951.607s including5repository tests71.85s. Format8 pin-refresh PASS134.879s,
+pin-check PASS169.669s. Generated artifacts came only from repository tools.
+Allocated Terrain records8614-8692, WorldBundle format8; no commands/capabilities.
+WIP full production Sugar/publication/native projection PostgreSQL rerun is next;
+this checkpoint compiles and does not claim full-row completion yet.

@@ -58,7 +58,7 @@ fn facts_of(id: u32) -> EntryFacts {
         definition: MapDefinition::Terrain(nz(id)),
         terrain_kind: Some(kind),
         appearance_id: 100 + id as u16,
-        blocks_projectile: false,
+        blocks_projectile: kind == TerrainKind::Wall,
         pickupable: false,
         bound: false,
         count: 1,
@@ -167,11 +167,13 @@ fn bundle_bytes(
                 kind,
                 walkable: Some(true),
                 ground_speed: Some(ground_speed),
+                blocks_projectile: None,
             },
             _ => Terrain {
                 kind,
                 walkable: None,
                 ground_speed: None,
+                blocks_projectile: None,
             },
         }),
     };

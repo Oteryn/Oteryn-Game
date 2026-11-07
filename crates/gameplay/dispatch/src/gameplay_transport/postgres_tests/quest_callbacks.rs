@@ -43,6 +43,7 @@ pub(super) fn source_world_choices(
             kind: bundle::TerrainKind::Common,
             walkable: None,
             ground_speed: None,
+            blocks_projectile: None,
         }),
     });
     let ground = || sector::Item {

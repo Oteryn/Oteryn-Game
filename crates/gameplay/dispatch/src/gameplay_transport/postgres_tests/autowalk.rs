@@ -75,6 +75,7 @@ pub(super) fn bundle(door: u32, coin: u32) -> TestResult<(Vec<u8>, crate::map::B
                     kind: TerrainKind::Ground,
                     walkable: Some(true),
                     ground_speed: Some(150),
+                    blocks_projectile: None,
                 }),
             },
             PaletteEntry {
@@ -85,6 +86,7 @@ pub(super) fn bundle(door: u32, coin: u32) -> TestResult<(Vec<u8>, crate::map::B
                     kind: TerrainKind::Wall,
                     walkable: None,
                     ground_speed: None,
+                    blocks_projectile: None,
                 }),
             },
             PaletteEntry {
@@ -240,9 +242,11 @@ fn snowbunny_transaction_scenario() -> TestResult {
             .await?;
         assert_eq!(steps, 0, "progress failure rolls the durable step back");
 
-        sqlx::query("DROP TRIGGER reject_snowbunny_progress ON game_character_achievement_progress")
-            .execute(&h.pool)
-            .await?;
+        sqlx::query(
+            "DROP TRIGGER reject_snowbunny_progress ON game_character_achievement_progress",
+        )
+        .execute(&h.pool)
+        .await?;
         let mut committed = h.pool.begin().await?;
         sqlx::query("INSERT INTO snowbunny_step_probe(event) VALUES($1)")
             .bind(event.as_slice())
@@ -633,7 +637,11 @@ async fn seed_backpack(
     Ok(())
 }
 
-pub(super) fn object(digest: [u8; 32], pos: TilePos, revision: u64) -> TestResult<WorldObjectTarget> {
+pub(super) fn object(
+    digest: [u8; 32],
+    pos: TilePos,
+    revision: u64,
+) -> TestResult<WorldObjectTarget> {
     let mut placement = digest.to_vec();
     placement.extend_from_slice(
         &crate::map::view::placement_key(pos, 1)

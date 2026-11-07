@@ -2958,6 +2958,17 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         if outcome.is_ok() {
             admission.credit_weapon_proficiency_kill(&entry).await;
         }
+        // Crystal boss_lever_death.lua:21-32 keeps the physical corpse in the room.
+        // Refresh ordinary Ground views for both first commits and retained/replayed
+        // corpse receipts, including a resumed settle after commit cancellation.
+        if let Ok(outcome) = &outcome
+            && matches!(
+                outcome.rewards.loot,
+                Ok(_) | Err(CombatDeathRewardLootError::Mint(_, _))
+            )
+        {
+            admission.states.loop_ground.invalidate();
+        }
         let mut runtime = admission.runtime.lock().await;
         if let Ok(outcome) = &outcome
             && let CorpseBind::Refused(error) =

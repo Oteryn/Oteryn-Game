@@ -1165,6 +1165,7 @@ pub mod tests {
                 kind,
                 walkable,
                 ground_speed: walkable.map(|_| 150),
+                blocks_projectile: None,
             }),
         };
         let item = |key: &str, id| PaletteEntry {
@@ -1290,6 +1291,7 @@ pub mod tests {
                 kind: TerrainKind::Ground,
                 walkable: Some(true),
                 ground_speed: Some(150),
+                blocks_projectile: None,
             }),
         };
         let item = |key: &str, id| PaletteEntry {

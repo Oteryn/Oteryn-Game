@@ -215,6 +215,7 @@ fn ground(walkable: bool, speed: u16) -> Terrain {
         kind: TerrainKind::Ground,
         walkable: Some(walkable),
         ground_speed: Some(speed),
+        blocks_projectile: None,
     }
 }
 
@@ -223,6 +224,7 @@ fn other(kind: TerrainKind) -> Terrain {
         kind,
         walkable: None,
         ground_speed: None,
+        blocks_projectile: None,
     }
 }
 
@@ -235,8 +237,8 @@ fn one_entry_of_each_kind_compiles_into_its_terrain_values() -> TestResult {
     let bytes = fixture_bytes()?;
     assert_eq!(bytes, fixture_bytes()?, "two builds are byte-identical");
     let read = bundle::read(&bytes)?;
-    assert_eq!(read.manifest.format, "OTERYN_WORLD_BUNDLE/v7");
-    assert_eq!(read.manifest.min_reader_version, 7);
+    assert_eq!(read.manifest.format, "OTERYN_WORLD_BUNDLE/v8");
+    assert_eq!(read.manifest.min_reader_version, 8);
     let terrain = |key: &str| {
         read.manifest
             .palette
@@ -614,5 +616,43 @@ fn the_parity_report_counts_placed_entries_by_class() -> TestResult {
     assert_eq!(counts.by_kind.get("common"), Some(&1));
     assert_eq!((counts.world_object, counts.plain_item), (1, 1));
     assert_eq!((counts.unknown_kind, counts.refused), (1, 1));
+    Ok(())
+}
+
+#[test]
+fn source_projectile_known_false_true_and_unknown_are_distinct() -> TestResult {
+    let mut transparent = terrain_record("terrain:transparent", None, Some("wall"), None, None);
+    transparent["blocks_projectile"] = field(Some(Value::Bool(false)));
+    let mut opaque = terrain_record("terrain:opaque", None, Some("ground"), Some(false), Some(0));
+    opaque["blocks_projectile"] = field(Some(Value::Bool(true)));
+    let legacy = terrain_record("terrain:legacy", None, Some("wall"), None, None);
+    let sealed = registry(vec![transparent.clone(), opaque, legacy])?;
+    assert_eq!(
+        sealed
+            .terrain_of("terrain:transparent")?
+            .unwrap()
+            .blocks_projectile,
+        Some(false)
+    );
+    assert_eq!(
+        sealed
+            .terrain_of("terrain:opaque")?
+            .unwrap()
+            .blocks_projectile,
+        Some(true)
+    );
+    assert_eq!(
+        sealed
+            .terrain_of("terrain:legacy")?
+            .unwrap()
+            .blocks_projectile,
+        None
+    );
+    transparent["blocks_projectile"] = field(Some(Value::String("false".into())));
+    assert!(
+        registry(vec![transparent])?
+            .terrain_of("terrain:transparent")
+            .is_err()
+    );
     Ok(())
 }

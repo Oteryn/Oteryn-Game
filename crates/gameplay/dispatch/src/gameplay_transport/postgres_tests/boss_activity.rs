@@ -79,7 +79,8 @@ fn boss_activity_postgres_real_instance_native_boss_death_and_reward_custody() -
 }
 
 #[test]
-fn boss_activity_postgres_production_reward_boss_instance_corpse_and_personal_custody() -> TestResult {
+fn boss_activity_postgres_production_reward_boss_instance_corpse_and_personal_custody() -> TestResult
+{
     run_scenario(Case::ProductionRewards)
 }
 
@@ -588,7 +589,10 @@ fn scenario(case: Case) -> TestResult {
             crate::foundation::ScopeOwnershipGeneration::new(assignment.ownership_generation + 1)
                 .map_err(debug)?;
         assert!(owner.resolve_runtime_view(forged).await.is_err());
-        if matches!(case, Case::Rewards | Case::ProductionRewards | Case::LateRewards) {
+        if matches!(
+            case,
+            Case::Rewards | Case::ProductionRewards | Case::LateRewards
+        ) {
             rewards::settle_and_collect(&h, &owner, &destination, admitted, &policy, late).await?;
             if late {
                 eprintln!("BOSS_ACTIVITY_LATE_REWARD_TIMEOUT POSTGRES_CASE_COMPLETED");
@@ -693,9 +697,18 @@ fn fixture_policy() -> crate::foundation::CompiledCreaturePolicy {
     }
 }
 
-async fn issue_content_and_reset(
+pub(super) async fn issue_content_and_reset(
     h: &Harness,
     pin: &oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+) -> TestResult {
+    issue_content_and_reset_with_runtime_pin(h, pin, pin, "activity-fixture").await
+}
+
+pub(super) async fn issue_content_and_reset_with_runtime_pin(
+    h: &Harness,
+    pin: &oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+    runtime_pin: &oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+    runtime_map_revision: &str,
 ) -> TestResult {
     let RuntimeScopeRefV1::Channel {
         world_id,
@@ -712,9 +725,9 @@ async fn issue_content_and_reset(
         .bind(pin.frame_binding_digest().as_slice()).execute(&h.pool).await?;
     // Initial reset fixture follows the existing kill-reward PG harness. Runtime
     // entry never writes a control grant, activation or world-reset row.
-    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'activity-fixture',$2,$3,$4,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),'2026-10')")
-        .bind(world_id.as_bytes().as_slice()).bind(pin.server_artifact_digest().as_slice())
-        .bind(pin.client_artifact_digest().as_slice()).bind(pin.frame_binding_digest().as_slice()).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,$5,$2,$3,$4,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),'2026-10')")
+        .bind(world_id.as_bytes().as_slice()).bind(runtime_pin.server_artifact_digest().as_slice())
+        .bind(runtime_pin.client_artifact_digest().as_slice()).bind(runtime_pin.frame_binding_digest().as_slice()).bind(runtime_map_revision).execute(&h.pool).await?;
     sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,0)")
         .bind(world_id.as_bytes().as_slice())
         .execute(&h.pool)
@@ -722,7 +735,7 @@ async fn issue_content_and_reset(
     Ok(())
 }
 
-async fn exchange(
+pub(super) async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     boss: &str,
@@ -738,7 +751,7 @@ async fn exchange(
     .await
 }
 
-async fn exchange_command(
+pub(super) async fn exchange_command(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     boss: &str,

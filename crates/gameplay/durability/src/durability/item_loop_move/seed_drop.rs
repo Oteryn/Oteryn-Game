@@ -1,7 +1,7 @@
 //! Crystal AddItem seed callback joins the existing move, terrain and value-audit owners.
 use super::*;
-use crate::durability::terrain_tool::{MapMutation,TerrainScope};
-use sha2::{Digest,Sha256};
+use crate::durability::terrain_tool::{MapMutation, TerrainScope};
+use sha2::{Digest, Sha256};
 
 /// The existing fenced read checks this command's actual seed source.
 #[derive(Debug, Clone, Copy)]
@@ -10,57 +10,95 @@ pub struct SeedDropProbe {
     pub item: [u8; 16],
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct SeedDropTarget {
-    pub scope:TerrainScope,
-    pub placement:Vec<u8>,
-    pub expected_revision:i64,
-    pub ordinary_plant_admitted:bool,
-    pub ice_plant_admitted:bool,
+    pub scope: TerrainScope,
+    pub placement: Vec<u8>,
+    pub expected_revision: i64,
+    pub ordinary_plant_admitted: bool,
+    pub ice_plant_admitted: bool,
 }
 
 impl DurabilityRoot {
     /// Read the actual fenced source before reserving the source AddItem cue. Ordinary
     /// drops onto a flower pot must not depend on an unrelated presentation reservation.
     /// The writer below repeats this check together with the full custody/CAS proof.
-    pub async fn item_loop_is_seed<C:ItemLoopContent>(
-        &self,permit:&SpellLanePermit,recovery:&ReconciledCharacterAuthority<'_, '_>,
-        node:&NodeIncarnationProof,fence:CurrentCharacterItemFence,
-        content:&C,request:SeedDropProbe,
-    )->Result<bool,DurabilityError>{
+    pub async fn item_loop_is_seed<C: ItemLoopContent>(
+        &self,
+        permit: &SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        content: &C,
+        request: SeedDropProbe,
+    ) -> Result<bool, DurabilityError> {
         let SeedDropProbe { command, item } = request;
         permit.check_scope(fence.runtime_scope)?;
-        let record=recovery.record_for(self).map_err(|_|DurabilityError::Unavailable)?;
-        let node=node.clone();
-        let mut context=content;
-        self.try_issue_semantic_pass()?.run_with_context(&mut context,move|holder,deadline,content|Box::pin(async move{
-            let mut tx=crate::durability::db::begin_type2_transaction(holder,deadline).await?;
-            let attempt:LoopResult<bool>=async{
-                assert_recovery_fence(&mut tx,&record).await?;
-                assert_current_equipment_in_transaction(&mut tx,&record,&node,&fence,Some(command),content.loop_content_digest()).await?;
-                let(world,_)=scope_of(&fence).map_err(|_|LoopError::Refused(LoopMoveRefusal::Rejected))?;
-                Ok(lock_live_item(&mut tx,item,*world.as_bytes()).await?.is_some_and(|(definition,_,_)|
-                    matches!(definition.production_key.as_str(),"oteryn:item.tibia.i647"|"oteryn:item.tibia.i13844")))
-            }.await;
-            match attempt {
-                Ok(seed)=>{tx.commit(deadline).await?;Ok(seed)},
-                Err(error)=>loop_error(error).map(|_|false),
-            }
-        })).await
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        let mut context = content;
+        self.try_issue_semantic_pass()?
+            .run_with_context(&mut context, move |holder, deadline, content| {
+                Box::pin(async move {
+                    let mut tx =
+                        crate::durability::db::begin_type2_transaction(holder, deadline).await?;
+                    let attempt: LoopResult<bool> = async {
+                        assert_recovery_fence(&mut tx, &record).await?;
+                        assert_current_equipment_in_transaction(
+                            &mut tx,
+                            &record,
+                            &node,
+                            &fence,
+                            Some(command),
+                            content.loop_content_digest(),
+                        )
+                        .await?;
+                        let (world, _) = scope_of(&fence)
+                            .map_err(|_| LoopError::Refused(LoopMoveRefusal::Rejected))?;
+                        Ok(lock_live_item(&mut tx, item, *world.as_bytes())
+                            .await?
+                            .is_some_and(|(definition, _, _)| {
+                                matches!(
+                                    definition.production_key.as_str(),
+                                    "oteryn:item.tibia.i647" | "oteryn:item.tibia.i13844"
+                                )
+                            }))
+                    }
+                    .await;
+                    match attempt {
+                        Ok(seed) => {
+                            tx.commit(deadline).await?;
+                            Ok(seed)
+                        }
+                        Err(error) => loop_error(error).map(|_| false),
+                    }
+                })
+            })
+            .await
     }
 
     /// None means the locked source is not a seed; the caller uses the ordinary move.
     /// An exact existing move receipt is returned before current map/custody is inspected.
     #[allow(clippy::too_many_arguments)]
-    pub async fn commit_item_loop_seed_drop<C:ItemLoopContent>(
-        &self,permit:&SpellLanePermit,recovery:&ReconciledCharacterAuthority<'_, '_>,
-        node:&NodeIncarnationProof,fence:CurrentCharacterItemFence,command:CommandRef,
-        content:&C,request:LoopMoveRequest,target:SeedDropTarget,
-    )->Result<Option<Result<LoopMoveReceipt,LoopMoveRefusal>>,DurabilityError>{
+    pub async fn commit_item_loop_seed_drop<C: ItemLoopContent>(
+        &self,
+        permit: &SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        command: CommandRef,
+        content: &C,
+        request: LoopMoveRequest,
+        target: SeedDropTarget,
+    ) -> Result<Option<Result<LoopMoveReceipt, LoopMoveRefusal>>, DurabilityError> {
         permit.check_scope(fence.runtime_scope)?;
-        let record=recovery.record_for(self).map_err(|_|DurabilityError::Unavailable)?;
-        let node=node.clone();
-        let mut context=(permit,content);
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        let mut context = (permit, content);
         self.try_issue_semantic_pass()?.run_with_context(&mut context,move|holder,deadline,context|Box::pin(async move{
             let(permit,content)=*context;
             let mut tx=crate::durability::db::begin_type2_transaction(holder,deadline).await?;

@@ -655,6 +655,7 @@ fn world(world: crate::foundation::WorldId) -> TestResult<crate::map::boot::Bund
                 kind: TerrainKind::Ground,
                 walkable: Some(true),
                 ground_speed: Some(150),
+                blocks_projectile: None,
             }),
         }],
         draft_areas: vec![],

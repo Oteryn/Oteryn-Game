@@ -95,7 +95,9 @@ impl RealFacts {
                     definition: MapDefinition::Terrain(nz(id)),
                     terrain_kind: Some(terrain.kind),
                     appearance_id,
-                    blocks_projectile: false,
+                    blocks_projectile: terrain
+                        .blocks_projectile
+                        .unwrap_or(terrain.kind == oteryn_world_bundle::bundle::TerrainKind::Wall),
                     pickupable: false,
                     bound: false,
                     count: 1,

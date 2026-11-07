@@ -12,6 +12,11 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import sys
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(REPOSITORY_ROOT / "tools/content-migration"))
+import boss_reward_item_profiles
 
 PIN = "201189f871d23597b82caf88fd611454a2ddefb8"
 POSITION = r"Position\(\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*\)"
@@ -63,6 +68,25 @@ def policy(config, name, default):
 def canonical(value):
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
 
+def native_callback_closure(key, profiles):
+    """Only a complete pinned native donor capture can close an empty hook set.
+
+    Canary47df sugar_daddy.lua:97-132 has only native attacks/defenses and no
+    event scripts or summons. Crystal boss_lever.lua:241 always installs the
+    implemented BossLeverOnDeath callback; a missing native hook is not ignored.
+    """
+    raw = (REPOSITORY_ROOT / boss_reward_item_profiles.PATH).read_bytes()
+    if sha(raw) != boss_reward_item_profiles.CAPTURE_SHA256:
+        raise ValueError("BOSS_NATIVE_CALLBACK_CAPTURE_DRIFT")
+    closure = json.loads(raw)["callback_closure"]
+    if (key != closure["creature_key"] or key not in profiles
+            or sha(canonical(profiles[key])) != closure["native_profile_sha256"]):
+        return [], False
+    if (closure["source_events"] != [] or closure["source_summons"] is not False
+            or closure["required_callbacks"] != ["BossLeverOnDeath"]):
+        raise ValueError("BOSS_NATIVE_CALLBACK_CLOSURE")
+    return closure["required_callbacks"], True
+
 def capture(root, path, profiles, defaults):
     raw = path.read_bytes()
     text = raw.decode()
@@ -92,7 +116,7 @@ def capture(root, path, profiles, defaults):
     if table(config or "", r"\bmonsters") not in [None,"{}"]: blockers.append("extra_monster_closure")
     if "zone:addArea" in clean: blockers.append("additional_zone_closure")
     if len(re.findall(r"\bBossLever\s*\(",clean)) != 1: blockers.append("multiple_lever_constructors")
-    hooks, callbacks_known = [], False
+    hooks, callbacks_known = native_callback_closure(key, profiles)
     if key == "oteryn:creature.faceless_bane":
         monster = root/"data-global/monster/quests/the_dream_courts/bosses/faceless_bane.lua"
         callbacks = root/"data-global/scripts/quests/the_dream_courts/creaturescripts_faceless_bane.lua"

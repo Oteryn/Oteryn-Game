@@ -115,7 +115,13 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         }
         let owner = ActivityHandoffOwner::new(self.root.clone());
         let Some(definition) = owner
-            .read_boss_room_with_pin(self.character, self.holder, fence, &intent.boss_key, origin_pin)
+            .read_boss_room_with_pin(
+                self.character,
+                self.holder,
+                fence,
+                &intent.boss_key,
+                origin_pin,
+            )
             .await
             .ok()?
         else {

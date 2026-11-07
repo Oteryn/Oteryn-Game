@@ -830,7 +830,11 @@ fn palette_facts(
             &entry.key,
             palette_appearance(&entry.key).map(u32::from),
         ),
-        blocks_projectile: false,
+        blocks_projectile: entry.terrain.is_some_and(|terrain| {
+            terrain
+                .blocks_projectile
+                .unwrap_or(terrain.kind == TerrainKind::Wall)
+        }),
         pickupable: false,
         bound: false,
         count: 1,
@@ -843,7 +847,15 @@ fn palette_facts(
             .filter(|definition| definition.reference == reference)
             .ok_or(FactsRefusal::ItemReference)?;
         facts.definition = MapDefinition::Item(reference);
-        facts.blocks_projectile = definition.blocks_projectile;
+        facts.blocks_projectile = entry
+            .terrain
+            .and_then(|terrain| terrain.blocks_projectile)
+            .unwrap_or(
+                definition.blocks_projectile
+                    || entry
+                        .terrain
+                        .is_some_and(|terrain| terrain.kind == TerrainKind::Wall),
+            );
         facts.pickupable = definition.pickupable;
         solid = definition
             .solid
@@ -1381,6 +1393,7 @@ mod tests {
                         kind,
                         walkable,
                         ground_speed: (kind == TerrainKind::Ground).then_some(150),
+                        blocks_projectile: None,
                     }),
                 };
                 let definition = move |_: &str| {
