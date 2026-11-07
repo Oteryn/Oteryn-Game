@@ -214,9 +214,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if after.progress.rotation == before.progress.rotation
                         && battle.clears > after.completed
                     {
-                        for _ in after.completed + 1..=battle.clears {
-                            after.progress.wave(battle.completed);
-                        }
+                        // Manual combat.md:264: each missed clear adds one
+                        // starting level; the latest wave level is a single floor.
+                        // Match the durable server-cadence settlement calculation.
+                        let count = battle.clears - after.completed;
+                        after.progress.level = after.progress.level.max(battle.completed);
+                        after.progress.start = after
+                            .progress
+                            .start
+                            .saturating_add(count)
+                            .max(battle.completed);
+                        after.progress.waves = after.progress.waves.saturating_add(count);
                         after.completed = battle.clears;
                     }
                     after.wave = battle.wave;

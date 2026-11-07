@@ -1031,3 +1031,14 @@ This covers the admitted source corpus, Item/Creature identity and provenance,
 Instance isolation, physical projection, native combat and player effects.
 The source boss/physical reward PostgreSQL evidence recorded above remains
 GREEN; remaining final checks concern Drome custody/Highscores integration.
+
+## W17 native bulk-clear accounting GREEN
+
+The production native command catch-up now applies exactly the unsaved clear
+count once, matching the durable settlement formula. Real three-wave test
+`tibiadrome_postgres_three_native_waves_command_catchup_counts_each_once`
+PASS50.789s after twelve native kills; old code produced(level,start)=(3,5),
+corrected code returns(3,3), waves3. Source manual combat.md:264; no new IDs.
+The genuine native Bazaar interaction currently reaches an excluded E11
+adapter boundary: its Reference-only loader rejects native OTNSW03 content.
+Root requested owner scope direction; no byte limit or artifact pin was bypassed.
