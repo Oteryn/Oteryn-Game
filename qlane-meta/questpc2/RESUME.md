@@ -1,31 +1,37 @@
-# Active r2: native wire fixture compiles, PG RED pending
+# Active r2: source6 activated, wire combat actual RED133.84s
 
-New auto-mounted elvenbane_combat.rs drives genuine source Dragon via attack/
-chase protocol, ordinary auto-attacks/nativeAI, healing, XP/corpse/loot; asserts
-native Dragoncounter1 and ownphase3. All six original pinned SpawnSource points
-are selected from production project families (cells/keys/respawn unchanged),
-no qualification spawn helper/fixture damage/HP/kill flags. New RouteElvenbaneCombat
-follows actual earned source exploration. Binary compiled84s; actualPG180006
-started in session46024/log /tmp/questpc2-elvenbane-native-wire-corrected-red-pg.log.
-Exact pending point: expects6 runtime source actors; fixture intentionally lacks
-production activation call. Observe actual RED before adding begin_activation_spawn_sources/
-realize_activation_spawn_window(0) before Fresh admission, exactly serve boot.
-Then unchanged wire helper must kill Dragon and earn both progress tracks.
-Fix any real caller gaps generically; no snapshot/manual-credit bypasses.
+Source-native fixture baseline PG180006 RED75.32s (0runtime actors, expected6).
+Added normal BundleWorld.activation_spawns and begin/realize window before Fresh
+players, projected from6exact unmodified source declarations. Check42.05s PASS;
+new native binary compiles. Actual next PG133.84s: all6sources + whole earned
+exploration pass; wire attacks decrease Dragon but stall300HP. First exchange
+shows3600HP vsinitialmax1000. Preserve full-health/killed/damage/ordinary drain/
+nativecounter1/ownphase3 assertions. No direct damage/HP/flags in test.
 
-Immediate source file edits already compile; earlier missing fence local fixed.
-No production/content/migration changes in this WIP. Runtime selector/canonical
-activation/5PGcases/pins fully green at5346b5b3f and pushed. Authgit commands
-MUST source /workspace/oteryn-env/env.sh first; otherwise fetch may fail username.
-Push target10min (max15) and everygreen, fetchownbranch/merge beforeeverypush.
+IMMEDIATE diagnose current player/creature positions, target/chase/AI state and
+health owner. ComposedTestOwner builds fresh ChannelSessionStates::default, so
+initial guessed stale Dependencies monster state is NOT proven. Add bounded
+diagnostics; inspect real owner, fix generic/caller ifneeded. SourceGoalData6
+normal stats/policies and immutable spawn origins retained. No weakening.
+Primary log /tmp/questpc2-elvenbane-native-wire-green-pg.log; initial actualRED
+/tmp/questpc2-elvenbane-native-wire-corrected-red-pg.log. Wire helper code in
+elvenbane_combat.rs; shared protocol command/heal reused from annihilator_combat.
 
-Positive selector ABI cache/executable restored; current native binary is new
-RED candidate. Old positive READY archive retired AFTER verified restore to
-reclaim link space: /tmp/questpc2-selector-alias-positive-native-ready.json now
-retired=true; live READY remains. Do not restore retired archive. Positive
-five-case exe archive remains per cache hold ledger basement-five-pg-before-pin.
-Cache helper latest index supports inactive mode restore; currentclippy/check
-archived, no heavy parallel compiler. Whole Elvenbane/owned27 still unfinished.
+Reference reward investigation: cached/tmp donor manifest is older crystalserver
+revision9f5a72c64; its chest.lua SHA0ca1a7... has exact same tower loot at2553–2580:
+MorningStar3282 chest90,47; shield3425 chest91,47; source container2853 at88,45
+with237/3147/3059 and container2853 at88,44 with3028x2/3031x100. Current authored
+sources cite crystal201189 and SHA7c3a...; read CURRENT tar corpus manifest before
+changing citations (cached manifest may predate incoming handoff). Need real
+source container facts before inventing 7-root MINT mechanism; existing filled
+container owner may suffice for four native claims. Whole quest notqualified.
+
+Last source activation/selector fullygreen5346b5b3f pushed. New stage WIP only;
+source/genericQuest runtime unchanged beyond previouslypublishedhelper. Commit
+and push compiling current slice now, next target10min not15. Sourceenv before
+allgitfetch/push for auth. No final while owned27 remain. Native/current READY
+live, inactive clippy/check archived per cache index; prune superseded READY
+before nextcompile; no source mutation midbuild. Range1240–44 unchanged.
 
 Branch claude/happy-davinci-ijz3wy-questpc2; AUTHORING. Owned29:
 2QUALIFIED (Desert/Annihilator),27UNFINISHED,6world titles SKIPPED_OTHER_LANE

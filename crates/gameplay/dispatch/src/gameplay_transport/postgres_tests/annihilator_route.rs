@@ -180,6 +180,39 @@ fn run(route: Route) -> TestResult {
             .ok_or("native gameplay")?
             .install_companion_policies(&mut runtime)
             .map_err(debug)?;
+        if route == Route::ElvenbaneCombat {
+            // Same source projection/activation owner as serve.rs2445-2471,
+            // before Fresh players can block source spawn placement.
+            let sources = world
+                .activation_spawns(|key| {
+                    let policy = runtime.companion_policy(key).ok()?;
+                    Some((
+                        u64::try_from(policy.maximum_health).ok()?,
+                        policy.blocked_by_nearby_players,
+                    ))
+                })
+                .ok_or("source defender policies")?;
+            assert_eq!(
+                sources
+                    .iter()
+                    .map(|(points, _)| points.len())
+                    .sum::<usize>(),
+                6,
+                "all six source declarations must survive bundle compilation"
+            );
+            assert_eq!(
+                runtime
+                    .begin_activation_spawn_sources(sources)
+                    .map_err(debug)?,
+                6
+            );
+            let progress = runtime.realize_activation_spawn_window(0).map_err(debug)?;
+            assert_eq!(
+                (progress.realized, progress.remaining),
+                (6, 0),
+                "normal native source activation"
+            );
+        }
         let mut admitted = Vec::new();
         for (index, current) in currents.iter().enumerate() {
             let session = current.current_game_session_id();
