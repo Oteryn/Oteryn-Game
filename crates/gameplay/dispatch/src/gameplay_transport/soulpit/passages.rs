@@ -66,7 +66,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let closed = crate::map::floor::BundleDoors(map.facts.doors());
         let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
             &runtime,
-            self.movement_cells,
+            &self.movement_cells,
             actor,
             session,
             entered,

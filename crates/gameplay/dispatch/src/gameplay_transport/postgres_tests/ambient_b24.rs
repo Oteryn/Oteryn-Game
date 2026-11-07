@@ -73,7 +73,7 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.active_generation = Some(generation);
         deps.initialize(&owner).await;
         assert!(owner.subarea_available());

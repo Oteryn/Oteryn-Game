@@ -231,7 +231,7 @@ fn scenario(tool: &str, before: u16, after: u16, decay: &[u16]) -> TestResult {
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
@@ -303,7 +303,7 @@ fn scenario(tool: &str, before: u16, after: u16, decay: &[u16]) -> TestResult {
             .map_err(debug)?;
         let mut restarted = deps.owner(&harness, &authority);
         restarted.active_generation = Some(active);
-        restarted.movement_cells = &restored_cells;
+        restarted.movement_cells = (&restored_cells).into();
         deps.initialize(&restarted).await;
         let (_, result, _) = exchange(&restarted, admitted, 1, &payload, None)
             .await

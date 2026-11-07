@@ -93,6 +93,23 @@ pub struct FloorTable {
 }
 
 impl FloorTable {
+    pub(super) fn activity_region(&self, bounds: [i32; 6]) -> Self {
+        let inside = |pos| super::activity_contains(bounds, pos);
+        Self {
+            tiles: self
+                .tiles
+                .iter()
+                .filter(|(pos, _)| inside(**pos))
+                .map(|(pos, mask)| (*pos, *mask))
+                .collect(),
+            teleports: self
+                .teleports
+                .iter()
+                .filter(|(from, to)| inside(**from) && inside(**to))
+                .map(|(from, to)| (*from, *to))
+                .collect(),
+        }
+    }
     pub fn add(&mut self, pos: TilePos, mask: u8) {
         if mask != 0 {
             *self.tiles.entry(pos).or_insert(0) |= mask;

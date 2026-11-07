@@ -375,7 +375,7 @@ fn scenario_in_world(
             .map_err(debug)?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         deps.runtime
             .lock()
@@ -934,7 +934,7 @@ fn m10_move_yellow_pillow_postgres_real_dispatch() -> TestResult {
                 .map_err(debug)?;
             let mut owner = deps.owner(&h, &authority);
             owner.active_generation = Some(active);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             deps.initialize(&owner).await;
             deps.runtime
                 .lock()

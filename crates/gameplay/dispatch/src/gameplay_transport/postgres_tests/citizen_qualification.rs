@@ -93,7 +93,7 @@ fn scenario() -> TestResult {
         )?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         let actor = deps.actor;
         let session = deps.admitted.game_session_id;
         let mut admitted = deps.admitted;

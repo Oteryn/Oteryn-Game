@@ -105,7 +105,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if let Some(at) = super::bundle_map_position::bundle_map_position(
             &mut runtime,
-            self.movement_cells,
+            &self.movement_cells,
             actor,
         ) {
             let Some(index) =

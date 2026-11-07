@@ -75,7 +75,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         match self.movement_cells.index() {
             crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_) => {
-                let at = super::bundle_map_position(runtime, self.movement_cells, actor)?;
+                let at = super::bundle_map_position(runtime, &self.movement_cells, actor)?;
                 let tile = at.map.overlay.base().tile(
                     u16::try_from(at.at.x).ok()?,
                     u16::try_from(at.at.y).ok()?,
@@ -169,7 +169,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 no_logout: false,
                 protection_zone: super::actor_spell::qualified_protection_zone(
                     &mut runtime,
-                    self.movement_cells,
+                    &self.movement_cells,
                     actor,
                 ),
             });

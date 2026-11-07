@@ -302,7 +302,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let index = super::item_ref_admission::pinned_index(&runtime, self.active_generation)?;
-        let at = super::bundle_map_position(&mut runtime, self.movement_cells, actor)?;
+        let at = super::bundle_map_position(&mut runtime, &self.movement_cells, actor)?;
         let ItemKey::MapBase {
             bundle_digest,
             placement_key,

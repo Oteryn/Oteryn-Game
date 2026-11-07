@@ -151,7 +151,7 @@ fn scenario(before: u16, yields: bool) -> TestResult {
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
@@ -257,7 +257,7 @@ fn scenario(before: u16, yields: bool) -> TestResult {
             drop(owner);
             owner = deps.owner(&harness, &authority);
             owner.active_generation = Some(active);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             owner.reset_epoch = u64::try_from(epoch)?;
             deps.initialize(&owner).await;
         }
@@ -335,7 +335,7 @@ fn scenario(before: u16, yields: bool) -> TestResult {
             .map_err(debug)?;
         let mut restored = deps.owner(&harness, &authority);
         restored.active_generation = Some(active);
-        restored.movement_cells = &restored_cells;
+        restored.movement_cells = (&restored_cells).into();
         restored.reset_epoch = u64::try_from(epoch)?;
         deps.initialize(&restored).await;
         restored.refresh_terrain_tools().await;

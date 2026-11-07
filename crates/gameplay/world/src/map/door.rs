@@ -58,6 +58,7 @@ struct Door {
     /// Upper bits count transitions; low bits: 0 unlocked closed, 1 open, 2 locked.
     /// One atomic word pins the visible pose and wire revision together.
     state: AtomicU64,
+    initial_state: u64,
 }
 
 impl Door {
@@ -100,6 +101,30 @@ pub struct DoorBook {
 }
 
 impl DoorBook {
+    /// Private activities start from the authored pose, never another scope's toggles.
+    pub(super) fn activity_region(&self, inside: impl Fn(TilePos) -> bool) -> Self {
+        let doors = self
+            .doors
+            .iter()
+            .filter(|door| super::view::placement_of(door.key).is_some_and(|(pos, _)| inside(pos)))
+            .map(|door| Door {
+                key: door.key,
+                key_forms: door.key_forms,
+                action: door.action,
+                required_level: door.required_level,
+                required_storage: door.required_storage,
+                closed_solid: door.closed_solid,
+                open_solid: door.open_solid,
+                open: door.open,
+                state: AtomicU64::new(door.initial_state),
+                initial_state: door.initial_state,
+            })
+            .collect();
+        Self {
+            doors,
+            ..Self::default()
+        }
+    }
     #[allow(clippy::too_many_arguments, reason = "one authored door record")]
     pub fn push(
         &mut self,
@@ -122,6 +147,7 @@ impl DoorBook {
             open_solid,
             open,
             state: AtomicU64::new(if locked { 2 } else { 0 }),
+            initial_state: if locked { 2 } else { 0 },
         });
     }
 

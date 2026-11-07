@@ -31,7 +31,7 @@ fn current_owner_spawn_home_walkback_and_leash_use_actual_source_cell() -> TestR
         let (deps, rat) = dependencies(active, &pin)?;
         let mut owner = deps.owner(harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = deps.room.movement_cells();
+        owner.movement_cells = (deps.room.movement_cells()).into();
         owner.clock_origin -= std::time::Duration::from_secs(10);
         // No PlayerSpellState is installed: the actual think has no eligible target.
         owner.drain_monster_melee().await;

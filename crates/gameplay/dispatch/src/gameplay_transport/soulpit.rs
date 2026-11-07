@@ -220,7 +220,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .collect::<String>()
             );
             let native_room_placement_context = pin.frame_binding_digest().to_vec();
-            let Some(at) = super::bundle_map_position(&mut runtime, self.movement_cells, actor)
+            let Some(at) = super::bundle_map_position(&mut runtime, &self.movement_cells, actor)
             else {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
             };

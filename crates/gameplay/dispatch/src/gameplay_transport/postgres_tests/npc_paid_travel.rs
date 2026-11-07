@@ -158,7 +158,7 @@ fn scenario() -> TestResult {
         );
         let mut owner = dependencies.owner(&h, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.premium_coordinator = Some(&coordinator);
         owner.admit_premium(id(40), dependencies.admitted.game_session_id);
         let catalogue = NpcDataCatalogue::load(

@@ -130,6 +130,35 @@ pub struct BundleFacts {
 const AMBIGUOUS: u32 = u32::MAX;
 
 impl BundleFacts {
+    /// Retain static source facts, with fresh Instance-local mutable owners.
+    pub(super) fn activity_region(&self, bounds: [i32; 6]) -> Self {
+        let inside = |pos: TilePos| super::activity_contains(bounds, pos);
+        Self {
+            palette: self.palette.clone(),
+            movement_definitions: self.movement_definitions.clone(),
+            ids: self.ids.clone(),
+            placements: self
+                .placements
+                .iter()
+                .filter(|(key, _)| view::placement_of(*key).is_some_and(|(pos, _)| inside(pos)))
+                .cloned()
+                .collect(),
+            houses: self
+                .houses
+                .iter()
+                .filter(|(pos, _)| inside(*pos))
+                .copied()
+                .collect(),
+            house_doors: self
+                .house_doors
+                .iter()
+                .filter(|(pos, _, _)| inside(*pos))
+                .copied()
+                .collect(),
+            doors: self.doors.activity_region(inside),
+            ..Self::default()
+        }
+    }
     /// The facts of `manifest`'s palette. `item` serves the definition of an Item key.
     pub fn palette(
         manifest: &Manifest,

@@ -52,6 +52,7 @@ enum Case {
     Entry,
     AwardContinuity,
     Rewards,
+    ProductionRewards,
     LateRewards,
     NonRewardDefeat,
     Recovery,
@@ -75,6 +76,11 @@ fn boss_activity_postgres_native_award_effects_follow_return_and_apply_once() ->
 #[test]
 fn boss_activity_postgres_real_instance_native_boss_death_and_reward_custody() -> TestResult {
     run_scenario(Case::Rewards)
+}
+
+#[test]
+fn boss_activity_postgres_production_reward_boss_instance_corpse_and_personal_custody() -> TestResult {
+    run_scenario(Case::ProductionRewards)
 }
 
 #[test]
@@ -135,7 +141,7 @@ fn scenario(case: Case) -> TestResult {
     run(async |admin| {
         let with_rewards = matches!(
             case,
-            Case::Rewards | Case::LateRewards | Case::AwardContinuity
+            Case::Rewards | Case::ProductionRewards | Case::LateRewards | Case::AwardContinuity
         );
         let late = case == Case::LateRewards;
         let with_death = matches!(
@@ -154,6 +160,8 @@ fn scenario(case: Case) -> TestResult {
         let world = fixture::fence(1)?.runtime_scope.world_id();
         let (controller, source_pin) = if case == Case::AwardContinuity {
             state_effects::generation(world, "content-1")?
+        } else if case == Case::ProductionRewards {
+            crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None)
         } else if with_rewards {
             crate::content::native_gameplay::test_support::activated_reward_boss_fixture(
                 world, None,
@@ -185,7 +193,7 @@ fn scenario(case: Case) -> TestResult {
         owner.active_generation = controller.active();
         owner.rooms = SeamRooms::new(Some(&deps.room), Some(&deps.room));
         let (boss_key, policy) = if with_rewards {
-            rewards::source_boss(&owner)?
+            rewards::source_boss(&owner, case == Case::ProductionRewards)?
         } else if case == Case::NonRewardDefeat {
             nonreward::source_creature(&owner)?
         } else {
@@ -286,6 +294,8 @@ fn scenario(case: Case) -> TestResult {
         // content. Production uses the consumed activity-template activation API.
         let (_instance_controller, instance_pin) = if case == Case::AwardContinuity {
             state_effects::generation(world, "content-1")?
+        } else if case == Case::ProductionRewards {
+            crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None)
         } else if with_rewards {
             crate::content::native_gameplay::test_support::activated_reward_boss_fixture(
                 world, None,
@@ -397,7 +407,7 @@ fn scenario(case: Case) -> TestResult {
                 runtime,
                 door,
                 ActivityRuntimeAssets {
-                    movement_cells: cells,
+                    movement_cells: cells.into(),
                     rooms: SeamRooms::new(Some(&instance_room), Some(&instance_room)),
                 },
             )
@@ -578,7 +588,7 @@ fn scenario(case: Case) -> TestResult {
             crate::foundation::ScopeOwnershipGeneration::new(assignment.ownership_generation + 1)
                 .map_err(debug)?;
         assert!(owner.resolve_runtime_view(forged).await.is_err());
-        if matches!(case, Case::Rewards | Case::LateRewards) {
+        if matches!(case, Case::Rewards | Case::ProductionRewards | Case::LateRewards) {
             rewards::settle_and_collect(&h, &owner, &destination, admitted, &policy, late).await?;
             if late {
                 eprintln!("BOSS_ACTIVITY_LATE_REWARD_TIMEOUT POSTGRES_CASE_COMPLETED");

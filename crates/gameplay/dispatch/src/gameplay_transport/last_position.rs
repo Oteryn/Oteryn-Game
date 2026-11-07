@@ -966,7 +966,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             (pin.server_artifact_digest(), pin.frame_binding_digest())
         };
         let input = first_entry_input(decided, self.world_id, frame_digest, |cell| {
-            house_cell(self.movement_cells, cell)
+            house_cell(&self.movement_cells, cell)
         });
         // A respawn's fallback is DEATH-2b's; a stored cell's fallback never lands on a house
         // tile either.
@@ -980,7 +980,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 pinned_digest,
                 door.blocking_cells(),
                 cell,
-            ) && !(stored && house_cell(self.movement_cells, cell))
+            ) && !(stored && house_cell(&self.movement_cells, cell))
         })
     }
 

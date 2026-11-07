@@ -222,7 +222,7 @@ impl Turn<'_, '_, '_, '_> {
             .map_err(|_| MovementError::NotQualified)?;
         let origin = movement(current.state().position);
         let (direction, facing) = cardinal(self.direction);
-        let cells = self.owner.movement_cells;
+        let cells = &self.owner.movement_cells;
         let blocker = HouseBlocker {
             cells,
             bundle: self.owner.bundle_map(),
@@ -612,7 +612,7 @@ impl PlacementCheck<'_, '_, '_, '_> {
             return false;
         };
         let at = cell(movement(self.candidate.position));
-        let cells = self.owner.movement_cells;
+        let cells = &self.owner.movement_cells;
         let blocker = HouseBlocker {
             cells,
             bundle: self.owner.bundle_map(),

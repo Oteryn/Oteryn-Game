@@ -397,7 +397,7 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
             admitted.item_fence = Some(original_fence);
             // Crystal permits vessel replacement anywhere. No retained temple evidence is
             // needed when points are only added or kept (player_wheel.cpp:1763-1772).
-            let rooms = owner.rooms;
+            let rooms = owner.rooms.clone();
             owner.rooms = SeamRooms::new(None, None);
             assert_eq!(send(&owner, &mut admitted, &payload).await?, expected(false, 1, vessels)?);
             let revision: String = sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
@@ -622,7 +622,7 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
                 move_wheel_actor(&mut runtime, deps.actor, if in_pz { 2 } else { 0 }, if in_pz { 0 } else { 5 })?;
                 assert_eq!(
                     crate::gameplay_transport::actor_spell::qualified_protection_zone(
-                        &mut runtime, owner.movement_cells, deps.actor,
+                        &mut runtime, &owner.movement_cells, deps.actor,
                     ),
                     Some(in_pz),
                 );
@@ -787,7 +787,7 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
             points: [0; 36],
             vessels: None,
         };
-        let rooms = owner.rooms;
+        let rooms = owner.rooms.clone();
         owner.rooms = SeamRooms::new(None, None);
         {
             let mut runtime = owner.runtime.lock().await;
@@ -806,7 +806,7 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
             reply(true, 1, points)?,
             "reset action cannot bypass a running combat lock"
         );
-        owner.rooms = rooms;
+        owner.rooms = rooms.clone();
         // A fresh composed owner reloads the committed allocation through admission.
         let mut restarted = deps.owner(&h, &authority);
         restarted.active_generation = controller.active();

@@ -110,7 +110,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let pvp_blocking = super::pvp_live::PvpBlocker {
             inner: blocking,
-            cells: self.movement_cells,
+            cells: &self.movement_cells,
             blocked: super::pvp_live::pz_blocked(&states, actor, session, self.owner_now()),
         };
         let blocking: &dyn crate::map::floor::CellBlocker = &pvp_blocking;
@@ -131,7 +131,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             states.step_with_creature_field_contact(
                 &mut runtime,
-                self.movement_cells,
+                &self.movement_cells,
                 actor,
                 session,
                 now,

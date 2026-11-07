@@ -221,7 +221,7 @@ fn scenario() -> TestResult {
         let (actor, session) = (deps.actor, deps.admitted.game_session_id);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         let mut admitted = deps.admitted;
         Box::pin(owner.admit_progression_session(&mut admitted)).await;
         let progression = owner

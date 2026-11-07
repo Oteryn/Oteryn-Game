@@ -266,7 +266,7 @@ fn scenario(seed: &'static str, unpushable: bool, trap: Option<u16>) -> Result<(
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;

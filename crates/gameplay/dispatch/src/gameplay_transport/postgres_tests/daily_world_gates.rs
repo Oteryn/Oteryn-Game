@@ -277,7 +277,7 @@ fn scenario(
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         if eligible {
             owner.premium_coordinator = Some(&premium);
             owner.admit_premium(id(40), session);

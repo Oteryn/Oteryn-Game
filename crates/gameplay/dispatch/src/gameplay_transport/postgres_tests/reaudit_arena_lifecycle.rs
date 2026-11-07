@@ -360,7 +360,7 @@ fn physical() -> TestResult {
             .map_err(debug)?;
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         {
             let runtime = deps.runtime.lock().await;
             owner

@@ -462,7 +462,7 @@ fn scenario(quest: bool) -> TestResult {
             ] {
                 let mut owner = deps.owner(&harness, &authority);
                 owner.active_generation = Some(generation);
-                owner.movement_cells = &cells;
+                owner.movement_cells = (&cells).into();
                 owner.quest_catalogue = catalogue;
                 owner.admit_progression_session(&mut admitted).await;
                 deps.initialize(&owner).await;
@@ -501,7 +501,7 @@ fn scenario(quest: bool) -> TestResult {
         ] {
             let mut owner = deps.owner(&harness, &authority);
             owner.active_generation = Some(generation);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             if quest {

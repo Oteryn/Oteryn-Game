@@ -315,8 +315,22 @@ enum Room {
     Combat,
 }
 
-/// `self.qualified` or `self.combat`.
+/// The exact borrowed view of `self.qualified` or `self.combat`.
 fn field_room(expr: &syn::Expr) -> Option<Room> {
+    let syn::Expr::MethodCall(view) = expr else {
+        return None;
+    };
+    if view.method != "as_deref"
+        || !view.args.is_empty()
+        || !view.attrs.is_empty()
+        || view.turbofish.is_some()
+    {
+        return None;
+    }
+    stored_field_room(&view.receiver)
+}
+
+fn stored_field_room(expr: &syn::Expr) -> Option<Room> {
     let syn::Expr::Field(field) = expr else {
         return None;
     };
@@ -371,25 +385,107 @@ fn accessor_arms(function: &syn::ImplItemFn) -> Option<Vec<(String, Room)>> {
     Some(arms)
 }
 
-/// `Self { qualified, combat }`.
+fn named_expr(expr: &syn::Expr, name: &str) -> bool {
+    matches!(expr, syn::Expr::Path(path) if path.attrs.is_empty() && path.qself.is_none() && path.path.is_ident(name))
+}
+
+fn call_args<'a>(expr: &'a syn::Expr, name: &str) -> Option<Vec<&'a syn::Expr>> {
+    let syn::Expr::Call(call) = expr else {
+        return None;
+    };
+    if !call.attrs.is_empty()
+        || !matches!(&*call.func, syn::Expr::Path(path) if path.qself.is_none() && path.attrs.is_empty() && path_name(&path.path) == name)
+    {
+        return None;
+    }
+    Some(call.args.iter().collect())
+}
+
+/// `Self { qualified: qualified.map(SharedOwner::from), combat: combat.map(SharedOwner::from) }`.
 fn sets_both_rooms(function: &syn::ImplItemFn) -> bool {
     let [syn::Stmt::Expr(syn::Expr::Struct(init), None)] = function.block.stmts.as_slice() else {
         return false;
     };
-    let fields: Vec<String> = init
-        .fields
-        .iter()
-        .filter(|field| field.colon_token.is_none() && field.attrs.is_empty())
-        .filter_map(|field| match &field.member {
-            syn::Member::Named(name) => Some(name.to_string()),
-            syn::Member::Unnamed(_) => None,
+    init.path.is_ident("Self") && init.attrs.is_empty() && init.rest.is_none()
+        && init.fields.len() == 2 && init.fields.iter().zip(["qualified", "combat"]).all(|(field,name)| {
+            let syn::Expr::MethodCall(map) = &field.expr else { return false; };
+            field.attrs.is_empty() && field.colon_token.is_some()
+                && matches!(&field.member,syn::Member::Named(member) if member == name)
+                && map.attrs.is_empty() && map.method == "map" && map.turbofish.is_none()
+                && named_expr(&map.receiver,name)
+                && matches!(map.args.iter().collect::<Vec<_>>().as_slice(), [syn::Expr::Path(path)] if path_name(&path.path) == "SharedOwner::from" && path.attrs.is_empty() && path.qself.is_none())
         })
-        .collect();
-    init.path.is_ident("Self") && init.rest.is_none() && fields == ["qualified", "combat"]
+}
+
+/// The owned constructor keeps combat present and qualification conditional on its input.
+fn sets_owned_rooms(function: &syn::ImplItemFn) -> bool {
+    let [syn::Stmt::Expr(syn::Expr::Struct(init), None)] = function.block.stmts.as_slice() else {
+        return false;
+    };
+    let fields = init.fields.iter().collect::<Vec<_>>();
+    let [qualified, combat] = fields.as_slice() else {
+        return false;
+    };
+    if !init.path.is_ident("Self")
+        || !init.attrs.is_empty()
+        || init.rest.is_some()
+        || !qualified.attrs.is_empty()
+        || !combat.attrs.is_empty()
+        || qualified.colon_token.is_none()
+        || combat.colon_token.is_none()
+        || !matches!(&qualified.member,syn::Member::Named(name) if name == "qualified")
+        || !matches!(&combat.member,syn::Member::Named(name) if name == "combat")
+    {
+        return false;
+    }
+    let syn::Expr::MethodCall(then) = &qualified.expr else {
+        return false;
+    };
+    let then_args = then.args.iter().collect::<Vec<_>>();
+    let [syn::Expr::Closure(select)] = then_args.as_slice() else {
+        return false;
+    };
+    if then.method != "then"
+        || !then.attrs.is_empty()
+        || then.turbofish.is_some()
+        || !named_expr(&then.receiver, "qualified")
+        || !select.inputs.is_empty()
+        || !select.attrs.is_empty()
+        || select.capture.is_some()
+        || select.asyncness.is_some()
+    {
+        return false;
+    }
+    let Some(owned) = call_args(&select.body, "SharedOwner::Owned") else {
+        return false;
+    };
+    let [cloned] = owned.as_slice() else {
+        return false;
+    };
+    let Some(clone_args) = call_args(cloned, "Arc::clone") else {
+        return false;
+    };
+    let [syn::Expr::Reference(reference)] = clone_args.as_slice() else {
+        return false;
+    };
+    if reference.mutability.is_some()
+        || !reference.attrs.is_empty()
+        || !named_expr(&reference.expr, "room")
+    {
+        return false;
+    }
+    let Some(some) = call_args(&combat.expr, "Some") else {
+        return false;
+    };
+    let [owned] = some.as_slice() else {
+        return false;
+    };
+    call_args(owned, "SharedOwner::Owned")
+        .is_some_and(|args| matches!(args.as_slice(),[room] if named_expr(room,"room")))
 }
 
 /// Every macro invocation and every attribute other than a doc comment or the struct's
-/// `#[derive(Clone, Copy)]`, at any depth.
+/// `#[derive(Clone)]`, at any depth.
 #[derive(Default)]
 struct Foreign(Vec<String>);
 
@@ -400,7 +496,7 @@ impl<'ast> Visit<'ast> for Foreign {
     }
 
     fn visit_attribute(&mut self, attr: &'ast syn::Attribute) {
-        if attr.path().is_ident("doc") || derives_clone_copy(attr) {
+        if attr.path().is_ident("doc") || derives_clone(attr) {
             return;
         }
         self.0
@@ -408,7 +504,7 @@ impl<'ast> Visit<'ast> for Foreign {
     }
 }
 
-fn derives_clone_copy(attr: &syn::Attribute) -> bool {
+fn derives_clone(attr: &syn::Attribute) -> bool {
     let mut derived = Vec::new();
     attr.path().is_ident("derive")
         && attr
@@ -417,7 +513,7 @@ fn derives_clone_copy(attr: &syn::Attribute) -> bool {
                 Ok(())
             })
             .is_ok()
-        && derived == ["Clone", "Copy"]
+        && derived == ["Clone"]
 }
 
 fn path_name(path: &syn::Path) -> String {
@@ -480,7 +576,14 @@ fn accessors() -> BTreeMap<String, Vec<(String, Room)>> {
                     if name == "new" {
                         assert!(
                             sets_both_rooms(function),
-                            "`SeamRooms::new` does more than `Self {{ qualified, combat }}`"
+                            "`SeamRooms::new` must only wrap each borrowed room in SharedOwner"
+                        );
+                        continue;
+                    }
+                    if name == "owned" {
+                        assert!(
+                            sets_owned_rooms(function),
+                            "`SeamRooms::owned` must preserve its conditional qualification and shared combat room"
                         );
                         continue;
                     }
@@ -756,7 +859,8 @@ struct Constructions<'ast>(Vec<&'ast syn::ExprCall>);
 impl<'ast> Visit<'ast> for Constructions<'ast> {
     fn visit_expr_call(&mut self, call: &'ast syn::ExprCall) {
         if let syn::Expr::Path(path) = &*call.func
-            && path_name(&path.path).ends_with("SeamRooms::new")
+            && (path_name(&path.path).ends_with("SeamRooms::new")
+                || path_name(&path.path).ends_with("SeamRooms::owned"))
         {
             self.0.push(call);
         }
@@ -770,7 +874,7 @@ impl<'ast> Visit<'ast> for Constructions<'ast> {
 const CONSTRUCTIONS: &[(&str, usize)] = &[
     // Qualified activity content inherits the origin gate, checked below.
     ("gameplay_transport/activity_content.rs", 2),
-    // ActivityRuntimeAssets borrows the selected pair without constructing a qualified room.
+    // ActivityRuntimeAssets owns or borrows the selected pair without widening its gates.
     ("gameplay_transport/activity_runtime.rs", 1),
     ("gameplay_transport/composed_test_owner.rs", 2),
     ("gameplay_transport/item_use/item_use_postgres_tests.rs", 1),
@@ -865,30 +969,25 @@ fn a_bundle_world_seam_has_no_qualified_room() {
 
 /// Activity content may replace the room, but never widen the origin seam's qualification.
 fn inherits_origin_qualification(expr: &syn::Expr) -> bool {
-    let syn::Expr::MethodCall(map) = expr else {
+    let syn::Expr::MethodCall(is_some) = expr else {
         return false;
     };
-    let syn::Expr::MethodCall(gate) = &*map.receiver else {
+    let syn::Expr::MethodCall(gate) = &*is_some.receiver else {
         return false;
     };
     let syn::Expr::Field(rooms) = &*gate.receiver else {
         return false;
     };
-    map.method == "map"
-        && map.attrs.is_empty()
+    is_some.method == "is_some"
+        && is_some.attrs.is_empty()
+        && is_some.args.is_empty()
+        && is_some.turbofish.is_none()
         && gate.method == "gate_source_world"
         && gate.args.is_empty()
         && gate.attrs.is_empty()
         && rooms.attrs.is_empty()
         && matches!(&rooms.member, syn::Member::Named(name) if name == "rooms")
         && matches!(&*rooms.base, syn::Expr::Path(path) if path.path.is_ident("self"))
-        && matches!(
-            map.args.iter().collect::<Vec<_>>().as_slice(),
-            [syn::Expr::Closure(select)]
-                if select.inputs.len() == 1
-                    && matches!(select.inputs.first(), Some(syn::Pat::Wild(_)))
-                    && matches!(&*select.body, syn::Expr::Path(path) if path.path.is_ident("room"))
-        )
 }
 
 #[test]
@@ -898,7 +997,54 @@ fn an_activity_instance_preserves_the_origin_room_gate() {
     constructions.visit_file(&content);
     assert!(
         matches!(constructions.0.as_slice(), [call]
-            if call.args.first().is_some_and(inherits_origin_qualification)),
+            if matches!(&*call.func,syn::Expr::Path(path) if path_name(&path.path).ends_with("SeamRooms::owned"))
+                && call.args.len() == 2
+                && call.args.first().is_some_and(|arg| named_expr(arg,"room"))
+                && call.args.last().is_some_and(inherits_origin_qualification)),
         "activity content must inherit the origin room gate; qualifying a template cannot open unrelated bundle gates"
     );
+}
+
+#[test]
+fn owned_room_parser_rejects_qualification_and_accessor_gate_bypasses()
+-> Result<(), Box<dyn std::error::Error>> {
+    let valid: syn::ImplItemFn = syn::parse_str(
+        "pub fn owned(room: Arc<QualifiedNativeEntryRoom>, qualified: bool) -> Self { Self { qualified: qualified.then(|| SharedOwner::Owned(Arc::clone(&room))), combat: Some(SharedOwner::Owned(room)) } }",
+    )?;
+    assert!(sets_owned_rooms(&valid));
+    for body in [
+        "Self { qualified: Some(SharedOwner::Owned(Arc::clone(&room))), combat: Some(SharedOwner::Owned(room)) }",
+        "Self { qualified: true.then(|| SharedOwner::Owned(Arc::clone(&room))), combat: Some(SharedOwner::Owned(room)) }",
+        "Self { qualified: qualified.then(|| SharedOwner::Owned(Arc::clone(&room))), combat: None }",
+    ] {
+        let function = syn::parse_str(&format!(
+            "pub fn owned(room: Arc<QualifiedNativeEntryRoom>, qualified: bool) -> Self {{ {body} }}"
+        ))?;
+        assert!(!sets_owned_rooms(&function));
+    }
+    assert!(inherits_origin_qualification(&syn::parse_str(
+        "self.rooms.gate_source_world().is_some()"
+    )?));
+    for expr in [
+        "true",
+        "self.rooms.gate_native_combat_cast().is_some()",
+        "self.rooms.gate_source_world().is_none()",
+    ] {
+        assert!(!inherits_origin_qualification(&syn::parse_str(expr)?));
+    }
+    assert_eq!(
+        field_room(&syn::parse_str("self.qualified.as_deref()")?),
+        Some(Room::Qualified)
+    );
+    assert_eq!(
+        field_room(&syn::parse_str("self.combat.as_deref()")?),
+        Some(Room::Combat)
+    );
+    assert_eq!(
+        field_room(&syn::parse_str(
+            "self.qualified.or(self.combat).as_deref()"
+        )?),
+        None
+    );
+    Ok(())
 }

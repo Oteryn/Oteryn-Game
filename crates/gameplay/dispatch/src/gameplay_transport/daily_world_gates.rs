@@ -198,7 +198,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             crate::gameplay_transport::pvp_live::pz_blocked(&states, actor, session, now);
         let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
             &runtime,
-            self.movement_cells,
+            &self.movement_cells,
             actor,
             session,
             entered,

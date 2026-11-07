@@ -1,6 +1,6 @@
 //! A source-qualified ordinary creature used as the isolated room's primary
 //! boss. Its committed death drives W02 independently of personal reward groups
-//! and the explicitly unavailable ordinary Instance corpse-MINT descendant.
+//! and the exact-scoped physical corpse and source-race MINT descendants.
 use super::*;
 use crate::durability::activity_handoff::ActivityReturnReason;
 use crate::foundation::runtime_actor_spell_types::{
@@ -138,6 +138,18 @@ pub(super) async fn assert_defeat_and_return(
         owner.drain_kill_rewards(admitted.game_session_id).await,
         DrainOutcome::Drained
     );
+    // Crystal creature.cpp:711-721,777-782: ordinary deaths also retain the
+    // physical corpse, including exact source race provenance for shared bodies.
+    let RuntimeScopeRefV1::Instance { instance_id, .. } = fence.runtime_scope else {
+        return Err("actual Instance corpse custody required".into());
+    };
+    let corpse: (i64, String, bool, Vec<u8>) = sqlx::query_as(
+        "SELECT count(*) OVER (), s.race_key, g.channel_id IS NULL, uuid_send(g.instance_id) FROM game_corpse_source_races s JOIN game_item_mint_receipts r ON r.transaction_id=s.mint_transaction_id JOIN game_item_ground_locations g ON g.item_instance_id=s.item_instance_id WHERE r.loot_purpose_key='CORPSE_MATERIALIZATION'",
+    ).fetch_one(&h.pool).await?;
+    let rewards = native.reward_table().row(&policy.definition_key).map_err(debug)?;
+    let race = rewards.race.as_ref().ok_or("ordinary source race")?;
+    assert_eq!((corpse.0, corpse.1.as_str(), corpse.2, corpse.3.as_slice()),
+        (1, race.key(), true, instance_id.as_slice()));
     type DefeatRow = (i16, Vec<u8>, i64, i64);
     let recorded: DefeatRow = sqlx::query_as(
         "SELECT state,uuid_send(defeat_id),terminal_at,exit_deadline FROM game_boss_room_activities",
@@ -181,6 +193,7 @@ pub(super) async fn assert_defeat_and_return(
         owner.drain_kill_rewards(admitted.game_session_id).await,
         DrainOutcome::Drained
     );
+    assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_mint_receipts WHERE loot_purpose_key='CORPSE_MATERIALIZATION'").fetch_one(&h.pool).await?, 1);
     let replayed: DefeatRow = sqlx::query_as(
         "SELECT state,uuid_send(defeat_id),terminal_at,exit_deadline FROM game_boss_room_activities",
     ).fetch_one(&h.pool).await?;

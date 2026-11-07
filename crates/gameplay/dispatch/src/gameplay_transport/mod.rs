@@ -562,7 +562,7 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     pub required_capabilities:
         std::sync::Arc<world_required_capabilities::BoundRequiredCapabilities>,
     pub runtime: activity_runtime::SharedOwner<'a, Mutex<ChannelRuntimeV1>>,
-    pub movement_cells: &'a NativeEntryMovementCells,
+    pub movement_cells: activity_runtime::SharedOwner<'a, NativeEntryMovementCells>,
     /// The one entry-room door's bound runtime (#162 5868482467, M2b). Always locked after
     /// `runtime`, never before, so `step` and `use_object` can never deadlock against each
     /// other.

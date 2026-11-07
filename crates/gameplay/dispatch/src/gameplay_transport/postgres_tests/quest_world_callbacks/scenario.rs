@@ -126,7 +126,7 @@ fn scenario_case(
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.quest_catalogue = Some(std::sync::Arc::new(
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                 .map_err(debug)?

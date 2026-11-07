@@ -858,7 +858,7 @@ async fn field_scenario_inner(
     };
     owner.active_generation = Some(active);
     owner.rooms = SeamRooms::new(None, Some(&room));
-    owner.movement_cells = &cells;
+    owner.movement_cells = (&cells).into();
     owner.required_capabilities = BoundRequiredCapabilities::for_channel_boot(
         &[11, 30],
         crate::foundation::RuntimeScopeRefV1::channel(world, dependencies.admitted.channel_id),

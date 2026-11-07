@@ -748,3 +748,22 @@ implement a second `endgame_entry.rs` composition. The next W02 step adds
 owned, isolated map assets and a source-qualified ordinary boss template.
 All future SRVENC notes live in this lane-specific document; the root
 `CONTRACT-NOTES.md` is removed by the requested `git mv`.
+
+## SRVENC W02: isolated bundle-backed activity assets
+
+The existing qualified activity owner now retains owned room/movement handles
+through handoff and recovery. A bounded World Bundle view copies only actual
+authored tiles, resets scope-local doors/rotations/callback state, filters
+floor transitions and gives each real Instance its own overlay. Registration
+rejects an origin Channel overlay for an Instance. Immutable compiled content
+is shared through Arc; no leaked assets or alternate authority owner.
+Crystal `data/libs/functions/boss_lever.lua:63-76,190-225` supplies literal
+room/entry positions. Boot qualifies rooms after the bundle combat view and
+retains both the issued parent activation frame and physical bundle frame.
+
+Validation: dispatch all-features/all-targets check PASS3m46s; real World
+Bundle isolation test `boss_activity_bundle_instances_bound_tiles_and_isolate_door_state`
+PASS0.03s (build2m01s), covering2Instances, independent doors, bounded cells,
+parent preservation, stale scope and invalid Instance rejection. Independent
+source review found no concrete authority/aliasing defect. Native PostgreSQL
+regressions remain to rerun after1101; no full-row completion claimed.

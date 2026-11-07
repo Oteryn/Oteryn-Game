@@ -1177,7 +1177,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 legacy = self.door.lock().await.blocking_cells().clone();
                 &legacy
             };
-            let cells = self.movement_cells;
+            let cells = &self.movement_cells;
             let mut attack = self.states.attack.lock().await;
             // Owner time is read once the locks that serialize chase decisions are held, so the
             // Channel search budget sees its windows in order (`RANGED0-RL-03`).

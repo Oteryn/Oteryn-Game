@@ -618,7 +618,7 @@ fn coin_use_scenario() -> TestResult {
         let cells = map.movement_cells(deps.room.movement_cells()).map_err(debug)?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         deps.runtime.lock().await.initialize_first_entry_position(deps.actor).map_err(debug)?;
         let fence = owner.current_quest_fence(deps.admitted.game_session_id).await.map_err(|_| "fence")?.ok_or("fence")?.item_fence();
@@ -681,7 +681,7 @@ fn coin_use_scenario() -> TestResult {
             // retired inputs, and cannot borrow another stack or replay a bank command.
             let mut restarted = deps.owner(&h, &authority);
             restarted.active_generation = Some(active);
-            restarted.movement_cells = &cells;
+            restarted.movement_cells = (&cells).into();
             let replay = restarted.use_item_completion(deps.actor, UseCommand { game_session_id: fence.game_session_id, command_id, item_fence: Some(fence) }, ItemKey::Instance(source)).await.ok_or_else(|| format!("round {round} replay"))?;
             assert_eq!(replay.disposition, expected);
             assert_eq!(h.root.read_character_backpack(&authority, fence.character_id).await?.ok_or("replayed")?, after);
@@ -711,7 +711,7 @@ fn coin_use_scenario() -> TestResult {
         sqlx::raw_sql("DROP TRIGGER goldconvr_test_failure ON game_coin_exchange_receipts; DROP FUNCTION goldconvr_test_failure();").execute(&h.pool).await?;
         let mut restarted = deps.owner(&h, &authority);
         restarted.active_generation = Some(active);
-        restarted.movement_cells = &cells;
+        restarted.movement_cells = (&cells).into();
         assert!(restarted.resume_npc_bank(deps.actor, command).await.is_none());
         assert_eq!(h.root.read_character_backpack(&authority, fence.character_id).await?.ok_or("bank cannot resume use")?, before);
         // A different source under the same command is rejected before executing the pending use.

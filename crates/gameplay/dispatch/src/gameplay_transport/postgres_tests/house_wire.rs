@@ -181,7 +181,7 @@ fn scenario() -> TestResult {
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
         let mut owner = deps.owner(&h, &authority);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         owner
             .runtime
@@ -330,7 +330,7 @@ fn scenario() -> TestResult {
         drop(fresh);
         // A new composed runtime owner reads the durable notice (no cached management state).
         let mut restarted = deps.owner(&h, &authority);
-        restarted.movement_cells = &cells;
+        restarted.movement_cells = (&cells).into();
         let mut admitted = initial;
         reach(&restarted, &mut admitted, 8).await?;
         let page = send(&restarted, &mut admitted, 57, &query()).await?.1;

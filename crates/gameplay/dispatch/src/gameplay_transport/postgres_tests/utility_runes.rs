@@ -269,7 +269,7 @@ async fn run_case(admin: String, case: Case) -> TestResult {
         &[11, 30], crate::foundation::RuntimeScopeRefV1::channel(world, dependencies.admitted.channel_id),
         1, "policy-1", BUNDLE_WORLD_OFFERED_CAPABILITIES).map_err(debug)?;
     owner.rooms = SeamRooms::new(None, Some(&room));
-    owner.movement_cells = &cells;
+    owner.movement_cells = (&cells).into();
     let mut admitted = dependencies.admitted;
     admitted.first_entry = FirstEntryOutcome::Positioned;
     let (current, _) = FreshAdmissionStore::from_root(harness.root.clone())
@@ -822,7 +822,7 @@ async fn utility_inner(admin: String, case: WorldItemCase) -> TestResult {
     let mut owner = dependencies.owner(&harness, &authority);
     owner.active_generation = Some(active);
     owner.rooms = SeamRooms::new(Some(&room), Some(&room));
-    owner.movement_cells = &cells;
+    owner.movement_cells = (&cells).into();
     if case == WorldItemCase::House {
         owner.required_capabilities = BoundRequiredCapabilities::for_channel_boot(
             &[11, 30],

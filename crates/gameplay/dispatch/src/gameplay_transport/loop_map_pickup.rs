@@ -69,7 +69,7 @@ pub(super) async fn move_map_item(
         );
         let index = pinned_index(&runtime, admission.active_generation);
         drop(states);
-        let at = super::super::bundle_map_position(&mut runtime, admission.movement_cells, actor);
+        let at = super::super::bundle_map_position(&mut runtime, &admission.movement_cells, actor);
         (native, index, at)
     };
     let Some(native) = native else {
