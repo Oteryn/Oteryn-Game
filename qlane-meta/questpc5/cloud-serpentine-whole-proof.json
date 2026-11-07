@@ -1,5 +1,5 @@
 {
-  "status": "COMPILING_WIP_POST_BARREL_PG_PENDING",
+  "status": "QUALIFIED_WHOLE_SELECTED_TRIAL",
   "quest": "oteryn:quest.serpentine_tower_quest",
   "base_head": "da3c129374c411120e1088e5cbe7c60a0bc2c97e",
   "postgres_red": {
@@ -17,25 +17,11 @@
     "callback_mints": 0,
     "existing_claim_gates": 1,
     "generator_in_memory": "PASS; no generated files written",
-    "authoring_tests": "2 passed in 3.254s after the two runtime programme/gate documents were produced by the repository generator."
+    "authoring_tests": "2 passed in 3.254s"
   },
   "local_test_prerequisite": "Owner-authorized untracked 1300 migration only; never commit or ship. Consume QUESTPC8 from main after owner announces merge.",
-  "batch_state": "Whole PG green attempt active; only two runtime programme/gate documents updated to test the active quest. Broad generation, matrix and pins remain deferred until push. Post-dedup ownership clarification pending.",
-  "green_qualification": false,
-  "test_assertions_pending_green": [
-    "No seeded completion or quest progress",
-    "Chest denies early reward",
-    "Current Premium required for exploration and torch",
-    "Early observation cannot complete",
-    "Empty fire selects default entry",
-    "One exact pot transferred/dropped through native custody selects inner route",
-    "Torch removes source stone",
-    "Lever removes four source walls",
-    "Authored observation completes selected finite trial",
-    "Existing once-only claim mints one pearl",
-    "Repeated observation/chest do not duplicate progress/reward",
-    "Exactly four mutating progress receipts; read-only routing adds none"
-  ],
+  "batch_state": "Whole selected trial and shipping checks GREEN; qualification and tool-regenerated pins ready for immediate push.",
+  "green_qualification": true,
   "post_binding_pg_attempt": {
     "log": "/tmp/questpc5-serpentine-whole-green1.log",
     "duration_seconds": 114.66067871,
@@ -62,23 +48,85 @@
   "shipping_checks": {
     "workspace_all_targets": {
       "exit": 0,
-      "log": "/tmp/questpc5-serpentine-wip-workspace-check.log"
+      "duration": "3m 08s",
+      "log": "/tmp/questpc5-serpentine-green-workspace-check.log"
     },
     "fmt_all_check": {
       "exit": 0,
-      "log": "/tmp/questpc5-serpentine-wip-fmt.log"
+      "log": "/tmp/questpc5-serpentine-green-fmt.log"
     },
     "native_regeneration": {
       "exit": 0,
       "files": 45,
       "log": "/tmp/questpc5-serpentine-native-regen.log"
     },
+    "matrix_regeneration_and_check": {
+      "exit": 0,
+      "log": "/tmp/questpc5-serpentine-matrix-check.log"
+    },
+    "quest_generator_check": {
+      "exit": 0,
+      "log": "/tmp/questpc5-serpentine-generator-check.log"
+    },
     "duplicate_migrations": {
       "exit": 0,
-      "method": "Git write-tree plus repository dup-migrations script"
+      "method": "Staged Git tree and repository dup-migrations script"
     },
-    "local_foreign_migration_copies": "Absent from shipping tree",
-    "whole_post_barrel_pg": "NOT YET RUN; WIP remains unqualified",
-    "clippy": "Not held before this push under latest owner compile-only deadline rule"
+    "foreign_migration_copies": "Absent; consume owning PRs from main after owner announces merge"
+  },
+  "verified_test_assertions": [
+    "No seeded completion or quest progress",
+    "Chest denies early reward",
+    "Current Premium required for exploration and torch",
+    "Early observation cannot complete",
+    "Empty fire selects default entry",
+    "One exact pot transferred/dropped through native custody selects inner route",
+    "Torch removes source stone",
+    "Lever removes four source walls",
+    "Authored observation completes selected finite trial",
+    "Existing once-only claim mints one pearl",
+    "Repeated observation/chest do not duplicate progress/reward",
+    "Exactly four mutating progress receipts; read-only routing adds none"
+  ],
+  "postgres_green": {
+    "version": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "runner_duration_seconds": 130.168,
+    "scenario_duration_seconds": 130.12739066,
+    "trial_duration_seconds": 8.493233924,
+    "log": "/tmp/questpc5-serpentine-whole-green2.log",
+    "sha256": "97277d421feb86fbf8498334292f7b47434ff6e9ba5ce44805a404a0a9ae90c0",
+    "started_marker": "POSTGRES_CASE_STARTED serpentine_whole",
+    "completed_marker": "POSTGRES_CASE_COMPLETED serpentine_whole",
+    "success": true,
+    "prerequisite": "Owner-authorized local canonical QUESTPC8 1300 prerequisite was present for this test, removed afterwards; branch must consume the owning PR from main before integration."
+  },
+  "clippy": {
+    "exit": 0,
+    "crates": [
+      "oteryn-gameplay-quests",
+      "oteryn-gameplay-dispatch"
+    ],
+    "all_targets": true,
+    "all_features": true,
+    "deny_warnings": true,
+    "log": "/tmp/questpc5-serpentine-clippy.log",
+    "duration_including_build_lock_wait": "9m 49s"
+  },
+  "pins": {
+    "refresh_exit": 0,
+    "check_exit": 0,
+    "world_digest": "25a4bbe9df5fff5e8cd47afd5993592e891887f6464ee86e86df7198e5a697cd",
+    "inputs_digest": "2ff0b97d23ec019edbc9bdb82dc8231e4d3705cb5d4d709b32c3b650c999e629",
+    "refresh_log": "/tmp/questpc5-serpentine-pin-refresh.log",
+    "check_log": "/tmp/questpc5-serpentine-pin-check.log"
+  },
+  "product_sha256": {
+    "tools/content-schema/quest-authoring/serpentine_programme.py": "70994e73df630a4bbd51a417163432cfddc286ea095cdc91fe3f5296bed3e99a",
+    "tools/content-schema/quest-authoring/qengine_rewards.py": "45868be74b41e7f68392dfdb5cae8a0f31983b495bcc3e723c3640bd39caa7fe",
+    "tools/content-migration/questpc5_map_profiles.py": "741bb77970c0a09295cefff40b26dab8cd2d0bda201e8bd6358547907717107b",
+    "content/quests/authored-world-callbacks.json": "8909adb56c6424a54e583f7ac1a5d0b25b4dae37d277c5898268e21944bdd5a1",
+    "content/quests/reward-claim-gates.json": "ff4ac819f346f3e1e960f75521ce62ac8e4881370d684d895ce3204538ca34ca",
+    "content/items/definitions/spell-native-profiles.json": "84656c45467fb0d02d549c6e979da981087a7772d44e2394c7c45ce944eb43ca",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc5_serpentine_route.rs": "5e8b73b99d08cb4e89998cb67b8da0d55c28f45c95b5168ac98a7d0bac2c5e51"
   }
 }

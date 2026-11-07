@@ -740,18 +740,34 @@
     "canonical": "oteryn:quest.serpentine_tower_quest",
     "title": "Serpentine Tower Quest",
     "mechanism": "paired_portals_stepout_remote_predicates",
-    "status": "UNFINISHED",
-    "blocker": "Selected whole physical trial and existing once-only pearl claim gate are the next active implementation batch; source selectors, durable Ground predicates and portable pot are now qualified.",
+    "status": "QUALIFIED",
     "from_lanes": [
       "questpc3"
     ],
-    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "qualification_scope": "Whole selected Premium once personal trial on retained tower geometry: real STEP exploration, durable pot drop and source forcefield branches, torch/lever USE and wall traversal, authored observation completion, then one existing UID6184 White Pearl claim. Early reward/observation and Premium refusals, repeat/once and exactly four progress receipts verified. This chosen trial does not claim the historical mystery is solved; source paper text/World bytes preserved.",
     "input_canonical": "oteryn:quest.serpentine_tower_quest",
     "canonical_location": {
       "path": "content/quests/definitions/quests-00200-00299.json",
       "pointer": "/records/0/definition"
     },
-    "active_step": {
+    "current_batch": "Whole selected Serpentine trial and shipping checks GREEN: PG18.6 scenario130.12739066s/body8.493233924s; exact source claim once, four progress receipts; source barrel admission; two authoring/one barrel/fourteen callback-gate tests. Qualification proof and repo-generated World pins ready for immediate push.",
+    "migration_registry": "Owner correction: lane ships only 1270-1276; remove foreign Father 1277, obsolete dependent repair 1278, and QUESTPC8 1300. Father and backpack-output integration require QNPCFX #3027 and QUESTPC8 from main; no local migration copies shipped.",
+    "component_proof": "qlane-meta/questpc5/cloud-main-merge-proof.json",
+    "migration_ownership_proof": "qlane-meta/questpc5/cloud-migration-ownership-proof.json",
+    "whole_route_batch": {
+      "state": "QUALIFIED",
+      "red_log": "/tmp/questpc5-serpentine-whole-red3.log",
+      "postgres_version": "18.6",
+      "red_duration_seconds": 120.085965821,
+      "red_point": "Existing chest granted one pearl before the selected trial; expected zero.",
+      "programme": "Six source-validated callbacks and one gate on the existing source claim authored. Repository generator updated the two runtime documents needed for PG validation; both authoring tests pass. Broad generation, matrix and pins deferred until push.",
+      "green_attempt_log": "/tmp/questpc5-serpentine-whole-green2.log",
+      "last_pg_failure": "After the claim gate was added, PG18.6 ran114.66067871s and reached the torch approach; blocked by barrel2523 without native physical facts. Source-backed Ground-only admission authored via existing importer in43-line helper; unit passed1.983s. Post-admission PG rerun pending; quest remains UNFINISHED.",
+      "push_rule": "Owner compiling-WIP deadline: workspace all-target check and fmt, then push without waiting for full tests.",
+      "shipping_check": "Workspace all-target check PASS3m08s; fmt, strict quests/dispatch Clippy, matrix/generator checks and repo pin refresh/check PASS. Foreign migration copies absent. Immediate qualification/pin push follows.",
+      "proof": "qlane-meta/questpc5/cloud-serpentine-whole-proof.json"
+    },
+    "component_history": {
       "kind": "source-binding-regression",
       "state": "MAIN_MERGE_FULL_DEPENDENT_BASELINE_PENDING",
       "test": "questpc5_real_world_startup_selectors_reach_postgres",
@@ -794,22 +810,7 @@
       ],
       "full_test_log": "/tmp/questpc5-main-dependent-baseline.log"
     },
-    "current_batch": "Migration ownership correction GREEN: fresh PostgreSQL 18.6 registry case passed in 4.635718145s without local prerequisite copies; workspace all-target check, strict changed-crate Clippy, fmt, duplicate and pin refresh/check passed. Whole Serpentine route work preserved separately for the next mechanic slice.",
-    "migration_registry": "Owner correction: lane ships only 1270-1276; remove foreign Father 1277, obsolete dependent repair 1278, and QUESTPC8 1300. Father and backpack-output integration require QNPCFX #3027 and QUESTPC8 from main; no local migration copies shipped.",
-    "component_proof": "qlane-meta/questpc5/cloud-main-merge-proof.json",
-    "migration_ownership_proof": "qlane-meta/questpc5/cloud-migration-ownership-proof.json",
-    "whole_route_batch": {
-      "state": "COMPILING_WIP_POST_BARREL_PG_PENDING",
-      "red_log": "/tmp/questpc5-serpentine-whole-red3.log",
-      "postgres_version": "18.6",
-      "red_duration_seconds": 120.085965821,
-      "red_point": "Existing chest granted one pearl before the selected trial; expected zero.",
-      "programme": "Six source-validated callbacks and one gate on the existing source claim authored. Repository generator updated the two runtime documents needed for PG validation; both authoring tests pass. Broad generation, matrix and pins deferred until push.",
-      "green_attempt_log": "/tmp/questpc5-serpentine-whole-green1.log",
-      "last_pg_failure": "After the claim gate was added, PG18.6 ran114.66067871s and reached the torch approach; blocked by barrel2523 without native physical facts. Source-backed Ground-only admission authored via existing importer in43-line helper; unit passed1.983s. Post-admission PG rerun pending; quest remains UNFINISHED.",
-      "push_rule": "Owner compiling-WIP deadline: workspace all-target check and fmt, then push without waiting for full tests.",
-      "shipping_check": "Workspace all-target check and fmt PASS; native regeneration45files and duplicate-migration check PASS. Compiling WIP pushed under latest owner rule; post-barrel PG and strict Clippy continue afterwards. No copied1300/1277/1278 migration ships."
-    }
+    "qualification_proof": "qlane-meta/questpc5/cloud-serpentine-whole-proof.json"
   },
   {
     "canonical": "oteryn:quest.thais_lighthouse_quest",
