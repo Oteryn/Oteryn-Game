@@ -851,36 +851,100 @@
       }
     ],
     "current_batch": {
-      "id": "coat-chest-clock-merge",
-      "phase": "GREEN; commit merge and push fast-forward now",
-      "local_green": "dd00fe037c2db30b6c2ad7c4108d5d7a9b9ea398",
-      "incoming": "9a95cb0fda24e6341af0153d644ef2eb9c1cbea0",
-      "scope": "Combine source coat claim/obligation with deterministic recorded World-clock input in cfg(test); production uses the existing now_utc_ms authority unchanged",
-      "whole_entry_status": "Retain all qualifications; four owned whole quests still active unless durable quest rows show further remote qualification.",
+      "id": "beginning-damage-lesson-01",
+      "phase": "GREEN; commit and push this coherent reusable health owner + source lesson batch",
+      "scope": "SourceSantiagoGreet9->10/log8 with20physicalLuaHP loss; normalcase, retainedlost-ack/replay/noHPdoubleapply throughsharedQuestandconditionowners",
+      "red_log": "/tmp/questpc3-beginning-damage-red.log",
+      "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L180-L188",
+      "reused": "stage_item_health_loss in spell/actor_conditions/item_actions.rs:33 preservesLuaarmor/originbypass,mana-shield/survival; novelty_item_owner.rs showsretainedsuccessor/death/fences/classifiedreceipt. Questdialoguecommit/reconcile retainsoriginalcause andhookforunknownack.",
+      "dependency_heads": {
+        "qengine2": "3b0c2d9e23c68f1e1bece0f39643ba836077dfe2",
+        "questpc2": "8536146524ad9cc4af542c76049334c4b8dabdeb",
+        "questpc4": "18f87a584f777b2fbfc6e9e108d72218161f9e9b",
+        "questpc5": "dcc8f5272c6f6dcd5dda7cf68975e5f5bbd4e928",
+        "questpc6": "53d5648b88e48bed2b9f27545334c21ea6f37028",
+        "questpc7": "e7a5aac32f9dc903f7cb884414c66d4504ebcd3c",
+        "questpc8": "1d0b9e8d79fa5710b5ee61f9ef91afbe74ea736c",
+        "questl2": "96d03398ff4fa6a4b4600bce114209738e072d5f"
+      },
+      "upstream_check": "No declarativeNPC/worldcallbackhealth/vitaleffect inrefreshedqengine2,PC2/4-8/L2; implementreusableQuestcause participant usingexistinghealthowner, noSQLhealthwriter.",
+      "whole_entry_status": "FourownedwholequestsremainIN_PROGRESS; noengine deferral.",
+      "red_proof": {
+        "duration_ms": 92139,
+        "marker": "QUESTPC3_BEGINNING_DAMAGE POSTGRES_ASSERTION_REACHED lost_ack=false before_hp=185 after_hp=185 duration_ms=92013",
+        "failure": "Expected 165 HP from source addHealth(-20), actual 185 HP",
+        "sha256": "0ceb938638afdb008de56117a4be79ef96f83b2cdc37580707d8b95bcea7c779"
+      },
+      "implementation": "Optional positive health_loss extends callback binding only when present; existing stage_item_health_loss stages exact successor/death before durable command. ChannelSpellStates retains cause/fence/revision, blocks competing resource commits, prunes on lifecycle; NPC normal/reconcile settles original cause once, unknown retained. No SQL health writer.",
+      "checks_so_far": {
+        "callback_units": "5 passed,1.40s incl legacy binding/positive health/bound amount/value-free repeats",
+        "source_authoring": "11 passed18.009s; native41 regeneration running"
+      },
+      "green_proof": {
+        "log": "/tmp/questpc3-beginning-damage-green.log",
+        "sha256": "2610528bc9ac4c3a58261e36ce63f5f6f8b69fb4148b05bda3bd7321f269727e",
+        "duration_ms": 131694,
+        "proof": "1 passed131.71s; normal185->165HP;lostack165->145HP; exactcause-onlyrecovery,norepeatHP/mana; sourceGreet10/log8,2receipts."
+      },
       "checks": {
+        "callback_units": {
+          "log": "/tmp/questpc3-damage-callback-unit.log",
+          "sha256": "a17a8a41a810e3ff48e2017ed35ec9d9741d3f97ad1c1255379ebdeaf91e7e5e",
+          "proof": "5 callback tests passed1.40s; absent-health legacy binding unchanged; positive/bound health and value-free repeated checks"
+        },
+        "authoring": {
+          "log": "/tmp/questpc3-damage-authoring.log",
+          "sha256": "f14de230b3a7882ca6208582fde46bb2ca804882f6e0ec1b2c8c45f9c68e85d4",
+          "proof": "11 source authoring tests passed18.009s"
+        },
+        "native": {
+          "log": "/tmp/questpc3-damage-native.log",
+          "sha256": "b9cfaee5c12a30f2088b432476ec22d3e5d21fdd0776edd716d8812480dce754",
+          "proof": "41nativeproviders regenerated and drift-checked, unchanged generated data"
+        },
         "fmt": {
-          "log": "/tmp/questpc3-coat-clock-merge-fmt.log",
+          "log": "/tmp/questpc3-damage-fmt.log",
           "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "proof": "cargo fmt --all -- --checkPASS"
+          "proof": "cargo fmt --all -- --check; mounted test rustfmt explicitly; PASS"
         },
         "check": {
-          "log": "/tmp/questpc3-coat-clock-merge-check.log",
-          "sha256": "e4c322e69677724263a65e23a85ddf310a62dac195ea99d3cdfbfc04ce9c3830",
-          "proof": "dispatch/questsallfeaturesPASS32.05s"
+          "log": "/tmp/questpc3-damage-check-final.log",
+          "sha256": "10ff220a1ee3f8e5577bd1982816e903942d3eb16b7cf56f694027b7cbbf14ce",
+          "proof": "dispatch/quests allfeatures PASS; reported5m03 includes build-lock waiting"
         },
         "clippy": {
-          "log": "/tmp/questpc3-coat-clock-merge-clippy.log",
-          "sha256": "3c4713f5e58d62ea5a6bc6e8e8856d199e59f9a9dffd2d6a6ea76c1fe56951ae",
-          "proof": "dispatch/questsallfeatures/alltargets-DwarningsPASS1m35s"
+          "log": "/tmp/questpc3-damage-clippy.log",
+          "sha256": "17f9db003c3ef540445a69c126f4d3d119508feaad3877e13e5e9600133c53b5",
+          "proof": "dispatch/quests allfeatures/alltargets -Dwarnings PASS"
         },
-        "pg": {
-          "log": "/tmp/questpc3-coat-clock-merge-pg.log",
-          "sha256": "f6eeeea8e3cc88f2265b8d128c7c50cd7135119581b45c888aea7bda724ba477",
-          "proof": "1passed55.55s; actualnativecoatchest/recovery/coldreplay;POSTGRES_CASE_COMPLETED55545ms success=true"
+        "postgres_green": {
+          "log": "/tmp/questpc3-beginning-damage-green.log",
+          "sha256": "2610528bc9ac4c3a58261e36ce63f5f6f8b69fb4148b05bda3bd7321f269727e",
+          "proof": "1 passed131.71s;131694ms actualPG; normal185->165HP/lostack165->145HP, exactoriginalcause reply recovery/nodoubleHP;Greet10/log8,2receipts"
+        },
+        "reward_regression": {
+          "log": "/tmp/questpc3-damage-reward-regression.log",
+          "sha256": "d8d7ba68e7cc8fc454dce032b289f15ed86e22aaec43c686ee3d668c20834523",
+          "proof": "1passed146.20s/146194ms actualPG; physicallegs/fish/XP/Zirella unchanged"
+        },
+        "equipment_regression": {
+          "log": "/tmp/questpc3-damage-equipment-regression.log",
+          "sha256": "6b1223eb26258e6df67f3cb2725db706b2d5651b0d28dcfcb9925eadf01366ae",
+          "proof": "1passed147.92s/147913ms actualPG; missinggear/coat-only/wornarmor/onceclub unchanged"
+        },
+        "content": {
+          "log": "/tmp/questpc3-damage-content.log",
+          "sha256": "5af87cb9b7c06014995ac16366b7c6711c6f7f1572bcf7fb5218b697cd4f2292",
+          "proof": "123passed5.92s"
+        },
+        "pin_scope": {
+          "log": "/tmp/questpc3-damage-pin-scope.log",
+          "sha256": "69bfcdcc9548b5777b0bad85b10e739e67184238c360d7580953c6f44fe23ecc",
+          "proof": "No changed/untracked path intersects repository compiler INPUT_PATHS; retain existing exact e9059b986 world/input pin/repository proofs. No world data or pins changed."
         }
       },
-      "retained_data_proofs": "No content/worlddata changed byclockintegration; retainfullyGREENdd00fe037 sourceclaim/authoring/native/content/repository/pinproofs.",
-      "review": "Read cfg(test) atomic recorded clock and production fallback; source clock authority unchanged, no test skipped/loosened; nativechestcase allassertions pass. No blocking finding."
+      "review": "Read all changed source, original source health branch, callback binding/validation, live participant reservation/fences/revisions/death/lifecycle, normal/refusal/unknown/reconcile paths, and unchanged legacy regression assertions. No new SQL/persistence owner, protocol, credentials, item economics or pin changes. Exact existing health routine reused; positive amount is content-bound; no second application from receipt replay. No blocking finding.",
+      "next": "After push, apply /tmp/questpc3-next-carlos-test.py once for realPG RED on five Carlos greeting/outfit/hunt lessons; author source NPC callbacks generically with disjoint beginning-carlos prefix. No production Carlos change yet. Continue all four whole quests."
     },
     "effective_entries": [
       "oteryn:quest.the_beginning_quest",
@@ -2389,7 +2453,7 @@
       "wvar": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
     },
     "shared_feature_owner": "questpc3: reuse existing implementations; implement every remaining engine, binding, NPC, Item and world-mechanic gap locally. No external dependency wait.",
-    "updated_at": "2026-11-07T05:40:43.971956+00:00",
+    "updated_at": "2026-11-07T06:04:17.615125+00:00",
     "publication_native_counters_01": {
       "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
       "pushed": true,
@@ -2496,106 +2560,42 @@
       }
     },
     "previous_batch": {
-      "id": "beginning-coat-chest-01",
-      "phase": "GREEN; commit and fast-forward push now",
-      "scope": "Source UID50080 sturdy chest7757 at32032/32276/5 -> one coat3562 once + existing Quest obligation to SantiagoGreet3; preserve journal and prove cold replay",
-      "red_log": "/tmp/questpc3-beginning-coat-chest-red.log",
-      "reuse": "Existing once RewardClaim MINT, chest-to-Quest PENDING obligations and Beginning catalogue extension; no new persistence writer",
-      "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L3540-L3543 sha256=7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4; questSystem1.lua:166-171 sourceGreet3/noLog3; Santiago expectscoat3562",
-      "assumption": "Chest table pilot omitted this container; NPC expects a coat and supplies one replacement. Unless nested map contents are recovered, conservative authored chest reward is exactly one coat; no extra container/rewards/XP.",
-      "whole_entry_status": "Beginning remainsIN_PROGRESS. Fourownedwholequestsremain; no engine deferral.",
-      "red": {
-        "log": "/tmp/questpc3-beginning-coat-chest-red.log",
-        "sha256": "257a9f31a729bdf159f1f645df4198d5f245cac9c24b365fca6dc7b679cce019",
-        "proof": "0passed/1failed52.72s; sourceUID50080/appearance7757 assertion marker andPOSTGRES_CASE_COMPLETED52717ms success=false; sourceclaimdidnotbind"
-      },
-      "transition_key": "oteryn:quest-transition/kv/beginning_coat/chest",
-      "implementation": "Existing generic once-MINT+PENDING quest obligation; source-authored claim through strict witness/Item checks, explicit closed native chest-key set added to existing exact binding validation, Beginning Greet-only transition; no new writer or schema migration.",
+      "id": "coat-chest-clock-merge",
+      "phase": "GREEN; commit merge and push fast-forward now",
+      "local_green": "dd00fe037c2db30b6c2ad7c4108d5d7a9b9ea398",
+      "incoming": "9a95cb0fda24e6341af0153d644ef2eb9c1cbea0",
+      "scope": "Combine source coat claim/obligation with deterministic recorded World-clock input in cfg(test); production uses the existing now_utc_ms authority unchanged",
+      "whole_entry_status": "Retain all qualifications; four owned whole quests still active unless durable quest rows show further remote qualification.",
       "checks": {
-        "units": {
-          "log": "/tmp/questpc3-beginning-coat-chest-units.log",
-          "sha256": "a992fcd2a1d9d198bccec298d94be8ce3ebf7c0d9a4222ae10d3d34ad46e56a7",
-          "proof": "2Beginningunits1.14sPASS; Greet3only/noXP/completion"
-        },
-        "authoring": {
-          "log": "/tmp/questpc3-beginning-coat-chest-authoring.log",
-          "sha256": "f695280765f6d2c3fbb8d6f205b3f64b2cb455e42b4ee7c6717f3c35a465b8ec",
-          "proof": "content regenerated anddriftcheckPASS"
-        },
-        "authoring-units": {
-          "log": "/tmp/questpc3-beginning-coat-chest-authoring-units.log",
-          "sha256": "e93c4c76ea0abaa4a6e604c76014ca04cfbb744656154db4488d59ffe60d83df",
-          "proof": "5scriptedchesttests10.839sPASS; sourceUID andnonadmittedrewardnegativeguards"
-        },
-        "reward-authoring-tests": {
-          "log": "/tmp/questpc3-beginning-coat-chest-reward-authoring-tests.log",
-          "sha256": "e9e9c13548b4906d5a1f55df9f15f7b8558394892647996fc5cb2ad96eae2569",
-          "proof": "27rewardauthoringtestsPASS; exactcomplete3chestbindings"
-        },
-        "native": {
-          "log": "/tmp/questpc3-beginning-coat-chest-native.log",
-          "sha256": "b9cfaee5c12a30f2088b432476ec22d3e5d21fdd0776edd716d8812480dce754",
-          "proof": "41nativeprovidersregen/checkPASS"
-        },
         "fmt": {
-          "log": "/tmp/questpc3-beginning-coat-chest-fmt.log",
+          "log": "/tmp/questpc3-coat-clock-merge-fmt.log",
           "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "proof": "cargo fmt --all -- --checkPASS; mountedfile explicitlyrustfmt"
+          "proof": "cargo fmt --all -- --checkPASS"
         },
         "check": {
-          "log": "/tmp/questpc3-beginning-coat-chest-check.log",
-          "sha256": "e86650095c7eaa5130566e1a0e10eb84c8acbe7bb62f3d250484cdb11ba366dd",
-          "proof": "dispatch/questsallfeaturesPASS30.20s"
+          "log": "/tmp/questpc3-coat-clock-merge-check.log",
+          "sha256": "e4c322e69677724263a65e23a85ddf310a62dac195ea99d3cdfbfc04ce9c3830",
+          "proof": "dispatch/questsallfeaturesPASS32.05s"
         },
         "clippy": {
-          "log": "/tmp/questpc3-beginning-coat-chest-clippy.log",
-          "sha256": "e60c3219a82165c2150b287e88d37f45821d84f57c407f8b029cc9215fdf33c5",
-          "proof": "dispatch/questsallfeatures/alltargets-DwarningsPASS1m18s"
+          "log": "/tmp/questpc3-coat-clock-merge-clippy.log",
+          "sha256": "3c4713f5e58d62ea5a6bc6e8e8856d199e59f9a9dffd2d6a6ea76c1fe56951ae",
+          "proof": "dispatch/questsallfeatures/alltargets-DwarningsPASS1m35s"
         },
-        "postgres_green": {
-          "log": "/tmp/questpc3-beginning-coat-chest-green.log",
-          "sha256": "012031d9804e272dbe4634fb7bb10495ad1e52ac6961ed6000c98a66ad9fc149",
-          "proof": "1passed72.27s; UID50080appearance7757 actualnativeUSE; POSTGRES_CASE_COMPLETED72265ms success=true; onecoat, Greet3only, onequestreceipt acrosscoldreplay"
-        },
-        "pin_refresh": {
-          "log": "/tmp/questpc3-beginning-coat-chest-pin-refresh.log",
-          "sha256": "d442ba19bfb7360132754de3f94abab1e3170f9b38f71f65bf0bb381ae2b33d9",
-          "proof": "Repo tool PASS; world/inputdigest unchanged5a0915065c781aeb38945b17a04b119c4283268873432abb9e2f02aeee431fd3 /5feab142eb4a4387acf986fec44841e269c58848c4188160871945936863c973"
-        },
-        "rapier": {
-          "log": "/tmp/questpc3-beginning-coat-chest-rapier.log",
-          "sha256": "bb21beb4abef66cea8c28e7ffe522144c2f251fc3f37aa3f38602e58fa98a490",
-          "proof": "1passed50.64s; actualPGcompletion50634ms; existingonceclaimandreplay unchanged"
-        },
-        "content": {
-          "log": "/tmp/questpc3-beginning-coat-chest-content.log",
-          "sha256": "6eb51641cc29b53a6a36d873c0d2f8b56d8fc282fa2b38732a6850719ddeae9e",
-          "proof": "123passed4.47s"
-        },
-        "repository": {
-          "log": "/tmp/questpc3-beginning-coat-chest-repository.log",
-          "sha256": "517cd4721f01ad115eadd20973f59904a9750ce8a6074024fd6dd8a2a5946597",
-          "proof": "5passed75.84s"
-        },
-        "pin-check": {
-          "log": "/tmp/questpc3-beginning-coat-chest-pin-check.log",
-          "sha256": "220fe5d906fb52704760ccea1ccf29f3b65b95210e9536028b4fec60fd17bf40",
-          "proof": "PASSinputs5a0915065c781aeb38945b17a04b119c4283268873432abb9e2f02aeee431fd3/world5feab142eb4a4387acf986fec44841e269c58848c4188160871945936863c973/31102319bytes"
+        "pg": {
+          "log": "/tmp/questpc3-coat-clock-merge-pg.log",
+          "sha256": "f6eeeea8e3cc88f2265b8d128c7c50cd7135119581b45c888aea7bda724ba477",
+          "proof": "1passed55.55s; actualnativecoatchest/recovery/coldreplay;POSTGRES_CASE_COMPLETED55545ms success=true"
         }
       },
-      "running": {
-        "rapier_content_repository": 9217,
-        "pin_check": 12503
-      },
-      "authoring_correction": "First witness scan assumed every pilot entry hasposition; some omitted entries do not. Restrict exact position match via get(), retain uniqueUID/position strictchecks; finalauthoring/contenttestsallPASS. Firsterrorlog preserved.",
-      "review": "Read source witness checks, exact lower/native transition binding set, native greeting-only effect, once-MINT/obligation/replay assertions and unchanged prior recipes. All required checks GREEN. Conservative onecoat assumption explicit; no additionalcontainer/XP/journal/completion. No blocking finding."
+      "retained_data_proofs": "No content/worlddata changed byclockintegration; retainfullyGREENdd00fe037 sourceclaim/authoring/native/content/repository/pinproofs.",
+      "review": "Read cfg(test) atomic recorded clock and production fallback; source clock authority unchanged, no test skipped/loosened; nativechestcase allassertions pass. No blocking finding."
     },
     "previous_publication": {
-      "head": "456ea0def29aea5299e78f9d2e2b3e9a05336de5",
+      "head": "e9059b9867f1ce69e5d2b40e122d011854257106",
       "pushed": true,
       "remote_verified": true,
-      "batch": "equipment-feyrist-native-merge",
-      "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9"
+      "batch": "coat-chest-clock-merge"
     },
     "integrating_remote_batch": {
       "commit": "73a106fc5035885a844c81e8618900f80c028116",
@@ -3366,6 +3366,102 @@
         },
         "retained_data_proofs": "No content/worlddata changed byclockintegration; retainfullyGREENdd00fe037 sourceclaim/authoring/native/content/repository/pinproofs.",
         "review": "Read cfg(test) atomic recorded clock and production fallback; source clock authority unchanged, no test skipped/loosened; nativechestcase allassertions pass. No blocking finding."
+      },
+      "beginning-damage-lesson-01": {
+        "id": "beginning-damage-lesson-01",
+        "phase": "GREEN; commit and push this coherent reusable health owner + source lesson batch",
+        "scope": "SourceSantiagoGreet9->10/log8 with20physicalLuaHP loss; normalcase, retainedlost-ack/replay/noHPdoubleapply throughsharedQuestandconditionowners",
+        "red_log": "/tmp/questpc3-beginning-damage-red.log",
+        "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L180-L188",
+        "reused": "stage_item_health_loss in spell/actor_conditions/item_actions.rs:33 preservesLuaarmor/originbypass,mana-shield/survival; novelty_item_owner.rs showsretainedsuccessor/death/fences/classifiedreceipt. Questdialoguecommit/reconcile retainsoriginalcause andhookforunknownack.",
+        "dependency_heads": {
+          "qengine2": "3b0c2d9e23c68f1e1bece0f39643ba836077dfe2",
+          "questpc2": "8536146524ad9cc4af542c76049334c4b8dabdeb",
+          "questpc4": "18f87a584f777b2fbfc6e9e108d72218161f9e9b",
+          "questpc5": "dcc8f5272c6f6dcd5dda7cf68975e5f5bbd4e928",
+          "questpc6": "53d5648b88e48bed2b9f27545334c21ea6f37028",
+          "questpc7": "e7a5aac32f9dc903f7cb884414c66d4504ebcd3c",
+          "questpc8": "1d0b9e8d79fa5710b5ee61f9ef91afbe74ea736c",
+          "questl2": "96d03398ff4fa6a4b4600bce114209738e072d5f"
+        },
+        "upstream_check": "No declarativeNPC/worldcallbackhealth/vitaleffect inrefreshedqengine2,PC2/4-8/L2; implementreusableQuestcause participant usingexistinghealthowner, noSQLhealthwriter.",
+        "whole_entry_status": "FourownedwholequestsremainIN_PROGRESS; noengine deferral.",
+        "red_proof": {
+          "duration_ms": 92139,
+          "marker": "QUESTPC3_BEGINNING_DAMAGE POSTGRES_ASSERTION_REACHED lost_ack=false before_hp=185 after_hp=185 duration_ms=92013",
+          "failure": "Expected 165 HP from source addHealth(-20), actual 185 HP",
+          "sha256": "0ceb938638afdb008de56117a4be79ef96f83b2cdc37580707d8b95bcea7c779"
+        },
+        "implementation": "Optional positive health_loss extends callback binding only when present; existing stage_item_health_loss stages exact successor/death before durable command. ChannelSpellStates retains cause/fence/revision, blocks competing resource commits, prunes on lifecycle; NPC normal/reconcile settles original cause once, unknown retained. No SQL health writer.",
+        "checks_so_far": {
+          "callback_units": "5 passed,1.40s incl legacy binding/positive health/bound amount/value-free repeats",
+          "source_authoring": "11 passed18.009s; native41 regeneration running"
+        },
+        "green_proof": {
+          "log": "/tmp/questpc3-beginning-damage-green.log",
+          "sha256": "2610528bc9ac4c3a58261e36ce63f5f6f8b69fb4148b05bda3bd7321f269727e",
+          "duration_ms": 131694,
+          "proof": "1 passed131.71s; normal185->165HP;lostack165->145HP; exactcause-onlyrecovery,norepeatHP/mana; sourceGreet10/log8,2receipts."
+        },
+        "checks": {
+          "callback_units": {
+            "log": "/tmp/questpc3-damage-callback-unit.log",
+            "sha256": "a17a8a41a810e3ff48e2017ed35ec9d9741d3f97ad1c1255379ebdeaf91e7e5e",
+            "proof": "5 callback tests passed1.40s; absent-health legacy binding unchanged; positive/bound health and value-free repeated checks"
+          },
+          "authoring": {
+            "log": "/tmp/questpc3-damage-authoring.log",
+            "sha256": "f14de230b3a7882ca6208582fde46bb2ca804882f6e0ec1b2c8c45f9c68e85d4",
+            "proof": "11 source authoring tests passed18.009s"
+          },
+          "native": {
+            "log": "/tmp/questpc3-damage-native.log",
+            "sha256": "b9cfaee5c12a30f2088b432476ec22d3e5d21fdd0776edd716d8812480dce754",
+            "proof": "41nativeproviders regenerated and drift-checked, unchanged generated data"
+          },
+          "fmt": {
+            "log": "/tmp/questpc3-damage-fmt.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "proof": "cargo fmt --all -- --check; mounted test rustfmt explicitly; PASS"
+          },
+          "check": {
+            "log": "/tmp/questpc3-damage-check-final.log",
+            "sha256": "10ff220a1ee3f8e5577bd1982816e903942d3eb16b7cf56f694027b7cbbf14ce",
+            "proof": "dispatch/quests allfeatures PASS; reported5m03 includes build-lock waiting"
+          },
+          "clippy": {
+            "log": "/tmp/questpc3-damage-clippy.log",
+            "sha256": "17f9db003c3ef540445a69c126f4d3d119508feaad3877e13e5e9600133c53b5",
+            "proof": "dispatch/quests allfeatures/alltargets -Dwarnings PASS"
+          },
+          "postgres_green": {
+            "log": "/tmp/questpc3-beginning-damage-green.log",
+            "sha256": "2610528bc9ac4c3a58261e36ce63f5f6f8b69fb4148b05bda3bd7321f269727e",
+            "proof": "1 passed131.71s;131694ms actualPG; normal185->165HP/lostack165->145HP, exactoriginalcause reply recovery/nodoubleHP;Greet10/log8,2receipts"
+          },
+          "reward_regression": {
+            "log": "/tmp/questpc3-damage-reward-regression.log",
+            "sha256": "d8d7ba68e7cc8fc454dce032b289f15ed86e22aaec43c686ee3d668c20834523",
+            "proof": "1passed146.20s/146194ms actualPG; physicallegs/fish/XP/Zirella unchanged"
+          },
+          "equipment_regression": {
+            "log": "/tmp/questpc3-damage-equipment-regression.log",
+            "sha256": "6b1223eb26258e6df67f3cb2725db706b2d5651b0d28dcfcb9925eadf01366ae",
+            "proof": "1passed147.92s/147913ms actualPG; missinggear/coat-only/wornarmor/onceclub unchanged"
+          },
+          "content": {
+            "log": "/tmp/questpc3-damage-content.log",
+            "sha256": "5af87cb9b7c06014995ac16366b7c6711c6f7f1572bcf7fb5218b697cd4f2292",
+            "proof": "123passed5.92s"
+          },
+          "pin_scope": {
+            "log": "/tmp/questpc3-damage-pin-scope.log",
+            "sha256": "69bfcdcc9548b5777b0bad85b10e739e67184238c360d7580953c6f44fe23ecc",
+            "proof": "No changed/untracked path intersects repository compiler INPUT_PATHS; retain existing exact e9059b986 world/input pin/repository proofs. No world data or pins changed."
+          }
+        },
+        "review": "Read all changed source, original source health branch, callback binding/validation, live participant reservation/fences/revisions/death/lifecycle, normal/refusal/unknown/reconcile paths, and unchanged legacy regression assertions. No new SQL/persistence owner, protocol, credentials, item economics or pin changes. Exact existing health routine reused; positive amount is content-bound; no second application from receipt replay. No blocking finding.",
+        "next": "After push, apply /tmp/questpc3-next-carlos-test.py once for realPG RED on five Carlos greeting/outfit/hunt lessons; author source NPC callbacks generically with disjoint beginning-carlos prefix. No production Carlos change yet. Continue all four whole quests."
       }
     },
     "completed_batches": [

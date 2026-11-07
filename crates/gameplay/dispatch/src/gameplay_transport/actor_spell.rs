@@ -6,6 +6,7 @@
 mod activity_transfer;
 #[path = "novelty_item_owner.rs"]
 mod novelty_item_owner;
+mod quest_health_owner;
 pub(in crate::gameplay_transport) use activity_transfer::PreparedActivitySpellStates;
 pub(in crate::gameplay_transport) use novelty_item_owner::NoveltyEffectRequest;
 pub use oteryn_protocol_oteryn::actor_spell::*;
@@ -115,6 +116,7 @@ pub struct ChannelSpellStates {
         oteryn_gameplay_domain::domain::hireling::food::GourmetConditions,
         u64,
     )>,
+    pending_quest_health: Vec<quest_health_owner::PendingQuestHealth>,
     pub(in crate::gameplay_transport) pending_item_effects:
         Vec<super::novelty_item_use::PendingItemEffect>,
     pub(in crate::gameplay_transport) pending_gourmet: Vec<super::item_use::gourmet::PendingUse>,
@@ -301,6 +303,7 @@ impl Default for ChannelSpellStates {
             enchanting_pending: Vec::new(),
             gourmet_checkpoints: Vec::new(),
             pending_item_effects: Vec::new(),
+            pending_quest_health: Vec::new(),
             pending_gourmet: Vec::new(),
             pending_hireling_lamps: Vec::new(),
             prey: Vec::new(),
@@ -444,9 +447,12 @@ impl ChannelSpellStates {
 
     /// Unknown durable outcomes retain their original prepared owner state.
     pub fn has_pending_spell_commit(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
-        self.pending_item_effects
+        self.pending_quest_health
             .iter()
-            .any(|memo| memo.actor == actor && memo.request.command.game_session_id() == session)
+            .any(|memo| memo.actor == actor && memo.session == session)
+            || self.pending_item_effects.iter().any(|memo| {
+                memo.actor == actor && memo.request.command.game_session_id() == session
+            })
             || self
                 .pending_gourmet
                 .iter()
@@ -651,6 +657,14 @@ impl ChannelSpellStates {
                     .is_ok()
         });
         self.pending_gourmet.retain(|pending| {
+            runtime
+                .player_control_facts(pending.actor, pending.session)
+                .is_ok()
+                || runtime
+                    .house_player_control_facts(pending.actor, pending.session)
+                    .is_ok()
+        });
+        self.pending_quest_health.retain(|pending| {
             runtime
                 .player_control_facts(pending.actor, pending.session)
                 .is_ok()

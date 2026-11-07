@@ -24,7 +24,7 @@ fn questpc3_beginning_physical_rewards_and_xp_are_atomic() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(Scenario::Rewards).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "Beginning rewards scenario panicked")??;
     Ok(())
@@ -38,7 +38,7 @@ fn questpc3_beginning_coat_equipment_and_club_are_atomic() -> TestResult {
     }
     std::thread::Builder::new().stack_size(256 << 20).spawn(|| {
         let started = std::time::Instant::now();
-        match std::panic::catch_unwind(|| scenario(true)) {
+        match std::panic::catch_unwind(|| scenario(Scenario::Equipment)) {
             Ok(result) => {
                 eprintln!("QUESTPC3_BEGINNING_EQUIPMENT POSTGRES_CASE_COMPLETED duration_ms={} success={}", started.elapsed().as_millis(), result.is_ok());
                 result.map_err(|error| error.to_string())
@@ -52,7 +52,36 @@ fn questpc3_beginning_coat_equipment_and_club_are_atomic() -> TestResult {
     Ok(())
 }
 
-fn scenario(equipment: bool) -> TestResult {
+#[derive(Clone, Copy)]
+enum Scenario {
+    Rewards,
+    Equipment,
+    Damage,
+}
+
+#[test]
+fn questpc3_beginning_damage_lesson_is_once_and_recovers_lost_ack() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("QUESTPC3_BEGINNING_DAMAGE POSTGRES_SKIPPED no_admin_url");
+        return Ok(());
+    }
+    std::thread::Builder::new().stack_size(256 << 20).spawn(|| {
+        let started = std::time::Instant::now();
+        match std::panic::catch_unwind(|| scenario(Scenario::Damage)) {
+            Ok(result) => {
+                eprintln!("QUESTPC3_BEGINNING_DAMAGE POSTGRES_CASE_COMPLETED duration_ms={} success={}",started.elapsed().as_millis(),result.is_ok());
+                result.map_err(|error|error.to_string())
+            }
+            Err(panic) => {
+                eprintln!("QUESTPC3_BEGINNING_DAMAGE POSTGRES_CASE_COMPLETED duration_ms={} success=false assertion_panicked=true",started.elapsed().as_millis());
+                std::panic::resume_unwind(panic)
+            }
+        }
+    })?.join().map_err(|_|"damage lesson panicked")??;
+    Ok(())
+}
+
+fn scenario(mode: Scenario) -> TestResult {
     let started = std::time::Instant::now();
     run(async |admin| {
         let h =
@@ -133,6 +162,7 @@ fn scenario(equipment: bool) -> TestResult {
             .collect::<Result<Vec<_>, _>>()?;
         for (phase, npc, greet, log) in [
             ("equipment", "santiago", 3, 2),
+            ("damage", "santiago", 9, 7),
             ("legs", "santiago", 6, 4),
             ("fish", "santiago", 10, 8),
             ("zirella", "zirella", 7, 7),
@@ -177,7 +207,166 @@ fn scenario(equipment: bool) -> TestResult {
             ["oteryn:npc.santiago", "oteryn:npc.zirella"],
         )
         .await?;
-        if equipment {
+        if matches!(mode, Scenario::Damage) {
+            let actor = admitted.runtime_actor.ok_or("actor")?;
+            for (command_id, lost_ack) in [(4400, false), (4500, true)] {
+                // Only the earlier lessons are fixture state. The HP loss,
+                // successor, receipt and acknowledgement recovery execute below.
+                let fence = owner
+                    .current_quest_fence(admitted.game_session_id)
+                    .await
+                    .map_err(|()| "fence")?
+                    .ok_or("fence")?;
+                let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+                let seeded = slot
+                    .commit_quest_transition(
+                        owner.root,
+                        owner.character,
+                        owner.holder,
+                        fence,
+                        QuestTransitionRequest {
+                            transition_key:
+                                "oteryn:quest-transition/fixture/beginning-reward/damage".into(),
+                            cause: QuestCause::Command(CommandRef::new(
+                                admitted.game_session_id,
+                                CommandId::new(command_id).map_err(debug)?,
+                            )),
+                        },
+                        owner.quest_catalogue.clone().ok_or("catalogue")?,
+                    )
+                    .await
+                    .map_err(debug)?;
+                assert!(matches!(seeded, QuestTransitionOutcome::Committed(_)));
+                drop(slot);
+                owner
+                    .refresh_quest_session(admitted.game_session_id, false)
+                    .await;
+                super::classic_quests::talk(&mut owner, &admitted, santiago, command_id + 1, "hi")
+                    .await?;
+                let before = owner
+                    .observe_actor_vitals(actor, admitted.game_session_id)
+                    .await
+                    .ok_or("vitals")?
+                    .1;
+                assert!(before.health > 20, "healthy source lesson fixture");
+                let fence = owner
+                    .current_quest_fence(admitted.game_session_id)
+                    .await
+                    .map_err(|()| "fence")?
+                    .ok_or("fence")?;
+                let command = UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command_id + 2,
+                    item_fence: Some(fence.item_fence()),
+                };
+                owner.clock_origin = owner
+                    .clock_origin
+                    .checked_sub(std::time::Duration::from_secs(2))
+                    .ok_or("clock")?;
+                if lost_ack {
+                    owner
+                        .states
+                        .npc_conversations
+                        .fixture_interrupt_quest_dialogue_commit(
+                            admitted.game_session_id,
+                            command_id + 2,
+                        )?;
+                }
+                let result = owner
+                    .npc_talk(
+                        actor,
+                        command,
+                        NpcTalkIntent {
+                            npc_actor: santiago,
+                            text: "yes".into(),
+                        },
+                    )
+                    .await;
+                let after = owner
+                    .observe_actor_vitals(actor, admitted.game_session_id)
+                    .await
+                    .ok_or("vitals")?
+                    .1;
+                eprintln!(
+                    "QUESTPC3_BEGINNING_DAMAGE POSTGRES_ASSERTION_REACHED lost_ack={} before_hp={} after_hp={} duration_ms={}",
+                    lost_ack,
+                    before.health,
+                    after.health,
+                    started.elapsed().as_millis()
+                );
+                assert_eq!(
+                    after.health,
+                    before.health - 20,
+                    "source addHealth(-20) must execute through the existing vitals owner"
+                );
+                assert_eq!(
+                    after.mana, before.mana,
+                    "unshielded lesson has no mana debit"
+                );
+                for (name, value) in [
+                    ("santiago_npc_greet_storage", 10),
+                    ("santiago_quest_log", 8),
+                ] {
+                    assert_eq!(
+                        super::classic_quests::progress(
+                            &owner,
+                            &admitted,
+                            &authority,
+                            &format!("{BASE}{name}")
+                        )
+                        .await?,
+                        value
+                    );
+                }
+                if lost_ack {
+                    assert!(result.unknown && result.conversation.is_none());
+                    assert!(
+                        owner
+                            .resume_npc_bank(
+                                actor,
+                                UseCommand {
+                                    command_id: command_id + 3,
+                                    ..command
+                                }
+                            )
+                            .await
+                            .is_none(),
+                        "another command cannot settle the retained cause"
+                    );
+                    let replay = owner
+                        .resume_npc_bank(actor, command)
+                        .await
+                        .ok_or("retained damage reply")?;
+                    assert_eq!(replay.disposition, NpcIntentDisposition::Ok);
+                    assert!(!replay.unknown);
+                    assert!(owner.resume_npc_bank(actor, command).await.is_none());
+                } else {
+                    assert_eq!(result.disposition, NpcIntentDisposition::Ok);
+                    assert!(!result.unknown);
+                }
+                let settled = owner
+                    .observe_actor_vitals(actor, admitted.game_session_id)
+                    .await
+                    .ok_or("vitals")?
+                    .1;
+                assert_eq!(
+                    settled.health, after.health,
+                    "receipt/reply replay cannot apply HP loss again"
+                );
+                assert_eq!(settled.mana, after.mana);
+                let receipts: i64 = sqlx::query_scalar(
+                    "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+                )
+                .bind("oteryn:quest-reward/questpc3/beginning/damage-lesson")
+                .fetch_one(&h.pool)
+                .await?;
+                assert_eq!(receipts, if lost_ack { 2 } else { 1 });
+                super::classic_quests::talk(&mut owner, &admitted, santiago, command_id + 4, "bye")
+                    .await?;
+            }
+            return Ok(());
+        }
+        if matches!(mode, Scenario::Equipment) {
             let armor_slot = oteryn_protocol_oteryn::item_view::durable_slot(
                 oteryn_protocol_oteryn::item_view::EquipmentSlot::Armor,
             )

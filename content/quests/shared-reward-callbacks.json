@@ -141,6 +141,45 @@
       "repeatable_check": true
     },
     {
+      "key": "oteryn:quest-reward/questpc3/beginning/damage-lesson",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "keywords": [
+        "yes",
+        "right",
+        "ok"
+      ],
+      "topic": 6,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Watch your health bar. Shall I show you how food helps you recover?"
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L185"
+      ],
+      "health_loss": 20
+    },
+    {
       "key": "oteryn:quest-reward/questpc3/beginning/food-explained",
       "quest": "oteryn:quest.the_beginning_quest",
       "npc": "oteryn:npc.santiago",
