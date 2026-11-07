@@ -206,3 +206,13 @@ qualification. Continue owned missing mechanisms; no external engine deferral.
   canonical fact, allocate no identity, and keep source geometry/action ids.
   Fresh qengine2 a0100244c and questpc4 5ea9e52be retain the generic predicate
   but provide no5111/5112 admission to reuse.
+
+- Confirmed source startup gate (no assumption): retained corpus
+  data-global/startup/tables/door_level.lua:173-178, SHA256
+  d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc,
+  declares1100 at33214,31671,13. Raw captured B3 has no action. Independent
+  level-access recapture preserves the already finished chest source capture.
+  Source map diff adds only that action; all geometry/other items unchanged.
+- Actual PG100.04s passes gates, entry, native kills/drains and reward doorway.
+  Source statues2113 block26,58 and34,58; display2012 occupies30,57. Route
+  around these captured obstacles with real WALK; never remove collision.

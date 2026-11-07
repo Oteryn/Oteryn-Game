@@ -417,3 +417,43 @@ retire old metadata after confirming its newest snapshot. Restore appropriate
 current check/clippy and root caches before those checks; do not overwrite
 newer native durability READY with old archive. Heavy checks run sequentially.
 Counts remain0/35; no whole quest qualification from this checkpoint.
+
+2026-11-07 07:40 UTC source/resume checkpoint: runtime still local until
+full-route GREEN. Second PG RED74.28s after profiles proved raw gate lacked
+startup action. Retained corpus.tar.gz includes exact door_level.lua SHA
+d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc,
+lines173-178 action1100 at33214,31671,13. The prior chest source blob7c3...
+is not in this corpus; preserve its finished capture. Added independent
+--capture-level-access to existing quest_chest_bindings.py, using exact retained
+level source bytes while preserving all chest fields. Its apply/check and13
+tests pass. Semantic source-map diff is ONLY one action1100 on that tile;
+no geometry, other Item, terrain or placement changes. Pin refresh/check
+pass e9f0c52...e3c4e1d, logs /tmp/questpc2-complete-source-pin-*.log.
+
+Actual PG after restored startup binding ran100.04s: all four actual gates
+and source entry pass, both full-health native kills and durable corpse/loot
+drains pass. Reward-room door opens; hero moves25,59 then26,59. North is
+blocked by actual statue2113 at26,58. Captured map inspection also finds
+statue34,58 and display2012 at30,57. Fixed only real client walk: east to27,59,
+north to27,57; first chest27,56; east once to28,57 for second choice29,56;
+south to28,58, east five to33,58, south33,59, east34,59 for exit door35,59;
+then east twice and north four to actual portal36,55. Endpoint assertions
+remain; step failures now name actual origin and direction.
+
+Latest build compiled but linker SIGBUS at disk exhaustion; no PG ran.
+Removed only inactive failed .tmp and temporary native CGU copies, retaining
+newest completed READY s-hnxl7zd75m-010yfzw-7q4xhxkkjyyniv9al4n38lf8t.
+Old native metadata was retired after this newer READY. Retrying exact full
+case, log /tmp/questpc2-complete-link-recovered-pg.log, session39229.
+Latest additional cache ledger /tmp/questpc2-complete-route-native-retention.json;
+its old metadata retired, inactive content12xz cache still archived.
+Current check/clippy caches in complete-verification-cache-retention.json
+and five extra caches in complete-native-memory-retention.json must be
+restored to their recorded original paths before final checks. Do not
+overwrite any newer READY. Green66caf4fd0 combat executable remains gzip
+retained; obsolete older regular dispatch rlib was retired only after its
+newer original artifact was verified present. No broad clean/settings change.
+Next: actual full PG, fix real refusal if any; scoped check/clippy/fmt,
+registration43-file check and source-map tool checks, update qualification
+only after earned reward/replay/exit/reentry pass, publish runtime slice and
+continue all remaining quests. Counts remain0/35.
