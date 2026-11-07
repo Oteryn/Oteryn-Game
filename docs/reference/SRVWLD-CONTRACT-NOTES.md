@@ -1,5 +1,73 @@
 # Integrated producer contract notes
 
+## SRVWLD — W19b Dryad Garden
+
+Crystal `201189f871d23597b82caf88fd611454a2ddefb8`,
+`data-global/scripts/actions/other/dryad_garden.lua:1-27` binds unique IDs
+33331/33332 to the existing enter/leave destinations. Lines 18-19 teleport
+before emitting watersplash at the resulting player position. The existing
+callback executor owns movement; its successful teleport publishes effect 54
+through the ordinary item presentation journal, after the movement commit.
+No additional movement, quest storage or item writer is introduced.
+
+No migration, command, capability, mechanic ordinal or registry number is
+allocated. Existing USE and item presentation contracts are reused; migration
+range 1110-1119 remains unused. Tests use the production USE route in both
+directions and inspect the journal at the committed destination.
+
+The two `srvwld_dryad_garden_*_teleports_and_publishes_destination_splash`
+PostgreSQL cases first reproduced missing cues after successful teleports
+(46.28 s together). With the publisher wired, enter completed in 97.088 s
+and leave in 92.893 s against PostgreSQL 18.6, with explicit completed-case
+markers. Scope was narrowed to W01c, W19b and P01 using audit branch
+`claude/happy-davinci-ijz3wy-aud1107` at
+`d531f725dc25c70c268c85c40ad14e63a7a9c7cd`. No work on removed rows was pushed.
+
+## SRVWLD — P01 Scavenge consumer verification
+
+The November 7 audit's unconfirmed `SkinningChanceBonus` consumer already
+exists on base `9668e0a04`. Production USE_WITH enters
+`item_craft.rs:64`, then `item_craft/skinning.rs:166` calls the fenced durable
+`skin_corpse` owner. In
+`crates/gameplay/durability/src/durability/item_craft/skinning.rs:172-196`,
+the persisted assignment is joined to the minted corpse's race, explicitly
+checks `CharmEffect::SkinningChanceBonus`, and consumes its unlocked stage
+value in the exact skinning probability. Corpse conversion, reward and replay
+proof remain in the existing item transaction.
+
+Donor evidence: Canary `47dfd51f45280a59a1d3e50ba7edd573d7234446`,
+`data-otservbr-global/scripts/actions/tools/skinning.lua:200-208`, and the
+accepted positive-relative-chance rule documented in `docs/reference/SRX-2.md`.
+The existing production regression
+`srx2_scavenge_production_use_minted_corpse_atomic_replay_postgres` ran against
+PostgreSQL 18.6 in 44.951 s. It covers all three stages, fractional 11.2/13.3/15.4
+percent boundaries, exact source race, real corpse provenance, rollback and
+replay. The scoped 16-test dispatch run passed in 376.66 s, including the nine
+`srx2_charm` runtime cases, assignment progression and the source callback cases.
+No additional chance writer, migration or protocol/registry number is needed.
+
+## SRVWLD — W01c canonical callback closure
+
+The production canonical corpus on base `9668e0a04` already contains executable
+bodies for every canonical schedule. The regression
+`srvwld_canonical_schedules_resolve_every_callback_at_its_source_index` passed
+in 1.60 s: 1,863 canonical creatures, 7,201 attack/defense slots, 15 composed
+attack callback slots and eight healing-defense callback slots. It exercises
+the real native AI projection and verifies that every slot resolves without
+being dropped or renumbered. All 15 attack callback bodies also pass
+`ComposedSource::from_native_parts`, the parser called by production
+`monster_profile_cycle/physical_spell/composed.rs:27`.
+
+The compatibility nil-body branch is retained: the 33 unresolved slots belong
+to the seven retained `canary:` legacy/familiar records, not the canonical
+`oteryn:creature.*` source corpus. No executable behavior is inferred from an
+unqualified name. Crystal `201189f871d23597b82caf88fd611454a2ddefb8`,
+`src/creatures/monsters/monster.cpp:1201-1222`, likewise skips a null spell and
+executes resolved spells in source order. Existing native callback owner tests
+`nine_source_callbacks_actual_native_damage_delays_stages_and_replay` and
+`every_source_callback_missing_facts_provenance_scope_dead_parent_refuses`
+passed in the scoped dispatch run. No migration or public number is allocated.
+
 Package GPROD-PKG composes all three deliveries below on current main. The delivery
 sections retain their original scope/history; statements about another producer being
 absent describe that delivery's base, rather than this combined package.
