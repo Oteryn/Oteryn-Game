@@ -8,9 +8,9 @@ import questl2_exchange_recipes as recipes
 NPCS = tuple(sorted({'an_old_dragon_lord', 'dorian', 'gamon', 'hairycles', 'jorge', 'kroox', *prayers.PRIESTS, *recipes.NPCS}))
 NPC_FILES = {'oteryn:npc.an_old_dragonlord': 'an_old_dragon_lord'}
 
+
 def source_path(npc):
     return 'data-global/npc/' + NPC_FILES.get(npc, npc.removeprefix('oteryn:npc.')) + '.lua'
-
 ITEMS = {
     227, 5941, 4827, 4828, 4829, 4831, 4832, 7870, 7871, 7933,
     7935, 7936, 19083, 19150, 19151, 19152, 19153, 19154, 19155,
@@ -30,11 +30,11 @@ def append(callbacks, offers, inputs, pin):
                 'set': after, **({'preserve': True} if preserve else {})}
 
     def add(name, quest, npc, keywords, storage, reply, take=(), topic=0, offer=None,
-            give=None, repeatable=False, source_text=None, npc_key=None, fee=None):
-        path = f'data-global/npc/{npc}.lua'
+            give=None, repeatable=False, source_text=None, fee=None):
+        path = source_path('oteryn:npc.' + npc)
         callback = {
             'key': 'oteryn:quest-reward/' + name,
-            'quest': 'oteryn:quest.' + quest, 'npc': npc_key or 'oteryn:npc.' + npc,
+            'quest': 'oteryn:quest.' + quest, 'npc': 'oteryn:npc.' + npc,
             'keywords': keywords, 'topic': topic, 'next_topic': 0,
             'storage': storage,
             'take': [{'item': f'oteryn:item.tibia.i{item}', 'count': count}
@@ -67,36 +67,6 @@ def append(callbacks, offers, inputs, pin):
             offers.append({'npc': callback['npc'], 'keywords': words, 'topic': 0,
                            'next_topic': topic, 'storage': storage, 'reply': [text]})
 
-    friends = 'u7_8/friends_and_traders/'
-    add('exchange-quentin-start', 'friends_and_traders', 'quentin', ['yes'],
-        [state(friends + 'default_start', -1, 1, 1),
-         state(friends + 'the_blessed_stake', -1, 1, 0)],
-        "Alright, I guess you need a stake first. Maybe Gamon can help you, the leg of a chair or something could just do. Try asking him for a stake, and if you have one, bring it back to me.",
-        topic=1, offer=(['stake'], 'Is this stake really important enough to you so that you are willing to take this burden?'))
-    add('exchange-gamon-stake', 'friends_and_traders', 'gamon', ['yes'],
-        [state(friends + 'the_blessed_stake', 1, 1, 9223372036854775807, preserve=True)],
-        "Argh... my heart aches! Alright... a promise is a promise. Here - take this wooden stake, and now get lost.",
-        give=(5941, 1), topic=1, repeatable=True, fee={'gold':5000, 'include_bank':True},
-        offer=(['stake'], "Making a stake from a chair? Are you insane??! I won't waste my chairs on you for free! You will have to pay for it, but since I consider your plan a blasphemy, it will cost 5000 gold pieces. Okay?"))
-
-    prayers.append(add, state, callbacks, inputs)
-    recipes.append(add, state, callbacks, offers, inputs)
-
-    dragon_npc = 'oteryn:npc.an_old_dragonlord'
-    dragon_track = 'oteryn:quest-progress/dragonfetish'
-    dragon_reply = "AHHH MUSHRRROOOMSSS! NOW MY PAIN WILL BE EASSSED FOR A WHILE! TAKE THISS AND LEAVE THE DRAGONSSS' CEMETERY AT ONCE!"
-    for name, minimum, maximum in [('initial', -1, 0), ('later', 2, 9223372036854775807)]:
-        add('draconia-fetish-' + name, 'draconia_quest', 'an_old_dragon_lord', ['hi', 'hello'],
-            [{'track': dragon_track, 'minimum': minimum, 'maximum': maximum, 'set': 1}],
-            dragon_reply, take=[(3723, 1)], give=(3206, 1), repeatable=True,
-            source_text='player:addItem(3206, 1)', npc_key=dragon_npc)
-    blocked = "LEAVE THE DRAGONS' CEMETERY AT ONCE!"
-    if blocked not in inputs[source_path(dragon_npc)].decode():
-        raise ValueError('Draconia blocked greeting drift')
-    offers.append({'npc': dragon_npc, 'keywords': ['hi', 'hello'], 'topic': 0, 'next_topic': 0,
-                   'storage': [{'track': dragon_track, 'minimum': 1, 'maximum': 1, 'set': 1}],
-                   'reply': [blocked]})
-
     jorge = inputs['data-global/npc/jorge.lua'].decode()
     for required in ('{ name = "Abacus", id = 19151 }',
                      'getPlayerItemCount(creature, 19083) >= 20',
@@ -120,6 +90,40 @@ def append(callbacks, offers, inputs, pin):
                     if f'name = "{name}", id = {item}' in text)
         callbacks[-1]['sources'].append(
             f'crystal:{pin}:data-global/npc/jorge.lua:{line}:sha256:{hashlib.sha256(inputs["data-global/npc/jorge.lua"]).hexdigest()}')
+
+    friends = 'u7_8/friends_and_traders/'
+    add('exchange-quentin-start', 'friends_and_traders', 'quentin', ['yes'],
+        [state(friends + 'default_start', -1, 1, 1),
+         state(friends + 'the_blessed_stake', -1, 1, 0)],
+        "Alright, I guess you need a stake first. Maybe Gamon can help you, the leg of a chair or something could just do. Try asking him for a stake, and if you have one, bring it back to me.",
+        topic=1, offer=(['stake'], 'Is this stake really important enough to you so that you are willing to take this burden?'))
+    add('exchange-gamon-stake', 'friends_and_traders', 'gamon', ['yes'],
+        [state(friends + 'the_blessed_stake', 1, 1, 9223372036854775807, preserve=True)],
+        "Argh... my heart aches! Alright... a promise is a promise. Here - take this wooden stake, and now get lost.",
+        give=(5941, 1), topic=1, repeatable=True, fee={'gold':5000, 'include_bank':True},
+        offer=(['stake'], "Making a stake from a chair? Are you insane??! I won't waste my chairs on you for free! You will have to pay for it, but since I consider your plan a blasphemy, it will cost 5000 gold pieces. Okay?"))
+
+    prayers.append(add, state, callbacks, inputs)
+    recipes.append(add, state, callbacks, offers, inputs)
+
+    dragon = inputs['data-global/npc/an_old_dragon_lord.lua'].decode()
+    refusal = "AHHHH THE PAIN OF AGESSS! I NEED MUSSSSHRROOOMSSS TO EASSSE MY PAIN! BRRRING ME MUSHRRROOOMSSS!"
+    success = "AHHH MUSHRRROOOMSSS! NOW MY PAIN WILL BE EASSSED FOR A WHILE! TAKE THISS AND LEAVE THE DRAGONSSS' CEMETERY AT ONCE!"
+    track = 'oteryn:quest-progress/dragonfetish'
+    for suffix, minimum, maximum in [('initial', -1, 0), ('later', 2, 9223372036854775807)]:
+        add('draconia-fetish-' + suffix, 'draconia_quest', 'an_old_dragonlord',
+            ['hi', 'hello', 'hail'],
+            [{'track': track, 'minimum': minimum, 'maximum': maximum, 'set': 1}],
+            success, take=[(3723, 1)], give=(3206, 1), repeatable=True,
+            source_text='player:addItem(3206, 1)')
+        callbacks[-1].update(close_after=True, failure_reply=[refusal])
+    held = "LEAVE THE DRAGONS' CEMETERY AT ONCE!"
+    if held not in dragon or refusal not in dragon or 'player:removeItem(3723, 1)' not in dragon or 'player:addItem(3206, 1)' not in dragon:
+        raise ValueError('Draconia greeting recipe drift')
+    offers.append({'npc': 'oteryn:npc.an_old_dragonlord',
+                   'keywords': ['hi', 'hello', 'hail'], 'topic': 0, 'next_topic': 0,
+                   'storage': [{'track': track, 'minimum': 1, 'maximum': 1, 'set': 1}],
+                   'reply': [held], 'close_after': True})
 
     sam = 'u7_5/sams_old_backpack/'
     add('sam-kroox', 'sam_s_old_backpack_quest', 'kroox',

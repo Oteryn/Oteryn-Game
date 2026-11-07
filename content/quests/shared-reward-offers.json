@@ -213,7 +213,8 @@
       "npc": "oteryn:npc.an_old_dragonlord",
       "keywords": [
         "hi",
-        "hello"
+        "hello",
+        "hail"
       ],
       "topic": 0,
       "next_topic": 0,
@@ -227,6 +228,128 @@
       ],
       "reply": [
         "LEAVE THE DRAGONS' CEMETERY AT ONCE!"
+      ],
+      "close_after": true
+    },
+    {
+      "npc": "oteryn:npc.ariella",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_base_outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_hat_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Bring proof from the four pirate leaders."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ariella",
+      "keywords": [
+        "task"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_hat_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Did you bring the shirt, sabre, hat and eye patch?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ariella",
+      "keywords": [
+        "task"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_base_outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_hat_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Bring proof from the four pirate leaders."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ariella",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_base_outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_hat_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Bring proof from the four pirate leaders."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.avar_tar",
+      "keywords": [
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "Choose the base, shield or helmet."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.avar_tar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [],
+      "reply": [
+        "Choose the base, shield or helmet."
       ]
     },
     {
@@ -246,6 +369,92 @@
       ],
       "reply": [
         "Yes, I have been informed and haven't yet drunk enough to forget, so you can count yourself lucky. Are you prepared to <hicks> receive my line of the prayer?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "slime",
+        "mould",
+        "fungus",
+        "sample"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring samples for me to analyse?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "slime",
+        "mould",
+        "fungus",
+        "sample"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring samples for me to analyse?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Let me analyse the samples."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Let me analyse the samples."
       ]
     },
     {
@@ -358,6 +567,63 @@
       ],
       "reply": [
         "Do you have the sedge hat with you?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 7,
+          "maximum": 7
+        }
+      ],
+      "reply": [
+        "I need five sturdy books for the first addon or twenty epaulettes for the second."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 7,
+          "maximum": 7
+        }
+      ],
+      "reply": [
+        "I need five sturdy books for the first addon or twenty epaulettes for the second."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 7,
+          "maximum": 7
+        }
+      ],
+      "reply": [
+        "I need five sturdy books for the first addon or twenty epaulettes for the second."
       ]
     },
     {
@@ -536,6 +802,103 @@
       ]
     },
     {
+      "npc": "oteryn:npc.duncan",
+      "keywords": [
+        "eye patches"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_sabre_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Have you gathered 100 eye patches?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.duncan",
+      "keywords": [
+        "hooks"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_sabre_addon",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Have you gathered 100 hooks?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.duncan",
+      "keywords": [
+        "peg legs"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_sabre_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Have you gathered 100 peg legs?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.duncan",
+      "keywords": [
+        "task"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_sabre_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Bring 100 eye patches, 100 peg legs and 100 hooks in that order."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.duncan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_sabre_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Bring 100 eye patches, 100 peg legs and 100 hooks in that order."
+      ]
+    },
+    {
       "npc": "oteryn:npc.gamon",
       "keywords": [
         "stake"
@@ -687,6 +1050,289 @@
       ],
       "reply": [
         "You brought hair of holy ape?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 19,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 24,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Are you here to collect your accessory for 150000 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 25,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_second_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 30,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_second_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Are you here to collect your accessory for 150000 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 19,
+      "next_topic": 20,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "dress",
+        "coat"
+      ],
+      "topic": 20,
+      "next_topic": 21,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 21,
+      "next_topic": 22,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 22,
+      "next_topic": 23,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 25,
+      "next_topic": 26,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_second_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "hat"
+      ],
+      "topic": 26,
+      "next_topic": 27,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_second_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 27,
+      "next_topic": 28,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_second_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 28,
+      "next_topic": 29,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_second_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
       ]
     },
     {
@@ -883,6 +1529,25 @@
           "set": 1,
           "preserve": true
         }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.muriel",
+      "keywords": [
+        "addons"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/feathers",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "reply": [
+        "Choose the first or second addon."
       ]
     },
     {
@@ -1089,6 +1754,89 @@
       ],
       "reply": [
         "Did you bring me the vampiric crest?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "outfit",
+        "addon",
+        "royal"
+      ],
+      "topic": 0,
+      "next_topic": 14,
+      "storage": [],
+      "reply": [
+        "Choose armor, shield or crown for a token donation."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 14,
+      "next_topic": 15,
+      "storage": [],
+      "reply": [
+        "Choose armor, shield or crown for a token donation."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "armor"
+      ],
+      "topic": 15,
+      "next_topic": 16,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/outfit_quest/royal_costume_outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "The donation is 15000 silver tokens and 12500 gold tokens."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "crown"
+      ],
+      "topic": 15,
+      "next_topic": 18,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/outfit_quest/royal_costume_outfit",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "The donation is 7500 silver tokens and 6250 gold tokens."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "shield"
+      ],
+      "topic": 15,
+      "next_topic": 17,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/outfit_quest/royal_costume_outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "The donation is 7500 silver tokens and 6250 gold tokens."
       ]
     },
     {

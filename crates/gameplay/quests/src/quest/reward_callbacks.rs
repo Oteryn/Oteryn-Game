@@ -4,7 +4,7 @@ use super::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition,
 };
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub const PROVENANCE: &str = "crystal-9f5a72c-quest-rewards-v1";
 
@@ -57,6 +57,24 @@ pub struct MonetaryFee {
     pub include_bank: bool,
 }
 
+/// A read-only prerequisite: its original quest retains ownership and writes.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct TrackRequirement {
+    pub track: String,
+    pub minimum: i64,
+    pub maximum: i64,
+}
+
+impl TrackRequirement {
+    pub fn holds(&self, catalogue: &QuestStateCatalogue, stored: &BTreeMap<String, i64>) -> bool {
+        catalogue.track(&self.track).is_some_and(|track| {
+            QuestComparison::Between(self.minimum, self.maximum)
+                .holds(stored.get(&self.track).copied().unwrap_or(track.initial), 0)
+        })
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct RewardCallback {
@@ -67,6 +85,8 @@ pub struct RewardCallback {
     pub topic: u16,
     pub next_topic: u16,
     pub storage: Vec<Storage>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub requires: Vec<TrackRequirement>,
     pub take: Vec<ItemAmount>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fee: Option<MonetaryFee>,
@@ -79,8 +99,30 @@ pub struct RewardCallback {
     /// A costed item exchange may repeat under a fresh command occurrence.
     #[serde(default, skip_serializing_if = "is_false")]
     pub repeatable: bool,
+    /// Source greetings can conclude without retaining NPC focus.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub close_after: bool,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub failure_reply: Vec<String>,
+    /// Rechecked under the same character lock as the exchange.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub minimum_level: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub experience: Option<i64>,
     pub reply: Vec<String>,
     pub sources: Vec<String>,
+}
+
+/// Source-bound catalogue input only; this declaration never writes progress.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct TrackDeclaration {
+    key: String,
+    quest: String,
+    initial: i64,
+    min: i64,
+    max: i64,
+    sources: Vec<String>,
 }
 
 fn is_false(value: &bool) -> bool {
@@ -91,6 +133,8 @@ fn is_false(value: &bool) -> bool {
 #[serde(deny_unknown_fields)]
 struct Document {
     schema: u32,
+    #[serde(default)]
+    tracks: Vec<TrackDeclaration>,
     callbacks: Vec<RewardCallback>,
 }
 
@@ -101,6 +145,10 @@ pub fn load() -> Result<Vec<RewardCallback>, String> {
 }
 
 fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
+    parse_document(text).map(|document| document.callbacks)
+}
+
+fn parse_document(text: &str) -> Result<Document, String> {
     let document: Document = serde_json::from_str(text).map_err(|e| e.to_string())?;
     let mut keys = BTreeSet::new();
     let slug = |value: &str, prefix: &str, alphabet: &[u8], maximum: usize| {
@@ -114,13 +162,39 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
     };
     let item =
         |item: &str, count| slug(item, "oteryn:item.", b"._/:-", 256) && (1..=100).contains(&count);
-    if document.schema != 1 || document.callbacks.len() > 256 {
+    if document.schema != 1 || document.callbacks.len() > 256 || document.tracks.len() > 256 {
         return Err("reward callback bounds".into());
+    }
+    let mut declarations = BTreeSet::new();
+    for track in &document.tracks {
+        if !slug(&track.key, "oteryn:", b"._/:-", 128)
+            || !slug(&track.quest, "oteryn:", b"._/:-", 128)
+            || !declarations.insert(&track.key)
+            || track.min > track.initial
+            || track.initial > track.max
+            || track.sources.is_empty()
+            || track.sources.len() > 8
+            || track.sources.iter().any(|s| s.is_empty() || s.len() > 1024)
+            || !document
+                .callbacks
+                .iter()
+                .any(|c| c.requires.iter().any(|r| r.track == track.key))
+            || document
+                .callbacks
+                .iter()
+                .any(|c| c.storage.iter().any(|r| r.track == track.key))
+        {
+            return Err(format!(
+                "invalid reward prerequisite declaration {}",
+                track.key
+            ));
+        }
     }
     for c in &document.callbacks {
         let tracks: BTreeSet<_> = c.storage.iter().map(|s| &s.track).collect();
         let inputs: BTreeSet<_> = c.take.iter().map(|s| &s.item).collect();
         let evidence: BTreeSet<_> = c.present.iter().map(|s| &s.item).collect();
+        let requires: BTreeSet<_> = c.requires.iter().map(|s| &s.track).collect();
         if !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
@@ -128,6 +202,12 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || c.storage.is_empty()
             || c.storage.len() > super::QUESTSTATE0_RL_02
             || tracks.len() != c.storage.len()
+            || c.requires.len() > 8
+            || requires.len() != c.requires.len()
+            || !requires.is_disjoint(&tracks)
+            || c.requires
+                .iter()
+                .any(|r| !slug(&r.track, "oteryn:", b"._/:-", 128) || r.minimum > r.maximum)
             || c.storage.iter().any(|s| {
                 !slug(&s.track, "oteryn:", b"._/:-", 128)
                     || s.minimum > s.maximum
@@ -191,6 +271,13 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || c.keywords.iter().any(|s| {
                 s.is_empty() || s.len() > 64 || !s.is_ascii() || s != &s.to_ascii_lowercase()
             })
+            || c.minimum_level == Some(0)
+            || c.experience
+                .is_some_and(|xp| !(1..=super::QUESTGATE0_RL_05).contains(&xp))
+            || c.failure_reply.len() > 8
+            || c.failure_reply
+                .iter()
+                .any(|s| s.is_empty() || s.len() > 512 || s.chars().any(char::is_control))
             || c.reply.is_empty()
             || c.reply.len() > 8
             || c.reply
@@ -206,13 +293,37 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             return Err(format!("invalid reward callback {}", c.key));
         }
     }
-    Ok(document.callbacks)
+    Ok(document)
 }
 
 pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
-    for callback in load()? {
+    let document = parse_document(include_str!(
+        "../../../../../content/quests/shared-reward-callbacks.json"
+    ))?;
+    for declaration in document.tracks {
+        let declared = QuestTrack {
+            key: declaration.key,
+            quest: declaration.quest,
+            initial: declaration.initial,
+            min: declaration.min,
+            max: declaration.max,
+        };
+        if let Some(existing) = tracks.iter().find(|t| t.key == declared.key) {
+            if existing != &declared {
+                return Err(format!(
+                    "conflicting reward prerequisite declaration {}",
+                    declared.key
+                ));
+            }
+        } else {
+            tracks.push(declared);
+        }
+    }
+    let callbacks = document.callbacks;
+    let requires: Vec<_> = callbacks.iter().flat_map(|c| &c.requires).collect();
+    for callback in &callbacks {
         for s in &callback.storage {
             if let Some(track) = tracks.iter_mut().find(|t| t.key == s.track) {
                 if track.quest != callback.quest {
@@ -231,8 +342,8 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
             }
         }
         transitions.push(QuestTransition {
-            key: callback.key,
-            quest: callback.quest,
+            key: callback.key.clone(),
+            quest: callback.quest.clone(),
             effects: callback
                 .storage
                 .iter()
@@ -252,8 +363,14 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                 })
                 .collect(),
             completes: false,
-            experience: None,
+            experience: callback.experience,
         });
+    }
+    if let Some(required) = requires
+        .iter()
+        .find(|r| !tracks.iter().any(|t| t.key == r.track))
+    {
+        return Err(format!("undeclared reward prerequisite {}", required.track));
     }
     QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
         .map_err(|e| format!("{e:?}"))
@@ -319,6 +436,41 @@ mod tests {
     }
 
     #[test]
+    fn readonly_prerequisite_uses_declared_initial_and_fresh_stored_value() -> Result<(), String> {
+        let catalogue = QuestStateCatalogue::new(
+            "test",
+            vec![QuestTrack {
+                key: "oteryn:parent".into(),
+                quest: "oteryn:quest.parent".into(),
+                initial: 7,
+                min: 0,
+                max: 8,
+            }],
+            vec![],
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        let requirement = TrackRequirement {
+            track: "oteryn:parent".into(),
+            minimum: 7,
+            maximum: 7,
+        };
+        let mut stored = BTreeMap::new();
+        assert!(requirement.holds(&catalogue, &stored));
+        stored.insert(requirement.track.clone(), 6);
+        assert!(!requirement.holds(&catalogue, &stored));
+        stored.insert(requirement.track.clone(), 7);
+        assert!(requirement.holds(&catalogue, &stored));
+        assert!(
+            !TrackRequirement {
+                track: "oteryn:missing".into(),
+                ..requirement
+            }
+            .holds(&catalogue, &stored)
+        );
+        Ok(())
+    }
+
+    #[test]
     fn qengine_reward_callbacks_are_bounded_and_never_repeatable_value_grants() -> Result<(), String>
     {
         let source = include_str!("../../../../../content/quests/shared-reward-callbacks.json");
@@ -377,6 +529,36 @@ mod tests {
                 serde_json::from_str(source).map_err(|e| e.to_string())?;
             invalid["callbacks"][0]["present"] = present;
             assert!(parse(&invalid.to_string()).is_err());
+        }
+        let track = value["callbacks"][0]["storage"][0]["track"].clone();
+        for required in [
+            serde_json::json!([{"track":track,"minimum":0,"maximum":1}]),
+            serde_json::json!([{"track":"oteryn:parent","minimum":2,"maximum":1}]),
+            serde_json::json!([{"track":"oteryn:parent","minimum":0,"maximum":1},{"track":"oteryn:parent","minimum":0,"maximum":1}]),
+        ] {
+            let mut invalid: serde_json::Value =
+                serde_json::from_str(source).map_err(|e| e.to_string())?;
+            invalid["callbacks"][0]["requires"] = required;
+            assert!(parse(&invalid.to_string()).is_err());
+        }
+        for edit in 0..3 {
+            let mut invalid: serde_json::Value =
+                serde_json::from_str(source).map_err(|e| e.to_string())?;
+            match edit {
+                0 => {
+                    let duplicate = invalid["tracks"][0].clone();
+                    invalid["tracks"]
+                        .as_array_mut()
+                        .ok_or("tracks")?
+                        .push(duplicate);
+                }
+                1 => invalid["tracks"][0]["initial"] = serde_json::json!(i64::MAX),
+                _ => invalid["tracks"][0]["key"] = serde_json::json!("oteryn:unused"),
+            }
+            assert!(
+                parse(&invalid.to_string()).is_err(),
+                "invalid declaration {edit}"
+            );
         }
         super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|e| format!("{e:?}"))?;

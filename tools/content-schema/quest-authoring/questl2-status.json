@@ -101,6 +101,137 @@
       "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:175-180; tools/content-schema/quest-authoring/batch3_a/npc/fathers_burden.json"
     },
     {
+      "name": "exact conditional quest storage replacement",
+      "status": "QUALIFIED",
+      "reuse": {
+        "commit": "be812420e3c20d9dd8ae6c3c23a9c4acb942ceda",
+        "path": "qlane-meta/questpc6/cloud-conditional-reset-verification.json",
+        "sha256": "eb9a0946751fc304fc3c3905a2e1977834f2448f31fa2cfa7b63032d4080a289",
+        "red": {
+          "failed": 3,
+          "execution_seconds": 3.85,
+          "postgres_version": "18.6",
+          "marker": "POSTGRES_CASE_STARTED for each of the three cases",
+          "error": "expected conditional commit, got Refused(OutOfRange)",
+          "log": "/tmp/questpc6-reset-red.log"
+        },
+        "scope": "Original PostgreSQL RED proof from the reused implementation; compile/setup errors are excluded."
+      },
+      "fresh_postgres_green": [
+        {
+          "marker": "POSTGRES_CASE_COMPLETED conditional-reset-match",
+          "seconds": 75.885924223
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED conditional-reset-absent",
+          "seconds": 15.041148322
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED conditional-reset-later",
+          "seconds": 10.943092321
+        }
+      ],
+      "postgresql": "18.6",
+      "proves": [
+        "Only an exact locked value of one resets to zero",
+        "Absent minus-one and later value two remain unchanged",
+        "One fenced receipt binds each command; replay cannot write again",
+        "NPC rewards and world callbacks lower the same closed effect; invalid condition combinations fail authoring"
+      ],
+      "qualification_scope": "This evidence qualifies the shared mechanism; Draconia is separately QUALIFIED by its full PostgreSQL journey."
+    },
+    {
+      "name": "authored recovery landing after a refused step",
+      "status": "QUALIFIED",
+      "reuse": {
+        "commit": "c651c87d52acd0fcc56c5b426a1e9f27ab0b92ba",
+        "path": "qlane-meta/questpc6/cloud-failure-landing-verification.json",
+        "sha256": "3d887bff8873abf073f2c0da3bb0f016b98cbe9cc1991d11a46ff5318e8315d2",
+        "red": {
+          "cases": 2,
+          "failed": 2,
+          "execution_seconds": 44.92,
+          "proof": "Both cases reached PostgreSQL-backed framed STEP and failed actor-position assertions: actual origin (32817,31598,9), expected authored recovery (32818,31599,9) or retained entered tile (32818,31598,9).",
+          "log": "/tmp/questpc6-failure-red.log"
+        },
+        "scope": "Original PostgreSQL RED proof from the reused implementation; compile/setup errors are excluded."
+      },
+      "fresh_postgres_green": [
+        {
+          "marker": "POSTGRES_CASE_COMPLETED conditional-failure-landing",
+          "seconds": 89.495244525
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED conditional-failure-blocked",
+          "seconds": 165.626305471
+        }
+      ],
+      "legacy_regression": {
+        "test": "quest_world_callbacks_real_step_checks_storage_and_teleports",
+        "seconds": 80.687,
+        "passed": true
+      },
+      "postgresql": "18.6",
+      "proves": [
+        "A refused callback uses the authored valid landing",
+        "Quest state and quest receipt count stay unchanged",
+        "Replay retains the same position",
+        "An unavailable recovery cannot invent a walkable tile",
+        "Omitted recovery preserves legacy behavior"
+      ],
+      "qualification_scope": "Shared engine mechanism only; no full quest qualification is inferred."
+    },
+    {
+      "name": "source-bound quest coin and eligible bank payments",
+      "status": "QUALIFIED",
+      "reuse": {
+        "commit": "33b640335",
+        "reviewed_head": "4ddf4bcff",
+        "migration": "1142_quest_reward_payments.sql",
+        "original_migration": "1000_quest_reward_payments.sql",
+        "source_red": "QENGINE2 L1-04A real PostgreSQL failure44.661348814s (missing first-start binding), recorded in qlane-meta/qengine2/QUEST-STATUS.json at4ddf4bcff"
+      },
+      "fresh_postgres_green": {
+        "test": "qengine_l4_nobleman_paid_outfit_story",
+        "seconds": 141.869044076,
+        "log": "/tmp/l2-close-fee-pg-green.log"
+      },
+      "proves": [
+        "Exact paid source story through production NPC wire commands",
+        "Native coin/change and eligible bank fee owner",
+        "Quest, fee, item and appearance participant proofs in one transaction",
+        "Refusal and exact-command replay retain atomicity"
+      ]
+    },
+    {
+      "name": "source conversation conclusion and refusal responses",
+      "status": "QUALIFIED",
+      "red": {
+        "passed": 0,
+        "failed": 1,
+        "seconds": 110.435,
+        "postgres_server": "18.6 (Debian 18.6-1.pgdg13+2)",
+        "log": "/tmp/l2-draconia-greeting-red.log",
+        "failure": "greeting reply missing",
+        "selected_skipped": 0
+      },
+      "fresh_postgres_green": {
+        "test": "questl2_draconia_greeting_item_lifecycle",
+        "seconds": 134.055955613,
+        "log": "/tmp/l2-close-fee-pg-green.log"
+      },
+      "proves": [
+        "A missing payment returns the source refusal without a receipt",
+        "Exactly one mushroom is consumed for one dragon fetish",
+        "Both success and refusal release NPC focus",
+        "An existing flag of one refuses without another payment"
+      ],
+      "source": "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/an_old_dragon_lord.lua:61-80:sha256:85016cc08856f49d94c507f43bc84f54801d3a2844946ae391015a0d8c84a052",
+      "implementation_guards": [
+        "Pending conclusion policy survives reconciliation and cannot close a newer context"
+      ]
+    },
+    {
       "name": "exact-value conditional storage effects",
       "status": "QUALIFIED",
       "source_commit": "be812420e3c20d9dd8ae6c3c23a9c4acb942ceda",
@@ -182,87 +313,6 @@
         "be812420e3c20d9dd8ae6c3c23a9c4acb942ceda",
         "3bfd856061e5aa89668747ec7405af8c2b8cf7f5"
       ]
-    },
-    {
-      "name": "exact conditional quest storage replacement",
-      "status": "QUALIFIED",
-      "reuse": {
-        "commit": "be812420e3c20d9dd8ae6c3c23a9c4acb942ceda",
-        "path": "qlane-meta/questpc6/cloud-conditional-reset-verification.json",
-        "sha256": "eb9a0946751fc304fc3c3905a2e1977834f2448f31fa2cfa7b63032d4080a289",
-        "red": {
-          "failed": 3,
-          "execution_seconds": 3.85,
-          "postgres_version": "18.6",
-          "marker": "POSTGRES_CASE_STARTED for each of the three cases",
-          "error": "expected conditional commit, got Refused(OutOfRange)",
-          "log": "/tmp/questpc6-reset-red.log"
-        },
-        "scope": "Original PostgreSQL RED proof from the reused implementation; compile/setup errors are excluded."
-      },
-      "fresh_postgres_green": [
-        {
-          "marker": "POSTGRES_CASE_COMPLETED conditional-reset-match",
-          "seconds": 75.885924223
-        },
-        {
-          "marker": "POSTGRES_CASE_COMPLETED conditional-reset-absent",
-          "seconds": 15.041148322
-        },
-        {
-          "marker": "POSTGRES_CASE_COMPLETED conditional-reset-later",
-          "seconds": 10.943092321
-        }
-      ],
-      "postgresql": "18.6",
-      "proves": [
-        "Only an exact locked value of one resets to zero",
-        "Absent minus-one and later value two remain unchanged",
-        "One fenced receipt binds each command; replay cannot write again",
-        "NPC rewards and world callbacks lower the same closed effect; invalid condition combinations fail authoring"
-      ],
-      "qualification_scope": "This evidence qualifies the shared mechanism; Draconia is separately QUALIFIED by its full PostgreSQL journey."
-    },
-    {
-      "name": "authored recovery landing after a refused step",
-      "status": "QUALIFIED",
-      "reuse": {
-        "commit": "c651c87d52acd0fcc56c5b426a1e9f27ab0b92ba",
-        "path": "qlane-meta/questpc6/cloud-failure-landing-verification.json",
-        "sha256": "3d887bff8873abf073f2c0da3bb0f016b98cbe9cc1991d11a46ff5318e8315d2",
-        "red": {
-          "cases": 2,
-          "failed": 2,
-          "execution_seconds": 44.92,
-          "proof": "Both cases reached PostgreSQL-backed framed STEP and failed actor-position assertions: actual origin (32817,31598,9), expected authored recovery (32818,31599,9) or retained entered tile (32818,31598,9).",
-          "log": "/tmp/questpc6-failure-red.log"
-        },
-        "scope": "Original PostgreSQL RED proof from the reused implementation; compile/setup errors are excluded."
-      },
-      "fresh_postgres_green": [
-        {
-          "marker": "POSTGRES_CASE_COMPLETED conditional-failure-landing",
-          "seconds": 89.495244525
-        },
-        {
-          "marker": "POSTGRES_CASE_COMPLETED conditional-failure-blocked",
-          "seconds": 165.626305471
-        }
-      ],
-      "legacy_regression": {
-        "test": "quest_world_callbacks_real_step_checks_storage_and_teleports",
-        "seconds": 80.687,
-        "passed": true
-      },
-      "postgresql": "18.6",
-      "proves": [
-        "A refused callback uses the authored valid landing",
-        "Quest state and quest receipt count stay unchanged",
-        "Replay retains the same position",
-        "An unavailable recovery cannot invent a walkable tile",
-        "Omitted recovery preserves legacy behavior"
-      ],
-      "qualification_scope": "Shared engine mechanism only; no full quest qualification is inferred."
     },
     {
       "name": "atomic native monetary fees for repeatable quest item issuance",
@@ -458,6 +508,18 @@
       "post_merge_regression": [
         {
           "marker": "POSTGRES_CASE_COMPLETED draconia-lever-exit",
+          "duration_seconds": 109.142025186,
+          "postgresql": "18.6",
+          "passed": true
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED draconia-player-journey",
+          "duration_seconds": 132.364095502,
+          "postgresql": "18.6",
+          "passed": true
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED draconia-lever-exit",
           "duration_seconds": 70.334063951,
           "postgresql": "18.6",
           "passed": true
@@ -468,7 +530,12 @@
           "postgresql": "18.6",
           "passed": true
         }
-      ]
+      ],
+      "greeting_conclusion_evidence": {
+        "postgres_test": "questl2_draconia_greeting_item_lifecycle",
+        "seconds": 111.913960258,
+        "source_focus_rule": "All donor greeting branches return false; success and refusal close NPC focus."
+      }
     },
     {
       "title": "Exchange Quests",
@@ -804,16 +871,18 @@
   ],
   "validation": {
     "quest_unit_tests": {
-      "passed": 25,
+      "passed": 274,
       "failed": 0,
-      "log": "/tmp/l2-foundation-merge-quest-units-final.log",
-      "filter": "npc_rules"
+      "log": "/tmp/l2-paid-item-merged-quest-units2.log",
+      "filter": "npc_rules",
+      "seconds": 25.68
     },
     "reward_authoring_tests": {
-      "passed": 39,
+      "passed": 49,
       "failed": 0,
-      "log": "/tmp/l2-foundation-merge-rewards.log",
-      "pattern": "test_*rewards.py"
+      "log": "/tmp/l2-paid-item-merged-authoring3.log",
+      "pattern": "test_*rewards.py",
+      "seconds": 33.893
     },
     "l2_authoring_baseline": {
       "passed": 4,
@@ -849,19 +918,34 @@
         1143
       ],
       "payment_checked_main": "ca5a91b59",
-      "deadline_checked_main": "9668e0a04e1a631ebfc8752772102a1fd98ce8fa"
+      "deadline_checked_main": "9668e0a04e1a631ebfc8752772102a1fd98ce8fa",
+      "latest_all_branch_check": {
+        "refs_checked": 80,
+        "free_before_fee_port": [
+          1142,
+          1143,
+          1144,
+          1145,
+          1146,
+          1147,
+          1148,
+          1149
+        ],
+        "evidence": "/tmp/l2-migration-range-current.json"
+      }
     },
     "world_pins": {
       "regenerated": true,
       "checked": true,
-      "digest": "62954f2bc04e3c3faecbc8f478f1754bb01f9bfb519c3dfaa5e0c051e18c9aff",
-      "bytes": 31102216,
+      "digest": "099ec5efdf4e1fa87a0e63fb8077e0f22fa497bf252c8f2a244276f9a753947b",
+      "bytes": 31102495,
       "reason": "Includes admitted Cyclops and Marina deployments",
-      "tool": "world-bundle-compiler pin-refresh and pin-check",
-      "log": "/tmp/l2-exchanges-pin-check.log",
-      "regeneration_log": "/tmp/l2-exchanges-pin-refresh.log"
+      "tool": "convert_placements.py; regenerate_content.py --resolve --no-stage --skip-checks; world-bundle-compiler pin-check",
+      "log": "/tmp/l2-exchanges-postmerge-pin-check.log",
+      "regeneration_log": "/tmp/l2-exchanges-merge-regen.log",
+      "pin_check_log": "/tmp/l2-priests-merged-pin-check.log"
     },
-    "formatting": "cargo fmt --all --check and explicit mounted-file rustfmt --check passed",
+    "formatting": "cargo fmt --all --check passed after priest-journey merge",
     "content_tests": {
       "integration_rest_content": 123,
       "content_world_project_repository": 5,
@@ -936,7 +1020,9 @@
     },
     "npc_placement_tests": {
       "passed": 11,
-      "failed": 0
+      "failed": 0,
+      "seconds": 0.427,
+      "log": "/tmp/l2-priests-merged-placement-tests.log"
     },
     "build_resource_settings": {
       "incremental": false,
@@ -955,7 +1041,7 @@
       "scope": "All37 souvenirs, independent paid repeats, replay/refusal, and eleven-track atomicity after integrating the remote branch."
     },
     "provider_composition_tests": {
-      "passed": 11,
+      "passed": 6,
       "failed": 0,
       "log": "/tmp/l2-foundation-merge-providers.log"
     },
@@ -972,7 +1058,7 @@
       "failed": 0
     },
     "latest_focused_postgres": {
-      "passed": 8,
+      "passed": 4,
       "failed": 0,
       "selected_skipped": 0,
       "unselected": 2612,
@@ -991,7 +1077,40 @@
       ],
       "atomic_acceptance_seconds": 212.269035909,
       "father_handins_seconds": 235.933230805,
-      "repeat_exchange_seconds": 134.911461154
+      "repeat_exchange_seconds": 134.911461154,
+      "runs": [
+        {
+          "passed": 3,
+          "unselected": 2631,
+          "seconds": 295.502,
+          "log": "/tmp/l2-priests-merged-pg.log"
+        },
+        {
+          "passed": 1,
+          "unselected": 2633,
+          "seconds": 286.922,
+          "log": "/tmp/l2-priests-merged-priest-pg.log"
+        }
+      ],
+      "cases": [
+        {
+          "test": "questl2_paid_stake_full_priest_journey",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-paid-stake-priests",
+          "seconds": 286.804990407
+        },
+        {
+          "test": "questl2_paid_stake_fee_is_atomic_and_repeatable",
+          "seconds": 295.386499161
+        },
+        {
+          "test": "questl2_draconia_greeting_item_lifecycle",
+          "seconds": 246.423434931
+        },
+        {
+          "test": "qengine_l4_nobleman_paid_outfit_story",
+          "seconds": 267.830092855
+        }
+      ]
     },
     "latest_clippy": {
       "packages": [
@@ -1008,7 +1127,8 @@
       "all_targets": true,
       "deny_warnings": true,
       "exit_code": 0,
-      "log": "/tmp/l2-foundation-merge-clippy.log"
+      "log": "/tmp/l2-priests-merged-clippy.log",
+      "seconds": 609
     },
     "verified_conditional_parent": {
       "commit": "ae8ae247a",
@@ -1023,11 +1143,12 @@
     },
     "merged_authoring": {
       "batch3": 7,
-      "batch4": 19,
+      "batch4": 21,
       "claims": 4,
       "providers": 6,
       "state_lowering": 12,
-      "failed": 0
+      "failed": 0,
+      "reward_authoring": 48
     },
     "overlapping_conditional_remote": {
       "commit": "c48ad3674cfa7138f3b49c4b199b0916043b701a",
@@ -1209,13 +1330,59 @@
         "log": "/tmp/l2-exchanges-clippy-final.log"
       },
       "formatting": true
+    },
+    "draconia_greeting_red": {
+      "passed": 0,
+      "failed": 1,
+      "seconds": 110.435,
+      "postgres_server": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "log": "/tmp/l2-draconia-greeting-red.log",
+      "failure": "greeting reply missing",
+      "selected_skipped": 0
+    },
+    "reward_reproducibility": {
+      "passed": true,
+      "tool": "qengine_rewards.py --check",
+      "log": "/tmp/l2-priests-merged-reproduce.log"
+    },
+    "native_fetish_provider_tests": {
+      "passed": 9,
+      "failed": 0,
+      "seconds": 7.096,
+      "log": "/tmp/l2-draconia-merged-emperor-tests.log"
+    },
+    "full_draconia_merge_postgres": {
+      "passed": 7,
+      "failed": 0,
+      "selected_skipped": 0,
+      "unselected": 2625,
+      "seconds": 483.562,
+      "log": "/tmp/l2-draconia-merged-pg.log"
+    },
+    "reward_authoring": {
+      "passed": 32,
+      "failed": 0,
+      "seconds": 47.709,
+      "command": "python3 -m unittest test_qengine_rewards test_questl2_rewards",
+      "log": "/tmp/l2-priests-merged-authoring-full.log"
+    },
+    "postmerge_exchange_validation": {
+      "postgres_passed": 7,
+      "postgres_failed": 0,
+      "postgres_seconds": 318.11,
+      "postgres_log": "/tmp/l2-exchanges-postmerge-pg.log",
+      "clippy_exit_code": 0,
+      "clippy_log": "/tmp/l2-exchanges-postmerge-clippy.log",
+      "reward_authoring_passed": 49,
+      "npc_placement_passed": 11,
+      "formatting_exit_code": 0
     }
   },
   "cross_lane_inspection": {
     "qengine2": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
     "questpc5": "2d9db9c5abdb62abc8f9883984b5ad5bc22244c8",
     "questpc6": "3bfd856061e5aa89668747ec7405af8c2b8cf7f5",
-    "next": "Continue the remaining L2 full journeys and reuse the latest QENGINE2 foreign participant support where required.",
+    "next": "Complete generic programme capabilities and L2 journeys; retain exact resets, authored recovery and QENGINE2 effects.",
     "reused": [
       "QENGINE2 possession predicates and world outfit reward composition",
       "PC5 source NPC programmes, material/XP composition and claim-progress bindings",
@@ -1249,6 +1416,56 @@
       "passed": 4,
       "failed": 0,
       "qualification_scope": "Shared mechanisms only; no L2 entry becomes qualified from these primitive tests."
+    },
+    "native_payments_reuse": {
+      "source_commit": "33b640335",
+      "reviewed_head": "4ddf4bcff",
+      "implementation": "Reusable exact native coin/bank payment participant and cross-quest read-only prerequisites; retain L2 repeatability, conditional writes and shared sixteen-track cap.",
+      "migration": "1142_quest_reward_payments.sql, original1000 conflicts with imported corruptor lifecycle migration"
+    },
+    "draconia_remote_merge": {
+      "commit": "66bea9a4095aefbfb120d92366df9c20920195b1",
+      "scope": "Reuse full offering/alternative-exit journeys and generic composed remote-tile predicates; keep payment support and source greeting conclusion.",
+      "previous_remote_validation": {
+        "passed": 8,
+        "failed": 0,
+        "selected_skipped": 0,
+        "unselected": 2612,
+        "seconds": 485.917,
+        "log": "/tmp/l2-foundation-merge-pg.log",
+        "postgres_server": "18.6 (Debian 18.6-1.pgdg13+2)",
+        "scenarios": [
+          "conditional failure landing",
+          "blocked conditional failure landing",
+          "atomic source acceptance and replay",
+          "eight Father hand-ins, cape, XP, replay",
+          "exact reset match",
+          "absent reset preservation",
+          "later reset preservation",
+          "paid repeat token exchange"
+        ],
+        "atomic_acceptance_seconds": 212.269035909,
+        "father_handins_seconds": 235.933230805,
+        "repeat_exchange_seconds": 134.911461154
+      }
+    },
+    "paid_item_remote_merge": {
+      "commit": "80f41c77e48645a0513f56aae2133d9554aefbd9",
+      "scope": "Keep published1142 bytes and its deferred paid-repeat cost proof, reuse Gamon paid stake issuance and full PostgreSQL case.",
+      "fresh_postgres_green_seconds": 135.396463616
+    },
+    "wooden_stake_remote_merge": {
+      "commit": "79fd117c3",
+      "scope": "Ten source priests, exact carried stake evidence and ordinary-fallback confirmation refusal; preserve all existing QENGINE2/L2 callbacks.",
+      "fresh_postgres_green_seconds": 286.804990407
     }
+  },
+  "next_batch": {
+    "entries": [
+      "Sam's Old Backpack",
+      "To Outfox a Fox",
+      "Into The Bone Pit"
+    ],
+    "source_tracing": "Pinned NPC/startup sources and public quest_system2.lua resolve Sam door/chest/reward and Outfox door/helmet; generic doors already exist. Reuse them and compose complete journeys."
   }
 }
