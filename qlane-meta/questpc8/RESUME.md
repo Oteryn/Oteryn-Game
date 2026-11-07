@@ -1,3 +1,30 @@
+# Mystery introduction and native Lai placement — qualified component
+
+The mandatory introduction passes real PostgreSQL in69.175308851s after an
+actual69.96s RED. Missing/partial access and missing Premium refuse; the live
+purchase latch joins the NPC Type2 transaction. Acceptance, replay, fresh reuse,
+cold cache and unchanged revision on Premium refusal pass. Lai reuses the
+existing source greeting and stands at the native validated chosen Newhaven
+cell32571,32506,z7. World pin isb8f5701a982a55b3399727b62985cbf5190f6faa645f1b88d2c9ad9321111c70.
+
+Father's Burden fresh acceptance revalidated on PostgreSQL69.463318798s,
+including the atomic11track write.27NPC rules units, native cell realization,
+authored placement/refusal and existing override units pass. Check, strict
+Clippy on changed crates/all targets, fmt,40file native regeneration/drift and
+pin refresh pass. See mystery-introduction-validation.json for scoped proof and
+honestly recorded intermediate failures. An additional unchanged-NPC probe
+fails its Palimuth held-greeting assertion; preserve it and investigate before
+lane closeout. No NPC crate/dependency/greeting changes were retained.
+
+Full quest remains authoring at s2.14of23L7entries QUALIFIED,9remain. Continue
+immediately with the three shrine fragments and Kha'zeel assembly: accepted
+client identities50335Guardian Statue and50336..50338fragments, chosen ordinal
+mapping documented in CONTRACT-NOTES. Implement the missing reusable physical
+custody/binding and multi-carried-input support rather than deferring it.
+Current source XML has no certified constructor for those identities; canonical
+portable/nonstack facts and pinned official client appearances exist. Preserve
+original definitions/holds and do not invent a donor server-ID binding.
+
 # Production guardian default-build regression fixed
 
 The existing corpse-pin query is now available to production guardian cleanup.

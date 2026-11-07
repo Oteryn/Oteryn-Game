@@ -26,6 +26,7 @@ fn scenario_case(
     let classic_npc = matches!(
         name,
         "catalogue-npc"
+            | "authored-mystery-intro"
             | "catalogue-npc-father"
             | "fathers-burden-handins"
             | "catalogue-npc-hero"
@@ -343,6 +344,14 @@ fn scenario_case(
                 &h,
                 &authority,
                 name == "catalogue-npc-hero",
+            )
+            .await?;
+        } else if name == "authored-mystery-intro" {
+            super::super::questpc8_mystery::exercise_intro(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
             )
             .await?;
         } else if name == "catalogue-npc" {

@@ -102,6 +102,48 @@ def apply_placement_overrides(candidates: dict, scope: dict) -> dict:
     return result
 
 
+def apply_authored_placements(candidates: dict, scope: dict, admitted: set[str], root: Path = ROOT) -> dict:
+    """Add explicit recipe NPC cells without relabelling or replacing donor evidence."""
+    result = copy.deepcopy(candidates)
+    for key, row in scope.get("authored_placements", {}).items():
+        if key not in scope["npcs"] or key not in admitted or key in result:
+            raise ValueError("authored placement requires a new scoped admitted NPC")
+        path = Path(row["recipe_path"])
+        if path.is_absolute() or ".." in path.parts:
+            raise ValueError("authored placement recipe path")
+        raw = (root / path).read_bytes()
+        if (row.get("basis") != "CHOSEN_OTERYN_APPROXIMATION"
+                or hashlib.sha256(raw).hexdigest() != row.get("recipe_sha256")):
+            raise ValueError("authored placement recipe pin")
+        recipes = [recipe for recipe in json.loads(raw)["recipes"]
+                   if recipe["wiki_title"] == row["recipe_title"]]
+        normalize = lambda value: re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
+        if (len(recipes) != 1 or not any(
+                normalize(target) == local_name(key)
+                for stage in recipes[0]["stages"] if stage["kind"] == "talk"
+                for target in stage["targets"])):
+            raise ValueError("authored placement NPC is not a recipe talk target")
+        placements = row["placements"]
+        if not isinstance(placements, list) or not 1 <= len(placements) <= 8:
+            raise ValueError("authored placement count")
+        seen = set()
+        for placement in placements:
+            cell = cell_of(placement["position"])
+            if placement["direction"] not in {"NORTH", "EAST", "SOUTH", "WEST"} or cell in seen:
+                raise ValueError("authored placement direction or duplicate")
+            seen.add(cell)
+        result[key] = {
+            "identity": {"key": key}, "placements": copy.deepcopy(placements),
+            "placement_override_provenance": [{
+                "origin": "oteryn", "repository": "Oteryn/Oteryn-Game",
+                "basis": row["basis"], "source_row": str(path) + "#" + row["recipe_title"],
+                "definition_sha256": row["recipe_sha256"],
+                "direction_note": "Explicit chosen placement; no donor coordinate claim.",
+            }],
+        }
+    return result
+
+
 def provenance(candidate: dict, placement: dict) -> list[dict]:
     if "placement_override_provenance" in candidate:
         return copy.deepcopy(candidate["placement_override_provenance"])
@@ -151,6 +193,7 @@ def convert() -> dict[str, str]:
     scope = json.loads(SCOPE.read_text())
     candidates = apply_placement_overrides(candidates, scope)
     admitted = admitted_keys()
+    candidates = apply_authored_placements(candidates, scope, admitted)
     npcs = sorted(scope["npcs"])
     if len(set(npcs)) != len(npcs):
         sys.exit("the scope lists an NPC twice")

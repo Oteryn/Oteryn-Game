@@ -301,3 +301,66 @@ Torch grants one unlit2920after its native Rat death, with no lighting admission
 Its existing physical custody profile is reused by exact definition/binding.
 
 https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/actions/rookgaard/sewer_lever.lua
+
+Mystery of the Valley authoring decisions (2026-11-07): accepted canonical
+Items50335 and50336..50338 are Guardian Statue and three nonstacking statue
+fragments. The recipe-specific ordinal labels have no certified donor binding;
+choose ascending fragment identities for first/second/third, explicitly as
+Oteryn content. Retain all canonical holds and unknown use/teleport semantics.
+Pinned source Lai has only ordinary greeting/farewell, so the mandatory statue
+introduction is authored dialogue, never a fabricated Crystal branch.
+Source: https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/lai.lua .
+Access requirements use Ice Islands Mission06 >=1 (Cure the Dogs) and New
+Frontier Questline >=22 (the prison-access marker set with Mission08=1),
+rather than requiring their completion. The pinned corpus quest log states these mission names/startValue1;
+blob1b3e292826d90e9b92b75f091566d2fe57e682b3. Chosen authored NPC schema2
+requires a quest-specific recipe provenance marker; source-only schema1 keeps
+its exact existing provenance validation and serialization. Fresh Premium
+mutations recheck the live account authority using the locked Character root;
+receipt reconciliation remains historical and grants no fresh authority.
+Fandom item-page requests returned402 and TibiawikiBR returned403; no guessed
+source server IDs or unidentified donor reward code are certified.
+
+Mystery prior-access fixture correction: Mission08 movement1 remains Computed
+because its lowered predicate omits source guards; it is not promoted or used
+as a progress seed. The existing exact native prison secret-door event (Questline
+action2, LT23 ->23) establishes a prior-quest access witness. Lai requires the
+source trap's Questline22 marker or later. Initial/one-prerequisite/Premium
+refusals are still mandatory. The original74.79s PostgreSQL run stopped at the
+unsupported prior-quest event and is not counted as the introduction RED.
+
+The prior New Frontier fixture reads the hidden note through its existing
+exact native action before the secret-door event; the pinned door source
+requires HiddenNote1. Source: https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/the_new_frontier/action_prision_secret_door.lua
+(blob80c4beb3d8e97b523a684ce4b92bd5b771a7b454). This is prior-quest fixture
+preparation using existing owners, never a seeded Mystery counter or item.
+
+Lai production placement is an explicit Oteryn choice beside the Newhaven Magic
+Shop at32571,32506,z7, facing south. No donor placement or invented source UID
+is claimed. The placement producer pins the chosen recipe and requires an
+already admitted NPC that is an actual talk target; it cannot replace donor
+candidates. Native compiler realization still checks ground/collision, spawning,
+houses, floor changes and shared cells. The source-only dialogue/placement paths retain their original validation.
+Lai already has source-generated replies in the existing service model, despite
+the canonical declaration having no Dialogue reference. Reuse that admission;
+no new greeting override, NPC crate dependency or dialogue fallback is added.
+
+Native placement realization rejected32572,32507 as BlockSolid and32571,32508
+as Wall. A bounded eight-cell source-map probe found five valid cells. Choose
+32571,32506, immediately north of Viola, with all collision/spawn/house/floor
+checks retained. No map tile or native admission rule was changed.
+
+Additional unchanged-NPC regression probe: native_quest_book_admits_only_requested_source_greetings
+fails at its Palimuth held-greeting assertion. The NPC crate and its manifest
+are restored byte-for-byte to the branch head; this extra case is not counted
+as GREEN evidence for the authored NPC change. Preserve the assertion and
+investigate the baseline source-reply admission before lane closeout. Lai's
+existing source greeting is reused, and no NPC greeting implementation changes
+are part of this slice.
+
+NPC Premium publication uses the existing asynchronous GrizzlyPremiumGate
+participant, which joins the purchase latch inside the same Type2 transaction.
+A capacity-view-only check was rejected during implementation and is not the
+published contract. Existing NPC root/sequencer APIs delegate to NoGrizzlyPremium;
+the composed NPC owner passes QuestPremium explicitly. Replay remains historical,
+while fresh mutations without a current participant refuse unchanged.

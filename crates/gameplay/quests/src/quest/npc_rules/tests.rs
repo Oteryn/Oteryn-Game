@@ -580,7 +580,14 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     }
     let active = extend(old.catalogue().clone(), &bindings)?;
     let runtime = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
-    assert_eq!(runtime.programs().len(), 7);
+    assert_eq!(
+        runtime
+            .programs()
+            .iter()
+            .filter(|program| program.document.schema == 1)
+            .count(),
+        7
+    );
     assert_eq!(active.npc_legacy.len(), 6);
     let mut defaults = BTreeMap::new();
     for track in NpcRuleCatalog::embedded()
@@ -667,5 +674,92 @@ fn storage_owner_commits_exact_father_acceptance_without_raising_general_cap()
         vec!["oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-accept"]
     );
     assert!(facts.tracks.is_empty());
+    Ok(())
+}
+
+#[test]
+fn authored_npc_program_requires_explicit_recipe_provenance() -> Result<(), NpcRuleError> {
+    let mut document: serde_json::Value =
+        serde_json::from_str(include_str!("test-fixtures/hero_greeting.json"))
+            .map_err(|e| NpcRuleError::Json(e.to_string()))?;
+    let quest = "oteryn:quest.authored.mystery_of_the_valley_quest";
+    let source = "oteryn-authored:chosen-recipe:mystery-of-the-valley-quest:authored-r1";
+    document["schema"] = serde_json::json!(2);
+    document["quest"] = serde_json::json!(quest);
+    for group in ["tracks", "rules"] {
+        for row in document[group]
+            .as_array_mut()
+            .ok_or_else(|| NpcRuleError::Invalid("rows".into()))?
+        {
+            row["quest"] = serde_json::json!(quest);
+            row["sources"] = serde_json::json!([source]);
+        }
+    }
+    let encode = |value: &serde_json::Value| {
+        serde_json::to_string(value).map_err(|e| NpcRuleError::Json(e.to_string()))
+    };
+    NpcRuleCatalog::from_json_documents(&[&encode(&document)?])?;
+    for (schema, quest, provenance) in [
+        (1, quest, source),
+        (2, "oteryn:quest.hero_of_rathleton_quest", source),
+        (
+            2,
+            quest,
+            "oteryn-authored:chosen-recipe:unrelated:authored-r1",
+        ),
+        (
+            2,
+            quest,
+            "https://tibia.fandom.com/wiki/Mystery_of_the_Valley_Quest",
+        ),
+    ] {
+        let mut invalid = document.clone();
+        invalid["schema"] = serde_json::json!(schema);
+        invalid["quest"] = serde_json::json!(quest);
+        invalid["rules"][0]["sources"] = serde_json::json!([provenance]);
+        assert!(NpcRuleCatalog::from_json_documents(&[&encode(&invalid)?]).is_err());
+    }
+    // The original source-only schema remains valid and keeps its digest contract.
+    NpcRuleCatalog::from_json_documents(&[include_str!("test-fixtures/hero_greeting.json")])?;
+    Ok(())
+}
+
+#[test]
+fn mystery_access_source_transitions_preserve_their_native_effects() -> Result<(), String> {
+    let loaded = crate::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|e| format!("{e:?}"))?;
+    for key in [
+        "oteryn:quest-transition/quest/u8_0/the_ice_islands/mission06/npc_1",
+        "oteryn:quest-transition/quest/u8_54/the_new_frontier/mission08/movement_1",
+    ] {
+        let transition = loaded
+            .catalogue()
+            .transition(key)
+            .ok_or_else(|| format!("missing {key}"))?;
+        assert_eq!(transition.effects.len(), 1);
+        if key.contains("mission08") {
+            assert_eq!(
+                transition.effects[0].effect,
+                crate::quest::QuestEffectKind::Computed
+            );
+        } else {
+            assert_eq!(
+                transition.effects[0].effect,
+                crate::quest::QuestEffectKind::Set(1)
+            );
+        }
+    }
+    let access = loaded
+        .catalogue()
+        .transition("oteryn:quest-transition/quest/u8_54/the_new_frontier/questline/action_2")
+        .ok_or("native prison secret-door event")?;
+    assert_eq!(
+        access.effects[0].from,
+        crate::quest::QuestComparison::Lt(23)
+    );
+    assert_eq!(
+        access.effects[0].effect,
+        crate::quest::QuestEffectKind::Set(23)
+    );
     Ok(())
 }

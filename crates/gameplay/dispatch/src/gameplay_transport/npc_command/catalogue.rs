@@ -300,8 +300,10 @@ pub(super) async fn apply(
     let moves_items = request.npc == "oteryn:npc.tereban"
         && (request.transition_key.ends_with("-deliver")
             || request.transition_key.ends_with("/mission-complete"));
+    let premium =
+        super::super::spell_premium_coordinator::QuestPremium(admission.premium_coordinator);
     let outcome = slot
-        .commit_npc_program(
+        .commit_npc_program_with_premium(
             admission.root,
             admission.character,
             admission.holder,
@@ -321,6 +323,7 @@ pub(super) async fn apply(
                 },
             )
             .with_wheel(admission.premium_coordinator),
+            &premium,
         )
         .await;
     drop(slot);

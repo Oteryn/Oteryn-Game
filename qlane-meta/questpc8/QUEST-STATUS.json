@@ -1291,7 +1291,7 @@
       "runtime_enabled": false
     },
     "blocker": {
-      "missing_piece": "The six-stage chosen programme, three shrine fragments and Guardian Statue reward lack authored native bindings; explicit authored ordinal binding is now supported, but the chosen placements and stage graph still require composition."
+      "missing_piece": "Remaining three once-only shrine rewards, Kha'zeel crystal exploration and atomic three-fragment assembly are the active next slice; mandatory Lai introduction and production NPC placement are qualified components."
     },
     "first_unqualified_stage": {
       "key": "s2",
@@ -1304,7 +1304,7 @@
     },
     "disposition": "authoring",
     "qualified_elsewhere": [],
-    "mechanism": "native_reward_source_placement",
+    "mechanism": "authored_npc_dialogue_and_world_rewards",
     "round": "L7",
     "qualified_components": [
       {
@@ -1318,6 +1318,14 @@
         "qengine2_checked": "5a6de28c1",
         "qengine2_result": "no authored ordinal reward-claim selector present; reward/outfit components retained for subsequent reuse",
         "green_log_sha256": "d4b2067afeec1f3c5e9a9414f370bf01533afff7ce17a089de57baf7e16c5dd1"
+      },
+      {
+        "scope": "Mandatory Lai introduction and production native placement only; full quest remains active authoring",
+        "test": "questpc8_mystery_lai_introduction_requires_access_and_is_once",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_mystery_lai_introduction_requires_access_and_is_once duration=69.175308851s",
+        "duration_seconds": 69.175308851,
+        "red_duration_seconds": 69.96,
+        "proof": "mystery-introduction-validation.json"
       }
     ]
   },

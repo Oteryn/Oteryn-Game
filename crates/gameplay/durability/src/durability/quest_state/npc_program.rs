@@ -69,7 +69,11 @@ pub fn preview(
         .with_native_bounds(catalogue)?;
     match evaluate_source(&source, request, tracks, catalogue, now, None) {
         Err(_) if request.npc == "oteryn:npc.tereban" => evaluate_source(
-            &source, request, tracks, catalogue, now,
+            &source,
+            request,
+            tracks,
+            catalogue,
+            now,
             Some(&fathers_burden::optimistic_inventory()),
         ),
         result => result,
@@ -166,6 +170,36 @@ impl DurabilityRoot {
         catalogue: Arc<QuestStateCatalogue>,
         items: &C,
     ) -> Result<NpcProgramCommit> {
+        self.commit_character_npc_program_with_premium(
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            items,
+            &super::grizzly::NoGrizzlyPremium,
+        )
+        .await
+    }
+
+    /// A fresh Premium requirement joins the native purchase latch in this transaction.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "The NPC transaction keeps each existing authority and its Premium participant explicit."
+    )]
+    pub async fn commit_character_npc_program_with_premium<
+        C: super::super::item_loop_move::ItemLoopContent,
+        G: super::grizzly::GrizzlyPremiumGate,
+    >(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: NpcProgramRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        items: &C,
+        premium: &G,
+    ) -> Result<NpcProgramCommit> {
         if request.command.game_session_id() != fence.game_session_id
             || request.message.len() > 255
             || !request.transition_key.starts_with("oteryn:quest-npc/")
@@ -183,8 +217,9 @@ impl DurabilityRoot {
         let source = NpcRuleCatalog::runtime()
             .and_then(|source| source.clone().with_native_bounds(&catalogue))
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
-        let mut content = items;
-        self.try_issue_semantic_pass()?.run_with_context(&mut content, move |holder,deadline,content| Box::pin(async move {
+        let mut context = (items, premium);
+        self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder,deadline,context| Box::pin(async move {
+            let (content, premium) = *context;
             let mut tx=super::super::db::begin_type2_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;
             lock_admission_relations(&mut tx).await?;
@@ -242,6 +277,14 @@ impl DurabilityRoot {
                 _=>return Ok(Ok(refused(QuestRefusal::StageMismatch))),
             };
             let quest=&plan.quest;
+            if source.program(quest).is_some_and(|program| program.document.premium_required) {
+                let account: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(account_id) FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                    .bind(id).fetch_one(&mut **tx).await?;
+                let account: [u8;16] = account.try_into().map_err(|_| DurabilityError::InvalidStoredState)?;
+                if !premium.task_permitted(&mut tx, account).await? {
+                    return Ok(Ok(refused(QuestRefusal::StageMismatch)));
+                }
+            }
             let hash=catalogue.definition_hash(quest).ok_or(DurabilityError::InvalidStoredState)?;
             let stored_state=sqlx::query("SELECT pinned_content_revision,definition_hash,completed_character_revision IS NOT NULL AS completed FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 FOR UPDATE").bind(id).bind(quest).fetch_optional(&mut **tx).await?;
             let (pin,hash)=match &stored_state {
@@ -272,7 +315,7 @@ impl DurabilityRoot {
                 let pending: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_xp_obligations WHERE character_id=encode($1,'hex')::uuid")
                     .bind(id).fetch_one(&mut **tx).await?;
                 if pending >= QUESTGATE0_RL_10 as i64 { return Ok(Ok(refused(QuestRefusal::CapacityExceeded))); }
-                match fathers_burden::apply(&mut tx, fence, &request, &plan, *content, &node).await? {
+                match fathers_burden::apply(&mut tx, fence, &request, &plan, content, &node).await? {
                     true => {},
                     false => return Ok(Ok(refused(QuestRefusal::CapacityExceeded))),
                 }
