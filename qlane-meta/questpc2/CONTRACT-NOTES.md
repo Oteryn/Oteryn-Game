@@ -159,3 +159,20 @@ qualification. Continue owned missing mechanisms; no external engine deferral.
   donor26 and all other facts remain identical. SourceResolver still fails
   closed for unknown hand policies. This enables real equipped lethal damage;
   the next actual refusal is canonical demon-corpse admission, not a kill flag.
+
+- Demon corpse admission uses the existing generic encounter-corpse authoring
+  owner, not a special reward bypass. Pinned Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b
+  imports/canary/items-xml/items.xml:12452-12465,16320-16324, SHA256
+  1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2,
+  defines5995(capacity15,10s)->4097(capacity24,300s)->4098(capacity24,300s)
+  ->4099(no container,60s)->0. Existing captured WorldObjects independently
+  identify each as a non-player corpse and own movability. Canonical Item
+  admission and loot-table facts must agree before real lethal rewards commit.
+
+- Actual PG90.53s next refusal: eleven Angry Demon loot Items lack canonical
+  custody despite known physical facts. Source XML SHA256
+  1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2;
+  exact item:start-line witnesses 3060:7008, 3063:7020, 3284:8525, 3306:8837, 3364:9687, 3366:9713, 3414:10280, 5954:16097, 7368:19267, 7382:19393, 7393:19599.
+  Reuse pinned client2dfa943b...dae7e2 and existing source binding importer
+  for stack/container; retain all canonical physical/combat/charge facts.
+  No loot probability, corpse capacity or reward budget is changed.

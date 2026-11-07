@@ -319,3 +319,28 @@ server marker and nontrivial duration. Pure units may take0.00s. Fetch the exact
 lane before every push and compare FETCH_HEAD (tracking ref can be stale);
 merge advances. Commit as blakinio with supplied trailers. Push every green
 slice immediately, at least every30 minutes. Continue after pushing.
+
+2026-11-07 06:15 UTC source/runtime checkpoint: merged907bdacd9 is preserved
+in a1a96a04f and pushed. Local Annihilator test compiled2m55s after a proven
+compiler OOM recovery; real PostgreSQL180006 ran90.53s. Corpse5995 admission
+now passes; next actual refusal is loot_item_inadmissible. Eleven loot Items
+need canonical custody completion despite existing known physical facts and
+admitted native profiles. Local encounter_loot_item_admissions.py reuses
+pinned client/XML identity binding and preserves every non-custody field;
+2 preservation/atomicity tests passed13.443s. Existing Grizzly source capture
+independently confirms overlapping custody; explicit qualification retains
+all other canonical/source guards. Regeneration/PG retry remains pending.
+No runtime/source-data qualification is claimed by this checkpoint.
+
+Current resources: cache READY dep/query metadata was byte-verified on disk
+for the successful compile, then retired after its new READY completed.
+Never restore that retired metadata. Inactive root/check/clippy caches were
+restored for checks; latest scoped check passed66s. Clippy retry follows an
+ENOSPC failure and remains pending. Verification executable gzip archives
+retain original SHA proofs and must be restored to their recorded retained
+paths before using those unrelated executables. Current ledgers are
+/tmp/questpc2-demon-current-cache-retention.json,
+/tmp/questpc2-demon-inactive-root-caches.json and
+/tmp/questpc2-demon-verification-executable-retention.json.
+Next: finish Item/loot regeneration, scoped PG, checks and push runtime slice,
+then earned chest/source exit/sealed reentry. Counts remain0/35.
