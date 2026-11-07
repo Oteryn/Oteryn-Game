@@ -414,6 +414,115 @@
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/46/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50"
       ],
       "completes": true
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-hydra-entry",
+      "quest": "oteryn:quest.hydra_egg_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33003,
+          "y": 32665,
+          "floor": -3
+        },
+        "appearance": 1019,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/hydra/programme",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/hydra/kills",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You have reached the Hydra nest. Defeat its guardian and recover an egg.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/62/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z03-x128-y127.b3:1#(33004,32664,-3)/2:sha256:4143a9190fa20ae867b2cc015dcc6e974fdfbd786c6eb91f750cb5d832ba9072"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-hydra-nest",
+      "quest": "oteryn:quest.hydra_egg_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33004,
+          "y": 32664,
+          "floor": -3
+        },
+        "appearance": 1063,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/hydra/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/hydra/kills",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": [],
+        "owned_items": [
+          {
+            "item": "oteryn:item.tibia.i4839",
+            "count": 1,
+            "map_source": 141753241305858
+          }
+        ]
+      },
+      "success_message": "You have recovered an egg from the Hydra nest.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/62/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z03-x128-y127.b3:1#(33004,32664,-3)/2:sha256:4143a9190fa20ae867b2cc015dcc6e974fdfbd786c6eb91f750cb5d832ba9072"
+      ],
+      "completes": true
     }
   ]
 }

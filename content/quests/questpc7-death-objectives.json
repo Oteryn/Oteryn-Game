@@ -82,6 +82,37 @@
         "canary:04b83b512:data-otservbr-global/scripts/quests/hidden_threats/movement-chests_check.lua:18-22:sha256:0e00845e4ce1d3cf40dba3139210f86bc96dcb0f8f3242345a4a01aa3badc9b4",
         "content/world/placements/region-z13-x129-y125.b3:sha256:cd6d870e934961d3e6dd89e5b4b9ec6922c4d63b79203678bb876370859c83a1"
       ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-hydra-guardian",
+      "quest": "oteryn:quest.hydra_egg_quest",
+      "creature": "oteryn:creature.hydra",
+      "stage": "oteryn:quest-progress/questpc7/hydra/programme",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/hydra/kills",
+      "required": 1,
+      "minimum": {
+        "x": 33002,
+        "y": 32662,
+        "floor": -3
+      },
+      "maximum": {
+        "x": 33006,
+        "y": 32666,
+        "floor": -3
+      },
+      "guardian": {
+        "position": {
+          "x": 33005,
+          "y": 32665,
+          "floor": -3
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/62/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z03-x128-y127.b3:1#(33004,32664,-3)/2:sha256:4143a9190fa20ae867b2cc015dcc6e974fdfbd786c6eb91f750cb5d832ba9072"
+      ]
     }
   ]
 }

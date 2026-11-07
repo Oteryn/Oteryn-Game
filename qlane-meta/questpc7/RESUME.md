@@ -863,3 +863,25 @@ raw codec zero and charge/action0 while materializing Item0 as default1.
 Whole Hydra remains ACTIVE until ordinary reset replenishment and required
 checks pass. Push this honest proof checkpoint within30-minute cadence; product
 source stays uncommitted until green gates. Continue reset proof immediately.
+
+## Hydra Egg and native source prerequisites fully QUALIFIED
+
+Actual PG18.6 RED42.847576199s -> initialGREEN44.918829126s -> expanded
+GREEN43.817053605s. Fresh entry/native Hydra, unrelated egg refusal, actual
+ordinary command9 MapBase pickup, exact replay/stale refusal, real stack merge,
+no fabricated quest reward MINT, active reset0->1 replenishment and unchanged
+quest completion all pass. Reset pointer is an environment consumer fixture;
+this does not relabel the existing reset activation writer as newly qualified.
+Generic owned_items/map_source is fresh/read-only under the Character root and
+uses immutable native MINT plus completed pickup receipts. Explicit legacy Item
+count0 adapter preserves raw codec exactness, runtime zero refusal, Terrain,
+positive counts and charge/action0. Existing native egg physics were retained.
+All17 focused validation gates GREEN including strict checks, repository
+generation, newly built compiler pin refresh/check, content123/world5 and fmt.
+Stage final proof/status/pins, commit/push source immediately.11 ACTIVE remain.
+Continue Fire-Fighter immediately from /tmp/questpc7-fire-next-plan.txt. Both
+39544/39545 physical policies and source addon/FriendlyFire actions already
+exist. Add exact cosmetic compatibility aliases, chosen Gnomprona training/
+Gnomadness quartermaster route, ten actual native kills and both real USEs.
+Do not add a fake parent, duplicate item qualifier or new cosmetic mechanism.
+Bounded donor/source findings are complete; no further ownership questions.

@@ -46,6 +46,7 @@ class QuestRewards(unittest.TestCase):
 
     def test_hidden_native_objectives_share_quota_and_use_admitted_empty_ground(self):
         rows=json.loads(self.outputs['content/quests/questpc7-death-objectives.json'])['objectives']
+        rows=[r for r in rows if r['quest']=='oteryn:quest.hidden_threats_quest']
         self.assertEqual({r['creature'] for r in rows},{'oteryn:creature.corym_'+s for s in ['charlatan','skirmisher','vanguard']})
         self.assertEqual({r['counter'] for r in rows},{'oteryn:quest-progress/questpc7/hidden/kills'})
         self.assertTrue(all(r['required']==5 for r in rows))
@@ -58,6 +59,26 @@ class QuestRewards(unittest.TestCase):
         for position in [(33078,32015),(33079,32015),(33080,32015)]:
             self.assertEqual(tiles[position],[10113],position)
         self.assertIn(2469,tiles[(33080,32014)],'the reward binds an existing physical chest')
+
+    def test_hydra_uses_existing_nest_and_personal_native_pickup_instead_of_a_claim(self):
+        worlds=json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks']
+        rows=[r for r in worlds if r['quest']=='oteryn:quest.hydra_egg_quest']
+        self.assertEqual(len(rows),2)
+        nest=next(r for r in rows if r['trigger']=='use')
+        self.assertTrue(nest['completes'])
+        self.assertNotIn('item_reward',nest)
+        self.assertEqual(nest['requirements']['owned_items'],[{'item':'oteryn:item.tibia.i4839','count':1,'map_source':(33004<<32)|(32664<<16)|(3<<8)|2}])
+        objectives=json.loads(self.outputs['content/quests/questpc7-death-objectives.json'])['objectives']
+        objective=next(r for r in objectives if r['quest']==nest['quest'])
+        self.assertEqual((objective['creature'],objective['required']),('oteryn:creature.hydra',1))
+        codec=q.load_module('questpc7_hydra_test_codec','tools/content-schema/world-authoring/world_region_codec.py')
+        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette']
+        region=codec.decode_region((q.ROOT/'content/world/placements/region-z03-x128-y127.b3').read_bytes())
+        tiles={(x,y):[(palette[p]['source_item_id'],attrs) for p,depth,attrs in entries if not depth]
+            for _,cells in region[3] for x,y,_,_,_,entries in cells}
+        self.assertEqual(tiles[(33004,32664)],[(4402,None),(1063,None),(4839,{'count':0})])
+        self.assertEqual(tiles[(33003,32665)],[(1019,None)])
+        self.assertEqual(tiles[(33005,32665)],[(1019,None)])
 
     def test_hidden_valuables_are_one_exact_once_only_backpack_plan(self):
         rows=json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks']

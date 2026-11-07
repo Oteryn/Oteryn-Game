@@ -1563,45 +1563,38 @@
     "title": "Hydra Egg Quest",
     "canonical": "oteryn:quest.hydra_egg_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/62/definition",
-    "status": "ACTIVE",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
-    "queued_stage_binding": {
-      "stage": "s1",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
-    },
-    "first_unqualified_stage": {
-      "key": "s1",
-      "kind": "explore",
-      "objective": "Find the eastern Tiquanda stairway to the Hydra chamber.",
-      "targets": [
-        "eastern Tiquanda Hydra chamber"
-      ]
-    },
     "owner": "questpc7",
-    "remaining_work": {
-      "kind": "lane_implementation_work",
-      "missing_piece": "Implement the Hydra Egg native nest pickup/replenishment lifecycle and admit the exact egg item from source facts, then compose and qualify the selected quest path. Preserve ordinary map pickup ownership; do not invent a UID reward chest.",
-      "evidence": [
-        "content/quests/definitions/quests-00100-00199.json:1#/records/62/definition",
-        "crates/gameplay/quests/src/quest/world_callbacks.rs:98",
-        "crates/gameplay/quests/src/quest/world_callbacks.rs:200",
-        "content/items/definitions/items-26500-26999.json:1#/records/465/definition"
-      ],
-      "attempts": [
-        "Read the fresh Wiki route (explicitly permits ignoring the Hydra), searched all reward-claim shards and both pinned donor trees for the nest owner, and checked Item4839 native admission. Did not fabricate a selector or use a test-only mint as the quest reward."
-      ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
-    },
-    "current_batch": {
+    "qualification": {
+      "kind": "complete selected Hydra Egg native route and ordinary map-reset consumer",
       "proof": "qlane-meta/questpc7/HYDRA-PG-PROOF.json",
-      "state": "PG18.6 RED42.847576199s -> GREEN44.918829126s, including ordinary pickup and unrelated egg refusal. Reset replenishment and focused checks/pins/fmt pending; ACTIVE.",
+      "test": "questpc7_hydra_requires_personal_native_nest_pickup",
+      "postgres": "18.6",
+      "red_seconds": 42.847576199,
+      "green_seconds": 43.817053605,
+      "scope": [
+        "fresh subject quest state",
+        "CurrentPremium entry and nest acknowledgement",
+        "one actual native Hydra lethal occurrence",
+        "ordinary map-source command9 pickup",
+        "unrelated carried egg refuses",
+        "exact source pickup milestone survives stack merge",
+        "no fabricated quest chest or reward MINT",
+        "ordinary reset epoch replenishment to be proved",
+        "real native pickup merged into one existing carried stack",
+        "ordinary source replenishes at active reset1 after quest completion",
+        "personal quest completion revision remains unchanged",
+        "shared codec preserves explicit zero and runtime zero eligibility remains strict"
+      ],
       "assumptions": [
         "Selected existing1063 is a conservative authored search marker, not a uniquely resolved donor nest type.",
         "Legacy B3 Item count0 denotes one materialized object; explicit opt-in export adapter preserves codec/runtime strictness."
       ],
-      "green_seconds": 44.918829126
+      "fixture_boundary": "Reset pointer1 is an activated boot/reset-consumer environment precondition, matching existing world-reset map-pickup fixtures; it does not qualify the reset activation writer. No subject quest-stage seed. One unrelated egg through fenced ordinary MINT/transfer is an explicit negative provenance input; the selected reward comes only from ordinary native map pickup.",
+      "physical_item": "Existing accepted native4839 profile retained; no redundant qualifier or inferred use effect.",
+      "checks": "All17 focused gates GREEN: retained Hidden PG44.066s; loader/callback/reward/pickup/codec/compiler/author units; generation/check/strictclippy; rebuilt compiler pins; content123/world5/fmt."
     }
   },
   {

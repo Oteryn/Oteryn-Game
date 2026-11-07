@@ -220,11 +220,18 @@ pub(super) fn world_with_objects(
     objects: &[(Position,u16)],
     appearances: &[u16],
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    world_with_extra(callback, trigger, callback.selector.appearance.unwrap_or(100), 1, objects, appearances)
+    world_with_extra(callback, trigger, callback.selector.appearance.unwrap_or(100), 1, objects, appearances, None)
 }
 
 fn world_ordinal(callback: &Callback, trigger: Position, appearance:u16, ordinal:u8) -> TestResult<crate::map::boot::BundleWorld> {
-    world_with_extra(callback,trigger,appearance,ordinal,&[],&[])
+    world_with_extra(callback,trigger,appearance,ordinal,&[],&[],None)
+}
+
+pub(super) fn world_with_native_items(
+    callback:&Callback,trigger:Position,objects:&[(Position,u16)],
+    native:&crate::content::native_gameplay::NativeGameplayState,items:&[(Position,u32)],
+)->TestResult<crate::map::boot::BundleWorld>{
+    world_with_extra(callback,trigger,callback.selector.appearance.unwrap_or(100),1,objects,&[],Some((native,items)))
 }
 
 fn world_with_extra(
@@ -234,6 +241,7 @@ fn world_with_extra(
     ordinal: u8,
     objects: &[(Position,u16)],
     appearances: &[u16],
+    native_items: Option<(&crate::content::native_gameplay::NativeGameplayState,&[(Position,u32)])>,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
@@ -413,6 +421,16 @@ fn world_with_extra(
             entries.push(sector::Item{palette,depth:0,attrs:Default::default()});
         }
     }
+    if let Some((native,items)) = native_items {
+        for (position,source_id) in items {
+            let key=format!("oteryn:item.tibia.i{source_id}");
+            let reference=native.item_index().and_then(|index|index.definition_ref("Item",&key,"definition-r1")).ok_or("admitted native map item")?;
+            let palette=u32::try_from(data.manifest.palette.len())?;
+            data.manifest.palette.push(bundle::PaletteEntry{key,family:bundle::Family::Item,id:reference.get()-1,terrain:None});
+            cells.entry((position.floor,position.x,position.y)).or_default().push(sector::Item{palette,depth:0,
+                attrs:sector::Attrs{count:Some(0),..Default::default()}.with_legacy_default_item_count()});
+        }
+    }
     let floors: std::collections::BTreeSet<_> = cells.keys().map(|(f, _, _)| *f).collect();
     data.manifest.world = bundle::Extent {
         min_x: cells.keys().map(|(_, x, _)| *x).min().ok_or("min")?,
@@ -472,7 +490,13 @@ fn world_with_extra(
         },
         crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
         crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
-        |_| None,
+        |key| {
+            let (native,_)=native_items?;
+            Some(crate::map::facts::ItemDefinition{
+                reference:native.item_index()?.definition_ref("Item",key,"definition-r1")?,
+                solid:Some(false),blocks_projectile:false,pickupable:true,door:false,
+            })
+        },
     )
     .map_err(debug)
 }

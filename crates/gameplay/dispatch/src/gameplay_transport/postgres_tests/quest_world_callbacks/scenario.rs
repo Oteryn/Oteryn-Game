@@ -23,7 +23,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let monk = name.starts_with("monk-guidance");
-    let shared_rewards = name == "questpc7-hoist-story" || name == "questpc7-tokens" || name.starts_with("questpc7-hidden-") || name.starts_with("questpc7-outfits-") || name == "l1-warmaster-wardrobe" || name.starts_with("questpc7-eligibility-")
+    let shared_rewards = name == "questpc7-hydra" || name == "questpc7-hoist-story" || name == "questpc7-tokens" || name.starts_with("questpc7-hidden-") || name.starts_with("questpc7-outfits-") || name == "l1-warmaster-wardrobe" || name.starts_with("questpc7-eligibility-")
         || name.starts_with("qengine-rewards-")
         || name == "questpc7-golden"
         || name == "questpc7-friends";
@@ -44,7 +44,7 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if name == "questpc7-hoist-story" { "questpc7-hoist-entry" } else if name.starts_with("questpc7-hidden-") { "questpc7-hidden-entry" } else if name == "questpc7-outfits-formal" { "questpc7-formal-display" } else if name == "l1-warmaster-wardrobe" { name } else if classic_npc {
+    let mut callback = callback(if name == "questpc7-hydra" { "questpc7-hydra-entry" } else if name == "questpc7-hoist-story" { "questpc7-hoist-entry" } else if name.starts_with("questpc7-hidden-") { "questpc7-hidden-entry" } else if name == "questpc7-outfits-formal" { "questpc7-formal-display" } else if name == "l1-warmaster-wardrobe" { name } else if classic_npc {
         "behemoth"
     } else if rotten_purchase {
         "rotten-blood/sacrifice"
@@ -71,7 +71,9 @@ fn scenario_case(
     if stateless_destination.is_some() {
         assert_eq!(callback.selector.position, Some(trigger));
     }
-    let world = if name == "questpc7-hoist-story" {
+    let world = if name == "questpc7-hydra" {
+        world_with_objects(&callback,trigger,&[(Position{x:33004,y:32664,floor:-3},1063)],&[])?
+    } else if name == "questpc7-hoist-story" {
         let mut objects=Vec::new();
         for x in 32153..=32157 { for y in 31116..=31125 {
             objects.push((Position{x,y,floor:-9},7066));
@@ -116,6 +118,11 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
+        let world = if name == "questpc7-hydra" {
+            world_with_native_items(&callback,trigger,&[(Position{x:33004,y:32664,floor:-3},1063)],
+                generation.native_gameplay().ok_or("native")?,&[(Position{x:33004,y:32664,floor:-3},4839)])?
+        } else {world};
+
         let initial_level: Option<u32> = match name {
             "questpc7-eligibility-high" => Some(1000),
             "questpc7-outfits-formal" => Some(20),
@@ -200,7 +207,7 @@ fn scenario_case(
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let eligibility_premium =
-            if name == "questpc7-hoist-story" || (name.starts_with("questpc7-eligibility-") && !name.ends_with("no-premium")) || name.starts_with("questpc7-outfits-") {
+            if name == "questpc7-hydra" || name == "questpc7-hoist-story" || (name.starts_with("questpc7-eligibility-") && !name.ends_with("no-premium")) || name.starts_with("questpc7-outfits-") {
                 use crate::gameplay_transport::spell_premium_coordinator::{
                     SpellPremiumCoordinator, purchase_fixture,
                 };
@@ -214,6 +221,7 @@ fn scenario_case(
             } else {
                 None
             };
+        let hydra_reset_drain=crate::gameplay_transport::gameplay_drain::GameplayDrain::at_reset_epoch(1);
         let mut owner = deps.owner(&h, &authority);
         if let Some(premium) = &eligibility_premium {
             owner.premium_coordinator = Some(premium);
@@ -290,7 +298,19 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if name == "questpc7-hoist-story" {
+        if name == "questpc7-hydra" {
+            super::super::questpc7_hydra::exercise(&mut owner,&mut admitted,&h).await?;
+            // An activated pointer is a boot/reset-consumer precondition, as in
+            // world_reset_map_pickup_postgres_tests; no subject quest/custody seed.
+            sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,1,$2,$6,$3,$4,$5,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),'2026-11')")
+                .bind(owner.world_id.as_bytes().as_slice()).bind(world.base().digest().as_slice())
+                .bind(generation.identity().server_artifact_digest().as_slice()).bind(generation.identity().client_artifact_digest().as_slice())
+                .bind(activated.frame_binding().digest().as_slice()).bind(crate::map::overlay::map_revision(world.base())).execute(&h.pool).await?;
+            sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,1)").bind(owner.world_id.as_bytes().as_slice()).execute(&h.pool).await?;
+            owner.reset_epoch=hydra_reset_drain.epoch();
+            super::super::questpc7_hydra::replenishment(&mut owner,&mut admitted,&h).await?;
+
+        } else if name == "questpc7-hoist-story" {
             super::super::questpc7_hoist_story::exercise(&mut owner,&mut admitted,&h).await?;
         } else if name == "questpc7-tokens" {
             super::super::questpc7_tokens::exercise(&mut owner,&mut admitted,&h).await?;

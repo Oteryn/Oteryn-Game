@@ -475,6 +475,10 @@ impl DurabilityRoot {
                                 return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                             }
                         }
+                        if !requirements.owned_items.is_empty()
+                            && !super::owned_items::holds(&mut tx,fence,&requirements.owned_items).await? {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
                         if !requirements.owned_cosmetics.is_empty()
                             && !super::owned_cosmetics::holds(&mut tx, fence.character_id,
                                 reward_admission.as_ref().map(|admission| admission.native)

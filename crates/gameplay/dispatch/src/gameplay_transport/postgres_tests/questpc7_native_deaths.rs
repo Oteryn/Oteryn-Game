@@ -83,11 +83,12 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>, admi
     Ok(())
 }
 
-async fn lethal(
+pub(super) async fn lethal_creature(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     target: ExactActorRef,
     command: u64,
+    creature: &str,
 ) -> TestResult {
     let actor = admitted.runtime_actor.ok_or("hunter")?;
     owner
@@ -122,7 +123,7 @@ async fn lethal(
                 ),
                 1,
                 crate::foundation::OwnerDamageCommand {
-                    target: CREATURE.as_bytes(),
+                    target: creature.as_bytes(),
                     occurrence: admitted.game_session_id.as_bytes(),
                     binding: b"questpc7-native-objectives",
                     damage: health,
@@ -207,4 +208,8 @@ pub(super) async fn reward(owner:&mut ComposedFreshAdmission<'_, '_, '_>,a:&mut 
  assert_eq!(super::quest_world_callbacks::wire(owner,a,n,2,payload).await?,reply,"exact USE replay");
  let completed:bool=sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.hidden_threats_quest'").bind(super::fixture::id(41).as_slice()).fetch_one(&h.pool).await?; assert!(completed);
  Ok(())
+}
+
+async fn lethal(owner:&ComposedFreshAdmission<'_, '_, '_>, admitted:&AdmittedSession,target:ExactActorRef,command:u64)->TestResult {
+    lethal_creature(owner,admitted,target,command,CREATURE).await
 }

@@ -125,3 +125,11 @@ its active personal phase, leaving unrelated original object interactions
 available otherwise. It must exactly match a non-preserved storage write guard;
 the fenced writer always rechecks that guard. The admitted quest copy chooses
 routing only and cannot authorize any reward or bypass durable admission.
+
+`requirements.owned_items` checks at most8 unique item definitions/counts against
+current live carried custody (including closed nested containers), without
+consuming or minting anything. Optional `map_source` is the native placement key:
+a personally completed MapBase pickup of that definition/source in the same
+World must exist in the immutable map-MINT and matching item-loop operation5
+receipts. A stranded MINT or scripted Ground relocation is insufficient. Pickup
+milestones survive ordinary stack merges; carried quantity is checked afresh.

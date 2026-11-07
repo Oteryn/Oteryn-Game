@@ -411,6 +411,38 @@
           "items": {
             "$ref": "#/$defs/outfit"
           }
+        },
+        "owned_items": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/carriedItemRequirement"
+          }
+        }
+      }
+    },
+    "carriedItemRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "item",
+        "count"
+      ],
+      "properties": {
+        "item": {
+          "type": "string",
+          "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
+          "maxLength": 256
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "map_source": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 281474976710655
         }
       }
     }

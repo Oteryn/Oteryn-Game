@@ -74,6 +74,16 @@ pub struct RewardCounter {
     pub maximum: i64,
 }
 
+/// Read-only carried custody, optionally tied to a personally picked native map source.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct CarriedItemRequirement {
+    pub item: String,
+    pub count: u16,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub map_source: Option<u64>,
+}
+
 /// Authoritative character/account prerequisites checked before any reward effect.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -84,6 +94,8 @@ pub struct RewardRequirements {
     pub completed_quests: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub owned_cosmetics: Vec<OutfitReward>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub owned_items: Vec<CarriedItemRequirement>,
 }
 
 impl RewardRequirements {
@@ -105,6 +117,20 @@ impl RewardRequirements {
                 .completed_quests
                 .iter()
                 .all(|key| slug(key, "oteryn:quest.", 128))
+            && self.owned_items.len() <= 8
+            && self
+                .owned_items
+                .iter()
+                .map(|i| &i.item)
+                .collect::<BTreeSet<_>>()
+                .len()
+                == self.owned_items.len()
+            && self.owned_items.iter().all(|i| {
+                slug(&i.item, "oteryn:item.", 256)
+                    && (1..=100).contains(&i.count)
+                    && i.map_source
+                        .is_none_or(|key| key <= 0xffffffffffff && ((key >> 8) & 255) <= 15)
+            })
             && self.owned_cosmetics.len() <= 8
             && self
                 .owned_cosmetics

@@ -297,6 +297,9 @@ def build():
     hoist = load_module('questpc7_hoist_programme','tools/content-schema/quest-authoring/questpc7_hoist_programme.py')
     hoist_worlds, hoist_bindings = hoist.build(ROOT)
     formal_worlds.extend(hoist_worlds)
+    hydra = load_module('questpc7_hydra_programme','tools/content-schema/quest-authoring/questpc7_hydra_programme.py')
+    hydra_worlds, hydra_objectives = hydra.build(ROOT)
+    formal_worlds.extend(hydra_worlds)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'callbacks':callbacks})
@@ -309,7 +312,7 @@ def build():
             'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'callbacks':callbacks}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
     generated['content/quests/questpc7-world-callbacks.json'] = encoded({'schema':1,'callbacks':formal_worlds})
-    generated['content/quests/questpc7-death-objectives.json'] = encoded({'schema':1,'objectives':encounters.objectives(ROOT)})
+    generated['content/quests/questpc7-death-objectives.json'] = encoded({'schema':1,'objectives':encounters.objectives(ROOT)+hydra_objectives})
     generated['content/quests/native-world-callback-bindings.json'] = encoded({'schema':1,'bindings':hoist_bindings})
     greetings=[]
     for npc in sorted({c['npc'] for c in callbacks}):

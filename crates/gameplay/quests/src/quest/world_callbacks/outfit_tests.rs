@@ -35,7 +35,7 @@ fn world_outfits_require_a_stateful_use_and_a_closed_target() -> Result<(), Stri
 fn world_requirements_reject_unbounded_and_read_only_authority() -> Result<(), String> {
     let source = include_str!("../../../../../../content/quests/questpc7-world-callbacks.json");
     let document: serde_json::Value = serde_json::from_str(source).map_err(|e| e.to_string())?;
-    assert_eq!(parse(source)?.len(), 8);
+    assert_eq!(parse(source)?.len(), 10);
     for case in 0..4 {
         let mut row = document["callbacks"][0].clone();
         match case {
@@ -129,6 +129,48 @@ fn world_item_outputs_are_once_only_bounded_and_have_one_layout() -> Result<(), 
             8 => row["activation"]["track"] = "oteryn:quest-progress/foreign/track".into(),
             9 => row["activation"]["minimum"] = 0.into(),
             _ => row["activation"]["maximum"] = 0.into(),
+        }
+        assert!(
+            parse(&serde_json::json!({"schema":1,"callbacks":[row]}).to_string()).is_err(),
+            "case {case}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn carried_source_requirements_reject_unbounded_and_ambiguous_inputs() -> Result<(), String> {
+    let source: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/questpc7-world-callbacks.json"
+    ))
+    .map_err(|e| e.to_string())?;
+    let original = source["callbacks"]
+        .as_array()
+        .ok_or("callbacks")?
+        .iter()
+        .find(|r| r["key"] == "oteryn:quest-callback/questpc7-hydra-nest")
+        .ok_or("nest")?;
+    for case in 0..8 {
+        let mut row = original.clone();
+        match case {
+            0 => row["requirements"]["owned_items"][0]["count"] = 0.into(),
+            1 => row["requirements"]["owned_items"][0]["count"] = 101.into(),
+            2 => row["requirements"]["owned_items"][0]["item"] = "candidate:item/4839".into(),
+            3 => {
+                row["requirements"]["owned_items"][0]["map_source"] = serde_json::json!(1_u64 << 48)
+            }
+            4 => {
+                row["requirements"]["owned_items"][0]["map_source"] = serde_json::json!(16_u64 << 8)
+            }
+            5 => {
+                row["requirements"]["owned_items"] =
+                    serde_json::Value::Array(vec![row["requirements"]["owned_items"][0].clone(); 2])
+            }
+            6 => {
+                row["requirements"]["owned_items"] =
+                    serde_json::Value::Array(vec![row["requirements"]["owned_items"][0].clone(); 9])
+            }
+            _ => row["requirements"]["owned_items"][0]["unknown"] = true.into(),
         }
         assert!(
             parse(&serde_json::json!({"schema":1,"callbacks":[row]}).to_string()).is_err(),
