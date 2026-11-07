@@ -110,7 +110,7 @@ where
     A: FreshAdmissionAuthority,
 {
     if session.cast_chat_revision > 0 {
-        for (delta_type,payload) in authority.cast_live_chat(session.admitted).await {
+        for (delta_type, payload) in authority.cast_live_chat(session.admitted).await {
             let revision = session
                 .cast_chat_revision
                 .checked_add(1)

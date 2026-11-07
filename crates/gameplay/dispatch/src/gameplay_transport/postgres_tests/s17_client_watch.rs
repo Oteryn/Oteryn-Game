@@ -66,13 +66,6 @@ fn scenario(case: u8) -> TestResult {
     std::thread::Builder::new().stack_size(64<<20).spawn(move ||->Result<(),String>{
         run(async |admin| { tokio::task::LocalSet::new().run_until(async move {
             let started=std::time::Instant::now();
-            let h=Harness::create_with_admission_seed(admin,&format!("clcast_view_{case}"),true,false).await?;
-            prepare_current_session(&h).await?;
-            let upkeep_root=h.root.clone();
-            let upkeep=tokio::spawn(async move {let mut cadence=tokio::time::interval(Duration::from_millis(10));loop{cadence.tick().await;if upkeep_root.has_ready_demand()&&upkeep_root.maintain_ready_once().await.is_err(){upkeep_root.request_ready();}}});
-            let result=async {
-                let seal=h.recovery.seal_current().map_err(debug)?;
-                let authority=h.root.open_character_authority(&seal).await.map_err(debug)?;
                 use crate::map::boot::tests::{DOOR_AT,door_world};
                 let world_id=crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
                 let world=door_world()?;
@@ -81,6 +74,13 @@ fn scenario(case: u8) -> TestResult {
                 let pin=crate::foundation::ChannelContentPin::from_activation(world_id,1,generation.identity().server_artifact_digest(),generation.identity().client_artifact_digest(),activated.frame_binding().digest(),world.map_revision_digest(),(i32::from(DOOR_AT.x)-1,i32::from(DOOR_AT.y),-i16::from(DOOR_AT.floor)));
                 let deps=Dependencies::with_content(pin,crate::content::qualify_native_entry_room(world_id).map_err(debug)?,crate::spell::cast::v1_spell_book().map_err(debug)?)?;
                 let cells=world.movement_cells(deps.room.movement_cells()).map_err(debug)?;
+            let h=Harness::create_with_admission_seed(admin,&format!("clcast_view_{case}"),true,false).await?;
+            prepare_current_session(&h).await?;
+            let upkeep_root=h.root.clone();
+            let upkeep=tokio::spawn(async move {let mut cadence=tokio::time::interval(Duration::from_millis(10));loop{cadence.tick().await;if upkeep_root.has_ready_demand()&&upkeep_root.maintain_ready_once().await.is_err(){upkeep_root.request_ready();}}});
+            let result=async {
+                let seal=h.recovery.seal_current().map_err(debug)?;
+                let authority=h.root.open_character_authority(&seal).await.map_err(debug)?;
                 let mut owner=deps.owner(&h,&authority);owner.movement_cells=&cells;owner.active_generation=Some(generation);
                 deps.initialize(&owner).await;
                 let current=crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone()).current_session_at(deps.admitted.game_session_id).await?.0;

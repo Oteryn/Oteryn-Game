@@ -170,8 +170,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         kind: u32,
         payload: &[u8],
     ) -> Option<Vec<u8>> {
-        let facts = self.cast_facts(admitted).await?;
         let request = Message::decode(payload).ok()?;
+        // Canary livestream.cpp:249: settings use the current caster. NODEBOOT-1
+        // additionally bounds retries of these read/install gates while the privacy
+        // worker owns the shared holder. The cast operation itself is never retried.
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        let facts = budget
+            .retry_unavailable(async || {
+                self.cast_facts(admitted)
+                    .await
+                    .ok_or(connection::AdmissionRefusal::Unavailable)
+            })
+            .await
+            .ok()?;
         if kind == 503 {
             let change = match request {
                 Message::ConsentSet { revision, allowed } => {
@@ -180,13 +191,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Message::ConsentQuery => None,
                 _ => return None,
             };
-            let fence =
-                character_gameplay_fence::current(self, admitted.game_session_id, false).await?;
+            let fence = budget
+                .retry_unavailable(async || {
+                    character_gameplay_fence::current(self, admitted.game_session_id, false)
+                        .await
+                        .ok_or(connection::AdmissionRefusal::Unavailable)
+                })
+                .await
+                .ok()?;
             // The Root publishes the cross-worker denial floor and commits
             // only after every media lease is invalidated or expired.
-            let value = self
-                .root
-                .character_cast_consent(self.character, self.holder, fence, change)
+            // NODEBOOT-1: the privacy worker shares this holder. Retry only
+            // its explicit busy refusal under the existing command budget.
+            let value = budget
+                .retry_unavailable(async || {
+                    self.root
+                        .character_cast_consent(self.character, self.holder, fence, change)
+                        .await
+                        .map_err(|error| match error {
+                            crate::durability::character_progression::CharacterProgressionError::Unavailable(
+                                crate::durability::DurabilityError::RootUnavailable,
+                            ) => connection::AdmissionRefusal::Unavailable,
+                            _ => connection::AdmissionRefusal::Rejected,
+                        })
+                })
                 .await
                 .ok()?;
             use crate::durability::cast_consent::CastConsentOutcome as O;

@@ -199,7 +199,7 @@ impl Message {
             Self::CasterRoster { revision, subjects } => {
                 if *revision == 0
                     || subjects.len() > 50
-                    || subjects.iter().any(|id| *id == [0; 16])
+                    || subjects.contains(&[0; 16])
                     || subjects.windows(2).any(|pair| pair[0] >= pair[1])
                 {
                     return Err(WireError::Malformed);

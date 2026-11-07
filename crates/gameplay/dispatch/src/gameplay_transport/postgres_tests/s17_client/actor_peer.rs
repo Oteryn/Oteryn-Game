@@ -127,7 +127,11 @@ impl Peer {
         let (status, bytes) = self
             .exchange(kind, &message.encode().map_err(debug)?)
             .await?;
-        assert_eq!(status, wire::CommandStatus::Accepted, "cast command {kind}");
+        assert_eq!(
+            status,
+            wire::CommandStatus::Accepted,
+            "cast command {kind}: {message:?}"
+        );
         let reply = Message::decode(&bytes).map_err(debug)?;
         if matches!(
             reply,
