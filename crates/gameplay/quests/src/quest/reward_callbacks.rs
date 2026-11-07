@@ -64,6 +64,9 @@ pub struct RewardCallback {
     pub blessing: Option<String>,
     #[serde(default, skip_serializing_if = "is_false")]
     pub premium: bool,
+    /// Current locked progression must satisfy this source requirement.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub minimum_level: Option<u32>,
     #[serde(default, skip_serializing_if = "is_false")]
     pub completes: bool,
     pub reply: Vec<String>,
@@ -77,7 +80,7 @@ fn is_false(value: &bool) -> bool {
 fn reward_binding(callback: &RewardCallback) -> Result<[u8; 32], String> {
     // Speech and source citations are not durable reward terms. Every value and
     // admission participant is: changing one must invalidate an old quest pin.
-    let bytes = serde_json::to_vec(&(
+    let mut bytes = serde_json::to_vec(&(
         &callback.key,
         &callback.quest,
         &callback.npc,
@@ -96,6 +99,11 @@ fn reward_binding(callback: &RewardCallback) -> Result<[u8; 32], String> {
         callback.completes,
     ))
     .map_err(|error| error.to_string())?;
+    // Preserve every published binding for callbacks without a level gate.
+    if let Some(level) = callback.minimum_level {
+        bytes.extend_from_slice(b"\0minimum_level\0");
+        bytes.extend_from_slice(&level.to_be_bytes());
+    }
     let mut digest = Sha256::new();
     digest.update(bytes);
     // Empty optional predicates retain the original binding for unrelated
@@ -176,6 +184,7 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || c.equipped_slots
                 .iter()
                 .any(|slot| !(1..=10).contains(slot) || *slot == 9)
+            || c.minimum_level == Some(0)
             || c.experience
                 .is_some_and(|value| !(1..=super::QUESTGATE0_RL_05).contains(&value))
             || c.present.len() > 8
@@ -322,6 +331,12 @@ mod tests {
             parse(&value.to_string()).is_ok()
         };
         assert!(accepts(&callback));
+        let mut level_bound = callback.clone();
+        level_bound.minimum_level = Some(0);
+        assert!(!accepts(&level_bound));
+        level_bound.minimum_level = Some(30);
+        assert!(accepts(&level_bound));
+        assert_ne!(reward_binding(&level_bound)?, reward_binding(&callback)?);
         let mut mutating = callback.clone();
         mutating.storage[0].maximum = mutating.storage[0].minimum + 1;
         assert!(!accepts(&mutating));
@@ -413,6 +428,9 @@ mod tests {
         assert_ne!(make(changed)?.definition_hash(&callback.quest), original);
         let mut changed = callback.clone();
         changed.premium = !changed.premium;
+        assert_ne!(make(changed)?.definition_hash(&callback.quest), original);
+        let mut changed = callback.clone();
+        changed.minimum_level = Some(30);
         assert_ne!(make(changed)?.definition_hash(&callback.quest), original);
         Ok(())
     }

@@ -25,6 +25,7 @@ Each record has these fields:
 | `take` | Up to eight distinct `{item, count}` requirements, counts `1..65535`, aggregated across carried stacks, equipment and closed nested containers. Filled containers and items with keys, timers, text or imbuements refuse consumption. |
 | `present` | Optional, up to eight distinct `{item,count}` carried requirements (`1..65535`). Uses the same bounded locked custody scan as `take`, including closed nested containers. It retains the original instances, quantities and receipts. |
 | `equipped_slots` | Optional distinct occupied **durable** slots: HEAD=1, TORSO=2, LEGS=3, FEET=4, WEAPON=5, SHIELD=6, AMULET=7, RING=8, EXTRA=10. Backpack slot9 is excluded; donor and wire numbers are not durable keys. The current transaction checks the Character's equipment and live Item custody under the Character root lock. Combined with `present`, this can require a carried item and any occupied armor slot independently. |
+| `minimum_level` | Optional/null positive `u32` level. NPC selection and read-only offers consult the current progression projection; the reward transaction independently checks locked Character progression before any effect. The gate is bound into the callback definition; an absent gate preserves its original hash. |
 | `repeatable_check` | Optional boolean, false by default. Allows a source conversation to repeat a storage check. Every non-preserved predicate must accept exactly its unchanged next value. It forbids every physical debit, reward, XP, blessing, outfit, achievement and completion effect. Requirements and policy are bound into the transition digest. |
 | `give` | Optional/null `{item, count, contents?}`: one native reward root, count `1..100`, optionally up to twenty `{item, count}` children in a container. Native stack/container and weight rules still apply. The equipped main backpack needs room after the hand-in. |
 | `outfit` | Optional/null `{outfit, addons}`. `outfit` is the canonical `oteryn:outfit.<name>`; `addons` is a bitmask `0..3`: base only `0`, first addon `1`, second addon `2`, both `3`. Base is always included. |
@@ -41,7 +42,7 @@ the appearance owner selects the donor look using immutable creation sex. The
 existing appearance protocol publishes the new catalogue and permits selection.
 
 `shared-reward-offers.json` contains conversation-only records with `npc`,
-`keywords`, `topic`, `next_topic`, `storage`, and `reply`. These records establish
+`keywords`, `topic`, `next_topic`, `storage`, and `reply`. These records may also carry `minimum_level`. They establish
 confirmation topics and never apply storage effects. A reward's storage effects
 apply only after the complete exchange commits.
 

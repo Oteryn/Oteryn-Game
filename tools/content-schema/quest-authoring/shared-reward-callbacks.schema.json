@@ -293,6 +293,14 @@
         },
         "repeatable_check": {
           "type": "boolean"
+        },
+        "minimum_level": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 4294967295
         }
       }
     },
