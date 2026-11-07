@@ -718,3 +718,9 @@ Current WORLDCHG migration files:
 - `apps/game-server/migrations/1333_world_change_barter_custody.sql`
 
 1330 retains the World owner; 1331 retains credited counters. 1332 concatenates the gobbler cooldown and Voice phase migrations; 1333 concatenates Benevola custody and Yeo barter. Every statement remains in its original lane order. Exact filename references were updated. The repository duplicate-version check on the staged tree returned no duplicates. Focused PostgreSQL checks and regenerated pins follow this compiling checkpoint. Future lane migration groups will continue in ascending order inside this same package range.
+
+Registry revalidation completed on the 1330–1333 allocation: all-target/all-feature
+cargo check passed175.240s; all six focused owner PostgreSQL cases executed and
+passed (12.37s test time,157.583s command). Tool-driven pin-refresh136.989s and
+pin-check152.670s passed; digest remains7d31c6eb0395cafda888178a0d5e204bad469be754430172a2f396c5e330daaa.
+The repository duplicate-migration check on HEAD returned no duplicate versions.
