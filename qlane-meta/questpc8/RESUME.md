@@ -14,72 +14,84 @@ native placement alias supplement, preserving the source record and claim key;
 never allow arbitrary missing-UID fallback or any alias over a conflicting UID.
 Only embedded approved aliases should apply; fixture binder stays strict.
 
-# questpc8 — AUTHORING checkpoint
 
-Work directly on claude/happy-davinci-ijz3wy-questpc8, read current git log first.
-Owner authorizes specified-author commits and fast-forward pushes after green
-batches; fetch and merge remote movement. No force, main, PR, credentials,
-workflow/repository-tool edits, binaries or reference-data copies.
+The Tinder Box merge passed PG26.193199456s, Mintwallin scene revalidation
+25.09514015s,17 world units, all-feature check, strict all-target/all-feature
+Clippy and fmt. Preserve source scene support and native item admission.
+No Cargo job is active. Native Ruby cache alias is the next active slice; its
+RED test and strict alias implementation are drafted in /tmp/questpc8-native-*.
+Do not redo Tinder Box. Counts below:3 qualified here,3 elsewhere,17 remaining.
 
-Author: blakinio <75369544+blakinio@users.noreply.github.com>. Preserve the
-owner-specified co-author and session trailers from the current task and git log.
+# questpc8 — AUTHORING
 
-Active L7 scope is LANE-L7.json: 23 entries, three qualified elsewhere (skip),
-two qualified here (Killing in the Name of... and Braindeath), 18 remain in
-authoring. Historical
-non-L7 rows in QUEST-STATUS.json are not additional active scope. Shared engine
-features are our job, with qengine2 reuse checked before new implementation.
+Continue directly on claude/happy-davinci-ijz3wy-questpc8. Fetch and merge its
+remote before every fast-forward push; never force/rebase/main/PR. Push each
+green slice immediately, at least every30minutes. Investigations are bounded
+to ten minutes; document conservative choices in CONTRACT-NOTES.md. Shared
+engine features belong to this lane. Earlier publication bans are superseded.
 
-Reconciled local b75ad0765 with incoming 89ebe9ef9. Reused qengine2 at 5a6de28c1,
-including shared world effects and source outfit/access/reward content. There is
-one chosen hunting payout callback, guarded by ordered phase/count progress and
-immutable successful Snapper, Deathbine and Many report receipts. It gives exactly
-10000 XP plus 5000 gold value as 50 native platinum coins. Phase 10 advances to 11
-with quest completion in the same reward transaction; source rewards remain.
-Removed add/add duplicate modules, catalogue registration and reward application.
-Preserved value-plan hashing and native NPC legacy-binding metadata. Generated
-chosen callback/receipt predicates derive from chosen_campaign_rewards.py.
+Scope: LANE-L7.json,23 entries. Triangle Tower, Waterfall and Vampire Shield are
+QUALIFIED elsewhere. Killing in the Name of, Braindeath and Tinder Box are QUALIFIED here;
+17 remain. Historical non-L7 rows are not additional scope. Preserve exclusions
+Dawnport, W14/P23/X01-X06, atomic Father's Burden11-track write and exact charges.
 
-Fresh merged PostgreSQL proofs: campaign 117.259208372s; Father single eleven-track
-write 45.855361604s; altar consumption/replay 28.59s; Giant Smithhammer source
-four-state lever 27.42s. All print POSTGRES_CASE_COMPLETED. Four reward units and
-15 world-callback units pass. cargo check, strict all-target/all-feature Clippy
-on all six changed crates, fmt, generator check and pin refresh/check pass.
-World digest remains 2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968.
-Additional checks pass: NPC reward conversations 1, floor routing 13, content
-integration 123 and world repository 5. No Cargo job remained active at the prior checkpoint. Detailed commands,
-log digests and retained RED evidence are in campaign-validation.json.
+Pushed28a7715f7 after d90c1bfa2: Braindeath chosen exploration/native death/coffin
+programme. Actual native coffin32546,31522,z11 appearance1983 ordinal1 has no
+UID. Reusable bounded death objectives use existing frozen death capture and
+quest revision settlement. World rewards use existing Premium/MINT owners.
+PG RED2.64s; final PG PASS1/1 in38.43930999s with POSTGRES_CASE_COMPLETED.
+Strict changed-crate check/Clippy, provenance unit, pin-refresh and independent
+exact-head review passed. See cloud-braindeath-proof.json.
 
-Environment started and PostgreSQL is available. Source
-/workspace/oteryn-env/env.sh for Cargo/PG. Use CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1;
-old incremental cache exhausted disk and was safely cleared. Run large Rust
-builds, world pin compilation and world repository tests serially (otherwise
-combined peak memory can kill the dispatch compiler). No full PG/nextest suite.
+Killing campaign: real native300Crocodiles/150Carniphilas repeats,650Hydras,
+three boss portals/victories/reports and rank gates. Historical successful boss
+report receipts survive legitimate source rearming. Chosen extra10000XP and
+5000gold units (50platinum) exact/once. PG RED171.08s; GREEN179.886708384s,
+source regression36.07s. Static checks/regen/review passed. See
+cloud-hunting-campaign-proof.json. qengine2 reusable participants reused from
+5a6de28c1; source NPC executor and Smithhammer no-op preserved.
 
-Incoming 28a7715f7 adds and qualifies Braindeath through reusable death
-objectives, native world reward/Premium participants and authored selectors. Its
-PG proof is38.439s, with source checks and independent review. This newer merge
-has passed merged revalidation: Braindeath25.801730527s, hunting116.451671655s,
-4 reward units,16 world units,9 capture units, check, strict Clippy and fmt.
-See cloud-braindeath-proof.json and /tmp/questpc8-braindeath-merge-*.log. Preserve both this
-work and the ordered hunting programme. The previous reconciliation commit
-2ab818fac could not push because the remote advanced.
+Current worktree: Tinder Box fixture and chosen permanent summit callbacks.
+Actual summit bone pile32085,31025,z1 appearance4285 ordinal1, no UID; western
+approach32084,31025,z1. Premium exploration and once-only item20357. Real PG
+RED2.71s at missing callback. Focused PG GREEN40.243466689s passed with regenerated native provider.
+All15 generator regressions passed; changed-crate check/Clippy and pin refresh
+passed. Tinder Box QUALIFIED after independent review, clean and merged Cargo PG runs,
+merged check/strict Clippy and generator drift check. See cloud-tinder-box-proof.json. No new source binaries/map edits.
 
-Next: finish the remaining native programmes and bindings; avoid redoing the
-completed Braindeath slice. Remote RESUME says Tinder Box work is starting. Detailed researched next-engine
-and PG RED design is in /tmp/questpc8-next-engine-plan.md (scratch only, not a new
-contract). Braindeath native right coffin: (32546,31522,11), appearance1983,
-ordinal1, no UID in committed map. Crystal source:
-https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2709
-Chosen rewards: red backpack2867, great health potion239 x2, platinum3035 x13;
-do not add the source's rope/shovel/mana. Three stages: explore Beregar lava
-passage, real Braindeath death, correct coffin completion; Premium required.
+Source /workspace/oteryn-env/env.sh for Cargo/PG; never print/read credentials.
+PostgreSQL18.6 local harness. Full regeneration already passed, world pin stayed
+unchanged. Incremental cache exhausted disk; disposable cache cleared. Use
+CARGO_INCREMENTAL=0 until stable. Logs under /tmp. Only focused tests; no full
+workspace/PG/nextest suites. No workflow/tools-repository edits.
 
-The incoming slice already extends the fenced writer/MINT for world USE and
-Premium, and adds death objectives to the existing frozen queue. Reuse these
-owners for further work. Preserve ordered programme/capture guards and seal
-world value/eligibility plans as for NPC rewards. Exact remote refs must be
-fetched with explicit source:tracking refspecs; a plain named-branch fetch can
-update only FETCH_HEAD and leave origin tracking stale. qengine2 is now refreshed
-to059364f38; newer native payment support is available before writing our own. Material freeze and
-independent exact-head review remain ahead; no readiness/main/deployment claim.
+Next after Tinder: multi-item native reward composition and remaining chosen
+programmes; source Life Ring six-tile bridge/occupant relocation also researched
+from pinned Crystal thais_quest/actions_life_ring_lever.lua. Rechecked qengine2
+and other lane branches: no reusable multi-root reward batch found.
+
+Tinder fix: native provider omitted20357; generic authored callback Item closure
+added to quest_callback_profiles.py and regenerated40 repository artifacts. Only
+one native profile added, no existing profile changed/removed. Diagnostic build
+OOM was retried; direct exact test binary proved actual native reward behavior.
+Giant Smithhammer next RED2.69s after real PG initialization, missing callback;
+its uncommitted questpc8_smith_cache.rs scaffold is intentionally not in this
+green slice. Native chest32776,32253,z8 appearance2472 ordinal1 has no UID.
+
+Concurrent remote reconciliation (11335ecd3) preserves a stronger ordered
+hunting programme and generated chosen reward callbacks. Use
+content/quests/chosen-reward-callbacks.json (renamed from authored NPC file).
+Merged proof: hunting116.451671655s, Braindeath25.801730527s; see
+campaign-validation.json and cloud-braindeath-proof.json. Keep ordered
+programme/capture guards. Serial large Rust/Python builds avoid peak OOM.
+qengine2 newer059364f38 includes native payment support; explicit refspec fetch
+required before any new engine feature. Prior plain fetch left tracking stale.
+
+Tinder Box qualification: merged PG37.322011193s, clean PG36.814023825s,
+15 generator regressions104.667s, merged static checks and independent review
+passed. L7 now17 remaining. Last mechanism push c8cad5fdf01:13:06Z November7.
+Next Smithhammer: real PG RED2.69s; untracked test scaffold and unmounted
+backpack_outputs.rs capacity helper belong to next batch. Prepared API/contents/SQL
+patch scripts under /tmp/questpc8-flat-mint-*.py; apply and inspect before use.
+Do not claim the draft MINT mode qualified. Fresh explicit-ref qengine2 head
+ebdad836a and all six other lane heads checked: no multi-output batch exists.

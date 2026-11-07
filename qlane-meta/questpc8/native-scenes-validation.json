@@ -63,5 +63,61 @@
       "sha256": "05b88d437ad4ba777c640b50766ce239d5a71a04b8935e4ca05d0254d8c4bba8"
     }
   },
-  "remaining_checks": []
+  "remaining_checks": [],
+  "tinder_merge_revalidation": {
+    "parents": [
+      "79824d4ed",
+      "ed4effb62"
+    ],
+    "checks": {
+      "tinder-merged-pg": {
+        "log": "/tmp/questpc8-scene-tinder-merged-pg.log",
+        "sha256": "6825da44f272a2b1dfef9844409eb8a155ff77db8f638a25dc6fbaf63444dbe6",
+        "exit_code": 0,
+        "proof": [
+          "test gameplay_transport::monk_save::postgres_tests::questpc8_authored_programmes::questpc8_tinder_box_summit_and_once_reward ... POSTGRES_CASE_STARTED authored-tinder-box after PostgreSQL fixture initialization",
+          "POSTGRES_CASE_COMPLETED questpc8_tinder_box_summit_and_once_reward duration=26.193199456s",
+          "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2537 filtered out; finished in 26.19s"
+        ]
+      },
+      "mint-merged-pg": {
+        "log": "/tmp/questpc8-scene-mint-merged-pg.log",
+        "sha256": "3e503ec7698a37feb940f03ac5096fe47a51a8ae89b4982b783cfd3c8724b36b",
+        "exit_code": 0,
+        "proof": [
+          "test gameplay_transport::monk_save::postgres_tests::questpc8_native_scenes::questpc8_mintwallin_lever_edits_all_walls_once_and_restores_with_floor ... POSTGRES_CASE_STARTED mintwallin-cyclops-scene after PostgreSQL fixture initialization",
+          "POSTGRES_CASE_COMPLETED questpc8_mintwallin_scene duration=25.09514015s",
+          "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2537 filtered out; finished in 25.10s"
+        ]
+      },
+      "tinder-merged-unit": {
+        "log": "/tmp/questpc8-scene-tinder-merged-unit.log",
+        "sha256": "fcbc72a37528740135fcb999f305edbbb9baf982b52dce7a3f5905c80370ec09",
+        "exit_code": 0,
+        "proof": [
+          "test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 252 filtered out; finished in 1.47s"
+        ]
+      },
+      "tinder-merged-check": {
+        "log": "/tmp/questpc8-scene-tinder-merged-check.log",
+        "sha256": "8666cd46119db9e1dbe02d2595b290bf9c396ca4c533a51b581e6b5cac3a5379",
+        "exit_code": 0,
+        "proof": []
+      },
+      "tinder-merged-clippy": {
+        "log": "/tmp/questpc8-scene-tinder-merged-clippy.log",
+        "sha256": "6f685f26b650b64acc8f1f6dce1a53e06b779bc94fe3c3cfc2c6cb2a71b2e057",
+        "exit_code": 0,
+        "proof": []
+      },
+      "tinder-merged-fmt": {
+        "log": "/tmp/questpc8-scene-tinder-merged-fmt.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "exit_code": 0,
+        "proof": []
+      }
+    },
+    "scene_duration_seconds": 25.09514015,
+    "tinder_duration_seconds": 26.193199456
+  }
 }

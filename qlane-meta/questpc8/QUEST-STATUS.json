@@ -1390,14 +1390,12 @@
   {
     "canonical": "oteryn:quest.tinder_box_quest_chyllfroest",
     "title": "Tinder Box Quest",
-    "status": "UNFINISHED",
-    "disposition": "authoring",
+    "status": "QUALIFIED",
+    "disposition": "qualified-current-lane",
     "qualified_elsewhere": [],
-    "mechanism": "calendar_repeatable_random_rewards",
-    "blocker": {
-      "missing_piece": "UID3263's source Apr1-May1/20-hour reward differs from the chosen permanent once-only recipe; native calendar/claim binding for that selected recipe is absent."
-    },
-    "round": "L7"
+    "mechanism": "Premium summit exploration, native exact bone-pile ordinal, once-only world MINT",
+    "round": "L7",
+    "proof": "cloud-tinder-box-proof.json"
   },
   {
     "canonical": "oteryn:quest.treasure_island_quest",

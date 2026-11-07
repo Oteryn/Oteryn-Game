@@ -142,6 +142,19 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     callbacks = json.loads((root / 'content/quests/world-callbacks.json').read_bytes())
     keys = {offering['item'] for callback in callbacks['callbacks']
             for offering in callback['offerings']}
+    # Executable authored callbacks use the same exact canonical/native Item
+    # qualification as source chests. Include every output, never a partial bag.
+    for relative in ('authored-world-callbacks.json', 'chosen-reward-callbacks.json'):
+        path = root / 'content/quests' / relative
+        if not path.is_file():
+            continue
+        for callback in json.loads(path.read_bytes())['callbacks']:
+            reward = callback.get('give') or callback.get('effects', {}).get('item_reward')
+            if reward:
+                keys.add(reward['item'])
+                keys.update(child['item'] for child in reward.get('contents', []))
+            for field in ('take', 'present', 'offerings'):
+                keys.update(item['item'] for item in callback.get(field, []))
     # Rotten Blood's fixed Rust callback is not part of the JSON inventory.
     # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
     # apply the same pinned source, exact binding and portability checks below.

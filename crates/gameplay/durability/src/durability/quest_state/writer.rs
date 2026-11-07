@@ -69,17 +69,38 @@ impl DurabilityRoot {
     }
 
     /// World value grants borrow the existing MINT and native Premium participants.
-    #[allow(clippy::too_many_arguments, reason = "one fenced world transaction binds its source occurrence and admitted participants")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "one fenced world transaction binds its source occurrence and admitted participants"
+    )]
     pub(crate) async fn commit_character_world_reward<G: grizzly::GrizzlyPremiumGate>(
-        &self, authority: &ReconciledCharacterAuthority<'_, '_>, node: &NodeIncarnationProof,
-        fence: CurrentCharacterGameplayFence, request: QuestTransitionRequest,
-        catalogue: Arc<QuestStateCatalogue>, permit: &super::super::spell_owner_commit::SpellLanePermit,
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
         context: super::super::quest_world_callback::QuestWorldContext,
-        admission: QuestRewardAdmission<'_>, premium: &G,
+        admission: QuestRewardAdmission<'_>,
+        premium: &G,
     ) -> Result<QuestTransitionOutcome> {
-        self.commit_quest_inner::<_, 0>(authority, node, fence, request, catalogue,
+        self.commit_quest_inner::<_, 0>(
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
             Some((permit, context, Some(admission.native), Some(admission))),
-            None, None, None, premium, None, None, None).await
+            None,
+            None,
+            None,
+            premium,
+            None,
+            None,
+            None,
+        )
+        .await
     }
 
     /// Bloodshade's fixed access purchase uses the existing fee owner and then
