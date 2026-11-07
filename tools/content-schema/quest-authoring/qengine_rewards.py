@@ -32,7 +32,7 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana')]
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald')]
     paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua']
@@ -67,7 +67,8 @@ def build():
     groups = {}
     for row in xml:
         name = aliases.get(row.get('name'), row.get('name'))
-        if row.get('enabled') == 'yes' and row.get('from') != 'store':
+        # Owner-selected Royal Costume quest has a source NPC grant despite its XML store tag.
+        if row.get('enabled') == 'yes' and (row.get('from') != 'store' or name == 'Royal Costume'):
             groups.setdefault(name, {})[row.get('type')] = row.attrib
     appearance = ROOT / 'imports/cipsoft-appearances/outfits'
     manifest_raw = (appearance / 'manifest.json').read_bytes()
@@ -318,6 +319,17 @@ def build():
                 'storage':guard,'reply':['The accessory costs 150000 gold carried with you.']})
         offers.append({'npc':'oteryn:npc.irmana','keywords':['addon'],'topic':0,'next_topic':pay_topic,
             'storage':parent+[storage(track,1,1,preserve=True)],'reply':['Are you here to collect your accessory for 150000 gold?']})
+    royal='oteryn:quest-progress/outfit_quest/royal_costume_outfit'
+    for name,before,after,silver,gold,bit,topic,word in [
+        ('base',-1,1,15000,12500,0,16,'armor'),('shield',1,2,7500,6250,1,17,'shield'),('crown',2,3,7500,6250,2,18,'crown')]:
+        guard=[storage(royal,before,after,0 if bit==0 else before)]
+        add('l4-royal-costume-'+name,'royal_costume_outfits_quest','percybald',['yes'],guard,
+            take=[(22516,silver),(22721,gold)],outfit=('royal_costume',bit),topic=topic,next_topic=15)
+        offers.append({'npc':'oteryn:npc.percybald','keywords':[word],'topic':15,'next_topic':topic,
+            'storage':guard,'reply':[f'The donation is {silver} silver tokens and {gold} gold tokens.']})
+    for words,before,after in [(['outfit','addon','royal'],0,14),(['yes'],14,15)]:
+        offers.append({'npc':'oteryn:npc.percybald','keywords':words,'topic':before,'next_topic':after,
+            'storage':[],'reply':['Choose armor, shield or crown for a token donation.']})
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})

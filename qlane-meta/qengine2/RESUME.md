@@ -8,7 +8,7 @@ META 3.1.0 resolved at bound immutable commit; required dev/coding/debugging/
 review/verify/waves guidance read. Source env.sh for Cargo/PG commands:
 `source /workspace/oteryn-env/env.sh` (do not print its private URL).
 
-Scope: exactly 66 L1 outfit/addon entries. Counts: 10 QUALIFIED, 56 UNFINISHED,
+Scope: exactly 66 L1 outfit/addon entries. Counts: 11 QUALIFIED, 55 UNFINISHED,
 0 BLOCKED. Original cross-lane evidence and source hashes remain in QUEST-STATUS.
 Preserve exclusions and other-lane/world-change ownership. Parent quest tracks
 retain their original owners; qualify all of an L1 outfit entry's reward paths.
@@ -151,13 +151,30 @@ Nobleman auxiliary verification is now COMPLETE:123 content tests2.70s,
 Earlier disk exhaustion recovered by removing obsolete compiler snapshots,
 without deleting source/evidence. Native fee/Nobleman slice pushed33b640335.
 
-Current Royal Costume PG RED build session8478;log
-/tmp/qengine2-batch4-royal-red.log. Test covers base/shield/crown with all exact
-source token quantities, no internal-stage seeding. Test carrying capacity is
-earned through real XP owner at level200; closed bags reuse actual freed slots.
-No Royal content changed before RED. Source Percybald in pinned corpus grants
-looks1456/1457 despite XML from=store; both admitted client records exist.
-CONTRACT-NOTES scopes native quest admission to Royal only, keeps other store
-looks excluded. Token IDs22516/22721;base15000/12500,then7500/6250each. After
-actual RED implement/reproduce item/profile/appearance/NPC bindings,run focused
-GREEN and push slice immediately. Pirate follows in sameL1-04group.
+Royal Costume L1-04B GREEN: full base/shield/crown story. RED43.794021327s,
+GREEN130.656709439s,1 passed,no skips/ignored. Exact source token costs and
+partial-funding atomic refusal pass;no silver taken when gold missing;all3
+immutable account facts,replay and normal appearance selection pass. No internal
+outfit stages seeded. Normal XP owner arranges carrying capacity,all weight/
+stack/container checks stay active;closed bags reuse actual freed slots.
+
+Source Percybald:149-228 sha256b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc.
+Source token IDs22516/22721:base15000/12500,then7500/6250each. XML from=store
+exception scoped only to Royal;both client1456/1457 records admitted. Other store
+looks remain excluded. Two physical token profiles admitted with repo tool,
+Percybald captured placement generated. CONTRACT-NOTES records exact decisions.
+
+Checks:fmt;check20.68s;2 unit tests1.16s;clippy44.58s;16 Python tests5.506s;
+callback/placement reproduction;repo pin-refresh6989e9ea9b9b48dafa8bff6295f0b20aa8786916893dadd5aa2962e7e953b125.
+Commit/push green Royal slice immediately. Content tests/world targets/pin-check
+currently session95586;logs /tmp/qengine2-batch4-royal-{content-tests,world-tests,pincheck}.log.
+Record their completion after push. Counts11/66 qualified,55 remaining.
+
+Next: Pirate completes L1-04group. Use original pirate-sabre callback unchanged,
+add source Raymond Striker base and Ariella hat introduction/hand-in. Source
+scratches /tmp/qengine2-raymond_striker.lua and /tmp/qengine2-ariella.lua;
+base requires external Shattered Isles AccessToLagunaIsland1/RaysMission45.
+Ariella exact items6101/6102/6100/6099;start via addon/task/yes/yes then task/yes.
+Source parent objectives retain other lane ownership;do not seed internal outfit
+stages. Three NPC actors must be placed together once (Raymond,Morgan,Ariella).
+Run actual PG RED before Pirate production changes;push each green slice.

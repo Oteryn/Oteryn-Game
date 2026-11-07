@@ -11,7 +11,7 @@
   },
   "cosmetics": {
     "path": "cosmetics/outfits/native-cosmetics.json",
-    "sha256": "dc552914e856553717d862908d8ee0a9110963db077105ffc4da214dd8401843"
+    "sha256": "b309d1a99d6457a5151d1d36966e18cde3e9226e05666a3cbc332f2c67e5d53a"
   },
   "creature_profiles": {
     "path": "creatures/definitions/spell-native-profiles.json",
@@ -31,7 +31,7 @@
   },
   "item_profiles": {
     "path": "items/definitions/spell-native-profiles.json",
-    "sha256": "0d20d5f04396e226a7eb10fa324c028b410a44010228799e8b9ad595a238f326"
+    "sha256": "dd43d76396a378b999e9c3d10ba7f86679b64b33e117c728085b211d6d92632f"
   },
   "loot_tables": {
     "path": "../tools/content-schema/native-gameplay/loot-tables.json",

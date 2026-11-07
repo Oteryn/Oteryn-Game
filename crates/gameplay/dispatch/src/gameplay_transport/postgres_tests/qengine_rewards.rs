@@ -156,6 +156,9 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l4-nobleman-first-start" => &["addon", "yes", "dress", "yes", "yes"],
         "l4-nobleman-second-start" => &["addon", "yes", "hat", "yes", "yes"],
         "l4-nobleman-first" | "l4-nobleman-second" => &["addon"],
+        "l4-royal-costume-base" => &["outfit", "yes", "armor"],
+        "l4-royal-costume-shield" => &["outfit", "yes", "shield"],
+        "l4-royal-costume-crown" => &["outfit", "yes", "crown"],
         "hallowed-holy-water" => &["holy water"],
         "sam-backpack" => &["old backpack"],
         "deepling-helmet" => &[

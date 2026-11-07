@@ -40,3 +40,13 @@ or binaries are added. QUEST-STATUS.json retains exact tests and case markers.
 - Native Quest payments reuse the complete bounded carried-coin proof profile.
   The new cause must also have its exact same-transaction Quest fee/source
   receipt; no legacy custody, ordering, epoch or Character proof is skipped.
+
+- Royal Costume: donor XML tags looks1456/1457 as store, but the pinned source
+  NPC and owner-selected quest recipe explicitly grant them for in-game tokens.
+  Admit only Royal Costume as a native quest path; leave other store looks out.
+  Both client appearance records exist in the admitted corpus. Exact source
+  costs are15000 Silver Tokens22516 +12500 Gold Tokens22721 for base, then
+  7500+6250 each for shield and crown, in that order. Do not use the total-package
+  30000/25000 dialogue number as the base-only price. Source Crystal9f5a72c,
+  data-global/npc/percybald.lua:149-228,
+  sha256b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc.

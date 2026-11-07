@@ -3,8 +3,8 @@
   "lifecycle": "AUTHORING; owner-authorized local commits and fast-forward pushes to claude/happy-davinci-ijz3wy-qengine2 after each green batch",
   "qualification_boundary": "Whole L1 entry, not an isolated seeded reward stage. No entry is promoted before all of its required stages and relevant PG cases pass.",
   "counts": {
-    "qualified": 10,
-    "unfinished": 56,
+    "qualified": 11,
+    "unfinished": 55,
     "blocked": 0
   },
   "quests": [
@@ -1275,7 +1275,7 @@
     {
       "canonical": "oteryn:quest.royal_costume_outfits_quest",
       "title": "Royal Costume Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc3",
@@ -1285,7 +1285,11 @@
           ]
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "qualification": {
+        "batch": "L1-04B",
+        "scope": "Complete source base/shield/crown token exchanges;15000silver/12500gold base,7500/6250 each addon;late missing second token retains all first-token inputs;literal replay;3 immutable account facts;normal final appearance selection.",
+        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-royal-costume-story duration=130.656709439s success=true"
+      }
     },
     {
       "canonical": "oteryn:quest.soil_guardian_outfits_quest",
@@ -1896,7 +1900,7 @@
     "current_slice": "Generic native monetary fee participant + complete Nobleman source story; push this slice immediately after focused PG GREEN. Remaining entries follow with separate green commits.",
     "reuse_audit": "Primary questpc2..8 branches refreshed; none of the matched current entries is QUALIFIED. Latest questpc8 npc_program still calls plan_storage (line130); no native fee/outfit participant exists there. Reuse existing item_fee_burn owner and Type2 gate here.",
     "source": "Crystal9f5a72c data-global/npc/irmana.lua:50-135 and corresponding male branches. Carried-only150000 per addon; no10000 payment implementation despite dialogue.",
-    "phase": "Royal Costume full base/shield/crown PG RED authored before content changes; source prices15000silver12500gold,then7500/6250each; token IDs22516/22721. Source donor Percybald Lua known in corpus. Nobleman ancillary checks retry running session17823.",
+    "phase": "Royal is PostgreSQL GREEN and pushed immediately;Pirate is the last entry of current3-entry group. Nobleman full auxiliary checks already complete.",
     "red": {
       "result": "1 failed in44.66s: missing Nobleman first-start binding",
       "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-nobleman-story duration=44.661348814s success=false",
@@ -1932,6 +1936,28 @@
         "commit": "33b640335",
         "push": "Fast-forward confirmed",
         "verification": "All focused checks complete after immediate slice push. Previous disk-only integration failure recovered; no skipped/weakened tests."
+      },
+      {
+        "id": "L1-04B",
+        "status": "QUALIFIED",
+        "entries": [
+          "oteryn:quest.royal_costume_outfits_quest"
+        ],
+        "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-royal-costume-story duration=43.794021327s success=false",
+        "green": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-royal-costume-story duration=130.656709439s success=true",
+        "result": "1 passed;0 failed;0 ignored;130.66s;actualPostgreSQL18.6",
+        "scope": "Complete source base/shield/crown token exchanges;15000silver/12500gold base,7500/6250 each addon;late missing second token retains all first-token inputs;literal replay;3 immutable account facts;normal final appearance selection.",
+        "source": "Crystal9f5a72c data-global/npc/percybald.lua:149-228 sha256b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc",
+        "admission": "Two token custody profiles via repo register_spell_families;admitted client1456/1457 Royal store-tag exception scoped by owner-selected native quest/sourceNPC;captured Percybald placement.",
+        "checks": [
+          "cargo fmt --all --check;explicit story rustfmt",
+          "check20.68s",
+          "2 Quest tests1.16s",
+          "strict clippy44.58s",
+          "16 authoring tests5.506s;reproducers",
+          "pin-refresh passed6989e9ea9b9b48dafa8bff6295f0b20aa8786916893dadd5aa2962e7e953b125"
+        ],
+        "follow_on_verification": "Content targets and pin-check running95586 after immediate green slice push;no claim of completion yet."
       }
     ],
     "debug_evidence": [
@@ -1939,6 +1965,12 @@
       "Second80.468007016s and third80.35737872s failed: fresh Character proof required Atelier-specific receipt. Added exact Quest receipt alternative; retained old proof.",
       "Integration compile failed with No space left on device; obsolete compiler snapshots cleaned,normal execution restored. No source/test proof deleted."
     ],
-    "royal_source": "Crystal9f5a72c data-global/npc/percybald.lua:149-228 sha256 b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc"
+    "royal_source": "Crystal9f5a72c data-global/npc/percybald.lua:149-228 sha256 b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc",
+    "royal_red": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-royal-costume-story duration=43.794021327s success=false",
+    "royal_checks": [
+      "16 authoring tests5.506s;reproducers passed",
+      "check20.68s;2 Quest tests1.16s;strict clippy44.58s",
+      "repo pin-refresh passed;PG GREEN pending"
+    ]
   }
 }

@@ -101,11 +101,22 @@ class QuestRewards(unittest.TestCase):
             with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(bad)
         self.assertEqual(source['fee'],{'gold':150000,'include_bank':False})
 
+    def test_royal_costume_quest_admits_only_its_source_store_tag_exception(self):
+        outfits={r['key']:r for r in self.author['document']['outfits']}
+        royal=outfits['oteryn:outfit.royal_costume']
+        self.assertEqual((royal['female']['id'],royal['male']['id'],royal['addon_count']),(1456,1457,2))
+        callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}
+        for name,silver,gold,bit in [('base',15000,12500,0),('shield',7500,6250,1),('crown',7500,6250,2)]:
+            c=callbacks['l4-royal-costume-'+name]
+            self.assertEqual(c['take'],[{'item':'oteryn:item.tibia.i22516','count':silver},{'item':'oteryn:item.tibia.i22721','count':gold}])
+            self.assertEqual(c['outfit']['addons'],bit)
+            self.assertEqual(c['present'] if 'present' in c else [],[])
+
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
         self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),29)
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),32)
         self.assertEqual(sum(c['outfit'] is None for c in callbacks),8)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))

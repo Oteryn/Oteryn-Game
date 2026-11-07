@@ -1401,6 +1401,126 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l4-royal-costume-base",
+      "quest": "oteryn:quest.royal_costume_outfits_quest",
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 16,
+      "next_topic": 15,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/outfit_quest/royal_costume_outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 15000
+        },
+        {
+          "item": "oteryn:item.tibia.i22721",
+          "count": 12500
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.royal_costume",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/percybald.lua:sha256:b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l4-royal-costume-crown",
+      "quest": "oteryn:quest.royal_costume_outfits_quest",
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 18,
+      "next_topic": 15,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/outfit_quest/royal_costume_outfit",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 7500
+        },
+        {
+          "item": "oteryn:item.tibia.i22721",
+          "count": 6250
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.royal_costume",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/percybald.lua:sha256:b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l4-royal-costume-shield",
+      "quest": "oteryn:quest.royal_costume_outfits_quest",
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 17,
+      "next_topic": 15,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/outfit_quest/royal_costume_outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 7500
+        },
+        {
+          "item": "oteryn:item.tibia.i22721",
+          "count": 6250
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.royal_costume",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/percybald.lua:sha256:b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/outfox-helmet",
       "quest": "oteryn:quest.tibia_tales",
       "npc": "oteryn:npc.budrik",

@@ -809,6 +809,89 @@
       ]
     },
     {
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "outfit",
+        "addon",
+        "royal"
+      ],
+      "topic": 0,
+      "next_topic": 14,
+      "storage": [],
+      "reply": [
+        "Choose armor, shield or crown for a token donation."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 14,
+      "next_topic": 15,
+      "storage": [],
+      "reply": [
+        "Choose armor, shield or crown for a token donation."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "armor"
+      ],
+      "topic": 15,
+      "next_topic": 16,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/outfit_quest/royal_costume_outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "The donation is 15000 silver tokens and 12500 gold tokens."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "crown"
+      ],
+      "topic": 15,
+      "next_topic": 18,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/outfit_quest/royal_costume_outfit",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "The donation is 7500 silver tokens and 6250 gold tokens."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "shield"
+      ],
+      "topic": 15,
+      "next_topic": 17,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/outfit_quest/royal_costume_outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "The donation is 7500 silver tokens and 6250 gold tokens."
+      ]
+    },
+    {
       "npc": "oteryn:npc.sam",
       "keywords": [
         "old backpack",

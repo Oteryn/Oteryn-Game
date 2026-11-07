@@ -51,6 +51,11 @@ fn qengine_l4_nobleman_paid_outfit_story() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-l4-nobleman-story")
 }
 
+#[test]
+fn qengine_l4_royal_costume_full_token_exchange_story() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-l4-royal-costume-story")
+}
+
 const ANNIHILATOR: &str = "oteryn:quest-progress/quest/u7_24/the_annihilator/reward";
 const DEMON_HELMET: &str = "oteryn:quest-progress/quest/u6_4/demon_helmet/rewards/demon_helmet";
 const DEMON_OAK: &str = "oteryn:quest-progress/quest/u8_2/the_demon_oak/done";
@@ -166,6 +171,12 @@ async fn supply(
         .map_err(|_| "fence")?
         .ok_or("fence")?;
     let main: sqlx::types::Uuid = sqlx::query_scalar("SELECT item_instance_id FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid").bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    // Reuse physical free slots after prior source hand-ins consumed their stacks.
+    for (bag, used) in bags.iter_mut() {
+        let count: i64 = sqlx::query_scalar("SELECT count(*) FROM (SELECT item_instance_id FROM game_item_nested_entries WHERE parent_item_instance_id=$1 UNION ALL SELECT item_instance_id FROM game_item_container_entries WHERE parent_item_instance_id=$1) entries")
+            .bind(*bag).fetch_one(&h.pool).await?;
+        *used = u32::try_from(count)?;
+    }
     let mut remaining = u32::from(item.count) + if item.count > 1 { 1 } else { 0 };
     while remaining > 0 {
         let target = if let Some(index) = bags.iter().position(|(_, used)| *used < capacity) {
@@ -317,6 +328,15 @@ pub(super) async fn exercise(
             ],
             140,
         ),
+        "qengine-rewards-l4-royal-costume-story" => (
+            "royal-costume",
+            &[
+                ("base", Some((22516, 15000)), Some((22721, 12500)), Some(0)),
+                ("shield", Some((22516, 7500)), Some((22721, 6250)), Some(1)),
+                ("crown", Some((22516, 7500)), Some((22721, 6250)), Some(2)),
+            ],
+            1456,
+        ),
         _ => return Err("unknown outfit story".into()),
     };
     let all = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
@@ -340,10 +360,18 @@ pub(super) async fn exercise(
                 item: format!("oteryn:item.tibia.i{}", item.0),
                 count: item.1,
             };
-        assert_eq!(callback.take, take.iter().map(amount).collect::<Vec<_>>());
+        let mut expected_take = take.iter().map(amount).collect::<Vec<_>>();
+        if family == "royal-costume" {
+            expected_take.extend(present.iter().map(amount));
+        }
+        assert_eq!(callback.take, expected_take);
         assert_eq!(
             callback.present,
-            present.iter().map(amount).collect::<Vec<_>>()
+            if family == "royal-costume" {
+                vec![]
+            } else {
+                present.iter().map(amount).collect::<Vec<_>>()
+            }
         );
         assert_eq!(callback.outfit.as_ref().map(|o| o.addons), *addon);
         if family == "nobleman" && addon.is_some() {
@@ -569,9 +597,10 @@ pub(super) async fn exercise(
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
             .ok_or("capabilities")?;
-    // The creation fixture starts at level two. Earn normal level-50 capacity
-    // through the real progression owner before carrying the heavy native books.
-    if family == "battle-mage" {
+    // Earn ordinary carrying capacity through the real progression owner for
+    // the largest source recipes, preserving every native weight check.
+    if matches!(family, "battle-mage" | "royal-costume") {
+        let carrying_level = if family == "royal-costume" { 200 } else { 50 };
         use crate::durability::character_progression::{
             ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
         };
@@ -582,8 +611,8 @@ pub(super) async fn exercise(
             .policy
             .thresholds
             .iter()
-            .find(|t| t.level == 50)
-            .ok_or("level50 threshold")?
+            .find(|t| t.level == carrying_level)
+            .ok_or("carrying-level threshold")?
             .minimum_experience
             .get();
         let fence = owner
@@ -671,9 +700,27 @@ pub(super) async fn exercise(
             );
             assert_eq!(counts(h).await?, before);
         }
-        for item in &needed {
+        for (index, item) in needed.iter().enumerate() {
             if quantity(h, &item.item).await? < i64::from(item.count) {
                 supply(owner, admitted, h, item, &mut bags, &mut occurrence).await?;
+            }
+            if family == "royal-costume" && index == 0 {
+                let before = counts(h).await?;
+                let silver = quantity(h, &item.item).await?;
+                let (result, _, _) =
+                    super::qengine_rewards::wire_reward(owner, admitted, npc, callback, false)
+                        .await?;
+                assert_eq!(
+                    result,
+                    NpcIntentDisposition::Rejected,
+                    "missing second token must refuse the entire exchange"
+                );
+                assert_eq!(counts(h).await?, before);
+                assert_eq!(
+                    quantity(h, &item.item).await?,
+                    silver,
+                    "first token cannot be consumed before second token is proven"
+                );
             }
         }
         let required = requirements(callback)?;
@@ -882,7 +929,7 @@ pub(super) async fn exercise(
     }
     assert_eq!(
         checked_stale,
-        !matches!(family, "elementalist" | "nobleman")
+        !matches!(family, "elementalist" | "nobleman" | "royal-costume")
     );
     if family == "nobleman" {
         let paid:(i64,i64,i64)=sqlx::query_as("SELECT count(*),coalesce(sum(fee_gold_units),0)::bigint,coalesce(sum(bank_debit_gold_units),0)::bigint FROM game_item_fee_burns WHERE cause_kind=18").fetch_one(&h.pool).await?;
