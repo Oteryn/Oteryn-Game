@@ -8688,7 +8688,7 @@
     "cumulative_native_actors": 240
   },
   "active_shop_work": {
-    "state": "CONTRACT_AND_ACTOR_FIXTURES_WIP; NO_PROMOTION",
+    "state": "COMPILED_FOCUSED_PG_REPRO_RUNNING; NO_PROMOTION",
     "entries": [
       "Dixi",
       "Lubo",
@@ -8715,7 +8715,16 @@
       "48544": 80910
     },
     "placement_cases": "four retained exact donor/retail anchors appended; Toffee prior placement proof retained",
-    "compile_note": "Corrected u64 contract prices to checked u32 runtime prices; fresh focused test compiling. No native mutation or promotion ahead of actual PG RED.",
-    "publication_note": "This checkpoint changes data/metadata only; Rust source remains the previously green head. Focused shop test is being compiled in the working tree and follows in the next checkpoint. Exact open point: five Toffee native item profiles absent; actual shop PG repro not yet completed."
+    "compile_note": "cargo test compiled successfully in10m02s; focused real PostgreSQL scenario running",
+    "publication_note": "Rust exact-contract assertions compiled; original service/postal/Ahmet checks retained. Actor PG GREEN111.80s, profile guards9 GREEN40.764s. Exact open point: five Toffee native profiles absent; focused shop RED not yet finished.",
+    "actor_pg": {
+      "result": "GREEN",
+      "duration_seconds": 111.8,
+      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+      "npcs": 242,
+      "actors": 244,
+      "log": "/tmp/npcfix-evidence/five-shop-retained-actors-pg.log"
+    },
+    "profile_preflight": "PASS: strict capture of five portable physical profiles to /tmp only; no canonical or native mutation before shop PG RED"
   }
 }

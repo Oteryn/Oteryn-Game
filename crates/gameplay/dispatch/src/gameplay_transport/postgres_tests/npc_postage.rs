@@ -16,6 +16,9 @@ use oteryn_protocol_oteryn::npc_service::{
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
+#[path = "npc_postage/exact_shops.rs"]
+mod exact_shops;
+
 #[test]
 fn npcfix_postgres_dispatch_services_and_replay() -> TestResult {
     postgres_services(&[
@@ -33,6 +36,11 @@ fn npcfix_postgres_dispatch_services_and_replay() -> TestResult {
         "romella",
         "pugwah",
     ])
+}
+
+#[test]
+fn npcfix_postgres_retained_exact_shop_prices_and_replay() -> TestResult {
+    postgres_services(&["dixi", "lubo", "pompan", "shiantis", "toffee"])
 }
 
 #[test]
@@ -162,6 +170,7 @@ fn scenario(keys: &[&str]) -> TestResult {
                         generation: placed.generation,
                     }
                 };
+                let exact_shop = exact_shops::find(key)?;
                 let merchandise = match key {
                     "alesar" => Some("oteryn:item.tibia.i3297"),
                     "nah_bob" => Some("oteryn:item.tibia.i3284"),
@@ -172,6 +181,13 @@ fn scenario(keys: &[&str]) -> TestResult {
                 let mut inventory = vec![("oteryn:item.tibia.i3031", 100)];
                 if let Some(item) = merchandise {
                     inventory.extend([(item, 1), (item, 1)]);
+                }
+                if let Some(contract) = &exact_shop {
+                    for offer in &contract.offers {
+                        if matches!(offer.direction, crate::content::ProjectV2ServiceOfferDirection::BuyFromPlayer) {
+                            inventory.extend([(offer.item.key.as_str(), 1), (offer.item.key.as_str(), 1)]);
+                        }
+                    }
                 }
                 seed_main_backpack(&h, &inventory).await?;
                 let current =
@@ -206,6 +222,62 @@ fn scenario(keys: &[&str]) -> TestResult {
                         "{key}: {text}"
                     );
                     window = outcome.window;
+                }
+                if let Some(contract) = &exact_shop {
+                    if contract.offers.iter().any(|o| matches!(o.direction,
+                        crate::content::ProjectV2ServiceOfferDirection::SellToPlayer)) {
+                        seed_purchase_bank(&h).await?;
+                    }
+                    let window = window.ok_or("retained exact shop window")?;
+                    let (_, revision) = window.open.ok_or("retained shop open")?;
+                    let native = active.native_gameplay().ok_or("native shop catalogue")?;
+                    let item_index = native.item_index().ok_or("native shop Item index")?;
+                    for (offset, offer) in contract.offers.iter().enumerate() {
+                        let item = &offer.item.key;
+                        let reference = item_index.definition_ref("Item", item,
+                            &offer.item.revision).ok_or_else(|| format!("{key}: missing native contract Item {item}"))?.get();
+                        let side = match offer.direction {
+                            crate::content::ProjectV2ServiceOfferDirection::SellToPlayer => NpcTradeSide::Buy,
+                            crate::content::ProjectV2ServiceOfferDirection::BuyFromPlayer => NpcTradeSide::Sell,
+                        };
+                        let count = u32::from(offer.count.unwrap_or(1));
+                        let unit_price = u32::try_from(offer.unit_price)?;
+                        let offer_index = window.offers.iter().position(|o|
+                            o.item_definition_ref == reference && o.side == side
+                            && o.unit_price == unit_price && o.count == count)
+                            .ok_or_else(|| format!("{key}: exact retained offer missing {item}"))?;
+                        let intent = NpcTradeIntent { npc_actor: npc, catalogue_revision: revision,
+                            offer_index: u32::try_from(offer_index)?, side, quantity: 1,
+                            expected_unit_price: unit_price };
+                        let ordinal = 10 + u64::try_from(offset)? * 2;
+                        let before_gold = exact_shops::gold(&h).await?;
+                        let before_items = exact_shops::quantity(&h, item).await?;
+                        let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_npc_trades")
+                            .fetch_one(&h.pool).await?;
+                        let wrong = NpcTradeIntent { expected_unit_price: unit_price + 1, ..intent };
+                        assert!(matches!(owner.npc_trade(deps.actor, command(ordinal), wrong).await,
+                            NpcTradeStep::Refused(_)), "{key}: mismatched price {item}");
+                        assert_eq!(exact_shops::gold(&h).await?, before_gold, "wrong price never charges/pays");
+                        assert_eq!(exact_shops::quantity(&h, item).await?, before_items);
+                        let unchanged: i64 = sqlx::query_scalar("SELECT count(*) FROM game_npc_trades")
+                            .fetch_one(&h.pool).await?;
+                        assert_eq!(unchanged, receipts);
+                        for _ in 0..2 {
+                            require_trade(owner.npc_trade(deps.actor, command(ordinal + 1), intent).await, item)?;
+                        }
+                        let price = i64::try_from(offer.unit_price)?;
+                        let units = i64::from(count);
+                        let (gold, quantity) = if side == NpcTradeSide::Buy {
+                            (before_gold - price, before_items + units)
+                        } else { (before_gold + price, before_items - units) };
+                        assert_eq!(exact_shops::gold(&h).await?, gold, "{key}: exact gold once across replay {item}");
+                        assert_eq!(exact_shops::quantity(&h, item).await?, quantity,
+                            "{key}: exact physical units once across replay {item}");
+                        let after: i64 = sqlx::query_scalar("SELECT count(*) FROM game_npc_trades")
+                            .fetch_one(&h.pool).await?;
+                        assert_eq!(after, receipts + 1, "one durable receipt per exact contract offer");
+                    }
+                    return Ok(());
                 }
                 if key == "ahmet" {
                     let window = window.ok_or("Ahmet trade window")?;
