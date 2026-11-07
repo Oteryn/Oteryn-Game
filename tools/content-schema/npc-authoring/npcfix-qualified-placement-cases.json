@@ -489,6 +489,73 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-08",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.chartan",
+          "name": "Chartan",
+          "expected": {
+            "x": 33214,
+            "y": 31058,
+            "floor": -9
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.chrak",
+          "name": "Chrak",
+          "expected": {
+            "x": 33079,
+            "y": 31022,
+            "floor": -2
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.esrik",
+          "name": "Esrik",
+          "expected": {
+            "x": 33036,
+            "y": 31530,
+            "floor": -10
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.lizard_tunnel_guard",
+          "name": "Lizard Tunnel Guard",
+          "expected": {
+            "x": 33379,
+            "y": 31107,
+            "floor": -8
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.ongulf",
+          "name": "Ongulf",
+          "expected": {
+            "x": 33025,
+            "y": 31540,
+            "floor": -14
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.zalamon",
+          "name": "Zalamon",
+          "expected": {
+            "x": 33356,
+            "y": 31411,
+            "floor": -8
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }
