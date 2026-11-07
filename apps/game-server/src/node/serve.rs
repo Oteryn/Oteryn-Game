@@ -1853,6 +1853,10 @@ where
     let mut attempt = 0;
     let mut runs = 0;
     loop {
+        // Earlier boot reads can retire their holder while returning valid
+        // results. Prepare a real ready holder before the custody operation;
+        // the operation still supplies its own authoritative typed outcome.
+        let _ = root.await_ready().await;
         let result = {
             let _boot = root.boot_pass_deadline(deadline);
             operation().await
@@ -2198,6 +2202,21 @@ struct Readiness<'a> {
 }
 
 impl Readiness<'_> {
+    /// Shutdown has stopped the maintenance pump. Replenish or observe the real
+    /// holder here; requesting maintenance and sleeping alone cannot do so.
+    /// Keep the caller's existing shutdown deadline authoritative.
+    async fn await_holder(
+        &self,
+        budget: Option<tokio::time::Instant>,
+    ) -> Result<(), DurabilityError> {
+        match budget {
+            Some(deadline) => tokio::time::timeout_at(deadline, self.root.await_ready())
+                .await
+                .map_err(|_| DurabilityError::RootUnavailable)?,
+            None => self.root.await_ready().await,
+        }
+    }
+
     /// Prepare the exact successor of the current Runtime guard chain.
     async fn prepare(
         &self,
@@ -2211,7 +2230,11 @@ impl Readiness<'_> {
         // shutdown budget, or a bounded number of times at boot.
         let mut attempt = 0;
         let current = loop {
-            match guards.load(std::slice::from_ref(&key)).await {
+            let loaded = match self.await_holder(budget).await {
+                Ok(()) => guards.load(std::slice::from_ref(&key)).await,
+                Err(error) => Err(error),
+            };
+            match loaded {
                 Ok(mut rows) => break rows.pop().flatten(),
                 Err(error) => {
                     let exhausted = match budget {
@@ -2321,11 +2344,15 @@ impl Readiness<'_> {
                 if budget.is_some_and(|deadline| tokio::time::Instant::now() >= deadline) {
                     return Err(BootError::Readiness("shutdown budget"));
                 }
-                match self
-                    .root
-                    .publish_runtime_readiness(self.proof, &publication)
-                    .await
-                {
+                let outcome = match self.await_holder(budget).await {
+                    Ok(()) => {
+                        self.root
+                            .publish_runtime_readiness(self.proof, &publication)
+                            .await
+                    }
+                    Err(error) => Err(AssignmentError::from(error)),
+                };
+                match outcome {
                     Ok(
                         GuardPublicationDisposition::Applied
                         | GuardPublicationDisposition::Existing,
