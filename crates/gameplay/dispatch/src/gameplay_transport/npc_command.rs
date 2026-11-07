@@ -46,6 +46,7 @@ mod healing;
 pub(super) mod hireling_services;
 mod isle_of_evil;
 mod liquid_black;
+mod marriage;
 mod monk;
 mod premium_purchase;
 mod quest_dialogue;
@@ -73,6 +74,7 @@ struct SessionNpc {
     exchange: Option<coin_exchange::Pending>,
     grizzly: grizzly::Conversation,
     premium: Option<premium_purchase::PendingPurchase>,
+    marriage: Option<marriage::Pending>,
     monk: Option<monk::Pending>,
     quest_dialogue: quest_dialogue::State,
     endgame: Option<endgame::Pending>,
@@ -616,6 +618,9 @@ pub(super) async fn npc_bank_talk(
     use super::bank_npc::{self, BankNpcIntent};
     use crate::durability::bank::{BankError, BankNpcSource};
     use crate::foundation::{CommandId, CommandRef};
+    if let Some(outcome) = marriage::replay(admission, command, Some(&intent)).await {
+        return outcome;
+    }
     if let Some(outcome) = hireling_services::resume(admission, command, &intent).await {
         return outcome;
     }
@@ -683,6 +688,14 @@ pub(super) async fn npc_bank_talk(
     if ordinary.disposition != NpcIntentDisposition::Ok {
         admission.states.npc_conversations.cancel_bank(session);
         return ordinary;
+    }
+    if let Some(step) = marriage::prepare(admission, actor, command, &intent, &runtime) {
+        if matches!(step, marriage::Step::Ordinary) {
+            return ordinary;
+        }
+        drop(runtime);
+        drop(_trade_permit.take());
+        return marriage::apply(admission, actor, command, intent, step).await;
     }
     if let Some(context) = admission
         .states

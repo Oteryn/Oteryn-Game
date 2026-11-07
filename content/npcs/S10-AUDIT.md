@@ -376,9 +376,9 @@ for each donor (Canary uses `data-otservbr-global`, Crystal `data-global`).
   crosscheck (`tools/content-schema/npc-authoring/samples/tibiawiki-br-crosscheck-v1.json`,
   NPC657, page11100/revision407179) has no marriage dialogue.
 
-### OWNER QUESTION — marriage remains HELD
+### Historical OWNER QUESTION — resolved in resumed AUTHORING
 
-**Exact question:** Should native Lynda adopt the pinned donors' proposal /
+**Superseded question (not a current blocker):** Should native Lynda adopt the pinned donors' proposal /
 reciprocal-acceptance / celebration / proposal-removal / free-divorce state
 machine? At celebration should Item mint **one engraved ring to the speaker**
 (as both executable scripts do), or **two rings to the speaker for hand-off to the spouse** (as both
@@ -398,14 +398,16 @@ outfit expiry/removal. Donor file SHA256: Canary
 `edda7bc3c496b98624fabe8e9318860133798e73a017d71b8667e16e0e9ded5e`, Crystal
 `c02b3072ac121d52ccd9e4e6d911942633bddbd9489c9325f66e375e8f5207a9`.
 
-Choosing the ring count or outfit permanence would invent the durable Item /
-appearance effect the user explicitly reserves for an owner decision when
-source semantics cannot settle it. Marriage is therefore not activated or
-marked DONE. A subsequent implementation must lock both Character roots in
-stable identity order, require independent participant consent under their
-session generations, use immutable stage receipts/revision recovery, and
-compose all ring/garment burns, refunds and engraved mints through Item's
-existing ledger in the same transaction. Legacy spouse globals are not authority.
+Resumed SRV9B uses matching executable behavior as the durable contract: one
+engraved ring to the celebrant; permanent engagement outfits retained after
+divorce. The contradictory speech is a donor dialogue defect. The previous hold
+was unnecessary; the owner requested finishing the whole task. The native
+contract is `docs/contracts/OTERYN_NPC_MARRIAGE_V1.md`. Marriage implementation
+and completed qualification below supersede the previous owner-decision hold.
+Character roots are locked in identity order; independently fenced consent,
+immutable stage receipts, the existing Item/craft ledger/audit and account
+appearance owner compose the effects atomically. Legacy spouse globals remain
+reference evidence only.
 
 
 ### Fluid consumer compatibility finding
@@ -518,6 +520,113 @@ check found no1084/1085 collision on fetched main or open PRs
 No quest mission/dialogue or protected repository-policy/workflow/tool file changes.
 
 
+### Native marriage source and owner wiring (SRV9B)
+
+At the pinned Crystal revision, `data/global.lua:77-83` defines proposal1,
+married2, engaged3, ring3004 and engraved9585. `data/items/items.xml:6654-6659,25795-25804`
+defines the wedding ring, engraved ring and outfit box9586;
+`data/XML/outfits.xml:52,184` identifies female329/male328 Newly Wed.
+`data-global/npc/lynda.lua:293-305` registers the confirmed marry/name,
+celebration/begin, removal and divorce service; `:307-309` supplies greeting
+and farewell. These callbacks are nonquest services, not mission dialogue.
+
+Native contract: `docs/contracts/OTERYN_NPC_MARRIAGE_V1.md:1`.
+Character state transitions and fenced atomic stage receipts:
+`crates/gameplay/durability/src/durability/npc_marriage.rs:176,276`;
+recovery lineage verification: same file `:352`.
+The bounded Item participant reuses real Item instances/custody, Item craft
+outbox and Text owner at `crates/gameplay/durability/src/durability/item_craft/marriage.rs:16,177`.
+Permanent grants compose the existing AccountAppearance owner in
+`crates/gameplay/durability/src/durability/character_appearance/marriage.rs:1`.
+Production conversation and terminal replay:
+`crates/gameplay/dispatch/src/gameplay_transport/npc_command/marriage.rs:32,151,200`.
+Migration `apps/game-server/migrations/1086_npc_marriage.sql:1` installs
+immutable receipts, exact transition/value completion guards and the existing
+CharacterRevision view extension. Existing Item guard arms remain intact.
+No capability bit or command ID was added; entry remains NPC talk7.
+
+The first real proposal qualification then exposed a separate content admission
+gap:9585/9586 existed as source facts but had no materializable native profiles.
+`tools/content-migration/marriage_item_profiles.py:1` admits exactly these two
+items through the existing World facts/exact binding pipeline, checking weights
+40/2500, pickupability/movability and nonstacking. `test_marriage_item_profiles.py:10`
+reproduced missing9585 RED before generation and passes after generation, also
+checking existing3004. The production Item admission remains fail-closed.
+
+The subsequent real transaction reached deferred Item completion and reproduced
+PostgreSQL's JSON extraction/subtraction precedence error at COMMIT
+(`invalid input syntax for type json`, token `before`). A standalone PostgreSQL
+RED query reproduced that exact error; parenthesizing the extraction returned
+`{}` GREEN. Migration1086 now compares the same complete input snapshot with
+explicit extraction parentheses. No value proof or assertion was removed.
+
+The initial full PostgreSQL setup exposed
+a genuine fixture mismatch: the second independently Fresh-admitted player
+used a different runtime policy and newer signing observation than the
+already committed shared publications. The fixture now binds independently
+read runtime and signing facts, retaining all production authority checks.
+
+### Marriage qualification on the resumed source
+
+| Check | Command / evidence | Result |
+| --- | --- | --- |
+| Native Lynda production PostgreSQL | `cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib srv9b_marriage_postgres_native_lynda_service -- --nocapture`; `/tmp/srv9b-marriage-green5.log` | 1passed,0failed; real completion marker **150.363101953s**, not a route-less skip |
+| Marriage owner unit cases | `cargo test --locked -p oteryn-gameplay-durability --all-features --lib npc_marriage -- --nocapture`; `/tmp/srv9b-marriage-units.log` | 3passed,0failed: reciprocal/exclusive consent, cancellation, ceremony/divorce and exact wire binding |
+| Revision writer structural gate | same package/flags, `--lib writer_registration`; `/tmp/srv9b-marriage-writers.log` | 3passed,0failed,3.22s; new writer registered through the sequencer only |
+| Native wedding Item admission | `python3 tools/content-migration/test_marriage_item_profiles.py` | RED missing9585 before generation; GREEN1/1 after generation; all three exact native definitions checked |
+| Native generation | `python3 tools/content-migration/regenerate_content.py --native-only`; `/tmp/srv9b-marriage-regenerate.log` | generation and registered consistency check PASS,41files |
+| Content validator | `python3 tools/content-migration/validate_world_project_v2_to_tree.py`; `/tmp/srv9b-marriage-content-final.log` | PASS, including imbuement and item-conversion checks |
+| Bundle pins | compiler `pin-refresh .`, then `pin-check . /tmp/srv9b-marriage-final-pin`; `/tmp/srv9b-marriage-pin-final.log` | PASS; inputs `ad003609845d5da207160afd11a7447377178cf88fe7c3f8d8ef7465a2960a21`; bundle31101773bytes, SHA256 `feadb394d036441fdbdc52761b3fbd712a95f4dd2a4b538222ad4e1486c1be3d` |
+| Formatting | `cargo fmt --all --check`; `/tmp/srv9b-marriage-fmt-final2.log` | PASS |
+| Architecture | built `oteryn-architecture-check workspace .`; `/tmp/srv9b-marriage-architecture.log` | PASS |
+
+The marriage PostgreSQL case uses two independently bootstrapped and Fresh-admitted
+players through production NPC talk. It proves proposal debits, fresh cancellation
+refunds, reciprocal acceptance, both permanent account grants, one engraved ring,
+immutable names/date text, text-free value audit, exact terminal replay after
+conversation closure/stale fence, conflicting-byte refusal, free divorce without
+outfit revocation, and genuine recovery before a one-field corruption is refused.
+A direct sequencer boundary changes only current connection generation and refuses
+without a receipt or item effect. Migration1086 runs through the actual migrator.
+Additional affected checks completed:
+
+| Check | Evidence | Result |
+| --- | --- | --- |
+| Combined subtype/marriage PG and namespace unit | `/tmp/srv9b-all-pg-final.log`, same dispatch command filtered `srv9b_` | 4passed,0failed; genuine PG markers marriage138.728523795s, fluids138.872447913s, charges152.861750023s |
+| NPC units | dispatch `--lib npc_ -- --skip postgres`; `/tmp/srv9b-marriage-npc-units.log` | 118passed,0failed,146.25s |
+| Item USE units | dispatch `--lib gameplay_transport::item_use:: -- --skip postgres`; `/tmp/srv9b-marriage-item-units.log` | 25passed,0failed,112.29s |
+| Existing real wire shop/LOOK/SELL_ALL/replay PG | `npc_shop_postgres_real_wire_look_sell_all_replay_and_nothing_left` | 1passed,0failed,104.50s |
+| Existing filled-fluid loot PG | `w22a_fluid_loot_with_a_subtype_mints_the_filled_container` | 1passed,0failed,127.86s |
+| Existing milk craft PG | `item_craft_carried_flour_on_milk_vessel_makes_cake_dough_postgres` | 1passed,0failed,58.55s |
+| Existing genuine two-player consent PG | `genuine_two_fresh_players_require_target_consent_and_block_policy_before_invite_accept` | 1passed,0failed,8.56s; verifies the shared Fresh fixture remains valid |
+| Strict gameplay Clippy | four changed gameplay packages, `--all-targets --all-features -- -D warnings`; `/tmp/srv9b-marriage-clippy2.log` | PASS,6m52s |
+| Strict server Clippy | server, same target/feature/lint flags; `/tmp/srv9b-marriage-server-clippy.log` | PASS; final cached recheck1.61s |
+
+Repository-required content integration qualification also passes:
+`cargo test --locked -p oteryn-game-server --test integration_rest content_ --quiet`
+123/123,0failed,4.13s (`/tmp/srv9b-marriage-integration-rest.log`), and
+`--test content_world_project_repository --quiet`5/5,0failed,80.61s
+(`/tmp/srv9b-marriage-world-repository.log`). The required native loot-fact
+refresh leaves its committed bytes unchanged, SHA256
+`468610a825955a1a229dee2d0594bbd8518ffe9deabb621deeb4872b3627a0b2`.
+The NPC catalogue target also passes4/4,0failed,57.56s
+(`/tmp/srv9b-marriage-npc-catalogue.log`).
+Final architecture verification also passes
+(`/tmp/srv9b-marriage-architecture-final.log`).
+
+Regression logs use `/tmp/srv9b-marriage-regression-<case>.log`.
+Self-review enabled Lynda's existing source-name template rendering and added
+an exact rendered-greeting assertion. The final marriage PG case also invokes
+production Item LOOK using the real backpack view/handle and checks the committed
+engraving. Strict Clippy's sole initial `collapsible_if` finding was corrected
+without any lint allowance; the rerun above passes. The strengthened real PostgreSQL case passes1/1 with completion marker
+**115.127413748s** (`/tmp/srv9b-marriage-look-final.log`), including the
+rendered source greeting and production Item LOOK engraving assertion. The
+focused NPC book target passes20/20,0failed,264.17s
+(`/tmp/srv9b-marriage-book-final.log`), and final `cargo fmt --all --check`
+passes (`/tmp/srv9b-marriage-fmt-final3.log`).
+
+
 ## SRV9B current disposition
 
 Task base: `e70054802f4097d45e2860c73aaa7bc5e2b0335b`, branch
@@ -526,18 +635,24 @@ Task base: `e70054802f4097d45e2860c73aaa7bc5e2b0335b`, branch
 | Originally held row | Current status | Evidence / remaining decision |
 | --- | --- | --- |
 | NPC fluid/subtype trades | **DONE** | Native Item-owned subtype/full-charge contract;116 fluid and57 exercise-wrap source tuples qualified; production boundary file:line index and pinned donor evidence above; real runtime-role PG BUY/SELL/SELL_ALL/LOOK, mixed-subtype isolation, fences, audit and terminal replay proven in final verification. |
-| Marriage NPC service | **HELD — OWNER QUESTION** | Exact question and both pinned Lynda file:line/hash proofs above: executable celebration mints one engraved ring, speech promises two to the speaker for spouse hand-off; confirm the adopted state machine and permanent engagement outfit/divorce lifetime rules. No marriage durable effect is activated or represented as complete. |
+| Marriage NPC service | **DONE** | Matching executable donor file:line evidence and native owner contract above; one engraved ring, permanent engagement outfits, reciprocal consent, real Item/Text/AccountAppearance owners, fenced stage receipts, terminal replay and recovery. Two independently Fresh-admitted players complete production NPC talk and engraving LOOK in real PG,115.127413748s. |
 
-S10 remains **PARTIAL** for that explicit marriage owner decision. The fluid row
-no longer waits for a native owner contract. No quest mission/dialogue is added.
+S10 nonquest scope is **DONE**: both previously held native owner contracts are
+implemented and qualified above. There is no remaining OWNER QUESTION. No quest
+mission/dialogue, capability bit or command ID is added. SRV9B uses migrations1084–1086 only.
 
 Independent exact-head review of `32bf83ae595c1bd78a702688b786489d77c6ff65`
 identified the mixed-inventory SELL_ALL issue. Its semantic RED and final GREEN
 are recorded above. After all final local checks passed, the repair source was
 frozen and reviewed as `5d7e31023b53c1e0df9aba6c6152a199b048e47e`:
-**no significant findings**. This final disposition/review update changes only
-this audit; the reviewed source and tested generated inputs remain identical.
+**no significant findings**. That fluid-only disposition update changed only
+this audit. Resumed marriage source is qualified and independently reviewed
+separately below.
 
 Early fast-forward push: `0e20827d9860a454f201f7ddebf8d70bb0e0191c`.
 All SRV9B commits use blakinio `<75369544+blakinio@users.noreply.github.com>`.
 Delivery is a fast-forward branch push, with no force push and no PR.
+
+Resumed marriage source has completed deterministic local qualification above.
+Independent exact-head review is the next freeze qualification step; no review
+result is claimed before that review returns.

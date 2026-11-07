@@ -39,12 +39,12 @@ pub(in crate::durability) async fn verify_purchase_integrity(
           OR (NOT p.active AND (r.character_id IS DISTINCT FROM p.character_id \
             OR r.npc_key<>'oteryn:npc.pydar' OR r.service_key<>'oteryn:service.blessing.the_spark_of_the_phoenix')) LIMIT 1",
     )
-    .fetch_optional(connection)
+    .fetch_optional(&mut *connection)
     .await?
     .is_some();
     if invalid {
         Err(DurabilityError::InvalidStoredState)
     } else {
-        Ok(())
+        super::super::npc_marriage::verify_integrity(connection).await
     }
 }

@@ -24,6 +24,7 @@ pub(crate) mod audit;
 mod enchanting;
 mod event_containers;
 mod harvest;
+pub(crate) mod marriage;
 pub mod soulpit;
 pub use enchanting::EnchantingCraft;
 pub use harvest::{MapHarvestOperand, MapHarvestRequest, MapHarvestResult};

@@ -163,7 +163,7 @@ impl NpcTalkBook {
     pub fn from_model(model: &NpcServiceModel) -> Self {
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "npc-trade-3:v1\0{}\0{}\0{}\0{}\0{}",
+                "npc-trade-3:v1|npc-marriage-1\0{}\0{}\0{}\0{}\0{}",
                 crate::content::npc_catalogue::grizzly_shop::book_digest(
                     model.source_tree_digest()
                 ),
@@ -202,6 +202,17 @@ impl NpcTalkBook {
                     "Welcome to the Paw and Fur - Hunting Elite. Would you like to join?".into(),
                     "Good hunting!".into(),
                     Some("Ask me about tasks, points, rank, promotion or bosses.".into()),
+                    Vec::new(),
+                )
+            } else if reference.key == "oteryn:npc.lynda" {
+                // Crystal201189f lynda.lua:307-309; only the native marriage caller opens.
+                (
+                    "Welcome in the name of the gods, pilgrim |PLAYERNAME|!".into(),
+                    "Be careful on your journeys.".into(),
+                    Some(
+                        "Ask me about marriage, celebration, removing a proposal, or divorce."
+                            .into(),
+                    ),
                     Vec::new(),
                 )
             } else if matches!(
@@ -349,6 +360,7 @@ impl NpcTalkBook {
                     greeting_reply,
                     farewell_reply,
                     source_name_templates: bank
+                        || reference.key == "oteryn:npc.lynda"
                         || dark_messages.is_some()
                         || isle_messages.is_some(),
                     source_walkaway: if dark_messages.is_some() {
