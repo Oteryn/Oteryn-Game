@@ -891,6 +891,73 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-14",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.nipuna",
+          "name": "Nipuna",
+          "expected": {
+            "x": 33778,
+            "y": 32837,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.pescadu",
+          "name": "Pescadu",
+          "expected": {
+            "x": 34021,
+            "y": 32505,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.ziyad",
+          "name": "Ziyad",
+          "expected": {
+            "x": 33804,
+            "y": 32769,
+            "floor": -2
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.charles",
+          "name": "Charles",
+          "expected": {
+            "x": 32529,
+            "y": 32785,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.a_beggar",
+          "name": "A Beggar",
+          "expected": {
+            "x": 33594,
+            "y": 31957,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.chavis",
+          "name": "Chavis",
+          "expected": {
+            "x": 33547,
+            "y": 31948,
+            "floor": -7
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }
