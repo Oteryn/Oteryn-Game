@@ -6,6 +6,33 @@ requires local commits as blakinio with the supplied Claude trailers and a
 fast-forward push after every green batch. Older no-commit/no-push instructions
 and `/home/mole` paths are superseded. Never read credentials or force-push.
 
+Latest authoring tool: BATCH-group-source-authoring-2026-11-07.json.
+Standalone group_encounter_callbacks.py verifies the exact retained source corpus,
+manifest and Git blob, then emits the four-player/six-Angry-Demon layout.3 authoring
+cases pass. No active callback data/default regeneration hook/runtime code in that
+publication. Latest runtime green is f1c59a37c, detailed below.
+
+ACTIVE LOCAL GROUP WORK: Callback.group_encounter schema and generic native
+commit_source_group rollback owner; dispatch group census checks real member
+sessions/fences/levels and sealed native destinations before world lever CAS.
+Two rollback units and two schema boundary units pass. Use entity --features
+test-support; omitting it failed existing fixture APIs, not accepted as a test.
+PG RED /tmp/questpc2-group-entry-red.log ran on18.6,2.61s: source callback absent.
+The PG group_encounters.rs test is still a RED skeleton: extend it to complete
+real four-character admission/USE and negative cases BEFORE generating the
+production callback and accepting GREEN. Do not count presence alone as proof.
+Current local regeneration hook changes and three existing Callback literal
+updates must stay with runtime/schema, not the standalone authoring commit.
+Dependencies.owner_from now permits the existing genuine multi-player fixture;
+world callback fixture includes the declared group cells. Complete the full PG
+fixture next. No current Cargo process is required for this continuation.
+
+Check fetched branch object IDs from the authoring batch record; none had an
+existing group_encounter implementation. FETCH_HEAD is authoritative: explicit
+git fetch origin <branch> does not update this checkout's stale origin tracking
+ref. Before every push fetch lane, merge FETCH_HEAD if needed, then push exact
+HEAD:claude/happy-davinci-ijz3wy-questpc2. Never force or rebase.
+
 Latest runtime publication: BATCH-source-corpse-admission-2026-11-07.json.
 Five real PG18.6 cases pass197.29s: one exact native Spite33867/Bakragore44012/
 Primal39530 root, exact visible Item binding, empty physical contents, replay,

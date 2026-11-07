@@ -1646,10 +1646,10 @@
     }
   },
   "current_batch": {
-    "id": "source-corpse-admission-2026-11-07",
-    "record": "BATCH-source-corpse-admission-2026-11-07.json",
+    "id": "group-source-authoring-2026-11-07",
+    "record": "BATCH-group-source-authoring-2026-11-07.json",
     "whole_quest_qualifications": 0,
-    "next": "Continue participant-bound source encounter admission/settlement toward whole Annihilator/Desert Dungeon/Barbarian Arena qualification; check existing lane branches first. Owned source-room/callback/loot work remains implementation work, never an external engine deferral."
+    "next": "Finish current native group entry and real four-character PostgreSQL proof, then continue whole source encounters; no external engine deferral."
   },
   "verification": {
     "source_corpse_admission_2026_11_07": {

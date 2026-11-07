@@ -54,3 +54,24 @@ qualification. Continue owned missing mechanisms; no external engine deferral.
 - Canonical Item changes rebind the119 navigation taxonomy evidence hashes;
   all12,252 targets and family profiles remain unchanged. Use the full tree
   generator, then its native registration phase; never hand-edit those hashes.
+
+- Annihilator source is retained losslessly in
+  tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz,
+  blobs/62e92e8acd676bad545a501c8431c983dcd4edfa:1-84; source SHA256
+  02913ff4a52944f154e0d4148b6d0baf16c9999373fd699bf76a7dd577ed7fa2.
+  The inventory pins this exact blob to Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b
+  and Crystal00ce02a57ca5a12e48f32a3476e37471167e4c3f/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.
+  Four native players of level>=100 occupy x33225..33222,y31671,z13;
+  destinations x33222..33219,y31659,z13. Six Angry Demon positions are
+  (33219,31657),(33221,31657),(33223,31659),(33224,31659),
+  (33220,31661),(33222,31661), all z13. Occupancy checks players in
+  center(33221,31659,13)+/-4 cells. The selector is uid30025/item2772.
+- settings.daily=true means one-way lever2772->2773 until map reset;
+  do not substitute a24-hour character timestamp or enable daily=false cleanup.
+  Source lines63-78 explicitly keep that alternative branch inactive.
+- Group world callbacks preflight all participants, native destinations,
+  source creature policies and spawn capacity before consuming the lever or
+  moving anyone. If any spawn cannot be admitted, refuse the whole attempt.
+  This conservative atomic rule replaces the donor's sequential unchecked
+  createMonster failure case; it never grants a cheaper partial encounter.
+  A failed attempt must leave the lever, participant positions and actors intact.
