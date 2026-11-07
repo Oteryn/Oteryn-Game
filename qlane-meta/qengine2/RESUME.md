@@ -385,3 +385,18 @@ succeeds/unearnedmask3refuses. No outfitstagesseeded,no secondrewardinvented.
 16/66qualified,50remaining. Commit/pushimmediately.19Python6.657s,check15.28s,
 3Rust1.17s,clippy38.97s,fmt,repro,pinrefreshpass. Content/world/pinpending
 afterpush;continueCitizenRook+Beggar genericops/premium support.
+
+DruidRookfollowonCOMPLETE:123content2.05s,5world46.16s,pin24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25.
+CitizenRooktestAPPLIEDfiveNPCstages;actualPGRED96403 pendingmissingcallback,
+log /tmp/qengine2-batch6-citizen-rook-red.log. No ops/sourcebindingsyet.
+CitizenRookbody ownerdedicatedCitizenRook;Timer maxi64alreadyadmitted;Ref
+NOT in native catalogue. ExplicitwritabledeclarationunderGeneral needed.
+Stateops needcallback+participant support;SQLexactparticipantproofmustcover
+ops alongstorage,all old proofarms preserved;topdeclarationsdefaultreadonly.
+SourceAmberBackpack: addon/backpack/yes starts(Ref=max0+1);100leather5878
+starts2h;claimafterstrictdeadline writesBackpack3/Mission4,Ref=min(0,ref-1).
+SourceNormahat:hat/yes introHat1/Mission1;hat/yes takes3374x1,5902x50,
+5890x100,H at2/Mission0,addon2. ExistingplacementsAmber/Norma reused.
+SourceRef canonicalmissing:conservativeGeneralowner/initial0/nonnegative
+activecounter;normalizefinishRef to0 (source already0forpositive;avoidnegative
+sentinel ifanotheroutfitresetcounter). Documentassumption;no value weakened.
