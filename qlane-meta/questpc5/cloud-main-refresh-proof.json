@@ -1,0 +1,21 @@
+{
+  "status": "COMPILING_MAIN_MERGE",
+  "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+  "workspace_check": {
+    "exit": 0,
+    "duration": "3m 25s",
+    "log": "/tmp/questpc5-main-refresh-check4.log"
+  },
+  "source_core_check": {
+    "exit": 0,
+    "log": "/tmp/questpc5-main-refresh-source-amend2.log"
+  },
+  "world_pins": {
+    "refresh_exit": 0,
+    "check_exit": 0,
+    "refresh_log": "/tmp/questpc5-main-refresh-pin.log",
+    "check_log": "/tmp/questpc5-main-refresh-pin-check.log"
+  },
+  "scope": "Canonical main merge and optional-world-change compatibility only; no quest newly qualified in this merge. Existing12 PG qualifications retained as historical evidence; next new quest Queen of the Banshees.",
+  "migration_ownership": "Own1270\u20131276; canonical main0999\u20131008 and1320\u20131322; no copied1300/1315/1277/1278."
+}

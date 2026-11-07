@@ -606,6 +606,7 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                 return Err(format!("foreign participant operation {}", callback.key));
             }
             transitions.push(QuestTransition {
+                world_change: None,
                 key: participant_key(&callback.key, index),
                 quest: participant.quest.clone(),
                 effects: participant
@@ -655,6 +656,7 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                     .map(|byte| format!("{byte:02x}"))
                     .collect();
             transitions.push(QuestTransition {
+                world_change: None,
                 key: format!("oteryn:quest-reward-plan/{digest}"),
                 quest: callback.quest.clone(),
                 effects: vec![QuestEffect {
@@ -672,6 +674,7 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
             });
         }
         transitions.push(QuestTransition {
+            world_change: None,
             key: callback.key.clone(),
             quest: callback.quest.clone(),
             effects: callback

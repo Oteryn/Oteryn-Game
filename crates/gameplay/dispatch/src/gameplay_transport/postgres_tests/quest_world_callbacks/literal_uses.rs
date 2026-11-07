@@ -462,6 +462,7 @@ fn exercise_with_dropped_remote(
                 .collect();
             let seed = "oteryn:quest-transition/fixture/stag-stage";
             let mut transitions = vec![QuestTransition {
+                world_change: None,
                 key: seed.into(),
                 quest: callback.quest.clone(),
                 effects: guards

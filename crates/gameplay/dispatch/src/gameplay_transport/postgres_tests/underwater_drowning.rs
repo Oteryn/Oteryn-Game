@@ -419,7 +419,8 @@ fn scenario_in_world(
                 occupancy_driven: false,
                 occupancy_requirement: None,
                 occupancy_items: Vec::new(),
-                key: "fixture:underwater-callback".into(),
+                world_change: None,
+        key: "fixture:underwater-callback".into(),
                 quest: "fixture:underwater".into(),
                 trigger: Trigger::StepIn,
                 selector: Selector {

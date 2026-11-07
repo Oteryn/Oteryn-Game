@@ -20,6 +20,7 @@ pub(crate) fn callback() -> Callback {
         movement_origins: Vec::new(),
         required_claims: Vec::new(),
         counted_use: None,
+        world_change: None,
         key: ENTER.into(),
         quest: QUEST.into(),
         trigger: Trigger::StepIn,

@@ -144,6 +144,7 @@ pub(super) async fn exercise(
         let track = format!("oteryn:quest-progress/legion-helmet/{name}");
         tracks.push(original.track(&track).cloned().ok_or("contact track")?);
         transitions.push(QuestTransition {
+            world_change: None,
             key: format!("oteryn:quest-transition/fixture-legion-{name}"),
             quest: "oteryn:quest.newhaven_legion_helmet_quest".into(),
             effects: vec![QuestEffect {

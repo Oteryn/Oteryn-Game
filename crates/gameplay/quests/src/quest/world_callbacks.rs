@@ -152,6 +152,8 @@ pub struct Callback {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub minimum_level: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub world_change: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub experience: Option<i64>,
     /// Shared completion lowering reused from questpc8 d90c1bfa2.
     #[serde(default, skip_serializing_if = "is_false")]
@@ -455,6 +457,7 @@ fn extend_callbacks(
                     .map(|byte| format!("{byte:02x}"))
                     .collect();
             transitions.push(QuestTransition {
+                world_change: None,
                 key: format!("oteryn:quest-world-plan/{digest}"),
                 quest: callback.quest.clone(),
                 effects: vec![QuestEffect {
@@ -472,6 +475,7 @@ fn extend_callbacks(
             });
         }
         transitions.push(QuestTransition {
+            world_change: callback.world_change.clone(),
             key: callback.key.clone(),
             quest: callback.quest.clone(),
             effects: callback

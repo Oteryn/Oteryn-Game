@@ -212,6 +212,7 @@ async fn seed_visits(
     );
     let setup = "oteryn:quest-transition/fixture-newhaven-tour";
     transitions.push(QuestTransition {
+        world_change: None,
         key: setup.into(),
         quest: goal.quest.clone(),
         effects: ["school", "supply"]

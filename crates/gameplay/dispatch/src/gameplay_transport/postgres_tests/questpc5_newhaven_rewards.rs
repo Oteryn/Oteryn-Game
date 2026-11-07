@@ -53,6 +53,7 @@ async fn seed_ready(
     }
     let setup = "oteryn:quest-transition/fixture-newhaven-reward-ready";
     transitions.push(QuestTransition {
+        world_change: None,
         key: setup.into(),
         quest: guardian.quest.clone(),
         effects: guardian

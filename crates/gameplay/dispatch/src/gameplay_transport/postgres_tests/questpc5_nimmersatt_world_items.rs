@@ -86,6 +86,7 @@ async fn supply(
                 .cloned()
                 .ok_or("world transition")?,
             QuestTransition {
+                world_change: None,
                 key: setup.into(),
                 quest: callback.quest.clone(),
                 effects: vec![QuestEffect {

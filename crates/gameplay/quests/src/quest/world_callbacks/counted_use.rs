@@ -153,6 +153,7 @@ mod tests {
         assert!(catalogue.evaluate(&transition, &values, 0).is_err());
         let mut transitions = catalogue.transitions.values().cloned().collect::<Vec<_>>();
         transitions.push(QuestTransition {
+            world_change: None,
             key: "oteryn:quest-transition/fixture-counter-bypass".into(),
             quest: callback.quest.clone(),
             effects: vec![QuestEffect {

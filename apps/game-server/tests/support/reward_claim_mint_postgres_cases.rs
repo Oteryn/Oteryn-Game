@@ -2794,6 +2794,7 @@ mod quest_obligations {
     /// `step` is the amount the step adds; another amount is another definition hash.
     fn quest_catalogue(step: i64) -> TestResult<Arc<QuestStateCatalogue>> {
         let transition = |key: &str, from, effect| QuestTransition {
+            world_change: None,
             key: key.into(),
             quest: QUEST.into(),
             effects: vec![QuestEffect {

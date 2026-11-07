@@ -153,6 +153,7 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
             }
         }
         transitions.push(QuestTransition {
+            world_change: None,
             key: goal.key.clone(),
             quest: goal.quest.clone(),
             effects: vec![
@@ -293,6 +294,7 @@ mod tests {
             catalogue.transitions.insert(
                 key.clone(),
                 QuestTransition {
+                    world_change: None,
                     key,
                     quest: goal.quest.clone(),
                     effects: vec![QuestEffect {

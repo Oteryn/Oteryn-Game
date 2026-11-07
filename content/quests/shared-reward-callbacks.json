@@ -8179,7 +8179,7 @@
         "The helmet route leads through the training cave. Speak to both of us, descend to the equipment room, search the dead human, then return through the magic forcefield."
       ],
       "sources": [
-        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:045895d90cfd1f23945887e2bf108f66db9a0079c0a5e50745806a6d50221058"
+        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:c92479283a709d55850966bbfcd70f24a187fcf4103a8cdc5b4f4a9bcda85db9"
       ]
     },
     {
@@ -8208,7 +8208,7 @@
         "The helmet route leads through the training cave. Speak to both of us, descend to the equipment room, search the dead human, then return through the magic forcefield."
       ],
       "sources": [
-        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:045895d90cfd1f23945887e2bf108f66db9a0079c0a5e50745806a6d50221058"
+        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:c92479283a709d55850966bbfcd70f24a187fcf4103a8cdc5b4f4a9bcda85db9"
       ]
     },
     {
@@ -8253,7 +8253,7 @@
         "The village is safer. Take this guardian ring. Recover the Book of Wisdom and bring it to me."
       ],
       "sources": [
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:4dfb2080a7dce045c63348fbe728ec9cdc780888e31086668b14b057d0e3b606"
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:d7d1b617d1612d80a55a68473787f4deb547cb77862a199d9d5409aa69211bbe"
       ],
       "minimum_level": 2,
       "experience": 800
@@ -8304,7 +8304,7 @@
         "Your tour is complete. Defeat ten Trolls on the training route, then report back."
       ],
       "sources": [
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:4dfb2080a7dce045c63348fbe728ec9cdc780888e31086668b14b057d0e3b606"
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:d7d1b617d1612d80a55a68473787f4deb547cb77862a199d9d5409aa69211bbe"
       ],
       "minimum_level": 2
     },
@@ -8335,7 +8335,7 @@
         "Welcome to Newhaven. Visit the training school and the village supply point, then return for your defence task."
       ],
       "sources": [
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:4dfb2080a7dce045c63348fbe728ec9cdc780888e31086668b14b057d0e3b606"
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:d7d1b617d1612d80a55a68473787f4deb547cb77862a199d9d5409aa69211bbe"
       ],
       "minimum_level": 2
     },
@@ -8373,7 +8373,7 @@
         "Thank you for the Book of Wisdom. Take this scarf and the rest of your training experience."
       ],
       "sources": [
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:4dfb2080a7dce045c63348fbe728ec9cdc780888e31086668b14b057d0e3b606"
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:d7d1b617d1612d80a55a68473787f4deb547cb77862a199d9d5409aa69211bbe"
       ],
       "minimum_level": 2,
       "experience": 800,
