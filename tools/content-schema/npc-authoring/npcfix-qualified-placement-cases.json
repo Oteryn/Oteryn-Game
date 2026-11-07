@@ -690,6 +690,73 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-11",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.pydar",
+          "name": "Pydar",
+          "expected": {
+            "x": 32655,
+            "y": 31893,
+            "floor": -11
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.shortsighted_dwarf",
+          "name": "Shortsighted Dwarf",
+          "expected": {
+            "x": 32679,
+            "y": 31953,
+            "floor": -12
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.sigurd",
+          "name": "Sigurd",
+          "expected": {
+            "x": 32626,
+            "y": 31923,
+            "floor": -5
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.tezila",
+          "name": "Tezila",
+          "expected": {
+            "x": 32657,
+            "y": 31922,
+            "floor": -9
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.tulf",
+          "name": "Tulf",
+          "expected": {
+            "x": 32586,
+            "y": 31928,
+            "floor": -3
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.xelvar",
+          "name": "Xelvar",
+          "expected": {
+            "x": 32622,
+            "y": 31861,
+            "floor": -11
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }
