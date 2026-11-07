@@ -13,28 +13,28 @@
     "normal_profile": "This checkout retained normal unoptimized+debuginfo profiles and existing env.sh. Only stopped-build incremental caches were removed."
   },
   "active_batch": {
-    "name": "retail-population-qualification-15",
+    "name": "retail-population-qualification-16",
     "state": "QUALIFIED",
     "entries": [
-      "Eathar",
-      "Edmund",
-      "Elbert",
-      "Elliott",
-      "Emily",
-      "Fillias"
+      "Graham",
+      "Guide Kunibert",
+      "Hexel",
+      "Jossel",
+      "Klesar",
+      "Kromrek"
     ],
     "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed.",
     "red": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 36.92,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-15-red.log",
+      "seconds": 42.06,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-16-red.log",
       "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
     },
     "green": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 88.08,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-15-green.log",
-      "cumulative_cases": 90
+      "seconds": 88.65,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-16-green.log",
+      "cumulative_cases": 96
     },
     "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse e2615554b upstreamb25b5b8ca all-target/all-feature check59.70s and strict clippy1m19s plus fresh merged PG54/80.51s; source identity checked before each slice",
     "test_code_commit": "e2615554b49b114273c24e6c2c4cba6b781ade47",
@@ -1040,6 +1040,34 @@
         "seconds": 88.08,
         "log": "/tmp/npcfix-evidence/retail-population-qualification-15-green.log",
         "cumulative_cases": 90
+      },
+      "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse e2615554b upstreamb25b5b8ca all-target/all-feature check59.70s and strict clippy1m19s plus fresh merged PG54/80.51s; source identity checked before each slice",
+      "test_code_commit": "e2615554b49b114273c24e6c2c4cba6b781ade47",
+      "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
+    },
+    {
+      "name": "retail-population-qualification-16",
+      "state": "QUALIFIED",
+      "entries": [
+        "Graham",
+        "Guide Kunibert",
+        "Hexel",
+        "Jossel",
+        "Klesar",
+        "Kromrek"
+      ],
+      "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed.",
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 42.06,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-16-red.log",
+        "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
+      },
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 88.65,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-16-green.log",
+        "cumulative_cases": 96
       },
       "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse e2615554b upstreamb25b5b8ca all-target/all-feature check59.70s and strict clippy1m19s plus fresh merged PG54/80.51s; source identity checked before each slice",
       "test_code_commit": "e2615554b49b114273c24e6c2c4cba6b781ade47",
@@ -3572,8 +3600,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/148",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-16",
+        "postgres_red_seconds": 42.06,
+        "postgres_green_seconds": 88.65,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Guardian of the Deep Seas",
@@ -3590,8 +3624,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/152",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-16",
+        "postgres_red_seconds": 42.06,
+        "postgres_green_seconds": 88.65,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Helsi Van Ore",
@@ -3608,8 +3648,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/168",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-16",
+        "postgres_red_seconds": 42.06,
+        "postgres_green_seconds": 88.65,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Jossel",
@@ -3617,8 +3663,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/180",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-16",
+        "postgres_red_seconds": 42.06,
+        "postgres_green_seconds": 88.65,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Klesar",
@@ -3626,8 +3678,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/189",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-16",
+        "postgres_red_seconds": 42.06,
+        "postgres_green_seconds": 88.65,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Kromrek",
@@ -3635,8 +3693,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/190",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-16",
+        "postgres_red_seconds": 42.06,
+        "postgres_green_seconds": 88.65,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Maro",

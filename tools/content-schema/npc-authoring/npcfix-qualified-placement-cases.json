@@ -1025,6 +1025,73 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-16",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.graham",
+          "name": "Graham",
+          "expected": {
+            "x": 33611,
+            "y": 31887,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.guide_kunibert",
+          "name": "Guide Kunibert",
+          "expected": {
+            "x": 33493,
+            "y": 31983,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.hexel",
+          "name": "Hexel",
+          "expected": {
+            "x": 33558,
+            "y": 31945,
+            "floor": -14
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.jossel",
+          "name": "Jossel",
+          "expected": {
+            "x": 33566,
+            "y": 31948,
+            "floor": -13
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.klesar",
+          "name": "Klesar",
+          "expected": {
+            "x": 33542,
+            "y": 31947,
+            "floor": -14
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.kromrek",
+          "name": "Kromrek",
+          "expected": {
+            "x": 33554,
+            "y": 31966,
+            "floor": -13
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }
