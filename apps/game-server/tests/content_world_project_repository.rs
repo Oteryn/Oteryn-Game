@@ -18,17 +18,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         391,
-        "cf305d188837dc97f9104cfc11faa13d963d615c81351b9f5f196b1005950575",
+        "6de3e93898c35984d4a97bdda1e0d4a7a50cb36dec93f710da7b504405ca39ba",
     ),
     (
         "definitions/declarations.json",
-        27_647_486,
-        "f40f7a3043f4f64f8e9e7f7b0023aea0d24421d8e170a333c6a1baaab701ed3e",
+        27_647_942,
+        "03a9b91736d7ac84e8de50c6314cf0588acde2c06e5e5bf4eb5650cd47d67448",
     ),
     (
         "definitions/reference.json",
-        27_389_422,
-        "accdef2f0cb626996f77b69f6209d3bb7f1c290ed19672959eec4f4c4fc99571",
+        27_389_518,
+        "71843d03aeaca46c2b2275ff26c4bce9ac34484d86144d50e82f96414ca1aea5",
     ),
     (
         "editor/author.json",
@@ -38,7 +38,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1948,
-        "35a7ffbb4db01dcc023d617e49f0926a54718cc65a03e3c455be16cdf9adc28c",
+        "869cc2059a1884aace8b98d12bc75775a01f31810fa97bafe4ce547f9065e830",
     ),
     (
         "presentations/bindings.json",
@@ -48,12 +48,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         399,
-        "f88b460a3c18e919f83a53c92e8411fe782d1b4f92beaa72fcd979e75676f63e",
+        "580a9a4472d07602e5790532a820c1ee68bef56429ec64843e6475ce32d55690",
     ),
     (
         "provenance/imports.json",
         6_773_322,
-        "aeeefdd3e1b432cec366b09a44012c646177afca50401884925f5061d8cad08e",
+        "41a48760eb7f5fc3dde025daf1258514ba510f8b437739ebea9c979384b7b1f2",
     ),
     (
         "provenance/sources.json",
@@ -140,7 +140,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "077e00b379214916bf19b92d84addfee41318db986be6676404124ebd53e105d";
+const TREE_SHA256: &str = "8b3f1dc789446d1955c0fb038ac9d6da51d233095c9efe5db3224626eda35e89";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.
@@ -724,7 +724,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     );
     assert_eq!(
         world_project_sha256(npcfix_bytes),
-        "5efa3c245199ba4c9b1926b21d7afadb76939c2a634746b1ca0e8702beafd480"
+        "d2ab30181dc41efd535e5d5b565e438311fc4d175de756c3001b28ed5de96723"
     );
     let npcfix: serde_json::Value = serde_json::from_slice(npcfix_bytes).expect("NPCFIX packet");
     let npcfix_records: BTreeMap<_, _> = npcfix["repairs"]
@@ -740,7 +740,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             )
         })
         .collect();
-    assert_eq!(npcfix_records.len(), 53);
+    assert_eq!(npcfix_records.len(), 54);
     assert!(v2.declarations.iter().all(|declaration| {
         let repaired = match declaration {
             ProjectV2Declaration::Npc { identity, .. }

@@ -7477,6 +7477,6 @@
       "sha256": "6771057e93b31a49f19f8b6e508bb37cb6f695d865cfa2d92a801d8038448d63"
     },
     "source_effect_unit": "PASS1/0.01s; pure unit, not a PostgreSQL proof: oil7 restores nothing, mana10/life11 map to their source effects.",
-    "regeneration": "RUNNING repository default generator and registered checks; runtime source unchanged from compiled WIP8369545b0."
+    "regeneration": "Materializer compiled and completed all97 legacy package documents; store refresh PASS. Canonical tree emission and registered checks still running. Runtime source unchanged from compiled8369545b0."
   }
 }
