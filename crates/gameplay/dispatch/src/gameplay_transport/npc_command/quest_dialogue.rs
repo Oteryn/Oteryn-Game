@@ -40,10 +40,43 @@ pub(super) struct State {
     pending: Option<Pending>,
     #[cfg(test)]
     interrupt_after_commit: Option<u64>,
+    #[cfg(test)]
+    interrupt_trade_obligation: Option<u64>,
 }
 
 #[cfg(test)]
 impl NpcConversations {
+    pub(in crate::gameplay_transport) fn fixture_interrupt_trade_quest_commit(
+        &self,
+        session: GameSessionId,
+        command: u64,
+    ) -> Result<(), String> {
+        let mut sessions = self.sessions.lock().map_err(|_| "sessions")?;
+        let state = &mut sessions.get_mut(&session).ok_or("session")?.quest_dialogue;
+        if command == 0 || state.interrupt_trade_obligation.is_some() {
+            return Err("trade fault already armed".into());
+        }
+        state.interrupt_trade_obligation = Some(command);
+        Ok(())
+    }
+    pub(in crate::gameplay_transport) fn fixture_take_trade_quest_interrupt(
+        &self,
+        session: GameSessionId,
+        command: u64,
+    ) -> bool {
+        let Ok(mut sessions) = self.sessions.lock() else {
+            return false;
+        };
+        let Some(state) = sessions.get_mut(&session) else {
+            return false;
+        };
+        if state.quest_dialogue.interrupt_trade_obligation == Some(command) {
+            state.quest_dialogue.interrupt_trade_obligation = None;
+            true
+        } else {
+            false
+        }
+    }
     pub(in crate::gameplay_transport) fn fixture_interrupt_quest_dialogue_commit(
         &self,
         session: GameSessionId,

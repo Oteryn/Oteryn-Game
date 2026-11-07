@@ -97,6 +97,11 @@ pub(super) fn cause_key(cause: QuestCause) -> (&'static str, [u8; 16], u64) {
             *command.game_session_id().as_bytes(),
             command.command_id().get(),
         ),
+        QuestCause::TradeObligation(command) => (
+            "trade_obligation",
+            *command.game_session_id().as_bytes(),
+            command.command_id().get(),
+        ),
         QuestCause::ClaimObligation(command) => (
             "claim_obligation",
             *command.game_session_id().as_bytes(),

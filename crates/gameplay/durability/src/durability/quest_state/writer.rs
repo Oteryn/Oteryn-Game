@@ -157,6 +157,14 @@ impl DurabilityRoot {
         reward_admission: Option<QuestRewardAdmission<'_>>,
         native: Option<super::native_kills::NativeQuestDeath>,
     ) -> Result<QuestTransitionOutcome> {
+        let trade_rule = oteryn_gameplay_quests::quest::trade_callbacks::load()
+            .map_err(|_| CharacterProgressionError::InvalidInput)?
+            .into_iter().find(|rule| rule.key == request.transition_key);
+        let trade_key = request.transition_key.starts_with(oteryn_gameplay_quests::quest::trade_callbacks::PREFIX);
+        if trade_key != trade_rule.is_some()
+            || trade_key != matches!(request.cause, QuestCause::TradeObligation(_)) {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         let reward_callback = oteryn_gameplay_quests::quest::reward_callbacks::load()
             .map_err(|_| CharacterProgressionError::InvalidInput)?
             .into_iter()
@@ -446,15 +454,17 @@ impl DurabilityRoot {
                         return Ok(Err(CharacterProgressionError::RespawnPending));
                     }
                     let obligation = match request.cause {
-                        QuestCause::ClaimObligation(claim) => Some(claim),
+                        QuestCause::ClaimObligation(claim) | QuestCause::TradeObligation(claim) => Some(claim),
                         _ => None,
                     };
                     if let Some(claim) = obligation {
                         let row = sqlx::query(
-                            "SELECT character_id::text, transition_key, state \
-                               FROM game_character_quest_obligations \
-                              WHERE claim_game_session_id = encode($1,'hex')::uuid \
-                                AND claim_command_id = $2::text::numeric(20,0) FOR UPDATE",
+                            "SELECT o.character_id::text, o.transition_key, o.state, o.source_kind, o.source_binding, o.source_state, \
+                                    t.npc_key, t.side, t.unit_price, t.item_definition_family, t.item_definition_production_key, \
+                                    t.item_units, t.quantity AS trade_quantity, t.sell_all, t.world_id::text AS trade_world \
+                               FROM game_character_quest_obligations o LEFT JOIN game_npc_trades t ON t.transaction_id=o.source_trade_transaction_id \
+                              WHERE o.claim_game_session_id = encode($1,'hex')::uuid \
+                                AND o.claim_command_id = $2::text::numeric(20,0) FOR UPDATE OF o",
                         )
                         .bind(claim.game_session_id().as_bytes().as_slice())
                         .bind(claim.command_id().get().to_string())
@@ -467,6 +477,32 @@ impl DurabilityRoot {
                             || row.try_get::<String, _>("transition_key")?
                                 != request.transition_key
                         {
+                            return Ok(Err(CharacterProgressionError::InvalidInput));
+                        }
+                        if let Some(rule) = &trade_rule {
+                            let binding = rule.binding().map_err(|_| DurabilityError::InvalidStoredState)?;
+                            let captured: BTreeMap<String,i64> = serde_json::from_value(row.try_get("source_state")?)
+                                .map_err(|_|DurabilityError::InvalidStoredState)?;
+                            let side: i16 = row.try_get("side")?;
+                            let units:i64 = row.try_get("item_units")?;
+                            let quantity:i64 = row.try_get("trade_quantity")?;
+                            let sell_all:bool = row.try_get("sell_all")?;
+                            let offer_count = if sell_all {1} else {units.checked_div(quantity).ok_or(DurabilityError::InvalidStoredState)?};
+                            if row.try_get::<String,_>("source_kind")? != "npc_trade"
+                                || row.try_get::<Vec<u8>,_>("source_binding")? != binding
+                                || row.try_get::<String,_>("npc_key")? != rule.npc
+                                || side != match rule.side {oteryn_gameplay_quests::quest::trade_callbacks::Side::Buy=>1,oteryn_gameplay_quests::quest::trade_callbacks::Side::Sell=>2}
+                                || row.try_get::<i64,_>("unit_price")? != i64::try_from(rule.unit_price).map_err(|_|DurabilityError::InvalidStoredState)?
+                                || row.try_get::<String,_>("item_definition_family")? != "Item"
+                                || !rule.items.contains(&row.try_get::<String,_>("item_definition_production_key")?)
+                                || units < i64::from(rule.minimum_units) || offer_count != i64::from(rule.offer_count)
+                                || (!sell_all && units % quantity != 0)
+                                || uuid_text(row.try_get("trade_world")?)? != *fence.runtime_scope.world_id().as_bytes()
+                                || captured.len() != rule.storage.len()
+                                || rule.storage.iter().any(|condition| captured.get(&condition.track).is_none_or(|value| !(condition.minimum..=condition.maximum).contains(value))) {
+                                return Ok(Err(CharacterProgressionError::InvalidInput));
+                            }
+                        } else if row.try_get::<String,_>("source_kind")? != "reward_claim" {
                             return Ok(Err(CharacterProgressionError::InvalidInput));
                         }
                         if row.try_get::<String, _>("state")? != "PENDING" {

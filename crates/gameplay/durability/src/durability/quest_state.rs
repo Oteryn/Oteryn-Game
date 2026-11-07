@@ -78,6 +78,8 @@ pub enum QuestCause {
     Step(CommandRef),
     /// A reward-claim obligation (§5.4): the claim's CommandRef.
     ClaimObligation(CommandRef),
+    /// A continuation captured with an actual NPC trade in its original transaction.
+    TradeObligation(CommandRef),
     /// A creature-death reward occurrence.
     CreatureDeath(ExperienceRewardOccurrence),
 }
@@ -89,6 +91,7 @@ impl QuestCause {
             Self::Use(_) => "use",
             Self::Step(_) => "step",
             Self::ClaimObligation(_) => "claim_obligation",
+            Self::TradeObligation(_) => "trade_obligation",
             Self::CreatureDeath(_) => "creature_death",
         }
     }
@@ -100,7 +103,8 @@ impl QuestCause {
             Self::Command(command)
             | Self::Use(command)
             | Self::Step(command)
-            | Self::ClaimObligation(command) => (
+            | Self::ClaimObligation(command)
+            | Self::TradeObligation(command) => (
                 *command.game_session_id().as_bytes(),
                 command.command_id().get(),
             ),
@@ -121,6 +125,7 @@ impl QuestCause {
             "use" => Self::Use(command()?),
             "step" => Self::Step(command()?),
             "claim_obligation" => Self::ClaimObligation(command()?),
+            "trade_obligation" => Self::TradeObligation(command()?),
             "creature_death" if ordinal == 0 => {
                 Self::CreatureDeath(ExperienceRewardOccurrence::from_bytes(id).map_err(invalid)?)
             }
@@ -216,6 +221,8 @@ pub struct QuestObligationRecord {
     pub transition_key: String,
     /// `WAITING_MIGRATION`: kept, counted toward RL-07, never re-requested here.
     pub waiting_migration: bool,
+    /// Source selected from the durable obligation; false retains reward-claim semantics.
+    pub trade_source: bool,
 }
 
 /// The session copy of one Character's quest progress (§7): loaded at admission and advanced by
@@ -358,7 +365,7 @@ impl QuestStateCopy {
                 completed: false,
             });
         state.completed |= committed.completes;
-        if let QuestCause::ClaimObligation(claim) = committed.cause {
+        if let QuestCause::ClaimObligation(claim) | QuestCause::TradeObligation(claim) = committed.cause {
             self.obligations
                 .retain(|obligation| obligation.claim != claim);
         }
@@ -473,7 +480,7 @@ pub async fn request_pending_obligations(
                 fence,
                 QuestTransitionRequest {
                     transition_key: obligation.transition_key.clone(),
-                    cause: QuestCause::ClaimObligation(obligation.claim),
+                    cause: if obligation.trade_source { QuestCause::TradeObligation(obligation.claim) } else { QuestCause::ClaimObligation(obligation.claim) },
                 },
                 Arc::clone(catalogue),
             )

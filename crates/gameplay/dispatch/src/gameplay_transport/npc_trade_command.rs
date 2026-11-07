@@ -137,6 +137,33 @@ pub(super) async fn trade(
     intent: NpcTradeIntent,
     sell_all: bool,
 ) -> Result<SoldUnits, Box<NpcTradeStep>> {
+    let result = trade_inner(admission, actor, command, intent, sell_all).await;
+    #[cfg(test)]
+    if result.is_ok()
+        && admission
+            .states
+            .npc_conversations
+            .fixture_take_trade_quest_interrupt(command.game_session_id, command.command_id)
+    {
+        return Err(Box::new(NpcTradeStep::Unknown));
+    }
+    if result.is_ok() {
+        // The durable trade captured any eligible continuation. The Quest owner
+        // drains it here and again at admission/cadence after an unknown outcome.
+        admission
+            .refresh_quest_session(command.game_session_id, false)
+            .await;
+    }
+    result
+}
+
+async fn trade_inner(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: NpcTradeIntent,
+    sell_all: bool,
+) -> Result<SoldUnits, Box<NpcTradeStep>> {
     let session = command.game_session_id;
     // Without an item fence no trade can commit or have committed for the session.
     let (Some(fence), Ok(command_id)) = (command.item_fence, CommandId::new(command.command_id))

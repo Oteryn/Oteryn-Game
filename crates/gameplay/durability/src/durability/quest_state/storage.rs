@@ -86,7 +86,7 @@ impl DurabilityRoot {
                     .await?;
                     let obligations = sqlx::query(
                         "SELECT claim_game_session_id::text, claim_command_id::text, \
-                                transition_key, state \
+                                transition_key, state, source_kind \
                            FROM game_character_quest_obligations \
                           WHERE character_id = encode($1,'hex')::uuid \
                             AND state IN ('PENDING', 'WAITING_MIGRATION') \
@@ -157,6 +157,7 @@ impl DurabilityRoot {
                                     .map_err(|_| DurabilityError::InvalidStoredState)?,
                             ),
                             transition_key: row.try_get("transition_key")?,
+                            trade_source: row.try_get::<String,_>("source_kind")? == "npc_trade",
                             waiting_migration: row.try_get::<String, _>("state")?
                                 == "WAITING_MIGRATION",
                         });
