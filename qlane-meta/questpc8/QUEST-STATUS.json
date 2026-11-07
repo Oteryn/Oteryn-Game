@@ -1291,7 +1291,7 @@
       "runtime_enabled": false
     },
     "blocker": {
-      "missing_piece": "Remaining three once-only shrine rewards, Kha'zeel crystal exploration and atomic three-fragment assembly are the active next slice; mandatory Lai introduction and production NPC placement are qualified components."
+      "missing_piece": "Three once-only shrine bindings, crystal exploration and atomic three-fragment consumption are the next active slice; mandatory introduction, production NPC and all four item constructors are implemented."
     },
     "first_unqualified_stage": {
       "key": "s2",
@@ -1326,6 +1326,14 @@
         "duration_seconds": 69.175308851,
         "red_duration_seconds": 69.96,
         "proof": "mystery-introduction-validation.json"
+      },
+      {
+        "scope": "Plain constructor MINT/carried custody for statue and all three fragments; quest collection/assembly still active authoring",
+        "test": "questpc8_static_constructors_mint_and_carry_four_plain_items_without_timers",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_static_constructors_mint_and_carry_four_plain_items_without_timers duration=38.512744657s",
+        "duration_seconds": 38.512744657,
+        "red_duration_seconds": 37.85,
+        "proof": "static-constructor-validation.json"
       }
     ]
   },

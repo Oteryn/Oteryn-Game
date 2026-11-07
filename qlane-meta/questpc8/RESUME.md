@@ -1,3 +1,39 @@
+# Mystery static constructors — qualified reusable component
+
+Four existing canonical identities50335..50338 now have explicit first-party
+plain constructors, separate from imported donor bindings. Real PostgreSQL
+RED37.85s(DefinitionNotFound), GREEN38.512744657s: one of each minted through
+existing MINT and transferred into carried custody, no charge/timer rows, no
+seeded Mystery progress. Native admission unit passes74.95s(pure, not PG) and
+rejects20tamper variants. Python policy/refusal tests pass; check, strict Clippy,
+fmt,41file native regeneration/drift and pin refresh pass. Existing profiles
+are unchanged; world digest remainsb8f5701a982a55b3399727b62985cbf5190f6faa645f1b88d2c9ad9321111c70.
+See static-constructor-validation.json. Original definitions/holds retained.
+
+Full Mystery remains authoring at s2;14of23L7entries QUALIFIED,9remain.
+Continue with three shrine collection bindings, Kha'zeel exploration and atomic
+three-fragment assembly. Reuse reward_callbacks.ItemAmount for a bounded carried
+input list in world callback effects and the existing root-locked BURN/MINT
+receipt owner; do not add another inventory writer. Existing item_on_target
+handles one carried input. Preserve reusable-tool and optional serialization.
+
+New public raw/API Wiki access works with a descriptive User-Agent. The full
+Mystery walkthrough is available at
+https://www.tibiawiki.com.br/index.php?title=Mystery_of_the_Valley_Quest&action=raw .
+It locates the first shrine cliff at32459,31093,z6(after levitation), Zao ramp
+33198,31184,z7, Kilmaresh approach33839,31710,z7 and levitation33834,31697,z6,
+and Kha'zeel approach33095,32689,z7/33082,32706,z6/33080,32705,z5. Inspect
+nearby native floors/ordinals before binding. Raw walkthrough is temporary only;
+no third-party bodies or binaries are committed. Public page reports Guardian
+Statue as an immovable world-object variant; our selected recipe explicitly
+asks for one Item and the accepted canonical/pinned client50335is portable.
+The separate constructor is an explicit Oteryn choice, not a donor equivalence
+claim. Current bounded source map probe is in temporary files, not committed.
+
+The unchanged NPC Palimuth held-greeting probe remains an explicit baseline
+follow-up before lane closeout. No test was weakened and no NPC crate changes
+were retained. Continue without ending the session; push each green slice.
+
 # Mystery introduction and native Lai placement — qualified component
 
 The mandatory introduction passes real PostgreSQL in69.175308851s after an
