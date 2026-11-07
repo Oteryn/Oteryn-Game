@@ -757,6 +757,73 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-12",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.chantalle",
+          "name": "Chantalle",
+          "expected": {
+            "x": 32363,
+            "y": 32791,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.charlotta",
+          "name": "Charlotta",
+          "expected": {
+            "x": 32269,
+            "y": 32841,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.chondur",
+          "name": "Chondur",
+          "expected": {
+            "x": 32360,
+            "y": 32549,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.duncan",
+          "name": "Duncan",
+          "expected": {
+            "x": 32336,
+            "y": 32610,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.eleonore",
+          "name": "Eleonore",
+          "expected": {
+            "x": 32332,
+            "y": 32764,
+            "floor": -5
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.marina",
+          "name": "Marina",
+          "expected": {
+            "x": 32329,
+            "y": 32528,
+            "floor": -7
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }
