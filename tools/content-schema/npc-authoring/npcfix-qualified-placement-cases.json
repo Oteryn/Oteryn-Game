@@ -288,6 +288,73 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-05",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.gundralph",
+          "name": "Gundralph",
+          "expected": {
+            "x": 33268,
+            "y": 31849,
+            "floor": -5
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.hawkhurst",
+          "name": "Hawkhurst",
+          "expected": {
+            "x": 33357,
+            "y": 31984,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.iwan",
+          "name": "Iwan",
+          "expected": {
+            "x": 33217,
+            "y": 31833,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.lailene",
+          "name": "Lailene",
+          "expected": {
+            "x": 33282,
+            "y": 31845,
+            "floor": -4
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.luna",
+          "name": "Luna",
+          "expected": {
+            "x": 33254,
+            "y": 31840,
+            "floor": -5
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.milos",
+          "name": "Milos",
+          "expected": {
+            "x": 33259,
+            "y": 31826,
+            "floor": -3
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }
