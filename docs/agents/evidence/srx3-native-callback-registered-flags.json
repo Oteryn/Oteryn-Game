@@ -1,0 +1,1165 @@
+{
+  "note": "Attack proposals carry the independently selected combat target; source callback stage/anchor owns VAR semantics. This evidence does not authorize metadata projection.",
+  "rows": [
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.cerebellum.field-fill-heal_brain_head",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.cerebellum",
+        "revision": "definition-r1"
+      },
+      "index": 1,
+      "list": "attacks",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [
+        {
+          "flag": "needs_target",
+          "line": 25,
+          "value": false
+        }
+      ],
+      "source": {
+        "git_blob": "1e9547177d85de9c851e500ddcc632fb909964f2",
+        "path": "data-otservbr-global/scripts/spells/monster/heal_brain_head.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "f43dead6738ef01a961778164a342b7f82664e5c0b0fdecd989cba5c18411eef"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.charge_vortex",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.charged_anomaly",
+        "revision": "definition-r1"
+      },
+      "index": 5,
+      "list": "attacks",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "4cf96614b7825c1e8a4560e708520fb66fa2a9d2",
+        "path": "data-otservbr-global/scripts/spells/monster/charge_vortex.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "3e529d22f9c4f78960c45744b0caa4c98700e73d573c58425fa2c20845966db8"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.outburst_explode",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.charging_outburst",
+        "revision": "definition-r1"
+      },
+      "index": 5,
+      "list": "attacks",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "c16b220e283f3c46039d706bd509ed00c5418eff",
+        "path": "data-otservbr-global/scripts/spells/monster/outburst_explode.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "8fa2a802b7260b143d0a783bbee7be0fc197b01fa98f578a97d4de55451f9023"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.energy_pulse_explosion",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.energy_pulse",
+        "revision": "definition-r1"
+      },
+      "index": 0,
+      "list": "attacks",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "3739036a1388be7647ef435605eb6e715691ad15",
+        "path": "data-otservbr-global/scripts/spells/monster/energy_pulse_explosion.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "50fb41cf56f8e5f3cc7cb07720c85dbbae8c62375cce0a30ab5f497970cad5a9"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.eruption_of_destruction_explosion",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.eruption_of_destruction",
+        "revision": "definition-r1"
+      },
+      "index": 1,
+      "list": "attacks",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "fbbe4922f14e6e79f3dc8051f81e1a26c7a5370f",
+        "path": "data-otservbr-global/scripts/spells/monster/eruption_of_destruction_explosion.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "187faff452a85845e92026b8c4c7c1ea32cfc40ea9fe35f378d42c0947247edb"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.foam_stalker.field-fill-foamsplash",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.foam_stalker",
+        "revision": "definition-r1"
+      },
+      "index": 4,
+      "list": "attacks",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [
+        {
+          "flag": "needs_direction",
+          "line": 55,
+          "value": false
+        }
+      ],
+      "source": {
+        "git_blob": "a417f1c77842531a79539fa2c7115b12d337e5dc",
+        "path": "data-otservbr-global/scripts/spells/monster/foam_splash.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "349f2ee70d96cd3c77fae52ed2df251c824ab9f4673dcdf31d9c60244aaaf591"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.gaz_haragoth_death",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.gaz_haragoth",
+        "revision": "definition-r1"
+      },
+      "index": 10,
+      "list": "attacks",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "ea42a9645fda86753750f9b3849e7e1b35b7c6de",
+        "path": "data-otservbr-global/scripts/spells/monster/gaz'haragoth_death.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "6ef18d921d93baf9f4ac43266dae5817d4d4a22d02d7388423c1dce787d10d46"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.gaz_haragoth_summon",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.gaz_haragoth",
+        "revision": "definition-r1"
+      },
+      "index": 11,
+      "list": "attacks",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "aafb438ac096ec9520855f12540de3a08b3173cb",
+        "path": "data-otservbr-global/scripts/spells/monster/gaz'haragoth_summon.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "db93fab130fdf02dd5d1697f2eb81b2058296e0ac0c8e09e8304a3349961f693"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.glooth_generator_summon",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.glooth_generator",
+        "revision": "definition-r1"
+      },
+      "index": 0,
+      "list": "defenses",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "6138d0335e72a7e46c8409ab44ac0d839909548d",
+        "path": "data-otservbr-global/scripts/spells/monster/glooth-generator_summon.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "e4027d8e41c9d6b036e21bd420430030b79ff6331e3aff38b5f28f2fbbde0223"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.tenebris_summon",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.lady_tenebris",
+        "revision": "definition-r1"
+      },
+      "index": 3,
+      "list": "attacks",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "cb921639372a882ade7f128ccda5259b2fc44868",
+        "path": "data-otservbr-global/scripts/spells/monster/tenebris_summon.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "2667cf4d2994a00badd75da99d5ed2c02a6f80d24a8a9ff8f1f61c490f08da0e"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.tenebris_ultimate",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.lady_tenebris",
+        "revision": "definition-r1"
+      },
+      "index": 4,
+      "list": "attacks",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "f80f39907610f8f3c55734fd988f9f5ca689f45f",
+        "path": "data-otservbr-global/scripts/spells/monster/tenebris_ultimate.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "43fc74c1713787877c68415c6402b4d6de7298d2123687da18ee24e2d24d3949"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.lisa.field-fill-lisa_heal",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.lisa",
+        "revision": "definition-r1"
+      },
+      "index": 0,
+      "list": "defenses",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "c0eda49bb979e614034b6a19446fd7a3ddd4705a",
+        "path": "data-otservbr-global/scripts/spells/monster/lisa_heal.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "69cc197d06ae863a01d449ea0692ec861f94bb09f686464e03db382ca7fa77ba"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.mazoran_fire",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.mazoran",
+        "revision": "definition-r1"
+      },
+      "index": 2,
+      "list": "defenses",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "72e035354a8b04800fa25670535129144b6afb48",
+        "path": "data-otservbr-global/scripts/spells/monster/mazoran_fire.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "4f8c27f8f13b59caae7355c600170e8f896a2e213637c5fa02e26595b730d9ea"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.thorn_summon",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.mounted_thorn_knight",
+        "revision": "definition-r1"
+      },
+      "index": 0,
+      "list": "defenses",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "56ff1720bb161deae4ec435b92d9890eb5f2b14d",
+        "path": "data-otservbr-global/scripts/spells/monster/thorn_summon.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "e507265f181812f28713a64fe787ca068944b860f1403cfe5492e23c24613028"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.plagirath_bog",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.plagirath",
+        "revision": "definition-r1"
+      },
+      "index": 6,
+      "list": "attacks",
+      "metadata_differs": true,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": true
+      },
+      "setters": [
+        {
+          "flag": "needs_target",
+          "line": 65,
+          "value": true
+        }
+      ],
+      "source": {
+        "git_blob": "9a43c902ccb28b31dd838339f304e5c6b60f6e8f",
+        "path": "data-otservbr-global/scripts/spells/monster/plagirath_bog.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "f3b2b9b09f250270597faaeb15687c835f5cb872899c59706799c7ab86c17e2d"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.plagirath_summon",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.plagirath",
+        "revision": "definition-r1"
+      },
+      "index": 2,
+      "list": "defenses",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "e4948e8245838ebcf3a69770569604e330ae6f92",
+        "path": "data-otservbr-global/scripts/spells/monster/plagirath_summon.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "4001f565d6c0e235f47fd3572d5fd92ae79737c894347be9b306ecef5f9b7f56"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.generator",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.professor_maxxen",
+        "revision": "definition-r1"
+      },
+      "index": 2,
+      "list": "defenses",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "ee36912022a1bf347f3f099ceba10c54ae6cebf3",
+        "path": "data-otservbr-global/scripts/spells/monster/generator.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "5117addccc505a0a15b57aacf130dcee123102bb0a6f3c46ecc159c5efdac765"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.maxxenteleport",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.professor_maxxen",
+        "revision": "definition-r1"
+      },
+      "index": 3,
+      "list": "defenses",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "096a733e25fc0a2e12e07418b41610dd7f7b506d",
+        "path": "data-otservbr-global/scripts/spells/monster/maxxen_teleport.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "f77ac8c34f92afe1f7e0bb2b27e0e73a83efe92448ec23341475e02fdd2492fe"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.glooth_fairy_healing",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.professor_maxxen",
+        "revision": "definition-r1"
+      },
+      "index": 4,
+      "list": "defenses",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "ff99f1a43d2da5c2662134eec17f70dd72e2ea13",
+        "path": "data-otservbr-global/scripts/spells/monster/glooth_fairy_healing.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "7781f1c8ea2d0879fd308adf0a5b7b324b2eed1b44c64f193c8564aa38a8aa81"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.ragiaz_transform",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.ragiaz",
+        "revision": "definition-r1"
+      },
+      "index": 2,
+      "list": "defenses",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "25caeb8626da31e3493923ee34395fdf7af88d21",
+        "path": "data-otservbr-global/scripts/spells/monster/ragiaz_transform.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "759d3885326cce17039788192093c6fcaee5a1672a68645dc75da19ace9d1587"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.razzagorn_summon",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.razzagorn",
+        "revision": "definition-r1"
+      },
+      "index": 2,
+      "list": "defenses",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "bc57c3b9d5d0ce865536e731f87be2898ac5020f",
+        "path": "data-otservbr-global/scripts/spells/monster/razzagorn_summon.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "335894d9f4351b56c03323510e768f7718ee99f1f0020ed823e966d7a951ab89"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.rotthingshaper",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.rootthing_amber_shaper",
+        "revision": "definition-r1"
+      },
+      "index": 4,
+      "list": "attacks",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "d81aa32e7b28cc051d3076e0762106190f348edd",
+        "path": "data-otservbr-global/scripts/spells/monster/rotthing_shaper.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "c0f9b25d66219034bc027b822b8fdbeeace81aae707bef382dd72d72e84afdf0"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.rotthingwave",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.rootthing_nutshell",
+        "revision": "definition-r1"
+      },
+      "index": 3,
+      "list": "attacks",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": true,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": true,
+        "needs_target": false
+      },
+      "setters": [
+        {
+          "flag": "needs_direction",
+          "line": 49,
+          "value": true
+        }
+      ],
+      "source": {
+        "git_blob": "59b61ea219ae7ea7dde482adac4df84e0844ecf0",
+        "path": "data-otservbr-global/scripts/spells/monster/rotthing_wave.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "c554ad43f68b7b68f60d11ca995fb37687f3322477a048a69ca9207575236084"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shulgrax_summon",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.shulgrax",
+        "revision": "definition-r1"
+      },
+      "index": 1,
+      "list": "defenses",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "50365b8453d814dd68adc4dea74aa94c987f1d96",
+        "path": "data-otservbr-global/scripts/spells/monster/shulgrax_summon.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "0285160685f876223064b173d1a7bd8abbefdde6a5071c8754cb70e900c9c5a6"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.smelly_cheese.berserk_bridge",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.smelly_cheese",
+        "revision": "definition-r1"
+      },
+      "index": 0,
+      "list": "attacks",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [
+        {
+          "flag": "needs_direction",
+          "line": 62,
+          "value": false
+        }
+      ],
+      "source": {
+        "git_blob": "e5ed30327837856ba4f0e2f8d13f2ff30c903e3f",
+        "path": "data-global/scripts/spells/monster/smelly_cheese_berserk.lua",
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "59074420d45ea48551a8276d4ee6d082dcb6b48a7832ca301db2f88e12ab65e3"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.soulcatcher_summon",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.soulcatcher",
+        "revision": "definition-r1"
+      },
+      "index": 0,
+      "list": "defenses",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "a59ff17ae132ab4cb3c1b31f06bd92476fa839fc",
+        "path": "data-otservbr-global/scripts/spells/monster/soulcatcher_summon.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "340e3dd0dfdaca35670a900b5fd0c2d539da0c02827b0d53492ace1758ed4b0c"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.time_guardian_lost_time",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.the_blazing_time_guardian",
+        "revision": "definition-r1"
+      },
+      "index": 0,
+      "list": "defenses",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": true,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": true,
+        "needs_target": false
+      },
+      "setters": [
+        {
+          "flag": "needs_direction",
+          "line": 21,
+          "value": true
+        }
+      ],
+      "source": {
+        "git_blob": "7076b09d1a71610d81c3d9d0308aeea08143b353",
+        "path": "data-otservbr-global/scripts/spells/monster/time_guardian_lost_time.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "8b202aa6f12e9d72411fe5f4e20da29dfe210d7ee609c33286d6110970506d80"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.destruction_summon",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.the_destruction",
+        "revision": "definition-r1"
+      },
+      "index": 8,
+      "list": "attacks",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "67433c26331cb5791bbf1f49e88d1395c457b088",
+        "path": "data-otservbr-global/scripts/spells/monster/destruction_summon.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "90a7c07c79fb790c9a6293d43109d59b7daf60c152440b9ff2e9cb14e2a4c217"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.time_guardian_lost_time",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.the_freezing_time_guardian",
+        "revision": "definition-r1"
+      },
+      "index": 0,
+      "list": "defenses",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": true,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": true,
+        "needs_target": false
+      },
+      "setters": [
+        {
+          "flag": "needs_direction",
+          "line": 21,
+          "value": true
+        }
+      ],
+      "source": {
+        "git_blob": "7076b09d1a71610d81c3d9d0308aeea08143b353",
+        "path": "data-otservbr-global/scripts/spells/monster/time_guardian_lost_time.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "8b202aa6f12e9d72411fe5f4e20da29dfe210d7ee609c33286d6110970506d80"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.hunger_summon",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.the_hunger",
+        "revision": "definition-r1"
+      },
+      "index": 6,
+      "list": "attacks",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "751d38126f32378624948f3e21bb3f8b612dd895",
+        "path": "data-otservbr-global/scripts/spells/monster/hunger_summon.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "2a00ccf5a083a34776038a504726f4f33f54d82e864353e6bb140c8fcc6b9ce2"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.rage_summon",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.the_rage",
+        "revision": "definition-r1"
+      },
+      "index": 8,
+      "list": "attacks",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "266e3c272a9caad2ccf068b6e8fc7e6414b60a8d",
+        "path": "data-otservbr-global/scripts/spells/monster/rage_summon.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "39ce94ec2e36690b5c2359fb9cd4344fddcc25783001ef86b665ce6b1ff9d24f"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.time_guardian",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.the_time_guardian",
+        "revision": "definition-r1"
+      },
+      "index": 0,
+      "list": "defenses",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "266b811cf51c769a519c130bf27535cae6a7bfce",
+        "path": "data-otservbr-global/scripts/spells/monster/time_guardian.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "a426a55ae830a65f3aec0258d2630773998ad64229d7d64ca152ebd3b18d99aa"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.time_guardiann",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.the_time_guardian",
+        "revision": "definition-r1"
+      },
+      "index": 1,
+      "list": "defenses",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "9e4ffe6ae81a8954b9ceb6f887326422b2e303ba",
+        "path": "data-otservbr-global/scripts/spells/monster/time_guardiann.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "11837a0c512e8a0ec26279763c1d58d1ad5885df193a7e81672879f51017a08a"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.tyrn.field-fill-tyrn_heal",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.tyrn",
+        "revision": "definition-r1"
+      },
+      "index": 2,
+      "list": "defenses",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "4661ec8671e0d22dee8392a14dd9c78caee57718",
+        "path": "data-otservbr-global/scripts/spells/monster/tyrn_heal.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "d7dc7e8a032c9e4471ace81b34fc799e0d86fdda88463b54086e30ca8b991755"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.devourer_summon",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.world_devourer",
+        "revision": "definition-r1"
+      },
+      "index": 7,
+      "list": "attacks",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "823dd5cb247832086cb73300bb465b62ca8ae452",
+        "path": "data-otservbr-global/scripts/spells/monster/devourer_summon.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "7c2f2a85b1ac52a5ff58fd203eb920e993947b4c0832c1309e603ecb2d126e9d"
+      }
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.zamulosh_tp",
+        "revision": "definition-r1"
+      },
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.zamulosh",
+        "revision": "definition-r1"
+      },
+      "index": 1,
+      "list": "defenses",
+      "metadata_differs": false,
+      "native_metadata": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "registered_flags": {
+        "needs_direction": false,
+        "needs_target": false
+      },
+      "setters": [],
+      "source": {
+        "git_blob": "8bf3b1449a5286a3aaf9e9a346e2184a49147e05",
+        "path": "data-otservbr-global/scripts/spells/monster/zamulosh_tp.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "d4759dd2e9fafe0d3f85f465e41423fc7d1f333c8683124c282ea4dc1c1642cb"
+      }
+    }
+  ],
+  "schema": "OTERYN_SRX3_CALLBACK_REGISTERED_FLAGS/v1",
+  "source_definitions_sha256": "5e72bdb573c69dd4ca96d3e77290fe074f8798b8d031ceb6e77e7f516f4afb19"
+}

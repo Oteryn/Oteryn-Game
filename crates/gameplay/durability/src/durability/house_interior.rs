@@ -12,8 +12,8 @@ mod step;
 pub use step::{HouseStepReadRequest, HouseStepSnapshot};
 
 pub use oteryn_gameplay_housing::house_interior::{
-    HouseCharacterSource, HouseItemAction, HouseItemReceipt, HouseItemOutcome,
-    HOUSE_INTERIOR_ITEMS_MAX, HouseInteriorError, HouseItemRole,
+    HOUSE_INTERIOR_ITEMS_MAX, HouseCharacterSource, HouseInteriorError, HouseItemAction,
+    HouseItemOutcome, HouseItemReceipt, HouseItemRole,
 };
 
 pub type HouseInteriorLocation =

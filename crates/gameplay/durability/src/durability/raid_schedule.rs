@@ -3,12 +3,14 @@
 //! reset/content facts do not authorize a World reset, actor or announcement.
 mod activity;
 mod calendar;
+mod claustrophobic;
 mod lua;
 mod scheduler;
 mod storage;
 
 pub use activity::{MAX_RAID_ACTIVITY_PLAYERS, RaidActivityPlayer, RaidActivitySnapshot};
 pub use calendar::CalendarRaidScheduleCandidate;
+pub use claustrophobic::ClaustrophobicRaidStart;
 pub use lua::LuaRaidScheduleCandidate;
 pub use scheduler::{RaidScheduleCandidate, RaidSchedulerCheck, RaidSchedulerOutcome};
 

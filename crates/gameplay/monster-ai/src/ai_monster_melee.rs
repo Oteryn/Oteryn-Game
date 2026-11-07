@@ -63,6 +63,22 @@ pub struct MonsterMeleeOwner {
     pub think_players: Vec<(ExactActorRef, GameSessionId)>,
 }
 impl MonsterMeleeOwner {
+    /// Read the real retained receipt, never synthesize an attack or damage fact.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn last_native_bite_for_test(
+        &self,
+        actor: ExactActorRef,
+        index: u16,
+    ) -> Option<AppliedBite> {
+        let entries = self.entries.get(&actor.actor_local_id())?;
+        if entries.actor != actor {
+            return None;
+        }
+        match entries.native.get(&index)?.last?.1 {
+            Dispatch::Bite(Ok(receipt)) => Some(receipt),
+            _ => None,
+        }
+    }
     /// One scheduled owner think, at most one existing typed bite. The selected
     /// player id resolves to current actor/session facts supplied by the owner;
     /// the bite independently revalidates both generations and protection.
@@ -298,9 +314,35 @@ impl MonsterMeleeOwner {
                         armor_draw,
                         defence_draw,
                     );
+                    let critical_roll = if runtime
+                        .soulpit_variant(issuer)
+                        .and_then(|tag| tag.boss)
+                        .is_some_and(|boss| {
+                            boss.ability
+                                == oteryn_gameplay_domain::domain::soulpit::BossAbility::Overpower
+                        }) {
+                        let draw = deterministic_decision_u64(
+                            &input.decision_root,
+                            draw_occurrence,
+                            "soulpit_overpower",
+                            draw_index,
+                        )
+                        .map_err(|_| BiteRejection::InvalidPlan)?;
+                        u8::try_from(oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(
+                            draw, 1, 100,
+                        ))
+                        .map_err(|_| BiteRejection::InvalidPlan)?
+                    } else {
+                        100
+                    };
                     let bite = match native_source {
-                        Some(source) => CreatureBiteDefinition::from_native_source(
-                            source, runtime, intent, definition, magnitude,
+                        Some(source) => CreatureBiteDefinition::from_native_source_with_roll(
+                            source,
+                            runtime,
+                            intent,
+                            definition,
+                            magnitude,
+                            critical_roll,
                         ),
                         None => CreatureBiteDefinition::new(
                             definition.interval_us.max(MONSTER_MELEE_THRESHOLD_MICROS),
@@ -1349,4 +1391,5 @@ mod tests {
     }
 
     mod native_tests;
+    mod soulpit_native;
 }

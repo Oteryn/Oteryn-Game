@@ -343,6 +343,23 @@ pub trait PlayerLethalVitals {
         self.apply_attack_damage(runtime, target, session, magnitude, occurrence, now)
     }
 
+    /// Native callers retain the actual issuer through the post-block HP boundary.
+    /// The default preserves legacy implementations and their existing receipts.
+    #[allow(clippy::too_many_arguments)]
+    fn apply_source_typed_attack_damage(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        _source: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        kind: PlayerHitKind,
+        occurrence: &str,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<PlayerDamageReceipt> {
+        self.apply_typed_attack_damage(runtime, target, session, magnitude, kind, occurrence, now)
+    }
+
     #[allow(clippy::too_many_arguments)]
     fn apply_typed_composite_attack_damage(
         &mut self,

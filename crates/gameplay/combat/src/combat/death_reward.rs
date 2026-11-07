@@ -234,8 +234,8 @@ pub struct CreatureDeathRewardInput<const N: usize> {
     /// The corpse `ItemInstance`'s definition, supplied by the caller exactly
     /// as the loot definitions are (Content binding of `i00005801` waits on
     /// the Content revision, D3-7).
-    pub corpse_item: LootDefinitionRef,
-    pub loot_table_ref: LootDefinitionRef,
+    pub corpse_item: Option<LootDefinitionRef>,
+    pub loot_table_ref: Option<LootDefinitionRef>,
     pub loot_table: LootTableDefinition,
     pub ground: DeathGroundContext,
     pub inflight_loot_mints_before_this_death: usize,
@@ -379,7 +379,8 @@ pub struct CreatureDeathRewardOutcome {
     /// Advisory committed child details, including entries preceding a later MINT error.
     pub committed_loot: Vec<(CommittedItemMint, LootDefinitionRef, u32)>,
     pub death: CreatureDeathOccurrenceKey,
-    pub loot: Result<CommittedCorpseLoot, CombatDeathRewardLootError>,
+    /// Ok(None) is an explicitly corpse-free source death, independent of XP.
+    pub loot: Result<Option<CommittedCorpseLoot>, CombatDeathRewardLootError>,
     pub xp: Result<ExperienceCommitOutcome, CombatDeathRewardXpError>,
 }
 
@@ -430,14 +431,26 @@ fn ground_placement(
     corpse: MovementLocalPosition,
     ground: &DeathGroundContext,
 ) -> Result<GroundPlacement, ItemMintError> {
-    let channel_id = death.channel_id().ok_or(ItemMintError::AuthorityRejected)?;
     let mut spatial_position = Vec::with_capacity(10);
     spatial_position.extend_from_slice(&corpse.x.to_be_bytes());
     spatial_position.extend_from_slice(&corpse.y.to_be_bytes());
     spatial_position.extend_from_slice(&corpse.floor.to_be_bytes());
-    let mut corpse_ref = Vec::with_capacity(52);
+    let mut corpse_ref = Vec::with_capacity(53);
+    if matches!(
+        death.runtime_scope(),
+        crate::foundation::RuntimeScopeRefV1::Instance { .. }
+    ) {
+        corpse_ref.push(2);
+    }
     corpse_ref.extend_from_slice(death.world_id().as_bytes());
-    corpse_ref.extend_from_slice(channel_id.as_bytes());
+    match death.runtime_scope() {
+        crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } => {
+            corpse_ref.extend_from_slice(channel_id.as_bytes())
+        }
+        crate::foundation::RuntimeScopeRefV1::Instance { instance_id, .. } => {
+            corpse_ref.extend_from_slice(&instance_id)
+        }
+    }
     corpse_ref.extend_from_slice(&death.scope_ownership_generation().get().to_be_bytes());
     corpse_ref.extend_from_slice(&death.actor_local_id().to_be_bytes());
     corpse_ref.extend_from_slice(&death.actor_local_generation().to_be_bytes());
@@ -467,19 +480,21 @@ async fn settle_loot(
     corpse: MovementLocalPosition,
     top_damage_character_id: [u8; 16],
     ground: &DeathGroundContext,
-    corpse_item: &LootDefinitionRef,
-    loot_table_ref: &LootDefinitionRef,
+    corpse_item: Option<&LootDefinitionRef>,
+    loot_table_ref: Option<&LootDefinitionRef>,
     loot_table: &LootTableDefinition,
     inflight_before_this_death: usize,
     committed_loot: &mut Vec<(CommittedItemMint, LootDefinitionRef, u32)>,
-) -> Result<CommittedCorpseLoot, CombatDeathRewardLootError> {
-    // Ground custody has no Instance placement contract. This typed refusal does
-    // not suppress the independent XP path or W03's personal reward entitlements.
-    if death.channel_id().is_none() {
-        return Err(CombatDeathRewardLootError::Corpse(
-            ItemMintError::AuthorityRejected,
-        ));
-    }
+) -> Result<Option<CommittedCorpseLoot>, CombatDeathRewardLootError> {
+    let (corpse_item, loot_table_ref) = match (corpse_item, loot_table_ref) {
+        (None, None) if loot_table.entries.is_empty() => return Ok(None),
+        (Some(corpse), Some(table)) => (corpse, table),
+        _ => {
+            return Err(CombatDeathRewardLootError::Corpse(
+                ItemMintError::InvalidInput,
+            ));
+        }
+    };
     let plan: LootPlan = plan_creature_loot(loot_plan_seed(death), loot_table_ref, loot_table)
         .map_err(CombatDeathRewardLootError::Plan)?;
     // W22a: a fluid subtype mints with its fluid state; only one beyond the fluid range is refused.
@@ -592,7 +607,7 @@ async fn settle_loot(
                 .zip(&plan.entries)
                 .map(|(mint, entry)| (mint.clone(), entry.item.clone(), entry.quantity)),
         );
-        return Ok(CommittedCorpseLoot { corpse, entries });
+        return Ok(Some(CommittedCorpseLoot { corpse, entries }));
     }
     let corpse_outcome = if let Some(boss) = &ground.boss_spawn {
         session
@@ -662,10 +677,10 @@ async fn settle_loot(
         committed_loot.push((mint.clone(), entry.item.clone(), entry.quantity));
         entries.push(mint);
     }
-    Ok(CommittedCorpseLoot {
+    Ok(Some(CommittedCorpseLoot {
         corpse: corpse_mint,
         entries,
-    })
+    }))
 }
 
 fn committed(outcome: ItemMintOutcome) -> CommittedItemMint {
@@ -810,8 +825,8 @@ pub async fn settle_creature_death_rewards<const N: usize>(
         facts.corpse,
         *facts.top_damage_character.as_bytes(),
         &input.ground,
-        &input.corpse_item,
-        &input.loot_table_ref,
+        input.corpse_item.as_ref(),
+        input.loot_table_ref.as_ref(),
         &input.loot_table,
         input.inflight_loot_mints_before_this_death,
         &mut committed_loot,

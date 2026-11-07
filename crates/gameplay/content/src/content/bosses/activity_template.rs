@@ -9,7 +9,18 @@ use crate::content::{
 };
 use serde::{Deserialize, Serialize};
 
+mod outburst;
+#[path = "activity_template/rotten_blood.rs"]
+mod rotten_blood;
+#[path = "activity_template/soul_war.rs"]
+mod soul_war;
+mod soul_war_entry_gate;
+#[path = "activity_template/soul_war_spawns.rs"]
+mod soul_war_spawns;
+pub use soul_war_spawns::QualifiedAmbientXmlSpawns;
+
 pub const CRYSTAL_REVISION: &str = "201189f871d23597b82caf88fd611454a2ddefb8";
+pub use crate::content::project::native_spell_world::PinnedActivitySourceRoom;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -69,7 +80,8 @@ pub struct ActivityTemplateDiagnostic {
 
 /// Produced only by the active Content owner, never by a client or SQL catalogue
 /// row. Its bounded room keeps the original frame/map/artifact identity and only
-/// exposes the admitted encounter region. Entry/exit facts retain authored order.
+/// exposes the admitted encounter region. Entry order stays authored; the raw exit
+/// remains explicit when a pinned source Teleport composes its final landing.
 #[derive(Debug)]
 pub struct QualifiedActivityRoomTemplate {
     boss_key: String,
@@ -83,6 +95,7 @@ pub struct QualifiedActivityRoomTemplate {
     source_levers: Vec<LogicalCell>,
     entries: Vec<LogicalCell>,
     boss_position: LogicalCell,
+    source_exit_position: LogicalCell,
     exit_position: LogicalCell,
     minimum_players: u32,
     minimum_level: u32,
@@ -128,6 +141,9 @@ impl QualifiedActivityRoomTemplate {
     pub fn boss_position(&self) -> LogicalCell {
         self.boss_position
     }
+    pub fn source_exit_position(&self) -> LogicalCell {
+        self.source_exit_position
+    }
     pub fn exit_position(&self) -> LogicalCell {
         self.exit_position
     }
@@ -135,7 +151,11 @@ impl QualifiedActivityRoomTemplate {
         self.minimum_players
     }
     pub fn maximum_players(&self) -> usize {
-        self.entries.len()
+        if self.boss_key == "oteryn:boss.bakragore" {
+            5
+        } else {
+            self.entries.len()
+        }
     }
     pub fn minimum_level(&self) -> u32 {
         self.minimum_level
@@ -193,7 +213,197 @@ pub fn captured_boss_levers() -> Result<Vec<BossLeverCandidate>, ActivityTemplat
     Ok(document.records)
 }
 
+impl ActiveGeneration {
+    /// Only the two embedded, source-qualified SRX-3 room captures are accepted.
+    /// This creates no Instance assignment, readiness, participant or teleport grant.
+    pub fn qualify_activity_source_room(
+        &self,
+        room: &QualifiedNativeEntryRoom,
+        source: PinnedActivitySourceRoom,
+    ) -> Result<QualifiedNativeEntryRoom, ActivityTemplateRefusal> {
+        if room.compiled().server_digest() != self.identity().server_artifact_digest()
+            || room.compiled().client_digest() != self.identity().client_artifact_digest()
+        {
+            return Err(ActivityTemplateRefusal::NoActiveGeneration);
+        }
+        let native = self
+            .native_gameplay()
+            .ok_or(ActivityTemplateRefusal::CreatureClosureUnavailable)?;
+        let index = native
+            .item_index()
+            .ok_or(ActivityTemplateRefusal::CreatureClosureUnavailable)?;
+        let view = room
+            .pinned_activity_source_view(source)
+            .map_err(|_| ActivityTemplateRefusal::SourceMapUnavailable)?;
+        let map = view
+            .source_world()
+            .ok_or(ActivityTemplateRefusal::SourceMapUnavailable)?;
+        if map.source_identity_bindings().iter().any(|binding| {
+            let static_binding = binding.external_id.parse::<u32>().ok().is_some_and(|id| {
+                crate::content::qualified_static_binding(
+                    match binding.target.family {
+                        crate::content::project::ProjectV2Family::Terrain => "Terrain",
+                        crate::content::project::ProjectV2Family::WorldObject => "WorldObject",
+                        _ => "",
+                    },
+                    &binding.target.key,
+                    &binding.target.revision,
+                    id,
+                )
+            });
+            !static_binding
+                && (binding.target.family != crate::content::project::ProjectV2Family::Item
+                    || index
+                        .definition_ref("Item", &binding.target.key, &binding.target.revision)
+                        .is_none())
+        }) {
+            return Err(ActivityTemplateRefusal::CreatureClosureUnavailable);
+        }
+        Ok(view)
+    }
+}
+impl ActiveGeneration {
+    pub fn qualifies_primal_source_lobby(&self, room: &QualifiedNativeEntryRoom) -> bool {
+        room.compiled().server_digest() == self.identity().server_artifact_digest()
+            && room.compiled().client_digest() == self.identity().client_artifact_digest()
+            && crate::content::project::native_spell_world::qualifies_primal_lobby_cells(room)
+    }
+    /// Primal's custom callbacks are implemented by the native W10 owners.
+    /// The ordinary lever qualifier still refuses every other unknown hook.
+    pub fn qualify_primal_activity_template(
+        &self,
+        room: &QualifiedNativeEntryRoom,
+        content_revision: &str,
+    ) -> Result<QualifiedActivityRoomTemplate, ActivityTemplateRefusal> {
+        use ActivityTemplateRefusal as R;
+        const CREATURE: &str = "oteryn:creature.the_primal_menace";
+        const PATH: &str = "data-global/scripts/actions/bosses_levers/the_primal_manace.lua";
+        const SOURCE: &str = "59768c964e9e6319810e3c0619a1e322b8a8a2c3f03232b021667ae595927703";
+        if room.pinned_activity_source_room() != Some(PinnedActivitySourceRoom::Primal)
+            || !matches!(
+                room.movement_cells().index(),
+                crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)
+            )
+            || room.compiled().server_digest() != self.identity().server_artifact_digest()
+            || room.compiled().client_digest() != self.identity().client_artifact_digest()
+            || content_revision.is_empty()
+            || content_revision.len() > 128
+        {
+            return Err(R::InvalidSourceCapture);
+        }
+        let candidate = captured_boss_levers()?
+            .into_iter()
+            .find(|candidate| candidate.path == PATH && candidate.sha256 == SOURCE)
+            .ok_or(R::InvalidSourceCapture)?;
+        if candidate.creature_key.as_deref() != Some(CREATURE)
+            || candidate.blockers != ["config.disableCooldown"]
+            || candidate.minimum_players != Some(1)
+            || candidate.minimum_level != Some(500)
+            || candidate.cooldown_seconds != Some(72_000)
+            || candidate.time_limit_seconds != Some(1_200)
+            || candidate.after_kill_seconds != Some(60)
+            || !candidate.complete_literal_layout
+        {
+            return Err(R::InvalidSourceCapture);
+        }
+        // The captured generic diagnostic treats any disableCooldown token as
+        // unresolved. The pinned source's literal false (:18) preserves cooldown.
+        let native = self
+            .native_gameplay()
+            .ok_or(R::CreatureClosureUnavailable)?;
+        if !native.qualifies_primal_callbacks(self.identity().server_artifact_digest()) {
+            return Err(R::SourceHookUnavailable);
+        }
+        let pod = native
+            .item_policy("oteryn:item.tibia.i39176", "definition-r1")
+            .ok_or(R::SourceHookUnavailable)?;
+        if !pod.record().admission.materializable
+            || pod.record().admission.legal_destinations
+                != [crate::content::native_gameplay::NativeItemDestination::Ground]
+        {
+            return Err(R::SourceHookUnavailable);
+        }
+        let record = native
+            .creature_profiles()
+            .records
+            .iter()
+            .find(|record| record.profile.target.key == CREATURE)
+            .ok_or(R::CreatureClosureUnavailable)?;
+        qualify_instance_death_descendant(&record.profile.data)?;
+        native
+            .reward_table()
+            .row(CREATURE)
+            .map_err(|_| R::CreatureClosureUnavailable)?;
+        let cell = |[x, y, z]: [i32; 3]| LogicalCell { x, y, z };
+        let levers = candidate
+            .lever_positions
+            .iter()
+            .copied()
+            .map(cell)
+            .collect::<Vec<_>>();
+        let entries = candidate
+            .entry_positions
+            .iter()
+            .copied()
+            .map(cell)
+            .collect::<Vec<_>>();
+        let boss = cell(candidate.boss_position.ok_or(R::IncompleteLayout)?);
+        let exit = cell(candidate.exit_position.ok_or(R::IncompleteLayout)?);
+        if levers.len() != 5 || entries.len() != 5 {
+            return Err(R::IncompleteLayout);
+        }
+        for position in levers
+            .iter()
+            .chain(entries.iter())
+            .copied()
+            .chain([boss, exit])
+        {
+            if room
+                .movement_cells()
+                .index()
+                .lookup(room.movement_cells().scope(), position)
+                .ok()
+                != Some(crate::content::CollisionClass::Walkable)
+            {
+                return Err(R::UnknownPlacement);
+            }
+        }
+        Ok(QualifiedActivityRoomTemplate {
+            boss_key: "oteryn:boss.the_primal_menace".into(),
+            template_key: "oteryn:room.primal-source".into(),
+            template_revision: "crystal-201189f".into(),
+            content_revision: content_revision.into(),
+            creature_key: CREATURE.into(),
+            source_path: PATH.into(),
+            source_sha256: SOURCE.into(),
+            room: room.clone(),
+            source_levers: levers,
+            entries,
+            boss_position: boss,
+            source_exit_position: exit,
+            exit_position: exit,
+            minimum_players: 1,
+            minimum_level: 500,
+            cooldown_seconds: 72_000,
+            time_limit_seconds: 1_200,
+            after_kill_seconds: 60,
+            activation_sequence: self.activation_sequence(),
+            server_digest: self.identity().server_artifact_digest(),
+            client_digest: self.identity().client_artifact_digest(),
+        })
+    }
+}
 impl ContentActivationController {
+    pub fn qualify_activity_source_room(
+        &self,
+        room: &QualifiedNativeEntryRoom,
+        source: PinnedActivitySourceRoom,
+    ) -> Result<QualifiedNativeEntryRoom, ActivityTemplateRefusal> {
+        self.active()
+            .filter(|_| self.is_ready())
+            .ok_or(ActivityTemplateRefusal::NoActiveGeneration)?
+            .qualify_activity_source_room(room, source)
+    }
     /// Deterministic initial selection authorized by PR2769 ANSWER6543189919.
     /// Every earlier refusal is retained; only the first complete qualified
     /// template can be registered by the gameplay seam.
@@ -455,6 +665,7 @@ impl ContentActivationController {
             source_levers: levers,
             entries,
             boss_position: boss,
+            source_exit_position: exit,
             exit_position: exit,
             minimum_players: minimum,
             minimum_level: level,
@@ -489,13 +700,13 @@ fn qualify_instance_death_descendant(
     let ProjectV2AuthoringProfileData::Creature(creature) = data else {
         return Err(R::CreatureClosureUnavailable);
     };
-    let details = creature
+    creature
         .details
         .as_ref()
         .ok_or(R::CreatureClosureUnavailable)?;
-    if details.corpse_item.is_some() {
-        return Err(R::InstanceCorpseMintUnavailable);
-    }
+    // The qualified reward row below still proves the exact native corpse
+    // capacity and complete loot closure. Physical Instance deaths now use the
+    // scoped MINT/temporal owner, so a declared corpse is not itself a blocker.
     Ok(())
 }
 
@@ -523,8 +734,51 @@ mod tests {
     }
 
     #[test]
-    fn physical_corpse_requirement_blocks_both_ordinary_and_reward_boss_templates()
+    fn pinned_activity_maps_retain_active_content_and_independent_source_frames()
     -> Result<(), String> {
+        let world = test_world()?;
+        let (controller, pin) =
+            crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
+        let base = pin.qualified_room();
+        for source in [
+            PinnedActivitySourceRoom::Primal,
+            PinnedActivitySourceRoom::Soulpit,
+        ] {
+            let room = controller
+                .qualify_activity_source_room(base, source)
+                .map_err(debug)?;
+            assert_eq!(
+                room.compiled().server_digest(),
+                base.compiled().server_digest()
+            );
+            assert_eq!(
+                room.compiled().client_digest(),
+                base.compiled().client_digest()
+            );
+            assert_ne!(room.frame_binding().digest(), base.frame_binding().digest());
+            assert_ne!(room.map_revision_digest(), base.map_revision_digest());
+            assert_eq!(room.map_revision_digest(), sha256(source.bytes()));
+            assert!(room.source_world().is_some());
+            let pair = crate::content::native_source_world_carrier::compile(
+                base.compiled(),
+                source.bytes(),
+            )
+            .map_err(debug)?;
+            let decoded =
+                crate::content::native_source_world_carrier::decode(&pair.server, &pair.client)
+                    .map_err(debug)?;
+            assert_eq!(decoded.source_world, source.bytes());
+        }
+        assert!(
+            ContentActivationController::new()
+                .qualify_activity_source_room(base, PinnedActivitySourceRoom::Primal)
+                .is_err()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn scoped_corpse_bridge_admits_both_ordinary_and_reward_boss_templates() -> Result<(), String> {
         let world = test_world()?;
         for reward_boss in [false, true] {
             let (controller, _pin) = if reward_boss {
@@ -554,7 +808,15 @@ mod tests {
             assert!(details.corpse_item.is_some());
             assert_eq!(
                 qualify_instance_death_descendant(&record.profile.data),
-                Err(ActivityTemplateRefusal::InstanceCorpseMintUnavailable)
+                Ok(())
+            );
+            let mut incomplete = record.profile.data.clone();
+            if let ProjectV2AuthoringProfileData::Creature(creature) = &mut incomplete {
+                creature.details = None;
+            }
+            assert_eq!(
+                qualify_instance_death_descendant(&incomplete),
+                Err(ActivityTemplateRefusal::CreatureClosureUnavailable)
             );
         }
         Ok(())

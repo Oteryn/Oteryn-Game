@@ -37,6 +37,8 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     logout::CAPABILITY_LOGOUT_V1,
     oteryn_protocol_oteryn::world_object::CAPABILITY_RUNE_USE_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_PRESENTATION_V1,
+    oteryn_protocol_oteryn::native_map_cues::CAPABILITY_NATIVE_MAP_CUES_V1,
+    oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_NATIVE_OBJECT_APPEARANCE_V1,
     oteryn_protocol_oteryn::appearance::CAPABILITY_APPEARANCE_V1,
     oteryn_protocol_oteryn::world_weather::CAPABILITY_WORLD_WEATHER_V1,
     oteryn_protocol_oteryn::capability_tables::CAPABILITY_ITEM_LOOK_V1,
@@ -121,6 +123,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     spell_catalog::CAPABILITY_ACTOR_SPELL_CATALOG_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1,
     skill_display::CAPABILITY_SKILL_DISPLAY_V1,
+    oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_NATIVE_CREATURE_ICONS_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
@@ -139,6 +142,8 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
     oteryn_protocol_oteryn::world_clock::CAPABILITY_WORLD_LIGHT_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_PRESENTATION_V1,
+    oteryn_protocol_oteryn::native_map_cues::CAPABILITY_NATIVE_MAP_CUES_V1,
+    oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_NATIVE_OBJECT_APPEARANCE_V1,
     oteryn_protocol_oteryn::appearance::CAPABILITY_APPEARANCE_V1,
     oteryn_protocol_oteryn::world_weather::CAPABILITY_WORLD_WEATHER_V1,
     oteryn_protocol_oteryn::capability_tables::CAPABILITY_ITEM_LOOK_V1,

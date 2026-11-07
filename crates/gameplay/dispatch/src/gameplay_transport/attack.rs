@@ -69,6 +69,16 @@ use crate::movement::CardinalStep;
 use crate::movement::interest::{VisibilityPosition, VisibilitySettings};
 use crate::spell::combat_execution::actor_atom;
 
+// Crystal soul_war_mechanics.lua:1091-1098: the event scales each
+// post-mitigation component before Game's Wheel additions, including zero.
+fn cruelty_health_component(component: i64, drain: Option<u64>) -> Option<i64> {
+    let Some(drain) = drain else {
+        return Some(component);
+    };
+    let scaled = component as f64 * (1.0 - drain as f64 / 100.0).max(0.0);
+    (scaled.is_finite() && scaled >= 0.0 && scaled < i64::MAX as f64).then(|| scaled.trunc() as i64)
+}
+
 /// `ATTACK0-RL-01` and `ATTACK0-RL-02`: intents per [`ATTACK_INTENT_WINDOW`].
 const MAX_INTENTS_PER_WINDOW: usize = 25;
 const _: () = assert!(
@@ -1120,7 +1130,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) -> Option<(super::StepOutcome, Option<Duration>)> {
         use super::FreshAdmissionAuthority as _;
-        let room = self.rooms.gate_chase_step()?;
+        let room = self.effective_rooms().gate_chase_step()?;
         let step = {
             // Lock order: runtime, spell states, door, then attack.
             let runtime = self.runtime.lock().await;
@@ -1132,7 +1142,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // The same closed doors a player step reads (`paced_step`).
             let (none, bundle_doors, legacy);
             let blocking: &dyn crate::map::floor::CellBlocker = if self
-                .rooms
+                .effective_rooms()
                 .gate_source_world()
                 .is_some_and(|room| room.source_world().is_some())
             {
@@ -1145,7 +1155,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 legacy = self.door.lock().await.blocking_cells().clone();
                 &legacy
             };
-            let cells = self.movement_cells;
+            let cells = self.effective_movement_cells();
             let mut attack = self.states.attack.lock().await;
             // Owner time is read once the locks that serialize chase decisions are held, so the
             // Channel search budget sees its windows in order (`RANGED0-RL-03`).

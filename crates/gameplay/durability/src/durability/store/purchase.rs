@@ -14,19 +14,21 @@ impl DurabilityRoot {
         account_id: [u8; 16],
         character_id: [u8; 16],
     ) -> Result<bool, StoreDurabilityError> {
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| {
-            Box::pin(async move {
-                let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                let retained: bool = sqlx::query_scalar(
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let retained: bool = sqlx::query_scalar(
                     "SELECT EXISTS(SELECT 1 FROM store_purchase_requests \
                      WHERE purchase_request_id=encode($1,'hex')::uuid \
                      AND account_id=encode($2,'hex')::uuid AND character_id=encode($3,'hex')::uuid)"
                 ).bind(purchase_request_id.as_slice()).bind(account_id.as_slice())
                     .bind(character_id.as_slice()).fetch_one(&mut *tx).await?;
-                commit_semantic_transaction(tx, deadline).await?;
-                Ok(Ok(retained))
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(retained))
+                })
             })
-        }).await?
+            .await?
     }
 
     /// Retain the first immutable purchase binding; retries return its saved answer.
@@ -56,7 +58,8 @@ impl DurabilityRoot {
         request: PurchaseRequest,
         answer: Vec<u8>,
     ) -> Result<Vec<u8>, StoreDurabilityError> {
-        self.record_store_answer_with_history(request, answer, None).await
+        self.record_store_answer_with_history(request, answer, None)
+            .await
     }
 
     /// Save the Platform answer and its optional immutable Game display row atomically.

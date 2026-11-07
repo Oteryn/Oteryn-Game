@@ -57,3 +57,12 @@ impl crate::play::mailbox::Mailbox {
         }
     }
 }
+
+/// A scope barrier discards coalesced source projections before fresh destination deltas.
+pub(in crate::play) fn activity_scope(
+    pushed: &mut Pushed,
+    scope: AppliedDelta<oteryn_session::activity_scope::ActivityScopeSnapshot>,
+) {
+    *pushed = Pushed::default();
+    pushed.activity_scope = Some(scope.value);
+}

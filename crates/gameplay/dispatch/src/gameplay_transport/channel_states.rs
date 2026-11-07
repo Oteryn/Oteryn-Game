@@ -11,6 +11,8 @@ use tokio::sync::Mutex;
 /// Channel-local session state; keep fields sorted by name.
 #[derive(Default)]
 pub struct ChannelSessionStates {
+    /// Independent mutable Map facts for one source-qualified Instance.
+    pub(super) activity_room: Option<std::sync::Arc<crate::content::QualifiedNativeEntryRoom>>,
     pub(super) analyser: std::sync::Arc<super::analyser::AnalyserStreams>,
     /// APP-3: the appearance-change command state of each session, forgotten with the session.
     pub appearance_commands: appearance_change::AppearanceCommands,
@@ -124,6 +126,7 @@ impl ChannelSessionStates {
     pub(super) fn for_activity(&self) -> Self {
         Self {
             analyser: std::sync::Arc::clone(&self.analyser),
+            boss_activity_handoff: self.boss_activity_handoff.clone(),
             gameplay_idle_policy: self.gameplay_idle_policy,
             input_gate: std::sync::Arc::clone(&self.input_gate),
             server_messages: std::sync::Arc::clone(&self.server_messages),

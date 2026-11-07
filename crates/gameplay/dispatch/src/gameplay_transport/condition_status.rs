@@ -34,8 +34,8 @@ macro_rules! authority_methods {
 }
 pub(super) use authority_methods;
 
-fn catalogue(kind: ConditionType) -> (u8, u8) {
-    match kind {
+fn catalogue(kind: ConditionType) -> Option<(u8, u8)> {
+    Some(match kind {
         ConditionType::DamageOverTime(element) => (
             match element {
                 DotElement::Poison => 1,
@@ -67,7 +67,7 @@ fn catalogue(kind: ConditionType) -> (u8, u8) {
         ConditionType::Light => (18, 0),
         ConditionType::Attributes => (19, 0),
         ConditionType::SpellSkills(id) => (20, id),
-        ConditionType::SpellRegeneration(id) => (21, id),
+        ConditionType::SpellRegeneration(id) => (21, u8::try_from(id).ok()?),
         ConditionType::Outfit => (22, 0),
         ConditionType::IntenseHex => (23, 0),
         ConditionType::Gate(gate) => (
@@ -79,15 +79,17 @@ fn catalogue(kind: ConditionType) -> (u8, u8) {
             0,
         ),
         ConditionType::Agony => (27, 0),
-    }
+    })
 }
 fn append<S: Clone>(
     conditions: &mut std::collections::BTreeMap<(u8, u8), i64>,
     store: &ConditionStore<S>,
     now: u64,
-) {
+) -> Option<()> {
     for (kind, remaining) in store.visible_statuses(now) {
-        let key = catalogue(kind);
+        // The monster-only source marker is not a byte-sized player icon.
+        // Refuse an unrepresentable player snapshot instead of truncating it.
+        let key = catalogue(kind)?;
         conditions
             .entry(key)
             .and_modify(|current| {
@@ -99,6 +101,7 @@ fn append<S: Clone>(
             })
             .or_insert(remaining);
     }
+    Some(())
 }
 pub(super) fn snapshot(
     runtime: &ChannelRuntimeV1,
@@ -123,8 +126,8 @@ pub(super) fn snapshot(
         .actor_conditions_at(actor, Some(session), now)
         .ok()?;
     let mut conditions = std::collections::BTreeMap::new();
-    append(&mut conditions, state.owned_conditions(), now);
-    append(&mut conditions, native, now);
+    append(&mut conditions, state.owned_conditions(), now)?;
+    append(&mut conditions, native, now)?;
     Some(ConditionStatus {
         conditions: conditions
             .into_iter()
@@ -233,5 +236,18 @@ mod tests {
         let stale = GameSessionId::decode(&stale_id).map_err(|e| format!("{e:?}"))?;
         assert!(snapshot(&runtime, &states, actor, stale, 1_000_000).is_none());
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod srx3_source_marker_tests {
+    use super::*;
+    #[test]
+    fn srx3_source_marker_cannot_be_truncated_into_player_condition_status() {
+        assert_eq!(catalogue(ConditionType::SpellRegeneration(88_888)), None);
+        assert_eq!(
+            catalogue(ConditionType::SpellRegeneration(1)),
+            Some((21, 1))
+        );
     }
 }

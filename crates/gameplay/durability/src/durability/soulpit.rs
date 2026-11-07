@@ -20,8 +20,14 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sqlx::{Postgres, Row, Transaction};
 
+mod departure;
 mod entry;
 mod progress;
+mod scope_read;
+mod terminal_read;
+pub(super) use departure::{lock_shared_return, record_shared_return};
+pub use scope_read::{SoulpitScopeBinding, SoulpitScopeMember};
+pub use terminal_read::SoulpitTerminalCleanup;
 
 pub const SOULPIT_ACTIVITY_KEY: &str = "oteryn:activity.soulpit";
 
@@ -159,9 +165,29 @@ impl DurabilityRoot {
         let recovery = authority
             .record_for(self)
             .map_err(|_| SoulpitWriteError::AuthorityRejected)?;
-        assert_recovery_fence(tx, &recovery).await?;
+        self.write_soulpit_entry_with_recovery_in_transaction(
+            tx, permit, &recovery, node, fence, request, native,
+        )
+        .await
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the shared handoff retains the same independent item and recovery authorities"
+    )]
+    pub(crate) async fn write_soulpit_entry_with_recovery_in_transaction(
+        &self,
+        tx: &mut Type2Transaction<'_>,
+        permit: &SpellLanePermit,
+        recovery: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: &SoulpitEntryRequest,
+        native: &NativeGameplayState,
+    ) -> Result<SoulpitEntryWritten, SoulpitWriteError> {
+        assert_recovery_fence(tx, recovery).await?;
         permit.check_scope(fence.runtime_scope)?;
-        entry::write(tx, &recovery, node, fence, request, native).await
+        entry::write(tx, recovery, node, fence, request, native).await
     }
 
     /// A retry returns its exact retained transition before live actor/fence checks. A new

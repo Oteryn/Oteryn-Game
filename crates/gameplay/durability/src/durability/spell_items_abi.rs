@@ -131,6 +131,8 @@ pub struct CastCostBinding {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SpellItemOperation {
+    /// Same physical Ground instance, source-qualified callback only.
+    TransformGround(DurableGroundItemTransform),
     ConsumeCorpse(DurableCorpseReservation),
     RemoveGround(DurableGroundItemReservation),
     MergeInventory(DurableInventoryGrantReservation),
@@ -216,6 +218,16 @@ pub struct DurableGroundItemReservation {
     pub placement: GroundPlacement,
     pub quantity: u32,
     pub contents: Vec<DurableContainedRetirement>,
+}
+
+/// Sealed by the existing scoped Item callback owner after a locked current
+/// Ground read. No external caller can construct a definition mutation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DurableGroundItemTransform {
+    pub(super) current: DurableGroundItemReservation,
+    pub(super) target: QualifiedItemDefinition,
+    pub(super) blocks_movement: bool,
+    pub(super) blocks_projectile: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

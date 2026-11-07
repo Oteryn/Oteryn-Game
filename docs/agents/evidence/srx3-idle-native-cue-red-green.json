@@ -1,0 +1,26 @@
+{
+  "task": "SRX-3",
+  "base": "b2cfa798e3def61002d39a6da8b9de5df5aa2fd8",
+  "test_filter": "gameplay_transport::connection::serve::inbound::tests::native_idle_cues_tests::srx3_idle_native_map_cue_reaches_wire_without_player_movement",
+  "command": "source /tmp/srx3-test-env.sh && <fresh-dispatch-lib-test> --exact <test_filter> --nocapture",
+  "regression": "Only refresh eligibility was temporarily changed to HEAD StepDisposition::Moved; actual native384 offer,19 snapshot2,20 snapshot1,19 delta2, current map pins, no-Move assertion and duplicate-delivery control stayed intact.",
+  "restoration": "All three saved production files byte-equal before normal40n build; no counterfactual body retained.",
+  "checks": [
+    {
+      "case": "old-movement-only-flush",
+      "result": "EXPECTED_FAIL",
+      "tests": 1,
+      "duration_seconds": 57.41,
+      "log_sha256": "6f47c3b231b2b27e6937796f1b4f888eb936bd312e2435c8309207b3ae6957cf",
+      "proof": "idle native cue was stranded until a player step"
+    },
+    {
+      "case": "restored-periodic-flush",
+      "result": "PASS",
+      "tests": 1,
+      "duration_seconds": 66.55,
+      "log_sha256": "3756412011821c539ac7cc22304dacd5f4b8d86beae630d1b25a5aceb6c64b4b",
+      "proof": "test result: ok. 1 passed; 0 failed"
+    }
+  ]
+}

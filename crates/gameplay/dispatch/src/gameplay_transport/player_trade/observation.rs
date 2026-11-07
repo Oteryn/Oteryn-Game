@@ -122,6 +122,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .chain(visible.creatures.iter().map(|e| (VisibleKind::Creature, e)))
             .chain(visible.npcs.iter().map(|e| (VisibleKind::Npc, e)))
             .map(|(kind, e)| super::super::world_spatial::ChannelEntity {
+ source_icons: oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(),
                 display_name: None,
                 health_percent: 100,
                 direction: match runtime
@@ -174,8 +175,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let digest = runtime.content_pin().server_artifact_digest();
         pinned_index(runtime, self.active_generation).ok_or(ResultCode::Rejected)?;
-        let room = self
-            .rooms
+        let room = self.effective_rooms()
             .gate_attack_target()
             .ok_or(ResultCode::Rejected)?;
         let objects = self.door.lock().await;

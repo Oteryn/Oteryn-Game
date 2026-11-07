@@ -7,7 +7,7 @@ pub(super) async fn pending<S, A>(
     stream: &mut S,
     authority: &A,
     session: &mut ServeState,
-) -> Result<Option<AdmittedSession>, ServeEnd>
+) -> Result<Option<(AdmittedSession, Option<u64>)>, ServeEnd>
 where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
@@ -48,5 +48,5 @@ where
     if !authority.finish_activity_switch(source, switch.destination) {
         return Err(ServeEnd::Disconnected);
     }
-    Ok(Some(switch.destination))
+    Ok(Some((switch.destination, switch.movement_effect_start)))
 }

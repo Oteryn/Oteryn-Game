@@ -16,8 +16,12 @@ async fn tree_fixture(h: &Harness, map_mint: bool) -> TestResult<LoopGround> {
         .await?;
     // Explicit location fixture: move the existing eight-level branch below a
     // nonwritable Ground bag. Its leaf is the writable scroll, not its root.
-    sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
-        .bind(id(101).as_slice()).execute(&mut *tx).await?;
+    sqlx::query(
+        "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(id(101).as_slice())
+    .execute(&mut *tx)
+    .await?;
     sqlx::query("INSERT INTO game_item_nested_entries VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,game_character_uuid_v7())")
         .bind(id(101).as_slice()).bind(native::id(native::WORLD).as_slice()).bind(id(111).as_slice()).execute(&mut *tx).await?;
     sqlx::query("UPDATE game_item_instances SET definition_production_key='oteryn:item.tibia.i2854' WHERE item_instance_id=encode($1,'hex')::uuid")
@@ -37,7 +41,16 @@ async fn write_tree(
     text: &str,
     placement: Option<LoopGround>,
 ) -> TestResult<std::result::Result<ItemTextWriteOutcome, ItemTextWriteError>> {
-    write_with_custody(h, item, command, text, native::item_fence()?, None, placement).await
+    write_with_custody(
+        h,
+        item,
+        command,
+        text,
+        native::item_fence()?,
+        None,
+        placement,
+    )
+    .await
 }
 
 #[test]
@@ -51,7 +64,9 @@ fn write_postgres_map_ground_tree_metadata_limits_and_history() -> TestResult {
 }
 
 fn tree_metadata_limits_and_history(map_mint: bool) -> TestResult {
-    let Some(admin) = configured_admin() else { return Ok(()); };
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
     runtime()?.block_on(async move {
         let tag = if map_mint { "write_map_tree" } else { "write_drop_tree" };
         let h = Harness::create(admin, tag, false).await?;
@@ -162,7 +177,9 @@ fn write_postgres_ground_tree_revalidates_ancestry_after_item_lock() -> TestResu
 }
 
 fn tree_revalidates_ancestry_after_lock(owner: bool) -> TestResult {
-    let Some(admin) = configured_admin() else { return Ok(()); };
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
     runtime()?.block_on(async move {
         let tag = if owner { "write_tree_owner_wait" } else { "write_tree_item_wait" };
         let h = Harness::create(admin, tag, false).await?;

@@ -55,6 +55,7 @@ pub struct CreatureBehaviourProfile {
     abilities: BTreeMap<ProjectV2DefinitionRef, ProjectV2AbilityAuthoring>,
     melee: Option<MeleeEntry>,
     native: bool,
+    default_source_faction: bool,
 }
 
 impl CreatureBehaviourProfile {
@@ -143,12 +144,20 @@ impl CreatureBehaviourProfile {
             abilities: projected_abilities,
             melee,
             native,
+            default_source_faction: behavior
+                .faction
+                .as_ref()
+                .is_none_or(|faction| faction.faction == "FACTION_DEFAULT"),
         })
     }
 
     #[must_use]
     pub const fn is_native(&self) -> bool {
         self.native
+    }
+
+    pub(crate) const fn default_source_faction(&self) -> bool {
+        self.default_source_faction
     }
 
     #[must_use]

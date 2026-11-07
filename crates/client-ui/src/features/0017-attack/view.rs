@@ -1,7 +1,10 @@
 use super::*;
 pub fn row_text(entity: &WorldSpatialEntity) -> String {
     let health = match entity.detail {
-        oteryn_client_runtime::attack::EntityDetail::Actor { health_percent, .. } => health_percent,
+        oteryn_client_runtime::attack::EntityDetail::Actor { health_percent, .. }
+        | oteryn_client_runtime::attack::EntityDetail::ActorWithIcons { health_percent, .. } => {
+            health_percent
+        }
         _ => 0,
     };
     let identity: String = entity

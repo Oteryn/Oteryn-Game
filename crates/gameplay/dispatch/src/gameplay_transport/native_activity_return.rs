@@ -902,7 +902,9 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             ..old
         };
         if !attempt.ancillary_installed {
-            source_view.transfer_activity_session_state(&destination_view, old, next)?;
+            source_view
+                .transfer_activity_session_state(&destination_view, old, next)
+                .await?;
             attempt.ancillary_installed = true;
         }
         // The destination's existing death owner takes its own lane and revision
@@ -933,6 +935,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             handoff_id: attempt.request.return_id,
             deadline_unix_ms: None,
             connections: vec![(old, next)],
+            entry_effect_starts: Vec::new(),
         });
         attempt.outcome = Some(outcome.clone());
         Ok(outcome)

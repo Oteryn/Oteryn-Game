@@ -22,10 +22,10 @@ pub mod public_channels;
 
 pub use crate::charm_wire::CyclopediaWireError as ChatWireError;
 use crate::charm_wire::{
-    WireResult, push_message_field, push_nonzero_varint_field, push_varint_field, read_bytes,
-    read_uint32, read_varint, set_once,
+    push_message_field, push_nonzero_varint_field, push_varint_field, read_bytes, read_uint32,
+    read_varint, set_once, WireResult,
 };
-use crate::world_spatial::{ActorPosition, decode_position, encode_position};
+use crate::world_spatial::{decode_position, encode_position, ActorPosition};
 use crate::world_spatial_entities::ENTITY_IDENTITY_BYTES;
 
 /// Registered capability `CHAT_V1`: command type 13, state domain 12.
@@ -273,8 +273,14 @@ fn read_text(input: &[u8], cursor: &mut usize, maximum: usize) -> WireResult<Str
     Ok(text.to_owned())
 }
 
-fn check_position(position: &ActorPosition) -> WireResult<()> {
-    if (0..=MAX_FLOOR).contains(&position.floor) {
+fn check_position(position: &ActorPosition, native: bool) -> WireResult<()> {
+    if (if native {
+        -MAX_FLOOR..=0
+    } else {
+        0..=MAX_FLOOR
+    })
+    .contains(&position.floor)
+    {
         Ok(())
     } else {
         Err(ChatWireError::Malformed)
@@ -478,6 +484,10 @@ pub fn decode_chat_rooms(payload: &[u8]) -> WireResult<ChatRoomSet> {
 
 /// Encodes a line delta (type 1). A line outside the bounds is a server fault.
 pub fn encode_chat_line(line: &ChatLine) -> WireResult<Vec<u8>> {
+    encode_chat_line_with_basis(line, false)
+}
+
+pub(crate) fn encode_chat_line_with_basis(line: &ChatLine, native: bool) -> WireResult<Vec<u8>> {
     let mut output = Vec::with_capacity(MAX_CHAT_LINE_BYTES);
     match line {
         ChatLine::Guild(line) => return guild_room::encode_line(line),
@@ -494,7 +504,7 @@ pub fn encode_chat_line(line: &ChatLine) -> WireResult<Vec<u8>> {
         } => {
             check_text(speaker_name, MAX_CHAT_NAME_BYTES)?;
             check_text(text, MAX_CHAT_TEXT_BYTES)?;
-            check_position(position)?;
+            check_position(position, native)?;
             push_varint_field(&mut output, 1, 1);
             push_message_field(&mut output, 2, &speaker.identity);
             push_varint_field(&mut output, 3, speaker.generation.get());
@@ -540,6 +550,10 @@ struct LineFields {
 }
 
 pub fn decode_chat_line(payload: &[u8]) -> WireResult<ChatLine> {
+    decode_chat_line_with_basis(payload, false)
+}
+
+pub(crate) fn decode_chat_line_with_basis(payload: &[u8], native: bool) -> WireResult<ChatLine> {
     if payload.len() > MAX_CHAT_LINE_BYTES {
         return Err(ChatWireError::LimitExceeded);
     }
@@ -570,7 +584,7 @@ pub fn decode_chat_line(payload: &[u8]) -> WireResult<ChatLine> {
             (8, 2) => {
                 let position = decode_position(read_bytes(input, cursor)?)
                     .map_err(|_| ChatWireError::Malformed)?;
-                check_position(&position)?;
+                check_position(&position, native)?;
                 set_once(&mut f.position, position)
             }
             _ => Err(ChatWireError::Malformed),

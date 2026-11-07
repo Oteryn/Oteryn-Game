@@ -410,6 +410,10 @@ pub(super) fn publish<T: Stepper>(
     outbox: &Outbox,
     held: &mut Vec<WorldSpatialEntity>,
 ) {
+    if outbox.scope_publish(session) {
+        held.clear();
+        return;
+    }
     outbox.hotkey_equip_items(session.hotkey_equip_items());
     outbox.chat_private_publish(session);
     outbox.targeting_refresh(session);

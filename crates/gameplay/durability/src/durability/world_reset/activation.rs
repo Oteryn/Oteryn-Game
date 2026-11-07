@@ -24,7 +24,10 @@ impl DurabilityRoot {
         if let Some(epoch) = activate(self, node, *reset, target).await? {
             return Ok(Some(epoch));
         }
-        if !self.retire_world_reset_ground(authority, node, reset).await? {
+        if !self
+            .retire_world_reset_ground(authority, node, reset)
+            .await?
+        {
             return Ok(None);
         }
         Ok(activate(self, node, *reset, target).await?)
@@ -39,7 +42,12 @@ async fn activate(
 ) -> Result<Option<u64>> {
     let owner = root.clone();
     let node = node.clone();
-    let map = target.movement_cells().scope().map_revision.as_str().to_owned();
+    let map = target
+        .movement_cells()
+        .scope()
+        .map_revision
+        .as_str()
+        .to_owned();
     let server = target.compiled().server_digest();
     let client = target.compiled().client_digest();
     let frame = target.frame_binding().digest();

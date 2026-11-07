@@ -552,21 +552,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
-                    let eq_authority = equipment_owner::assert_equipment_authority_in_transaction(
+                    let actual = equipment_owner::read_current_equipment_in_transaction(
                         &mut tx,
                         owner.root,
                         owner.character,
                         owner.holder,
                         &fence,
-                        command,
                         content.source_digest(),
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
-                    let actual =
-                        equipment_owner::read_equipment_in_transaction(&mut tx, &eq_authority)
-                            .await
-                            .map_err(|_| DurabilityError::Unavailable)?;
                     if actual != equipment {
                         return Err(DurabilityError::Unavailable);
                     }
@@ -825,6 +820,7 @@ pub(super) fn creature_damage(
         CommandRef,
         u16,
     ),
+    cruelty_drain: Option<u64>,
     wheel: Option<(&crate::spell::cast::PlayerSpellState, u64, u64, u64, bool)>,
 ) -> Option<[i64; 2]> {
     use oteryn_gameplay_combat_rules::resolution::{
@@ -875,6 +871,11 @@ pub(super) fn creature_damage(
         element,
         if bow && element == "physical" { 2 } else { 0 },
     )?;
+    let physical = super::cruelty_health_component(physical, cruelty_drain)?;
+    let elemental = super::cruelty_health_component(elemental, cruelty_drain)?;
+    if cruelty_drain.is_some() && physical == 0 && elemental == 0 {
+        return Some([0, 0]);
+    }
     let (physical, elemental) = if let Some((state, now, health, maximum, adjacent)) = wheel {
         if matches!(ranged.damage, RangedDamage::Magic { .. }) {
             let (primary, _) = state
@@ -909,7 +910,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .active_generation
             .and_then(|a| a.native_gameplay())
             .ok_or("content")?;
-        let room = self.rooms.gate_auto_attack().ok_or("room")?;
+        let room = self.effective_rooms().gate_auto_attack().ok_or("room")?;
         let constants = AttackConstants::checked_in().ok_or("constants")?;
         let selected = super::drain::select_swing(
             entry,

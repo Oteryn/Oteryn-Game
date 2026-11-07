@@ -52,9 +52,10 @@ Native buttons and combos disable while pending or unselected. The panel shows
 server progress, rank, cooldown, potion entitlement and all eight gameplay
 outcomes. It never predicts progress, purchases or potion grants. Combat timing
 is a server snapshot, explicitly refreshed by the player. The rotation boundary
-alone is displayed as a labelled local-clock estimate. Status phase is rendered
-as idle/active without inventing a preparation phase that this producer does not
-send. Svargrond controls, reward groups, bytes and the existing key chord remain.
+alone is displayed as a labelled local-clock estimate. SRX-3 extends the producer
+to publish phase 0 idle, 1 preparation and 2 fighting; the native panel renders
+those decoded values. It does not infer phase from the countdown. Svargrond
+controls, reward groups, bytes and the existing key chord remain.
 The native control presentation extends the base's accepted Arena v1 native UI;
 no exact proprietary-client layout parity is claimed.
 

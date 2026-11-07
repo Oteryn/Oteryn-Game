@@ -51,6 +51,30 @@ pub fn sees(player: MovementLocalPosition, creature: MovementLocalPosition) -> b
     }
 }
 
+/// Pinned Creature::canSee: a symmetric eleven-tile viewport from the
+/// monster, independently of the client's reference viewport.
+pub(super) fn sees_native(creature: MovementLocalPosition, player: MovementLocalPosition) -> bool {
+    match (
+        VisibilityPosition::new(creature.x, creature.y, creature.floor),
+        VisibilityPosition::new(player.x, player.y, player.floor),
+        VisibilitySettings::new(23, 23),
+    ) {
+        (Ok(observer), Ok(target), Ok(view)) => view.can_see(observer, target),
+        _ => false,
+    }
+}
+pub(super) fn perceives(
+    native: bool,
+    creature: MovementLocalPosition,
+    player: MovementLocalPosition,
+) -> bool {
+    if native {
+        sees_native(creature, player)
+    } else {
+        sees(player, creature)
+    }
+}
+
 /// Plane Chebyshev distance, ignoring floors.
 #[must_use]
 pub fn plane_distance(from: MovementLocalPosition, to: MovementLocalPosition) -> u64 {
@@ -77,9 +101,16 @@ pub fn perceive(
     creature: MovementLocalPosition,
     players: &[TargetCandidate],
 ) -> Vec<TargetCandidate> {
+    perceive_mode(false, creature, players)
+}
+pub(super) fn perceive_mode(
+    native: bool,
+    creature: MovementLocalPosition,
+    players: &[TargetCandidate],
+) -> Vec<TargetCandidate> {
     let mut perceived = players
         .iter()
-        .filter(|player| sees(player.position, creature))
+        .filter(|player| perceives(native, creature, player.position))
         .copied()
         .collect::<Vec<_>>();
     perceived.sort_by_key(|candidate| canonical_key(creature, candidate));
@@ -221,12 +252,13 @@ pub(super) fn with_current_damage(
     creature: ExactActorRef,
     position: MovementLocalPosition,
     players: &[TargetCandidate],
+    native: bool,
 ) -> Option<Vec<TargetCandidate>> {
     let shares = runtime
         .borrow_combat_death()
         .current_session_damage_shares(creature)
         .ok()?;
-    let mut perceived = perceive(position, players);
+    let mut perceived = perceive_mode(native, position, players);
     for candidate in &mut perceived {
         candidate.damage = shares
             .iter()

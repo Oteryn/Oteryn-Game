@@ -100,8 +100,14 @@ impl FeeBurnCause {
                 Ok(())
             }
             Self::QuestAccessPurchase { .. } => Ok(()),
-            Self::HirelingService { service, .. } if service.starts_with("oteryn:service.hireling.") => Ok(()),
-            Self::PreyListReroll { slot: 1..=3, .. } | Self::PreyPickAgain { slot: 1..=3, .. } => Ok(()),
+            Self::HirelingService { service, .. }
+                if service.starts_with("oteryn:service.hireling.") =>
+            {
+                Ok(())
+            }
+            Self::PreyListReroll { slot: 1..=3, .. } | Self::PreyPickAgain { slot: 1..=3, .. } => {
+                Ok(())
+            }
             Self::GemReveal { .. } | Self::GemSwitchDomain { .. } | Self::GemGradeUp { .. } => {
                 Ok(())
             }
@@ -141,7 +147,11 @@ impl FeeBurnCause {
     }
     pub(in super::super) fn audit(&self) -> FeeBurnCauseV1 {
         match self {
-            Self::ArenaEntry { occurrence } => FeeBurnCauseV1::ArenaEntry(OneItemNpcPurchaseV1 { service_key: self.key().into(), occurrence: occurrence.to_vec(), atelier_proof: Vec::new() }),
+            Self::ArenaEntry { occurrence } => FeeBurnCauseV1::ArenaEntry(OneItemNpcPurchaseV1 {
+                service_key: self.key().into(),
+                occurrence: occurrence.to_vec(),
+                atelier_proof: Vec::new(),
+            }),
             Self::BosstiarySlot { occurrence } => {
                 FeeBurnCauseV1::BosstiarySlot(OneItemNpcPurchaseV1 {
                     service_key: self.key().into(),
@@ -161,10 +171,21 @@ impl FeeBurnCause {
                     proof: proof.clone(),
                 })
             }
-            Self::QuestAccessPurchase { occurrence } => FeeBurnCauseV1::QuestAccessPurchase(OneItemNpcPurchaseV1 {
-                service_key:self.key().into(),occurrence:occurrence.to_vec(),atelier_proof:Vec::new(),
+            Self::QuestAccessPurchase { occurrence } => {
+                FeeBurnCauseV1::QuestAccessPurchase(OneItemNpcPurchaseV1 {
+                    service_key: self.key().into(),
+                    occurrence: occurrence.to_vec(),
+                    atelier_proof: Vec::new(),
+                })
+            }
+            Self::HirelingService {
+                service,
+                occurrence,
+            } => FeeBurnCauseV1::HirelingService(OneItemNpcPurchaseV1 {
+                service_key: service.clone(),
+                occurrence: occurrence.to_vec(),
+                atelier_proof: Vec::new(),
             }),
-            Self::HirelingService { service, occurrence } => FeeBurnCauseV1::HirelingService(OneItemNpcPurchaseV1 { service_key: service.clone(), occurrence: occurrence.to_vec(), atelier_proof: Vec::new() }),
             Self::PreyListReroll { occurrence, .. } | Self::PreyPickAgain { occurrence, .. } => {
                 FeeBurnCauseV1::PreyListReroll(OneItemNpcPurchaseV1 {
                     service_key: self.key().into(),

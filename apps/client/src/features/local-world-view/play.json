@@ -5,6 +5,7 @@
   ],
   "events": {
     "WorldMap": "world_map",
-    "WorldMapSnapshot": "world_map_snapshot"
+    "WorldMapSnapshot": "world_map_snapshot",
+    "ActivityScope": "activity_scope"
   }
 }

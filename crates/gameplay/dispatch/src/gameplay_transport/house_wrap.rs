@@ -222,8 +222,8 @@ pub(super) async fn execute(
                     },
                 )
                 .ok()?
-                || owner.movement_cells.index().lookup(
-                    owner.movement_cells.scope(),
+                || owner.effective_movement_cells().index().lookup(
+                    owner.effective_movement_cells().scope(),
                     crate::content::LogicalCell {
                         x: cell.x,
                         y: cell.y,

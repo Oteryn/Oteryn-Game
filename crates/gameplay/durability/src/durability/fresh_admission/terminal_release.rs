@@ -180,5 +180,4 @@ impl FreshAdmissionStore {
         };
         Ok(Some(transition))
     }
-
 }

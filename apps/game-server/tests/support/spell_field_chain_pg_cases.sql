@@ -41,7 +41,7 @@ BEGIN
  END IF;
  IF with_audit THEN
   SELECT * INTO STRICT r FROM game_spell_field_temporal_receipts WHERE transaction_id=t;
-  body:=convert_to(jsonb_build_object('receipt',to_jsonb(r),'schedule',to_jsonb(p))::TEXT,'UTF8');
+  body:=convert_to(jsonb_build_object('receipt',game_spell_field_temporal_receipt_json(r),'schedule',to_jsonb(p))::TEXT,'UTF8');
   INSERT INTO game_spell_field_temporal_audit(event_id,transaction_id,envelope,envelope_sha256) VALUES(e,t,body,sha256(body));
  END IF;
  RETURN t;

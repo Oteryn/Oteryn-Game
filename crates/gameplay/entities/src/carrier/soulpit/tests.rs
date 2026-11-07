@@ -92,7 +92,7 @@ fn request(wave: u8, ability: BossAbility) -> SoulpitWaveRequest {
         boss_ability: ability,
         now_micros: 4_000_000,
         positions: std::array::from_fn(|index| {
-            if wave == 4 && index == 6 {
+            Some(if wave == 4 && index == 6 {
                 MovementLocalPosition {
                     x: 32376,
                     y: 31144,
@@ -104,7 +104,7 @@ fn request(wave: u8, ability: BossAbility) -> SoulpitWaveRequest {
                     y: 31133,
                     floor: 8,
                 }
-            }
+            })
         }),
     }
 }
@@ -170,7 +170,10 @@ fn instance_wave_attempts_preserve_partial_failure_and_replay_without_refill() -
         142
     );
     let mut conflict = request;
-    conflict.positions[0].x += 1;
+    conflict.positions[0]
+        .as_mut()
+        .ok_or("selected source position")?
+        .x += 1;
     assert_eq!(
         carrier.spawn_soulpit_wave(&owner, &pin, &policies, conflict, |_| true),
         Err(CarrierError::PlanConflict)

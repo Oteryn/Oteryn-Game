@@ -4,6 +4,13 @@
     dead_code,
     reason = "spell import candidate; awaits its production owner caller"
 )]
+#[path = "native_gameplay/boss_corpse_terminal.rs"]
+mod boss_corpse_terminal;
+#[path = "native_gameplay/boss_movement_bindings.rs"]
+mod boss_movement_bindings;
+#[path = "native_gameplay/boss_reward_bindings.rs"]
+mod boss_reward_bindings;
+
 use super::character_progression_content::{
     CharacterProgressionContent, MAX_PROGRESSION_SECTION_BYTES,
 };
@@ -33,6 +40,7 @@ pub use cosmetics_view::NativeCosmeticsView;
 mod market_catalogue;
 
 pub mod mount_taming;
+mod primal_callbacks;
 
 mod native_cosmetics;
 mod starting_loadout_input;
@@ -1170,6 +1178,30 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 return Err(invalid("native gameplay candidate Item binding conflict"));
             }
         }
+        let mut source_reward_items = boss_reward_bindings::qualified_records()?;
+        for record in &source_reward_items {
+            let binding = &record.production_binding;
+            if admitted
+                .insert(binding.external_id.clone(), binding.clone())
+                .is_some()
+            {
+                return Err(invalid("native boss reward exact binding conflict"));
+            }
+        }
+        let movement_items = boss_movement_bindings::qualified_records()?;
+        boss_movement_bindings::admit_exact_bindings(&mut admitted, &movement_items)?;
+        source_reward_items.extend(movement_items);
+        let terminal = boss_corpse_terminal::qualified_record()?;
+        if admitted
+            .insert(
+                terminal.production_binding.external_id.clone(),
+                terminal.production_binding.clone(),
+            )
+            .is_some()
+        {
+            return Err(invalid("native Elder corpse terminal binding conflict"));
+        }
+        source_reward_items.push(terminal);
         for record in &items.records {
             let binding = &record.production_binding;
             let external = binding
@@ -1188,7 +1220,14 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
             {
                 return Err(invalid("native gameplay item production binding"));
             }
-            if binding.external_id == "40450" {
+            if let Some(expected) = source_reward_items
+                .iter()
+                .find(|expected| expected.production_binding.external_id == binding.external_id)
+            {
+                if record != expected {
+                    return Err(invalid("native boss reward complete source Item policy"));
+                }
+            } else if binding.external_id == "40450" {
                 use super::ReferenceItemField as F;
                 let F::Known(physical) = &record.semantics.physical else {
                     return Err(invalid("native gameplay40450 source physics"));
@@ -1455,9 +1494,13 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         .then(|| super::creature_reward::LootTablesSection::decode(sections[11], &creatures))
         .transpose()?;
     let reward_table = Arc::new(
-        super::creature_reward::CreatureRewardTable::from_pin(&creatures, loot.as_ref())
-            .with_daily_boss_equipment(items.as_ref())
-            .with_encounter_items(items.as_ref()),
+        super::creature_reward::CreatureRewardTable::from_pin_with_native_corpses(
+            &creatures,
+            loot.as_ref(),
+            items.as_ref(),
+        )
+        .with_daily_boss_equipment(items.as_ref())
+        .with_encounter_items(items.as_ref()),
     );
     let cosmetics = if is_v9 {
         let mut cosmetics = native_cosmetics::decode(sections[12])?
@@ -1467,8 +1510,9 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
     } else {
         None
     };
-    let policies = CompiledCreaturePolicies::from_active_artifact(source_digest, records)
+    let mut policies = CompiledCreaturePolicies::from_active_artifact(source_digest, records)
         .map_err(|_| invalid("native gameplay creature policy table"))?;
+    policies.bind_soul_war_health_callbacks(&creatures);
     Ok(DecodedNativeGameplay {
         baseline: sections[0],
         state: NativeGameplayState {
@@ -2744,6 +2788,40 @@ mod tests {
         changed.spell_appearances = Some(pinned(b"{}"));
         assert!(compile_native_gameplay(baseline.compiled(), &changed).is_err());
     }
+    #[test]
+    fn srx3_reward_binding_requires_complete_source_profile_at_real_decoder() {
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let records = boss_reward_bindings::qualified_records().unwrap();
+        let original = serde_json::json!({
+            "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1", "records": records,
+        });
+        let mut supplied = input();
+        let bytes = serde_json::to_vec(&original).unwrap();
+        supplied.item_profiles = Some(pinned(&bytes));
+        let compiled = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&compiled.server_artifact).unwrap();
+        assert!(
+            decoded
+                .state
+                .item_policy("oteryn:item.tibia.i43946", "definition-r1")
+                .is_some()
+        );
+        for pointer in [
+            "/records/0/production_binding_qualification/scope",
+            "/records/0/authoring/item/revision",
+        ] {
+            let mut changed = original.clone();
+            *changed.pointer_mut(pointer).unwrap() = "unqualified-splice".into();
+            let bytes = serde_json::to_vec(&changed).unwrap();
+            supplied.item_profiles = Some(pinned(&bytes));
+            assert!(
+                compile_native_gameplay(baseline.compiled(), &supplied).is_err(),
+                "{pointer}"
+            );
+        }
+    }
+
     #[test]
     fn existing_twenty_two_record_baseline_is_preserved_exactly_by_envelope() {
         let source = test_source(3).unwrap();
@@ -4059,8 +4137,17 @@ pub fn retained_callback_native_fixture(
 ) -> NativeGameplayState {
     let path = std::env::var_os("OTERYN_FULL_SPELL_TEST_MANIFEST")
         .expect("explicit actual native manifest required for callback authority test");
-    let input = NativeGameplayInput::from_manifest(Path::new(&path))
-        .expect("qualified native callback test fixture");
+    retained_callback_native_fixture_at(world, Path::new(&path))
+}
+
+#[cfg(any(test, feature = "test-support"))]
+#[allow(clippy::expect_used)]
+pub fn retained_callback_native_fixture_at(
+    world: oteryn_protocol_oteryn::WorldId,
+    path: &Path,
+) -> NativeGameplayState {
+    let input =
+        NativeGameplayInput::from_manifest(path).expect("qualified native callback test fixture");
     let room = super::qualify_selected_native_gameplay_room(world, &input)
         .expect("qualified native callback test fixture");
     let staged = super::production::StagedGeneration::stage(

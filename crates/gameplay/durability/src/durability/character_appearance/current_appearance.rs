@@ -40,7 +40,8 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         grant_keys: Vec<String>,
     ) -> Result<CurrentCharacterAppearance, AppearanceWriteError> {
-        self.read_appearance_state_in_scope(authority, node, fence, grant_keys, ReadScope::Channel).await
+        self.read_appearance_state_in_scope(authority, node, fence, grant_keys, ReadScope::Channel)
+            .await
     }
 
     /// Read-only House projection. The native named-House proof replaces only the Channel
@@ -54,7 +55,14 @@ impl DurabilityRoot {
         origin_channel: [u8; 16],
         grant_keys: Vec<String>,
     ) -> Result<CurrentCharacterAppearance, AppearanceWriteError> {
-        self.read_appearance_state_in_scope(authority, node, fence, grant_keys, ReadScope::House { origin_channel }).await
+        self.read_appearance_state_in_scope(
+            authority,
+            node,
+            fence,
+            grant_keys,
+            ReadScope::House { origin_channel },
+        )
+        .await
     }
 
     async fn read_appearance_state_in_scope(
@@ -66,9 +74,11 @@ impl DurabilityRoot {
         scope: ReadScope,
     ) -> Result<CurrentCharacterAppearance, AppearanceWriteError> {
         if fence.character_lease_generation == 0
-            || !matches!((scope, fence.runtime_scope),
+            || !matches!(
+                (scope, fence.runtime_scope),
                 (ReadScope::Channel, RuntimeScopeRefV1::Channel { .. })
-                | (ReadScope::House { .. }, RuntimeScopeRefV1::Instance { .. }))
+                    | (ReadScope::House { .. }, RuntimeScopeRefV1::Instance { .. })
+            )
         {
             return Err(AppearanceWriteError::InvalidInput);
         }

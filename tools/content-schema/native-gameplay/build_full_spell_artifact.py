@@ -260,18 +260,81 @@ def qualify_item_closure(catalog, provider):
     indexed = {identity(row['authoring']['item']): row for row in provider['records']}
     if len(indexed) != len(provider['records']):
         raise ValueError('Duplicate authored Item provider identity')
+    # Bounded source-qualified references declared in the canonical graph.
+    # Their binding packet grants no custody authority without the complete
+    # native profile, which must match the source capture byte-for-byte in data.
+    sys.path.insert(0, str(ROOT/'tools/content-migration'))
+    import boss_reward_yield_profiles as boss_rewards
+    extra_bindings, extra_packet = boss_rewards.binding_extension(ROOT)
+    extra_raw, extra_profiles = read(ROOT/boss_rewards.PATH)
+    if json.loads((ROOT/boss_rewards.PIN_PATH).read_bytes()) != {
+            'path': boss_rewards.PATH, 'sha256': digest(extra_raw)}:
+        raise ValueError('Boss reward Item source capture pin mismatch')
+    extra_records = {row['production_binding']['external_id']: row
+                     for row in extra_profiles['records']
+                     if row['production_binding']['external_id'] in extra_bindings}
+    if set(extra_records) != set(extra_bindings) or set(extra_bindings) & bindings.keys():
+        raise ValueError('Boss reward Item exact binding extension mismatch')
+    extra_packets = {identifier: extra_packet for identifier in extra_bindings}
+    import boss_movement_item_profiles as boss_movement
+    movement_raw, movement_profiles = read(ROOT/boss_movement.PATH)
+    movement_packet = boss_movement.packet()
+    if (json.loads((ROOT/boss_movement.PIN_PATH).read_bytes()) != {
+            'path': boss_movement.PATH, 'sha256': digest(movement_raw)}
+            or json.loads((ROOT/boss_movement.PACKET).read_bytes()) != movement_packet
+            or movement_profiles['schema'] != 'OTERYN_NATIVE_BOSS_MOVEMENT_ITEMS/v1'
+            or movement_profiles['source_revision'] != boss_movement.base.PIN
+            or movement_profiles['ids'] != sorted(boss_movement.IDS)
+            or len(movement_profiles['records']) != len(boss_movement.IDS)
+            or {row['production_binding']['external_id'] for row in movement_profiles['records']}
+               != {str(identifier) for identifier in boss_movement.IDS}):
+        raise ValueError('Boss movement Item source capture authority mismatch')
+    for binding in movement_packet['bindings']:
+        identifier = binding['external_id']
+        if identifier in bindings or identifier in extra_bindings:
+            raise ValueError('Boss movement Item binding conflict')
+        extra_bindings[identifier] = binding
+        extra_packets[identifier] = movement_packet
+    for record in movement_profiles['records']:
+        identifier = record['production_binding']['external_id']
+        if identifier in extra_records:
+            raise ValueError('Boss movement Item source record conflict')
+        extra_records[identifier] = record
+    import boss_corpse_profiles as corpse_profiles
+    import boss_corpse_terminal_reference as corpse_terminal
+    terminal_packet = corpse_terminal.checked_packet(ROOT)
+    terminal_raw, terminal_capture = read(ROOT/corpse_profiles.PATH)
+    if (json.loads((ROOT/corpse_profiles.PIN_PATH).read_bytes()) != {
+            'path': corpse_profiles.PATH, 'sha256': digest(terminal_raw)}
+            or len(terminal_capture['records']) != 51):
+        raise ValueError('Elder terminal source capture authority mismatch')
+    terminal_records = [record for record in terminal_capture['records']
+                        if record['production_binding']['external_id'] == '43666']
+    if len(terminal_records) != 1 or len(terminal_packet['bindings']) != 1:
+        raise ValueError('Elder terminal exact source cardinality')
+    terminal_binding = terminal_packet['bindings'][0]
+    if ('43666' in bindings or '43666' in extra_bindings or '43666' in extra_records
+            or terminal_records[0]['production_binding'] != terminal_binding):
+        raise ValueError('Elder terminal source identity conflict')
+    extra_bindings['43666'] = terminal_binding
+    extra_packets['43666'] = terminal_packet
+    extra_records['43666'] = terminal_records[0]
     qualified = []
     for ref in sorted(requested):
         if ref not in indexed:
             raise ValueError(f'Missing exact authored Item provider reference: {ref}')
         row = indexed[ref]; external = ref[1].removeprefix('candidate:item/')
-        if ref[2] != 'spell-p2-r21' or external == ref[1] or not external.isdigit():
+        exact_extra = external in extra_records and ref == identity(extra_records[external]['authoring']['item'])
+        if (ref[2] != 'spell-p2-r21' and not exact_extra) or external == ref[1] or not external.isdigit():
             raise ValueError(f'Wrong Item importer reference: {ref}')
-        expected = packet['bindings'][0] if external == '40450' else bindings.get(external)
+        expected = packet['bindings'][0] if external == '40450' else bindings.get(external, extra_bindings.get(external))
         if not expected or row['production_binding'] != expected:
             raise ValueError(f'Actual SourceIdentityBinding mismatch: {ref}')
         if external == '40450' and row['production_binding_qualification'] != packet:
             raise ValueError('Item40450 full qualification packet was changed or truncated')
+        if external in extra_records and (row != extra_records[external]
+                or row['production_binding_qualification'] != extra_packets.get(external)):
+            raise ValueError('Boss reward Item full source profile was changed or truncated')
         target = expected['target']
         definition = {'family':target['family'], 'production_key':target['key'], 'revision_ref':target['revision']}
         if row['production_definition'] != definition:
@@ -397,6 +460,96 @@ def item_facts(definitions: Path = ITEM_DEFINITIONS, appearances: Path = APPEARA
     return facts
 
 
+def known_native(field):
+    return field.get('value') if isinstance(field, dict) and field.get('state') == 'KNOWN' else None
+
+
+def native_item_semantics(ref: dict, profile: dict, destinations: set[str]) -> dict | None:
+    """Read already-qualified exact native facts; never infer unknown physics."""
+    exact = {'family': ref['family'], 'production_key': ref['key'],
+             'revision_ref': ref['revision']}
+    binding = profile.get('production_binding', {})
+    admission = profile.get('admission', {})
+    if (ref['family'] != 'Item' or profile.get('production_definition') != exact
+            or binding.get('disposition') != 'EXACT' or binding.get('target') != ref
+            or admission.get('materializable') is not True
+            or not destinations <= set(admission.get('legal_destinations', []))):
+        return None
+    semantics = profile.get('semantics', {})
+    physical = known_native(semantics.get('physical', {}))
+    classification = known_native(semantics.get('classification', {}))
+    stack = known_native(semantics.get('stack', {}))
+    if not all(isinstance(value, dict) for value in (physical, classification, stack)):
+        return None
+    if (type(known_native(physical.get('movable', {}))) is not bool
+            or type(known_native(physical.get('pickupable', {}))) is not bool
+            or type(known_native(physical.get('weight', {}))) is not int
+            or not 0 <= known_native(physical['weight']) <= 0xffffffff
+            or classification.get('item_type', {}).get('state') not in ('KNOWN', 'NOT_APPLICABLE')
+            or type(known_native(stack.get('stackable', {}))) is not bool):
+        return None
+    stackable = known_native(stack['stackable'])
+    if admission.get('stack_class') != ('StackCapable' if stackable else 'NonStackable'):
+        return None
+    return semantics
+
+
+def native_corpse_capacity(ref: dict, profile: dict) -> int | None:
+    """Ground-container admission applies only to canonical corpse mint purposes."""
+    semantics = native_item_semantics(ref, profile, {'Ground'})
+    if semantics is None:
+        return None
+    classification = known_native(semantics['classification'])
+    container = known_native(semantics.get('container', {}))
+    stack = known_native(semantics['stack'])
+    if (known_native(classification['item_type']) != 'CONTAINER'
+            or known_native(stack['stackable']) is not False or not isinstance(container, dict)):
+        return None
+    capacity = known_native(container.get('capacity', {}))
+    # Physical capacity and the existing 30-entry MINT work bound are distinct.
+    # Crystal201189f items.xml declares48 for these exact Soul War corpses.
+    # Ground-only physical capacity does not raise the30-item MINT work bound.
+    source_48 = {f'oteryn:item.tibia.i{i}' for i in (
+        33797,33801,33805,33809,33813,33817,33859,33863,33867,33871,33875,33889,
+        33897,33901,33905,33909)}
+    if (type(capacity) is int and capacity == 48 and ref['key'] in source_48
+            and profile['admission']['legal_destinations'] == ['Ground']):
+        return capacity
+    return capacity if type(capacity) is int and 1 <= capacity <= 30 else None
+
+
+def native_loot_yield_facts(ref: dict, profile: dict) -> dict | None:
+    """Normal yields additionally require admitted carried custody and pickup physics."""
+    semantics = native_item_semantics(ref, profile, {'Ground', 'CharacterInventory'})
+    if semantics is None:
+        return None
+    physical = known_native(semantics['physical'])
+    if (known_native(physical['movable']) is not True
+            or known_native(physical['pickupable']) is not True):
+        return None
+    container = semantics.get('container', {})
+    capacity = None
+    if container.get('state') == 'KNOWN':
+        capacity = known_native(container.get('value', {}).get('capacity', {}))
+        if type(capacity) is not int or not 0 < capacity <= 0xffffffff:
+            return None
+    elif container.get('state') != 'NOT_APPLICABLE':
+        return None
+    charges = semantics.get('charges', {})
+    count = None
+    if charges.get('state') == 'KNOWN':
+        count = known_native(charges.get('value', {}).get('count', {}))
+        if type(count) is not int or not 0 <= count <= 0xffffffff:
+            return None
+    elif charges.get('state') != 'NOT_APPLICABLE':
+        return None
+    fact = {'item': ref, 'materializable': True, 'container_capacity': capacity,
+            'stackable': known_native(known_native(semantics['stack'])['stackable'])}
+    if count:
+        fact['charges'] = count
+    return fact
+
+
 def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIONS,
                 loot_definitions: Path = LOOT_DEFINITIONS, item_definitions: Path = ITEM_DEFINITIONS) -> bytes:
     """The `loot_tables` section (OTERYN_NATIVE_LOOT_TABLES/v1, OTNGP08): one `creature_loot` row per
@@ -419,6 +572,12 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
             tables[definition['identity']['key']] = definition
     facts = item_facts(item_definitions)
     bindings, named, used = {}, {}, {}
+    corpse_refs, yield_keys, corpse_tables = {}, set(), {}
+    profile_path = item_definitions / 'spell-native-profiles.json'
+    _, native_profiles = read(profile_path) if profile_path.exists() else (b'', {'records': []})
+    native_by_key = {}
+    for profile in native_profiles['records']:
+        native_by_key.setdefault(profile['production_definition']['production_key'], []).append(profile)
 
     def name(ref):
         fact = facts.get(ref['key'])
@@ -438,18 +597,50 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
             corpse = record['profile']['data']['profile']['details'].get('corpse_item')
             if corpse is not None:
                 name(corpse)
+                corpse_refs[corpse['key']] = corpse
             loot = definition['loot']
             if loot is not None:
                 table = tables.get(loot['key'])
                 if table is None or table['identity'] != loot:
                     raise ValueError(f"Creature loot reference has no exact loot table: {loot['key']}")
                 used[loot['key']] = table
+                if corpse is not None:
+                    corpse_tables.setdefault(loot['key'], set()).add(corpse['key'])
                 def name_entries(entries):
                     for entry in entries:
                         name(entry['item'])
+                        yield_keys.add(entry['item']['key'])
                         name_entries(entry.get('children', []))
                 name_entries(table['entries'])
         bindings[target['key']] = {'creature': target, 'loot': loot}
+    # Only canonical current CreatureProfile corpse references receive stronger native
+    # Ground admission. A reference also used as an ordinary loot yield retains its
+    # original static facts, so this producer cannot widen general yield admission.
+    qualified_corpses = set()
+    for key, ref in corpse_refs.items():
+        profiles = native_by_key.get(key, [])
+        if key in yield_keys or len(profiles) != 1:
+            continue
+        capacity = native_corpse_capacity(ref, profiles[0])
+        if capacity is not None:
+            facts[key]['materializable'] = True
+            facts[key]['container_capacity'] = capacity
+            qualified_corpses.add(key)
+    # Complete only these source-qualified corpse rows' existing loot closures.
+    # Ordinary yields retain the stronger Inventory + Ground + pickup admission;
+    # Ground-only corpse admission never authorizes a normal yield.
+    def admit_yields(entries):
+        for entry in entries:
+            key = entry['item']['key']
+            profiles = native_by_key.get(key, [])
+            if not facts[key]['materializable'] and len(profiles) == 1:
+                native = native_loot_yield_facts(entry['item'], profiles[0])
+                if native is not None:
+                    facts[key].update(native)
+            admit_yields(entry.get('children', []))
+    for key, corpses in corpse_tables.items():
+        if corpses & qualified_corpses:
+            admit_yields(used[key]['entries'])
     # FORGECREATURE: this resource is added by the live fiend's death classification,
     # rather than by every creature's static loot table. Preserve core admission facts.
     sliver = facts.get('oteryn:item.tibia.i37109')

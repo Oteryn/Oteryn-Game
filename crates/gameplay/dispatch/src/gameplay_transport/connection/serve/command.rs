@@ -24,6 +24,13 @@ where
         arrived_while_buffered,
         buffered_original,
     } = input;
+    // Also fence direct/previously buffered dispatch; this is before integrity,
+    // command reservation, replay acknowledgement or any owner invocation.
+    match command_session_matches(&frame, session.admitted, session.require_session_binding) {
+        Ok(false) => return Ok(()),
+        Ok(true) => {}
+        Err(error) => return Err(close(stream, session.admitted, error).await),
+    }
     let command = match decode_wire_envelope(&frame) {
         Err(error) => return Err(close(stream, session.admitted, error).await),
         Ok(envelope) if envelope.connection_generation() != session.generation => {

@@ -11,7 +11,6 @@ use super::character_authority::{
     ReconciledCharacterAuthority, SERVER_BUILD_ID, Security, account_security,
     assert_recovery_fence, current_interpretation, uuid_text,
 };
-use oteryn_gameplay_characters::character_authority_audit::{EVENT_SCHEMA_REVISION, EVENT_TYPE_CHARACTER_AUTHORITY_BOOTSTRAPPED, RETENTION_PROFILE, encode_bootstrap};
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation};
 use super::{DurabilityError, DurabilityRoot};
@@ -19,6 +18,10 @@ use crate::domain::character_name::CharacterName;
 use crate::native_admission_source::character_commands::{
     CREATE_COMMAND, Decision, ISSUER_AUTHORITY, Input, command_valid, counter,
     source_authority_valid, uuid_v7,
+};
+use oteryn_gameplay_characters::character_authority_audit::{
+    EVENT_SCHEMA_REVISION, EVENT_TYPE_CHARACTER_AUTHORITY_BOOTSTRAPPED, RETENTION_PROFILE,
+    encode_bootstrap,
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};

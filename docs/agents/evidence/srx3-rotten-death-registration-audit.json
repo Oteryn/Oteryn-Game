@@ -1,0 +1,85 @@
+{
+  "schema": "SRX3_ROTTEN_DEATH_REGISTRATION_AUDIT/v1",
+  "sources": [
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/bosses/murcion.lua",
+      "git_blob": "ad091f747580d0c0c84f0c4a5d1d7d77928d3b5a",
+      "sha256": "005136bb67ef49abb6696f26cabe7bc3bfeeefd56bcffafb71b3b83c434adc81"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/bosses/bakragore.lua",
+      "git_blob": "c13592e7ade1fcbf041899ce3939141559670597",
+      "sha256": "85a8805daa48b77e9ba347a01b77d7f3e1486c9a33f495d4bd882acb8986ba0d"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/rotten_blood_quest/creaturescripts_bosses_killed.lua",
+      "git_blob": "2bb1fa3d53c29f15df5e0267c109ea8abb75c797",
+      "sha256": "996765c0fc761a5e05c83a09b8986aec8a151a370851211832710a7e44db1831"
+    }
+  ],
+  "registry_audit": {
+    "canary": {
+      "scanned_scripts": 2373,
+      "missing_script_blobs": [],
+      "hits": [
+        {
+          "path": "data-otservbr-global/scripts/quests/rotten_blood_quest/creaturescripts_bosses_killed.lua",
+          "line": 1,
+          "text": "local bossesRottenBlood = CreatureEvent(\"RottenBloodBossDeath\")",
+          "sha256": "996765c0fc761a5e05c83a09b8986aec8a151a370851211832710a7e44db1831"
+        }
+      ]
+    },
+    "crystal": {
+      "scanned_scripts": 3229,
+      "missing_script_blobs": [],
+      "hits": [
+        {
+          "path": "data-global/scripts/quests/rotten_blood_quest/eventcallback_on_combat_rottenblood.lua",
+          "line": 270,
+          "text": "local deathCallback = CreatureEvent(\"RottenBloodMonsterDeath\")",
+          "sha256": "290dd720bfc56cddc1c64669da34aafcd41fa924f317d7590e435d766ca70d6a"
+        },
+        {
+          "path": "data-global/scripts/quests/rotten_blood_quest/startup_register_events.lua",
+          "line": 26,
+          "text": "mType:registerEvent(\"RottenBloodMonsterDeath\")",
+          "sha256": "b0016a207f5fd5e0cb6db4bb722fa6e4896d40878fe2e925179f557a2c9710cd"
+        },
+        {
+          "path": "data-global/scripts/quests/rotten_blood_quest/startup_register_events.lua",
+          "line": 27,
+          "text": "logger.debug(\"Registered RottenBloodMonsterDeath event for monster: {}\", monsterName)",
+          "sha256": "b0016a207f5fd5e0cb6db4bb722fa6e4896d40878fe2e925179f557a2c9710cd"
+        }
+      ]
+    }
+  },
+  "selected_native_source": {
+    "guard": "crates/gameplay/content/src/content/native_rotten_blood_callbacks.rs:qualifies_document",
+    "non_pillar": "Exact Canary47dfd51",
+    "pillar": "Exact Crystal201189f"
+  },
+  "registered_canary_events": {
+    "murcion": {
+      "name": "RottenBloodBossDeath",
+      "declaration_line": 17,
+      "handler_line": 1,
+      "registration_line": 22
+    },
+    "bakragore": {
+      "name": "RottenBloodBakragoreDeath",
+      "declaration_line": 17,
+      "handler_line": 25,
+      "registration_line": 50
+    }
+  },
+  "crystal_difference": "RottenBloodBossDeath is declared by five monster arrays but has no loaded definition in complete cached scripts and bounded event XML audit. BakragoreMechanicsDeath is a distinct registered Crystal mechanics handler, not the Canary quest handler. Overlay registration precedence must be explicit.",
+  "runtime_status": "Real native Murcion HP-lethal to canonical death-notice regression mounted; not yet executed. No new descriptor admission or handler authority granted by this evidence."
+}

@@ -16,8 +16,12 @@ use {
     },
 };
 
+#[path = "spell_magnitude_owner_tests/soul_war.rs"]
+mod soul_war;
 #[path = "spell_magnitude_owner_tests/soulpit_hex.rs"]
 mod soulpit_hex;
+#[path = "spell_magnitude_owner_tests/w01_health.rs"]
+mod w01_health;
 
 struct Fixture {
     runtime: ChannelRuntimeV1,
@@ -34,11 +38,29 @@ fn fixture_with_damage_healing(source_percent: i64) -> Fixture {
     fixture_with_capacity(source_percent, false)
 }
 fn fixture_with_capacity(source_percent: i64, extra_slots: bool) -> Fixture {
+    fixture_with_source(source_percent, extra_slots, false)
+}
+fn fixture_with_source(source_percent: i64, extra_slots: bool, soul_war: bool) -> Fixture {
+    fixture_with_source_kind(source_percent, extra_slots, soul_war, None)
+}
+fn fixture_with_source_kind(
+    source_percent: i64,
+    extra_slots: bool,
+    soul_war: bool,
+    native_source: Option<&str>,
+) -> Fixture {
     let uuid = |tag| [1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag];
     let world = crate::foundation::WorldId::decode(&uuid(0x60)).expect("world");
-    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
-        world,
-        crate::foundation::ChannelId::decode(&uuid(0x61)).expect("channel"),
+    let scope = if soul_war {
+        crate::foundation::RuntimeScopeRefV1::instance(world, uuid(0x61)).expect("Instance")
+    } else {
+        crate::foundation::RuntimeScopeRefV1::channel(
+            world,
+            crate::foundation::ChannelId::decode(&uuid(0x61)).expect("channel"),
+        )
+    };
+    let mut runtime = ChannelRuntimeV1::from_committed_scope_assignment(
+        scope,
         crate::foundation::NodeId::decode(&uuid(0x62)).expect("node"),
         1,
         1,
@@ -71,8 +93,13 @@ fn fixture_with_capacity(source_percent: i64, extra_slots: bool) -> Fixture {
         100,
     )
     .expect("real Avatar condition store");
+    let definition = native_source.unwrap_or(if soul_war {
+        "oteryn:creature.goshnar_s_greed"
+    } else {
+        "fixture:qualified"
+    });
     let policy = CompiledCreaturePolicy {
-        definition_key: "fixture:qualified".into(),
+        definition_key: definition.into(),
         definition_revision: "fixture:1".into(),
         display_name: "fixture creature".into(),
         maximum_health: 20,
@@ -123,14 +150,26 @@ fn fixture_with_capacity(source_percent: i64, extra_slots: bool) -> Fixture {
             health_hidden: false,
         },
     };
-    runtime
-        .install_companion_policies(
-            CompiledCreaturePolicies::from_active_artifact(
-                runtime.content_pin().server_artifact_digest(),
-                vec![policy],
-            )
-            .expect("qualified table"),
+    let policies = if native_source.is_some() {
+        static NATIVE: std::sync::OnceLock<CompiledCreaturePolicies> = std::sync::OnceLock::new();
+        NATIVE.get_or_init(|| {
+            let path=std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content/spells.manifest.json");
+            let native=oteryn_gameplay_content::content::native_gameplay::retained_callback_native_fixture_at(world,&path);
+            assert!(native.qualifies_soul_war_callbacks(native.source_digest()),"actual complete bounded source body closure");
+            let mut policies=native.policies().clone();
+            policies.bind_qualified_outer_artifact(runtime.content_pin().server_artifact_digest())
+                .expect("unit outer digest changes no reviewed native body");
+            policies
+        }).clone()
+    } else {
+        CompiledCreaturePolicies::from_active_artifact(
+            runtime.content_pin().server_artifact_digest(),
+            vec![policy],
         )
+        .expect("qualified table")
+    };
+    runtime
+        .install_companion_policies(policies)
         .expect("matches actual active pin");
     let mut bindings = vec![LiveActorBinding {
         source_id: 1,
@@ -138,20 +177,47 @@ fn fixture_with_capacity(source_percent: i64, extra_slots: bool) -> Fixture {
         target_atom: crate::spell::combat_execution::actor_atom(caster),
     }];
     for id in [2, 3] {
-        let actor = runtime
-            .admit_pinned_test_creature(MovementLocalPosition {
-                x: 8 + id as i32,
-                y: 9,
-                floor: 7,
-            })
-            .expect("real creature slot");
+        let position = MovementLocalPosition {
+            x: 8 + id as i32,
+            y: 9,
+            floor: 7,
+        };
+        let actor = if soul_war {
+            ExactActorRef(
+                runtime
+                    .admit_encounter_fixture_actor(
+                        oteryn_gameplay_entities::carrier::ActorState(1),
+                        definition,
+                        if native_source.is_some() {
+                            runtime
+                                .companion_policy(definition)
+                                .expect("actual native health")
+                                .maximum_health
+                        } else {
+                            20
+                        },
+                        Some(oteryn_gameplay_entities::carrier::LocalPosition {
+                            x: position.x,
+                            y: position.y,
+                            floor: position.floor,
+                        }),
+                    )
+                    .expect("real source creature slot"),
+            )
+        } else {
+            runtime
+                .admit_pinned_test_creature(MovementLocalPosition { ..position })
+                .expect("real creature slot")
+        };
         runtime
-            .install_creature_policy(actor, "fixture:qualified")
+            .install_creature_policy(actor, definition)
             .expect("actual source policy binding");
         bindings.push(LiveActorBinding {
             source_id: id,
             actor,
-            target_atom: "test:creature".into(),
+            target_atom: runtime
+                .creature_spell_target_atom(actor)
+                .expect("actual target atom"),
         });
     }
     let attributes = MagnitudeOwnedAttributes {

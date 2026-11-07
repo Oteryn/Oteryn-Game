@@ -693,7 +693,7 @@ struct CueRecord {
     clippy::expect_used,
     reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
 )]
-fn resolve_source_cue(alias: &str) -> Option<Cue> {
+pub fn resolve_source_cue(alias: &str) -> Option<Cue> {
     static REGISTRY: OnceLock<Vec<CueRecord>> = OnceLock::new();
     let records = REGISTRY.get_or_init(|| {
         serde_json::from_slice::<CueDocument>(include_bytes!(

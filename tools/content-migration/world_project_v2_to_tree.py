@@ -195,6 +195,12 @@ def main() -> int:
     apply_container_fact(item_records, ROOT)
     from enchanting_item_profiles import apply_admissions as apply_enchanting_admissions
     apply_enchanting_admissions(item_records)
+    from boss_conditional_item_reference import extend_records as extend_conditional_reference
+    extend_conditional_reference(item_records, ROOT)
+    from boss_movement_item_profiles import extend_records as extend_boss_movement_references
+    extend_boss_movement_references(item_records, ROOT)
+    from boss_corpse_terminal_reference import extend_records as extend_corpse_terminal_reference
+    extend_corpse_terminal_reference(item_records, ROOT)
     item_shards: list[str] = []
     for start in range(0, len(item_records), ITEM_SHARD_SIZE):
         rows = []
@@ -279,6 +285,8 @@ def main() -> int:
     ]
 
     profiles = {target_id(row["target"]): row["data"] for row in declarations.get("authoring_profiles", [])}
+    from spite_global_event_rule import apply as apply_spite_global_event_rule
+    apply_spite_global_event_rule(profiles, ROOT)
     for key, profile in profiles.items():
         if key[0] == "Creature":
             profile["profile"]["details"].setdefault("reference_level", None)

@@ -362,7 +362,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !crate::spell::actor_conditions::has_periodic_damage(state) {
             return states.tick_in_environment(
                 &mut runtime,
-                self.movement_cells,
+                self.effective_movement_cells(),
                 actor,
                 session,
                 now,
@@ -370,7 +370,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // COND-1c: a bundle World has no fixture qualified room; its periodic player damage
         // reads the same bundle view as combat (BUNDLE-COMBAT-ENABLE-1).
-        let room = self.rooms.gate_periodic_damage()?;
+        let room = self.effective_rooms().gate_periodic_damage()?;
         let source = self.active_generation?.native_gameplay()?;
         let position = runtime.borrow_movement_position().read(actor).ok()?;
         let target =
@@ -438,7 +438,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(_) => {
                 return states.tick_in_environment(
                     &mut runtime,
-                    self.movement_cells,
+                    self.effective_movement_cells(),
                     actor,
                     session,
                     now,
@@ -452,7 +452,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         states.tick_with_standing_read(
             &mut runtime,
-            self.movement_cells,
+            self.effective_movement_cells(),
             room,
             source,
             actor,
@@ -482,8 +482,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let mut tx=crate::durability::spell_item_transaction::begin_field_owner_transaction(holder,deadline).await?;
             let read=crate::durability::spell_item_transaction::read_standing_player_tile_in_transaction(&mut tx,permit,owner.root,owner.character,owner.holder,&fence,source.source_digest(),&target).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             let position=runtime.read_actor_position(actor).map_err(|_|crate::durability::DurabilityError::Unavailable)?.position();
-            let pz=qualified_protection_zone(runtime,owner.movement_cells,actor).ok_or(crate::durability::DurabilityError::Unavailable)?;
-            let static_tile=owner.movement_cells.spell_tiles().lookup(owner.movement_cells.scope(),crate::content::LogicalCell{x:position.x,y:position.y,z:i32::from(position.floor)}).ok();
+            let pz=qualified_protection_zone(runtime,owner.effective_movement_cells(),actor).ok_or(crate::durability::DurabilityError::Unavailable)?;
+            let static_tile=owner.effective_movement_cells().spell_tiles().lookup(owner.effective_movement_cells().scope(),crate::content::LogicalCell{x:position.x,y:position.y,z:i32::from(position.floor)}).ok();
             let standing=if pz {None} else {combine_elements(standing_element(&read,source),static_tile.map_or(Some(None),|tile|static_element(tile,source))).ok_or(crate::durability::DurabilityError::Unavailable)?};
             let before=states.get(runtime,actor,session).ok_or(crate::durability::DurabilityError::Unavailable)?.clone();
             let cycle=crate::spell::actor_conditions::stage_source_owner_cycle(&before,now,Some(TickFacts{in_protection_zone:pz,standing_on_field:standing}),None).map_err(|_|crate::durability::DurabilityError::Unavailable)?;

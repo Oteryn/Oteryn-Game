@@ -1,8 +1,8 @@
 //! Preserve the real login clock across internal native House GameSessions.
 //! Transfer ancestry is read-only history; the logout owner independently proves
 //! current custody and the expected CharacterRevision before this read.
-use super::*;
 use super::super::character_progression::CurrentCharacterGameplayFence;
+use super::*;
 use sqlx::{Postgres, Transaction};
 
 impl FreshAdmissionStore {
@@ -16,13 +16,19 @@ impl FreshAdmissionStore {
         let store = self.clone();
         let backend = self.guards.backend.clone();
         let issued = backend.try_issue_root()?;
-        backend.run_pass(issued, move |holder, deadline| Box::pin(async move {
-            let mut tx = super::super::admission_journal::begin_pass_transaction(holder, deadline).await?;
-            super::super::db::lock_admission_relations(&mut tx).await?;
-            let clock = store.training_login_clock_locked(&mut tx, fence).await?;
-            super::super::admission_journal::commit_pass_transaction(tx, deadline).await?;
-            Ok(clock)
-        })).await
+        backend
+            .run_pass(issued, move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx =
+                        super::super::admission_journal::begin_pass_transaction(holder, deadline)
+                            .await?;
+                    super::super::db::lock_admission_relations(&mut tx).await?;
+                    let clock = store.training_login_clock_locked(&mut tx, fence).await?;
+                    super::super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    Ok(clock)
+                })
+            })
+            .await
     }
 
     pub(in crate::durability) async fn training_login_clock_locked(
@@ -36,7 +42,10 @@ impl FreshAdmissionStore {
                WHERE t.destination_game_session_id=s.game_session_id AND t.state=2) \
              FROM game_durability_reconnect_sessions s \
              WHERE s.game_session_id=encode($1,'hex')::uuid",
-        ).bind(fence.game_session_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        )
+        .bind(fence.game_session_id.as_bytes().as_slice())
+        .fetch_one(&mut **tx)
+        .await?;
         if !house_lineage {
             // Preserve the original rule for ordinary Channel and activity sessions.
             return sqlx::query_scalar(
@@ -44,14 +53,21 @@ impl FreshAdmissionStore {
                  s.game_session_id=encode($1,'hex')::uuid AND EXISTS( \
                    SELECT 1 FROM game_character_training_markers m \
                    WHERE m.game_session_id=s.game_session_id AND m.cause='offline_settlement')",
-            ).bind(fence.game_session_id.as_bytes().as_slice())
-             .fetch_optional(&mut **tx).await.map(Option::flatten).map_err(Into::into);
+            )
+            .bind(fence.game_session_id.as_bytes().as_slice())
+            .fetch_optional(&mut **tx)
+            .await
+            .map(Option::flatten)
+            .map_err(Into::into);
         }
 
-        let current = self.current_session_locked(tx, fence.game_session_id).await?;
+        let current = self
+            .current_session_locked(tx, fence.game_session_id)
+            .await?;
         if current.current_game_session_id() != fence.game_session_id
             || current.session_state() != GameSessionState::Active
-            || current.current_character_lease().character_id().as_bytes() != fence.character_id.as_bytes()
+            || current.current_character_lease().character_id().as_bytes()
+                != fence.character_id.as_bytes()
             || current.current_character_lease().generation() != fence.character_lease_generation
             || current.current_connection_generation() != fence.connection_generation
             || current.current_runtime_scope() != fence.runtime_scope

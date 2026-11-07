@@ -147,6 +147,14 @@ pub(super) async fn assert_entry_and_timeout_return(
             + 1,
     );
     assert_attack(origin, *admitted, &expected).await?;
+    assert_eq!(
+        origin.runtime.lock().await.hazard_level(
+            admitted.runtime_actor.ok_or("returned Channel actor")?,
+            admitted.game_session_id,
+        ),
+        Some(1),
+        "the current returned session must reload its durable hazard selection"
+    );
     assert!(
         instance
             .runtime

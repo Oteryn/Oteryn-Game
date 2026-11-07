@@ -37,9 +37,8 @@ impl ChannelActorCarrier {
         actor: ExactActorRef,
         item: RuntimeCorpseItem,
     ) -> Result<(), CarrierError> {
-        // A runtime projection alone never proves a committed Item MINT in
-        // Instance custody. That durable owner is not implemented yet.
-        self.channel_id()?;
+        // The durable MINT consumer supplies a committed Item; the projection,
+        // exact actor and ownership generation must remain in this same scope.
         if actor.runtime_scope() != self.runtime_scope
             || actor.scope_generation() != self.scope_generation
             || !self
@@ -129,6 +128,7 @@ impl ChannelRuntimeV1 {
         production_key: &str,
         revision_ref: &str,
     ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
         self.carrier.bind_corpse_item_inner(
             actor,
             RuntimeCorpseItem {

@@ -324,7 +324,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 Ok(permit) => permit,
                 Err(unresolved) => self.resolve_unresolved_spell_commit(unresolved).await,
             };
-            if permit.has_unresolved() || !self.resolve_player_trades(&permit).await {
+            if permit.has_unresolved()
+                || !self.resolve_player_trades(&permit).await
+                || !self.resolve_primal_pod_steps(&permit).await
+            {
                 return None;
             }
             Some(permit)
@@ -2340,7 +2343,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let Some(native) = active.native_gameplay() else {
             return rejected();
         };
-        let Some(_room) = self.rooms.gate_native_combat_cast() else {
+        let Some(_room) = self.effective_rooms().gate_native_combat_cast() else {
             return rejected();
         };
         let Ok((current, _)) = FreshAdmissionStore::from_root(self.root.clone())
@@ -2523,7 +2526,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let (permit,pending)=writer.parts();
             let active=owner.active_generation.ok_or(DurabilityError::Unavailable)?;
             let content=active.native_gameplay().ok_or(DurabilityError::Unavailable)?;
-            let room=owner.rooms.gate_native_combat_cast().ok_or(DurabilityError::Unavailable)?;
+            let room=owner.effective_rooms().gate_native_combat_cast().ok_or(DurabilityError::Unavailable)?;
             let spell=owner.spells.indexed(intent.spell).ok_or(DurabilityError::Unavailable)?;
             let item_fence=CurrentCharacterItemFence{character_id:fence.character_id,game_session_id:session,
                 connection_generation:fence.connection_generation,character_lease_generation:fence.character_lease_generation,
@@ -2592,6 +2595,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     };
                     let training_occurrence=BuildOccurrence::from_bytes(nonce(b"oteryn:native-cast-training:v1",actor,session,command_id,&[]))
                         .map_err(|_|DurabilityError::Unavailable)?;
+                    // W11 only: immutable current Quest/vocation DATA for native
+                    // source health callbacks; payment/cast routing is unchanged.
+                    super::super::soul_war_callbacks::publish_command_source(
+                        &mut tx,&authority,active,room,runtime,states,actor,now.get()).await?;
                     let prepared_result=if native_companion_item_cast::direct_applicable(spell) {
                         native_companion_item_cast::prepare_direct(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
                             owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),legacy.as_ref(),parameter.as_ref(),attack_target,&mut draw).await

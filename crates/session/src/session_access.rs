@@ -99,6 +99,8 @@ impl<S: SessionStream> Session<S> {
             admission.appearance_items,
             JoinAcceptance {
                 game_session_id: accepted_fields.game_session_id,
+                world_id: *accepted_fields.world_id.as_bytes(),
+                activity_scope: None,
                 connection_generation: session_generation,
                 next_command_id: accepted_fields.next_command_id,
                 selected_capabilities: accepted_fields.selected_capabilities,

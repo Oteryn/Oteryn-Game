@@ -14,6 +14,9 @@ impl ChannelRuntimeV1 {
         match &mut self.carrier.slots[index] {
             Slot::Occupied { spell_combat, .. } | Slot::CreatureOccupied { spell_combat, .. } => {
                 spell_combat.tibiadrome = enabled;
+                if !enabled {
+                    spell_combat.tibiadrome_modifiers = None;
+                }
                 spell_combat.tibiadrome_origin = origin;
                 Ok(())
             }
@@ -49,14 +52,30 @@ impl ChannelRuntimeV1 {
 }
 
 impl ChannelRuntimeV1 {
-    /// oteryn-choice: +10% native health/damage per Drome level; the current
-    /// manual combat.md:297 and pinned donors have no numeric Drome scaling.
+    /// ARENA1 A4 / ARENA1-RL-20: round(base * 1.039^wave) for HP and damage.
+    /// The shared damage curve is the owner-accepted engineering default.
     pub fn scale_tibiadrome_opponent(
         &mut self,
         actor: ExactActorRef,
         level: u32,
     ) -> Result<(), CarrierError> {
         self.owner_fence()?;
+        if level > 300 {
+            return Err(CarrierError::DamageOverflow);
+        }
+        let snapshot = self.companion_snapshot(actor)?;
+        let base = self.companion_policy(&snapshot.state.policy.definition_key)?;
+        if let Some(role) =
+            super::tibiadrome_modifiers::DromeCreatureRole::from_key(&base.definition_key)
+            && u64::try_from(base.maximum_health).ok() != Some(role.base_health())
+        {
+            return Err(CarrierError::InvalidCreatureHealth);
+        }
+        let maximum = (base.maximum_health as f64 * 1.039_f64.powi(level as i32)).round();
+        if !maximum.is_finite() || maximum < 1.0 || maximum >= i64::MAX as f64 {
+            return Err(CarrierError::DamageOverflow);
+        }
+        let maximum = maximum as i64;
         let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
         let Slot::CreatureOccupied {
             health,
@@ -67,17 +86,13 @@ impl ChannelRuntimeV1 {
         else {
             return Err(CarrierError::NotCreature);
         };
-        let scale = 100u64.saturating_add(u64::from(level).saturating_mul(10));
-        let maximum =
-            i64::try_from(i128::from(companion.policy.maximum_health) * i128::from(scale) / 100)
-                .map_err(|_| CarrierError::DamageOverflow)?;
         let mut policy = (*companion.policy).clone();
         policy.maximum_health = maximum;
         companion.policy = std::sync::Arc::new(policy);
         *health = maximum;
         spell_combat.maximum_health = maximum;
         spell_combat.tibiadrome = true;
-        spell_combat.tibiadrome_scale = scale;
+        spell_combat.tibiadrome_wave = level;
         Ok(())
     }
     pub(super) fn tibiadrome_damage(
@@ -86,14 +101,32 @@ impl ChannelRuntimeV1 {
         raw: u64,
     ) -> Result<Option<u64>, CarrierError> {
         let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
-        let Slot::CreatureOccupied { spell_combat, .. } = &self.carrier.slots[index] else {
+        let Slot::CreatureOccupied {
+            spell_combat,
+            health,
+            ..
+        } = &self.carrier.slots[index]
+        else {
             return Ok(None);
         };
         if !spell_combat.tibiadrome {
             return Ok(None);
         }
-        u64::try_from(u128::from(raw) * u128::from(spell_combat.tibiadrome_scale) / 100)
-            .map(Some)
-            .map_err(|_| CarrierError::DamageOverflow)
+        let wave = spell_combat.tibiadrome_wave
+            + if self.drome_escalated(actor, *health, spell_combat.maximum_health) {
+                5
+            } else {
+                0
+            };
+        let aura = self.drome_aura_percent(actor);
+        if wave == 0 && aura == 0 {
+            return Ok(Some(raw));
+        }
+        let scaled =
+            (raw as f64 * 1.039_f64.powi(wave as i32) * f64::from(100 + aura) / 100.0).round();
+        if !scaled.is_finite() || scaled >= u64::MAX as f64 {
+            return Err(CarrierError::DamageOverflow);
+        }
+        Ok(Some(scaled as u64))
     }
 }

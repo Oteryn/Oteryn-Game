@@ -1,0 +1,12 @@
+{
+  "url": "https://api.tibiadata.com/v4/creature/soul_sphere",
+  "user_agent_sent": false,
+  "status": 400,
+  "error": "HTTP Error 400: Bad Request",
+  "seconds": 0.086,
+  "classification": "invalid_or_unresolved_query; not evidence of host refusal",
+  "response_body_retained": false,
+  "hp_resolved": false,
+  "followup_catalogue": "srx3-tibiadata-source-catalogue.json",
+  "followup_note": "The normal public creature catalogue returned HTTP 200 and 718 entries; Soul Sphere was absent. No guessed alternate detail identifier was requested, and no HP value was inferred."
+}

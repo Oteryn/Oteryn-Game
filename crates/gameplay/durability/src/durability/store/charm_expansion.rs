@@ -21,7 +21,9 @@ impl DurabilityRoot {
         if request.character_id != *fence.character_id.as_bytes() {
             return Err(StoreDurabilityError::AuthorityRejected);
         }
-        let recovery = authority.record_for(self).map_err(|_| StoreDurabilityError::AuthorityRejected)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| StoreDurabilityError::AuthorityRejected)?;
         let node = node.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
@@ -65,9 +67,13 @@ impl DurabilityRoot {
         operation_id: [u8; 16],
         identity: DeliveryIdentity,
     ) -> Result<DeliveryReceipt, StoreDurabilityError> {
-        if !uuid_v7(&operation_id) { return Err(StoreDurabilityError::ConflictingOperation); }
+        if !uuid_v7(&operation_id) {
+            return Err(StoreDurabilityError::ConflictingOperation);
+        }
         identity.validate()?;
-        let recovery = authority.record_for(self).map_err(|_| StoreDurabilityError::AuthorityRejected)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| StoreDurabilityError::AuthorityRejected)?;
         let node = node.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
@@ -104,7 +110,9 @@ impl DurabilityRoot {
         request: PurchaseRequest,
     ) -> Result<(), StoreDurabilityError> {
         request.validate()?;
-        let recovery = authority.record_for(self).map_err(|_| StoreDurabilityError::AuthorityRejected)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| StoreDurabilityError::AuthorityRejected)?;
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;

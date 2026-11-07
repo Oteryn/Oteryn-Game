@@ -31,6 +31,7 @@ pub enum PlayEvent {
 /// Pushed deltas coalesced to latest state, so an undrained shell holds a bounded amount.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Pushed {
+    pub activity_scope: Option<oteryn_session::activity_scope::ActivityScopeSnapshot>,
     pub served_channel: Option<Option<oteryn_client_runtime::channel_list::ServedChannel>>,
     pub world_weather: Option<oteryn_session::world_weather::WorldWeather>,
     pub world_clock: Option<oteryn_session::world_clock::WorldClock>,
@@ -61,6 +62,10 @@ pub struct Pushed {
 impl Pushed {
     /// Folds `newer` over `self`: its position and entries win.
     fn absorb(&mut self, newer: Self) {
+        if newer.activity_scope.is_some() {
+            *self = Self::default();
+        }
+        self.activity_scope = newer.activity_scope.or(self.activity_scope.take());
         super::feature_0023_presentation::protocol::absorb_visuals(
             &mut self.visuals,
             newer.visuals,
@@ -106,6 +111,10 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) activity_scope: Option<oteryn_session::activity_scope::ActivityScopeSnapshot>,
+    pub(super) scope_pending: bool,
+    pub(super) scope_initialize: bool,
+    pub(super) command_receiver: std::sync::Weak<Mutex<UnboundedReceiver<PlayCommand>>>,
     pub(super) target_move_selected: bool,
     pub(super) movement_turn: Option<StepDir>,
     pub(super) creature_push_selected: bool,
@@ -273,7 +282,13 @@ impl Outbox {
     }
 
     /// Delivers validated session events to the native view (also used by the headless harness).
-    pub fn push(&self, events: Vec<SessionEvent>) {
+    pub fn push(&self, mut events: Vec<SessionEvent>) {
+        if let Some(index) = events
+            .iter()
+            .rposition(|event| matches!(event, SessionEvent::ActivityScope(_)))
+        {
+            events.drain(..index);
+        }
         self.channel_list_events(&events);
         self.appearance_events(&events);
         self.pvp_expert_events(&events);

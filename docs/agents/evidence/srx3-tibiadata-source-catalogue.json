@@ -1,0 +1,36 @@
+{
+  "url": "https://api.tibiadata.com/v4/creatures",
+  "purpose": "public race identifier list via normal configured proxy transport",
+  "user_agent_sent": false,
+  "status": 200,
+  "bytes": 97398,
+  "seconds": 0.186,
+  "sha256": "49bd53e3194d9c0581a20406955d4f7c085369071479f11afd6bb0aef8a042d2",
+  "information": {
+    "api": {
+      "version": 4,
+      "release": "4.10.0",
+      "commit": "d53b603c7e235c45268bcf878ef2921b2356cf75"
+    },
+    "timestamp": "2026-11-07T08:22:45Z",
+    "tibia_urls": [
+      "https://www.tibia.com/library/?subtopic=creatures"
+    ],
+    "status": {
+      "http_code": 200
+    }
+  },
+  "creature_count": 718,
+  "searched_terms": [
+    "soul sphere",
+    "soulsphere",
+    "soul_sphere",
+    "domestikion",
+    "hoodinion",
+    "mearidion",
+    "scissorion",
+    "murmillion"
+  ],
+  "matching_entries": [],
+  "conclusion": "The returned current public library catalogue supplies no race identifier or gameplay facts for the searched creatures; this does not resolve their missing native rules."
+}

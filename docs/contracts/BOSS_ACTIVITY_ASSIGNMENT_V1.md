@@ -418,3 +418,213 @@ cannot yield a Channel death key, mint a reward occurrence or bind a corpse Item
 These are kernel checks, not admitted Instance combat, durable Instance loot,
 Bosstiary credit, handoff or restart qualification. The production grant issuer
 and composed death/reward path remain Channel-only.
+
+## SRX-3 scoped physical corpse descendant
+
+The one-item MINT owner now accepts the exact committed death's Channel or
+Instance scope. This extends the historical Channel-only restriction above;
+it does not create a Channel identity for an Instance. Crystal
+`201189f871d23597b82caf88fd611454a2ddefb8`,
+`src/creatures/monsters/monster.cpp:2412-2426` still creates a corpse and its
+most-damage owner for a reward boss; `:2567-2569` suppresses ordinary loot for
+reward bosses, whose personal entitlements retain their independent owner.
+
+`CreatureDeathOccurrenceRefV1.instance_id` uses the next free nested field 6.
+It is absent for a Channel death and present with an empty `channel_id` for
+an Instance death. The MINT envelope carries the same exact namespace. Both
+namespace fields, neither field, malformed UUIDs, a mismatched World, and a
+Ground scope different from the death are rejected. Historical Channel bytes
+and existing type-2 event tuples are unchanged.
+
+Migration `0984` adds the namespace and Instance identifier to the existing
+reservation/receipt owner. Its full key includes both the namespace and UUID,
+so a Channel and Instance with identical local identifiers cannot share a cause
+or replay. Current assignment generation, current node incarnation, recovery,
+exact scope lane, capacity, immutable intent, reserved identities, audit bytes,
+and the durable retry budget remain mandatory at the same boundaries.
+An Instance additionally requires its installed activity and at least one
+unreturned participant; a retained control assignment alone cannot authorize
+new MINTs after the activity has returned everyone.
+
+After commit, the existing physical corpse projection binds the Item in that
+same scope and generation. After all participants return, the existing
+`retire_activity_ground_step` owner retires the Instance's Ground and contained
+Items before the activity runtime can retire. It does not move them to the
+origin Channel. No new ordinary reward route or copied personal loot is added.
+
+The same original MINT receipt installs the existing corpse-chain schedules for
+Primal Menace's source corpse: Crystal `201189f`, `data/items/items.xml:73328-73347`
+qualifies `39530 → 39529 → 39528 → 39527`, with durations 10/300/300 seconds
+and the final 60-second lifetime. The existing field-chain consumer admits
+Instance Ground only for these original corpse schedules and their installed,
+unreturned activity; it retains exact scope/generation, predecessor, due time,
+custody, successor, and audit proofs. Channel temporal receipt JSON omits the
+new default scope columns to preserve its existing bytes. Instance receipts
+include the discriminator and actual Instance identifier. General inventory
+timers and unrelated Instance spell fields are outside this extension.
+
+SRX-3 consumes the exact native corpse/yield admission producer slice from
+`5e60c19701fe3acdda0a3d1331da1239440a9d1e` (DUPLICATE-ON-BRANCH producer
+provenance). It reads existing exact native Item physics and legal destinations;
+it does not infer unknown Item properties or copy a new reward table. Grand
+Mother Foulscale's production raid supplies a nonempty source qualification:
+Crystal `201189f`, `data-global/monster/raids/grand_mother_foulscale.lua:24`
+corpse 5973, `:46` rewardBoss, and `:93,95` guaranteed green dragon scale/leather.
+The original raid catalogue supplies the actor; its ordinary corpse and personal
+reward descendants retain their separate existing owners.
+
+The W11 native Item overlay preserves exact source corpse physics and every
+original decay descendant (51 Items, including Grand Mother Foulscale and Elder Bloodjaw), with 15 separately qualified carried Item profiles (14 ordinary loot yields
+and the explicit physical-corpse callback Item43860). Crystal `201189f` `data/items/items.xml:63392-63508` gives capacity48
+for the six Soul War root corpses; `:76817-76890` gives capacity8 for the five
+Rotten Blood roots, and `:16589` gives capacity7 for corpse6028. The generated
+capture records each exact XML line. Capacity48 is accepted only for matched
+actual Soul War rewardBoss/creature/corpse pairs with a verified native Ground-only
+Item profile. It does not change the existing30 materialized-entry/work bound;
+these reward bosses' ordinary physical corpse has no personal loot entries.
+
+Three existing canonical reward Item references (43946,43947,44048) need bounded
+native source bindings absent from the historical XML-only partition. The source
+proof replays pinned DAT objects, `src/items/items.cpp:226` ItemType initialization
+and `src/items/item.cpp:86` factory acceptance, plus actual loot at
+`data-global/monster/quests/rotten_blood_quest/bakragore.lua:100,102-103`.
+Their XML overrides are absent; `src/items/items.hpp:300` supplies their zero-weight loader
+default. Their exact carried physics and source profile bodies are hash-bound in
+the native reader. Those three existing references retain their identities. Additional actual Lua-created
+Items43860,43589,43590,42851,42853,43625 receive reference-only declarations at
+Item ordinals34111–34116 through the bounded repo producer. All canonical gameplay
+semantics remain UNKNOWN. Their exact native profiles derive separately from
+pinned XML/DAT, official appearance membership and the C++ Item factory/defaults;
+no alias or inferred name/container/use rule is introduced. A source binding alone
+grants no Item use or inventory materialization.
+
+The same corpse timer owner consumes W11's exact original body durations rather
+than the older uniform four-body schedule. Crystal `201189f`
+`data/items/items.xml:16589` gives 6028→4206→4207→4208 at10/300/300/60 seconds;
+`:63392-63508` gives Soul War four-body chains at10/600/600/600 seconds,
+except33859 at10/900/600/600; `:76817-76890` gives each Rotten Blood three-body
+chain at5/5/5 seconds. The last duration is terminal lifetime, not a further
+transform. Existing immutable schedule rows preserve the original chain identity;
+retirement requires the actual final transform receipt and exact terminal delay.
+An unrelated or unknown source key cannot acquire a source corpse schedule.
+The existing unscheduled-corpse60-second rule remains the accepted legacy policy.
+
+Rotten Blood's existing Quest kill receipt accepts the existing Channel52-byte
+native death DATA or Instance's discriminator2 followed by that same52-byte
+payload. The Quest consumer validates every participant's exact runtime scope
+and ownership generation before querying its source. The existing same-transaction
+party-death receipt, membership, native boss key, damage-contributor and Character
+revision proofs remain required. Namespace admission alone grants no progression.
+
+Crystal201189f `data/items/items.xml:16272,12116-12126`: Grand Mother Foulscale
+reuses that same source corpse owner for5973→4025→4026→4027
+at10/300/300/60 seconds; the native overlay includes all four original body
+profiles. Its personal reward remains independent of the physical corpse.
+
+A same-socket activity barrier can install a fresh GameSession with generation1
+and command1. ClientCommand's optional field16 binds its bytes to the current
+GameSession UUID. Legacy unbound commands remain accepted on fresh/cold transports;
+a transport that has crossed any activity barrier requires the binding thereafter,
+including a later House route on that same socket. Any provided binding must
+match the current session. Old or unbound successor bytes are discarded before
+buffering/replacement peeks, ingress windows, command counters, replay acknowledgments
+or physical owner calls. The server produces no fabricated result for those bytes.
+Malformed/duplicate bindings retain normal protocol errors. The current bound
+command1 remains usable after stale source commands arrive.
+
+Rotten callback witnesses preserve the existing Tibia Global balance decision,
+recorded read-only in `docs/architecture/reviews/OTERYN_GAME_CRYSTAL_REAUDIT_2026-10-28.md:195`:
+Bakragore660000 HP and the other four600000 HP come from the already-qualified
+`official-balance.json` overrides, rather than Crystal's350000. The accepted
+rotten-charge explosion is flat1250 agony (official news7852), rather than
+Crystal's40%-maximum-health expression. This does not replace the separate
+standing-position agony percentages. Canary `47dfd51f`
+`data-otservbr-global/monster/quests/rotten_blood/echo_of_{chagorz,ichgahal,murcion,vemiath}.lua:16-20`
+qualifies all four Echoes'90000 HP and speed100. The other native physical profile
+fields retain their existing exact canonical bindings; the full source bodies
+are frozen by the bounded27-profile callback witness. Wiki rechecks are wiki-pending.
+
+
+The Rotten Blood movement closure contains eight additional Ground-only profiles:
+37000,42851,42853,43294,43295,43589,43590,43625. Existing43297 already has its
+source profile. The exact producer binds the actual onMove bodies of Murcion,
+Ichgahal, Chagorz, Vemiath and Bakragore, the shared boss mechanics and
+`movements_fields.lua`. Callback-created Items remain under scoped Item custody;
+map-only flames/pillars retain their source WorldObject identities. These are
+separate owners: a source sprite never substitutes for an Item reference.
+
+Crystal `201189f` `bakragore_mechanics_death.lua:21-43` adds at most one explicit
+extra bag to the physical corpse, independently of the private ordinary boss loot
+table. Its chance for essence counts1–4 is5/8/12/15 percent, followed by a uniform
+choice between43895 and43860. The actual physical corpse pointer passes through
+`src/creatures/creature.cpp:717-720,759-762`; the rewardBoss skip in
+`src/creatures/monsters/monster.cpp:2567-2569` only skips ordinary dropLoot.
+This source callback does not redirect the extra bag into personal rewards.
+
+Bakragore preparation precedes the boss chamber. The literal boss entry is
+(33044,32407,15), whereas the four essence flames occupy the separate cross around
+(33076,32398,15). A read-only replay of pinned `world.otbm` with the repo tile
+extractor and actual XML/DAT policies gives a264-cell walkable chamber component
+(x33035–33052,y32390–32409), with no floor changes or boundary escape; unrestricted
+diagonal reachability gives the same component. None of the four flame-adjacent
+cells belongs to it. Therefore default zero essences cannot be replaced by an
+assumption that a player activates those flames after boss-chamber entry.
+`monster/quests/rotten_blood_quest/rottenEssences.lua:1-28,30-111` supplies the
+actual stored-essence consumption and flame activation callbacks. Nonzero phase
+facts require those real callers and an explicit, fenced preparation handoff;
+taints alone are not preparation evidence.
+
+D26 isolates each Instance's internal mutable encounter state; it does not
+change eligibility for the source Channel's external flame preparation. Crystal
+`rottenEssences.lua:74-94` guards a global flavor flag, then sets it and burns the
+activating Player's stored essence. Bakragore `bakragore.lua:531-541` reads any
+positive global flavor on its first think, independently of who lit it or who
+entered its chamber. Its:570-608 clears those flavors and resets the corresponding
+fixed visuals. Consequently the external phase owner is scoped to the actual
+source Channel/generation/activation/reset epoch, shared across its Players.
+Admission retains origin provenance; it must not consume or freeze the phase.
+The actual first native think captures and consumes the current external phase
+atomically, including explicit0. No source Character-in-roster condition or taint
+inference may alter that selection. Instance-local counters and delayed actions
+remain private under the existing accepted baseline. The earlier per-roster
+"accepted difference" paragraph was an unsupported inference and is superseded
+by these literal source rules.
+
+Rotten Blood's level250 admission is also explicit in pinned Canary47dfd
+`data-otservbr-global/scripts/quests/rotten_blood_quest/actions_murcion_lever.lua:6`
+and `actions_chagorz_lever.lua:6`; Crystal omits the field in those two configs.
+The other three Crystal configs state250 explicitly. The existing Quest owner's
+all-roster level250 check therefore uses donor evidence rather than a guessed
+BossLever default.
+
+The Elder Bloodjaw source corpse is43669→43668→43667→43666, with successive
+10/300/300-second transforms (Crystal `data/items/items.xml:75446-75463`). Its terminal43666
+has no XML decay declaration in either pinned donor; `items.hpp:292,302` defaults
+to duration0 and decayTo−1, and `item.cpp:3377-3380` rejects automatic decay.
+The source-bound terminal reference uses Item ordinal34117, added through the
+repo producer and guarded binding packet. The resulting corpse remains present
+until InstanceRetire; a nullable retirement deadline means no timer, not a
+60-second fallback. The source-ground corpse closure now contains51 profiles.
+
+Rotten essence ItemUseCause4 composes the exact one-unit burn and its source
+Quest flag0→1 in one Type2 transaction. `OneItemUseV1.instance_id` field15
+identifies an actual Activity Instance and excludes channel_id/house_key. A real
+named House retains the existing house_key plus origin Channel provenance; the
+House assignment remains custody authority. Ordinary Channel wire bytes remain
+unchanged. Generic item-only commits cannot issue cause4 independently.
+
+Pinned Crystal also registers `rotten_bakragore1.lua:8-13,26`: the preparation
+cross has its own real lever at(33079,32398,15), with five waiting cells
+(33078..33074,32398,15). All four flame-adjacent cells connect to that roster
+inside the actual227-cell walkable cross component. It reaches the same boss
+and destination as the primary lever. Its literal20-hour cooldown is superseded
+by the already selected68-hour final cooldown; both entry routes share one boss
+and cooldown identity. The complete admitted roster must belong to one literal
+lever group; combining members from the two disjoint lever groups is not a donor
+entry. This permits real preparation and entry without a fabricated relocation.
+
+The43667→43666 timer transform additionally requires empty direct and nested
+corpse custody. A nonempty historical/corrupt state fails closed through the
+existing timer receipt guard; it cannot silently strand children under a Generic
+Item. This changes no valid empty Elder source flow and leaves the separately
+fenced InstanceRetire tree path intact.

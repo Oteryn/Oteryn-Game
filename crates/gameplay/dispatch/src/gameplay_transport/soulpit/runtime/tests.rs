@@ -17,10 +17,22 @@ fn id(seed: u8) -> [u8; 16] {
 
 struct Scene {
     allow_spawn: bool,
+    native_floor: Option<i16>,
+    only_spawn: Option<MovementLocalPosition>,
+    effects: std::sync::Mutex<Vec<(MovementLocalPosition, u16)>>,
 }
 impl ActivityHandoffScene for Scene {
-    fn permits_spawn(&self, _: MovementLocalPosition) -> bool {
+    fn emit_spawn_effect(&self, at: MovementLocalPosition, effect: u16) -> bool {
+        let Ok(mut effects) = self.effects.lock() else {
+            return false;
+        };
+        effects.push((at, effect));
+        true
+    }
+    fn permits_spawn(&self, at: MovementLocalPosition) -> bool {
         self.allow_spawn
+            && self.native_floor.is_none_or(|floor| at.floor == floor)
+            && self.only_spawn.is_none_or(|position| at == position)
     }
     fn attack_target(&self, _: ExactActorRef) -> Option<ExactActorRef> {
         None
@@ -98,7 +110,12 @@ impl Owner {
             continuity,
             content,
             native,
-            scene: Scene { allow_spawn },
+            scene: Scene {
+                allow_spawn,
+                native_floor: None,
+                only_spawn: None,
+                effects: std::sync::Mutex::new(Vec::new()),
+            },
             stored: SoulpitStoredEncounter {
                 revision: 1,
                 species: "oteryn:creature.rat".into(),
@@ -218,10 +235,58 @@ impl ActivityHandoffOwnerRuntime for Owner {
 }
 
 #[test]
+fn srx3_soulpit_random_position_selects_only_source_walkable_cells() -> TestResult {
+    tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(debug)?.block_on(async {
+        let mut owner=Owner::fixture_with_capacity(true,32)?;
+        let only=MovementLocalPosition{x:32374,y:31145,floor:8};
+        owner.scene.only_spawn=Some(only);
+        drive_soulpit_deadlines(&mut owner,4_250_000).await.map_err(debug)?;
+        let actors=owner.carrier.soulpit_actors(&owner.continuity,owner.binding.handoff_id).map_err(debug)?;
+        assert_eq!(actors.len(),1,"Zone:randomPosition filters walkability BEFORE its uniform sample; later occupied attempts do not redraw");
+        assert_eq!(actors[0].position,only);
+        Ok(())
+    })
+}
+
+#[test]
+fn srx3_soulpit_runtime_spawns_on_native_source_floor() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .map_err(debug)?
+        .block_on(async {
+            let mut owner = Owner::fixture_with_capacity(true, 32)?;
+            owner.scene.native_floor = Some(-8);
+            owner.content = ChannelContentPin::from_activation(
+                owner.binding.scope.world_id(),
+                1,
+                owner.native.source_digest(),
+                [2; 32],
+                [3; 32],
+                [4; 32],
+                (32373, 31151, -8),
+            );
+            drive_soulpit_deadlines(&mut owner, 4_250_000)
+                .await
+                .map_err(debug)?;
+            let actors = owner
+                .carrier
+                .soulpit_actors(&owner.continuity, owner.binding.handoff_id)
+                .map_err(debug)?;
+            assert_eq!(
+                actors.len(),
+                MONSTERS_PER_WAVE,
+                "source z8 is native floor -8, not an empty successful wave"
+            );
+            Ok(())
+        })
+}
+
+#[test]
 fn precise_spawn_and_source_global_clearance_have_independent_deadlines() -> TestResult {
     tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(debug)?.block_on(async {
     let mut owner=Owner::fixture(false)?;
-    assert_eq!(drive_soulpit_activity(&mut owner,1_000_000).await.map_err(debug)?,Some(4_250_000));
+    assert_eq!(drive_soulpit_activity(&mut owner,1_000_000).await.map_err(debug)?,Some(1_250_000));
     assert_eq!(owner.stored.encounter.snapshot().phase,EncounterPhase::Preparing);
     assert_eq!(drive_soulpit_deadlines(&mut owner,4_250_000).await.map_err(debug)?,Some(600_250_000));
     assert_eq!(owner.stored.encounter.snapshot().phase,EncounterPhase::Fighting);
@@ -496,6 +561,59 @@ fn lethal_boss_reward_precedes_both_timeout_drivers_and_replayed_return_never_re
                         .is_empty()
                 );
             }
+            Ok(())
+        })
+}
+
+#[test]
+fn srx3_soulpit_prepared_positions_emit_four_native_cues_once_without_spawn_redraw() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .map_err(debug)?
+        .block_on(async {
+            let mut owner = Owner::fixture_with_capacity(true, 8)?;
+            drive_soulpit_deadlines(&mut owner, 1_249_999)
+                .await
+                .map_err(debug)?;
+            assert!(owner.scene.effects.lock().map_err(debug)?.is_empty());
+            drive_soulpit_deadlines(&mut owner, 1_250_000)
+                .await
+                .map_err(debug)?;
+            let first = owner.scene.effects.lock().map_err(debug)?.clone();
+            assert_eq!(
+                first.len(),
+                7,
+                "each Source-selected wave position emits its1s teleport cue"
+            );
+            assert!(first.iter().all(|(_, effect)| *effect == 11));
+            drive_soulpit_deadlines(&mut owner, 1_250_000)
+                .await
+                .map_err(debug)?;
+            assert_eq!(
+                owner.scene.effects.lock().map_err(debug)?.len(),
+                7,
+                "same deadline never replays a cue"
+            );
+            // The source retained these positions before the creation callback.
+            // A newly blocked scene prevents creation but must not redraw cues.
+            owner.scene.allow_spawn = false;
+            drive_soulpit_deadlines(&mut owner, 4_250_000)
+                .await
+                .map_err(debug)?;
+            let effects = owner.scene.effects.lock().map_err(debug)?.clone();
+            assert_eq!(effects.len(), 28, "source1/2/3/4second wave cues");
+            for burst in effects.chunks_exact(7) {
+                assert_eq!(burst, first.as_slice());
+            }
+            assert_eq!(owner.stored.encounter.snapshot().monsters_alive, 0);
+            assert!(
+                owner
+                    .carrier
+                    .soulpit_actors(&owner.continuity, owner.binding.handoff_id)
+                    .map_err(debug)?
+                    .is_empty()
+            );
             Ok(())
         })
 }

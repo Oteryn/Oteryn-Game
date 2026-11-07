@@ -1,0 +1,41 @@
+{
+  "kind": "copied-native-death-quest-schema-probe",
+  "scope": "isolated PostgreSQL test database; BEGIN/ROLLBACK; TEMP table/function/trigger only",
+  "public_schema_or_data_changed": false,
+  "cloned_check_constraints": true,
+  "foreign_keys_copied": false,
+  "actual_source_guard_attached": "game_soul_war_death_source_guard",
+  "baseline": {
+    "sqlstate": "23514",
+    "message": "Soul War boss gain requires its matching native death and member receipt",
+    "probe_ms": 5.217,
+    "ordinary_non_death_control_ms": 0.653
+  },
+  "forward_temp": {
+    "copied_source_shape_accepted_ms": 4.838,
+    "ordinary_control_accepted_ms": 0.316,
+    "legacy_non_xp_rejected_sqlstate": "23514",
+    "legacy_non_xp_probe_ms": 1.338,
+    "purple_false_event_rejected_sqlstate": "23514",
+    "purple_probe_ms": 0.355
+  },
+  "qualification_limit": "The TEMP forward probe verifies schema shape and legacy guard preservation only. Its synthetic metadata is not native source authority and does not prove the pending opaque writer/production copied handler. No XP member or parent was fabricated. The forward migration remains a draft until that writer is coherent.",
+  "files": {
+    "red_sql": {
+      "path": "docs/agents/evidence/srx3-source-quest-non-xp-red.sql",
+      "sha256": "3d856a579c9e9756c27c8802e7e18106e1e27c497994ba2dc2793047e13622a3"
+    },
+    "red_log": {
+      "path": "docs/agents/evidence/srx3-source-quest-non-xp-red.log",
+      "sha256": "f8ea746529b8f3f2e564f6768fa814eb641869ccf2616faad3dfc2178fdb610e"
+    },
+    "forward_temp_sql": {
+      "path": "docs/agents/evidence/srx3-source-quest-death-forward-temp.sql",
+      "sha256": "6159bd9ee232f7154aa2081d52382058f9f32ab6212b97aab3da3bffe758cd5c"
+    },
+    "forward_temp_log": {
+      "path": "docs/agents/evidence/srx3-source-quest-death-forward-temp.log",
+      "sha256": "62d16868c744831988b22a1d8973b1fcd79bd978a914daa9534143b78a3f8406"
+    }
+  }
+}

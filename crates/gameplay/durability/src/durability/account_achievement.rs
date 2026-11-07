@@ -275,7 +275,10 @@ pub(super) async fn grant_missing(
     .bind(keys)
     .fetch_all(&mut **tx)
     .await?;
-    for key in keys.iter().filter(|key| !held.iter().any(|held| held == *key)) {
+    for key in keys
+        .iter()
+        .filter(|key| !held.iter().any(|held| held == *key))
+    {
         let request = AchievementGrantRequest {
             achievement_key: (*key).to_owned(),
             catalogue: embedded_lookup(key)?,

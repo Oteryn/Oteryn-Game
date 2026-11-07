@@ -397,6 +397,16 @@ pub(super) async fn prepare_in_transaction(
             }
         }));
     }
+    if super::soul_war::is_soul_war(&r.activity_key)
+        && !super::soul_war::validate_entry(tx, r, now).await?
+    {
+        return Ok(Err(ActivityRefusal::AuthorityRejected));
+    }
+    if super::rotten_blood::is_rotten(&r.activity_key)
+        && !super::rotten_blood::validate_entry(tx, r, now).await?
+    {
+        return Ok(Err(ActivityRefusal::AuthorityRejected));
+    }
     let reset:Option<String>=sqlx::query_scalar("SELECT a.reset_epoch::text FROM game_world_reset_active a JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE a.world_id=encode($1,'hex')::uuid FOR SHARE OF a,e")
         .bind(r.destination_scope.world_id().as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     let Some(reset) = reset else {
@@ -585,3 +595,7 @@ mod tests {
         assert!(parse_cell(&serde_json::json!({"x":2147483648_i64,"y":2,"floor":7})).is_none());
     }
 }
+
+#[path = "boss_room/source_prefix.rs"]
+mod source_prefix;
+pub use source_prefix::{QualifiedBossPadExtra, QualifiedBossPadPrefix, SourceBossLeverExtra};

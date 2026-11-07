@@ -355,7 +355,8 @@ impl ChannelSpellStates {
                         speaker: actor,
                         position,
                         talk_type,
-                        text,
+                        text: text.to_owned(),
+                        captured_name: None,
                     });
                 changed |= map.facts.emit_movement_effect(position, effect);
             }
@@ -656,10 +657,10 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             }
             let east = position.x.checked_add(1).map(|x| TilePos { x, ..position });
             let east_enterable = east.is_some_and(|east| {
-                self.movement_cells
+                self.effective_movement_cells()
                     .index()
                     .lookup(
-                        self.movement_cells.scope(),
+                        self.effective_movement_cells().scope(),
                         crate::content::LogicalCell {
                             x: i32::from(east.x),
                             y: i32::from(east.y),
@@ -1006,8 +1007,12 @@ mod tests {
             let speech = map.facts.movement_speech_since(0);
             assert_eq!(speech.len(), 1);
             assert_eq!(
-                (speech[0].1.speaker, speech[0].1.text, speech[0].1.talk_type),
-                (actor, "Faaart!", 36)
+                (
+                    speech[0].1.speaker,
+                    speech[0].1.text.clone(),
+                    speech[0].1.talk_type
+                ),
+                (actor, "Faaart!".to_owned(), 36)
             );
             assert_eq!(
                 map.facts

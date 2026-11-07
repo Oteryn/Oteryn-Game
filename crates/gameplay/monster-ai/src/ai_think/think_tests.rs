@@ -21,7 +21,7 @@ use serde_json::{Value, json};
 
 type Abilities = BTreeMap<ProjectV2DefinitionRef, ProjectV2AbilityAuthoring>;
 
-fn actor_n(seed: u16) -> ExactActorRef {
+pub(super) fn actor_n(seed: u16) -> ExactActorRef {
     let mut bytes = [0; 16];
     bytes[0] = 1;
     bytes[6] = 0x70;
@@ -38,12 +38,12 @@ fn rat() -> ExactActorRef {
     actor_n(1)
 }
 
-fn revisions() -> RevisionSet {
+pub(super) fn revisions() -> RevisionSet {
     RevisionSet::new("rules-r1", "content-r1", "world-r1", "formula-r1", "sim-r1")
         .expect("revisions")
 }
 
-fn root() -> GameplayDecisionRoot {
+pub(super) fn root() -> GameplayDecisionRoot {
     GameplayDecisionRoot::from_bytes([9; 32])
 }
 

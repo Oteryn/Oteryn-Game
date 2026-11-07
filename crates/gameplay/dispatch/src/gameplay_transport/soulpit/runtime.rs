@@ -26,8 +26,8 @@ use oteryn_simulation_determinism::{
 use sha2::{Digest, Sha256};
 use std::{future::Future, pin::Pin};
 
-pub type ActivityFuture<'a, T> =
-    Pin<Box<dyn Future<Output = Result<T, SoulpitRuntimeError>> + Send + 'a>>;
+/// A locally polled owner operation, matching the existing listener/cycle executor.
+pub type ActivityFuture<'a, T> = Pin<Box<dyn Future<Output = Result<T, SoulpitRuntimeError>> + 'a>>;
 
 #[derive(Debug)]
 pub enum SoulpitRuntimeError {
@@ -59,6 +59,7 @@ pub struct SoulpitActivityBinding {
 /// Current native map and AI observations from the shared runtime, not client coordinates.
 pub trait ActivityHandoffScene {
     fn permits_spawn(&self, at: MovementLocalPosition) -> bool;
+    fn emit_spawn_effect(&self, at: MovementLocalPosition, effect: u16) -> bool;
     fn attack_target(&self, source: ExactActorRef) -> Option<ExactActorRef>;
     fn permits_condition(
         &self,
@@ -180,7 +181,83 @@ fn draw(
     ))
 }
 
-fn request(
+fn retain_wave_plan(
+    kernel: &mut SoulpitKernel<'_>,
+    binding: SoulpitActivityBinding,
+    stored: &SoulpitStoredEncounter,
+) -> Result<SoulpitWaveRequest, SoulpitRuntimeError> {
+    let wave = stored.encounter.snapshot().wave;
+    if let Some(plan) =
+        kernel
+            .carrier
+            .soulpit_wave_plan(kernel.continuity, binding.handoff_id, wave)?
+    {
+        return Ok(plan);
+    }
+    let stacks = wave_stacks(wave).map_err(|_| SoulpitRuntimeError::InvalidState)?;
+    let floor = kernel.content.entry_start().floor;
+    // Crystal zones.lua12–35 filters real ground first. Occupancy is deliberately
+    // excluded: Game.createSoulPitMonster may fail later without redrawing.
+    let mut eligible = Vec::new();
+    for y in 31132..=31153 {
+        for x in 32362..=32390 {
+            let at = MovementLocalPosition { x, y, floor };
+            if kernel.scene.permits_spawn(at) {
+                eligible.push(at);
+            }
+        }
+    }
+    let root = kernel.content.server_artifact_digest();
+    let id = occurrence(binding, b"wave", u64::from(wave));
+    let mut positions = [None; MONSTERS_PER_WAVE];
+    for (ordinal, stack) in stacks.into_iter().enumerate() {
+        positions[ordinal] = if stack == SoulpitStack::Boss {
+            Some(MovementLocalPosition {
+                x: 32376,
+                y: 31144,
+                floor,
+            })
+        } else if eligible.len() == 638 {
+            // Preserve existing deterministic decisions when the full rectangle
+            // is source-qualified; this is the same uniform distribution.
+            Some(MovementLocalPosition {
+                x: draw(root, id, "soulpit_x", ordinal as u64, 32362, 32390)? as i32,
+                y: draw(root, id, "soulpit_y", ordinal as u64, 31132, 31153)? as i32,
+                floor,
+            })
+        } else if eligible.is_empty() {
+            None
+        } else {
+            let max =
+                i64::try_from(eligible.len() - 1).map_err(|_| SoulpitRuntimeError::InvalidState)?;
+            let at = draw(root, id, "soulpit_position", ordinal as u64, 0, max)?;
+            Some(
+                *eligible
+                    .get(usize::try_from(at).map_err(|_| SoulpitRuntimeError::InvalidState)?)
+                    .ok_or(SoulpitRuntimeError::InvalidState)?,
+            )
+        };
+    }
+    let boss_ability =
+        BossAbility::from_roll(draw(root, id, "soulpit_boss_ability", 6, 1, 3)? as u8)
+            .map_err(|_| SoulpitRuntimeError::InvalidState)?;
+    kernel
+        .carrier
+        .retain_soulpit_wave_plan(
+            kernel.continuity,
+            SoulpitWaveRequest {
+                handoff_id: binding.handoff_id,
+                wave,
+                species: stored.species.clone(),
+                positions,
+                boss_ability,
+                now_micros: 0,
+            },
+        )
+        .map_err(Into::into)
+}
+
+pub(super) fn request(
     binding: SoulpitActivityBinding,
     stored: &SoulpitStoredEncounter,
     now: u64,
@@ -283,8 +360,11 @@ async fn drive(
             return Err(SoulpitRuntimeError::InvalidScope);
         }
     }
-    let mut stored = owner.read_encounter().await?;
+    owner.read_encounter().await?;
     settle_lethal_bosses(owner, binding).await?;
+    // Reward settlement may yield its lane. Reconcile explicit native departures
+    // and their lifecycle revision before a terminal wave can choose survivors.
+    let mut stored = owner.read_encounter().await?;
     let mut effect = EncounterEffect::NoChange;
     if global_tick && !stored.encounter.snapshot().phase.is_terminal() {
         // A failed Spawned acknowledgement leaves the physical actors registered while
@@ -386,49 +466,26 @@ async fn drive(
             effect = outcome.effect;
         }
     }
+    if stored.encounter.snapshot().phase == EncounterPhase::Preparing
+        || matches!(effect, EncounterEffect::SpawnWave { .. })
+    {
+        let mut kernel = owner.kernel()?;
+        let plan = retain_wave_plan(&mut kernel, binding, &stored)?;
+        emit_prepared_cues(&mut kernel, binding, &stored, &plan, now_micros)?;
+    }
     if let EncounterEffect::SpawnWave { wave, stacks } = effect {
         if stacks != wave_stacks(wave).map_err(|_| SoulpitRuntimeError::InvalidState)? {
             return Err(SoulpitRuntimeError::InvalidState);
         }
         let actors = {
-            let kernel = owner.kernel()?;
-            let root = kernel.content.server_artifact_digest();
-            let id = occurrence(binding, b"wave", u64::from(wave));
-            let mut positions = [MovementLocalPosition {
-                x: 0,
-                y: 0,
-                floor: 8,
-            }; MONSTERS_PER_WAVE];
-            for (ordinal, stack) in stacks.into_iter().enumerate() {
-                positions[ordinal] = if stack == SoulpitStack::Boss {
-                    MovementLocalPosition {
-                        x: 32376,
-                        y: 31144,
-                        floor: 8,
-                    }
-                } else {
-                    MovementLocalPosition {
-                        x: draw(root, id, "soulpit_x", ordinal as u64, 32362, 32390)? as i32,
-                        y: draw(root, id, "soulpit_y", ordinal as u64, 31132, 31153)? as i32,
-                        floor: 8,
-                    }
-                };
-            }
-            let boss_ability =
-                BossAbility::from_roll(draw(root, id, "soulpit_boss_ability", 6, 1, 3)? as u8)
-                    .map_err(|_| SoulpitRuntimeError::InvalidState)?;
+            let mut kernel = owner.kernel()?;
+            let mut plan = retain_wave_plan(&mut kernel, binding, &stored)?;
+            plan.now_micros = now_micros;
             kernel.carrier.spawn_soulpit_wave(
                 kernel.continuity,
                 kernel.content,
                 kernel.native.policies(),
-                SoulpitWaveRequest {
-                    handoff_id: binding.handoff_id,
-                    wave,
-                    species: stored.species.clone(),
-                    positions,
-                    boss_ability,
-                    now_micros,
-                },
+                plan,
                 |position| kernel.scene.permits_spawn(position),
             )?
         };
@@ -552,6 +609,54 @@ pub async fn interrupt_soulpit_activity(
         .await
 }
 
+// Crystal soulpit_fight.lua:118-128 selects once, then emits at 1/2/3/4 seconds.
+// The callback cursor belongs to the same physical plan as the spawn receipt;
+// uncertain durable retries cannot replay accepted native Map effects.
+fn emit_prepared_cues(
+    kernel: &mut SoulpitKernel<'_>,
+    binding: SoulpitActivityBinding,
+    stored: &SoulpitStoredEncounter,
+    plan: &SoulpitWaveRequest,
+    now: u64,
+) -> Result<(), SoulpitRuntimeError> {
+    while let Some(cue) =
+        kernel
+            .carrier
+            .next_soulpit_wave_cue(kernel.continuity, binding.handoff_id, plan.wave)?
+    {
+        let deadline = stored
+            .encounter
+            .snapshot()
+            .wave_started_at_micros
+            .checked_add((u64::from(cue) / 7 + 1) * 1_000_000)
+            .ok_or(SoulpitRuntimeError::InvalidState)?;
+        if now < deadline {
+            break;
+        }
+        let slot = usize::from(cue % 7);
+        if let Some(at) = plan.positions[slot] {
+            let stacks = wave_stacks(plan.wave).map_err(|_| SoulpitRuntimeError::InvalidState)?;
+            let effect = match stacks[slot].get() {
+                1 => 11,
+                5 => 224,
+                15 => 223,
+                40 => 222,
+                _ => return Err(SoulpitRuntimeError::InvalidState),
+            };
+            if !kernel.scene.emit_spawn_effect(at, effect) {
+                return Err(SoulpitRuntimeError::AdapterUnavailable);
+            }
+        }
+        kernel.carrier.acknowledge_soulpit_wave_cue(
+            kernel.continuity,
+            binding.handoff_id,
+            plan.wave,
+            cue,
+        )?;
+    }
+    Ok(())
+}
+
 /// Precise source addEvent deadlines, independently of the source one-second global tick.
 /// The shared owner returns their minimum to its existing world cadence after every pass.
 pub fn next_soulpit_deadline(
@@ -572,6 +677,18 @@ pub fn next_soulpit_deadline(
         .ok_or(SoulpitRuntimeError::InvalidState)?;
     let mut due = timeout;
     if snapshot.phase == EncounterPhase::Preparing {
+        if let Some(cue) = kernel.carrier.next_soulpit_wave_cue(
+            kernel.continuity,
+            binding.handoff_id,
+            snapshot.wave,
+        )? {
+            due = due.min(
+                snapshot
+                    .wave_started_at_micros
+                    .checked_add((u64::from(cue) / 7 + 1) * 1_000_000)
+                    .ok_or(SoulpitRuntimeError::InvalidState)?,
+            );
+        }
         due = due.min(
             snapshot
                 .wave_started_at_micros

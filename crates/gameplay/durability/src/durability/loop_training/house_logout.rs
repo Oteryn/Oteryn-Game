@@ -1,12 +1,12 @@
 //! Q16: the existing explicit logout marker under actual named-House custody.
 //! This proof cannot authorize training, vocation, experience or activity writes.
-use super::TrainingLogout;
 use super::super::character_authority::ReconciledCharacterAuthority;
 use super::super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, FencedCharacterRoot, numeric_u64,
 };
 use super::super::runtime_scope_assignment::NodeIncarnationProof;
 use super::super::{DurabilityError, DurabilityRoot};
+use super::TrainingLogout;
 use crate::foundation::{ChannelId, RuntimeScopeRefV1};
 use sqlx::{Postgres, Row, Transaction};
 
@@ -36,16 +36,24 @@ impl<'a> HouseLogout<'a> {
         // This is an actor-end checkpoint, not a service or entry grant. ACL
         // revocation must not prevent the resident from releasing its claims.
         if super::super::house_hireling::fence::assert_house_custody_fence(
-            tx, &self.owner.node, &self.owner.fence.item_fence(), *origin.as_bytes(),
-        ).await?.is_none() {
+            tx,
+            &self.owner.node,
+            &self.owner.fence.item_fence(),
+            *origin.as_bytes(),
+        )
+        .await?
+        .is_none()
+        {
             return Ok(Err(CharacterProgressionError::AuthorityRejected));
         }
         let row = sqlx::query(
             "SELECT character_revision::text,profile_revision,ruleset_revision,content_revision \
              FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid \
              AND lifecycle=1 FOR UPDATE",
-        ).bind(self.owner.fence.character_id.as_bytes().as_slice())
-         .fetch_optional(&mut **tx).await?;
+        )
+        .bind(self.owner.fence.character_id.as_bytes().as_slice())
+        .fetch_optional(&mut **tx)
+        .await?;
         let Some(row) = row else {
             return Ok(Err(CharacterProgressionError::AuthorityRejected));
         };

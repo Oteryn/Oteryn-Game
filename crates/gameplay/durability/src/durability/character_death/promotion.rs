@@ -17,8 +17,7 @@ pub(super) async fn benefit(
     let promoted =
         crate::durability::character_promotion::read_durable_promotion(tx, character).await?;
     Ok(crate::domain::premium::promotion_benefit_current(
-        promoted,
-        premium,
+        promoted, premium,
     ))
 }
 

@@ -127,6 +127,17 @@ impl UnresolvedLane {
 }
 
 impl SpellLanePermit {
+    /// Infallible fresh scoped permit for the MINT test-support facade. The typed
+    /// scope has already been validated; acquiring its empty lane cannot fail.
+    #[cfg(any(test, feature = "test-support"))]
+    pub(crate) async fn fresh_mint_scope(scope: RuntimeScopeRefV1) -> Self {
+        let lane = SpellLane::for_scope(scope);
+        Self {
+            scope,
+            guard: Arc::clone(&lane.state).lock_owned().await,
+        }
+    }
+
     /// The permit of a fresh lane, which never holds a parked attempt: for the PostgreSQL test
     /// support of the DB-only item writers, which owns no Channel runtime.
     #[cfg(any(test, feature = "test-support"))]

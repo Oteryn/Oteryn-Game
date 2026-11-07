@@ -28,10 +28,10 @@ pub use oteryn_gameplay_economy::bank::{
 };
 
 use super::bank_audit::{
-    self as audit, ASSET_GOLD, BANK_DEPOSIT_MAX, BANK_TRANSFER_MAX,
-    BANK_WITHDRAW_MAX, BankCauseV1, BankCoinLineV1, BankConversionCauseV1, BankEventIdentity,
+    self as audit, ASSET_GOLD, BANK_DEPOSIT_MAX, BANK_TRANSFER_MAX, BANK_WITHDRAW_MAX, BankCauseV1,
+    BankCoinLineV1, BankConversionCauseV1, BankEventIdentity, BankHirelingHouseV1,
     BankItemDefinitionV1, BankItemStateV1, BankOperationCauseV1, BankOperationV1,
-    BankTransferCauseV1, BankValueLineV1, BankHirelingHouseV1, COIN_LINE_INPUT, COIN_LINE_OUTPUT, CONVERSION_DEPOSIT,
+    BankTransferCauseV1, BankValueLineV1, COIN_LINE_INPUT, COIN_LINE_OUTPUT, CONVERSION_DEPOSIT,
     CONVERSION_WITHDRAW, LINE_CLASS_CONVERSION, LINE_CLASS_TRANSFER,
 };
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
@@ -620,7 +620,7 @@ async fn read_npc_bank_command(
     let Some(row) = row else {
         return Ok(None);
     };
-    let world_id=fence.runtime_scope.world_id();
+    let world_id = fence.runtime_scope.world_id();
     if uuid_text(&row.try_get::<String, _>("character_id")?)? != *fence.character_id.as_bytes()
         || uuid_text(&row.try_get::<String, _>("world_id")?)? != *world_id.as_bytes()
     {
@@ -673,23 +673,33 @@ impl DurabilityRoot {
         coins: Option<BankCoinFacts>,
         recipient_name: Option<CharacterName>,
     ) -> Result<BankNpcPreview> {
-        self.preview_bank(authority,node,fence,coins,recipient_name,None).await
+        self.preview_bank(authority, node, fence, coins, recipient_name, None)
+            .await
     }
 
     /// Exact active Hireling and character-wide Banker entitlement, under named House custody.
     pub async fn preview_hireling_bank(
-        &self, authority:&ReconciledCharacterAuthority<'_,'_>,node:&NodeIncarnationProof,
-        fence:CurrentCharacterItemFence,coins:Option<BankCoinFacts>,recipient_name:Option<CharacterName>,
-        npc_key:String,
-    )->Result<BankNpcPreview>{
-        self.preview_bank(authority,node,fence,coins,recipient_name,Some(npc_key)).await
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        coins: Option<BankCoinFacts>,
+        recipient_name: Option<CharacterName>,
+        npc_key: String,
+    ) -> Result<BankNpcPreview> {
+        self.preview_bank(authority, node, fence, coins, recipient_name, Some(npc_key))
+            .await
     }
 
     async fn preview_bank(
-        &self, authority:&ReconciledCharacterAuthority<'_,'_>,node:&NodeIncarnationProof,
-        fence:CurrentCharacterItemFence,coins:Option<BankCoinFacts>,recipient_name:Option<CharacterName>,
-        npc_key:Option<String>,
-    )->Result<BankNpcPreview>{
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        coins: Option<BankCoinFacts>,
+        recipient_name: Option<CharacterName>,
+        npc_key: Option<String>,
+    ) -> Result<BankNpcPreview> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| BankError::AuthorityRejected)?;
@@ -834,11 +844,13 @@ impl DurabilityRoot {
 /// The request's own shape, before any read: identities, the amount within its row, the planned
 /// slots and the coin facts.
 pub fn validate_request(fence: &CurrentCharacterItemFence, request: &BankRequest) -> Result<()> {
-    if !matches!(fence.runtime_scope,RuntimeScopeRefV1::Channel{..}) {return Err(BankError::InvalidInput)}
+    if !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. }) {
+        return Err(BankError::InvalidInput);
+    }
     validate_request_shape(request)
 }
 
-fn validate_request_shape(request:&BankRequest)->Result<()> {
+fn validate_request_shape(request: &BankRequest) -> Result<()> {
     let identity = request.identity();
     let cap = match request {
         BankRequest::Deposit(_) => BANK_DEPOSIT_MAX,
@@ -933,7 +945,7 @@ struct Acting {
     world_id: WorldId,
     channel_id: ChannelId,
     scope_ownership_generation: u64,
-    hireling_house: Option<(String,[u8;16])>,
+    hireling_house: Option<(String, [u8; 16])>,
     // Current deciding fence, distinct from immutable NPC confirmation provenance.
     hireling_connection_generation: Option<u64>,
 }
@@ -947,14 +959,21 @@ pub async fn bank_operation_in_transaction(
     fence: &CurrentCharacterItemFence,
     request: &BankRequest,
 ) -> Result<BankOperationOutcome> {
-    bank_operation_with_npc(tx,node,fence,request,None).await
+    bank_operation_with_npc(tx, node, fence, request, None).await
 }
 
 async fn bank_operation_with_npc(
-    tx:&mut sqlx::Transaction<'_,sqlx::Postgres>,node:&NodeIncarnationProof,
-    fence:&CurrentCharacterItemFence,request:&BankRequest,npc_key:Option<&str>,
-)->Result<BankOperationOutcome>{
-    if npc_key.is_some(){validate_request_shape(request)?}else{validate_request(fence,request)?}
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    request: &BankRequest,
+    npc_key: Option<&str>,
+) -> Result<BankOperationOutcome> {
+    if npc_key.is_some() {
+        validate_request_shape(request)?
+    } else {
+        validate_request(fence, request)?
+    }
     let binding = request_binding(fence, request);
     let occurrence = request.identity().occurrence;
     sqlx::query(
@@ -967,7 +986,7 @@ async fn bank_operation_with_npc(
     if let Some(record) = load_operation(tx, occurrence, &binding).await? {
         return Ok(BankOperationOutcome::Replayed(record));
     }
-    let Some(acting) = hireling::acting_npc_fence(tx,node,fence,npc_key).await? else {
+    let Some(acting) = hireling::acting_npc_fence(tx, node, fence, npc_key).await? else {
         return Err(BankError::AuthorityRejected);
     };
     let record = match request {
@@ -1799,7 +1818,13 @@ fn encode_event(
             backpack_item_instance_id: backpack.map(|id| id.to_vec()).unwrap_or_default(),
             coin_lines,
             value_lines,
-            hireling_house: acting.hireling_house.as_ref().map(|(house,id)|BankHirelingHouseV1{house_key:house.clone(),hireling_id:id.to_vec()}),
+            hireling_house: acting
+                .hireling_house
+                .as_ref()
+                .map(|(house, id)| BankHirelingHouseV1 {
+                    house_key: house.clone(),
+                    hireling_id: id.to_vec(),
+                }),
             recipient_character_id: recipient
                 .map(|id| id.as_bytes().to_vec())
                 .unwrap_or_default(),
@@ -1871,8 +1896,14 @@ async fn deposit(
         return Err(DurabilityError::InvalidStoredState.into());
     };
     let Some(after) = super::bank_credit_headroom::credit_in_transaction(
-        tx, &acting.account_id, acting.world_id, balance.balance, deposit.amount,
-    ).await? else {
+        tx,
+        &acting.account_id,
+        acting.world_id,
+        balance.balance,
+        deposit.amount,
+    )
+    .await?
+    else {
         return refuse(tx, acting, &request, binding, BankResult::BalanceLimit).await;
     };
 
@@ -2177,8 +2208,14 @@ async fn transfer(
         .await;
     };
     let Some(receiver_after) = super::bank_credit_headroom::credit_in_transaction(
-        tx, &recipient_account, acting.world_id, receiver.balance, transfer.amount,
-    ).await? else {
+        tx,
+        &recipient_account,
+        acting.world_id,
+        receiver.balance,
+        transfer.amount,
+    )
+    .await?
+    else {
         return refuse(
             tx,
             acting,

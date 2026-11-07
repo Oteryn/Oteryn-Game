@@ -258,7 +258,8 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
     ) -> Result<Option<StoredPvpState>> {
-        self.read_pvp_state_in_scope(authority, node, fence, None).await
+        self.read_pvp_state_in_scope(authority, node, fence, None)
+            .await
     }
 
     /// E12: the same persisted combat deadlines under current named-House
@@ -271,7 +272,8 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         origin_channel: crate::foundation::ChannelId,
     ) -> Result<Option<StoredPvpState>> {
-        self.read_pvp_state_in_scope(authority, node, fence, Some(*origin_channel.as_bytes())).await
+        self.read_pvp_state_in_scope(authority, node, fence, Some(*origin_channel.as_bytes()))
+            .await
     }
 
     async fn read_pvp_state_in_scope(
@@ -283,7 +285,8 @@ impl DurabilityRoot {
     ) -> Result<Option<StoredPvpState>> {
         // Activities use the shared session fence; named Houses require custody below.
         if fence.character_lease_generation == 0
-            || (origin_channel.is_some() && !matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. }))
+            || (origin_channel.is_some()
+                && !matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. }))
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
@@ -299,13 +302,20 @@ impl DurabilityRoot {
                     lock_admission_relations(&mut tx).await?;
                     if let Some(origin_channel) = origin_channel {
                         if super::house_hireling::fence::assert_house_custody_fence(
-                            &mut tx, &node, &fence.item_fence(), origin_channel,
-                        ).await?.is_none() {
+                            &mut tx,
+                            &node,
+                            &fence.item_fence(),
+                            origin_channel,
+                        )
+                        .await?
+                        .is_none()
+                        {
                             return Ok(Err(CharacterProgressionError::AuthorityRejected));
                         }
                     } else if let Err(error) =
-                        assert_session_fence(&mut tx, &fence.item_fence(), &node).await? {
-                            return Ok(Err(error));
+                        assert_session_fence(&mut tx, &fence.item_fence(), &node).await?
+                    {
+                        return Ok(Err(error));
                     }
                     let stored = load_pvp_state(&mut tx, fence.character_id).await?;
                     commit_semantic_transaction(tx, deadline).await?;

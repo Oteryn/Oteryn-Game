@@ -98,9 +98,7 @@ pub(super) async fn lock_carried_path(
     .bind(world.as_slice())
     .fetch_all(&mut *connection)
     .await?;
-    if locked.len() != items.len()
-        || use_path(connection, source).await? != path
-    {
+    if locked.len() != items.len() || use_path(connection, source).await? != path {
         return Err(ItemUseError::StaleState);
     }
     if let Some((tool, path)) = tool_path

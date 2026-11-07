@@ -1,0 +1,18 @@
+[
+  {
+    "mechanic": "0385-native-map-cues",
+    "kind": "handlers",
+    "id": "0385-native-map-cues-projection",
+    "status": "unsupported",
+    "commands": [],
+    "direction": "server_to_client",
+    "reason": "The strict wire codecs are implemented; current-epoch Session basis and scene delivery remain pending verification.",
+    "not_applicable": {
+      "view": "Native cues reuse the existing map presentation and local speech views after Session basis projection.",
+      "input": "Coordinate basis grants no client command.",
+      "settings": "The current qualified scope selects the basis.",
+      "state": "The existing Session domain revisions retain cue ordering.",
+      "protocol": "Session epoch-basis installation and negotiated native delta routing are not yet enabled."
+    }
+  }
+]

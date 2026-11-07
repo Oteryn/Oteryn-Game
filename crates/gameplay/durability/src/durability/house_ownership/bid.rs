@@ -70,7 +70,9 @@ pub(super) async fn bid_in_transaction(
         .map_err(|_| HouseOwnershipError::AuthorityRejected)?;
     let kind: Option<String> = sqlx::query_scalar("SELECT kind FROM game_house_properties WHERE world_id=encode($1,'hex')::uuid AND house_key=$2")
         .bind(world.as_bytes().as_slice()).bind(&request.house_key).fetch_optional(&mut **tx).await?;
-    if kind.as_deref().is_some_and(|kind| kind != request.kind) || (kind.is_none() && request.kind != "guildhall") {
+    if kind.as_deref().is_some_and(|kind| kind != request.kind)
+        || (kind.is_none() && request.kind != "guildhall")
+    {
         return Err(HouseOwnershipError::CatalogueUnavailable);
     }
     if request.kind == "guildhall" {

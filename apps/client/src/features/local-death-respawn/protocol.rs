@@ -16,7 +16,7 @@ pub(crate) struct DeathState {
 
 impl Mailbox {
     pub(in crate::play) fn world_input_blocked(&self) -> bool {
-        self.death.dead || self.death_reset_commands
+        self.death.dead || self.death_reset_commands || self.scope_pending
     }
 
     pub(in crate::play) fn apply_death_vitals(&mut self, vitals: ActorVitals) {
@@ -62,31 +62,39 @@ impl PlayView {
 
 impl Outbox {
     /// Discard pending world actions on death, even if respawn arrived before the next poll.
+    #[cfg(test)]
     pub(in crate::play) fn death_command(
         &self,
         commands: &mut UnboundedReceiver<PlayCommand>,
     ) -> Result<PlayCommand, TryRecvError> {
         let mut mailbox = lock(&self.0);
-        let blocked = mailbox.world_input_blocked();
-        loop {
-            let command = match commands.try_recv() {
-                Ok(command) => command,
-                Err(error) => {
-                    mailbox.death_reset_commands = false;
-                    return Err(error);
-                }
-            };
-            let world_input = matches!(
-                command,
-                PlayCommand::Step(_)
-                    | PlayCommand::TargetWalk(_)
-                    | PlayCommand::Combat(_)
-                    | PlayCommand::DailyReward(_)
-            );
-            let movement_control = matches!(&command, PlayCommand::ServerMechanic(request) if matches!(request.capability, 64 | 82));
-            if !blocked || !(world_input || movement_control) {
-                return Ok(command);
+        receive_command(&mut mailbox, commands)
+    }
+}
+
+pub(in crate::play) fn receive_command(
+    mailbox: &mut Mailbox,
+    commands: &mut UnboundedReceiver<PlayCommand>,
+) -> Result<PlayCommand, TryRecvError> {
+    let blocked = mailbox.world_input_blocked();
+    loop {
+        let command = match commands.try_recv() {
+            Ok(command) => command,
+            Err(error) => {
+                mailbox.death_reset_commands = false;
+                return Err(error);
             }
+        };
+        let world_input = matches!(
+            command,
+            PlayCommand::Step(_)
+                | PlayCommand::TargetWalk(_)
+                | PlayCommand::Combat(_)
+                | PlayCommand::DailyReward(_)
+        );
+        let movement_control = matches!(&command, PlayCommand::ServerMechanic(request) if matches!(request.capability, 64 | 82));
+        if !blocked || !(world_input || movement_control) {
+            return Ok(command);
         }
     }
 }

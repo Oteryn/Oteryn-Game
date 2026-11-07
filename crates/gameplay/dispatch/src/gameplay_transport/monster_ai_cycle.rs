@@ -48,6 +48,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         permit: crate::durability::spell_owner_commit::SpellLanePermit,
         now: oteryn_simulation_determinism::SemanticTimeMicros,
     ) {
+        if !self.drain_w01_death_item_expiry(&permit, now.get()).await {
+            return;
+        }
+        self.activity_runtimes
+            .gc_rotten_area_caches(*self.world_id.as_bytes(), now.get());
         let mut runtime = self.runtime.lock().await;
         // SPAWN-1a (CREATURE-AI-0 §6.3): the respawn occurrences due on this owner turn run
         // before the creature think pass, whether or not melee content is active.
@@ -56,7 +61,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         super::tibiadrome::tick(self, &mut runtime);
         // BUNDLE-MONSTER-AI-1: the pass reads the combat room, the entry room on the fixture
         // World and its bundle view (bundle cells and map revision) on a bundle World.
-        let Some(room) = self.rooms.gate_monster_ai() else {
+        let Some(room) = self.effective_rooms().gate_monster_ai() else {
             return;
         };
         let Some(content) = self
@@ -71,13 +76,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
-        let mut states = self.states.spell_states.lock().await;
+        let Ok(mut states) = self.states.spell_states.try_lock() else {
+            return;
+        };
+        if states.source_death_action_ready {
+            drop(states);
+            drop(runtime);
+            self.finish_prepared_source_death_action(&permit).await;
+            return;
+        }
+        if states.rotten_area.pending() {
+            drop(states);
+            drop(runtime);
+            self.finish_rotten_area(&permit).await;
+            return;
+        }
         let periodic_pass = now.get() >= states.next_monster_ai_pass_us;
         if !periodic_pass
             && !states
                 .monster_melee
                 .creature_ai
                 .has_movement_melee_retry(&runtime)
+            && !states.primal_callbacks.has_native_due(now.get())
+            && !states.soul_war_callbacks.has_native_due(now.get())
+            && !states.native_callbacks.has_native_due(now.get())
+            && !states.rotten_blood_callbacks.has_native_due(now.get())
+            && !states.rotten_area.pending()
+            && !runtime.has_pending_source_creature_deaths()
         {
             return;
         }
@@ -112,7 +137,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             think_player_census(&runtime, &states.monster_melee.think_players)
         };
         // ATTACK-1b: lock order runtime, spell states, attack.
-        let mut attack = self.states.attack.lock().await;
+        let Ok(mut attack) = self.states.attack.try_lock() else {
+            return;
+        };
         let semantic_now =
             oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now.get());
         let targets = melee_targets(room, &runtime, &states, &attack, &census, now.get());
@@ -120,7 +147,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .filter(|(_, _, session)| session.is_none())
             .collect::<Vec<_>>();
-        if swing_pass && monsters.is_empty() {
+        if swing_pass
+            && monsters.is_empty()
+            && !states.primal_callbacks.has_native_work()
+            && !states.soul_war_callbacks.has_native_work()
+            && !states.native_callbacks.has_native_work()
+            && !states.rotten_blood_callbacks.has_native_work()
+            && !states.rotten_area.pending()
+            && !runtime.has_pending_source_creature_deaths()
+        {
             return;
         }
         let digest = content
@@ -144,9 +179,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .collect();
             // CREATURE-AI-1 §2.1: every qualified monster is admitted to the think table, which
             // decides its target; the swing below only swings at that target. A monster already
-            // admitted is not qualified again.
+            // admitted keeps its clocks; a source setType rebinds only its qualified profile.
             for (actor, ..) in &monsters {
                 if states.monster_melee.creature_ai.state(*actor).is_some() {
+                    let _ = states
+                        .monster_melee
+                        .creature_ai
+                        .refresh_current_native_creature(&runtime, content, *actor);
                     continue;
                 }
                 let Ok(snapshot) = runtime.companion_snapshot(*actor) else {
@@ -168,7 +207,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // An idle creature that died or despawned has no due think to remove it.
             states.monster_melee.creature_ai.forget_dead(&runtime);
         }
-        if states.monster_melee.creature_ai.is_empty() {
+        if states.monster_melee.creature_ai.is_empty()
+            && !states.primal_callbacks.has_native_work()
+            && !states.soul_war_callbacks.has_native_work()
+            && !states.native_callbacks.has_native_work()
+            && !states.rotten_blood_callbacks.has_native_work()
+            && !runtime.has_pending_source_creature_deaths()
+        {
             return;
         }
         if swing_pass {
@@ -188,7 +233,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Crystal monster.cpp searchTarget reads current player health. The admitted content
         // describes the strategy; the held player-state owner supplies its live input.
         let candidates = think_candidates(&runtime, &states, &targets);
-        let (next_think, thought_actors) = if periodic_pass {
+        let (next_think, thought_actors) = if periodic_pass
+            || states.primal_callbacks.has_native_due(now.get())
+            || states.soul_war_callbacks.has_native_due(now.get())
+            || states.native_callbacks.has_native_due(now.get())
+            || states.rotten_blood_callbacks.has_native_due(now.get())
+            || states.rotten_area.pending()
+            || runtime.has_pending_source_creature_deaths()
+        {
             match self
                 .drive_monster_profiles(
                     &mut runtime,
@@ -204,11 +256,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
             {
                 Ok(next) => next,
-                Err(()) => return,
+                Err(()) => {
+                    let source_action = states.source_death_action.is_some();
+                    drop(attack);
+                    drop(states);
+                    drop(runtime);
+                    if source_action {
+                        self.finish_prepared_source_death_action(&permit).await;
+                    }
+                    return;
+                }
             }
         } else {
             (None, Vec::new())
         };
+        if states.rotten_area.pending() {
+            drop(attack);
+            drop(states);
+            drop(runtime);
+            self.finish_rotten_area(&permit).await;
+            return;
+        }
         if let Some(map) = self.bundle_map() {
             super::paced_movement::monster_trap::apply_monster_trap_steps(
                 &mut runtime,
@@ -239,6 +307,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let mut melee_owner = std::mem::take(&mut states.monster_melee);
         let mut trained = super::attack::skill_training::TrainingDue::new();
+        // The accepted Drome role clock is independent of melee chance/cooldown.
+        // Reuse this admitted native think's exact current target; no second AI selects one.
+        for actor in &thought_actors {
+            let Some(target) = melee_owner
+                .creature_ai
+                .state(*actor)
+                .and_then(|state| state.target())
+            else {
+                continue;
+            };
+            let Some((_, _, session, _, _)) = targets.iter().find(|(player, ..)| *player == target)
+            else {
+                continue;
+            };
+            let _ = states.apply_drome_murmillion_paralyze(
+                &mut runtime,
+                target,
+                *session,
+                *actor,
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get()),
+            );
+        }
         // §2.1: only a monster whose think holds a target swings, in census order from the
         // cursor and at most `CREATUREAI0-RL-05` per pass. A creature that stepped swings from,
         // and is perceived at, its new cell.
@@ -263,7 +353,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // pass between legacy swing deadlines. Consume N before preparing movement N+1:
         // an earlier selected source entry must not disappear when another grants extra.
         let mut ordinary = thought_actors
-            .into_iter()
+            .iter()
+            .copied()
             .filter_map(|actor| {
                 let state = melee_owner.creature_ai.state(actor)?;
                 let selected = (0..state.profile().behavior().attacks.len()).any(|index| {
@@ -317,6 +408,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 std::mem::take(&mut ordinary)
             };
             for (actor, position) in &batch {
+                super::monster_profile_cycle::publish_native_facing(
+                    &mut runtime,
+                    &melee_owner.creature_ai,
+                    *actor,
+                );
                 let Some(entries) = qualified_melee(&runtime, content, *actor) else {
                     continue;
                 };
@@ -551,6 +647,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         Dispatch::ZeroDamage => false,
                         Dispatch::Bite(Err(_)) | Dispatch::Decision(_) => continue,
                     };
+                    super::tibiadrome::modifiers::melee(self, &mut runtime, *actor);
                     states.prey_activity(&runtime, player, session, super::prey::PreyActivity {
                         creature: race_key,
                         kind: if received_damage {
@@ -565,6 +662,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         states.monster_melee = melee_owner;
+        // Source executeConditions follows this actor's complete onAttacking phase,
+        // including the native melee selection committed above. Timer-only owner
+        // turns cannot expire a marker belonging to an actor that did not think.
+        let callbacks = states.native_callbacks.clone();
+        if callbacks
+            .expire_native_conditions(&mut runtime, room, content, &thought_actors, now.get())
+            .await
+            .is_err()
+        {
+            return;
+        }
         states.next_monster_ai_pass_us = next_pass;
         if !swinging.is_empty() {
             states.monster_ai_cursor = (cursor + count) % swinging.len();

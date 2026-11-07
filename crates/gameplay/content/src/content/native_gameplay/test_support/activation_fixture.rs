@@ -202,13 +202,15 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         .filter(|policy| policy.reward_boss == Some(true))
         .collect::<Vec<_>>();
     assert!(!bosses.is_empty());
-    // Quests batch 2 admits corpse 39530: one reward boss is now materializable,
-    // leaving 52 without a corpse and 334 with an inadmissible corpse.
+    // Exact native corpse/yield producer admission now qualifies sixteen source
+    // reward bosses. Four further admitted corpses retain unresolved loot yields;
+    // those rows must remain refused rather than silently dropping their Items.
     // Keep each exact admission reason:
     // a missing corpse is different from an authored but inadmissible corpse.
     // Change these source-qualification expectations only with admitted content.
     let mut missing = 0;
     let mut inadmissible = 0;
+    let mut inadmissible_loot = 0;
     let mut admitted = Vec::new();
     for policy in &bosses {
         let record = source
@@ -232,9 +234,36 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     && facts.materializable
                     && facts.container_capacity.is_some_and(|capacity| {
                         (1..=GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX as u32).contains(&capacity)
+                            || (capacity == 48
+                                && matches!(
+                                    policy.definition_key.as_str(),
+                                    "oteryn:creature.goshnar_s_cruelty"
+                                        | "oteryn:creature.goshnar_s_greed"
+                                        | "oteryn:creature.goshnar_s_spite"
+                                        | "oteryn:creature.goshnar_s_malice"
+                                        | "oteryn:creature.goshnar_s_hatred"
+                                        | "oteryn:creature.goshnar_s_megalomania_blue"
+                                        | "oteryn:creature.goshnar_s_megalomania_green"
+                                ))
                     })
             })
         });
+        if materializable_corpse.is_some()
+            && matches!(
+                policy.definition_key.as_str(),
+                "oteryn:creature.an_observer_eye"
+                    | "oteryn:creature.orshabaal"
+                    | "oteryn:creature.the_weakened_count"
+                    | "oteryn:creature.gravelord_oshuran"
+            )
+        {
+            inadmissible_loot += 1;
+            assert_eq!(
+                source.reward_table().row(&policy.definition_key).err(),
+                Some(NoSettlementReason::LootItemInadmissible)
+            );
+            continue;
+        }
         let expected = if let Some(corpse) = materializable_corpse {
             admitted.push(policy.definition_key.as_str());
             let row = source
@@ -243,7 +272,11 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 .map_err(|reason| format!("{}: {reason:?}", policy.definition_key))?;
             assert_eq!(
                 row.corpse_item,
-                LootDefinitionRef::new("Item", &corpse.key, &corpse.revision)
+                Some(LootDefinitionRef::new(
+                    "Item",
+                    &corpse.key,
+                    &corpse.revision
+                ))
             );
             assert_eq!(
                 row.xp_amount,
@@ -257,13 +290,40 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 .iter()
                 .find(|binding| binding.creature.key == policy.definition_key)
                 .ok_or("source reward-boss loot binding")?;
-            assert!(binding.loot.is_none(), "source boss has no authored loot");
-            assert_eq!(row.loot_table_ref, row.corpse_item);
+            if let Some(reference) = &binding.loot {
+                assert_eq!(
+                    row.loot_table_ref,
+                    Some(LootDefinitionRef::new(
+                        &reference.family,
+                        &reference.key,
+                        &reference.revision
+                    ))
+                );
+                let table = loot
+                    .tables
+                    .iter()
+                    .find(|table| table.identity.key == reference.key)
+                    .ok_or("source loot table")?;
+                assert_eq!(row.loot_table.entries.len(), table.entries.len());
+                for (actual, original) in row.loot_table.entries.iter().zip(&table.entries) {
+                    assert_eq!(actual.item.production_key, original.item.key);
+                    assert_eq!(
+                        (actual.min_count, actual.max_count, actual.probability_ppm),
+                        (
+                            original.min_count,
+                            original.max_count,
+                            original.probability_ppm
+                        )
+                    );
+                }
+            } else {
+                assert_eq!(row.loot_table_ref, row.corpse_item);
+                assert!(row.loot_table.entries.is_empty());
+            }
             assert_eq!(
                 row.loot_table.algorithm,
                 LootSelectionAlgorithm::IndependentBernoulliPpm
             );
-            assert!(row.loot_table.entries.is_empty());
             None
         } else if corpse.is_none() {
             missing += 1;
@@ -279,8 +339,32 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             policy.definition_key
         );
     }
-    assert_eq!((missing, inadmissible, admitted.len()), (52, 334, 1));
-    assert_eq!(admitted, ["oteryn:creature.the_primal_menace"]);
+    admitted.sort_unstable();
+    assert_eq!(
+        (missing, inadmissible, inadmissible_loot, admitted.len()),
+        (52, 315, 4, 16)
+    );
+    assert_eq!(
+        admitted,
+        [
+            "oteryn:creature.armenius_creature",
+            "oteryn:creature.bakragore",
+            "oteryn:creature.chagorz",
+            "oteryn:creature.goshnar_s_cruelty",
+            "oteryn:creature.goshnar_s_greed",
+            "oteryn:creature.goshnar_s_hatred",
+            "oteryn:creature.goshnar_s_malice",
+            "oteryn:creature.goshnar_s_megalomania_blue",
+            "oteryn:creature.goshnar_s_megalomania_green",
+            "oteryn:creature.goshnar_s_megalomania_purple",
+            "oteryn:creature.goshnar_s_spite",
+            "oteryn:creature.grand_mother_foulscale",
+            "oteryn:creature.ichgahal",
+            "oteryn:creature.murcion",
+            "oteryn:creature.the_primal_menace",
+            "oteryn:creature.vemiath"
+        ]
+    );
     assert_eq!(bosses.len(), 387);
     let before = source.reward_table().row("oteryn:creature.rat").unwrap();
     let before_policy = source
@@ -494,4 +578,153 @@ pub fn activated_loop_monster_missing_child(
     refresh_fixture_attack_roots(rat);
     supplied.creature_profiles = pinned(&serde_json::to_vec(&creatures).unwrap());
     activate(world, &supplied)
+}
+
+#[cfg(test)]
+#[test]
+fn srx3_actual_grand_mother_reward_boss_has_source_corpse_and_complete_material_loot()
+-> Result<(), String> {
+    // Crystal201189f data-global/monster/raids/grand_mother_foulscale.lua:
+    // corpse5973(:24), actual rewardBoss=true(:46), guaranteed5920/5877(:93/95).
+    let world = test_source(1)
+        .map_err(|error| format!("source world: {error:?}"))?
+        .world_id;
+    let (controller, _) = activated_with_loot_tables(world, None);
+    let native = controller
+        .active()
+        .and_then(|generation| generation.native_gameplay())
+        .ok_or("active native gameplay")?;
+    let policy = native
+        .policies()
+        .policies()
+        .iter()
+        .find(|policy| policy.definition_key == "oteryn:creature.grand_mother_foulscale")
+        .ok_or("actual source Grand Mother Foulscale profile")?;
+    assert_eq!(policy.reward_boss, Some(true));
+    let row = native
+        .reward_table()
+        .row(&policy.definition_key)
+        .map_err(|error| format!("actual source boss reward qualification: {error:?}"))?;
+    assert_eq!(
+        row.corpse_item
+            .as_ref()
+            .ok_or("physical source corpse")?
+            .production_key,
+        "oteryn:item.tibia.i5973"
+    );
+    for id in [5973, 4025, 4026, 4027] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let profile = native
+            .item_policy(&key, "definition-r1")
+            .unwrap_or_else(|| panic!("actual Grand Mother corpse descendant {key}"));
+        assert_eq!(
+            profile.record().admission.legal_destinations,
+            [super::super::NativeItemDestination::Ground]
+        );
+    }
+    assert_eq!(row.loot_table.entries.len(), 19);
+    for expected in ["oteryn:item.tibia.i5920", "oteryn:item.tibia.i5877"] {
+        assert!(
+            row.loot_table
+                .entries
+                .iter()
+                .any(|entry| entry.item.production_key == expected
+                    && entry.probability_ppm == Some(1_000_000)),
+            "source guaranteed material reward {expected}"
+        );
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn srx3_actual_w11_bosses_have_source_ground_corpses_and_complete_reward_rows() -> Result<(), String>
+{
+    let world = test_source(1)
+        .map_err(|error| format!("source world: {error:?}"))?
+        .world_id;
+    let (controller, _) = activated_with_loot_tables(world, None);
+    let native = controller
+        .active()
+        .and_then(|generation| generation.native_gameplay())
+        .ok_or("native gameplay")?;
+    let roots = [
+        6028, 33859, 33863, 33867, 33871, 33875, 33889, 44012, 44015, 44018, 44021, 44024,
+    ];
+    for id in roots {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let policy = native
+            .item_policy(&key, "definition-r1")
+            .ok_or_else(|| format!("missing actual W11 native corpse profile {key}"))?;
+        assert!(policy.record().admission.materializable);
+        assert_eq!(
+            policy.record().admission.legal_destinations,
+            vec![crate::content::native_gameplay::NativeItemDestination::Ground]
+        );
+    }
+    for key in [
+        "goshnar_s_greed",
+        "goshnar_s_malice",
+        "goshnar_s_spite",
+        "goshnar_s_hatred",
+        "goshnar_s_cruelty",
+        "goshnar_s_megalomania_blue",
+        "goshnar_s_megalomania_green",
+        "goshnar_s_megalomania_purple",
+        "ichgahal",
+        "murcion",
+        "vemiath",
+        "chagorz",
+        "bakragore",
+    ] {
+        let key = format!("oteryn:creature.{key}");
+        let policy = native
+            .policies()
+            .policies()
+            .iter()
+            .find(|policy| policy.definition_key == key)
+            .ok_or("actual W11 Creature")?;
+        assert_eq!(policy.reward_boss, Some(true));
+        native
+            .reward_table()
+            .row(&key)
+            .map_err(|reason| format!("actual W11 source reward closure {key}: {reason:?}"))?;
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn srx3_actual_rotten_reward_yields_have_source_inventory_profiles() -> Result<(), String> {
+    use crate::content::ReferenceItemField as F;
+    use crate::content::native_gameplay::NativeItemDestination;
+    let world = test_source(1)
+        .map_err(|error| format!("source world: {error:?}"))?
+        .world_id;
+    let (controller, _) = activated_with_loot_tables(world, None);
+    let native = controller
+        .active()
+        .and_then(|generation| generation.native_gameplay())
+        .ok_or("native gameplay")?;
+    for id in [
+        33778, 39037, 43501, 43502, 43503, 43504, 43946, 43947, 43961, 43962, 43966, 43967, 43968,
+        44048,
+    ] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let record = native
+            .item_policy(&key, "definition-r1")
+            .ok_or_else(|| format!("missing actual Rotten loot yield native profile {key}"))?
+            .record();
+        assert!(record.admission.materializable);
+        assert_eq!(
+            record.admission.legal_destinations,
+            vec![
+                NativeItemDestination::CharacterInventory,
+                NativeItemDestination::Ground
+            ]
+        );
+        assert!(matches!(&record.semantics.physical, F::Known(physical)
+            if physical.movable==F::Known(true) && physical.pickupable==F::Known(true)));
+    }
+    Ok(())
 }

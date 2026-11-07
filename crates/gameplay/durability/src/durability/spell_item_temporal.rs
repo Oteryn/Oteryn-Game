@@ -19,7 +19,16 @@ pub async fn schedule_minted_item_in_transaction(
     occurred_at: i64,
 ) -> Result<(), SpellItemError> {
     if !definition.decay_chain.is_empty() {
-        return schedule_field_chain_in_transaction(tx, authority, request, definition, item, ordinal, occurred_at).await;
+        return schedule_field_chain_in_transaction(
+            tx,
+            authority,
+            request,
+            definition,
+            item,
+            ordinal,
+            occurred_at,
+        )
+        .await;
     }
     let Some(decay) = &definition.decay else {
         return Ok(());
@@ -59,14 +68,25 @@ pub(super) async fn schedule_action_item_in_transaction(
     occurred_at: i64,
 ) -> Result<(), super::DurabilityError> {
     use super::DurabilityError;
-    let Some(decay) = output.get("decay").filter(|value| !value.is_null()) else { return Ok(()); };
-    let duration = decay.get("duration_millis").and_then(serde_json::Value::as_u64)
+    let Some(decay) = output.get("decay").filter(|value| !value.is_null()) else {
+        return Ok(());
+    };
+    let duration = decay
+        .get("duration_millis")
+        .and_then(serde_json::Value::as_u64)
         .filter(|value| (1..=u64::from(u32::MAX)).contains(value))
         .ok_or(DurabilityError::InvalidStoredState)?;
     let duration = i64::try_from(duration).map_err(|_| DurabilityError::InvalidStoredState)?;
-    let expires = occurred_at.checked_add(duration).ok_or(DurabilityError::InvalidStoredState)?;
-    let target = decay.get("target").ok_or(DurabilityError::InvalidStoredState)?;
-    if output.get("count").and_then(serde_json::Value::as_u64) != Some(1) || ordinal == 0 || content_digest == [0; 32] {
+    let expires = occurred_at
+        .checked_add(duration)
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    let target = decay
+        .get("target")
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    if output.get("count").and_then(serde_json::Value::as_u64) != Some(1)
+        || ordinal == 0
+        || content_digest == [0; 32]
+    {
         return Err(DurabilityError::InvalidStoredState);
     }
     sqlx::query("INSERT INTO game_spell_item_temporal_schedules(item_instance_id,source_transaction_id,source_ordinal,duration_millis,expires_at_unix_ms,definition_family,definition_production_key,definition_revision,target_family,target_production_key,target_revision,content_digest) VALUES(($1->>'item')::uuid,$2::uuid,$3,$4,$5,'Item',$1->>'key',$1->>'revision',$6->>'family',$6->>'key',$6->>'revision',$7)")
@@ -251,9 +271,12 @@ pub async fn drain_due_field_chains_in_transaction(
     }
     check_scope_transaction(tx, authority).await?;
     let world = authority.world_bytes();
-    let channel = authority.channel_bytes().ok_or(SpellItemError::Rejected(
-        "Channel Item timer scope required",
-    ))?;
+    let (scope_kind, scope_id) = match authority.runtime_scope() {
+        crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } => {
+            (1_i16, *channel_id.as_bytes())
+        }
+        crate::foundation::RuntimeScopeRefV1::Instance { instance_id, .. } => (2_i16, instance_id),
+    };
     let mut changed = 0;
     while changed < limit {
         let rows=sqlx::query(r#"SELECT i.item_instance_id::text,i.state_revision::text,i.quantity,p.source_stage,
@@ -281,13 +304,32 @@ pub async fn drain_due_field_chains_in_transaction(
        AND (i.definition_family,i.definition_production_key,i.definition_revision_ref)=(p.definition_family,p.definition_production_key,p.definition_revision)
        AND p.expires_at_unix_ms<=floor(extract(epoch FROM statement_timestamp())*1000)::bigint
        AND NOT EXISTS(SELECT 1 FROM game_spell_field_temporal_receipts done WHERE done.item_instance_id=i.item_instance_id AND done.source_stage=p.source_stage)
-       AND ((g.world_id=i.world_id AND g.channel_id=encode($2,'hex')::uuid AND ((g.runtime_scope_ownership_generation=$3::text::numeric OR game_event_item_timer_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)) OR game_corpse_stage_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)))
+       AND (($5::smallint=1 AND ((g.world_id=i.world_id AND g.channel_id=encode($2,'hex')::uuid AND ((g.runtime_scope_ownership_generation=$3::text::numeric OR game_event_item_timer_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)) OR game_corpse_stage_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)))
          OR (((e.world_id=i.world_id AND bag.character_id=e.character_id) OR eq.world_id=i.world_id)
           AND cg.eligible AND cg.lease_generation=sess.character_lease_generation AND sess.session_state IN(1,2)
           AND sess.character_id=cg.character_id AND sess.runtime_scope_kind=1 AND sess.runtime_scope_world_id=i.world_id
-          AND sess.runtime_scope_channel_id=encode($2,'hex')::uuid AND sess.scope_ownership_generation=$3::text::numeric))
+          AND sess.runtime_scope_channel_id=encode($2,'hex')::uuid AND sess.scope_ownership_generation=$3::text::numeric)))
+         OR ($5::smallint=2 AND g.scope_kind=2 AND g.world_id=i.world_id
+          AND g.instance_id=encode($2,'hex')::uuid AND g.runtime_scope_ownership_generation=$3::text::numeric
+          AND p.source_ordinal=0 AND EXISTS (
+           SELECT 1 FROM game_item_mint_receipts m JOIN game_activity_handoff_groups h
+             ON h.world_id=m.death_world_id AND h.instance_id=m.death_instance_id
+              AND h.ownership_generation=m.death_scope_ownership_generation AND h.state=2
+           JOIN game_activity_runtime_entries installed USING(handoff_id)
+           JOIN game_activity_handoff_participants member USING(handoff_id)
+           JOIN game_runtime_scope_assignments live ON live.world_id=h.world_id
+             AND live.activity_instance_id=h.instance_id AND live.scope_kind=3 AND live.state=1
+             AND live.ownership_generation=h.ownership_generation
+             AND live.holder_node_id=installed.holder_node_id
+             AND live.holder_registration_revision=installed.holder_registration_revision
+           WHERE m.item_instance_id=i.item_instance_id AND m.transaction_id=p.source_transaction_id
+             AND m.loot_purpose_key='CORPSE_MATERIALIZATION' AND m.draw_ordinal=0
+             AND m.death_scope_kind=2 AND m.death_instance_id=g.instance_id
+             AND m.death_world_id=i.world_id AND m.death_scope_ownership_generation=$3::text::numeric
+             AND NOT EXISTS(SELECT 1 FROM game_activity_runtime_returns returned
+                 WHERE returned.handoff_id=member.handoff_id AND returned.character_id=member.character_id))))
       ORDER BY p.expires_at_unix_ms,i.item_instance_id,p.source_stage LIMIT $4 FOR UPDATE OF i,p"#)
-        .bind(world.as_slice()).bind(channel.as_slice()).bind(authority.generation().to_string()).bind(1_i64).fetch_all(&mut **tx).await?;
+        .bind(world.as_slice()).bind(scope_id.as_slice()).bind(authority.generation().to_string()).bind(1_i64).bind(scope_kind).fetch_all(&mut **tx).await?;
         if rows.is_empty() {
             break;
         }
@@ -335,9 +377,9 @@ pub async fn drain_due_field_chains_in_transaction(
             };
             let ordinal: Option<String> = row.try_get("ordinal")?;
             let equipment_revision: Option<String> = row.try_get("equipment_revision")?;
-            sqlx::query("INSERT INTO game_spell_field_temporal_receipts(source_stage,transaction_id,event_id,item_instance_id,world_id,channel_id,ownership_generation,state_revision_before,quantity_before,occurred_at_unix_ms,custody_kind,character_id,game_session_id,character_lease_generation,connection_generation,source_parent,source_ordinal,source_slot,equipment_revision_before,source_stack_ordinal) VALUES($18,$1::uuid,$2::uuid,$3::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6::text::numeric,$7::text::numeric,1,floor(extract(epoch FROM statement_timestamp())*1000)::bigint,$8,$9::uuid,$10::uuid,$11::text::numeric,$12::text::numeric,$13::uuid,$14::text::numeric,$15,$16::text::numeric,$17)")
-            .bind(&transaction).bind(&event).bind(&item).bind(world.as_slice()).bind(channel.as_slice()).bind(authority.generation().to_string())
-            .bind(&revision).bind(kind).bind(&character).bind(&session).bind(&lease).bind(&connection).bind(&parent).bind(&ordinal).bind(slot).bind(&equipment_revision).bind(stack).bind(stage)
+            sqlx::query("INSERT INTO game_spell_field_temporal_receipts(source_stage,transaction_id,event_id,item_instance_id,world_id,channel_id,scope_kind,instance_id,ownership_generation,state_revision_before,quantity_before,occurred_at_unix_ms,custody_kind,character_id,game_session_id,character_lease_generation,connection_generation,source_parent,source_ordinal,source_slot,equipment_revision_before,source_stack_ordinal) VALUES($18,$1::uuid,$2::uuid,$3::uuid,encode($4,'hex')::uuid,CASE WHEN $19::smallint=1 THEN encode($5,'hex')::uuid END,$19::smallint,CASE WHEN $19::smallint=2 THEN encode($5,'hex')::uuid END,$6::text::numeric,$7::text::numeric,1,floor(extract(epoch FROM statement_timestamp())*1000)::bigint,$8,$9::uuid,$10::uuid,$11::text::numeric,$12::text::numeric,$13::uuid,$14::text::numeric,$15,$16::text::numeric,$17)")
+            .bind(&transaction).bind(&event).bind(&item).bind(world.as_slice()).bind(scope_id.as_slice()).bind(authority.generation().to_string())
+            .bind(&revision).bind(kind).bind(&character).bind(&session).bind(&lease).bind(&connection).bind(&parent).bind(&ordinal).bind(slot).bind(&equipment_revision).bind(stack).bind(stage).bind(scope_kind)
             .execute(&mut **tx).await?;
             let target: Option<String> = row.try_get("target_production_key")?;
             let affected = if let Some(target) = target {
@@ -370,7 +412,7 @@ pub async fn drain_due_field_chains_in_transaction(
                     return Err(SpellItemError::Rejected("Item timer equipment epoch"));
                 }
             }
-            let envelope:serde_json::Value=sqlx::query_scalar("SELECT jsonb_build_object('receipt',to_jsonb(r),'schedule',to_jsonb(p)) FROM game_spell_field_temporal_receipts r JOIN game_spell_field_temporal_schedules p ON p.item_instance_id=r.item_instance_id AND p.source_stage=r.source_stage WHERE r.transaction_id=$1::uuid")
+            let envelope:serde_json::Value=sqlx::query_scalar("SELECT jsonb_build_object('receipt',game_spell_field_temporal_receipt_json(r),'schedule',to_jsonb(p)) FROM game_spell_field_temporal_receipts r JOIN game_spell_field_temporal_schedules p ON p.item_instance_id=r.item_instance_id AND p.source_stage=r.source_stage WHERE r.transaction_id=$1::uuid")
             .bind(&transaction).fetch_one(&mut **tx).await?;
             let bytes = serde_json::to_vec(&envelope)
                 .map_err(|_| SpellItemError::Rejected("Item timer audit encoding"))?;

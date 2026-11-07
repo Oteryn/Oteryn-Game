@@ -7,6 +7,9 @@ mod replay;
 #[path = "rune_use_bridge/revision.rs"]
 mod revision;
 pub(super) use replay::bind_batch;
+#[cfg(test)]
+#[path = "rune_use_bridge/source_positions_tests.rs"]
+mod source_positions_tests;
 
 use super::ComposedFreshAdmission;
 use super::actor_spell::NativeCastDispatch;
@@ -122,6 +125,7 @@ fn target(
     spell: &SpellDefinition,
     original: UseIntent,
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    frame: super::wire_position::WirePositionFrame,
 ) -> Result<(SpellTarget, LegacyRuneUse), UseDisposition> {
     // docs/reference/spells/utility-runes-2026-10-29.md:10: a creature
     // target must not turn into the movable item underneath that creature.
@@ -133,13 +137,29 @@ fn target(
     {
         return Err(UseDisposition::TargetIllegal);
     }
+    // Preserve `original` for retained payment/replay binding. Only the
+    // decoded positional target enters the current physical frame once.
+    let position = match original.use_with_position {
+        Some(position) => {
+            let physical = frame
+                .unproject(oteryn_protocol_oteryn::world_spatial::ActorPosition {
+                    x: position.x,
+                    y: position.y,
+                    floor: position.floor,
+                })
+                .ok_or(UseDisposition::TargetIllegal)?;
+            Some(SpellTargetPosition {
+                x: physical.x,
+                y: physical.y,
+                floor: physical.floor,
+            })
+        }
+        None => None,
+    };
     let caster = runtime
         .read_actor_position(actor)
         .map_err(|_| UseDisposition::Rejected)?;
-    if original
-        .use_with_position
-        .is_some_and(|p| p.floor != caster.position().floor)
-    {
+    if position.is_some_and(|p| p.floor != caster.position().floor) {
         return Err(UseDisposition::TargetIllegal);
     }
     let entities = runtime.visible_entities();
@@ -177,7 +197,7 @@ fn target(
                 .ok_or(UseDisposition::TargetIllegal)?,
         )
     } else if spell.needs_target
-        && let Some(p) = original.use_with_position
+        && let Some(p) = position
     {
         // Native ordinary casts select the lowest actor id on a tile. Select it before
         // legality filtering and retain its exact generation; never fall through to a sibling.
@@ -206,15 +226,15 @@ fn target(
         } else {
             caster.position()
         };
-        let position = original.use_with_position.unwrap_or(SpellTargetPosition {
+        let physical_position = position.unwrap_or(SpellTargetPosition {
             x: at.x,
             y: at.y,
             floor: at.floor,
         });
-        if spell.needs_target && original.use_with_position.is_some() {
+        if spell.needs_target && position.is_some() {
             return Err(UseDisposition::NoTarget);
         }
-        SpellTarget::Position(position)
+        SpellTarget::Position(physical_position)
     };
     Ok((
         mapped,
@@ -380,7 +400,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if !visible {
                 return Some(outcome(UseDisposition::TargetIllegal));
             }
-            let (mapped, legacy) = match target(&runtime, actor, spell, intent, fence) {
+            let Some(frame) = self.wire_position_frame(&runtime) else {
+                return Some(outcome(UseDisposition::Rejected));
+            };
+            let (mapped, legacy) = match target(&runtime, actor, spell, intent, fence, frame) {
                 Ok(value) => value,
                 Err(reason) => return Some(outcome(reason)),
             };

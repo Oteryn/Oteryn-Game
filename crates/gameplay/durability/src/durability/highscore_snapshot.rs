@@ -110,12 +110,16 @@ pub fn activated_charm_points() -> Option<Vec<BestiaryCharmEntry>> {
 
 /// HIGHSCORES0 §3 row 12 and Crystal `game.cpp:434`: Boss Points.
 pub const BOSS_POINTS_CATEGORY: u8 = 12;
+/// ARENA1 A6: cumulative new-best Drome levels; unknown legacy totals are excluded.
+pub const DROME_LEVELS_CATEGORY: u8 = 13;
+mod drome;
 
 /// Categories 1-10 and 12 are always served; category 11 requires an activated Charm point
 /// source.
 pub fn served_category(category: u8) -> bool {
     (1..=10).contains(&category)
         || category == BOSS_POINTS_CATEGORY
+        || category == DROME_LEVELS_CATEGORY
         || (category == 11 && activated_charm_points().is_some())
 }
 
@@ -165,6 +169,7 @@ impl SnapshotCatalogues {
             categories.push(11);
         }
         categories.push(i32::from(BOSS_POINTS_CATEGORY));
+        categories.push(i32::from(DROME_LEVELS_CATEGORY));
         categories
     }
 }
@@ -336,7 +341,7 @@ impl DurabilityRoot {
         snapshot_id: u64,
         character: CharacterId,
     ) -> Result<SnapshotPage> {
-        if !(1..=12).contains(&category) {
+        if !(1..=13).contains(&category) {
             return Err(SnapshotError::NotSupported);
         }
         if page == 0 || (page > 1 && snapshot_id == 0) {
@@ -737,6 +742,7 @@ async fn publish_cut(
     let source = read_source_within(tx, world, limits).await?;
     let extra = read_extra_sources(tx, world, &source, catalogues, limits).await?;
     let bosses = read_boss_points(tx, &source, limits).await?;
+    let drome = drome::read_lifetime_levels(tx, &source, limits).await?;
     let mut published = Vec::new();
     for (index, head) in heads.into_iter().enumerate() {
         let category = u8::try_from(head.try_get::<i32, _>("category")?).map_err(|_| corrupt())?;
@@ -749,6 +755,7 @@ async fn publish_cut(
             10 => materialize(&extra[0], 0)?,
             11 => materialize(&extra[1], 0)?,
             BOSS_POINTS_CATEGORY => materialize(&bosses, 0)?,
+            DROME_LEVELS_CATEGORY => materialize(&drome, 0)?,
             _ => return Err(corrupt()),
         };
         let count = i32::try_from(rows.len()).map_err(|_| corrupt())?;
@@ -851,7 +858,8 @@ mod category_set_tests {
         assert!(served_category(10));
         assert!(!served_category(11));
         assert!(!served_category(0));
-        assert!(!served_category(13));
+        assert!(served_category(13));
+        assert!(!served_category(14));
         assert_eq!(BOSS_POINTS_CATEGORY, 12);
     }
 }

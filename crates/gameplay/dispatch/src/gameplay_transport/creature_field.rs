@@ -23,6 +23,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         native: &crate::content::native_gameplay::NativeGameplayState,
         now: u64,
     ) -> Result<(), DurabilityError> {
+        let mut plans = Vec::new();
+        let mut source_players = Vec::new();
         for visible in runtime.visible_entities().creatures {
             let Ok(snapshot) = runtime.companion_snapshot(visible.actor) else {
                 continue;
@@ -81,9 +83,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             })
                         })
                         .filter(|(actor, session, _)| {
-                            runtime
-                                .player_control_facts(*actor, *session)
-                                .is_ok_and(|facts| facts.control_loss.is_none())
+                            runtime.player_control_facts(*actor, *session).is_ok()
                         })
                         .map(|(actor, _, _)| *actor);
                     let lineage =
@@ -120,17 +120,59 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if !snapshot.state.conditions.accepts_time(now) {
                 continue;
             }
+            let facts = TickFacts {
+                in_protection_zone: tile.flags().protection_zone,
+                standing_on_field: standing,
+            };
+            // Preview only a cloned condition store. Actual due work is consumed
+            // once by the existing canonical owner after all source reads finish.
+            if native
+                .policies()
+                .soul_war_health_policy(
+                    &snapshot.state.policy.definition_key,
+                    &snapshot.state.policy.definition_revision,
+                )
+                .is_some_and(|policy| {
+                    matches!(policy.kind(),
+                crate::content::native_soul_war_callbacks::SoulWarHealthCallbackKind::MirrorImage
+                | crate::content::native_soul_war_callbacks::SoulWarHealthCallbackKind::FourthTaint)
+                })
+            {
+                let mut preview = snapshot.state.conditions.clone();
+                for tick in preview.take_due(now, facts) {
+                    if let Some(source) = tick.provenance.source {
+                        source_players.push(source);
+                    }
+                }
+                if let Some(source) = entry.as_ref().and_then(|field| field.source) {
+                    source_players.push(source);
+                }
+            }
+            plans.push((visible.actor, entry, facts));
+        }
+        if let Some(active) = self.active_generation {
+            super::soul_war_callbacks::player_source::publish_condition_sources(
+                tx,
+                self.root,
+                authority,
+                active,
+                room,
+                runtime,
+                states,
+                &source_players,
+                now,
+            )
+            .await?;
+        }
+        for (actor, entry, facts) in plans {
             runtime
-                .commit_creature_field_entry(visible.actor, now, entry.as_ref())
+                .commit_creature_field_entry(actor, now, entry.as_ref())
                 .map_err(|_| DurabilityError::Unavailable)?;
             states
                 .tick_source_creature_conditions(
                     runtime,
-                    visible.actor,
-                    TickFacts {
-                        in_protection_zone: tile.flags().protection_zone,
-                        standing_on_field: standing,
-                    },
+                    actor,
+                    facts,
                     crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now),
                 )
                 .map_err(|_| DurabilityError::Unavailable)?;

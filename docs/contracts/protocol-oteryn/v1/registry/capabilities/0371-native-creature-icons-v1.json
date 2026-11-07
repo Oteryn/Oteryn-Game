@@ -1,0 +1,13 @@
+{
+  "id": 371,
+  "name": "NATIVE_CREATURE_ICONS_V1",
+  "owner_decision": "SRX-3 W07: native Source fusion stack and boss indicators",
+  "owner": "current physical creature owner; Soulpit variant tag",
+  "requires": [
+    6
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES offers this optional native Source carrier with capability6. Entity field14 is absent unless371 is selected; legacy bytes remain unchanged."
+}

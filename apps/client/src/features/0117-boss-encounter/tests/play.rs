@@ -112,3 +112,6 @@ fn boss_encounter_play_input_queries_and_displays_server_snapshot() -> Result<()
 
 #[path = "activity.rs"]
 mod activity;
+
+#[path = "actual_capture.rs"]
+mod actual_capture;

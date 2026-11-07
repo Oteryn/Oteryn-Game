@@ -78,7 +78,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let disposition = rope_in_channel(
             &mut runtime,
             &mut states,
-            self.movement_cells,
+            self.effective_movement_cells(),
             actor,
             command,
             intent,

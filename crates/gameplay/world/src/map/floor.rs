@@ -347,6 +347,35 @@ fn teleported(
     }
 }
 
+/// Read-only authored arrival composition over the actual qualified Bundle.
+/// This issues no movement proof and does not make the source Teleport walkable.
+/// Activity return separately checks its current physical owner and dynamic doors.
+/// The source `internalTeleport`/postAdd path reaches this same one-hop Teleport
+/// resolution without inventing an adjacent step or synthetic ground facts.
+pub fn resolve_teleport_arrival(
+    cells: &NativeEntryMovementCells,
+    cell: LogicalCell,
+) -> Result<LogicalCell, MovementError> {
+    let table = table_of(cells).ok_or(MovementError::NotQualified)?;
+    let from = pos(cell.x, cell.y, cell.z).ok_or(MovementError::NotQualified)?;
+    if table.teleport(from).is_none() {
+        return Err(MovementError::NotQualified);
+    }
+    let ground = ground_of(cells);
+    let known_landing = |(x, y, z)| {
+        cells
+            .spell_tiles()
+            .lookup(cells.scope(), LogicalCell { x, y, z })
+            .is_ok()
+    };
+    let origin = (cell.x, cell.y, cell.z);
+    let (x, y, z) = teleported(table, &ground, &known_landing, origin);
+    if (x, y, z) == origin {
+        return Err(MovementError::NotQualified);
+    }
+    Ok(LogicalCell { x, y, z })
+}
+
 /// The floor table of the bundle `cells` run over; `None` on a fixture or source World.
 pub fn table_of(cells: &NativeEntryMovementCells) -> Option<&FloorTable> {
     match cells.index() {

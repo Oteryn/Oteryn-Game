@@ -14,14 +14,12 @@ fn ambient_b24_wire_is_additive_and_zero_stops() -> Result<(), PresentationWireE
     let bytes = encode_presentation_batch(&events)?;
     assert_eq!(bytes, [0x0a, 8, 8, 1, 16, 1, 66, 2, 8, 0]);
     assert_eq!(decode_presentation_batch(&bytes)?, events);
-    assert!(
-        encode_presentation_batch(&[event(
-            1,
-            1,
-            PresentationEventKind::AmbientSound { cue_id: 65_536 }
-        )])
-        .is_err()
-    );
+    assert!(encode_presentation_batch(&[event(
+        1,
+        1,
+        PresentationEventKind::AmbientSound { cue_id: 65_536 }
+    )])
+    .is_err());
     assert!(decode_presentation_batch(&[0x0a, 6, 8, 1, 16, 1, 66, 0]).is_err());
     Ok(())
 }
@@ -214,7 +212,7 @@ fn a_full_batch_round_trips_within_its_bound() {
     push_message_field(
         &mut last,
         1,
-        &encode_event(&small[MAX_PRESENTATION_EVENTS]).expect("event"),
+        &encode_event(&small[MAX_PRESENTATION_EVENTS], false).expect("event"),
     );
     over.extend_from_slice(&last);
     assert!(over.len() <= MAX_PRESENTATION_BATCH_BYTES);
@@ -365,12 +363,10 @@ fn malformed_events_fail_closed() {
         push_message_field(&mut output, 1, body);
         output
     };
-    assert!(
-        decode_presentation_batch(&entry(&[
-            0x08, 0x01, 0x10, 0x01, 0x1a, 0x06, 0x0a, 0x00, 0x10, 0x01, 0x18, 0x01
-        ]))
-        .is_ok()
-    );
+    assert!(decode_presentation_batch(&entry(&[
+        0x08, 0x01, 0x10, 0x01, 0x1a, 0x06, 0x0a, 0x00, 0x10, 0x01, 0x18, 0x01
+    ]))
+    .is_ok());
     for body in [
         // An empty oneof.
         &[0x08, 0x01, 0x10, 0x01][..],
@@ -535,11 +531,9 @@ fn cooldowns_round_trip_within_their_bounds() {
         rtt_ms: None,
         entries: Vec::new(),
     };
-    assert!(
-        encode_actor_cooldowns(&provisional)
-            .expect("encode")
-            .is_empty()
-    );
+    assert!(encode_actor_cooldowns(&provisional)
+        .expect("encode")
+        .is_empty());
     assert_eq!(decode_actor_cooldowns(&[]).expect("decode"), provisional);
     // A measured round trip of 0 ms is still an estimate.
     let instant = ActorCooldowns {
@@ -666,13 +660,11 @@ fn malformed_cooldowns_fail_closed() {
         assert_eq!(encode_actor_cooldowns(&message), expected, "{message:?}");
     }
     // The same spell id under SPELL and GROUP is two keys.
-    assert!(
-        encode_actor_cooldowns(&with(vec![
-            cooldown(ActorCooldownKind::Spell, 1, 5),
-            cooldown(ActorCooldownKind::Group, 1, 5),
-        ]))
-        .is_ok()
-    );
+    assert!(encode_actor_cooldowns(&with(vec![
+        cooldown(ActorCooldownKind::Spell, 1, 5),
+        cooldown(ActorCooldownKind::Group, 1, 5),
+    ]))
+    .is_ok());
 
     for bytes in [
         // An unestimated round trip that is not 0.
@@ -754,14 +746,33 @@ fn registry_binds_the_presentation_wire_ids_and_limits() {
     };
 
     assert!(crate::REGISTERED_CAPABILITY_IDS_V1.contains(&CAPABILITY_PRESENTATION_V1));
-    assert!(
-        crate::CAPABILITY_REQUIREMENTS_V1
+    assert!(crate::CAPABILITY_REQUIREMENTS_V1
+        .iter()
+        .any(|(capability, requires)| {
+            *capability == CAPABILITY_PRESENTATION_V1
+                && *requires == CAPABILITY_PRESENTATION_V1_REQUIRES
+        }));
+    let native = only("capabilities", 385);
+    assert_eq!(native["requires"], serde_json::json!([23, 30]));
+    let native_domain = only("state_domains", STATE_DOMAIN_WORLD_PRESENTATION);
+    for (section, name, bound) in [
+        ("snapshot_types", "NATIVE_MAP_CUE_BASIS_V1", 0),
+        (
+            "delta_types",
+            "NATIVE_MAP_PRESENTATION_BATCH_V1",
+            MAX_PRESENTATION_BATCH_BYTES,
+        ),
+    ] {
+        let row = native_domain[section]
+            .as_array()
+            .unwrap()
             .iter()
-            .any(|(capability, requires)| {
-                *capability == CAPABILITY_PRESENTATION_V1
-                    && *requires == CAPABILITY_PRESENTATION_V1_REQUIRES
-            })
-    );
+            .find(|row| row["id"] == 2)
+            .unwrap();
+        assert_eq!(row["name"], name);
+        assert_eq!(row["capability"], 385);
+        assert_eq!(row["max_payload_bytes"], bound);
+    }
     let capability = only("capabilities", CAPABILITY_PRESENTATION_V1);
     assert_eq!(capability["name"], "PRESENTATION_V1");
     assert_eq!(capability["offered"], false);
@@ -786,14 +797,26 @@ fn registry_binds_the_presentation_wire_ids_and_limits() {
             [("delta_types", delta), ("snapshot_types", snapshot)]
         {
             let entries = domain[section].as_array().expect(section);
-            assert_eq!(entries.len(), 1, "{section}");
-            assert_eq!(entries[0]["id"], id);
-            assert_eq!(entries[0]["name"], type_name);
             assert_eq!(
-                entries[0]["payload_schema"],
+                entries.len(),
+                if domain_id == STATE_DOMAIN_WORLD_PRESENTATION {
+                    2
+                } else {
+                    1
+                },
+                "{section}"
+            );
+            let entry = entries
+                .iter()
+                .find(|entry| entry["id"] == id)
+                .expect("unchanged legacy row");
+            assert_eq!(entry["id"], id);
+            assert_eq!(entry["name"], type_name);
+            assert_eq!(
+                entry["payload_schema"],
                 format!("{SCHEMA_PATH}#{message}").as_str()
             );
-            assert_eq!(entries[0]["max_payload_bytes"], bytes);
+            assert_eq!(entry["max_payload_bytes"], bytes);
             assert!(
                 SCHEMA.contains(&format!("message {message} {{")),
                 "{message}"
@@ -855,12 +878,12 @@ fn registry_binds_the_presentation_wire_ids_and_limits() {
     ] {
         let entry = row(id);
         assert_eq!(entry["hard_maximum"], maximum, "{id}");
-        assert!(
-            entry["owner_contract"]
-                .as_str()
-                .expect("owner contract")
-                .ends_with("OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md")
-        );
+        assert!(entry["owner_contract"]
+            .as_str()
+            .expect("owner contract")
+            .ends_with(
+                "OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md"
+            ));
     }
 }
 

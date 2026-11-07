@@ -1,0 +1,14 @@
+{
+  "id": 386,
+  "name": "NATIVE_OBJECT_APPEARANCE_V1",
+  "owner_decision": "SRX-3 actual domain1 native corpse pixel failure; main d34807f5bd234ee8318e57ba454ba39be0df113d allocation check",
+  "owner": "current pinned native Item index, canonical visible object and negotiated client asset context",
+  "requires": [
+    4,
+    6
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Qualified native Bundle offer; optional domain1 object field15 uses exact native appearance ID independently of its generation-local Item reference. No command or custody grant."
+}

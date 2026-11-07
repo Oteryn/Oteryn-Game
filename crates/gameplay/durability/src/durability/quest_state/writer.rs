@@ -1,5 +1,5 @@
-use super::*;
 use super::super::db::begin_type2_transaction;
+use super::*;
 
 impl DurabilityRoot {
     /// Commit one quest transition (§4-§5). Exact replay of the receipt key returns the receipt
@@ -31,6 +31,9 @@ impl DurabilityRoot {
             &grizzly::NoGrizzlyPremium,
             None,
             None,
+            None,
+            None,
+            None,
         )
         .await
     }
@@ -60,6 +63,9 @@ impl DurabilityRoot {
             &grizzly::NoGrizzlyPremium,
             None,
             None,
+            None,
+            None,
+            None,
         )
         .await
     }
@@ -74,11 +80,25 @@ impl DurabilityRoot {
         payment: super::rotten_blood_access::RottenBloodAccessPayment,
         catalogue: Arc<QuestStateCatalogue>,
     ) -> Result<QuestTransitionOutcome> {
-        let request=payment.request();
+        let request = payment.request();
         self.commit_quest_inner::<_, 0>(
-            authority, node, fence, request, catalogue, None, None, None, None,
-            &grizzly::NoGrizzlyPremium, None, Some(payment),
-        ).await
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            None,
+            None,
+            None,
+            None,
+            &grizzly::NoGrizzlyPremium,
+            None,
+            Some(payment),
+            None,
+            None,
+            None,
+        )
+        .await
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -102,7 +122,65 @@ impl DurabilityRoot {
         grizzly_gate: &G,
         grizzly_policy: Option<&FiniteProgressionPolicy<String, N>>,
         payment: Option<super::rotten_blood_access::RottenBloodAccessPayment>,
+        essence: Option<super::rotten_essence::RottenEssenceUse>,
+        flame: Option<super::rotten_flame::RottenFlameUse>,
+        source_action: Option<super::QuestSourceAction>,
     ) -> Result<QuestTransitionOutcome> {
+        let source_key = request
+            .transition_key
+            .starts_with(oteryn_gameplay_quests::quest::soul_war::source_items::TRANSITION_PREFIX)
+            || catalogue
+                .transition(&request.transition_key)
+                .is_some_and(|transition| {
+                    transition.quest == oteryn_gameplay_quests::quest::soul_war::source_items::QUEST
+                });
+        let area_key = request
+            .transition_key
+            .starts_with(oteryn_gameplay_quests::quest::rotten_blood::area_icons::PREFIX)
+            || catalogue
+                .transition(&request.transition_key)
+                .is_some_and(|t| {
+                    t.quest == oteryn_gameplay_quests::quest::rotten_blood::area_icons::QUEST
+                });
+        let soul_input = matches!(&source_action, Some(super::QuestSourceAction::SoulWar(_)));
+        let area_input = matches!(
+            &source_action,
+            Some(super::QuestSourceAction::RottenArea(_))
+        );
+        if source_key != soul_input
+            || area_key != area_input
+            || source_action
+                .as_ref()
+                .is_some_and(|input| input.request(&fence).ok().as_ref() != Some(&request))
+            || matches!(
+                &source_action,
+                Some(super::QuestSourceAction::SoulWar(
+                    super::soul_war_source::SoulWarSourceAction::Step(_)
+                ))
+            )
+            || matches!(request.cause, QuestCause::SourceStep(_))
+            || matches!(request.cause, QuestCause::SourceThink(_)) && !area_input
+            || source_action.is_some()
+                && (context.is_some() || payment.is_some() || essence.is_some() || flame.is_some())
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        // A bare callback key/context must not manufacture a prepared boss phase.
+        // The closed native flame caller is mounted separately after its real USE RED.
+        let flame_key = request
+            .transition_key
+            .starts_with(oteryn_gameplay_quests::quest::rotten_blood::flames::PREFIX)
+            || catalogue.transition(&request.transition_key).is_some_and(
+                oteryn_gameplay_quests::quest::rotten_blood::flames::source_only_transition,
+            );
+        if flame_key != flame.is_some()
+            || flame
+                .as_ref()
+                .is_some_and(|input| input.request(&fence).ok().as_ref() != Some(&request))
+            || flame.is_some() && (context.is_none() || payment.is_some() || essence.is_some())
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         // The specialised owner evaluates these computed rules under the locked snapshot.
         // A generic NPC transition cannot bypass the action/cause validation.
         let grizzly_key = request
@@ -130,7 +208,19 @@ impl DurabilityRoot {
         // A paid-access state change must be composed with the existing fee
         // owner; the public generic Quest entry point cannot grant it for free.
         if (request.transition_key == oteryn_gameplay_quests::quest::rotten_blood::PURCHASE_ACCESS)
-            != payment.is_some() {
+            != payment.is_some()
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        let essence_key = oteryn_gameplay_quests::quest::rotten_blood::ESSENCES
+            .iter()
+            .any(|source| source.transition == request.transition_key);
+        if essence_key != essence.is_some()
+            || (payment.is_some() && essence.is_some())
+            || essence
+                .as_ref()
+                .is_some_and(|input| input.request(&fence).ok().as_ref() != Some(&request))
+        {
             return Err(CharacterProgressionError::InvalidInput);
         }
         let callback = if context.is_some() {
@@ -152,31 +242,39 @@ impl DurabilityRoot {
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         // Native rules require a world occurrence even if a caller renames the
         // transition. Inspect the effects, not only the authored callback key.
-        let native_world_rule = catalogue.transition(&request.transition_key).is_some_and(|transition| {
-            transition.effects.iter().any(|effect| matches!(
-                effect.effect,
-                oteryn_gameplay_quests::quest::QuestEffectKind::Native(_)
-            ))
-        });
+        let native_world_rule =
+            catalogue
+                .transition(&request.transition_key)
+                .is_some_and(|transition| {
+                    transition.effects.iter().any(|effect| {
+                        matches!(
+                            effect.effect,
+                            oteryn_gameplay_quests::quest::QuestEffectKind::Native(_)
+                        )
+                    })
+                });
         // Value-bearing or context-dependent callbacks cannot use a weaker generic caller.
         if context.is_none()
-            && (native_world_rule || oteryn_gameplay_quests::quest::world_callbacks::load()
-                .map_err(|_| CharacterProgressionError::InvalidInput)?
-                .iter()
-                .any(|c| {
-                    c.key == request.transition_key
-                        && (!c.offerings.is_empty()
-                            || c.item_on_target.is_some()
-                            || c.minimum_level.is_some()
-                            || c.experience.is_some()
-                            || c.monk_reward.is_some()
-                            || c.native_rule.is_some())
-                }))
+            && (native_world_rule
+                || oteryn_gameplay_quests::quest::world_callbacks::load()
+                    .map_err(|_| CharacterProgressionError::InvalidInput)?
+                    .iter()
+                    .any(|c| {
+                        c.key == request.transition_key
+                            && (!c.offerings.is_empty()
+                                || c.item_on_target.is_some()
+                                || c.minimum_level.is_some()
+                                || c.experience.is_some()
+                                || c.monk_reward.is_some()
+                                || c.native_rule.is_some())
+                    }))
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
         if fence.character_lease_generation == 0
-            || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+            || (!matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+                && essence.is_none()
+                && source_action.is_none())
             || !valid_quest_key(&request.transition_key)
         {
             return Err(CharacterProgressionError::InvalidInput);
@@ -191,8 +289,18 @@ impl DurabilityRoot {
             return Err(CharacterProgressionError::AuthorityRejected);
         }
         let mut binding = payment.as_ref().map_or_else(
-            ||request_binding(fence.character_id,&request),
-            |payment|payment.binding(fence.character_id));
+            || request_binding(fence.character_id, &request),
+            |payment| payment.binding(fence.character_id),
+        );
+        if let Some(input) = &essence {
+            binding = input.binding(fence.character_id, &request);
+        }
+        if let Some(input) = &source_action {
+            binding = input.binding(fence.character_id, &request);
+        }
+        if let Some(input) = &flame {
+            binding = input.binding(fence.character_id);
+        }
         if let Some(action) = &grizzly_action {
             grizzly::bind_action(&mut binding, action);
         }
@@ -229,7 +337,7 @@ impl DurabilityRoot {
             .run_with_context(&mut context, move |holder, deadline, (context, grizzly_gate, grizzly_boss, grizzly_policy)| {
                 Box::pin(async move {
                     let character = fence.character_id;
-                    let mut tx = if let Some(payment)=&payment {
+                    let mut tx = if payment.is_some() || essence.is_some() || flame.is_some() || source_action.is_some() {
                         // The fee owner's activation fence is the first database
                         // read, before even recovery or admission statements.
                         let mut tx = begin_type2_transaction(holder, deadline).await?;
@@ -244,10 +352,27 @@ impl DurabilityRoot {
                             tx.commit(deadline).await?;
                             return Ok(Ok(QuestTransitionOutcome::AlreadyCommitted(receipt)));
                         }
-                        match assert_gameplay_fence(&mut tx,&fence,&node).await? {
+                        match super::rotten_essence::assert_fence(&mut tx,&fence,&node,essence.is_some() || soul_input).await? {
                             Ok(_) => {}, Err(error) => return Ok(Err(error)),
                         }
-                        if !super::rotten_blood_access::consume(&mut tx,fence,payment).await? {
+                        if let Some(input)=&flame
+                            && !super::rotten_flame::admit(&mut tx,fence,input).await? {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                        if let Some(payment)=&payment
+                            && !super::rotten_blood_access::consume(&mut tx,fence,payment).await? {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                        if let Some(input)=&essence
+                            && !super::rotten_essence::consume(&mut tx,fence,input).await? {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                        if let Some(super::QuestSourceAction::SoulWar(input))=&source_action
+                            && !super::soul_war_source::consume(&mut tx,fence,input).await? {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                        if let Some(super::QuestSourceAction::RottenArea(input))=&source_action
+                            && !input.validate_current_in_transaction(&mut tx,fence).await? {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
                         tx.into_inner()
@@ -278,7 +403,7 @@ impl DurabilityRoot {
                     let Some(transition) = catalogue.transition(&request.transition_key) else {
                         return Ok(Err(CharacterProgressionError::InvalidInput));
                     };
-                    let root = match assert_gameplay_fence(&mut tx, &fence, &node).await? {
+                    let root = match super::rotten_essence::assert_fence(&mut tx, &fence, &node, essence.is_some() || soul_input).await? {
                         Ok(root) => root,
                         Err(error) => return Ok(Err(error)),
                     };
@@ -625,6 +750,9 @@ impl DurabilityRoot {
                     .await?;
                     if receipt.rows_affected() != 1 {
                         return Err(DurabilityError::InvalidStoredState);
+                    }
+                    if let Some(input)=&flame {
+                        super::rotten_flame::record(&mut tx,fence,input,&binding).await?;
                     }
                     for change in &changes {
                         let written = sqlx::query(

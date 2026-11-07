@@ -82,7 +82,11 @@ const KIND: &str = concat!(
     fence_args!(),
     ",encode($10,'hex')::uuid)"
 );
-const LOAD: &str = concat!("SELECT * FROM game_house_podium_load_fenced(", fence_args!(), ")");
+const LOAD: &str = concat!(
+    "SELECT * FROM game_house_podium_load_fenced(",
+    fence_args!(),
+    ")"
+);
 
 fn fenced(
     sql: &'static str,
@@ -245,7 +249,10 @@ impl DurabilityRoot {
                     if !prove_current_incarnation(&mut tx, &node).await? {
                         return Ok(Err(HousePodiumRefusal::StaleSession));
                     }
-                    let rows = match fenced(LOAD, &node, &fence, &house).fetch_all(&mut *tx).await {
+                    let rows = match fenced(LOAD, &node, &fence, &house)
+                        .fetch_all(&mut *tx)
+                        .await
+                    {
                         Ok(rows) => rows,
                         Err(error) => {
                             return match HousePodiumRefusal::of(&error) {

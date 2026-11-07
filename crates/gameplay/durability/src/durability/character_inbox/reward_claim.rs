@@ -39,8 +39,8 @@ use std::pin::Pin;
 
 mod authority;
 mod mint;
-use authority::InboxAuthority;
 pub use authority::HirelingRecallRequest;
+use authority::InboxAuthority;
 pub use mint::{
     RewardClaimInboxMintCandidate, RewardClaimInboxMintOutput, RewardClaimInboxMintRequest,
 };
@@ -345,7 +345,15 @@ impl DurabilityRoot {
             > + Send
             + 'static,
     {
-        self.with_inbox_authority(authority, node, InboxAuthority::Character(fence), plan, owner, operation).await
+        self.with_inbox_authority(
+            authority,
+            node,
+            InboxAuthority::Character(fence),
+            plan,
+            owner,
+            operation,
+        )
+        .await
     }
 
     async fn with_inbox_authority<T, C, F>(

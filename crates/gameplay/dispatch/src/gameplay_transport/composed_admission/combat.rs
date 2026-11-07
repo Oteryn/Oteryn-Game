@@ -47,7 +47,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
             }
         }
-        let room = self.rooms.gate_attack_target();
+        let room = self.effective_rooms().gate_attack_target();
         if let Some(permit) = permit.as_ref()
             && !self
                 .pvp_selection_allowed(

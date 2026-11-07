@@ -50,6 +50,14 @@ const COMBAT_ENABLE: Gate = Gate::Open {
 
 const INVENTORY: &[Entry] = &[
     Entry {
+        gate: "spatial wire projection",
+        plan: "spatial wire projection",
+        accessor: "gate_wire_position",
+        key: "",
+        state: Gate::AllocatedOpen { task: "SRX-3" },
+        calls: &[("gameplay_transport/wire_position.rs", 1)],
+    },
+    Entry {
         gate: "attack target",
         plan: "player attack target",
         accessor: "gate_attack_target",
@@ -103,8 +111,17 @@ const INVENTORY: &[Entry] = &[
         // Activity registration validates its combat room against the active content pin.
         calls: &[
             ("gameplay_transport/activity_runtime.rs", 1),
+            // SRX-3: source-owned maps retain combat only; exact construction is checked below.
+            ("gameplay_transport/effective_rooms.rs", 2),
+            (
+                "gameplay_transport/postgres_tests/srx3_soulpit_native.rs",
+                1,
+            ),
             ("gameplay_transport/native_combat_cast.rs", 2),
             ("gameplay_transport/rune_use_bridge/revision.rs", 1),
+            // SRX-3: install the same source-qualified combat room and read Soulpit terrain.
+            ("gameplay_transport/serving.rs", 1),
+            ("gameplay_transport/soulpit/scene.rs", 1),
         ],
     },
     Entry {
@@ -225,6 +242,8 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/field_removal.rs", 1),
             ("gameplay_transport/field_step_ingress.rs", 2),
             ("gameplay_transport/postgres_tests/field_runes.rs", 2),
+            // SRX-3: source-owned Primal Pod creation and expiry use the existing Ground gate.
+            ("gameplay_transport/primal_callbacks.rs", 2),
         ],
     },
     Entry {
@@ -626,6 +645,11 @@ fn every_gate_names_its_opener_or_owner() -> Result<(), Box<dyn std::error::Erro
                     assert_eq!(entry.key, "creature_appearance");
                     continue;
                 }
+                if task == "SRX-3" {
+                    assert_eq!(entry.accessor, "gate_wire_position");
+                    assert_eq!(entry.key, "");
+                    continue;
+                }
                 if task == "TK-W19" {
                     assert_eq!(entry.accessor, "gate_ground_item_action");
                     assert_eq!(entry.key, "");
@@ -762,7 +786,7 @@ impl<'ast> Visit<'ast> for Constructions<'ast> {
 /// constructor and explicit fixture room overrides.
 const CONSTRUCTIONS: &[(&str, usize)] = &[
     // Qualified activity content inherits the origin gate, checked below.
-    ("gameplay_transport/activity_content.rs", 2),
+    ("gameplay_transport/activity_content.rs", 3),
     // ActivityRuntimeAssets borrows the selected pair without constructing a qualified room.
     ("gameplay_transport/activity_runtime.rs", 1),
     ("gameplay_transport/composed_test_owner.rs", 2),
@@ -859,7 +883,7 @@ fn inherits_origin_qualification(expr: &syn::Expr) -> bool {
     let syn::Expr::MethodCall(gate) = &*map.receiver else {
         return false;
     };
-    let syn::Expr::Field(rooms) = &*gate.receiver else {
+    let syn::Expr::MethodCall(rooms) = &*gate.receiver else {
         return false;
     };
     map.method == "map"
@@ -868,8 +892,9 @@ fn inherits_origin_qualification(expr: &syn::Expr) -> bool {
         && gate.args.is_empty()
         && gate.attrs.is_empty()
         && rooms.attrs.is_empty()
-        && matches!(&rooms.member, syn::Member::Named(name) if name == "rooms")
-        && matches!(&*rooms.base, syn::Expr::Path(path) if path.path.is_ident("self"))
+        && rooms.method == "effective_rooms"
+        && rooms.args.is_empty()
+        && matches!(&*rooms.receiver, syn::Expr::Path(path) if path.path.is_ident("self"))
         && matches!(
             map.args.iter().collect::<Vec<_>>().as_slice(),
             [syn::Expr::Closure(select)]
@@ -885,8 +910,40 @@ fn an_activity_instance_preserves_the_origin_room_gate() {
     let mut constructions = Constructions::default();
     constructions.visit_file(&content);
     assert!(
-        matches!(constructions.0.as_slice(), [call]
-            if call.args.first().is_some_and(inherits_origin_qualification)),
+        matches!(constructions.0.as_slice(), [source, inherited]
+            if source.args.len() == 2
+                && matches!(source.args.first(), Some(syn::Expr::Path(path))
+                    if path_name(&path.path) == "None")
+                && matches!(source.args.iter().nth(1), Some(syn::Expr::Call(some))
+                    if matches!(&*some.func, syn::Expr::Path(path) if path_name(&path.path) == "Some")
+                        && some.args.len() == 1
+                        && matches!(some.args.first(), Some(syn::Expr::Path(path))
+                            if path_name(&path.path) == "template_room"))
+                && inherited.args.first().is_some_and(inherits_origin_qualification)),
         "activity content must inherit the origin room gate; qualifying a template cannot open unrelated bundle gates"
+    );
+}
+
+/// An independently owned source Bundle has no qualified entry-world room.
+/// Its shared map owner may supply combat, never generic casting or House gates.
+#[test]
+fn a_source_instance_effective_room_constructs_only_none_some_combat() {
+    let source = parse_source("src/gameplay_transport/effective_rooms.rs");
+    let mut constructions = Constructions::default();
+    constructions.visit_file(&source);
+    assert_eq!(
+        constructions.0.len(),
+        1,
+        "effective source rooms must have exactly one explicit construction"
+    );
+    let call = &constructions.0[0];
+    assert_eq!(call.args.len(), 2);
+    assert!(matches!(call.args.first(), Some(syn::Expr::Path(path))
+        if path_name(&path.path) == "None"));
+    assert!(
+        matches!(call.args.iter().nth(1), Some(syn::Expr::Call(some))
+        if matches!(&*some.func, syn::Expr::Path(path) if path_name(&path.path) == "Some")
+            && some.args.len() == 1
+            && matches!(some.args.first(), Some(syn::Expr::Path(path)) if path_name(&path.path) == "room"))
     );
 }

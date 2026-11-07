@@ -106,6 +106,40 @@ impl SmellyCheeseTimers {
         runtime
             .smelly_unambiguous_targets(occurrence.caster)
             .map_err(SmellyScheduleError::Owner)?;
+        self.schedule_checked(runtime, fence, stamp, occurrence, now)
+    }
+    pub fn schedule_native_once(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        fence: &ScopeRuntimeFence,
+        stamp: RuntimeWorkStamp,
+        occurrence: SmellyCastOccurrence,
+        source:&oteryn_gameplay_content::content::native_monster_callbacks::QualifiedNativeCallback,
+        now: SemanticTimeMicros,
+    ) -> Result<bool, SmellyScheduleError> {
+        let entry = source.entry();
+        if source.content() != runtime.content_pin().server_artifact_digest()
+            || entry.creature.key != "oteryn:creature.smelly_cheese"
+            || entry.ability.key != "oteryn:ability.creature.smelly_cheese.berserk_bridge"
+            || !runtime
+                .matches_live_creature_identity(occurrence.caster, entry.creature.key.as_bytes())
+            || !fence.is_current_for_scope(self.lane.scope(), self.lane.generation())
+            || !fence.accepts_stamp(stamp)
+        {
+            return Err(SmellyScheduleError::Owner(
+                CarrierError::InvalidCreatureTarget,
+            ));
+        }
+        self.schedule_checked(runtime, fence, stamp, occurrence, now)
+    }
+    fn schedule_checked(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        fence: &ScopeRuntimeFence,
+        stamp: RuntimeWorkStamp,
+        occurrence: SmellyCastOccurrence,
+        now: SemanticTimeMicros,
+    ) -> Result<bool, SmellyScheduleError> {
         self.accepted
             .retain(|old| runtime.contains_live_creature(old.caster));
         if let Some(old) = self
@@ -177,6 +211,38 @@ impl SmellyCheeseTimers {
             return Err(error);
         }
         Ok(())
+    }
+    pub fn next_due(&self) -> Option<SemanticTimeMicros> {
+        self.lane.earliest_due()
+    }
+    /// Eligibility is an original source deadline, not an owner-clock rewrite.
+    pub fn drain_through(
+        &mut self,
+        clock: &impl OwnerClock,
+        fence: &ScopeRuntimeFence,
+        caster_is_current: impl FnMut(ExactActorRef) -> bool,
+        occurrence: SmellyCastOccurrence,
+        eligible_through_us: u64,
+    ) -> Vec<SmellyDuePulse> {
+        let damage = self
+            .lane
+            .occurrence_due(SmellyPulse::Damage500, occurrence)
+            .is_some_and(|due| due.get() <= eligible_through_us);
+        let presentation = self
+            .lane
+            .occurrence_due(SmellyPulse::Presentation700, occurrence)
+            .is_some_and(|due| due.get() <= eligible_through_us);
+        self.lane
+            .drain_due_matching(clock, fence, caster_is_current, |family, current| {
+                current == occurrence
+                    && match family {
+                        SmellyPulse::Damage500 => damage,
+                        SmellyPulse::Presentation700 => presentation,
+                    }
+            })
+            .into_iter()
+            .map(|pulse| SmellyDuePulse { pulse })
+            .collect()
     }
     /// Stale owner and retired actor purging are the existing timer owner's checks.
     /// Each drained pulse is consumed exactly once; target/presentation consumers resolve
@@ -265,6 +331,27 @@ mod tests {
         assert_eq!(second.len(), 1);
         assert_eq!(second[0].kind(), SmellyPulse::Presentation700);
         assert!(lane.drain(&clock, &fence, |_| true).is_empty());
+    }
+    #[test]
+    fn source_cutoff_keeps_later_original_pulse_without_rewriting_owner_clock() {
+        let (mut lane, fence, stamp, occurrence) = setup();
+        let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(0));
+        lane.schedule(&fence, stamp, occurrence, clock.now())
+            .expect("source two-pulse cast");
+        clock.advance(1_000_000);
+        let first = lane.drain_through(&clock, &fence, |_| true, occurrence, 600_000);
+        assert_eq!(first.len(), 1);
+        assert_eq!(first[0].kind(), SmellyPulse::Damage500);
+        assert_eq!(clock.now().get(), 1_000_000);
+        assert_eq!(lane.next_due().map(|due| due.get()), Some(700_000));
+        assert!(
+            lane.drain_through(&clock, &fence, |_| true, occurrence, 600_000)
+                .is_empty()
+        );
+        let later = lane.drain_through(&clock, &fence, |_| true, occurrence, 1_000_000);
+        assert_eq!(later.len(), 1);
+        assert_eq!(later[0].kind(), SmellyPulse::Presentation700);
+        assert_eq!(lane.next_due(), None);
     }
     #[test]
     fn retired_caster_cancels_both_even_before_deadline() {

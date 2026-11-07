@@ -82,6 +82,53 @@ pub fn spell_from_bundle(
 impl CompiledNativeSpell {
     /// The complete qualified cast header remains available to the cast owner for
     /// its common checks and the single cost/cooldown commitment.
+    /// S21 selected Canary familiar profile, not a display-name preference.
+    /// The five complete formal47df Creature definitions are byte-identical to
+    /// the selected source999 definitions (familiar-profile-source-proof.json).
+    /// Crystal alternatives deliberately have no Canary binding here.
+    pub fn familiar_creature_definition(&self) -> Option<crate::content::ProjectV2DefinitionRef> {
+        let identity = &self.spell["identity"];
+        if identity["revision"] != REVISION {
+            return None;
+        }
+        let (vocation, name, creature) = match identity["key"].as_str()? {
+            "candidate:spell/druid_familiar" => {
+                ("druid", "Druid familiar", "canary:creature/druid_familiar")
+            }
+            "candidate:spell/knight_familiar" => (
+                "knight",
+                "Knight familiar",
+                "canary:creature/knight_familiar",
+            ),
+            "candidate:spell/monk_familiar" => {
+                ("monk", "Monk familiar", "canary:creature/monk_familiar")
+            }
+            "candidate:spell/paladin_familiar" => (
+                "paladin",
+                "Paladin familiar",
+                "canary:creature/paladin_familiar",
+            ),
+            "candidate:spell/sorcerer_familiar" => (
+                "sorcerer",
+                "Sorcerer familiar",
+                "canary:creature/sorcerer_familiar",
+            ),
+            _ => return None,
+        };
+        let behavior = &self.spell["execution"]["native_behavior"];
+        if behavior["key"] != "familiar_summon"
+            || behavior["parameters"]["vocation"] != vocation
+            || behavior["parameters"]["creature_name"] != name
+        {
+            return None;
+        }
+        Some(crate::content::ProjectV2DefinitionRef {
+            family: crate::content::ProjectV2Family::Creature,
+            key: creature.into(),
+            revision: "canary-47dfd51f".into(),
+        })
+    }
+
     pub fn dependencies(&self) -> &Value {
         &self.dependencies
     }

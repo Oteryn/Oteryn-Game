@@ -158,9 +158,11 @@ async fn mailbox_in_reach(
     {
         return false;
     }
-    let Some(at) =
-        super::bundle_map_position::bundle_map_position(&mut runtime, owner.movement_cells, actor)
-    else {
+    let Some(at) = super::bundle_map_position::bundle_map_position(
+        &mut runtime,
+        owner.effective_movement_cells(),
+        actor,
+    ) else {
         return false;
     };
     let Some(index) = super::item_ref_admission::pinned_index(&runtime, owner.active_generation)

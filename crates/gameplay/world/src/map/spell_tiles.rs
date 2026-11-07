@@ -166,13 +166,18 @@ impl SpellTilesBuilder {
                     let definition = (entry.family == Family::Item)
                         .then(|| item(&entry.key))
                         .flatten();
+                    let surface = (entry.family == Family::Terrain)
+                        .then(|| crate::content::qualified_static_surface(&entry.key))
+                        .flatten();
                     PaletteSpell {
                         source_id: super::palette_appearance(&entry.key).map(u32::from),
                         wall: entry
                             .terrain
                             .is_some_and(|terrain| terrain.kind == TerrainKind::Wall),
-                        blocks_projectile: definition
-                            .is_none_or(|definition| definition.blocks_projectile),
+                        blocks_projectile: surface.map_or_else(
+                            || definition.is_none_or(|definition| definition.blocks_projectile),
+                            |surface| surface.blocks_projectile,
+                        ),
                         pickupable: definition.is_some_and(|definition| definition.pickupable),
                     }
                 })

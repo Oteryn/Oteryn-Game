@@ -263,3 +263,6 @@ mod tests {
         );
     }
 }
+
+#[path = "boss_room/source_prefix.rs"]
+pub mod source_prefix;

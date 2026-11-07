@@ -47,7 +47,9 @@ use oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL;
 use sqlx::Row;
 mod house;
 pub use house::{HouseLastPosition, ScopedLastPosition, ScopedPeriodicLastPosition};
-pub(super) use house::{load_scoped_last_position, upsert_scoped_last_position, release_terminal_house_entry};
+pub(super) use house::{
+    load_scoped_last_position, release_terminal_house_entry, upsert_scoped_last_position,
+};
 
 type Result<T> = std::result::Result<T, CharacterProgressionError>;
 
@@ -216,8 +218,15 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         writes: Vec<PeriodicLastPosition>,
     ) -> Result<Vec<Result<LastPositionWrite>>> {
-        self.write_scoped_character_last_positions(authority, node,
-            writes.into_iter().map(|write| ScopedPeriodicLastPosition { write, house: None }).collect()).await
+        self.write_scoped_character_last_positions(
+            authority,
+            node,
+            writes
+                .into_iter()
+                .map(|write| ScopedPeriodicLastPosition { write, house: None })
+                .collect(),
+        )
+        .await
     }
 
     /// §3.3: the Character's last position, read under the session fence of `fence` when a new

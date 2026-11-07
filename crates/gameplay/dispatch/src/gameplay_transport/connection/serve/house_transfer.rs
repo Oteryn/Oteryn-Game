@@ -67,6 +67,10 @@ pub(super) async fn execute<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmission
 
 /// House custody uses the same command ingress and framing, with no Channel
 /// snapshot, combat cadence or Channel mutations while the House owns the slot.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the same transport carries its activity session fence into House ingress"
+)]
 pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
     stream: &mut S,
     mut admitted: AdmittedSession,
@@ -75,6 +79,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
     server_messages: &mut Option<ServerMessageConnection<'a, A>>,
     policy: LivenessPolicy,
     integrity: &mut integrity::Integrity,
+    require_session_binding: bool,
 ) -> Result<AdmittedSession, Box<ConnectionEnd>> {
     let run = async {
         let (_, projection) = authority
@@ -219,6 +224,11 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                             .probe_id,
                     )
                     .map_err(ServeEnd::Closed)?;
+                continue;
+            }
+            if !command_session_matches(&frame, admitted, require_session_binding)
+                .map_err(ServeEnd::Closed)?
+            {
                 continue;
             }
             let command = envelope

@@ -1,5 +1,7 @@
 //! Fenced durable execution of a channel raid run and its acknowledged live effects.
+mod claustrophobic;
 mod effects;
+pub use claustrophobic::{ClaustrophobicRaidCue, claustrophobic_cue_pending_in_transaction};
 mod end;
 mod live_guard;
 mod pending;

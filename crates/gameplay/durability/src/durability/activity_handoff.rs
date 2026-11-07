@@ -13,7 +13,8 @@ use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_f
 use super::character_last_position::{LastPositionCell, LastPositionRecord};
 use super::character_progression::{assert_item_only_fence, assert_runtime_scope_fence};
 use super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+    begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction,
+    lock_admission_relations,
 };
 use super::fresh_admission::FreshAdmissionStore;
 use super::item_transfer::CurrentCharacterItemFence;
@@ -29,6 +30,10 @@ use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
 
 mod entry;
+mod outburst;
+mod primal;
+mod rotten_blood;
+mod soul_war;
 mod transfer_recovery;
 pub use transfer_recovery::ActivityTransferRecovery;
 pub(crate) use transfer_recovery::OfflineActivityMismatchRelease;
@@ -163,7 +168,7 @@ pub enum ActivityReturnReason {
     },
 }
 impl ActivityReturnReason {
-    fn stored(self) -> i16 {
+    pub(super) fn stored(self) -> i16 {
         match self {
             Self::Exit => 1,
             Self::Timeout => 2,
@@ -226,6 +231,13 @@ pub type ActivityRecoveryOutcome = ActivityReturnOutcome;
 pub struct ActivityHandoffOwner {
     root: DurabilityRoot,
 }
+
+struct SoulpitAdmission<'a> {
+    permit: &'a super::spell_owner_commit::SpellLanePermit,
+    native: &'a oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+    request: super::soulpit::SoulpitEntryRequest,
+}
+
 impl ActivityHandoffOwner {
     pub fn new(root: DurabilityRoot) -> Self {
         Self { root }
@@ -237,7 +249,8 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         request: ActivityEnterRequest,
     ) -> Result<ActivityEnterOutcome> {
-        self.enter_inner(authority, node, request, false).await
+        self.enter_inner(authority, node, request, false, None)
+            .await
     }
 
     pub async fn enter_boss_room(
@@ -246,7 +259,37 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         request: ActivityEnterRequest,
     ) -> Result<ActivityEnterOutcome> {
-        self.enter_inner(authority, node, request, true).await
+        self.enter_inner(authority, node, request, true, None).await
+    }
+
+    /// Crystal soulpit_fight.lua:37-76 validates every participant before consuming
+    /// one core and moving the group. The debit and all successor sessions commit
+    /// together; an unavailable core rolls the prepared group back as well.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "shared handoff, item lane and native content are independent authorities"
+    )]
+    pub async fn enter_soulpit(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        request: ActivityEnterRequest,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        core: super::soulpit::SoulpitEntryRequest,
+        native: &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+    ) -> Result<ActivityEnterOutcome> {
+        self.enter_inner(
+            authority,
+            node,
+            request,
+            false,
+            Some(SoulpitAdmission {
+                permit,
+                native,
+                request: core,
+            }),
+        )
+        .await
     }
 
     async fn enter_inner(
@@ -255,11 +298,41 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         mut request: ActivityEnterRequest,
         boss_room: bool,
+        soulpit: Option<SoulpitAdmission<'_>>,
     ) -> Result<ActivityEnterOutcome> {
         request
             .participants
             .sort_by_key(|p| *p.source.character_id.as_bytes());
-        if !entry::valid_request(&request, boss_room) {
+        if !entry::valid_request(&request, boss_room)
+            || (request.activity_key == super::soulpit::SOULPIT_ACTIVITY_KEY) != soulpit.is_some()
+            || soulpit.as_ref().is_some_and(|admission| {
+                boss_room
+                    || request.time_limit_ms != 600_000
+                    || admission.request.handoff_id != request.handoff_id
+                    || admission.request.command.command_id().get() != request.command_id
+                    || request
+                        .participants
+                        .iter()
+                        .find(|participant| {
+                            participant.source.character_id.as_bytes()
+                                == request.initiating_character_id.as_bytes()
+                        })
+                        .is_none_or(|participant| {
+                            participant.source.game_session_id
+                                != admission.request.command.game_session_id()
+                        })
+                    || admission.request.participants.len() != request.participants.len()
+                    || request.participants.iter().any(|participant| {
+                        admission
+                            .request
+                            .participants
+                            .iter()
+                            .filter(|fact| fact.character == participant.source.character_id)
+                            .count()
+                            != 1
+                    })
+            })
+        {
             return Ok(ActivityEnterOutcome::Refused(ActivityRefusal::InvalidInput));
         }
         let recovery = authority
@@ -267,18 +340,26 @@ impl ActivityHandoffOwner {
             .map_err(|_| DurabilityError::Unavailable)?;
         let root = self.root.clone();
         let node = node.clone();
+        let mut context = soulpit;
         self.root
             .try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut context, move |holder, deadline, soulpit| {
                 Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    let result =
-                        entry::enter_in_transaction(&mut tx, &root, &node, &request, boss_room)
-                            .await?;
+                    let result = entry::enter_in_transaction(
+                        &mut tx,
+                        &root,
+                        &node,
+                        &request,
+                        boss_room,
+                        &recovery,
+                        soulpit.as_ref(),
+                    )
+                    .await?;
                     if !matches!(result, ActivityEnterOutcome::Refused(_)) {
-                        commit_semantic_transaction(tx, deadline).await?;
+                        tx.commit(deadline).await?;
                     }
                     Ok(result)
                 })

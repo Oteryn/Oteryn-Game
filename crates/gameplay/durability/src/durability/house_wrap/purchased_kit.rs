@@ -13,10 +13,14 @@ pub(crate) async fn record_purchased_kit(
     source_row: usize,
     target: &TypedDefinitionRef,
 ) -> Result<(), DurabilityError> {
-    let source=wrapped_buy(source_row).ok_or(DurabilityError::InvalidStoredState)?;
-    if target.family!="Item" || target.production_key!=format!("oteryn:item.tibia.i{}",source.item_id)
-        || target.revision_ref!="definition-r1" {return Err(DurabilityError::InvalidStoredState)}
-    let row=i32::try_from(source_row).map_err(|_|DurabilityError::InvalidStoredState)?;
+    let source = wrapped_buy(source_row).ok_or(DurabilityError::InvalidStoredState)?;
+    if target.family != "Item"
+        || target.production_key != format!("oteryn:item.tibia.i{}", source.item_id)
+        || target.revision_ref != "definition-r1"
+    {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let row = i32::try_from(source_row).map_err(|_| DurabilityError::InvalidStoredState)?;
     sqlx::query("INSERT INTO game_house_furniture_kit_origins(item_instance_id,mint_transaction_id,source_row,target_key,target_revision) \
         VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,$5)")
         .bind(item.as_slice()).bind(transaction.as_slice()).bind(row)
@@ -32,7 +36,9 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         item: [u8; 16],
     ) -> Result<Option<TypedDefinitionRef>, DurabilityError> {
-        let recovery=authority.record_for(self).map_err(|_|DurabilityError::InvalidStoredState)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;

@@ -67,6 +67,39 @@ type Result<T> = std::result::Result<T, CharacterProgressionError>;
 type StoredResult<T> = std::result::Result<T, DurabilityError>;
 const REQUEST_BINDING_VERSION: u8 = 1;
 
+/// Immutable server-think data identity. Only the source owner and stored-row
+/// decoder construct it; this is neither a GameSession nor a player command.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SourceThinkOccurrence([u8; 16]);
+impl SourceThinkOccurrence {
+    fn from_bytes(value: [u8; 16]) -> Option<Self> {
+        super::spell_item_transaction::uuid_v7(&value).then_some(Self(value))
+    }
+    pub const fn as_bytes(&self) -> &[u8; 16] {
+        &self.0
+    }
+}
+
+/// Deterministic server-owned physical-step identity. UUIDv8 names data in
+/// the source_step namespace; it is never a session or transport command ID.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SourceStepOccurrence([u8; 16]);
+impl SourceStepOccurrence {
+    fn from_binding_digest(digest: [u8; 32]) -> Self {
+        let mut id = [0; 16];
+        id.copy_from_slice(&digest[..16]);
+        id[6] = (id[6] & 0x0f) | 0x80;
+        id[8] = (id[8] & 0x3f) | 0x80;
+        Self(id)
+    }
+    fn from_bytes(id: [u8; 16]) -> Option<Self> {
+        (id[6] >> 4 == 8 && id[8] & 0xc0 == 0x80).then_some(Self(id))
+    }
+    pub const fn as_bytes(&self) -> &[u8; 16] {
+        &self.0
+    }
+}
+
 /// The occurrence a transition request is bound to, 1:1 with its trigger (§4 "Request").
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QuestCause {
@@ -80,6 +113,9 @@ pub enum QuestCause {
     ClaimObligation(CommandRef),
     /// A creature-death reward occurrence.
     CreatureDeath(ExperienceRewardOccurrence),
+    /// A sealed actual native onThink callback, in its own occurrence namespace.
+    SourceThink(SourceThinkOccurrence),
+    SourceStep(SourceStepOccurrence),
 }
 
 impl QuestCause {
@@ -90,6 +126,8 @@ impl QuestCause {
             Self::Step(_) => "step",
             Self::ClaimObligation(_) => "claim_obligation",
             Self::CreatureDeath(_) => "creature_death",
+            Self::SourceThink(_) => "source_think",
+            Self::SourceStep(_) => "source_step",
         }
     }
 
@@ -105,6 +143,8 @@ impl QuestCause {
                 command.command_id().get(),
             ),
             Self::CreatureDeath(occurrence) => (*occurrence.as_bytes(), 0),
+            Self::SourceThink(occurrence) => (*occurrence.as_bytes(), 0),
+            Self::SourceStep(occurrence) => (*occurrence.as_bytes(), 0),
         }
     }
 
@@ -124,6 +164,12 @@ impl QuestCause {
             "creature_death" if ordinal == 0 => {
                 Self::CreatureDeath(ExperienceRewardOccurrence::from_bytes(id).map_err(invalid)?)
             }
+            "source_step" if ordinal == 0 => Self::SourceStep(
+                SourceStepOccurrence::from_bytes(id).ok_or(DurabilityError::InvalidStoredState)?,
+            ),
+            "source_think" if ordinal == 0 => Self::SourceThink(
+                SourceThinkOccurrence::from_bytes(id).ok_or(DurabilityError::InvalidStoredState)?,
+            ),
             _ => return Err(DurabilityError::InvalidStoredState),
         })
     }
@@ -243,7 +289,10 @@ impl QuestStateCopy {
     pub fn meets_door_storage(&self, action: u16) -> bool {
         // Crystal201189f storages.lua:3069 / torkada.lua:63-85; source door outside the historical generated sample.
         if action == oteryn_gameplay_quests::quest::rotten_blood::ACCESS_DOOR_STORAGE {
-            return self.tracks.get(oteryn_gameplay_quests::quest::rotten_blood::ACCESS_DOOR_TRACK) == Some(&1);
+            return self
+                .tracks
+                .get(oteryn_gameplay_quests::quest::rotten_blood::ACCESS_DOOR_TRACK)
+                == Some(&1);
         }
         // The donor's numeric action names the same storage that quest authoring
         // normalizes to a named track. Resolve that identity before reading the copy.
@@ -539,9 +588,13 @@ pub(super) fn report_refused_experience(
 pub(super) mod capacity;
 pub mod grizzly;
 pub mod grizzly_boss;
+pub mod rotten_area;
 pub mod rotten_blood;
 pub mod rotten_blood_access;
+pub mod rotten_essence;
+pub mod rotten_flame;
 pub mod soul_war;
+pub mod soul_war_source;
 mod storage;
 #[cfg(test)]
 #[allow(clippy::expect_used)]
@@ -559,4 +612,25 @@ pub(super) async fn inquisition_blessing_eligible(
 ) -> std::result::Result<bool, DurabilityError> {
     Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.the_inquisition_quest' AND track_key='oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline' AND value=25)")
         .bind(character.as_bytes().as_slice()).fetch_one(connection).await?)
+}
+
+/// Private closed source union: causes alone never grant autonomous mutations.
+#[derive(Debug, Clone)]
+pub(super) enum QuestSourceAction {
+    SoulWar(soul_war_source::SoulWarSourceAction),
+    RottenArea(rotten_area::QualifiedRottenAreaThink),
+}
+impl QuestSourceAction {
+    fn request(&self, fence: &CurrentCharacterGameplayFence) -> Result<QuestTransitionRequest> {
+        match self {
+            Self::SoulWar(x) => x.request(fence),
+            Self::RottenArea(x) => x.request(fence),
+        }
+    }
+    fn binding(&self, character: CharacterId, request: &QuestTransitionRequest) -> [u8; 33] {
+        match self {
+            Self::SoulWar(x) => x.binding(character, request),
+            Self::RottenArea(x) => x.binding(character, request),
+        }
+    }
 }

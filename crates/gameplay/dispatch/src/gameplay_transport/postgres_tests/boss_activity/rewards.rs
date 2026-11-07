@@ -20,8 +20,9 @@ pub(super) fn source_boss(
         .active_generation
         .and_then(|generation| generation.native_gameplay())
         .ok_or("active native gameplay")?;
-    // The fixture's one test-only classification is compiled before activation.
-    // Production reward bosses remain unavailable under current corpse admission.
+    // This test-only classification isolates the scoped custody/fencing boundary.
+    // The actual source raid -> Grand Mother -> material private reward journey
+    // has its own srx3_boss_corpse production-profile case.
     let policy = native
         .policies()
         .policies()
@@ -141,8 +142,7 @@ pub(super) async fn settle_and_collect(
             now.get() / 1_000,
         );
         // Projection is the death owner's next step after the lethal vitals
-        // commit. Retaining this native proof does not authorize the separately
-        // refused ordinary Instance corpse/loot MINT descendant.
+        // commit. Its exact typed death is the scoped corpse MINT's cause.
         assert!(runtime.retains_corpse_projection(target));
         assert!(attack.kills().has_session(admitted.game_session_id));
         batch
@@ -151,6 +151,21 @@ pub(super) async fn settle_and_collect(
         owner.drain_kill_rewards(admitted.game_session_id).await,
         DrainOutcome::Drained
     );
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM game_item_ground_locations g \
+             JOIN game_item_mint_receipts r USING(item_instance_id) \
+             WHERE g.scope_kind=2 AND g.channel_id IS NULL \
+               AND g.instance_id=encode($1,'hex')::uuid \
+               AND r.loot_purpose_key='CORPSE_MATERIALIZATION'",
+        )
+        .bind(instance_id.as_slice())
+        .fetch_one(&h.pool)
+        .await?,
+        1,
+        "a personal reward boss still materializes its exact Instance corpse"
+    );
+    let (mut corpse_request, corpse_death) = assert_corpse_scope_guards(h, owner, &batch).await?;
     let retained: (Vec<u8>, i16, Vec<u8>, bool, i64) = sqlx::query_as(
         "SELECT uuid_send(death_id),scope_kind,uuid_send(instance_id),channel_id IS NULL,minted_at FROM game_boss_reward_deaths",
     ).fetch_one(&h.pool).await?;
@@ -257,6 +272,28 @@ pub(super) async fn settle_and_collect(
         origin
             .publish_activity_commit(&commit)
             .map_err(|_| "publish actual timeout return")?;
+        // The control assignment remains current here. The completed activity
+        // must independently close the physical MINT owner before cleanup.
+        assert_eq!(sqlx::query_scalar::<_, i16>(
+            "SELECT state FROM game_runtime_scope_assignments WHERE world_id=encode($1,'hex')::uuid AND activity_instance_id=encode($2,'hex')::uuid",
+        ).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(instance_id.as_slice()).fetch_one(&h.pool).await?, 1);
+        corpse_request.cause = crate::durability::item_mint::ItemMintCause::from_creature_death(
+            corpse_death,
+            corpse_request.item.clone(),
+            "fixture:after-activity-return".into(),
+            1,
+        )
+        .map_err(debug)?;
+        assert!(
+            matches!(
+                owner
+                    .root
+                    .freeze_item_mint(owner.character, owner.holder, corpse_request)
+                    .await,
+                Err(crate::durability::item_mint::ItemMintError::AuthorityRejected)
+            ),
+            "a retained death cannot mint new Ground after every participant has returned"
+        );
         assert_eq!(
             sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_activity_runtime_returns")
                 .fetch_one(&h.pool)
@@ -415,6 +452,166 @@ pub(super) async fn settle_and_collect(
     Ok(())
 }
 
+async fn assert_corpse_scope_guards(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    batch: &OwnerCombatBatch,
+) -> TestResult<(
+    crate::durability::item_mint::ItemMintRequest,
+    crate::foundation::CreatureDeathOccurrenceKey,
+)> {
+    use crate::durability::item_mint::{
+        CORPSE_MATERIALIZATION_PURPOSE_KEY, GroundPlacement, ItemMintCause, ItemMintError,
+        ItemMintRequest, TypedDefinitionRef,
+    };
+    let actor = batch.effects.first().ok_or("lethal effect")?.target;
+    let death = {
+        let mut runtime = owner.runtime.lock().await;
+        runtime
+            .borrow_combat_death()
+            .projected_death(actor)
+            .map_err(debug)?
+            .0
+    };
+    let audit: Vec<u8> = sqlx::query_scalar(
+        "SELECT a.envelope FROM game_item_mint_receipts r \
+         JOIN game_item_mint_reservations v USING(transaction_id) \
+         JOIN game_item_audit_outbox a ON a.event_id=r.event_id \
+         WHERE r.loot_purpose_key='CORPSE_MATERIALIZATION' \
+           AND r.death_scope_kind=2 AND r.death_channel_id IS NULL \
+           AND v.death_scope_kind=r.death_scope_kind \
+           AND v.death_scope_id=r.death_scope_id AND v.death_channel_id IS NULL \
+           AND v.intent_binding=r.intent_binding AND v.event_id=r.event_id AND a.envelope=v.envelope",
+    ).fetch_one(&h.pool).await?;
+    let (envelope, mint) =
+        crate::durability::item_mint_audit::decode_envelope(&audit).map_err(debug)?;
+    let source = mint.source.ok_or("corpse provenance")?;
+    let typed_death = source.death_occurrence.ok_or("corpse typed death")?;
+    assert_eq!(
+        typed_death.runtime_scope().map_err(debug)?,
+        death.runtime_scope()
+    );
+    assert!(envelope.channel_id.is_none());
+    assert_eq!(envelope.instance_id, typed_death.instance_id);
+    assert_eq!(typed_death.actor_local_id, death.actor_local_id());
+    assert_eq!(
+        typed_death.actor_local_generation,
+        death.actor_local_generation()
+    );
+    let after = mint.after.ok_or("corpse Item")?;
+    let item_id: [u8; 16] = after
+        .item_instance_id
+        .as_slice()
+        .try_into()
+        .map_err(|_| "corpse Item id")?;
+    assert!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .visible_corpses()
+            .iter()
+            .any(|corpse| corpse.item.item_instance_id == item_id)
+    );
+    let ground = mint.destination.ok_or("corpse Ground")?;
+    assert_eq!(
+        ground.runtime_scope().map_err(debug)?,
+        death.runtime_scope()
+    );
+    let definition = after.definition.ok_or("corpse definition")?;
+    let item = TypedDefinitionRef {
+        family: definition.family,
+        production_key: definition.production_key,
+        revision_ref: definition.revision_ref,
+    };
+    let mut request = ItemMintRequest {
+        cause: ItemMintCause::from_creature_death(
+            death,
+            item.clone(),
+            CORPSE_MATERIALIZATION_PURPOSE_KEY.into(),
+            0,
+        )
+        .map_err(debug)?,
+        item: item.clone(),
+        quantity: after.quantity,
+        ground: GroundPlacement {
+            spatial_position: ground.spatial_position,
+            corpse_ref: ground.corpse_ref,
+            map_revision: ground.map_revision,
+            content_revision: ground.content_revision,
+            native_room_placement_context: ground.native_room_placement_context,
+        },
+        content_revision: source.content_revision,
+        ruleset_revision: source.ruleset_revision,
+        sim_revision: source.sim_revision,
+    };
+    let replay = owner
+        .root
+        .freeze_item_mint(owner.character, owner.holder, request.clone())
+        .await
+        .map_err(debug)?;
+    assert_eq!(
+        replay.item_instance_id(),
+        &item_id,
+        "same cause reuses its original reservation"
+    );
+    let instance_id = match death.runtime_scope() {
+        RuntimeScopeRefV1::Instance { instance_id, .. } => instance_id,
+        _ => return Err("Instance death".into()),
+    };
+    let shadow_channel = crate::foundation::ChannelId::decode(&instance_id).map_err(debug)?;
+    let original = request.clone();
+    request.cause = ItemMintCause::for_test_scope(
+        RuntimeScopeRefV1::channel(death.world_id(), shadow_channel),
+        death.scope_ownership_generation(),
+        death.actor_local_id(),
+        death.actor_local_generation(),
+        item.clone(),
+        CORPSE_MATERIALIZATION_PURPOSE_KEY.into(),
+        0,
+    );
+    assert!(
+        matches!(
+            owner
+                .root
+                .freeze_item_mint(owner.character, owner.holder, request.clone())
+                .await,
+            Err(ItemMintError::AuthorityRejected)
+        ),
+        "equal UUIDs cannot replay an Instance receipt through Channel custody"
+    );
+    request.cause = ItemMintCause::for_test_scope(
+        death.runtime_scope(),
+        crate::foundation::ScopeOwnershipGeneration::new(
+            death.scope_ownership_generation().get() + 1,
+        )
+        .map_err(debug)?,
+        death.actor_local_id(),
+        death.actor_local_generation(),
+        item,
+        CORPSE_MATERIALIZATION_PURPOSE_KEY.into(),
+        0,
+    );
+    assert!(
+        matches!(
+            owner
+                .root
+                .freeze_item_mint(owner.character, owner.holder, request)
+                .await,
+            Err(ItemMintError::AuthorityRejected)
+        ),
+        "a different ownership generation cannot borrow this scope's current writer"
+    );
+    let reservations: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_item_mint_reservations WHERE loot_purpose_key='CORPSE_MATERIALIZATION'",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(
+        reservations, 1,
+        "refused namespace/generation probes reserve no new cause"
+    );
+    Ok((original, death))
+}
+
 /// Existing command 340 has no physical-map prerequisite. Exercise the real
 /// Instance stream and routing, independently of the direct durable custody proof.
 async fn open_reward_groups(
@@ -439,13 +636,14 @@ async fn open_reward_groups(
         }
         write_frame(
             &mut client,
-            &encode_client_command(
+            &oteryn_protocol_oteryn::encode_client_command_for_session(
                 admitted.continuity.connection_generation,
                 &ClientCommandValue {
                     command_id,
                     command_type: wire::COMMAND_TYPE_BOSS_REWARD_OPEN,
                     payload: &[],
                 },
+                admitted.game_session_id.as_bytes(),
             )
             .map_err(debug)?,
         )

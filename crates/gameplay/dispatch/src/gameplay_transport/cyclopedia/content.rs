@@ -50,10 +50,9 @@ pub(super) fn admit(owner: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Admitt
             y: p.y,
             z: i32::from(-p.floor),
         };
-        owner
-            .movement_cells
+        owner.effective_movement_cells()
             .index()
-            .lookup(owner.movement_cells.scope(), cell)
+            .lookup(owner.effective_movement_cells().scope(), cell)
             == Ok(CollisionClass::Walkable)
     };
     if !walkable(start) {

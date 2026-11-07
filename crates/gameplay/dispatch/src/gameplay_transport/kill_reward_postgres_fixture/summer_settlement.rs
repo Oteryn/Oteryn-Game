@@ -16,6 +16,10 @@ pub(super) async fn qualify_summer_settlement(
 ) -> TestResult {
     let native = owner.active_generation.unwrap().native_gameplay().unwrap();
     let reward = native.reward_table().row(creature).map_err(debug)?;
+    let source_corpse = reward
+        .corpse_item
+        .as_ref()
+        .ok_or("actual Summer source corpse")?;
     assert!(
         reward.race.is_some(),
         "the native Radiant has a Bestiary race"
@@ -36,10 +40,7 @@ pub(super) async fn qualify_summer_settlement(
         .next()
         .unwrap();
     let item = corpse.item.item_instance_id;
-    assert_eq!(
-        corpse.item.production_key,
-        reward.corpse_item.production_key
-    );
+    assert_eq!(corpse.item.production_key, source_corpse.production_key);
     let top: bool = sqlx::query_scalar("SELECT corpse_top_damage_character_id=encode($1,'hex')::uuid FROM game_item_mint_receipts WHERE item_instance_id=encode($2,'hex')::uuid")
         .bind(id(41).as_slice()).bind(item.as_slice()).fetch_one(&h.pool).await?;
     assert!(top, "corpse ownership is the actual top-damage Character");
@@ -143,7 +144,7 @@ pub(super) async fn qualify_summer_settlement(
     );
     let state: (String,String,i64) = sqlx::query_as("SELECT definition_production_key,state_revision::text,quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(item.as_slice()).fetch_one(&h.pool).await?;
-    let terminal = match reward.corpse_item.production_key.as_str() {
+    let terminal = match source_corpse.production_key.as_str() {
         "oteryn:item.tibia.i54678" => "oteryn:item.tibia.i54681",
         "oteryn:item.tibia.i54407" => "oteryn:item.tibia.i54404",
         "oteryn:item.tibia.i54399" => "oteryn:item.tibia.i54396",
@@ -180,9 +181,9 @@ pub(super) async fn qualify_summer_settlement(
             .bind_corpse_item(
                 target,
                 item,
-                &reward.corpse_item.family,
-                &reward.corpse_item.production_key,
-                &reward.corpse_item.revision_ref,
+                &source_corpse.family,
+                &source_corpse.production_key,
+                &source_corpse.revision_ref,
             )
             .map_err(debug)?;
         assert_eq!(runtime.visible_corpses()[0].item.production_key, terminal);
@@ -395,7 +396,10 @@ fn summer_corpse_process_restart() -> TestResult {
         } else {
             assert_eq!(mode, "read");
             assert_eq!(
-                schedule.corpses[0].decay_at_unix_ms - schedule.corpses[0].materialized_at_unix_ms,
+                schedule.corpses[0]
+                    .decay_at_unix_ms
+                    .ok_or("timed source corpse deadline")?
+                    - schedule.corpses[0].materialized_at_unix_ms,
                 670_000
             );
             assert!(

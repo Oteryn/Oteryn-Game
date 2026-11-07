@@ -1,31 +1,40 @@
 //! Ownership-loss recovery is fenced by the current House owner node, not an offline session.
-use super::super::character_authority::{ReconciledCharacterAuthority,assert_recovery_fence};
-use super::super::character_inbox::{HirelingRecallRequest,RewardClaimInboxError,RewardClaimInboxOutcome,RewardClaimInboxPlan};
+use super::super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
+use super::super::character_inbox::{
+    HirelingRecallRequest, RewardClaimInboxError, RewardClaimInboxOutcome, RewardClaimInboxPlan,
+};
 use super::super::character_progression::numeric_u64;
-use super::super::db::{begin_semantic_transaction,commit_semantic_transaction,lock_admission_relations};
-use super::super::runtime_scope_assignment::{NodeIncarnationProof,prove_current_incarnation};
-use super::super::{DurabilityError,DurabilityRoot};
-use super::{HirelingSnapshot,HirelingLampReturn,model,receipts,return_lamp};
-use crate::foundation::{ChannelId,CommandId,CommandRef,GameSessionId,WorldId};
+use super::super::db::{
+    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+};
+use super::super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation};
+use super::super::{DurabilityError, DurabilityRoot};
+use super::{HirelingLampReturn, HirelingSnapshot, model, receipts, return_lamp};
+use crate::foundation::{ChannelId, CommandId, CommandRef, GameSessionId, WorldId};
 use sqlx::Row;
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct HirelingRecallState {
-    pub hireling:HirelingSnapshot,
-    pub authority:HirelingRecallRequest,
-    pub source:RewardClaimInboxPlan,
-    pub content_revision:String,
-    pub ruleset_revision:String,
+    pub hireling: HirelingSnapshot,
+    pub authority: HirelingRecallRequest,
+    pub source: RewardClaimInboxPlan,
+    pub content_revision: String,
+    pub ruleset_revision: String,
 }
 
 impl DurabilityRoot {
     /// At most ten recalls per pass. A caller drains successive batches; no source row is
     /// truncated or acknowledged until its native Inbox return actually commits.
     pub async fn pending_hireling_recalls(
-        &self,authority:&ReconciledCharacterAuthority<'_,'_>,node:&NodeIncarnationProof,world:WorldId,
-    )->Result<Vec<HirelingRecallState>,DurabilityError>{
-        let recovery=authority.record_for(self).map_err(|_|DurabilityError::InvalidStoredState)?;
-        let node=node.clone();
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        world: WorldId,
+    ) -> Result<Vec<HirelingRecallState>, DurabilityError> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        let node = node.clone();
         self.try_issue_semantic_pass()?.run(move|holder,deadline|Box::pin(async move{
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;lock_admission_relations(&mut tx).await?;
@@ -65,13 +74,27 @@ impl DurabilityRoot {
     /// Return even for an offline former owner or a full donor Store Inbox. The native Inbox
     /// owner still enforces its own durable resource ceiling and original command provenance.
     pub async fn recall_hireling_to_lamp(
-        &self,authority:&ReconciledCharacterAuthority<'_,'_>,node:&NodeIncarnationProof,
-        recall:HirelingRecallRequest,request:HirelingLampReturn,
-    )->Result<(),DurabilityError>{
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        recall: HirelingRecallRequest,
+        request: HirelingLampReturn,
+    ) -> Result<(), DurabilityError> {
         return_lamp::validate(&request)?;
-        if recall.hireling!=request.hireling{return Err(DurabilityError::InvalidStoredState)}
-        let mut candidate=self.prepare_hireling_recall_inbox_mint(authority,node,recall.clone(),&request.source,request.mint.clone()).await.map_err(return_lamp::inbox_error)?;
-        let mut owner=();
+        if recall.hireling != request.hireling {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        let mut candidate = self
+            .prepare_hireling_recall_inbox_mint(
+                authority,
+                node,
+                recall.clone(),
+                &request.source,
+                request.mint.clone(),
+            )
+            .await
+            .map_err(return_lamp::inbox_error)?;
+        let mut owner = ();
         let result=self.commit_hireling_recall_inbox_mint(authority,node,recall,&mut candidate,&mut owner,
             move|context,_|Box::pin(async move{
                 let tx=context.transaction();
@@ -83,6 +106,9 @@ impl DurabilityRoot {
                 let h=model::decode(&row)?;
                 return_lamp::finish_return(tx,&request.source,&h,3).await?;Ok(())
             })).await.map_err(return_lamp::inbox_error)?;
-        match result{RewardClaimInboxOutcome::Committed{..}|RewardClaimInboxOutcome::AlreadyCommitted(_)=>Ok(())}
+        match result {
+            RewardClaimInboxOutcome::Committed { .. }
+            | RewardClaimInboxOutcome::AlreadyCommitted(_) => Ok(()),
+        }
     }
 }

@@ -1,7 +1,9 @@
-//! Source-qualified bounded sixteen multi-effect attacks; no new timing/RNG authority.
-//! SOURCE native callbacks are preserved. PROJECT snapshot primary-then-callback batches,
-//! stronger current PZ gates and deterministic uniform draws are explicitly GlobalUnverified.
+//! Source-qualified multi-effect attacks and sealed delayed callback stages.
+//! The original sixteen retain their PROJECT snapshot primary-then-callback
+//! batching, stronger PZ gates and GlobalUnverified uniform draw qualification.
+//! Sealed callback readers supply their separately qualified donor normal law.
 use super::*;
+mod omrafir;
 use crate::content::{ProjectV2AffectsKind, ProjectV2Draft, ProjectV2EffectAffects};
 use crate::creature_area_heal::CreatureHealCatalog;
 use crate::foundation::{OwnerDamageCommand, OwnerDamageResult};
@@ -18,6 +20,13 @@ pub struct ComposedSource {
     content: [u8; 32],
     pub range: u16,
     pub magnitude: Option<ProjectV2Magnitude>,
+    callback_stage: Option<u8>,
+    anchor: Option<SourcePositionAnchor>,
+    omrafir_stage: Option<crate::content::native_omrafir::QualifiedOmrafirBeamStage>,
+    retained_caster: Option<(
+        oteryn_gameplay_entities::NativeRetainedCallbackCaster,
+        crate::content::native_monster_callbacks::QualifiedNativeCallbackStage,
+    )>,
 }
 #[derive(Debug, Clone)]
 pub struct Callback {
@@ -27,6 +36,131 @@ pub struct Callback {
     maximum: u32,
 }
 impl ComposedSource {
+    /// Compile one sealed source callback stage without synthesizing a native profile.
+    pub fn from_callback_stage(
+        native: &crate::content::native_gameplay::NativeGameplayState,
+        stage: &crate::content::native_monster_callbacks::QualifiedNativeCallbackStage,
+        anchor: Option<SourcePositionAnchor>,
+    ) -> Result<Self, AttackError> {
+        let parent = stage.parent();
+        let entry = parent.entry();
+        if parent.content() != native.source_digest() || stage.index() >= 3 {
+            return Err(AttackError::ContentChanged);
+        }
+        let record = native
+            .creature_profiles()
+            .records
+            .iter()
+            .find(|record| record.profile.target == entry.creature)
+            .ok_or(AttackError::InvalidSource)?;
+        let Data::Creature(creature) = &record.profile.data else {
+            return Err(AttackError::InvalidSource);
+        };
+        let critical = crate::source_critical_baseline::SourceCriticalBaseline::qualify(
+            &entry.creature.key,
+            creature
+                .details
+                .as_ref()
+                .map_or(0, |details| details.critical_chance_ppm),
+            false,
+        )
+        .map_err(|_| AttackError::InvalidSource)?;
+        let primary = SpellSource {
+            list: ScheduleList::Attack,
+            creature_key: entry.creature.key.clone(),
+            ability: entry.ability.clone(),
+            entry_index: entry.index,
+            minimum: stage.minimum(),
+            maximum: stage.maximum(),
+            reference_level: creature
+                .details
+                .as_ref()
+                .and_then(|details| details.reference_level),
+            reference_level_overrides: creature.details.as_ref().map_or_else(Vec::new, |details| {
+                details.reference_level_overrides.clone()
+            }),
+            critical,
+            conditions: Vec::new(),
+            appearances: Vec::new(),
+            appearance_cast: false,
+            formula_revision: None,
+            fingerprint: stage.fingerprint(),
+            content_digest: parent.content(),
+            element: Some(stage.element().to_owned()),
+            armor: stage.armor(),
+            range: 0,
+            magnitude: None,
+            area: stage.area().cloned(),
+            chain: None,
+            presentation: stage.presentation().cloned().map(Box::new),
+            source_none_correction: false,
+            dispel_invisible: false,
+            variants: Vec::new(),
+            variant_child: None,
+            windup: None,
+            needs_target: false,
+            needs_direction: stage.needs_direction(),
+        };
+        let details = crate::content::ProjectV2AbilityDetails {
+            kind: crate::content::ProjectV2AbilityKind::Spell,
+            range_tiles: 0,
+            needs_target: false,
+            needs_direction: stage.needs_direction(),
+            area: stage.area().cloned(),
+            effects: Vec::new(),
+            variants: Vec::new(),
+            encounter: None,
+            path_requirement: None,
+            chain: None,
+            windup: None,
+            cast_cue: None,
+            impact_cue: None,
+        };
+        Ok(Self {
+            caster: entry.creature.clone(),
+            ability: entry.ability.clone(),
+            index: entry.index,
+            details: Box::new(details),
+            primary: Some(primary),
+            callbacks: Vec::new(),
+            fingerprint: stage.fingerprint(),
+            content: parent.content(),
+            range: stage.range_tiles(),
+            magnitude: stage.magnitude(),
+            callback_stage: Some(stage.index() as u8),
+            anchor,
+            omrafir_stage: None,
+            retained_caster: None,
+        })
+    }
+    /// Attach only the live-scheduled native caster capability to the exact
+    /// immutable stage from which this composed source was derived.
+    pub fn with_native_retained_caster(
+        mut self,
+        stage: &crate::content::native_monster_callbacks::QualifiedNativeCallbackStage,
+        caster: oteryn_gameplay_entities::NativeRetainedCallbackCaster,
+    ) -> Result<Self, AttackError> {
+        let entry = stage.parent().entry();
+        if self.callback_stage != Some(stage.index() as u8)
+            || self.fingerprint != stage.fingerprint()
+            || self.caster != entry.creature
+            || self.ability != entry.ability
+            || self.index != entry.index
+            || self.content != stage.parent().content()
+            || self.range != stage.range_tiles()
+            || self.magnitude != stage.magnitude()
+            || !self.callbacks.is_empty()
+        {
+            return Err(AttackError::InvalidSource);
+        }
+        self.retained_caster = Some((caster, stage.clone()));
+        Ok(self)
+    }
+    fn retained_caster_is_current(&self, runtime: &ChannelRuntimeV1, actor: ExactActorRef) -> bool {
+        self.retained_caster
+            .as_ref()
+            .is_some_and(|(caster, stage)| caster.matches_stage(runtime, actor, stage))
+    }
     pub fn from_native(
         draft: &ProjectV2Draft,
         caster: &Ref,
@@ -175,6 +309,10 @@ impl ComposedSource {
             content,
             range: entry.range_tiles.unwrap_or(details.range_tiles),
             magnitude: entry.magnitude,
+            callback_stage: None,
+            anchor: None,
+            omrafir_stage: None,
+            retained_caster: None,
         })
     }
 }
@@ -263,6 +401,7 @@ pub struct ComposedOutcome {
 pub struct Memo {
     actor: ExactActorRef,
     index: usize,
+    callback_stage: Option<u8>,
     sequence: u64,
     at: SemanticTimeMicros,
     binding: [u8; 32],
@@ -378,7 +517,9 @@ impl ComposedOwner {
         if proposal.occurrence.revisions().formula() != "definition-r1" {
             return Err(AttackError::InvalidSource);
         }
-        if !r.matches_live_creature_identity(proposal.issuer, source.caster.key.as_bytes()) {
+        if !r.matches_live_creature_identity(proposal.issuer, source.caster.key.as_bytes())
+            && !source.retained_caster_is_current(r, proposal.issuer)
+        {
             return Err(AttackError::StaleIssuer);
         }
         if proposal.list != ScheduleList::Attack
@@ -390,10 +531,16 @@ impl ComposedOwner {
             return Err(AttackError::InvalidSource);
         }
         let prefix = format!("ai-profile:{}:", hex(&proposal.issuer.placement_identity()));
-        let tail = proposal
-            .occurrence
-            .id()
-            .as_str()
+        let occurrence = proposal.occurrence.id().as_str();
+        let parent_occurrence = if let Some(stage) = source.callback_stage {
+            occurrence
+                .strip_prefix("callback:")
+                .and_then(|parent| parent.strip_suffix(&format!(":stage:{stage}")))
+                .ok_or(AttackError::InvalidPlan)?
+        } else {
+            occurrence
+        };
+        let tail = parent_occurrence
             .strip_prefix(&prefix)
             .ok_or(AttackError::InvalidPlan)?;
         let (raw, suffix) = tail.split_once(':').ok_or(AttackError::InvalidPlan)?;
@@ -407,12 +554,15 @@ impl ComposedOwner {
         )
         .into();
         let activation = r.content_pin().activation_sequence();
-        self.memos
-            .retain(|m| r.contains_live_creature(m.actor) && m.activation == activation);
-        let old = self
-            .memos
-            .iter()
-            .position(|m| m.actor == proposal.issuer && m.index == source.index);
+        self.memos.retain(|m| {
+            (r.contains_live_creature(m.actor) || source.retained_caster_is_current(r, m.actor))
+                && m.activation == activation
+        });
+        let old = self.memos.iter().position(|m| {
+            m.actor == proposal.issuer
+                && m.index == source.index
+                && m.callback_stage == source.callback_stage
+        });
         if let Some(i) = old {
             let m = &self.memos[i];
             if sequence < m.sequence || now < m.at {
@@ -438,7 +588,18 @@ impl ComposedOwner {
         let prepared = source
             .primary
             .as_ref()
-            .map(|p| generic.prepare_target(r, p, proposal, reader, stamp, None, now))
+            .map(|p| {
+                generic.prepare_target_anchored(
+                    r,
+                    p,
+                    proposal,
+                    reader,
+                    stamp,
+                    None,
+                    now,
+                    source.anchor.as_ref(),
+                )
+            })
             .transpose()?;
         // Independently current player state, including immutable maximum, before ANY owner write.
         if let Some(p) = &prepared {
@@ -530,7 +691,42 @@ impl ComposedOwner {
                 let (key, _) = catalog
                     .current_target(r, *target)
                     .map_err(|_| AttackError::InvalidSource)?;
-                let raw = prepared.result.requested;
+                let target_child = format!(
+                    "{}:target:{}",
+                    proposal.occurrence.id().as_str(),
+                    hex(&target.placement_identity())
+                );
+                let target_digest = Sha256::new()
+                    .chain_update(b"oteryn:creature-damage-spell-target:v1")
+                    .chain_update(target_child.as_bytes())
+                    .finalize();
+                let mut target_id = [0; 16];
+                target_id.copy_from_slice(&target_digest[..16]);
+                let target_draw = deterministic_decision_u64(
+                    &root,
+                    DecisionOccurrenceId::from_bytes(target_id),
+                    "source_target_damage",
+                    source.index as u64,
+                )
+                .map_err(|_| AttackError::InvalidPlan)?;
+                let raw = match reader.source_damage_draw(
+                    primary.minimum,
+                    primary.maximum,
+                    target_draw,
+                    Some(*target),
+                )? {
+                    Some(amount) => u32::try_from(
+                        r.encounter_source_damage(
+                            proposal.issuer,
+                            u64::from(amount),
+                            super::source_overpower_roll(primary, proposal)?,
+                        )
+                        .map_err(|_| AttackError::NumericOverflow)?
+                        .0,
+                    )
+                    .map_err(|_| AttackError::NumericOverflow)?,
+                    None => prepared.result.requested,
+                };
                 let armor = if primary.armor {
                     let (lo, hi) =
                         crate::creature_auto_attack::canonical_armor_bounds(facts.armor)?;
@@ -792,16 +988,23 @@ impl ComposedOwner {
                     if amount == 0 {
                         Ok(BranchReceipt::Zero)
                     } else {
-                        r.borrow_exact_actor_commit()
-                            .commit_damage(
-                                target,
-                                OwnerDamageCommand {
-                                    target: key.as_bytes(),
-                                    occurrence: occurrence.as_bytes(),
-                                    binding: &binding,
-                                    damage: i64::from(amount),
-                                },
-                            )
+                        let receipt = r.borrow_exact_actor_commit_at_us(now.get()).commit_damage(
+                            target,
+                            OwnerDamageCommand {
+                                target: key.as_bytes(),
+                                occurrence: occurrence.as_bytes(),
+                                binding: &binding,
+                                damage: i64::from(amount),
+                            },
+                        );
+                        if let Ok(hit) = &receipt
+                            && hit.applied
+                            && hit.health_after < hit.health_before
+                        {
+                            // Keep the actual issuer separate from any master's reward credit.
+                            r.record_tibiadrome_source_hit(proposal.issuer, target);
+                        }
+                        receipt
                             .map(BranchReceipt::Creature)
                             .map_err(|_| AttackError::MissingVitals)
                     }
@@ -840,6 +1043,7 @@ impl ComposedOwner {
         let memo = Memo {
             actor: proposal.issuer,
             index: source.index,
+            callback_stage: source.callback_stage,
             sequence,
             at: now,
             binding: proof,
@@ -857,6 +1061,11 @@ impl ComposedOwner {
 impl ComposedSource {
     pub fn creature_key(&self) -> &str {
         &self.caster.key
+    }
+    pub fn omrafir_beam_stage(
+        &self,
+    ) -> Option<&crate::content::native_omrafir::QualifiedOmrafirBeamStage> {
+        self.omrafir_stage.as_ref()
     }
     pub fn primary_source(&self) -> Option<&SpellSource> {
         self.primary.as_ref()
@@ -927,8 +1136,12 @@ impl ComposedSource {
         let to = r
             .read_actor_position(p.target)
             .map_err(|_| AttackError::StaleTarget)?;
-        let fp = from.position();
-        let tp = to.position();
+        let captured = match (&self.anchor, &self.primary) {
+            (Some(anchor), Some(primary)) => Some(anchor.current_position(r, primary, p)?),
+            _ => None,
+        };
+        let fp = captured.unwrap_or(from.position());
+        let tp = captured.unwrap_or(to.position());
         if from.context() != to.context() || fp.floor != tp.floor {
             return Err(AttackError::OutOfRange);
         }
@@ -1012,3 +1225,7 @@ fn damage_binding(occurrence: &str, fingerprint: &[u8; 32]) -> Result<Vec<u8>, A
 }
 
 pub const SOURCE_BODIES: &str = r##"{"cases":[{"creature":"oteryn:creature.a_greedy_eye","entry":0,"ability":"oteryn:ability.creature.a_greedy_eye.optional-field-core-attacks-1"},{"creature":"oteryn:creature.aggressive_lava","entry":1,"ability":"oteryn:ability.spell.aggressivelavawave"},{"creature":"oteryn:creature.ember_beast","entry":1,"ability":"oteryn:ability.spell.emberbeastarea"},{"creature":"oteryn:creature.ember_beast","entry":2,"ability":"oteryn:ability.spell.emberbeasthur"},{"creature":"oteryn:creature.fiery_blood","entry":1,"ability":"oteryn:ability.spell.aggressivelavawave"},{"creature":"oteryn:creature.fiery_heart","entry":0,"ability":"oteryn:ability.spell.aggressivelavawave"},{"creature":"oteryn:creature.freed_soul","entry":0,"ability":"oteryn:ability.spell.freed_soul_spell"},{"creature":"oteryn:creature.frozen_minion","entry":2,"ability":"oteryn:ability.spell.frozen_minion_wave"},{"creature":"oteryn:creature.frozen_minion","entry":3,"ability":"oteryn:ability.spell.frozen_minion_beam"},{"creature":"oteryn:creature.ravenous_lava_lurker","entry":1,"ability":"oteryn:ability.spell.ravennouslavalurkerwave"},{"creature":"oteryn:creature.ravenous_lava_lurker","entry":2,"ability":"oteryn:ability.spell.ravennouslavalurkertarget"},{"creature":"oteryn:creature.the_corruptor_of_souls","entry":2,"ability":"oteryn:ability.spell.remorseless_wave"},{"creature":"oteryn:creature.the_flaming_orchid","entry":4,"ability":"oteryn:ability.spell.aggressivelavawave"},{"creature":"oteryn:creature.the_remorseless_corruptor","entry":2,"ability":"oteryn:ability.spell.remorseless_wave"},{"creature":"oteryn:creature.the_source_of_corruption","entry":1,"ability":"oteryn:ability.spell.source_of_corruption_wave"},{"creature":"oteryn:creature.unchained_fire","entry":1,"ability":"oteryn:ability.spell.unchained_fire_beam"}],"abilities":{"oteryn:ability.creature.a_greedy_eye.optional-field-core-attacks-1":{"primary":0,"callbacks":[{"filter":{"creatures":[{"family":"Creature","key":"oteryn:creature.poor_soul","revision":"definition-r1"}],"excludes_caster_name":false,"includes_caster":false,"kind":"NamedCreatures","top_creature_only":true},"heal":false,"minimum":1000,"maximum":1000,"raw_effect_key":"oteryn:effect.creature.a_greedy_eye.optional-field-core-attacks-1"}],"profiles":[{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["x","x","C"],"shape":"Matrix"},"effects":[{"effect":{"family":"Effect","key":"oteryn:effect.creature.a_greedy_eye.optional-field-core-attacks-1-drowning","revision":"definition-r1"},"kind":"Executable"},{"effect":{"family":"Effect","key":"oteryn:effect.creature.a_greedy_eye.optional-field-core-attacks-1","revision":"definition-r1"},"kind":"Executable"}],"kind":"Spell","needs_direction":true,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.creature.a_greedy_eye.optional-field-core-attacks-1","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"damage_type":"drowning","presentation":{"impact_asset_binding":"canary.appearance:effect/smallclouds"}}},"target":{"family":"Effect","key":"oteryn:effect.creature.a_greedy_eye.optional-field-core-attacks-1-drowning","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"Range","maximum":1000,"minimum":1000}},"target":{"family":"Formula","key":"oteryn:formula.creature.a_greedy_eye.optional-field-core-attacks-1","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"affects":{"creatures":[{"family":"Creature","key":"oteryn:creature.poor_soul","revision":"definition-r1"}],"excludes_caster_name":false,"includes_caster":false,"kind":"NamedCreatures","top_creature_only":true},"damage_type":"untyped","presentation":{"impact_asset_binding":"canary.appearance:effect/smallclouds"}}},"target":{"family":"Effect","key":"oteryn:effect.creature.a_greedy_eye.optional-field-core-attacks-1","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"Range","maximum":1000,"minimum":1000}},"target":{"family":"Formula","key":"oteryn:formula.creature.a_greedy_eye.optional-field-core-attacks-1","revision":"definition-r1"}}],"records":[{"effects":[{"family":"Effect","key":"oteryn:effect.creature.a_greedy_eye.optional-field-core-attacks-1-drowning","revision":"definition-r1"},{"family":"Effect","key":"oteryn:effect.creature.a_greedy_eye.optional-field-core-attacks-1","revision":"definition-r1"}],"identity":{"family":"Ability","key":"oteryn:ability.creature.a_greedy_eye.optional-field-core-attacks-1","revision":"definition-r1"},"kind":"Ability"},{"client_projection":"ServerOnly","effect_family":"Damage","formula":{"family":"Formula","key":"oteryn:formula.creature.a_greedy_eye.optional-field-core-attacks-1","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.creature.a_greedy_eye.optional-field-core-attacks-1-drowning","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.creature.a_greedy_eye.optional-field-core-attacks-1","revision":"definition-r1"},"kind":"Formula"},{"client_projection":"ServerOnly","effect_family":"Damage","formula":{"family":"Formula","key":"oteryn:formula.creature.a_greedy_eye.optional-field-core-attacks-1","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.creature.a_greedy_eye.optional-field-core-attacks-1","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.creature.a_greedy_eye.optional-field-core-attacks-1","revision":"definition-r1"},"kind":"Formula"}]},"oteryn:ability.spell.aggressivelavawave":{"primary":1,"callbacks":[{"filter":{"creatures":[{"family":"Creature","key":"oteryn:creature.aggressive_lava","revision":"definition-r1"},{"family":"Creature","key":"oteryn:creature.fiery_heart","revision":"definition-r1"},{"family":"Creature","key":"oteryn:creature.the_baron_from_below","revision":"definition-r1"},{"family":"Creature","key":"oteryn:creature.the_duke_of_the_depths","revision":"definition-r1"},{"family":"Creature","key":"oteryn:creature.the_fire_empowered_duke","revision":"definition-r1"},{"family":"Creature","key":"oteryn:creature.the_hungry_baron_from_below","revision":"definition-r1"}],"excludes_caster_name":true,"includes_caster":false,"kind":"NamedCreatures","top_creature_only":true},"heal":true,"minimum":0,"maximum":650,"raw_effect_key":"oteryn:effect.spell.aggressivelavawave.effect-callback-1"}],"profiles":[{"data":{"kind":"Ability","profile":{"details":{"area":{"north":[".xxx.","xxxxx","xxCxx","xxxxx",".xxx."],"shape":"Matrix"},"effects":[{"effect":{"family":"Effect","key":"oteryn:effect.spell.aggressivelavawave.effect-callback-1","revision":"definition-r1"},"kind":"Executable"},{"effect":{"family":"Effect","key":"oteryn:effect.spell.aggressivelavawave.effect","revision":"definition-r1"},"kind":"Executable"}],"kind":"Spell","needs_direction":true,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.aggressivelavawave","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"affects":{"creatures":[{"family":"Creature","key":"oteryn:creature.aggressive_lava","revision":"definition-r1"},{"family":"Creature","key":"oteryn:creature.fiery_heart","revision":"definition-r1"},{"family":"Creature","key":"oteryn:creature.the_baron_from_below","revision":"definition-r1"},{"family":"Creature","key":"oteryn:creature.the_duke_of_the_depths","revision":"definition-r1"},{"family":"Creature","key":"oteryn:creature.the_fire_empowered_duke","revision":"definition-r1"},{"family":"Creature","key":"oteryn:creature.the_hungry_baron_from_below","revision":"definition-r1"}],"excludes_caster_name":true,"includes_caster":false,"kind":"NamedCreatures","top_creature_only":true},"damage_type":"healing"}},"target":{"family":"Effect","key":"oteryn:effect.spell.aggressivelavawave.effect-callback-1","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"Range","maximum":650,"minimum":0}},"target":{"family":"Formula","key":"oteryn:formula.spell.aggressivelavawave.formula-callback-1","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"damage_type":"fire","presentation":{"impact_asset_binding":"canary.appearance:effect/hitbyfire"}}},"target":{"family":"Effect","key":"oteryn:effect.spell.aggressivelavawave.effect","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"CasterMagnitude"}},"target":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"}}],"records":[{"effects":[{"family":"Effect","key":"oteryn:effect.spell.aggressivelavawave.effect-callback-1","revision":"definition-r1"},{"family":"Effect","key":"oteryn:effect.spell.aggressivelavawave.effect","revision":"definition-r1"}],"identity":{"family":"Ability","key":"oteryn:ability.spell.aggressivelavawave","revision":"definition-r1"},"kind":"Ability"},{"client_projection":"ServerOnly","effect_family":"Heal","formula":{"family":"Formula","key":"oteryn:formula.spell.aggressivelavawave.formula-callback-1","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.spell.aggressivelavawave.effect-callback-1","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.spell.aggressivelavawave.formula-callback-1","revision":"definition-r1"},"kind":"Formula"},{"client_projection":"ServerOnly","effect_family":"Damage","formula":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.spell.aggressivelavawave.effect","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"},"kind":"Formula"}]},"oteryn:ability.spell.emberbeastarea":{"primary":1,"callbacks":[{"filter":{"creatures":[{"family":"Creature","key":"oteryn:creature.the_count_of_the_core","revision":"definition-r1"}],"excludes_caster_name":true,"includes_caster":false,"kind":"NamedCreatures","top_creature_only":true},"heal":true,"minimum":0,"maximum":1500,"raw_effect_key":"oteryn:effect.spell.emberbeastarea.effect-callback-1"}],"profiles":[{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["xxx","xCx","xxx"],"shape":"Matrix"},"effects":[{"effect":{"family":"Effect","key":"oteryn:effect.spell.emberbeastarea.effect-callback-1","revision":"definition-r1"},"kind":"Executable"},{"effect":{"family":"Effect","key":"oteryn:effect.spell.emberbeastarea.effect","revision":"definition-r1"},"kind":"Executable"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.emberbeastarea","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"affects":{"creatures":[{"family":"Creature","key":"oteryn:creature.the_count_of_the_core","revision":"definition-r1"}],"excludes_caster_name":true,"includes_caster":false,"kind":"NamedCreatures","top_creature_only":true},"damage_type":"healing"}},"target":{"family":"Effect","key":"oteryn:effect.spell.emberbeastarea.effect-callback-1","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"Range","maximum":1500,"minimum":0}},"target":{"family":"Formula","key":"oteryn:formula.spell.emberbeastarea.formula-callback-1","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"damage_type":"fire","presentation":{"impact_asset_binding":"canary.appearance:effect/explosionhit"}}},"target":{"family":"Effect","key":"oteryn:effect.spell.emberbeastarea.effect","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"CasterMagnitude"}},"target":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"}}],"records":[{"effects":[{"family":"Effect","key":"oteryn:effect.spell.emberbeastarea.effect-callback-1","revision":"definition-r1"},{"family":"Effect","key":"oteryn:effect.spell.emberbeastarea.effect","revision":"definition-r1"}],"identity":{"family":"Ability","key":"oteryn:ability.spell.emberbeastarea","revision":"definition-r1"},"kind":"Ability"},{"client_projection":"ServerOnly","effect_family":"Heal","formula":{"family":"Formula","key":"oteryn:formula.spell.emberbeastarea.formula-callback-1","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.spell.emberbeastarea.effect-callback-1","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.spell.emberbeastarea.formula-callback-1","revision":"definition-r1"},"kind":"Formula"},{"client_projection":"ServerOnly","effect_family":"Damage","formula":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.spell.emberbeastarea.effect","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"},"kind":"Formula"}]},"oteryn:ability.spell.emberbeasthur":{"primary":1,"callbacks":[{"filter":{"creatures":[{"family":"Creature","key":"oteryn:creature.the_count_of_the_core","revision":"definition-r1"}],"excludes_caster_name":true,"includes_caster":false,"kind":"NamedCreatures","top_creature_only":true},"heal":true,"minimum":0,"maximum":1500,"raw_effect_key":"oteryn:effect.spell.emberbeasthur.effect-callback-1"}],"profiles":[{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["x","x","x","x","x","C"],"shape":"Matrix"},"effects":[{"effect":{"family":"Effect","key":"oteryn:effect.spell.emberbeasthur.effect-callback-1","revision":"definition-r1"},"kind":"Executable"},{"effect":{"family":"Effect","key":"oteryn:effect.spell.emberbeasthur.effect","revision":"definition-r1"},"kind":"Executable"}],"kind":"Spell","needs_direction":true,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.emberbeasthur","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"affects":{"creatures":[{"family":"Creature","key":"oteryn:creature.the_count_of_the_core","revision":"definition-r1"}],"excludes_caster_name":true,"includes_caster":false,"kind":"NamedCreatures","top_creature_only":true},"damage_type":"healing"}},"target":{"family":"Effect","key":"oteryn:effect.spell.emberbeasthur.effect-callback-1","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"Range","maximum":1500,"minimum":0}},"target":{"family":"Formula","key":"oteryn:formula.spell.emberbeasthur.formula-callback-1","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"damage_type":"fire","presentation":{"impact_asset_binding":"canary.appearance:effect/explosionhit"}}},"target":{"family":"Effect","key":"oteryn:effect.spell.emberbeasthur.effect","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"CasterMagnitude"}},"target":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"}}],"records":[{"effects":[{"family":"Effect","key":"oteryn:effect.spell.emberbeasthur.effect-callback-1","revision":"definition-r1"},{"family":"Effect","key":"oteryn:effect.spell.emberbeasthur.effect","revision":"definition-r1"}],"identity":{"family":"Ability","key":"oteryn:ability.spell.emberbeasthur","revision":"definition-r1"},"kind":"Ability"},{"client_projection":"ServerOnly","effect_family":"Heal","formula":{"family":"Formula","key":"oteryn:formula.spell.emberbeasthur.formula-callback-1","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.spell.emberbeasthur.effect-callback-1","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.spell.emberbeasthur.formula-callback-1","revision":"definition-r1"},"kind":"Formula"},{"client_projection":"ServerOnly","effect_family":"Damage","formula":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.spell.emberbeasthur.effect","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"},"kind":"Formula"}]},"oteryn:ability.spell.freed_soul_spell":{"primary":1,"callbacks":[{"filter":{"creatures":[{"family":"Creature","key":"oteryn:creature.the_souldespoiler","revision":"definition-r1"}],"excludes_caster_name":false,"includes_caster":true,"kind":"NamedCreatures","top_creature_only":true},"heal":false,"minimum":500,"maximum":2000,"raw_effect_key":"oteryn:effect.spell.freed_soul_spell.effect-callback-1"}],"profiles":[{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["..xxx..",".xxxxx.","xxxxxxx","xxxCxxx","xxxxxxx",".xxxxx.","..xxx.."],"shape":"Matrix"},"effects":[{"effect":{"family":"Effect","key":"oteryn:effect.spell.freed_soul_spell.effect-callback-1","revision":"definition-r1"},"kind":"Executable"},{"effect":{"family":"Effect","key":"oteryn:effect.spell.freed_soul_spell.effect","revision":"definition-r1"},"kind":"Executable"}],"kind":"Spell","needs_direction":true,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.freed_soul_spell","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"affects":{"creatures":[{"family":"Creature","key":"oteryn:creature.the_souldespoiler","revision":"definition-r1"}],"excludes_caster_name":false,"includes_caster":true,"kind":"NamedCreatures","top_creature_only":true},"damage_type":"untyped"}},"target":{"family":"Effect","key":"oteryn:effect.spell.freed_soul_spell.effect-callback-1","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"Range","maximum":2000,"minimum":500}},"target":{"family":"Formula","key":"oteryn:formula.spell.freed_soul_spell.formula-callback-1","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"damage_type":"energy","presentation":{"impact_asset_binding":"canary.appearance:effect/purpleenergy"}}},"target":{"family":"Effect","key":"oteryn:effect.spell.freed_soul_spell.effect","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"CasterMagnitude"}},"target":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"}}],"records":[{"effects":[{"family":"Effect","key":"oteryn:effect.spell.freed_soul_spell.effect-callback-1","revision":"definition-r1"},{"family":"Effect","key":"oteryn:effect.spell.freed_soul_spell.effect","revision":"definition-r1"}],"identity":{"family":"Ability","key":"oteryn:ability.spell.freed_soul_spell","revision":"definition-r1"},"kind":"Ability"},{"client_projection":"ServerOnly","effect_family":"Damage","formula":{"family":"Formula","key":"oteryn:formula.spell.freed_soul_spell.formula-callback-1","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.spell.freed_soul_spell.effect-callback-1","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.spell.freed_soul_spell.formula-callback-1","revision":"definition-r1"},"kind":"Formula"},{"client_projection":"ServerOnly","effect_family":"Damage","formula":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.spell.freed_soul_spell.effect","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"},"kind":"Formula"}]},"oteryn:ability.spell.frozen_minion_wave":{"primary":null,"callbacks":[{"filter":{"excludes_caster_name":false,"includes_caster":true,"kind":"NonPlayerSide","top_creature_only":false},"heal":true,"minimum":200,"maximum":700,"raw_effect_key":"oteryn:effect.spell.frozen_minion_wave.effect-callback-1"},{"filter":{"excludes_caster_name":false,"includes_caster":false,"kind":"PlayerSide","top_creature_only":false},"heal":true,"minimum":200,"maximum":700,"raw_effect_key":"oteryn:effect.spell.frozen_minion_wave.effect-callback-2"}],"profiles":[{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["....xxx....","....xxx....","....xxx....",".....x.....",".....C....."],"shape":"Matrix"},"effects":[{"effect":{"family":"Effect","key":"oteryn:effect.spell.frozen_minion_wave.effect-callback-1","revision":"definition-r1"},"kind":"Executable"},{"effect":{"family":"Effect","key":"oteryn:effect.spell.frozen_minion_wave.effect-callback-2","revision":"definition-r1"},"kind":"Executable"},{"effect":{"key":"oteryn:effect.spell.frozen_minion_wave.effect-presentation","operation":{"operation":"PresentationOnly"},"presentation":{"impact_asset_binding":"canary.appearance:effect/poff"}},"kind":"Inline"}],"kind":"Spell","needs_direction":true,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.frozen_minion_wave","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"affects":{"excludes_caster_name":false,"includes_caster":true,"kind":"NonPlayerSide","top_creature_only":false},"damage_type":"healing"}},"target":{"family":"Effect","key":"oteryn:effect.spell.frozen_minion_wave.effect-callback-1","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"Range","maximum":700,"minimum":200}},"target":{"family":"Formula","key":"oteryn:formula.spell.frozen_minion_wave.formula-callback-1","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"affects":{"excludes_caster_name":false,"includes_caster":false,"kind":"PlayerSide","top_creature_only":false},"damage_type":"ice"}},"target":{"family":"Effect","key":"oteryn:effect.spell.frozen_minion_wave.effect-callback-2","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"Range","maximum":700,"minimum":200}},"target":{"family":"Formula","key":"oteryn:formula.spell.frozen_minion_wave.formula-callback-2","revision":"definition-r1"}}],"records":[{"effects":[{"family":"Effect","key":"oteryn:effect.spell.frozen_minion_wave.effect-callback-1","revision":"definition-r1"},{"family":"Effect","key":"oteryn:effect.spell.frozen_minion_wave.effect-callback-2","revision":"definition-r1"}],"identity":{"family":"Ability","key":"oteryn:ability.spell.frozen_minion_wave","revision":"definition-r1"},"kind":"Ability"},{"client_projection":"ServerOnly","effect_family":"Heal","formula":{"family":"Formula","key":"oteryn:formula.spell.frozen_minion_wave.formula-callback-1","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.spell.frozen_minion_wave.effect-callback-1","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.spell.frozen_minion_wave.formula-callback-1","revision":"definition-r1"},"kind":"Formula"},{"client_projection":"ServerOnly","effect_family":"Damage","formula":{"family":"Formula","key":"oteryn:formula.spell.frozen_minion_wave.formula-callback-2","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.spell.frozen_minion_wave.effect-callback-2","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.spell.frozen_minion_wave.formula-callback-2","revision":"definition-r1"},"kind":"Formula"}]},"oteryn:ability.spell.frozen_minion_beam":{"primary":null,"callbacks":[{"filter":{"excludes_caster_name":false,"includes_caster":true,"kind":"NonPlayerSide","top_creature_only":false},"heal":true,"minimum":200,"maximum":700,"raw_effect_key":"oteryn:effect.spell.frozen_minion_beam.effect-callback-1"},{"filter":{"excludes_caster_name":false,"includes_caster":false,"kind":"PlayerSide","top_creature_only":false},"heal":true,"minimum":200,"maximum":700,"raw_effect_key":"oteryn:effect.spell.frozen_minion_beam.effect-callback-2"}],"profiles":[{"data":{"kind":"Ability","profile":{"details":{"area":{"north":["x","x","x","x","x","x","C"],"shape":"Matrix"},"effects":[{"effect":{"family":"Effect","key":"oteryn:effect.spell.frozen_minion_beam.effect-callback-1","revision":"definition-r1"},"kind":"Executable"},{"effect":{"family":"Effect","key":"oteryn:effect.spell.frozen_minion_beam.effect-callback-2","revision":"definition-r1"},"kind":"Executable"},{"effect":{"key":"oteryn:effect.spell.frozen_minion_beam.effect-presentation","operation":{"operation":"PresentationOnly"},"presentation":{"impact_asset_binding":"canary.appearance:effect/poff"}},"kind":"Inline"}],"kind":"Spell","needs_direction":true,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.frozen_minion_beam","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"affects":{"excludes_caster_name":false,"includes_caster":true,"kind":"NonPlayerSide","top_creature_only":false},"damage_type":"healing"}},"target":{"family":"Effect","key":"oteryn:effect.spell.frozen_minion_beam.effect-callback-1","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"Range","maximum":700,"minimum":200}},"target":{"family":"Formula","key":"oteryn:formula.spell.frozen_minion_beam.formula-callback-1","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"affects":{"excludes_caster_name":false,"includes_caster":false,"kind":"PlayerSide","top_creature_only":false},"damage_type":"ice"}},"target":{"family":"Effect","key":"oteryn:effect.spell.frozen_minion_beam.effect-callback-2","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"Range","maximum":700,"minimum":200}},"target":{"family":"Formula","key":"oteryn:formula.spell.frozen_minion_beam.formula-callback-2","revision":"definition-r1"}}],"records":[{"effects":[{"family":"Effect","key":"oteryn:effect.spell.frozen_minion_beam.effect-callback-1","revision":"definition-r1"},{"family":"Effect","key":"oteryn:effect.spell.frozen_minion_beam.effect-callback-2","revision":"definition-r1"}],"identity":{"family":"Ability","key":"oteryn:ability.spell.frozen_minion_beam","revision":"definition-r1"},"kind":"Ability"},{"client_projection":"ServerOnly","effect_family":"Heal","formula":{"family":"Formula","key":"oteryn:formula.spell.frozen_minion_beam.formula-callback-1","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.spell.frozen_minion_beam.effect-callback-1","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.spell.frozen_minion_beam.formula-callback-1","revision":"definition-r1"},"kind":"Formula"},{"client_projection":"ServerOnly","effect_family":"Damage","formula":{"family":"Formula","key":"oteryn:formula.spell.frozen_minion_beam.formula-callback-2","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.spell.frozen_minion_beam.effect-callback-2","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.spell.frozen_minion_beam.formula-callback-2","revision":"definition-r1"},"kind":"Formula"}]},"oteryn:ability.spell.ravennouslavalurkerwave":{"primary":1,"callbacks":[{"filter":{"creatures":[{"family":"Creature","key":"oteryn:creature.gnome_pack_crawler","revision":"definition-r1"},{"family":"Creature","key":"oteryn:creature.lost_gnome","revision":"definition-r1"}],"excludes_caster_name":false,"includes_caster":true,"kind":"NamedCreatures","top_creature_only":true},"heal":false,"minimum":0,"maximum":1000,"raw_effect_key":"oteryn:effect.spell.ravennouslavalurkerwave.effect-callback-1"}],"profiles":[{"data":{"kind":"Ability","profile":{"details":{"area":{"north":[".xxx.","xxxxx","xxCxx","xxxxx",".xxx."],"shape":"Matrix"},"effects":[{"effect":{"family":"Effect","key":"oteryn:effect.spell.ravennouslavalurkerwave.effect-callback-1","revision":"definition-r1"},"kind":"Executable"},{"effect":{"family":"Effect","key":"oteryn:effect.spell.ravennouslavalurkerwave.effect","revision":"definition-r1"},"kind":"Executable"}],"kind":"Spell","needs_direction":false,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.ravennouslavalurkerwave","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"affects":{"creatures":[{"family":"Creature","key":"oteryn:creature.gnome_pack_crawler","revision":"definition-r1"},{"family":"Creature","key":"oteryn:creature.lost_gnome","revision":"definition-r1"}],"excludes_caster_name":false,"includes_caster":true,"kind":"NamedCreatures","top_creature_only":true},"damage_type":"untyped"}},"target":{"family":"Effect","key":"oteryn:effect.spell.ravennouslavalurkerwave.effect-callback-1","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"Range","maximum":1000,"minimum":0}},"target":{"family":"Formula","key":"oteryn:formula.spell.ravennouslavalurkerwave.formula-callback-1","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"damage_type":"fire","presentation":{"impact_asset_binding":"canary.appearance:effect/hitbyfire"}}},"target":{"family":"Effect","key":"oteryn:effect.spell.ravennouslavalurkerwave.effect","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"CasterMagnitude"}},"target":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"}}],"records":[{"effects":[{"family":"Effect","key":"oteryn:effect.spell.ravennouslavalurkerwave.effect-callback-1","revision":"definition-r1"},{"family":"Effect","key":"oteryn:effect.spell.ravennouslavalurkerwave.effect","revision":"definition-r1"}],"identity":{"family":"Ability","key":"oteryn:ability.spell.ravennouslavalurkerwave","revision":"definition-r1"},"kind":"Ability"},{"client_projection":"ServerOnly","effect_family":"Damage","formula":{"family":"Formula","key":"oteryn:formula.spell.ravennouslavalurkerwave.formula-callback-1","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.spell.ravennouslavalurkerwave.effect-callback-1","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.spell.ravennouslavalurkerwave.formula-callback-1","revision":"definition-r1"},"kind":"Formula"},{"client_projection":"ServerOnly","effect_family":"Damage","formula":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.spell.ravennouslavalurkerwave.effect","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"},"kind":"Formula"}]},"oteryn:ability.spell.ravennouslavalurkertarget":{"primary":1,"callbacks":[{"filter":{"creatures":[{"family":"Creature","key":"oteryn:creature.gnome_pack_crawler","revision":"definition-r1"},{"family":"Creature","key":"oteryn:creature.lost_gnome","revision":"definition-r1"}],"excludes_caster_name":false,"includes_caster":true,"kind":"NamedCreatures","top_creature_only":true},"heal":false,"minimum":0,"maximum":1000,"raw_effect_key":"oteryn:effect.spell.ravennouslavalurkertarget.effect-callback-1"}],"profiles":[{"data":{"kind":"Ability","profile":{"details":{"area":{"north":[".......","..xxx..",".xxxxx.","xxxxxxx","xxxCxxx","xxxxxxx",".xxxxx.","..xxx..","......."],"shape":"Matrix"},"effects":[{"effect":{"family":"Effect","key":"oteryn:effect.spell.ravennouslavalurkertarget.effect-callback-1","revision":"definition-r1"},"kind":"Executable"},{"effect":{"family":"Effect","key":"oteryn:effect.spell.ravennouslavalurkertarget.effect","revision":"definition-r1"},"kind":"Executable"}],"kind":"Spell","needs_direction":false,"needs_target":true,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.ravennouslavalurkertarget","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"affects":{"creatures":[{"family":"Creature","key":"oteryn:creature.gnome_pack_crawler","revision":"definition-r1"},{"family":"Creature","key":"oteryn:creature.lost_gnome","revision":"definition-r1"}],"excludes_caster_name":false,"includes_caster":true,"kind":"NamedCreatures","top_creature_only":true},"damage_type":"untyped"}},"target":{"family":"Effect","key":"oteryn:effect.spell.ravennouslavalurkertarget.effect-callback-1","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"Range","maximum":1000,"minimum":0}},"target":{"family":"Formula","key":"oteryn:formula.spell.ravennouslavalurkertarget.formula-callback-1","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"damage_type":"fire","presentation":{"impact_asset_binding":"canary.appearance:effect/fireattack"}}},"target":{"family":"Effect","key":"oteryn:effect.spell.ravennouslavalurkertarget.effect","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"CasterMagnitude"}},"target":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"}}],"records":[{"effects":[{"family":"Effect","key":"oteryn:effect.spell.ravennouslavalurkertarget.effect-callback-1","revision":"definition-r1"},{"family":"Effect","key":"oteryn:effect.spell.ravennouslavalurkertarget.effect","revision":"definition-r1"}],"identity":{"family":"Ability","key":"oteryn:ability.spell.ravennouslavalurkertarget","revision":"definition-r1"},"kind":"Ability"},{"client_projection":"ServerOnly","effect_family":"Damage","formula":{"family":"Formula","key":"oteryn:formula.spell.ravennouslavalurkertarget.formula-callback-1","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.spell.ravennouslavalurkertarget.effect-callback-1","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.spell.ravennouslavalurkertarget.formula-callback-1","revision":"definition-r1"},"kind":"Formula"},{"client_projection":"ServerOnly","effect_family":"Damage","formula":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.spell.ravennouslavalurkertarget.effect","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"},"kind":"Formula"}]},"oteryn:ability.spell.remorseless_wave":{"primary":2,"callbacks":[{"filter":{"excludes_caster_name":false,"includes_caster":false,"kind":"Players","top_creature_only":true},"heal":false,"minimum":0,"maximum":600,"raw_effect_key":"oteryn:effect.spell.remorseless_wave.effect-callback-1"},{"filter":{"creatures":[{"family":"Creature","key":"oteryn:creature.stolen_soul","revision":"definition-r1"}],"excludes_caster_name":false,"includes_caster":true,"kind":"NamedCreatures","top_creature_only":true},"heal":false,"minimum":700,"maximum":1500,"raw_effect_key":"oteryn:effect.spell.remorseless_wave.effect-callback-2"}],"profiles":[{"data":{"kind":"Ability","profile":{"details":{"area":{"north":[".....x.....","....xxx....","...xxxxx...","..xxxxxxx..",".xxxxxxxxx.","xxxxxCxxxxx",".xxxxxxxxx.","..xxxxxxx..","...xxxxx...","....xxx....",".....x....."],"shape":"Matrix"},"effects":[{"effect":{"family":"Effect","key":"oteryn:effect.spell.remorseless_wave.effect-callback-1","revision":"definition-r1"},"kind":"Executable"},{"effect":{"family":"Effect","key":"oteryn:effect.spell.remorseless_wave.effect-callback-2","revision":"definition-r1"},"kind":"Executable"},{"effect":{"family":"Effect","key":"oteryn:effect.spell.remorseless_wave.effect","revision":"definition-r1"},"kind":"Executable"}],"kind":"Spell","needs_direction":true,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.remorseless_wave","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"affects":{"excludes_caster_name":false,"includes_caster":false,"kind":"Players","top_creature_only":true},"damage_type":"untyped"}},"target":{"family":"Effect","key":"oteryn:effect.spell.remorseless_wave.effect-callback-1","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"Range","maximum":600,"minimum":0}},"target":{"family":"Formula","key":"oteryn:formula.spell.remorseless_wave.formula-callback-1","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"affects":{"creatures":[{"family":"Creature","key":"oteryn:creature.stolen_soul","revision":"definition-r1"}],"excludes_caster_name":false,"includes_caster":true,"kind":"NamedCreatures","top_creature_only":true},"damage_type":"untyped"}},"target":{"family":"Effect","key":"oteryn:effect.spell.remorseless_wave.effect-callback-2","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"Range","maximum":1500,"minimum":700}},"target":{"family":"Formula","key":"oteryn:formula.spell.remorseless_wave.formula-callback-2","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"damage_type":"death","presentation":{"impact_asset_binding":"canary.appearance:effect/blacksmoke"}}},"target":{"family":"Effect","key":"oteryn:effect.spell.remorseless_wave.effect","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"CasterMagnitude"}},"target":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"}}],"records":[{"effects":[{"family":"Effect","key":"oteryn:effect.spell.remorseless_wave.effect-callback-1","revision":"definition-r1"},{"family":"Effect","key":"oteryn:effect.spell.remorseless_wave.effect-callback-2","revision":"definition-r1"},{"family":"Effect","key":"oteryn:effect.spell.remorseless_wave.effect","revision":"definition-r1"}],"identity":{"family":"Ability","key":"oteryn:ability.spell.remorseless_wave","revision":"definition-r1"},"kind":"Ability"},{"client_projection":"ServerOnly","effect_family":"Damage","formula":{"family":"Formula","key":"oteryn:formula.spell.remorseless_wave.formula-callback-1","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.spell.remorseless_wave.effect-callback-1","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.spell.remorseless_wave.formula-callback-1","revision":"definition-r1"},"kind":"Formula"},{"client_projection":"ServerOnly","effect_family":"Damage","formula":{"family":"Formula","key":"oteryn:formula.spell.remorseless_wave.formula-callback-2","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.spell.remorseless_wave.effect-callback-2","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.spell.remorseless_wave.formula-callback-2","revision":"definition-r1"},"kind":"Formula"},{"client_projection":"ServerOnly","effect_family":"Damage","formula":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.spell.remorseless_wave.effect","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"},"kind":"Formula"}]},"oteryn:ability.spell.source_of_corruption_wave":{"primary":2,"callbacks":[{"filter":{"excludes_caster_name":false,"includes_caster":false,"kind":"Players","top_creature_only":true},"heal":false,"minimum":0,"maximum":600,"raw_effect_key":"oteryn:effect.spell.source_of_corruption_wave.effect-callback-1"},{"filter":{"creatures":[{"family":"Creature","key":"oteryn:creature.stolen_soul","revision":"definition-r1"}],"excludes_caster_name":false,"includes_caster":true,"kind":"NamedCreatures","top_creature_only":true},"heal":false,"minimum":700,"maximum":1500,"raw_effect_key":"oteryn:effect.spell.source_of_corruption_wave.effect-callback-2"}],"profiles":[{"data":{"kind":"Ability","profile":{"details":{"area":{"north":[".....",".xCx.","....."],"shape":"Matrix"},"effects":[{"effect":{"family":"Effect","key":"oteryn:effect.spell.source_of_corruption_wave.effect-callback-1","revision":"definition-r1"},"kind":"Executable"},{"effect":{"family":"Effect","key":"oteryn:effect.spell.source_of_corruption_wave.effect-callback-2","revision":"definition-r1"},"kind":"Executable"},{"effect":{"family":"Effect","key":"oteryn:effect.spell.source_of_corruption_wave.effect","revision":"definition-r1"},"kind":"Executable"}],"kind":"Spell","needs_direction":true,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.source_of_corruption_wave","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"affects":{"excludes_caster_name":false,"includes_caster":false,"kind":"Players","top_creature_only":true},"damage_type":"untyped"}},"target":{"family":"Effect","key":"oteryn:effect.spell.source_of_corruption_wave.effect-callback-1","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"Range","maximum":600,"minimum":0}},"target":{"family":"Formula","key":"oteryn:formula.spell.source_of_corruption_wave.formula-callback-1","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"affects":{"creatures":[{"family":"Creature","key":"oteryn:creature.stolen_soul","revision":"definition-r1"}],"excludes_caster_name":false,"includes_caster":true,"kind":"NamedCreatures","top_creature_only":true},"damage_type":"untyped"}},"target":{"family":"Effect","key":"oteryn:effect.spell.source_of_corruption_wave.effect-callback-2","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"Range","maximum":1500,"minimum":700}},"target":{"family":"Formula","key":"oteryn:formula.spell.source_of_corruption_wave.formula-callback-2","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"damage_type":"energy","presentation":{"impact_asset_binding":"canary.appearance:effect/purpleenergy"}}},"target":{"family":"Effect","key":"oteryn:effect.spell.source_of_corruption_wave.effect","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"CasterMagnitude"}},"target":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"}}],"records":[{"effects":[{"family":"Effect","key":"oteryn:effect.spell.source_of_corruption_wave.effect-callback-1","revision":"definition-r1"},{"family":"Effect","key":"oteryn:effect.spell.source_of_corruption_wave.effect-callback-2","revision":"definition-r1"},{"family":"Effect","key":"oteryn:effect.spell.source_of_corruption_wave.effect","revision":"definition-r1"}],"identity":{"family":"Ability","key":"oteryn:ability.spell.source_of_corruption_wave","revision":"definition-r1"},"kind":"Ability"},{"client_projection":"ServerOnly","effect_family":"Damage","formula":{"family":"Formula","key":"oteryn:formula.spell.source_of_corruption_wave.formula-callback-1","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.spell.source_of_corruption_wave.effect-callback-1","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.spell.source_of_corruption_wave.formula-callback-1","revision":"definition-r1"},"kind":"Formula"},{"client_projection":"ServerOnly","effect_family":"Damage","formula":{"family":"Formula","key":"oteryn:formula.spell.source_of_corruption_wave.formula-callback-2","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.spell.source_of_corruption_wave.effect-callback-2","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.spell.source_of_corruption_wave.formula-callback-2","revision":"definition-r1"},"kind":"Formula"},{"client_projection":"ServerOnly","effect_family":"Damage","formula":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.spell.source_of_corruption_wave.effect","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"},"kind":"Formula"}]},"oteryn:ability.spell.unchained_fire_beam":{"primary":1,"callbacks":[{"filter":{"creatures":[{"family":"Creature","key":"oteryn:creature.magma_bubble","revision":"definition-r1"}],"excludes_caster_name":false,"includes_caster":true,"kind":"NamedCreatures","top_creature_only":true},"heal":true,"minimum":2000,"maximum":5000,"raw_effect_key":"oteryn:effect.spell.unchained_fire_beam.effect-callback-1"}],"profiles":[{"data":{"kind":"Ability","profile":{"details":{"area":{"north":[".x.",".x.",".x.",".x.",".x.",".x.",".x.",".C."],"shape":"Matrix"},"effects":[{"effect":{"family":"Effect","key":"oteryn:effect.spell.unchained_fire_beam.effect-callback-1","revision":"definition-r1"},"kind":"Executable"},{"effect":{"family":"Effect","key":"oteryn:effect.spell.unchained_fire_beam.effect","revision":"definition-r1"},"kind":"Executable"}],"kind":"Spell","needs_direction":true,"needs_target":false,"range_tiles":0}}},"target":{"family":"Ability","key":"oteryn:ability.spell.unchained_fire_beam","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"affects":{"creatures":[{"family":"Creature","key":"oteryn:creature.magma_bubble","revision":"definition-r1"}],"excludes_caster_name":false,"includes_caster":true,"kind":"NamedCreatures","top_creature_only":true},"damage_type":"healing"}},"target":{"family":"Effect","key":"oteryn:effect.spell.unchained_fire_beam.effect-callback-1","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"Range","maximum":5000,"minimum":2000}},"target":{"family":"Formula","key":"oteryn:formula.spell.unchained_fire_beam.formula-callback-1","revision":"definition-r1"}},{"data":{"kind":"Effect","profile":{"damage_type":"fire","presentation":{"impact_asset_binding":"canary.appearance:effect/firearea"}}},"target":{"family":"Effect","key":"oteryn:effect.spell.unchained_fire_beam.effect","revision":"definition-r1"}},{"data":{"kind":"Formula","profile":{"formula":"CasterMagnitude"}},"target":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"}}],"records":[{"effects":[{"family":"Effect","key":"oteryn:effect.spell.unchained_fire_beam.effect-callback-1","revision":"definition-r1"},{"family":"Effect","key":"oteryn:effect.spell.unchained_fire_beam.effect","revision":"definition-r1"}],"identity":{"family":"Ability","key":"oteryn:ability.spell.unchained_fire_beam","revision":"definition-r1"},"kind":"Ability"},{"client_projection":"ServerOnly","effect_family":"Heal","formula":{"family":"Formula","key":"oteryn:formula.spell.unchained_fire_beam.formula-callback-1","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.spell.unchained_fire_beam.effect-callback-1","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.spell.unchained_fire_beam.formula-callback-1","revision":"definition-r1"},"kind":"Formula"},{"client_projection":"ServerOnly","effect_family":"Damage","formula":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"},"identity":{"family":"Effect","key":"oteryn:effect.spell.unchained_fire_beam.effect","revision":"definition-r1"},"kind":"Effect"},{"identity":{"family":"Formula","key":"oteryn:formula.creature.caster-magnitude","revision":"definition-r1"},"kind":"Formula"}]}}}"##;
+
+#[cfg(test)]
+#[path = "callback_stage_composed_tests.rs"]
+mod callback_stage_composed_tests;

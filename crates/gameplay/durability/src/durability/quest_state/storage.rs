@@ -107,6 +107,18 @@ impl DurabilityRoot {
                     .bind(bound(QUESTGATE0_RL_10))
                     .fetch_all(&mut *tx)
                     .await?;
+                    // Crystal primal_menace_killed.lua:10-17 awards storage47855
+                    // to every damaging player. The existing Hazard receipt is
+                    // the committed source-qualified contributor proof, including
+                    // kills that cannot advance an already unlocked Hazard level.
+                    // Keep this readonly projection in the same root-locked copy.
+                    let primal_killed: bool = sqlx::query_scalar(
+                        "SELECT EXISTS(SELECT 1 FROM game_character_primal_hazard_receipts \
+                          WHERE character_id=encode($1,'hex')::uuid)",
+                    )
+                    .bind(id)
+                    .fetch_one(&mut *tx)
+                    .await?;
                     commit_semantic_transaction(tx, deadline).await?;
                     if over(&tracks, QUESTSTATE0_RL_01.min(QUESTSTATE0_RL_08_TRACKS))
                         || over(&states, QUESTSTATE0_RL_05.min(QUESTSTATE0_RL_08_STATES))
@@ -128,6 +140,13 @@ impl DurabilityRoot {
                     for row in &tracks {
                         copy.tracks
                             .insert(row.try_get("track_key")?, row.try_get("value")?);
+                    }
+                    if primal_killed {
+                        let first_kill = copy
+                            .tracks
+                            .entry("oteryn:quest-progress/storage/47855".into())
+                            .or_insert(1);
+                        *first_kill = (*first_kill).max(1);
                     }
                     oteryn_gameplay_quests::quest::monk_shrines::derive_count(&mut copy.tracks);
                     if copy.tracks.len() > QUESTSTATE0_RL_08_TRACKS {

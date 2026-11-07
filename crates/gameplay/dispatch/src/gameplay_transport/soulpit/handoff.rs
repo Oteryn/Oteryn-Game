@@ -6,7 +6,7 @@ use super::super::{
     connection::{UseCommand, UseOutcome},
 };
 use crate::durability::item_mint::TypedDefinitionRef;
-use crate::foundation::{ExactActorRef, GameSessionId};
+use crate::foundation::ExactActorRef;
 use std::{
     future::Future,
     pin::Pin,
@@ -35,6 +35,10 @@ pub struct SoulpitEntryIntent {
 /// sessions end. A missing ready scope refuses without consuming the selected core. It also
 /// owns logout/death/recovery routing and calls the Soulpit lifecycle writer for those facts.
 /// No method here grants a Channel authority to teleport into an Instance.
+// The listener polls connections/lifecycles on its current owner thread
+// (listener.rs); serving.rs polls activity cycles in that same task. These
+// futures therefore retain their existing local owner/recovery borrows. The
+// installed descriptor remains Send + Sync; no future is spawned or migrated.
 pub trait BossActivityHandoff: Send + Sync {
     /// World-owned cadence, including when the last participant disconnects. The shared
     /// owner enumerates only its live Instance activities, proves each current ownership
@@ -48,13 +52,13 @@ pub trait BossActivityHandoff: Send + Sync {
         admission: &'a ComposedFreshAdmission<'_, '_, '_>,
         now_micros: u64,
         global_tick: bool,
-    ) -> Pin<Box<dyn Future<Output = Result<Option<u64>, ()>> + Send + 'a>>;
+    ) -> Pin<Box<dyn Future<Output = Result<Option<u64>, ()>> + 'a>>;
 
     fn enter_soulpit<'a>(
         &'a self,
         admission: &'a ComposedFreshAdmission<'_, '_, '_>,
         request: SoulpitEntryIntent,
-    ) -> Pin<Box<dyn Future<Output = Result<Option<UseOutcome>, ()>> + Send + 'a>>;
+    ) -> Pin<Box<dyn Future<Output = Result<Option<UseOutcome>, ()>> + 'a>>;
 
     /// Called only after an authenticated USE of the source exit object. The caller
     /// proves the current target revision and reach; the adapter revalidates membership
@@ -63,13 +67,13 @@ pub trait BossActivityHandoff: Send + Sync {
         &'a self,
         admission: &'a ComposedFreshAdmission<'_, '_, '_>,
         actor: ExactActorRef,
-        session: GameSessionId,
-    ) -> Pin<Box<dyn Future<Output = Result<(), ()>> + Send + 'a>>;
+        command: UseCommand,
+    ) -> Pin<Box<dyn Future<Output = Result<(), ()>> + 'a>>;
 }
 
 /// Installed once by the shared activity composition root. Absence is no capacity, not a
 /// request to create a Channel teleport or to burn a core ahead of an unavailable owner.
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct BossActivityHandoffSlot(OnceLock<Arc<dyn BossActivityHandoff>>);
 
 impl BossActivityHandoffSlot {

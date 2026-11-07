@@ -137,6 +137,8 @@ mod tests {
             content_generation: [1; 32],
             observer: [1; 16],
             entities: vec![ChannelEntity {
+                source_icons:
+                    oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(),
                 display_name: Some(EntityDisplayName::new("Before")?),
                 health_percent: 100,
                 direction: StepDirection::South,

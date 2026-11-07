@@ -125,7 +125,8 @@ mod tests {
     }
 
     #[test]
-    fn quest_outfit_receipt_identity_binds_character_event_and_exact_base_grant() -> Result<(), DurabilityError> {
+    fn quest_outfit_receipt_identity_binds_character_event_and_exact_base_grant()
+    -> Result<(), DurabilityError> {
         let a = identity(character(1)?, &[7; 32], QuestOutfitGrant::Revenant)?;
         assert_eq!(
             a,

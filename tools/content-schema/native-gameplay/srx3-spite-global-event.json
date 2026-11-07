@@ -1,0 +1,77 @@
+{
+  "schema": "OTERYN_SOURCE_GLOBAL_EVENT/v1",
+  "donor": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "sources": [
+    {
+      "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916",
+      "git_blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+    },
+    {
+      "path": "data-global/lib/quests/soul_war.lua",
+      "sha256": "89c0024914b0593b9b7d2bfb535a24025a552f54b158319697cdf56a66375e75",
+      "git_blob_sha1": "4c9d3ac502ecbd7ec32f4823a8cab13d7ad6f703"
+    }
+  ],
+  "events": [
+    {
+      "name": "CreateGoshnarSpiteFire",
+      "owner": "RegisteredGlobalEvent",
+      "encounter": {
+        "family": "Encounter",
+        "key": "oteryn:encounter.soul_war_taint_zones",
+        "revision": "definition-r1"
+      },
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i33877",
+        "revision": "definition-r1"
+      },
+      "positions": [
+        [
+          33743,
+          31628,
+          14
+        ],
+        [
+          33736,
+          31632,
+          14
+        ],
+        [
+          33750,
+          31632,
+          14
+        ],
+        [
+          33742,
+          31637,
+          14
+        ]
+      ],
+      "interval_ms": 14000,
+      "removal_delay_ms": 5000,
+      "expiry_defense_add": 10,
+      "requires_parent_creature": false,
+      "requires_committed_lever": false,
+      "declaration_line": 415,
+      "create_lines": [
+        417,
+        429
+      ],
+      "expiry_lines": [
+        400,
+        413
+      ],
+      "registration_lines": [
+        431,
+        432
+      ],
+      "create_body": "function goshnarSpiteFire.onThink(interval)\n\tlocal randomIndex = math.random(#SoulWarQuest.goshnarsSpiteFirePositions) -- Choose a random index\n\tlocal firePosition = SoulWarQuest.goshnarsSpiteFirePositions[randomIndex] -- Get the corresponding position\n\tlocal tile = Tile(firePosition)\n\tif tile then\n\t\tlocal fire = Game.createItem(SoulWarQuest.searingFireId, 1, firePosition)\n\t\tif fire then\n\t\t\taddEvent(removeSearingFire, SoulWarQuest.timeToRemoveSearingFire * 1000, firePosition)\n\t\tend\n\tend\n\n\treturn true\nend\n",
+      "expiry_body": "local function removeSearingFire(position)\n\tlocal tile = Tile(position)\n\tif tile then\n\t\tlocal fire = tile:getItemById(SoulWarQuest.searingFireId)\n\t\tif fire then\n\t\t\tlocal monster = Creature(\"Goshnar's Spite\")\n\t\t\tif monster then\n\t\t\t\tmonster:addDefense(SoulWarQuest.goshnarsSpiteIncreaseDefense)\n\t\t\t\tlogger.debug(\"Found Goshnar's Spite on boss zone, adding defense.\")\n\t\t\tend\n\t\t\tfire:remove()\n\t\tend\n\tend\nend\n",
+      "create_body_sha256": "66adcbe8e7de5249ab10b7c9693c1aa076053acf2c5fffdc6eeb5351da1abd80",
+      "expiry_body_sha256": "23fd9c032786023a26d8762a40e92f63fd822b597758c624f8471e5c6cfafae8"
+    }
+  ]
+}

@@ -5,7 +5,7 @@ use super::RoomPosition;
     non_upper_case_globals,
     reason = "the follow-up hook API requires this exported name"
 )]
-pub const Murcion_KEY: &str = "oteryn:creature.murcion";
+pub const MURCION_KEY: &str = "oteryn:creature.murcion";
 pub const MUSHROOM_KEY: &str = "oteryn:creature.mushroom";
 pub const ELDER_BLOODJAW_KEY: &str = "oteryn:creature.elder_bloodjaw";
 pub const MUSHROOM_FLOOR: u8 = 4;

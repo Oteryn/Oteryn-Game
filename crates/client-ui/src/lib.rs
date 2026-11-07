@@ -272,3 +272,6 @@ pub mod rest_status;
 pub mod skill_display;
 #[path = "features/0279-skill-progress/mod.rs"]
 pub mod skill_progress;
+
+#[path = "features/0371-native-creature-icons/mod.rs"]
+pub mod native_creature_icons;

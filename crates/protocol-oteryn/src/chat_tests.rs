@@ -51,13 +51,11 @@ fn server_owned_mount_voice_cannot_be_forged_as_player_intent() {
         *mode = ChatSpeechMode::MonsterSay;
     }
     round_trip_line(&line);
-    assert!(
-        encode_chat_intent(&ChatIntent::Say {
-            mode: ChatSpeechMode::MonsterSay,
-            text: "Groar".into(),
-        })
-        .is_err()
-    );
+    assert!(encode_chat_intent(&ChatIntent::Say {
+        mode: ChatSpeechMode::MonsterSay,
+        text: "Groar".into(),
+    })
+    .is_err());
     assert!(decode_chat_intent(&[0x0a, 5, 8, 4, 0x12, 1, b'x']).is_err());
 }
 
@@ -286,9 +284,7 @@ fn lines_round_trip_and_the_local_line_is_the_byte_bound() {
             speaker_name: "Bob".to_owned(),
             text: "hi".to_owned(),
         }),
-        [
-            0x08, 0x02, 0x22, 0x03, b'B', b'o', b'b', 0x3a, 0x02, b'h', b'i'
-        ]
+        [0x08, 0x02, 0x22, 0x03, b'B', b'o', b'b', 0x3a, 0x02, b'h', b'i']
     );
     round_trip_line(&ChatLine::Room {
         room: ChatRoom::World,
@@ -470,6 +466,13 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
                     .to_owned(),
                 crate::vip_presence::MAX_BYTES as u64
             ),
+            (
+                u64::from(crate::native_map_cues::DELTA_TYPE_NATIVE_MAP_CHAT_LINE_V1),
+                "NATIVE_MAP_CHAT_LINE_V1".to_owned(),
+                "docs/contracts/protocol-oteryn/v1/native-map-cues-v1.md#native-local-chat"
+                    .to_owned(),
+                MAX_CHAT_LINE_BYTES as u64
+            ),
         ]
     );
     assert_eq!(
@@ -637,12 +640,10 @@ fn party_chat_roundtrips_and_refuses_empty_or_duplicate_text() {
         decode_chat_intent(&encode_chat_intent(&intent).expect("encode")).expect("decode"),
         intent
     );
-    assert!(
-        encode_chat_intent(&ChatIntent::Party {
-            text: String::new()
-        })
-        .is_err()
-    );
+    assert!(encode_chat_intent(&ChatIntent::Party {
+        text: String::new()
+    })
+    .is_err());
     assert!(decode_chat_intent(&[114, 6, 10, 1, b'a', 10, 1, b'b']).is_err());
     let line = ChatLine::Party {
         speaker_name: "Leader".into(),
@@ -668,18 +669,14 @@ fn party_chat_line_bounds_and_alien_fields_fail_closed() {
         alien.extend_from_slice(suffix);
         assert!(decode_chat_line(&alien).is_err());
     }
-    assert!(
-        encode_chat_line(&ChatLine::Party {
-            speaker_name: String::new(),
-            text: "hi".into()
-        })
-        .is_err()
-    );
-    assert!(
-        encode_chat_line(&ChatLine::Party {
-            speaker_name: "Leader".into(),
-            text: String::new()
-        })
-        .is_err()
-    );
+    assert!(encode_chat_line(&ChatLine::Party {
+        speaker_name: String::new(),
+        text: "hi".into()
+    })
+    .is_err());
+    assert!(encode_chat_line(&ChatLine::Party {
+        speaker_name: "Leader".into(),
+        text: String::new()
+    })
+    .is_err());
 }

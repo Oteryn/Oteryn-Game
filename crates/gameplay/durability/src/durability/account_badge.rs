@@ -99,7 +99,10 @@ mod tests {
     #[test]
     fn p12b_stored_badges_decode_only_admitted_ids() {
         assert!(matches!(decode_badge(1), Ok(Badge::FledgelingHero)));
-        assert!(matches!(decode_badge(27), Ok(Badge::EnlightenedStudentGrade3)));
+        assert!(matches!(
+            decode_badge(27),
+            Ok(Badge::EnlightenedStudentGrade3)
+        ));
         for invalid in [0, 15, 21, 28, -1, 256] {
             assert!(matches!(
                 decode_badge(invalid),

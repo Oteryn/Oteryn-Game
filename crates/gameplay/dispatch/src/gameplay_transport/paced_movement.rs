@@ -2,6 +2,7 @@
 use super::*;
 
 mod autowalk;
+mod drunk;
 pub use autowalk::{AutoWalkRoute, AutoWalkTarget};
 pub(super) mod monster_trap;
 pub(super) mod special_movement;
@@ -46,12 +47,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return (StepOutcome::rejected(), None);
         }
         use crate::movement::{CardinalStep, MovementError};
-        let cardinal = match direction {
-            StepDirection::North => CardinalStep::North,
-            StepDirection::East => CardinalStep::East,
-            StepDirection::South => CardinalStep::South,
-            StepDirection::West => CardinalStep::West,
-        };
         // Preflight SQL shares the field owner's bounded durability holder.
         // Take the lane before those reads so a concurrent field turn cannot
         // exhaust the holder or invalidate their player-state predecessor.
@@ -70,6 +65,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // lane or Channel locks. Sample time only after acquiring its owners;
         // field entry must not predate the condition predecessor it observes.
         let now = self.owner_now().get();
+        if runtime.note_rotten_movement_time(now).is_err() {
+            return (StepOutcome::rejected(), None);
+        }
         // USE-AUTOWALK-1: a relocation (even away and back) invalidates the queued step.
         // Compare while holding the same owner lock as the movement commit.
         if follow.is_some_and(|(target, expected)| {
@@ -91,11 +89,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if states.has_pending_spell_commit(actor, session) {
             return (StepOutcome::rejected(), None);
         }
+        let (direction, hicks) =
+            drunk::admitted_direction(&mut runtime, &states, actor, session, direction, now);
+        let cardinal = match direction {
+            StepDirection::North => CardinalStep::North,
+            StepDirection::East => CardinalStep::East,
+            StepDirection::South => CardinalStep::South,
+            StepDirection::West => CardinalStep::West,
+        };
         // The closed bundle doors are read live per candidate cell, not collected per step: a
         // teleport landing never relocates a player onto one (WORLD-INTERACTION-0 §6.6).
         let (none, bundle_doors, legacy);
         let blocking: &dyn crate::map::floor::CellBlocker = if self
-            .rooms
+            .effective_rooms()
             .gate_source_world()
             .is_some_and(|room| room.source_world().is_some())
         {
@@ -110,7 +116,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let pvp_blocking = super::pvp_live::PvpBlocker {
             inner: blocking,
-            cells: self.movement_cells,
+            cells: self.effective_movement_cells(),
             blocked: super::pvp_live::pz_blocked(&states, actor, session, self.owner_now()),
         };
         let blocking: &dyn crate::map::floor::CellBlocker = &pvp_blocking;
@@ -131,7 +137,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             states.step_with_creature_field_contact(
                 &mut runtime,
-                self.movement_cells,
+                self.effective_movement_cells(),
                 actor,
                 session,
                 now,
@@ -155,6 +161,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
         };
+        if hicks
+            && matches!(
+                &outcome,
+                Ok(_)
+                    | Err(MovementError::Blocked
+                        | MovementError::Cell(
+                            crate::content::static_cell_engine::StaticCellEngineError::Absent,
+                        ))
+            )
+        {
+            drunk::speech(self, &runtime, actor, session, origin);
+        }
         match outcome {
             Ok((snapshot, duration)) => {
                 // PAR-M10: underwater ground drowns on entry and stops on exit, in the same
@@ -183,6 +201,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 drop(states);
                 drop(runtime);
+                self.resolve_rotten_movement_callbacks(&permit).await;
+                super::soul_war_world::committed_step(self, actor, session, origin, snapshot, now)
+                    .await;
+                super::primal_callbacks::step_in(self, &permit, actor, session, snapshot, now)
+                    .await;
+                super::rotten_blood_callbacks::step_in(
+                    self, &permit, actor, session, snapshot, now,
+                )
+                .await;
                 super::echo_warden::step_in(self, actor, session, now / 1000).await;
                 if let Some(event) = snowbunny_progress_operation(
                     snow_origin,
@@ -228,7 +255,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 (
                     StepOutcome {
                         disposition: StepDisposition::Moved,
-                        moved_to: Some(Self::observation(&runtime, snapshot.position())),
+                        moved_to: self.wire_observation(&runtime, snapshot.position()),
                     },
                     Some(duration),
                 )

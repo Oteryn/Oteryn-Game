@@ -6,6 +6,7 @@ use super::{
 };
 mod execute;
 mod rewards;
+mod rotten_flame;
 mod soul_war_reward;
 
 use super::paced_movement::underwater_drown::underwater;
@@ -39,7 +40,9 @@ struct Pending {
     cause: QuestCause,
     origin: Option<MovementPositionSnapshot>,
     context: Option<QuestWorldContext>,
+    flame: Option<crate::durability::quest_state::rotten_flame::RottenFlameUse>,
     ingress_settled: bool,
+    flame_effect_sent: bool,
 }
 
 #[derive(Default)]
@@ -96,7 +99,9 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
             .facts
             .quest_callback_matches(key, None, None, selector.appearance)
             || ((selector.position.is_some()
-                || callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE)
+                || callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE
+                || oteryn_gameplay_quests::quest::rotten_blood::flames::by_key(&callback.key)
+                    .is_some())
                 && selector.appearance.is_some_and(|appearance| {
                     // The Crystal plate callback is registered by item appearance. Plain
                     // placements are omitted from the sparse attribute index. Resolve
@@ -172,11 +177,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return false;
             };
             let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
-            let disposition = match slot.commit_world_callback(self.root, self.character, self.holder, fence,
-                QuestTransitionRequest { transition_key: pending.callback, cause: pending.cause },
-                std::sync::Arc::clone(catalogue), &permit, context).await {
+            let flame = pending.flame.clone();
+            let outcome = if let Some(input) = pending.flame {
+                slot.commit_rotten_flame_use(
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    input,
+                    std::sync::Arc::clone(catalogue),
+                    &permit,
+                )
+                .await
+            } else {
+                slot.commit_world_callback(
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    QuestTransitionRequest {
+                        transition_key: pending.callback,
+                        cause: pending.cause,
+                    },
+                    std::sync::Arc::clone(catalogue),
+                    &permit,
+                    context,
+                )
+                .await
+            };
+            let disposition = match outcome {
                 Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => UseDisposition::Committed,
                 Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => return false,
+                Ok(QuestTransitionOutcome::Refused(oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch))
+                    if flame.as_ref().and_then(|input|input.no_change()).is_some()=>UseDisposition::Committed,
                 Ok(_) | Err(_) => UseDisposition::Rejected,
             };
             if self
@@ -537,7 +570,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         cause,
                         origin: Some(origin),
                         context: None,
+                        flame: None,
                         ingress_settled: false,
+                        flame_effect_sent: false,
                     });
                     pending.origin = Some(origin);
                 }
@@ -566,7 +601,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let blocked = super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
         if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
             runtime,
-            self.movement_cells,
+            self.effective_movement_cells(),
             actor,
             session,
             entered,
@@ -602,4 +637,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+/// Literal fixed external reset under the retained origin scope owner. This is
+/// source-event composition, not an invented USE command or a Character grant.
+pub(in crate::gameplay_transport) fn prepare_bak_public_reset(
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    map: &crate::map::boot::BundleMap,
+    prepared: crate::durability::quest_state::rotten_flame::PreparedBakEssences,
+) -> Option<crate::durability::quest_state::rotten_flame::phase::BakPhasePublication> {
+    rotten_flame::prepare_public_reset(runtime, map, prepared)
 }

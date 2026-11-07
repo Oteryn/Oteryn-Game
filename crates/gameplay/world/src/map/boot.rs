@@ -103,6 +103,7 @@ impl From<FactsRefusal> for BootRefusal {
 /// the walkable tiles a wall or a solid item blocks.
 #[derive(Debug)]
 pub struct BundleWorld {
+    source_bases: Arc<crate::content::QualifiedBundleSourceBases>,
     daily: Option<super::daily::DailyMap>,
     base: Arc<WorldBase>,
     map: Arc<BundleMap>,
@@ -242,7 +243,10 @@ impl CheckedBundle {
                 }
             })
             .map_err(BootRefusal::FloorChain)?;
+        let source_bases =
+            crate::content::qualify_bundle_source_bases(&self.data).map_err(LoadError::from)?;
         Ok(BundleWorld {
+            source_bases: Arc::new(source_bases),
             daily: self.daily,
             map: Arc::new(BundleMap {
                 entry_start: self.start,
@@ -550,6 +554,7 @@ impl BundleWorld {
         scope.coordinate_frame = CoordinateFrameRef::new(BUNDLE_FRAME)?;
         scope.map_revision = MapRevisionRef::new(&self.map_revision)?;
         let index = BundleCollisionIndex(Arc::new(BundleCollisionData {
+            source_bases: Arc::clone(&self.source_bases),
             scope: scope.clone(),
             base: Arc::clone(&self.base),
             blocked: Arc::clone(&self.blocked),
@@ -581,6 +586,7 @@ pub struct BundleMap {
 /// is enterable, Blocked when it exists but is not, and Absent outside the map.
 #[derive(Debug, Clone)]
 struct BundleCollisionData {
+    source_bases: Arc<crate::content::QualifiedBundleSourceBases>,
     scope: EngineeringStaticCellScope,
     base: Arc<WorldBase>,
     blocked: Arc<BTreeSet<TilePos>>,
@@ -632,6 +638,12 @@ impl crate::content::native_cell_lookup::BundleCollisionLookup for BundleCollisi
         cell: LogicalCell,
     ) -> Result<CollisionClass, StaticCellEngineError> {
         self.lookup(scope, cell)
+    }
+    fn source_capture_cell_count(&self) -> Option<usize> {
+        Some(self.base.tile_count())
+    }
+    fn source_bases(&self) -> Option<&crate::content::QualifiedBundleSourceBases> {
+        Some(&self.source_bases)
     }
     fn same_index(
         &self,

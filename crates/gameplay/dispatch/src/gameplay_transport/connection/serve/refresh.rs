@@ -106,6 +106,7 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    super::native_cues::refresh(stream, authority, session).await?;
     channel_list(stream, authority, session).await?;
     typing(stream, authority, session).await?;
     super::vip_presence::refresh(stream, authority, session).await?;
@@ -396,6 +397,7 @@ where
     A: FreshAdmissionAuthority,
 {
     sounds(stream, authority, session).await?;
+    super::native_cues::refresh(stream, authority, session).await?;
     if let Some(view) = session.item_view.as_mut()
         && view.inventory_refresh_pending
     {

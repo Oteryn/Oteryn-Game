@@ -19,7 +19,7 @@ pub fn request(p: &mut HighscoresPanel, action: Action) -> Option<ServerMechanic
     match action {
         Action::Refresh => {}
         Action::Filter { category, vocation } => {
-            if !(1..=11).contains(&category) || vocation > 5 {
+            if !(1..=13).contains(&category) || vocation > 5 {
                 return None;
             }
             query.category = category;

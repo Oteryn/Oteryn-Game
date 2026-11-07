@@ -419,8 +419,10 @@ pub fn check_bank_operation(value: &BankOperationV1) -> Result<(), AuditError> {
     check_uuid_v7(&value.channel_id)?;
     if let Some(house) = &value.hireling_house {
         check_uuid_v7(&house.hireling_id)?;
-        let world = crate::foundation::WorldId::decode(&value.world_id).map_err(|_|AuditError::InvalidInput)?;
-        super::house_scope_handoff::HouseId::new(world,&house.house_key).ok_or(AuditError::InvalidInput)?;
+        let world = crate::foundation::WorldId::decode(&value.world_id)
+            .map_err(|_| AuditError::InvalidInput)?;
+        super::house_scope_handoff::HouseId::new(world, &house.house_key)
+            .ok_or(AuditError::InvalidInput)?;
     }
     if value.runtime_scope_ownership_generation == 0 {
         return Err(AuditError::InvalidInput);
@@ -562,8 +564,7 @@ mod tests {
     use super::*;
     use serde_json::Value;
 
-    const RESOURCE_REGISTRY: &str =
-        oteryn_protocol_oteryn::RESOURCE_LIMITS_REGISTRY_JSON;
+    const RESOURCE_REGISTRY: &str = oteryn_protocol_oteryn::RESOURCE_LIMITS_REGISTRY_JSON;
     const EVENT_REGISTRY: &str =
         include_str!("../../../../../docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json");
 
@@ -964,7 +965,13 @@ mod tests {
             amount,
         );
         // Named-House extension: 515-byte House key field +18-byte identity +3-byte wrapper.
-        value_.hireling_house = Some(BankHirelingHouseV1 {house_key:format!("oteryn:content.house.{}","h".repeat(512-"oteryn:content.house.".len())),hireling_id:uuid(72)});
+        value_.hireling_house = Some(BankHirelingHouseV1 {
+            house_key: format!(
+                "oteryn:content.house.{}",
+                "h".repeat(512 - "oteryn:content.house.".len())
+            ),
+            hireling_id: uuid(72),
+        });
         value_.runtime_scope_ownership_generation = u64::MAX;
         value_.backpack_item_instance_id = uuid(50);
         value_.coin_lines = lines;
@@ -987,17 +994,28 @@ mod tests {
     fn hireling_house_scope_is_explicit_and_closed() {
         let old = deposit();
         let old_bytes = old.encode_to_vec();
-        assert_eq!(BankOperationV1::decode(old_bytes.as_slice()).unwrap().hireling_house,None);
+        assert_eq!(
+            BankOperationV1::decode(old_bytes.as_slice())
+                .unwrap()
+                .hireling_house,
+            None
+        );
         let mut value = old.clone();
-        value.hireling_house = Some(BankHirelingHouseV1 {house_key:"oteryn:content.house.fixture".into(),hireling_id:uuid(72)});
+        value.hireling_house = Some(BankHirelingHouseV1 {
+            house_key: "oteryn:content.house.fixture".into(),
+            hireling_id: uuid(72),
+        });
         assert!(check_bank_operation(&value).is_ok());
-        let bytes = encode_bank_event(identity(),value.clone()).unwrap();
-        assert_eq!(decode_bank_envelope(&bytes).unwrap().1,value);
+        let bytes = encode_bank_event(identity(), value.clone()).unwrap();
+        assert_eq!(decode_bank_envelope(&bytes).unwrap().1, value);
         value.hireling_house.as_mut().unwrap().house_key.clear();
         assert!(check_bank_operation(&value).is_err());
-        value.hireling_house = Some(BankHirelingHouseV1 {house_key:"oteryn:content.house.fixture".into(),hireling_id:vec![0;16]});
+        value.hireling_house = Some(BankHirelingHouseV1 {
+            house_key: "oteryn:content.house.fixture".into(),
+            hireling_id: vec![0; 16],
+        });
         assert!(check_bank_operation(&value).is_err());
-        assert_eq!(old.encode_to_vec(),old_bytes);
+        assert_eq!(old.encode_to_vec(), old_bytes);
     }
 
     #[test]

@@ -82,6 +82,8 @@ pub(super) fn inactive(data: &TaskBoardData) -> bool {
 pub(super) fn cause_key(cause: QuestCause) -> (&'static str, [u8; 16], u64) {
     match cause {
         QuestCause::CreatureDeath(id) => ("creature_death", *id.as_bytes(), 0),
+        QuestCause::SourceThink(id) => ("source_think", *id.as_bytes(), 0),
+        QuestCause::SourceStep(id) => ("source_step", *id.as_bytes(), 0),
         QuestCause::Command(command) => (
             "command",
             *command.game_session_id().as_bytes(),

@@ -216,6 +216,10 @@ pub fn load_embedded_quest_state(
     lowered.catalogue =
         super::rotten_blood::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
+        super::rotten_blood::area_icons::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::soul_war::source_items::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
         super::dark_trails::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::isle_of_evil::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;

@@ -503,6 +503,11 @@ def validate_record(record):
     errors = schema_errors(family, record)
     if errors:
         return errors
+    import activity_static
+    if record["provenance"]["source_item_id"] in activity_static.IDENTIFIERS:
+        expected = next((row for row in json.loads(activity_static.outputs()[activity_static.SHARDS[family]])["records"]
+            if row["provenance"]["source_item_id"] == record["provenance"]["source_item_id"]), None)
+        return [] if record == expected else ["static activity geometry differs from its qualified source"]
     if "item_pointer" not in record["provenance"]:
         import grizzly_ground
         import summer_ground

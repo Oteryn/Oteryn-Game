@@ -12,10 +12,14 @@ pub(super) async fn write_if_inbox(
     let ItemUseKind::HirelingLamp { origin_channel } = request.kind else {
         return Err(ItemUseError::InvalidInput);
     };
-    if request.source_quantity_before != 1 || request.flask != ItemUseFlaskPlan::None
+    if request.source_quantity_before != 1
+        || request.flask != ItemUseFlaskPlan::None
         || request.source_definition.family != "Item"
-        || request.source_definition.production_key != crate::durability::house_hireling::HIRELING_LAMP_KEY
-    { return Err(ItemUseError::InvalidInput); }
+        || request.source_definition.production_key
+            != crate::durability::house_hireling::HIRELING_LAMP_KEY
+    {
+        return Err(ItemUseError::InvalidInput);
+    }
     let world = fence.runtime_scope.world_id();
     let row = sqlx::query(
         "SELECT l.ordinal::text AS ordinal, i.quantity, i.lifecycle, i.definition_family, \
@@ -25,35 +29,65 @@ pub(super) async fn write_if_inbox(
            AND l.world_id=encode($3,'hex')::uuid AND i.world_id=l.world_id FOR UPDATE OF i",
     ).bind(request.source_item_instance_id.as_slice()).bind(fence.character_id.as_bytes().as_slice())
      .bind(world.as_bytes().as_slice()).fetch_optional(&mut *connection).await?;
-    let Some(row) = row else { return Ok(None); };
-    if row.try_get::<i64,_>("quantity")? != 1 || row.try_get::<i16,_>("lifecycle")? != 1
-        || row.try_get::<String,_>("definition_family")? != request.source_definition.family
-        || row.try_get::<String,_>("definition_production_key")? != request.source_definition.production_key
-        || row.try_get::<String,_>("definition_revision_ref")? != request.source_definition.revision_ref
-    { return Err(ItemUseError::StaleState); }
+    let Some(row) = row else {
+        return Ok(None);
+    };
+    if row.try_get::<i64, _>("quantity")? != 1
+        || row.try_get::<i16, _>("lifecycle")? != 1
+        || row.try_get::<String, _>("definition_family")? != request.source_definition.family
+        || row.try_get::<String, _>("definition_production_key")?
+            != request.source_definition.production_key
+        || row.try_get::<String, _>("definition_revision_ref")?
+            != request.source_definition.revision_ref
+    {
+        return Err(ItemUseError::StaleState);
+    }
     let ordinal = numeric_u64(&row, "ordinal")?;
     let house = house_scope(connection, fence).await?;
     let state = |quantity, lifecycle| OneItemStateV1 {
-        item_instance_id: request.source_item_instance_id.to_vec(), world_id: world.as_bytes().to_vec(),
-        definition: Some(definition_message(&request.source_definition)), quantity, lifecycle, key_number: 0,
+        item_instance_id: request.source_item_instance_id.to_vec(),
+        world_id: world.as_bytes().to_vec(),
+        definition: Some(definition_message(&request.source_definition)),
+        quantity,
+        lifecycle,
+        key_number: 0,
     };
-    let envelope = encode_item_use_event(ItemUseEventIdentity {
-        event_id: request.event_id, transaction_id: request.transaction_id,
-        occurred_at_unix_ms: request.occurred_at_unix_ms, server_build_id: &request.server_build_id,
-    }, OneItemUseV1 {
-        source_before: Some(state(1, ITEM_LIFECYCLE_LIVE)),
-        source_after: Some(state(0, ITEM_LIFECYCLE_RETIRED)),
-        source_entry: None, source_inbox_ordinal: Some(ordinal), house_key: Some(house.clone()),
-        cause: Some(OneItemUseCauseV1 {
-            kind: request.kind.code(), content_revision: request.content_revision.clone(),
-            ruleset_revision: request.ruleset_revision.clone(), sim_revision: request.sim_revision.clone(),
-            command_ref: Some(OneItemCommandRefV1 { game_session_id: fence.game_session_id.as_bytes().to_vec(), command_id: request.command_id }),
-        }),
-        character_id: fence.character_id.as_bytes().to_vec(), world_id: world.as_bytes().to_vec(),
-        channel_id: origin_channel.to_vec(), runtime_scope_ownership_generation: fence.scope_ownership_generation.get(),
-        expected_session_generation: fence.connection_generation.get(), expected_game_session_id: fence.game_session_id.as_bytes().to_vec(),
-        flask: None, flask_missing: false,
-    }, tuple.tuple()).map_err(|_| ItemUseError::InvalidInput)?;
+    let envelope = encode_item_use_event(
+        ItemUseEventIdentity {
+            event_id: request.event_id,
+            transaction_id: request.transaction_id,
+            occurred_at_unix_ms: request.occurred_at_unix_ms,
+            server_build_id: &request.server_build_id,
+        },
+        OneItemUseV1 {
+            source_before: Some(state(1, ITEM_LIFECYCLE_LIVE)),
+            source_after: Some(state(0, ITEM_LIFECYCLE_RETIRED)),
+            source_entry: None,
+            source_inbox_ordinal: Some(ordinal),
+            house_key: Some(house.clone()),
+            instance_id: None,
+            cause: Some(OneItemUseCauseV1 {
+                kind: request.kind.code(),
+                content_revision: request.content_revision.clone(),
+                ruleset_revision: request.ruleset_revision.clone(),
+                sim_revision: request.sim_revision.clone(),
+                command_ref: Some(OneItemCommandRefV1 {
+                    game_session_id: fence.game_session_id.as_bytes().to_vec(),
+                    command_id: request.command_id,
+                }),
+            }),
+            character_id: fence.character_id.as_bytes().to_vec(),
+            world_id: world.as_bytes().to_vec(),
+            channel_id: origin_channel.to_vec(),
+            runtime_scope_ownership_generation: fence.scope_ownership_generation.get(),
+            expected_session_generation: fence.connection_generation.get(),
+            expected_game_session_id: fence.game_session_id.as_bytes().to_vec(),
+            flask: None,
+            flask_missing: false,
+        },
+        tuple.tuple(),
+    )
+    .map_err(|_| ItemUseError::InvalidInput)?;
     sqlx::query(
         "INSERT INTO game_item_use_records(transaction_id,event_id,cause_kind,game_session_id,command_id, \
          content_revision,ruleset_revision,sim_revision,request_binding,character_id,world_id,channel_id, \
@@ -78,9 +112,13 @@ pub(super) async fn write_if_inbox(
     let changed = sqlx::query("UPDATE game_item_instances SET quantity=0,lifecycle=2,last_transaction_id=encode($2,'hex')::uuid WHERE item_instance_id=encode($1,'hex')::uuid AND quantity=1 AND lifecycle=1")
         .bind(request.source_item_instance_id.as_slice()).bind(request.transaction_id.as_slice())
         .execute(&mut *connection).await?.rows_affected();
-    if changed != 1 { return Err(ItemUseError::StaleState); }
+    if changed != 1 {
+        return Err(ItemUseError::StaleState);
+    }
     sqlx::query("SELECT game_hireling_inbox_lamp_unlink(encode($1,'hex')::uuid)")
-        .bind(request.transaction_id.as_slice()).execute(&mut *connection).await?;
+        .bind(request.transaction_id.as_slice())
+        .execute(&mut *connection)
+        .await?;
     sqlx::query(
         "INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count, \
          event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) \
@@ -90,14 +128,22 @@ pub(super) async fn write_if_inbox(
      .bind(tuple.retention_profile_id()).bind(request.source_item_instance_id.as_slice())
      .bind(request.occurred_at_unix_ms).bind(mint_audit::AUDIT_RETENTION_P90D_MS).bind(envelope.as_slice())
      .execute(&mut *connection).await?;
-    Ok(Some(ItemUseOutcome::Written { shape: ItemUseShape::Burn }))
+    Ok(Some(ItemUseOutcome::Written {
+        shape: ItemUseShape::Burn,
+    }))
 }
 
 /// Read the exact named scope proved by the caller; an origin Channel never
 /// supplies House identity to the item-use audit.
-pub(super) async fn house_scope(connection: &mut PgConnection,
-    fence: &CurrentCharacterItemFence) -> Result<String> {
-    let RuntimeScopeRefV1::Instance { world_id, instance_id } = fence.runtime_scope else {
+pub(super) async fn house_scope(
+    connection: &mut PgConnection,
+    fence: &CurrentCharacterItemFence,
+) -> Result<String> {
+    let RuntimeScopeRefV1::Instance {
+        world_id,
+        instance_id,
+    } = fence.runtime_scope
+    else {
         return Err(ItemUseError::AuthorityRejected);
     };
     let house: Option<String> = sqlx::query_scalar(
@@ -114,7 +160,8 @@ pub(super) async fn house_scope(connection: &mut PgConnection,
      .bind(fence.scope_ownership_generation.get().to_string()).fetch_optional(connection).await?;
     let house = house.ok_or(ItemUseError::AuthorityRejected)?;
     if crate::durability::house_scope_handoff::HouseId::new(world_id, &house)
-        .is_none_or(|named| named.instance_id() != instance_id) {
+        .is_none_or(|named| named.instance_id() != instance_id)
+    {
         return Err(ItemUseError::AuthorityRejected);
     }
     Ok(house)

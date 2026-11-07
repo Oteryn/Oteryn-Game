@@ -68,6 +68,9 @@ pub(super) async fn return_in_transaction(
     r: &ActivityReturnRequest,
     recovering: bool,
 ) -> Result<ActivityReturnOutcome> {
+    // Match Soulpit progress's advisory-before-Character lock order. This
+    // bounded lookup grants nothing; the return receipt below remains authority.
+    let soulpit = super::super::soulpit::lock_shared_return(tx, &r.handoff_id).await?;
     let character = foundation_character(r.source)?;
     let row = sqlx::query("SELECT uuid_send(p.origin_channel_id) AS origin, p.account_id::text, g.content_revision,g.ownership_generation::text AS generation, \
         e.deadline,e.holder_node_id::text AS original_node,e.holder_registration_revision::text AS original_registration, \
@@ -219,8 +222,8 @@ pub(super) async fn return_in_transaction(
                 .bind(r.handoff_id.as_slice()).fetch_optional(&mut **tx).await?;
             now >= row.try_get::<i64,_>("deadline")? && !matches!(boss_state, Some(2 | 4))
         },
-        ActivityReturnReason::Defeated => sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_boss_room_activities WHERE admission=encode($1,'hex')::uuid AND state=2 AND exit_deadline <= $2)")
-            .bind(r.handoff_id.as_slice()).bind(now).fetch_one(&mut **tx).await?,
+        ActivityReturnReason::Defeated => sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_boss_room_activities WHERE admission=encode($1,'hex')::uuid AND state=2 AND exit_deadline <= $2) OR EXISTS(SELECT 1 FROM game_soulpit_encounters f JOIN game_activity_handoff_groups g USING(handoff_id) WHERE f.handoff_id=encode($1,'hex')::uuid AND g.activity_key=$3 AND f.terminal)")
+            .bind(r.handoff_id.as_slice()).bind(now).bind(super::super::soulpit::SOULPIT_ACTIVITY_KEY).fetch_one(&mut **tx).await?,
     };
     if !due {
         return Ok(ActivityReturnOutcome::Refused(ActivityRefusal::NotDue));
@@ -336,6 +339,9 @@ pub(super) async fn return_in_transaction(
         .bind(match r.reason { ActivityReturnReason::Abandoned { transport } => Some(transport.to_bytes().to_vec()), _ => None })
         .bind(match r.reason { ActivityReturnReason::CapabilityMismatch { epoch } => Some(epoch.get().to_string()), _ => None })
         .execute(&mut **tx).await?;
+    if soulpit {
+        super::super::soulpit::record_shared_return(tx, r).await?;
+    }
     sqlx::query("UPDATE game_boss_room_participants SET returned_at=$3 WHERE admission=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND returned_at IS NULL")
         .bind(r.handoff_id.as_slice()).bind(r.source.character_id.as_bytes().as_slice()).bind(now).execute(&mut **tx).await?;
     if r.reason == ActivityReturnReason::Timeout {

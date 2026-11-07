@@ -50,7 +50,17 @@ mod position;
 
 const OTHER_HOUSE: &str = "oteryn:content.house.admiral_s_avenue_2";
 #[derive(Clone, Copy)]
-enum Case { Lifecycle, InboxFull, LegacyConversion, Bank, GuestAcl, Wire, LegacyWire, Trader, Gourmet, Cook, CookBank, Steward, Furniture, LampPending, Store, PositionCapture, PositionRelog, PositionProcessLoss, PositionAcl, PositionOccupied, BedRest }
+enum Case { EssenceUse, EssenceCue, Lifecycle, InboxFull, LegacyConversion, Bank, GuestAcl, Wire, LegacyWire, Trader, Gourmet, Cook, CookBank, Steward, Furniture, LampPending, Store, PositionCapture, PositionRelog, PositionProcessLoss, PositionAcl, PositionOccupied, BedRest }
+
+#[test]
+fn srx3_rotten_essence_named_house_native_blue_effect_postgres() -> TestResult {
+    run_case(Case::EssenceCue)
+}
+
+#[test]
+fn srx3_rotten_essence_named_house_real_handoff_postgres() -> TestResult {
+    run_case(Case::EssenceUse)
+}
 
 #[test]
 fn hireling_postgres_native_inbox_lamp_fences_replay_and_return() -> TestResult {
@@ -157,6 +167,9 @@ fn run_case(case: Case) -> TestResult {
 
 async fn scenario(h: &Harness, case: Case) -> TestResult {
     super::reset();
+    if matches!(case, Case::EssenceUse | Case::EssenceCue) {
+        super::item_look::seed_main_backpack(h, &[("oteryn:item.tibia.i43501", 2)]).await?;
+    }
     let evidence = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -200,6 +213,19 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     let generation = controller.active().ok_or("active content")?;
     assert_eq!(room.compiled().server_digest(), generation.identity().server_artifact_digest(),
         "fixture movement and Item facts must share one qualified native generation");
+    let bed_index = if matches!(case, Case::BedRest) { generation.native_gameplay().and_then(|n| n.item_index()) } else { None };
+    let world = hireling_bundle(base.admitted.world_id, base.admitted.channel_id, bed_index.map(|i| i.as_ref()))?;
+    let cells = world.movement_cells(room.movement_cells()).map_err(debug)?;
+    use sha2::Digest as _;
+    let map_digest = sha2::Sha256::digest(cells.scope().map_revision.as_str().as_bytes()).into();
+    // The Essence native-presentation cases use the exact booted Bundle frame,
+    // retaining the same map cells and compiled body. This is an ordinary World
+    // view, not a private Source activity role or a synthetic content pin.
+    let room = if matches!(case, Case::EssenceUse | Case::EssenceCue) {
+        room.bundle_view(cells.clone(),world.frame_binding_digest(base.admitted.world_id),map_digest,
+            crate::content::NativeEntryStart { x:32309,y:32805,floor:7 })
+            .ok_or("actual House fixture Bundle view")?
+    } else { room };
     // Publish the same qualified artifact through the existing control-plane
     // owner. Native House equipment/STEP reads require the durable current
     // activation; an in-memory provider alone does not authorize that read.
@@ -218,11 +244,6 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             frame_binding_digest: room.frame_binding().digest(),
         },
     ).await.map_err(debug)?);
-    let bed_index = if matches!(case, Case::BedRest) { generation.native_gameplay().and_then(|n| n.item_index()) } else { None };
-    let world = hireling_bundle(base.admitted.world_id, base.admitted.channel_id, bed_index.map(|i| i.as_ref()))?;
-    let cells = world.movement_cells(room.movement_cells()).map_err(debug)?;
-    use sha2::Digest as _;
-    let map_digest = sha2::Sha256::digest(cells.scope().map_revision.as_str().as_bytes()).into();
     let pin = ChannelContentPin::from_activation(
         base.admitted.world_id,
         1,
@@ -241,6 +262,12 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     let mut owner = deps.owner(h, &authority);
     owner.premium_coordinator = bed_premium.as_ref();
     owner.movement_cells = &cells;
+    if matches!(case, Case::EssenceUse | Case::EssenceCue) {
+        owner.rooms = crate::gameplay_transport::SeamRooms::new(None,Some(&deps.room));
+        assert!(crate::gameplay_transport::native_cue_offer::source_available(
+            generation,&deps.room,owner.runtime.lock().await.content_pin()),
+            "actual booted ordinary Bundle qualifies native presentation before House handoff");
+    }
     owner.evidence = &evidence.evidence;
     owner.active_generation = Some(generation);
     let house_store = matches!(case, Case::Store).then(||
@@ -278,8 +305,13 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         crate::gameplay_transport::capabilities::OfferedCapability { id: 207, requires: &[49] },
         crate::gameplay_transport::capabilities::OfferedCapability { id: 250, requires: &[165] },
     ];
+    let boot_offers = if matches!(case, Case::EssenceUse | Case::EssenceCue) {
+        let runtime = owner.runtime.lock().await;
+        crate::gameplay_transport::world_required_capabilities::with_native_map_presentation_offer(
+            OFFERS,Some(generation),Some(&deps.room),runtime.content_pin())
+    } else { OFFERS };
     owner.required_capabilities = crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
-        &[],crate::foundation::RuntimeScopeRefV1::channel(deps.admitted.world_id,deps.admitted.channel_id),1,"policy-1",OFFERS,
+        &[],crate::foundation::RuntimeScopeRefV1::channel(deps.admitted.world_id,deps.admitted.channel_id),1,"policy-1",boot_offers,
     ).map_err(debug)?;
 
     deps.initialize(&owner).await;
@@ -369,10 +401,21 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     // only by this test producer. It is selected in the genuine source session
     // against the same boot offer already bound above, before the native handoff.
     let offers = if matches!(case, Case::Store) { OFFERS } else { owner.offered_capabilities() };
-    admitted.continuity.selected_capabilities =
+    admitted.continuity.selected_capabilities = if matches!(case, Case::EssenceUse | Case::EssenceCue) {
+        let selected = crate::gameplay_transport::connection::fresh_capability_selection(
+            &owner,&[3,4,6,15,21,23,37,49,51,62,86,154,165,207,250]).await.ok_or("qualified native House source offer")?;
+        assert!(selected.contains(23),"the real ordinary Bundle selects23 BEFORE immutable House acknowledgement");
+        selected
+    } else {
         SelectedCapabilities::select(offers, &[3, 4, 6, 15, 21, 37, 49, 51, 62, 86, 154, 165, 207, 250])
-            .ok_or("hireling offer")?;
+            .ok_or("hireling offer")?
+    };
     let source_selection = admitted.continuity.selected_capabilities;
+    if matches!(case, Case::EssenceUse | Case::EssenceCue) {
+        assert_eq!(owner.required_capabilities.authenticate_resume_support(source_selection.as_slice(),source_selection)
+            .map_err(debug)?.selected(),source_selection,
+            "qualified boot and session offers must retain exactly the same House selection");
+    }
 
     let mut transfer = vec![8, 1, 18, HOUSE.len() as u8];
     transfer.extend(HOUSE.as_bytes());
@@ -541,6 +584,17 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     if matches!(case, Case::Trader) {
         return trader::scenario(h, &owner, admitted, deps.actor, hireling).await;
+    }
+    if matches!(case, Case::EssenceUse | Case::EssenceCue) {
+        let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(debug)?;
+        owner.quest_catalogue = Some(std::sync::Arc::new(lowered.catalogue().clone()));
+        if matches!(case, Case::EssenceCue) {
+            return super::srx3_rotten_essence::assert_native_house_use(h,&owner,admitted,deps.actor).await;
+        }
+        return super::srx3_rotten_essence::assert_scoped_use(
+            h, &owner, admitted, deps.actor, Some(HOUSE),
+        ).await;
     }
     if matches!(case, Case::Gourmet) {
         return gourmet::scenario(h, &owner, admitted, deps.actor, hireling).await;

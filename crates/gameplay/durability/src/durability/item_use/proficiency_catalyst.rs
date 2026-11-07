@@ -42,7 +42,10 @@ impl DurabilityRoot {
         let [line] = change.lines() else {
             return Err(CharacterProgressionError::InvalidInput);
         };
-        let gained = line.after().progress().saturating_sub(line.before().progress());
+        let gained = line
+            .after()
+            .progress()
+            .saturating_sub(line.before().progress());
         if item.validate().is_err()
             || item.kind != ItemUseKind::ProficiencyCatalyst
             || change.cause() != ProficiencyCause::Catalyst

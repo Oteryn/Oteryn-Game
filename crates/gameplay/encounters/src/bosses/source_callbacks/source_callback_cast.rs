@@ -1,9 +1,13 @@
 //! Sealed, nine-source callback child casts; reuses the existing native damage consumer.
 //! Source Encounter bytes qualify actions; there is no general Encounter interpreter.
+#[cfg(test)]
+#[path = "source_callback_cast_cutoff_tests.rs"]
+mod cutoff_tests;
+
 use crate::content::{
-    EffectFamilyDocument, ProjectReferenceRecord, ProjectV2AbilityArea, ProjectV2AbilityEffect,
-    ProjectV2AbilityKind, ProjectV2AuthoringProfileData as Data, ProjectV2DefinitionRef as Ref,
-    ProjectV2Family, ProjectV2FormulaAuthoring, ProjectV2Magnitude,
+    EffectFamilyDocument, ProjectReferenceRecord, ProjectV2AbilityEffect, ProjectV2AbilityKind,
+    ProjectV2AuthoringProfileData as Data, ProjectV2DefinitionRef as Ref, ProjectV2Family,
+    ProjectV2FormulaAuthoring, ProjectV2Magnitude,
 };
 use crate::creature_auto_attack::{AttackError, ProfileAbilityProposal};
 use crate::creature_damage_spell::*;
@@ -59,10 +63,101 @@ pub struct SourceCallbackCast {
     pub magnitude: Option<ProjectV2Magnitude>,
     pub content: [u8; 32],
     stages: Vec<(u64, SpellSource)>,
+    native_parent:
+        Option<oteryn_gameplay_content::content::native_monster_callbacks::QualifiedNativeCallback>,
 }
 impl SourceCallbackCast {
+    pub fn qualify_native(
+        native: &crate::content::native_gameplay::NativeGameplayState,
+        creature: &Ref,
+        index: usize,
+        list: ScheduleList,
+    ) -> Result<Option<Self>, AttackError> {
+        if list != ScheduleList::Attack {
+            return Ok(None);
+        }
+        let Some(proof) = super::native_witness::qualify(native, creature, index, list)? else {
+            return Ok(None);
+        };
+        static FIXTURE: std::sync::OnceLock<Option<Witness>> = std::sync::OnceLock::new();
+        let w = FIXTURE
+            .get_or_init(|| {
+                serde_json::from_str(include_str!(
+                    "../../../../../../apps/game-server/src/source_callback_cast_fixture.json"
+                ))
+                .ok()
+            })
+            .as_ref()
+            .ok_or(AttackError::InvalidSource)?;
+        let Some((key, c)) = w
+            .cases
+            .iter()
+            .find(|(_, c)| c.caster == creature.key && c.index == index && c.phase == "attacks")
+        else {
+            return Ok(None);
+        };
+        if proof.entry().ability.key != *key || proof.entry().encounter.key != c.encounter {
+            return Err(AttackError::InvalidSource);
+        }
+        let record = native
+            .creature_profiles()
+            .records
+            .iter()
+            .find(|record| record.profile.target == *creature)
+            .ok_or(AttackError::InvalidSource)?;
+        let Data::Creature(cp) = &record.profile.data else {
+            return Err(AttackError::InvalidSource);
+        };
+        let Data::Behavior(behavior) = &record
+            .behavior
+            .as_ref()
+            .ok_or(AttackError::InvalidSource)?
+            .data
+        else {
+            return Err(AttackError::InvalidSource);
+        };
+        let entry = behavior
+            .attacks
+            .get(index)
+            .ok_or(AttackError::InvalidSource)?;
+        if serde_json::to_value(entry).map_err(|_| AttackError::InvalidSource)? != c.entry {
+            return Err(AttackError::InvalidSource);
+        }
+        let mut source = Self::from_reviewed_case(w, key, c, cp, entry, proof.content())?;
+        for (index, (_, stage)) in source.stages.iter_mut().enumerate() {
+            stage.fingerprint = proof
+                .as_content_source()
+                .stage(index)
+                .map_err(|_| AttackError::InvalidSource)?
+                .ok_or(AttackError::InvalidSource)?
+                .fingerprint();
+        }
+        source.native_parent = Some(proof.as_content_source().clone());
+        Ok(Some(source))
+    }
     pub fn parent(&self) -> &Ref {
         &self.parent
+    }
+    pub fn native_parent(
+        &self,
+    ) -> Option<&oteryn_gameplay_content::content::native_monster_callbacks::QualifiedNativeCallback>
+    {
+        self.native_parent.as_ref()
+    }
+    pub fn validates_current_native_proposal(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        proposal: &ProfileAbilityProposal,
+    ) -> bool {
+        self.native_parent
+            .as_ref()
+            .is_some_and(|parent| parent.content() == self.content)
+            && self.current(runtime, proposal.issuer)
+            && self.sequence(proposal).is_ok()
+            && super::source_callback_intent::validate(runtime, proposal).is_ok()
+    }
+    pub fn stages(&self) -> &[(u64, SpellSource)] {
+        &self.stages
     }
     pub fn qualify(
         d: &ProjectV2Draft,
@@ -143,8 +238,6 @@ impl SourceCallbackCast {
         {
             return Err(AttackError::InvalidSource);
         }
-        let parent = entry.ability.clone();
-        let mut stages = Vec::new();
         let Some(Data::Creature(cp)) = d
             .state
             .authoring_profiles
@@ -154,8 +247,21 @@ impl SourceCallbackCast {
         else {
             return Err(AttackError::InvalidSource);
         };
+        Self::from_reviewed_case(&w, key, c, cp, entry, content).map(Some)
+    }
+    fn from_reviewed_case(
+        w: &Witness,
+        key: &str,
+        c: &Case,
+        cp: &crate::content::ProjectV2CreatureAuthoring,
+        entry: &crate::content::ProjectV2AbilitySchedule,
+        content: [u8; 32],
+    ) -> Result<Self, AttackError> {
+        let parent = entry.ability.clone();
+        let index = c.index;
+        let mut stages = Vec::new();
         let critical = crate::source_critical_baseline::SourceCriticalBaseline::qualify(
-            &creature.key,
+            &c.caster,
             cp.details.as_ref().map_or(0, |c| c.critical_chance_ppm),
             false,
         )
@@ -254,10 +360,8 @@ impl SourceCallbackCast {
                     a.damage.min,
                     a.damage.max,
                     a.damage.damage_type.clone(),
-                    Some(ProjectV2AbilityArea::Circle {
-                        radius_tiles: u16::try_from(a.area.radius)
-                            .map_err(|_| AttackError::NumericOverflow)?,
-                    }),
+                    Some(oteryn_gameplay_content::content::native_monster_callbacks::source_callback_area(&c.caster)
+                        .ok_or(AttackError::InvalidSource)?),
                     false,
                     None,
                     false,
@@ -282,7 +386,7 @@ impl SourceCallbackCast {
                 stage.delay_ms.min,
                 SpellSource {
                     list: ScheduleList::Attack,
-                    creature_key: creature.key.clone(),
+                    creature_key: c.caster.clone(),
                     ability: parent.clone(),
                     entry_index: index,
                     minimum,
@@ -324,15 +428,16 @@ impl SourceCallbackCast {
         if stages.is_empty() || stages.len() > 3 {
             return Err(AttackError::InvalidSource);
         }
-        Ok(Some(Self {
-            creature: creature.key.clone(),
+        Ok(Self {
+            creature: c.caster.clone(),
             parent,
             index,
             range: entry.range_tiles.unwrap_or(0),
             magnitude: entry.magnitude,
             content,
             stages,
-        }))
+            native_parent: None,
+        })
     }
     fn sequence(&self, p: &ProfileAbilityProposal) -> Result<u64, AttackError> {
         if p.ability != self.parent
@@ -360,9 +465,27 @@ impl SourceCallbackCast {
         r.content_pin().server_artifact_digest() == self.content
             && r.matches_live_creature_identity(a, self.creature.as_bytes())
     }
+    /// A retained native Lua Combat closure resolves Creature(cid), which remains
+    /// registered at HP0 until its queued onDeath completes. This never admits a
+    /// new cast: scheduling continues to require `current` above. The immutable
+    /// source closure remains the captured one even if an earlier task setType.
+    fn current_retained(&self, r: &ChannelRuntimeV1, a: ExactActorRef) -> bool {
+        let Some(proof) = self.native_parent.as_ref() else {
+            return self.current(r, a);
+        };
+        let entry = proof.entry();
+        proof.content() == self.content
+            && r.content_pin().server_artifact_digest() == self.content
+            && entry.creature.key == self.creature
+            && entry.ability == self.parent
+            && entry.index == self.index
+            && r.source_creature_is_registered(a).unwrap_or(false)
+    }
 }
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 struct Family(u8);
+const CHARGING_REMOVAL_FAMILY: Family = Family(48);
+const CHARGING_REMOVAL_STAGE: u8 = u8::MAX;
 impl TimerFamily for Family {
     fn registered_maximum(self) -> usize {
         3
@@ -378,6 +501,9 @@ pub struct Cast {
     source: SourceCallbackCast,
     proposal: ProfileAbilityProposal,
     done: Vec<bool>,
+    anchors: Vec<Option<crate::creature_damage_spell::SourcePositionAnchor>>,
+    retained_caster: Option<oteryn_gameplay_entities::NativeRetainedCallbackCaster>,
+    charging_removal: Option<(SemanticTimeMicros, bool)>,
 }
 #[allow(dead_code, reason = "retained source callback occurrence metadata")]
 struct Memo {
@@ -402,7 +528,325 @@ pub struct CallbackCastOwner {
         Result<(), oteryn_gameplay_domain::domain::carrier_values::CarrierError>,
     )>,
 }
+/// Identity of one retained source stage; its constructor stays in this owner.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CallbackStageId {
+    token: u64,
+    stage: u8,
+}
+
+/// Read-only preparation data. Neither a stage ID nor these data fire a timer.
+pub struct CallbackStagePlan {
+    id: CallbackStageId,
+    source: SpellSource,
+    proposal: ProfileAbilityProposal,
+    anchor: Option<crate::creature_damage_spell::SourcePositionAnchor>,
+    native_stage: Option<
+        oteryn_gameplay_content::content::native_monster_callbacks::QualifiedNativeCallbackStage,
+    >,
+    retained_caster: Option<oteryn_gameplay_entities::NativeRetainedCallbackCaster>,
+}
+impl CallbackStagePlan {
+    pub fn retained_caster(
+        &self,
+    ) -> Option<&oteryn_gameplay_entities::NativeRetainedCallbackCaster> {
+        self.retained_caster.as_ref()
+    }
+    pub fn id(&self) -> CallbackStageId {
+        self.id
+    }
+    pub fn native_stage(
+        &self,
+    ) -> Option<
+        &oteryn_gameplay_content::content::native_monster_callbacks::QualifiedNativeCallbackStage,
+    > {
+        self.native_stage.as_ref()
+    }
+    pub fn position_anchor(&self) -> Option<&crate::creature_damage_spell::SourcePositionAnchor> {
+        self.anchor.as_ref()
+    }
+    pub fn source(&self) -> &SpellSource {
+        &self.source
+    }
+    /// Qualified impact binding for this source stage, independent of HP targets.
+    pub fn source_impact_binding(&self) -> Option<&str> {
+        Some(match (self.source.creature_key.as_str(), self.id.stage) {
+            ("oteryn:creature.energy_pulse", _) => "canary.appearance:effect/energyarea",
+            ("oteryn:creature.foam_stalker", _) => "canary.appearance:effect/watersplash",
+            ("oteryn:creature.charging_outburst" | "oteryn:creature.gaz_haragoth", _) => {
+                "canary.appearance:effect/purpleenergy"
+            }
+            ("oteryn:creature.eruption_of_destruction", _) => "canary.appearance:effect/firearea",
+            ("oteryn:creature.lady_tenebris", _) => "canary.appearance:effect/mortarea",
+            ("oteryn:creature.plagirath", _) => "canary.appearance:effect/poison",
+            ("oteryn:creature.rootthing_amber_shaper", 0) => "canary.appearance:effect/smallplants",
+            ("oteryn:creature.rootthing_amber_shaper", 1) => "canary.appearance:effect/fireattack",
+            ("oteryn:creature.rootthing_nutshell", 0) => "canary.appearance:effect/holydamage",
+            ("oteryn:creature.rootthing_nutshell", 1) => "canary.appearance:effect/groundshaker",
+            _ => return None,
+        })
+    }
+    pub fn proposal(&self) -> &ProfileAbilityProposal {
+        &self.proposal
+    }
+    /// Source callback target policy; ordinary spells do not use this selector.
+    pub fn permits_player_vocation(
+        &self,
+        vocation: oteryn_gameplay_content::content::spell_data::Vocation,
+    ) -> bool {
+        use oteryn_gameplay_content::content::spell_data::Vocation;
+        !matches!(
+            self.source.creature_key.as_str(),
+            "oteryn:creature.gaz_haragoth"
+                | "oteryn:creature.eruption_of_destruction"
+                | "oteryn:creature.lady_tenebris"
+        ) || matches!(
+            vocation,
+            Vocation::Sorcerer
+                | Vocation::MasterSorcerer
+                | Vocation::Druid
+                | Vocation::ElderDruid
+                | Vocation::Paladin
+                | Vocation::RoyalPaladin
+                | Vocation::Knight
+                | Vocation::EliteKnight
+        )
+    }
+    pub fn anchor_position(
+        &self,
+        runtime: &ChannelRuntimeV1,
+    ) -> Result<Option<oteryn_gameplay_entities::MovementLocalPosition>, AttackError> {
+        self.anchor
+            .as_ref()
+            .map(|anchor| anchor.current_position(runtime, &self.source, &self.proposal))
+            .transpose()
+    }
+}
+
+/// Current DATA prepared for one exact delayed stage, including its own anchor.
+pub trait CallbackStageReaders {
+    /// A terminal saved-variant failure consumes its original event. Missing
+    /// current map/combat facts instead keep the event at its original due time.
+    fn terminal_error(&self, _stage: CallbackStageId) -> Option<AttackError> {
+        None
+    }
+    fn ready(&self, stage: CallbackStageId) -> bool;
+    fn reader(&mut self, stage: CallbackStageId) -> Option<&mut (dyn SpellWorldReader + '_)>;
+    /// Execute a stage through the existing composed owner when current creature
+    /// facts were prepared alongside its player facts. Legacy readers use damage.
+    fn execute_current(
+        &mut self,
+        _stage: CallbackStageId,
+        _runtime: &mut ChannelRuntimeV1,
+        _stamp: RuntimeWorkStamp,
+        _vitals: &mut dyn PlayerLethalVitals,
+        _now: SemanticTimeMicros,
+    ) -> Option<Result<SpellOutcome, AttackError>> {
+        None
+    }
+}
+struct SingleStageReader<'a> {
+    reader: &'a mut dyn SpellWorldReader,
+}
+impl CallbackStageReaders for SingleStageReader<'_> {
+    fn ready(&self, _: CallbackStageId) -> bool {
+        true
+    }
+    fn reader(&mut self, _: CallbackStageId) -> Option<&mut (dyn SpellWorldReader + '_)> {
+        Some(&mut *self.reader)
+    }
+}
+fn stage_proposal(cast: &Cast, stage: usize) -> Result<ProfileAbilityProposal, AttackError> {
+    let mut proposal = cast.proposal.clone();
+    if cast.source.creature != "oteryn:creature.plagirath" {
+        proposal.target = proposal.issuer;
+    }
+    let actor = format!("actor:{}", hex(&proposal.issuer.placement_identity()));
+    let target = format!("actor:{}", hex(&proposal.target.placement_identity()));
+    proposal.intent = crate::ability::AiAbilityAdapter::normalize(&actor, &[&target])
+        .map_err(|_| AttackError::InvalidPlan)?;
+    proposal.occurrence = crate::ability::AbilityOccurrence::new(
+        &format!(
+            "callback:{}:stage:{}",
+            proposal.occurrence.id().as_str(),
+            stage
+        ),
+        proposal.occurrence.revisions().clone(),
+    )
+    .map_err(|_| AttackError::InvalidPlan)?;
+    Ok(proposal)
+}
 impl CallbackCastOwner {
+    pub fn next_due_time(&self) -> Option<SemanticTimeMicros> {
+        self.timers
+            .earliest_due()
+            .into_iter()
+            .chain(
+                self.casts
+                    .iter()
+                    .filter_map(|cast| match cast.charging_removal {
+                        Some((due, false)) => Some(due),
+                        _ => None,
+                    }),
+            )
+            .min()
+    }
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn source_parent_status_for_test(&self, issuer: ExactActorRef) -> (bool, bool) {
+        (
+            self.memos.iter().any(|memo| memo.actor == issuer),
+            self.casts.iter().any(|cast| {
+                cast.proposal.issuer == issuer
+                    && (cast.done.iter().any(|done| !done) || cast.charging_removal.is_some())
+            }),
+        )
+    }
+
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn source_stage_done_for_test(&self, issuer: ExactActorRef) -> Option<Vec<bool>> {
+        let mut casts = self
+            .casts
+            .iter()
+            .filter(|cast| cast.proposal.issuer == issuer);
+        let cast = casts.next()?;
+        if casts.next().is_some() {
+            return None;
+        }
+        Some(cast.done.clone())
+    }
+
+    /// Exact due-stage projection under the independently current physical owner.
+    pub fn due_stages_current(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        now: SemanticTimeMicros,
+    ) -> Result<Vec<CallbackStagePlan>, AttackError> {
+        self.due_stages(
+            runtime,
+            runtime.owner_fence().map_err(|_| AttackError::StaleOwner)?,
+            stamp,
+            now,
+        )
+    }
+
+    /// Readiness before an already queued death, retaining the real execution clock.
+    pub fn due_stages_current_through(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        eligible_through: SemanticTimeMicros,
+        now: SemanticTimeMicros,
+    ) -> Result<Vec<CallbackStagePlan>, AttackError> {
+        self.due_stages_current(runtime, stamp, now.min(eligible_through))
+    }
+
+    pub fn due_stages(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        fence: &ScopeRuntimeFence,
+        stamp: RuntimeWorkStamp,
+        now: SemanticTimeMicros,
+    ) -> Result<Vec<CallbackStagePlan>, AttackError> {
+        if !self.current(runtime, fence, stamp) {
+            return Err(AttackError::StaleOwner);
+        }
+        let mut plans = Vec::new();
+        for cast in &self.casts {
+            if !cast.source.current_retained(runtime, cast.proposal.issuer) {
+                continue;
+            }
+            for (stage, (_, source)) in cast.source.stages.iter().enumerate() {
+                if cast.done[stage] {
+                    continue;
+                }
+                let id = CallbackStageId {
+                    token: cast.token,
+                    stage: stage as u8,
+                };
+                if !self
+                    .timers
+                    .occurrence_due(
+                        Family((cast.source.index * 3 + stage) as u8),
+                        Key {
+                            token: id.token,
+                            stage: id.stage,
+                        },
+                    )
+                    .is_some_and(|due| due <= now)
+                {
+                    continue;
+                }
+                plans.push(CallbackStagePlan {
+                    id,
+                    source: source.clone(),
+                    proposal: stage_proposal(cast, stage)?,
+                    anchor: cast.anchors[stage].clone(),
+                    retained_caster: cast.retained_caster.clone(),
+                    native_stage: match cast.source.native_parent.as_ref() {
+                        Some(parent) => Some(
+                            parent
+                                .stage(stage)
+                                .map_err(|_| AttackError::InvalidSource)?
+                                .ok_or(AttackError::InvalidSource)?,
+                        ),
+                        None => None,
+                    },
+                });
+            }
+        }
+        Ok(plans)
+    }
+
+    /// Freeze the first due Eruption event before its master heal starts. A
+    /// retained partial prelude must never rebase its original event geometry.
+    pub fn freeze_eruption_event_current(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        id: CallbackStageId,
+        now: SemanticTimeMicros,
+    ) -> Result<(), AttackError> {
+        if !self.current(
+            runtime,
+            runtime.owner_fence().map_err(|_| AttackError::StaleOwner)?,
+            stamp,
+        ) {
+            return Err(AttackError::StaleOwner);
+        }
+        let cast = self
+            .casts
+            .iter_mut()
+            .find(|cast| cast.token == id.token)
+            .ok_or(AttackError::InvalidPlan)?;
+        let index = usize::from(id.stage);
+        if cast.source.creature != "oteryn:creature.eruption_of_destruction"
+            || cast.done.get(index).copied() != Some(false)
+            || !self
+                .timers
+                .occurrence_due(
+                    Family((cast.source.index * 3 + index) as u8),
+                    Key {
+                        token: id.token,
+                        stage: id.stage,
+                    },
+                )
+                .is_some_and(|due| due <= now)
+        {
+            return Err(AttackError::InvalidPlan);
+        }
+        if cast.anchors[index].is_none() {
+            let proposal = stage_proposal(cast, index)?;
+            let anchor =
+                SourcePositionAnchor::capture(runtime, &cast.source.stages[index].1, &proposal)?;
+            cast.anchors[index] = Some(anchor);
+        }
+        Ok(())
+    }
+
+    pub fn new_current(r: &ChannelRuntimeV1) -> Result<Self, AttackError> {
+        Self::new(r, r.owner_fence().map_err(|_| AttackError::StaleOwner)?)
+    }
     pub fn new(r: &ChannelRuntimeV1, f: &ScopeRuntimeFence) -> Result<Self, AttackError> {
         let b = r.binding();
         let scope = b.runtime_scope();
@@ -413,7 +857,7 @@ impl CallbackCastOwner {
         let timers = OwnerTimerLane::for_generation(
             scope,
             generation,
-            (0..48).map(|i| {
+            (0..49).map(|i| {
                 (
                     Family(i),
                     FamilyPolicy {
@@ -460,7 +904,9 @@ impl CallbackCastOwner {
     }
     fn prune(&mut self, r: &ChannelRuntimeV1) {
         for c in &self.casts {
-            if !c.source.current(r, c.proposal.issuer) || c.done.iter().all(|d| *d) {
+            if !c.source.current_retained(r, c.proposal.issuer)
+                || (c.done.iter().all(|d| *d) && c.charging_removal.is_none())
+            {
                 for stage in 0..c.done.len() {
                     self.timers.cancel(
                         Family((c.source.index * 3 + stage) as u8),
@@ -470,11 +916,37 @@ impl CallbackCastOwner {
                         },
                     );
                 }
+                self.timers.cancel(
+                    CHARGING_REMOVAL_FAMILY,
+                    Key {
+                        token: c.token,
+                        stage: CHARGING_REMOVAL_STAGE,
+                    },
+                );
             }
         }
-        self.casts
-            .retain(|c| c.source.current(r, c.proposal.issuer) && !c.done.iter().all(|d| *d));
+        self.casts.retain(|c| {
+            c.source.current_retained(r, c.proposal.issuer)
+                && (!c.done.iter().all(|d| *d) || c.charging_removal.is_some())
+        });
         self.memos.retain(|m| r.contains_live_creature(m.actor));
+    }
+    pub fn schedule_current(
+        &mut self,
+        r: &ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        source: &SourceCallbackCast,
+        proposal: &ProfileAbilityProposal,
+        now: SemanticTimeMicros,
+    ) -> Result<bool, AttackError> {
+        self.schedule(
+            r,
+            r.owner_fence().map_err(|_| AttackError::StaleOwner)?,
+            stamp,
+            source,
+            proposal,
+            now,
+        )
     }
     pub fn schedule(
         &mut self,
@@ -528,7 +1000,40 @@ impl CallbackCastOwner {
         self.speech
             .try_reserve(1)
             .map_err(|_| AttackError::LedgerFull)?;
-        let warning = CallbackSpeech::cast(r, p.issuer, &s.creature, false)?;
+        let warning = if s.native_parent.is_some() && s.creature == "oteryn:creature.lady_tenebris"
+        {
+            // Native prelude emits after the actual source teleport, at its new position.
+            None
+        } else {
+            CallbackSpeech::cast(r, p.issuer, &s.creature, false)?
+        };
+        let mut anchors = Vec::new();
+        anchors
+            .try_reserve_exact(s.stages.len())
+            .map_err(|_| AttackError::LedgerFull)?;
+        for (_, stage) in &s.stages {
+            anchors.push(if s.creature == "oteryn:creature.foam_stalker" {
+                Some(crate::creature_damage_spell::SourcePositionAnchor::capture(
+                    r, stage, p,
+                )?)
+            } else if s.creature == "oteryn:creature.plagirath" {
+                Some(
+                    crate::creature_damage_spell::SourcePositionAnchor::capture_target_variant(
+                        r, stage, p,
+                    )?,
+                )
+            } else {
+                None
+            });
+        }
+        let retained_caster = s
+            .native_parent
+            .as_ref()
+            .map(|parent| {
+                r.capture_native_retained_callback_caster(p.issuer, parent, stamp)
+                    .map_err(|_| AttackError::InvalidSource)
+            })
+            .transpose()?;
         let token = self.next;
         let next = token.checked_add(1).ok_or(AttackError::NumericOverflow)?;
         let mut timers = self.timers.clone();
@@ -573,6 +1078,9 @@ impl CallbackCastOwner {
             source: s.clone(),
             proposal: p.clone(),
             done: vec![false; s.stages.len()],
+            anchors,
+            retained_caster,
+            charging_removal: None,
         });
         if let Some(line) = warning {
             self.speech.push(line)
@@ -593,10 +1101,149 @@ impl CallbackCastOwner {
         reader: &mut dyn SpellWorldReader,
         clock: &impl OwnerClock,
     ) -> CallbackPulseBatch {
-        if !self.current(r, f, stamp) {
+        self.drain_bound(
+            r,
+            Some(f),
+            stamp,
+            v,
+            damage,
+            &mut SingleStageReader { reader },
+            clock,
+            None,
+        )
+    }
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "Current source callback owner shares the exact existing commit inputs"
+    )]
+    pub fn drain_current(
+        &mut self,
+        r: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        v: &mut dyn PlayerLethalVitals,
+        damage: &DamageSpellOwner,
+        reader: &mut dyn SpellWorldReader,
+        clock: &impl OwnerClock,
+    ) -> CallbackPulseBatch {
+        self.drain_bound(
+            r,
+            None,
+            stamp,
+            v,
+            damage,
+            &mut SingleStageReader { reader },
+            clock,
+            None,
+        )
+    }
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "same current commit inputs with one reader per retained stage"
+    )]
+    pub fn drain_current_prepared(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        vitals: &mut dyn PlayerLethalVitals,
+        damage: &DamageSpellOwner,
+        readers: &mut dyn CallbackStageReaders,
+        clock: &impl OwnerClock,
+    ) -> CallbackPulseBatch {
+        self.drain_bound(runtime, None, stamp, vitals, damage, readers, clock, None)
+    }
+    /// Consume only original deadlines preceding a queued death. HP and all
+    /// source side effects still use the actual execution clock.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the original deadline cutoff is distinct from the current commit clock"
+    )]
+    pub fn drain_current_prepared_through(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        vitals: &mut dyn PlayerLethalVitals,
+        damage: &DamageSpellOwner,
+        readers: &mut dyn CallbackStageReaders,
+        eligible_through: SemanticTimeMicros,
+        clock: &impl OwnerClock,
+    ) -> CallbackPulseBatch {
+        self.drain_bound(
+            runtime,
+            None,
+            stamp,
+            vitals,
+            damage,
+            readers,
+            clock,
+            Some(eligible_through),
+        )
+    }
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "Shared fence-bound callback commit implementation"
+    )]
+    fn drain_bound(
+        &mut self,
+        r: &mut ChannelRuntimeV1,
+        mut f: Option<&mut ScopeRuntimeFence>,
+        stamp: RuntimeWorkStamp,
+        v: &mut dyn PlayerLethalVitals,
+        damage: &DamageSpellOwner,
+        readers: &mut dyn CallbackStageReaders,
+        clock: &impl OwnerClock,
+        eligible_through: Option<SemanticTimeMicros>,
+    ) -> CallbackPulseBatch {
+        if !self.current(
+            r,
+            f.as_deref()
+                .unwrap_or(r.owner_fence().map_err(|_| AttackError::StaleOwner)?),
+            stamp,
+        ) {
             return Err(AttackError::StaleOwner);
         }
         self.prune(r);
+        self.arm_charging_removals(r, stamp)?;
+        let eligible = if let Some(cutoff) = eligible_through {
+            let cutoff = cutoff.min(clock.now());
+            let mut eligible = Vec::new();
+            eligible
+                .try_reserve_exact(
+                    self.casts
+                        .len()
+                        .checked_mul(4)
+                        .ok_or(AttackError::NumericOverflow)?,
+                )
+                .map_err(|_| AttackError::LedgerFull)?;
+            for cast in &self.casts {
+                for stage in 0..cast.done.len() {
+                    let key = Key {
+                        token: cast.token,
+                        stage: stage as u8,
+                    };
+                    if self
+                        .timers
+                        .occurrence_due(Family((cast.source.index * 3 + stage) as u8), key)
+                        .is_some_and(|due| due <= cutoff)
+                    {
+                        eligible.push(key);
+                    }
+                }
+                let key = Key {
+                    token: cast.token,
+                    stage: CHARGING_REMOVAL_STAGE,
+                };
+                if self
+                    .timers
+                    .occurrence_due(CHARGING_REMOVAL_FAMILY, key)
+                    .is_some_and(|due| due <= cutoff)
+                {
+                    eligible.push(key);
+                }
+            }
+            Some(eligible)
+        } else {
+            None
+        };
         if self.speech.len() > 320 {
             return Err(AttackError::LedgerFull);
         }
@@ -609,9 +1256,70 @@ impl CallbackCastOwner {
         self.removals
             .try_reserve(192)
             .map_err(|_| AttackError::LedgerFull)?;
-        let fired = self
-            .timers
-            .drain_due(clock, f, |a| r.contains_live_creature(a));
+        let casts = &self.casts;
+        let fired = self.timers.drain_due_matching(
+            clock,
+            f.as_deref()
+                .unwrap_or(r.owner_fence().map_err(|_| AttackError::StaleOwner)?),
+            |actor| {
+                casts.iter().any(|cast| {
+                    cast.proposal.issuer == actor && cast.source.current_retained(r, actor)
+                })
+            },
+            |_, key| {
+                if eligible
+                    .as_ref()
+                    .is_some_and(|eligible| !eligible.contains(&key))
+                {
+                    return false;
+                }
+                if key.stage == CHARGING_REMOVAL_STAGE {
+                    return true;
+                }
+                let id = CallbackStageId {
+                    token: key.token,
+                    stage: key.stage,
+                };
+                if readers.terminal_error(id).is_some() {
+                    return true;
+                }
+                if !readers.ready(id) {
+                    return false;
+                }
+                let Some(cast) = casts.iter().find(|cast| cast.token == key.token) else {
+                    return true;
+                };
+                let stage = usize::from(key.stage);
+                let Ok(proposal) = stage_proposal(cast, stage) else {
+                    return true;
+                };
+                let Some(reader) = readers.reader(id) else {
+                    return false;
+                };
+                if matches!(
+                    damage.prepare_target_anchored(
+                        r,
+                        &cast.source.stages[stage].1,
+                        &proposal,
+                        reader,
+                        stamp,
+                        None,
+                        clock.now(),
+                        cast.anchors[stage].as_ref()
+                    ),
+                    Err(AttackError::MissingCombatFacts)
+                ) {
+                    out.push((
+                        cast.proposal.issuer,
+                        cast.proposal.ability.clone(),
+                        stage,
+                        Err(AttackError::MissingCombatFacts),
+                    ));
+                    return false;
+                }
+                true
+            },
+        );
         for timer in fired {
             let Some(c) = self
                 .casts
@@ -620,39 +1328,105 @@ impl CallbackCastOwner {
             else {
                 continue;
             };
+            if timer.occurrence.stage == CHARGING_REMOVAL_STAGE {
+                if c.charging_removal.is_none() {
+                    continue;
+                }
+                let removal = match f.as_deref_mut() {
+                    Some(fence) => r.remove_native_encounter_subject(
+                        fence,
+                        stamp,
+                        c.proposal.issuer,
+                        &c.source.creature,
+                        c.source.content,
+                    ),
+                    None => r.remove_current_native_encounter_subject(
+                        stamp,
+                        c.proposal.issuer,
+                        &c.source.creature,
+                        c.source.content,
+                    ),
+                };
+                if removal.is_ok() {
+                    c.charging_removal = None;
+                } else if let Some((_, armed)) = &mut c.charging_removal {
+                    *armed = false;
+                }
+                self.removals.push((c.proposal.issuer, removal));
+                continue;
+            }
             let stage = usize::from(timer.occurrence.stage);
             if c.done[stage] {
                 continue;
             }
             c.done[stage] = true;
-            if c.source.current(r, c.proposal.issuer)
+            if c.source.current_retained(r, c.proposal.issuer)
                 && let Some(line) =
                     CallbackSpeech::cast(r, c.proposal.issuer, &c.source.creature, true)?
             {
                 self.speech.push(line)
             }
-            let result = if !c.source.current(r, c.proposal.issuer) {
+            let charging = c.source.native_parent.is_some()
+                && c.source.creature == "oteryn:creature.charging_outburst";
+            let removal_due = clock
+                .now()
+                .get()
+                .checked_add(1_000_000)
+                .map(SemanticTimeMicros::from_micros);
+            let result = if charging && removal_due.is_none() {
+                Err(AttackError::NumericOverflow)
+            } else if !c.source.current_retained(r, c.proposal.issuer) {
                 Err(AttackError::StaleIssuer)
+            } else if let Some(error) = readers.terminal_error(CallbackStageId {
+                token: c.token,
+                stage: stage as u8,
+            }) {
+                Err(error)
             } else {
-                let mut p = c.proposal.clone();
-                p.target = p.issuer;
-                p.occurrence = crate::ability::AbilityOccurrence::new(
-                    &format!("callback:{}:stage:{}", p.occurrence.id().as_str(), stage),
-                    p.occurrence.revisions().clone(),
-                )
-                .map_err(|_| AttackError::InvalidPlan)?;
-                damage.apply_target(
-                    r,
-                    v,
-                    &c.source.stages[stage].1,
-                    &p,
-                    reader,
-                    stamp,
-                    clock.now(),
-                    None,
-                    f,
-                )
+                let p = stage_proposal(c, stage)?;
+                let stage_id = CallbackStageId {
+                    token: c.token,
+                    stage: stage as u8,
+                };
+                if f.is_none()
+                    && let Some(result) =
+                        readers.execute_current(stage_id, r, stamp, v, clock.now())
+                {
+                    result
+                } else {
+                    let reader = readers
+                        .reader(stage_id)
+                        .ok_or(AttackError::MissingCombatFacts)?;
+                    match f.as_deref_mut() {
+                        Some(fence) => damage.apply_target_anchored(
+                            r,
+                            v,
+                            &c.source.stages[stage].1,
+                            &p,
+                            reader,
+                            stamp,
+                            clock.now(),
+                            None,
+                            fence,
+                            c.anchors[stage].as_ref(),
+                        ),
+                        None => damage.apply_target_current(
+                            r,
+                            v,
+                            &c.source.stages[stage].1,
+                            &p,
+                            reader,
+                            stamp,
+                            clock.now(),
+                            None,
+                            c.anchors[stage].as_ref(),
+                        ),
+                    }
+                }
             };
+            if result.is_ok() && charging {
+                c.charging_removal = removal_due.map(|due| (due, false));
+            }
             // Source remove follows a successfully committed cast, never mints death/rewards.
             // Preserve the damage outcome even if independently guarded administrative removal refuses.
             if result.is_ok()
@@ -663,17 +1437,53 @@ impl CallbackCastOwner {
             {
                 self.removals.push((
                     c.proposal.issuer,
-                    r.remove_native_encounter_subject(
-                        f,
-                        stamp,
-                        c.proposal.issuer,
-                        &c.source.creature,
-                        c.source.content,
-                    ),
+                    match f.as_deref_mut() {
+                        Some(fence) => r.remove_native_encounter_subject(
+                            fence,
+                            stamp,
+                            c.proposal.issuer,
+                            &c.source.creature,
+                            c.source.content,
+                        ),
+                        None => r.remove_current_native_encounter_subject(
+                            stamp,
+                            c.proposal.issuer,
+                            &c.source.creature,
+                            c.source.content,
+                        ),
+                    },
                 ));
             }
             out.push((c.proposal.issuer, c.proposal.ability.clone(), stage, result));
         }
+        self.arm_charging_removals(r, stamp)?;
         Ok(out)
+    }
+
+    // A successful Combat retains its original removal deadline before arming.
+    // Capacity refusal retries the same datum; it cannot repeat damage, rebase
+    // the source callback, or leave the completed cast eligible for pruning.
+    fn arm_charging_removals(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+    ) -> Result<(), AttackError> {
+        let fence = runtime.owner_fence().map_err(|_| AttackError::StaleOwner)?;
+        for cast in &mut self.casts {
+            let Some((due, armed)) = &mut cast.charging_removal else {
+                continue;
+            };
+            if *armed {
+                continue;
+            }
+            match self.timers.schedule(fence, stamp, CHARGING_REMOVAL_FAMILY,
+                Key { token: cast.token, stage: CHARGING_REMOVAL_STAGE },
+                Some(cast.proposal.issuer), *due) {
+                Ok(()) => *armed = true,
+                Err(oteryn_gameplay_foundation::foundation::owner_timer::OwnerTimerError::PendingLimitReached) => {},
+                Err(_) => return Err(AttackError::InvalidPlan),
+            }
+        }
+        Ok(())
     }
 }

@@ -395,8 +395,16 @@ fn boss_contribution_freezes_timestamp_table_and_census_after_native_death_for_l
     let (actor, session, character) = f.players[0];
     let reward = Arc::new(CreatureRewardRow {
         xp_amount: oteryn_simulation_determinism::ExactI64::new(5),
-        corpse_item: crate::combat::LootDefinitionRef::new("Item", "oteryn:item.corpse", "r1"),
-        loot_table_ref: crate::combat::LootDefinitionRef::new("Loot", "oteryn:loot.boss", "r1"),
+        corpse_item: Some(crate::combat::LootDefinitionRef::new(
+            "Item",
+            "oteryn:item.corpse",
+            "r1",
+        )),
+        loot_table_ref: Some(crate::combat::LootDefinitionRef::new(
+            "Loot",
+            "oteryn:loot.boss",
+            "r1",
+        )),
         loot_table: crate::combat::LootTableDefinition {
             algorithm: crate::combat::LootSelectionAlgorithm::IndependentBernoulliPpm,
             entries: vec![],

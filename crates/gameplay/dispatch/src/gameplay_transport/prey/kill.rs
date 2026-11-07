@@ -13,39 +13,59 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn credit_prey_kill(
         &self,
         entry: &PendingKillSettlement,
-        loot: Option<&Result<CommittedCorpseLoot, CombatDeathRewardLootError>>,
+        loot: Option<&Result<Option<CommittedCorpseLoot>, CombatDeathRewardLootError>>,
         revision: &mut RevisionSlot,
         fence: CurrentCharacterGameplayFence,
     ) -> bool {
-        let Some(mut checkpoint) = entry.prey_checkpoint.clone() else { return true; };
-        let Some(catalogue) = self.prey_catalogue() else { return false; };
+        let Some(mut checkpoint) = entry.prey_checkpoint.clone() else {
+            return true;
+        };
+        let Some(catalogue) = self.prey_catalogue() else {
+            return false;
+        };
         let corpse = match loot {
-            Some(Ok(committed)) => Some(&committed.corpse),
+            Some(Ok(Some(committed))) => Some(&committed.corpse),
             Some(Err(CombatDeathRewardLootError::Mint(_, corpse))) => Some(corpse),
-            Some(Err(_)) | None => None,
+            Some(Ok(None)) | Some(Err(_)) | None => None,
         };
         checkpoint.loot_gold = if let Some(corpse) = corpse {
-            match self.root.read_prey_committed_loot_value(
-                self.character, fence.character_id, corpse, &catalogue.rules().npc_sell_prices
-            ).await {
+            match self
+                .root
+                .read_prey_committed_loot_value(
+                    self.character,
+                    fence.character_id,
+                    corpse,
+                    &catalogue.rules().npc_sell_prices,
+                )
+                .await
+            {
                 Ok(value) => value,
                 Err(_) => return false,
             }
-        } else { 0 };
-        let Ok(expected_character_revision) = revision.cursor(self.root, self.character).await else {
+        } else {
+            0
+        };
+        let Ok(expected_character_revision) = revision.cursor(self.root, self.character).await
+        else {
             return false;
         };
-        let fence = CurrentCharacterGameplayFence { expected_character_revision, ..fence };
-        let outcome = self.root.commit_prey_command(
-            self.character,
-            self.holder,
-            fence,
-            kill_occurrence(entry.facts.occurrence),
-            PreyMutation::Checkpoint(vec![checkpoint]),
-            &catalogue,
-            None,
-            &Premium(self.premium_coordinator),
-        ).await;
+        let fence = CurrentCharacterGameplayFence {
+            expected_character_revision,
+            ..fence
+        };
+        let outcome = self
+            .root
+            .commit_prey_command(
+                self.character,
+                self.holder,
+                fence,
+                kill_occurrence(entry.facts.occurrence),
+                PreyMutation::Checkpoint(vec![checkpoint]),
+                &catalogue,
+                None,
+                &Premium(self.premium_coordinator),
+            )
+            .await;
         revision.observe_loop_training();
         outcome.is_ok_and(|(reply, _)| reply.status == 0)
     }

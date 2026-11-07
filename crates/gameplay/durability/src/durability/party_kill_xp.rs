@@ -82,7 +82,10 @@ pub fn encode_death_key(death: crate::foundation::CreatureDeathOccurrenceKey) ->
     key
 }
 
-fn decoded_death_scope(death: &[u8]) -> Option<(crate::foundation::RuntimeScopeRefV1, u64)> {
+/// Read-only tagged namespace decoding; grants no death or gameplay authority.
+pub(crate) fn decoded_death_scope(
+    death: &[u8],
+) -> Option<(crate::foundation::RuntimeScopeRefV1, u64)> {
     use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
     let (instance, fields) = match death {
         bytes if bytes.len() == 52 => (false, bytes),

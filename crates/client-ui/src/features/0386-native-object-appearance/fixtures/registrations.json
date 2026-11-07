@@ -1,0 +1,18 @@
+[
+  {
+    "mechanic": "0386-native-object-appearance",
+    "kind": "handlers",
+    "id": "0386-native-object-appearance-projection",
+    "status": "unsupported",
+    "commands": [],
+    "direction": "server_to_client",
+    "reason": "Native object codec and inherited scene resource projection are under focused source-capture validation.",
+    "not_applicable": {
+      "state": "Uses the authoritative domain1 object snapshot and delta.",
+      "view": "Native Item pixels extend the existing world scene; no independent panel.",
+      "input": "Appearance metadata grants no command.",
+      "settings": "The current source generation owns native appearance identity.",
+      "protocol": "Negotiated optional domain1 field15 preserves the existing object reference and handle."
+    }
+  }
+]

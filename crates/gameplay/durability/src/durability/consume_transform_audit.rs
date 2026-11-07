@@ -1,13 +1,13 @@
 //! Consume/transform proof in the canonical type-2 conversion envelope.
-use super::item_mint_audit::{
-    self as mint, CausationRefV1, CausationV1, EnvelopeCommandRefV1, EventEnvelopeV1, OneItemOperationV1, OneItemTransactionV1, TransactionEventRefV1,
-    Type2EventTuple,
-};
 use super::consume_transform::ConsumeTransformRequest;
+use super::item_mint_audit::{
+    self as mint, CausationRefV1, CausationV1, EnvelopeCommandRefV1, EventEnvelopeV1,
+    OneItemOperationV1, OneItemTransactionV1, TransactionEventRefV1, Type2EventTuple,
+};
 use super::item_transfer::CurrentCharacterItemFence;
 use super::{DurabilityError, character_authority, item_mint};
-use serde_json::{Value, json};
 use prost::Message;
+use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
 use super::item_craft::audit::OneItemCraftV1;
@@ -42,19 +42,29 @@ pub(super) fn action_proof(
 pub(super) fn payload_fits(proof: &[u8]) -> bool {
     OneItemTransactionV1 {
         interpretation_revision: mint::INTERPRETATION_REVISION,
-        operation: Some(OneItemOperationV1::Craft(OneItemCraftV1 { proof: proof.to_vec() })),
-    }.encoded_len() <= mint::RL07_PAYLOAD_BYTES_MAX
+        operation: Some(OneItemOperationV1::Craft(OneItemCraftV1 {
+            proof: proof.to_vec(),
+        })),
+    }
+    .encoded_len()
+        <= mint::RL07_PAYLOAD_BYTES_MAX
 }
 
 pub(super) fn compact_proof(transaction: &str, digest: &[u8]) -> Result<Vec<u8>, DurabilityError> {
-    if digest.len() != 32 { return Err(DurabilityError::InvalidStoredState); }
-    let digest = digest.iter().map(|byte| format!("{byte:02x}")).collect::<String>();
+    if digest.len() != 32 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let digest = digest
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
     serde_json::to_vec(&json!({
         "schema": "OTERYN_ITEM_ACTION_RECEIPT_COMMITMENT/v1",
         "encoding": "postgresql-jsonb-text-utf8/v1",
         "transaction_id": transaction,
         "receipt_sha256": digest,
-    })).map_err(|_| DurabilityError::InvalidStoredState)
+    }))
+    .map_err(|_| DurabilityError::InvalidStoredState)
 }
 
 #[allow(clippy::too_many_arguments)]

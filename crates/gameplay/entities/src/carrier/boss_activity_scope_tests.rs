@@ -467,22 +467,34 @@ fn boss_activity_carrier_death_projection_replays_in_its_scope_without_channel_c
             Err(CarrierError::RewardPrincipalConflict)
         );
         if matches!(owner.runtime_scope, RuntimeScopeRefV1::Instance { .. }) {
+            let item = RuntimeCorpseItem {
+                item_instance_id: id(10),
+                family: "Item".into(),
+                production_key: "fixture:corpse".into(),
+                revision_ref: "r1".into(),
+            };
+            assert_eq!(
+                carrier.bind_corpse_item_inner(ExactActorRef(*actor), item.clone()),
+                Ok(())
+            );
             let before = carrier.clone();
             assert_eq!(
-                carrier.bind_corpse_item_inner(
-                    ExactActorRef(*actor),
-                    RuntimeCorpseItem {
-                        item_instance_id: id(10),
-                        family: "Item".into(),
-                        production_key: "fixture:corpse".into(),
-                        revision_ref: "r1".into()
-                    }
-                ),
-                Err(CarrierError::WrongScope)
+                carrier.bind_corpse_item_inner(ExactActorRef(*actor), item.clone()),
+                Ok(())
             );
             assert_eq!(
                 *carrier, before,
-                "Instance death does not authorize Channel Ground custody"
+                "same committed Instance Item binds idempotently"
+            );
+            let mut conflicting = item;
+            conflicting.item_instance_id = id(11);
+            assert_eq!(
+                carrier.bind_corpse_item_inner(ExactActorRef(*actor), conflicting),
+                Err(CarrierError::CorpseProjectionConflict)
+            );
+            assert_eq!(
+                *carrier, before,
+                "a different Item cannot overwrite the committed binding"
             );
         }
         // Reusing the slot cannot let an old receipt address its successor.

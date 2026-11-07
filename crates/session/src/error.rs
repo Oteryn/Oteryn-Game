@@ -75,6 +75,9 @@ pub enum SessionError {
     /// (protocol violation, timeout or I/O): the peer's state is no longer trusted, so nothing
     /// further is sent on it.
     SessionUnusable,
+    /// The server replaced the source session while its local request was in flight.
+    /// No outcome is inferred and the fresh session remains usable at command one.
+    ScopeChanged,
     /// The next `CommandId` would overflow `u64`.
     CommandIdExhausted,
     /// A `CommandResult` named a `command_id` other than the one just sent.
@@ -220,6 +223,10 @@ impl fmt::Display for SessionError {
                 write!(formatter, "join snapshot did not carry domain {domain_id}")
             }
             Self::Timeout(stage) => write!(formatter, "timed out waiting for {stage}"),
+            Self::ScopeChanged => write!(
+                formatter,
+                "the activity scope changed; the source request was cancelled"
+            ),
             Self::SessionUnusable => write!(
                 formatter,
                 "session is unusable after an earlier failed command exchange"

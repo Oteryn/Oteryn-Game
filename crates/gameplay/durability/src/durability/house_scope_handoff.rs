@@ -75,7 +75,8 @@ impl HouseId {
     #[must_use]
     pub fn new(world_id: WorldId, house_key: &str) -> Option<Self> {
         let domain_world = crate::domain::WorldId::from_bytes(*world_id.as_bytes()).ok()?;
-        let rules = oteryn_gameplay_housing::house_scope_handoff::HouseId::new(domain_world, house_key)?;
+        let rules =
+            oteryn_gameplay_housing::house_scope_handoff::HouseId::new(domain_world, house_key)?;
         Some(Self { world_id, rules })
     }
 
@@ -1724,5 +1725,4 @@ mod tests {
         assert_eq!(HOUSE_ACCESS_ROLES, ["OWNER", "SUBOWNER", "GUEST"]);
         assert_ne!(HouseHandoffDirection::Entry, HouseHandoffDirection::Exit);
     }
-
 }

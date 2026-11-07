@@ -1,9 +1,9 @@
 //! Named-House inventory authority for Hireling services. An activity Instance is never a House.
+use super::super::DurabilityError;
 use super::super::character_progression::{assert_item_only_fence, numeric_u64};
 use super::super::house_scope_handoff::HouseId;
 use super::super::item_transfer::CurrentCharacterItemFence;
 use super::super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation};
-use super::super::DurabilityError;
 use crate::foundation::RuntimeScopeRefV1;
 use sqlx::{Postgres, Row, Transaction};
 
@@ -16,7 +16,11 @@ pub(crate) async fn assert_house_custody_fence(
     fence: &CurrentCharacterItemFence,
     origin_channel: [u8; 16],
 ) -> Result<Option<HouseId>, DurabilityError> {
-    let RuntimeScopeRefV1::Instance { world_id, instance_id } = fence.runtime_scope else {
+    let RuntimeScopeRefV1::Instance {
+        world_id,
+        instance_id,
+    } = fence.runtime_scope
+    else {
         return Ok(None);
     };
     let Some(row) = sqlx::query(
@@ -49,12 +53,13 @@ pub(crate) async fn assert_house_custody_fence(
      .bind(fence.scope_ownership_generation.get().to_string()).fetch_optional(&mut **tx).await?
     else { return Ok(None); };
     let house: String = row.try_get("house")?;
-    if HouseId::new(world_id, &house).is_none_or(|id| id.instance_id()!=instance_id)
+    if HouseId::new(world_id, &house).is_none_or(|id| id.instance_id() != instance_id)
         || numeric_u64(&row, "lease")? != fence.character_lease_generation
-        || !prove_current_incarnation(tx, node).await? {
+        || !prove_current_incarnation(tx, node).await?
+    {
         return Ok(None);
     }
-    let fact=node.fact();
+    let fact = node.fact();
     let held: bool=sqlx::query_scalar(
         "SELECT game_runtime_scope_assignment_history_valid() AND EXISTS( \
          SELECT 1 FROM game_runtime_scope_assignments \
@@ -66,28 +71,45 @@ pub(crate) async fn assert_house_custody_fence(
     ).bind(world_id.as_bytes().as_slice()).bind(&house)
      .bind(fence.scope_ownership_generation.get().to_string()).bind(fact.node_id().as_bytes().as_slice())
      .bind(fact.registration_revision().to_string()).fetch_one(&mut **tx).await?;
-    if !held { return Ok(None); }
+    if !held {
+        return Ok(None);
+    }
     let root=sqlx::query(
         "SELECT profile_revision,ruleset_revision,content_revision,starter_template_revision \
          FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE",
     ).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
-    let current=sqlx::query(
+    let current = sqlx::query(
         "SELECT profile_revision,ruleset_revision,content_revision,starter_template_revision \
          FROM game_character_interpretations ORDER BY interpretation_revision DESC LIMIT 1",
-    ).fetch_optional(&mut **tx).await?;
-    let (Some(root),Some(current))=(root,current) else {return Ok(None)};
-    for column in ["profile_revision","ruleset_revision","content_revision","starter_template_revision"] {
-        if root.try_get::<String,_>(column)? != current.try_get::<String,_>(column)? {return Ok(None)}
+    )
+    .fetch_optional(&mut **tx)
+    .await?;
+    let (Some(root), Some(current)) = (root, current) else {
+        return Ok(None);
+    };
+    for column in [
+        "profile_revision",
+        "ruleset_revision",
+        "content_revision",
+        "starter_template_revision",
+    ] {
+        if root.try_get::<String, _>(column)? != current.try_get::<String, _>(column)? {
+            return Ok(None);
+        }
     }
     Ok(HouseId::new(world_id, &house))
 }
 
 /// Service/input authority adds the original locked current ACL to named custody.
 pub(crate) async fn assert_house_inventory_fence(
-    tx: &mut Transaction<'_, Postgres>, node: &NodeIncarnationProof,
-    fence: &CurrentCharacterItemFence, origin_channel: [u8;16],
+    tx: &mut Transaction<'_, Postgres>,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    origin_channel: [u8; 16],
 ) -> Result<bool, DurabilityError> {
-    let Some(current) = assert_house_custody_fence(tx,node,fence,origin_channel).await? else { return Ok(false); };
+    let Some(current) = assert_house_custody_fence(tx, node, fence, origin_channel).await? else {
+        return Ok(false);
+    };
     let world_id = current.world_id();
     let house = current.house_key();
     let fact = node.fact();
@@ -99,27 +121,35 @@ pub(crate) async fn assert_house_inventory_fence(
         "SELECT game_hireling_service_access_lock(encode($1,'hex')::uuid,encode($2,'hex')::uuid, \
           $3::text::numeric,$4::text::numeric,$5::text::numeric,encode($6,'hex')::uuid, \
           $7::text::numeric,encode($8,'hex')::uuid,$9)",
-    ).bind(fence.game_session_id.as_bytes().as_slice())
-     .bind(fence.character_id.as_bytes().as_slice())
-     .bind(fence.connection_generation.get().to_string())
-     .bind(fence.character_lease_generation.to_string())
-     .bind(fence.scope_ownership_generation.get().to_string())
-     .bind(fact.node_id().as_bytes().as_slice())
-     .bind(fact.registration_revision().to_string())
-     .bind(world_id.as_bytes().as_slice()).bind(house)
-     .fetch_one(&mut **tx).await?)
+    )
+    .bind(fence.game_session_id.as_bytes().as_slice())
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(fence.connection_generation.get().to_string())
+    .bind(fence.character_lease_generation.to_string())
+    .bind(fence.scope_ownership_generation.get().to_string())
+    .bind(fact.node_id().as_bytes().as_slice())
+    .bind(fact.registration_revision().to_string())
+    .bind(world_id.as_bytes().as_slice())
+    .bind(house)
+    .fetch_one(&mut **tx)
+    .await?)
 }
 
 pub(crate) async fn assert_inventory_fence(
     tx: &mut Transaction<'_, Postgres>,
     node: &NodeIncarnationProof,
     fence: &CurrentCharacterItemFence,
-    origin_channel: [u8;16],
-) -> Result<bool,DurabilityError> {
+    origin_channel: [u8; 16],
+) -> Result<bool, DurabilityError> {
     match fence.runtime_scope {
-        RuntimeScopeRefV1::Channel { channel_id, .. } if *channel_id.as_bytes()==origin_channel =>
-            Ok(assert_item_only_fence(tx,fence,node).await?.is_ok()),
-        RuntimeScopeRefV1::Instance { .. }=>assert_house_inventory_fence(tx,node,fence,origin_channel).await,
-        _=>Ok(false),
+        RuntimeScopeRefV1::Channel { channel_id, .. }
+            if *channel_id.as_bytes() == origin_channel =>
+        {
+            Ok(assert_item_only_fence(tx, fence, node).await?.is_ok())
+        }
+        RuntimeScopeRefV1::Instance { .. } => {
+            assert_house_inventory_fence(tx, node, fence, origin_channel).await
+        }
+        _ => Ok(false),
     }
 }

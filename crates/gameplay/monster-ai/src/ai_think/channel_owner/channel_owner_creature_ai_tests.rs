@@ -29,6 +29,7 @@ mod creature_return_tests;
 mod creature_snapshot_tests;
 mod creature_think_hook_tests;
 mod movement_timer_fixture;
+mod reserved_current_think_tests;
 
 const SECOND: u64 = 1_000_000;
 
@@ -879,4 +880,47 @@ fn one_wake_pass_for_many_players_equals_their_wakes_in_turn_and_is_bounded() {
     for rat_actor in &rats {
         assert_eq!(production.due(*rat_actor), in_turn.due(*rat_actor));
     }
+}
+
+#[test]
+fn srx3_reserved_native_thinks_expose_next_occurrence_without_publishing_it() {
+    let mut channel = Channel::new();
+    let actor = channel.admit(at(110, 100), 0);
+    let batch = channel
+        .table
+        .reserve_current_thinks(&mut channel.runtime, 0)
+        .expect("current owner reserves its already due think");
+    assert_eq!(
+        batch.occurrences(),
+        &[crate::ai_think::ThinkOccurrence { actor, sequence: 1 }]
+    );
+    let entry = channel
+        .table
+        .entries
+        .get(&actor.placement_identity())
+        .expect("retained actor");
+    assert_eq!(
+        entry.sequence, 0,
+        "onThink runs before schedule publication"
+    );
+    assert_eq!(
+        entry.due_us,
+        Some(0),
+        "reservation does not invent a new clock"
+    );
+    assert_eq!(
+        channel.table.window_started, 1,
+        "reservation uses the existing think budget"
+    );
+    drop(batch);
+    assert_eq!(
+        channel
+            .table
+            .entries
+            .get(&actor.placement_identity())
+            .expect("retained actor")
+            .sequence,
+        0,
+        "a cancelled callback cannot publish the think sequence"
+    );
 }

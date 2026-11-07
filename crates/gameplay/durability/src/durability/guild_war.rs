@@ -1,12 +1,14 @@
+use crate::durability::DurabilityRoot;
 use crate::durability::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use crate::durability::character_progression::{assert_session_fence, uuid_text};
-use crate::durability::db::{begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations};
+use crate::durability::db::{
+    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+};
 use crate::durability::guild::GuildError;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
-use crate::durability::DurabilityRoot;
 use crate::foundation::CommandRef;
-use oteryn_gameplay_social_rules::guild::{guild_war_end, validate_guild_war_terms, GuildWarEnd};
+use oteryn_gameplay_social_rules::guild::{GuildWarEnd, guild_war_end, validate_guild_war_terms};
 use oteryn_protocol_oteryn::guild_war::{GuildWarIntent, GuildWarResult};
 use sqlx::Row;
 
@@ -17,8 +19,20 @@ impl DurabilityRoot {
         clippy::too_many_arguments,
         reason = "independent authority, replay, wire, identity and database-time trust inputs"
     )]
-    pub async fn commit_guild_war(&self, authority: &ReconciledCharacterAuthority<'_, '_>, node: &NodeIncarnationProof, fence: CurrentCharacterItemFence, command: CommandRef, digest: [u8; 32], intent: GuildWarIntent, war_id: [u8; 16], now: i64) -> Result<GuildWarResult, GuildError> {
-        let recovery = authority.record_for(self).map_err(|_| GuildError::NotCurrent)?;
+    pub async fn commit_guild_war(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        command: CommandRef,
+        digest: [u8; 32],
+        intent: GuildWarIntent,
+        war_id: [u8; 16],
+        now: i64,
+    ) -> Result<GuildWarResult, GuildError> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| GuildError::NotCurrent)?;
         let node = node.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
@@ -68,7 +82,9 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         world: crate::foundation::WorldId,
     ) -> Result<usize, GuildError> {
-        let recovery = authority.record_for(self).map_err(|_| GuildError::NotCurrent)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| GuildError::NotCurrent)?;
         let node = node.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
@@ -111,7 +127,10 @@ pub(crate) async fn attribute_guild_war_frag_in_transaction(
     if contributors.is_empty() {
         return Ok(());
     }
-    let contributor_ids: Vec<Vec<u8>> = contributors.iter().map(|c| c.character_id.as_bytes().to_vec()).collect();
+    let contributor_ids: Vec<Vec<u8>> = contributors
+        .iter()
+        .map(|c| c.character_id.as_bytes().to_vec())
+        .collect();
     let row = sqlx::query("SELECT w.war_id::text,w.declaring_guild::text,kg.guild_id::text AS killer_guild,vg.guild_id::text AS victim_guild,h.attacker::text AS killer FROM game_character_pvp_harm h JOIN game_guild_members km ON km.character_id=h.attacker JOIN game_guilds kg ON kg.guild_id=km.guild_id AND kg.world_id=encode($2,'hex')::uuid JOIN game_guild_members vm ON vm.character_id=encode($1,'hex')::uuid JOIN game_guilds vg ON vg.guild_id=vm.guild_id AND vg.world_id=kg.world_id JOIN game_guild_wars w ON w.world_id=kg.world_id AND w.state=2 AND ((w.declaring_guild=kg.guild_id AND w.opposing_guild=vg.guild_id) OR (w.opposing_guild=kg.guild_id AND w.declaring_guild=vg.guild_id)) WHERE h.victim=encode($1,'hex')::uuid AND h.attacker=ANY(SELECT encode(x,'hex')::uuid FROM unnest($3::bytea[]) x) AND h.damage>0 AND h.created_at>=clock_timestamp()-interval '5 minutes' ORDER BY h.created_at DESC LIMIT 1 FOR UPDATE OF w")
         .bind(victim.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(contributor_ids).fetch_optional(&mut **tx).await?;
     let Some(row) = row else { return Ok(()) };
@@ -132,4 +151,12 @@ pub(crate) async fn attribute_guild_war_frag_in_transaction(
     Ok(())
 }
 
-async fn leader_guild(tx:&mut sqlx::Transaction<'_,sqlx::Postgres>,actor:&[u8;16],world:&[u8;16])->Result<[u8;16],GuildError>{let row=sqlx::query("SELECT g.guild_id::text FROM game_guild_members m JOIN game_guilds g USING(guild_id) WHERE m.character_id=encode($1,'hex')::uuid AND m.rank_level=1 AND g.world_id=encode($2,'hex')::uuid AND g.state IN(1,2) FOR UPDATE OF g").bind(actor.as_slice()).bind(world.as_slice()).fetch_optional(&mut **tx).await?.ok_or(GuildError::InvalidInput)?;let text:String=row.try_get(0)?;uuid_text(&text).map_err(|_|GuildError::InvalidInput)}
+async fn leader_guild(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    actor: &[u8; 16],
+    world: &[u8; 16],
+) -> Result<[u8; 16], GuildError> {
+    let row=sqlx::query("SELECT g.guild_id::text FROM game_guild_members m JOIN game_guilds g USING(guild_id) WHERE m.character_id=encode($1,'hex')::uuid AND m.rank_level=1 AND g.world_id=encode($2,'hex')::uuid AND g.state IN(1,2) FOR UPDATE OF g").bind(actor.as_slice()).bind(world.as_slice()).fetch_optional(&mut **tx).await?.ok_or(GuildError::InvalidInput)?;
+    let text: String = row.try_get(0)?;
+    uuid_text(&text).map_err(|_| GuildError::InvalidInput)
+}

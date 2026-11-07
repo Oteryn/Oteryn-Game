@@ -1,6 +1,11 @@
 //! Transaction-bound native tile reads shared by Movement, Creature and Spell owners.
+mod prepared;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
+pub use prepared::{
+    PreparedCreatureTileRead, ReadCreatureTile, prepare_creature_tile_read,
+    read_prepared_creature_tile_in_transaction,
+};
 
 /// Borrow the actual WorldObject owner; implementations preserve its scope/content checks.
 pub trait NativeWorldObjectRead {

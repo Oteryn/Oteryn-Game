@@ -29,6 +29,7 @@ mod spell_catalog;
 mod target_move;
 use command::CommandOutcome;
 mod effects;
+mod native_cues;
 mod outbound;
 mod result;
 mod route;
@@ -64,6 +65,9 @@ struct ServeState {
     commands: crate::gameplay_transport::session_ingress::SessionCommandStream,
     sequence: u64,
     movement_effect_revision: u64,
+    movement_speech_revision: u64,
+    creature_visual_revision: u64,
+    native_cue_actor: ExactActorRef,
     sound_cursor: u64,
     ambient_revision: u64,
     weather_sent: Option<WorldWeather>,
@@ -90,8 +94,30 @@ struct ServeState {
     revision: u64,
     actor: ExactActorRef,
     generation: u64,
+    require_session_binding: bool,
     admitted: AdmittedSession,
     policy: LivenessPolicy,
+}
+
+/// A wire command belongs to one GameSession, even when a successor restarts
+/// generation1/command1 on the same socket. Never acknowledge stale-session
+/// bytes against the successor's fresh counter or charge its ingress window.
+fn command_session_matches(
+    frame: &[u8],
+    admitted: AdmittedSession,
+    required: bool,
+) -> Result<bool, FoundationProtocolError> {
+    let envelope = decode_wire_envelope(frame)?;
+    if envelope.message_type() != MessageType::ClientCommand
+        || envelope.connection_generation() != admitted.continuity.connection_generation
+    {
+        // Existing message/generation validators retain their original errors.
+        return Ok(true);
+    }
+    Ok(match envelope.client_command_session_id()? {
+        Some(session) => session == admitted.game_session_id.as_bytes(),
+        None => !required,
+    })
 }
 
 enum ServeEnd {
@@ -153,6 +179,8 @@ where
     // recipient if a handoff write is cancelled before destination setup.
     let mut server_messages = None;
     let mut scoped_authority: Option<A> = None;
+    let mut require_session_binding = false;
+    let mut handoff_effect_start = None;
     loop {
         let authority = scoped_authority.as_ref().unwrap_or(root_authority);
         match authority.resolve_native_scope(admitted).await {
@@ -185,6 +213,7 @@ where
                 &mut server_messages,
                 policy,
                 &mut integrity,
+                require_session_binding,
             ))
             .await
             {
@@ -216,6 +245,10 @@ where
             Ok(session) => session,
             Err(end) => return end.finish(admitted),
         };
+        if let Some(cursor) = handoff_effect_start.take() {
+            session.movement_effect_revision = cursor;
+        }
+        session.require_session_binding = require_session_binding;
         if server_messages.is_none() {
             server_messages =
                 crate::gameplay_transport::raid_notices::ServerMessageConnection::join(
@@ -231,7 +264,9 @@ where
                 return ServeEnd::Disconnected.finish(session.admitted);
             }
             match activity_transfer::pending(stream, authority, &mut session).await {
-                Ok(Some(next)) => {
+                Ok(Some((next, cursor))) => {
+                    require_session_binding = true;
+                    handoff_effect_start = cursor;
                     admitted = next;
                     integrity = std::mem::take(&mut session.integrity);
                     break;
@@ -248,7 +283,9 @@ where
             // waiting for input. Its buffered source command never reaches the
             // destination's fresh command stream.
             match activity_transfer::pending(stream, authority, &mut session).await {
-                Ok(Some(next)) => {
+                Ok(Some((next, cursor))) => {
+                    require_session_binding = true;
+                    handoff_effect_start = cursor;
                     admitted = next;
                     integrity = std::mem::take(&mut session.integrity);
                     break;

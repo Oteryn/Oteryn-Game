@@ -23,6 +23,35 @@ pub async fn serve_gameplay(
     .ok_or(GameplayServeError::InvalidLimits)?;
     let tls = tcp_tls::tls_config(config.certificates, config.private_key)
         .map_err(GameplayServeError::InvalidTls)?;
+    // Keep the sealed independent activity maps alive for the complete gameplay
+    // seam. They use the current native Item identities without changing Channel
+    // geometry or obtaining an Instance allocation.
+    let activity_source_rooms: Vec<_> = owners
+        .active_generation
+        .zip(owners.rooms.gate_native_combat_cast())
+        .into_iter()
+        .flat_map(|(active, room)| {
+            use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
+            PinnedActivitySourceRoom::ALL
+                .into_iter()
+                .filter_map(move |source| {
+                    active
+                        .qualify_activity_source_room(room, source)
+                        .ok()
+                        .and_then(|room| {
+                            activity_runtime::source_bundle::qualify(
+                                &room,
+                                source,
+                                active,
+                                owners.world_id,
+                                owners.channel_id,
+                            )
+                            .ok()
+                        })
+                        .map(|room| (source, room))
+                })
+        })
+        .collect();
     let authority = ComposedFreshAdmission {
         server_motd: &config.server_motd,
         reset_epoch: drain.epoch(),
@@ -80,6 +109,11 @@ pub async fn serve_gameplay(
         store_purchases: owners.store_purchases,
     };
     authority
+        .states
+        .boss_activity_handoff
+        .install(std::sync::Arc::new(soulpit::SharedSoulpitOwner))
+        .map_err(|_| GameplayServeError::OwnerUnavailable)?;
+    authority
         .register_current_runtime()
         .await
         .map_err(|_| GameplayServeError::OwnerUnavailable)?;
@@ -87,6 +121,12 @@ pub async fn serve_gameplay(
         authority
             .activity_runtimes
             .register_template(template)
+            .map_err(|_| GameplayServeError::OwnerUnavailable)?;
+    }
+    for (source, room) in &activity_source_rooms {
+        authority
+            .activity_runtimes
+            .register_source_room(*source, room)
             .map_err(|_| GameplayServeError::OwnerUnavailable)?;
     }
     if let Some(book) = owners.npc_talk {

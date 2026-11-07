@@ -24,9 +24,10 @@ mod reward_claim;
 
 pub(crate) use reward_claim::lock_reward_claim_cause;
 pub use reward_claim::{
-    HirelingRecallRequest, REWARD_CLAIM_INBOX_ITEMS_MAX, RewardClaimInboxError, RewardClaimInboxMintCandidate,
-    RewardClaimInboxMintOutput, RewardClaimInboxMintRequest, RewardClaimInboxOutcome,
-    RewardClaimInboxPlan, RewardClaimInboxPosition, RewardClaimInboxTransaction,
+    HirelingRecallRequest, REWARD_CLAIM_INBOX_ITEMS_MAX, RewardClaimInboxError,
+    RewardClaimInboxMintCandidate, RewardClaimInboxMintOutput, RewardClaimInboxMintRequest,
+    RewardClaimInboxOutcome, RewardClaimInboxPlan, RewardClaimInboxPosition,
+    RewardClaimInboxTransaction,
 };
 
 /// The SQLSTATEs `game_character_inbox_deliver` and the Inbox guards raise (migration 0076).

@@ -1,0 +1,152 @@
+{
+  "records": [
+    {
+      "admission": {
+        "legal_destinations": [
+          "Ground"
+        ],
+        "materializable": true,
+        "stack_class": "NonStackable"
+      },
+      "attributes": {
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "field_condition": null,
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
+      },
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/39176",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "39176",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i39176",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null,
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i39176",
+        "revision_ref": "definition-r1"
+      },
+      "semantics": {
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "capabilities": {
+              "state": "UNKNOWN"
+            },
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 0
+            }
+          }
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "primal pod"
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            },
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            }
+          }
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        }
+      }
+    }
+  ],
+  "schema": "OTERYN_NATIVE_PRIMAL_POD_ITEM_PROFILE/v1",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "sources": {
+    "data/items/appearances.dat": "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1",
+    "data/items/items.xml": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509"
+  }
+}

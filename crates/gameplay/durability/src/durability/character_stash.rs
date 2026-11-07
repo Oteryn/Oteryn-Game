@@ -109,27 +109,54 @@ impl DurabilityRoot {
         content: &C,
         probe: bool,
     ) -> Result<Option<StashReceipt>, DurabilityError> {
-        self.stash_conversion_at(permit,recovery,node,fence,request,native,content,probe,None).await
+        self.stash_conversion_at(
+            permit, recovery, node, fence, request, native, content, probe, None,
+        )
+        .await
     }
 
     /// Steward service extends the native stash owner with a closed named-House admission.
     #[allow(clippy::too_many_arguments)]
     pub async fn hireling_stash_conversion<C: ItemLoopContent>(
-        &self, permit:&super::spell_owner_commit::SpellLanePermit,
-        recovery:&ReconciledCharacterAuthority<'_, '_>,node:&NodeIncarnationProof,
-        fence:CurrentCharacterItemFence,request:StashRequest,native:&NativeGameplayState,content:&C,
-        probe:bool,origin_channel:crate::foundation::ChannelId,hireling_id:[u8;16],
-    )->Result<Option<StashReceipt>,DurabilityError> {
-        self.stash_conversion_at(permit,recovery,node,fence,request,native,content,probe,Some((origin_channel,hireling_id))).await
+        &self,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: StashRequest,
+        native: &NativeGameplayState,
+        content: &C,
+        probe: bool,
+        origin_channel: crate::foundation::ChannelId,
+        hireling_id: [u8; 16],
+    ) -> Result<Option<StashReceipt>, DurabilityError> {
+        self.stash_conversion_at(
+            permit,
+            recovery,
+            node,
+            fence,
+            request,
+            native,
+            content,
+            probe,
+            Some((origin_channel, hireling_id)),
+        )
+        .await
     }
 
     #[allow(clippy::too_many_arguments)]
     async fn stash_conversion_at<C: ItemLoopContent>(
-        &self, permit:&super::spell_owner_commit::SpellLanePermit,
-        recovery:&ReconciledCharacterAuthority<'_, '_>,node:&NodeIncarnationProof,
-        fence:CurrentCharacterItemFence,request:StashRequest,native:&NativeGameplayState,content:&C,
-        probe:bool,hireling:Option<(crate::foundation::ChannelId,[u8;16])>,
-    )->Result<Option<StashReceipt>,DurabilityError> {
+        &self,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: StashRequest,
+        native: &NativeGameplayState,
+        content: &C,
+        probe: bool,
+        hireling: Option<(crate::foundation::ChannelId, [u8; 16])>,
+    ) -> Result<Option<StashReceipt>, DurabilityError> {
         let intent =
             encode_stash_intent(request.intent).map_err(|_| DurabilityError::InvalidStoredState)?;
         if request.command.game_session_id() != fence.game_session_id
@@ -310,7 +337,8 @@ async fn plan<C: ItemLoopContent>(
             Err(super::item_loop_move::LoopError::Database(error)) => return Err(error.into()),
             Err(super::item_loop_move::LoopError::Durability(error)) => return Err(error),
         };
-        let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await?;
+        let capacity =
+            read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await?;
         if carried
             .checked_add(u64::from(weight) * u64::from(amount))
             .is_none_or(|total| total > capacity)

@@ -14,7 +14,9 @@ impl DurabilityRoot {
         if command.game_session_id() != fence.game_session_id {
             return Err(GuildError::InvalidInput);
         }
-        let recovery = authority.record_for(self).map_err(|_| GuildError::NotCurrent)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| GuildError::NotCurrent)?;
         let node = node.clone();
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {

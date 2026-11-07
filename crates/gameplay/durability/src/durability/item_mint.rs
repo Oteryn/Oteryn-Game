@@ -3,7 +3,7 @@
 //! This component owns durable application, idempotency and reconciliation
 //! only. It does not prove that Combat legitimately produced the loot output
 //! cause: [`ItemMintCause`]'s only runtime constructor takes the typed death
-//! key of the Channel owner's committed death, and no caller bytes.
+//! key of the current scope owner's committed death, and no caller bytes.
 //!
 //! Lifecycle of one logical MINT transaction:
 //! 1. [`DurabilityRoot::freeze_item_mint`] validates every registered bound and
@@ -42,11 +42,15 @@ use super::item_mint_audit::{
     SelectedType2Tuple,
 };
 use super::item_transfer_audit::OneItemContainerEntryV1;
-use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation, scope_key};
+use super::runtime_scope_assignment::{
+    NodeIncarnationProof, assignment_scope_key, prove_current_incarnation,
+};
 use super::spell_owner_commit::SpellLanePermit;
 use super::{DurabilityError, DurabilityRoot};
 use crate::character_recovery_fence::CharacterRecoveryFenceV1;
-use crate::foundation::{ChannelId, CreatureDeathOccurrenceKey, ScopeOwnershipGeneration, WorldId};
+use crate::foundation::{
+    ChannelId, CreatureDeathOccurrenceKey, RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
+};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 
@@ -65,11 +69,11 @@ pub const CORPSE_MATERIALIZATION_PURPOSE_KEY: &str = "CORPSE_MATERIALIZATION";
 /// advisory lock -- never re-decided here.
 const COMBAT01_CORPSES_PER_SCOPE_MAX: i64 = 64;
 
-/// Equality on the full cause tuple, parameters `$1..$10`; never a hash.
+/// Equality on the full tagged cause tuple, parameters `$1..$11`; never a hash.
 macro_rules! cause_key {
     () => {
         "death_world_id = encode($1,'hex')::uuid \
-         AND death_channel_id = encode($2,'hex')::uuid \
+         AND death_scope_id = encode($2,'hex')::uuid AND death_scope_kind = $11 \
          AND death_scope_ownership_generation = $3::text::numeric(20,0) \
          AND death_actor_local_id = $4 \
          AND death_actor_local_generation = $5::text::numeric(20,0) \
@@ -79,13 +83,13 @@ macro_rules! cause_key {
     };
 }
 
-/// Binds the full cause tuple as `$1..$10` of a query using `cause_key!()`.
+/// Binds the full tagged cause tuple as `$1..$11` of a query using `cause_key!()`.
 macro_rules! bind_cause {
     ($query:expr, $cause:expr) => {{
         let cause: &ItemMintCause = $cause;
         $query
             .bind(cause.death.world_id.as_bytes().as_slice())
-            .bind(cause.death.channel_id.as_bytes().as_slice())
+            .bind(cause.death.scope_id().as_slice())
             .bind(cause.death.scope_ownership_generation.get().to_string())
             .bind(i64::from(cause.death.actor_local_id))
             .bind(cause.death.actor_local_generation.to_string())
@@ -94,8 +98,11 @@ macro_rules! bind_cause {
             .bind(&cause.loot_table.revision_ref)
             .bind(&cause.purpose_key)
             .bind(i64::from(cause.draw_ordinal))
+            .bind(cause.death.scope_kind())
     }};
 }
+
+mod source_death;
 
 pub use crate::domain::item_definition::TypedDefinitionRef;
 
@@ -103,16 +110,32 @@ pub use crate::domain::item_definition::TypedDefinitionRef;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CreatureDeathKey {
     world_id: WorldId,
-    channel_id: ChannelId,
+    runtime_scope: RuntimeScopeRefV1,
     scope_ownership_generation: ScopeOwnershipGeneration,
     actor_local_id: u32,
     actor_local_generation: u64,
 }
 
+impl CreatureDeathKey {
+    fn scope_id(&self) -> &[u8; 16] {
+        match &self.runtime_scope {
+            RuntimeScopeRefV1::Channel { channel_id, .. } => channel_id.as_bytes(),
+            RuntimeScopeRefV1::Instance { instance_id, .. } => instance_id,
+        }
+    }
+
+    fn scope_kind(&self) -> i16 {
+        match self.runtime_scope {
+            RuntimeScopeRefV1::Channel { .. } => 1,
+            RuntimeScopeRefV1::Instance { .. } => 2,
+        }
+    }
+}
+
 /// The typed loot output cause `(death key, LootTableDefinitionRef,
 /// LootEntryOrPurposeKey, DeterministicDrawOrdinal)`, stored in full as the
 /// MINT's unique source cause. The runtime constructor takes the death key
-/// only from the physical Channel owner's committed lethal occurrence.
+/// only from the physical scope owner's committed lethal occurrence.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ItemMintCause {
     death: CreatureDeathKey,
@@ -122,23 +145,47 @@ pub struct ItemMintCause {
 }
 
 impl ItemMintCause {
+    /// Scoped test fixture only. Production causes require a committed carrier death.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn for_test_scope(
+        runtime_scope: RuntimeScopeRefV1,
+        scope_ownership_generation: ScopeOwnershipGeneration,
+        actor_local_id: u32,
+        actor_local_generation: u64,
+        loot_table: TypedDefinitionRef,
+        purpose_key: String,
+        draw_ordinal: u32,
+    ) -> Self {
+        Self {
+            death: CreatureDeathKey {
+                world_id: runtime_scope.world_id(),
+                runtime_scope,
+                scope_ownership_generation,
+                actor_local_id,
+                actor_local_generation,
+            },
+            loot_table,
+            purpose_key,
+            draw_ordinal,
+        }
+    }
+
     /// Loot output cause of one committed creature death (DUR-03 decision
     /// §4.2): the full typed tuple, with no caller-supplied death bytes. The
     /// death key has no constructor outside the carrier's committed lethal
     /// occurrence, so every cause built here descends from a real death.
-    /// Ordinary Ground custody remains Channel-only. Personal Instance boss
-    /// rewards use the scoped reward-claim mint owner instead.
+    /// Ground custody retains the death's exact Channel or Instance namespace.
+    /// Personal boss rewards use the independent scoped reward-claim owner.
     pub fn from_creature_death(
         death: CreatureDeathOccurrenceKey,
         loot_table: TypedDefinitionRef,
         purpose_key: String,
         draw_ordinal: u32,
     ) -> Result<Self> {
-        let channel_id = death.channel_id().ok_or(ItemMintError::AuthorityRejected)?;
         Ok(Self {
             death: CreatureDeathKey {
                 world_id: death.world_id(),
-                channel_id,
+                runtime_scope: death.runtime_scope(),
                 scope_ownership_generation: death.scope_ownership_generation(),
                 actor_local_id: death.actor_local_id(),
                 actor_local_generation: death.actor_local_generation(),
@@ -165,7 +212,7 @@ impl ItemMintCause {
         Self {
             death: CreatureDeathKey {
                 world_id,
-                channel_id,
+                runtime_scope: RuntimeScopeRefV1::channel(world_id, channel_id),
                 scope_ownership_generation,
                 actor_local_id,
                 actor_local_generation,
@@ -177,7 +224,7 @@ impl ItemMintCause {
     }
 }
 
-/// Actual typed Ground in the death's own World/Channel and generation.
+/// Actual typed Ground in the death's exact runtime scope and generation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GroundPlacement {
     pub spatial_position: Vec<u8>,
@@ -251,17 +298,13 @@ pub struct ItemMintCandidate {
 
 #[cfg(any(test, feature = "test-support"))]
 impl ItemMintCandidate {
-    /// A fresh lane permit of this candidate's death Channel, for the PostgreSQL test support.
+    /// A fresh lane permit of this candidate's exact death scope, for the PostgreSQL test support.
     #[allow(
         dead_code,
         reason = "used only by the PostgreSQL item-writer test support"
     )]
     pub async fn fresh_death_lane_permit(&self) -> SpellLanePermit {
-        SpellLanePermit::of_fresh_lane(
-            self.request.cause.death.world_id,
-            self.request.cause.death.channel_id,
-        )
-        .await
+        SpellLanePermit::fresh_mint_scope(self.request.cause.death.runtime_scope).await
     }
 }
 
@@ -635,8 +678,8 @@ impl DurabilityRoot {
                             "UPDATE game_item_mint_reservations \
                                 SET work_units_used = work_units_used + 1 WHERE ",
                             cause_key!(),
-                            " AND transaction_id = encode($11,'hex')::uuid \
-                              AND work_units_used < $12 RETURNING work_units_used"
+                            " AND transaction_id = encode($12,'hex')::uuid \
+                              AND work_units_used < $13 RETURNING work_units_used"
                         )),
                         &cause
                     )
@@ -649,7 +692,7 @@ impl DurabilityRoot {
                             sqlx::query(concat!(
                                 "SELECT 1 FROM game_item_mint_reservations WHERE ",
                                 cause_key!(),
-                                " AND transaction_id = encode($11,'hex')::uuid"
+                                " AND transaction_id = encode($12,'hex')::uuid"
                             )),
                             &cause
                         )
@@ -702,10 +745,7 @@ impl DurabilityRoot {
         }
         // SPELL-LOCK-2 §1.2: the Ground (or corpse entry) this writes takes advisory key 33,
         // so the lane must be the death's Channel, held to the end of the transaction.
-        permit.check_channel(
-            candidate.request.cause.death.world_id,
-            candidate.request.cause.death.channel_id,
-        )?;
+        permit.check_scope(candidate.request.cause.death.runtime_scope)?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| ItemMintError::AuthorityRejected)?;
@@ -771,13 +811,7 @@ impl DurabilityRoot {
                             permit,
                             &recovery,
                             &node,
-                            (
-                                crate::foundation::RuntimeScopeRefV1::channel(
-                                    death.world_id,
-                                    death.channel_id,
-                                ),
-                                death.scope_ownership_generation.get(),
-                            ),
+                            (death.runtime_scope, death.scope_ownership_generation.get()),
                             &frozen.request.ground,
                             &frozen.item_instance_id,
                         )
@@ -907,6 +941,47 @@ impl DurabilityRoot {
         top_damage_character_id: [u8; 16],
         boss: Option<(String, u64, oteryn_gameplay_content::content::BossPolicy)>,
     ) -> Result<Vec<ItemMintOutcome>> {
+        self.commit_kill_loot_mints_inner(
+            permit,
+            authority,
+            node,
+            candidate,
+            children,
+            Some(top_damage_character_id),
+            boss,
+        )
+        .await
+    }
+
+    /// Internal physical writer port. Its sole source-event facade validates
+    /// the opaque uncredited death completion before reaching this method.
+    pub(super) async fn commit_uncredited_corpse_mint_inner(
+        &self,
+        permit: &SpellLanePermit,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        candidate: &mut ItemMintCandidate,
+    ) -> Result<ItemMintOutcome> {
+        let mut result = self
+            .commit_kill_loot_mints_inner(permit, authority, node, candidate, &mut [], None, None)
+            .await?;
+        result.pop().ok_or(ItemMintError::InvalidInput)
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "one existing physical writer preserves credited and sealed uncredited source deaths"
+    )]
+    async fn commit_kill_loot_mints_inner(
+        &self,
+        permit: &SpellLanePermit,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        candidate: &mut ItemMintCandidate,
+        children: &mut [ItemMintCandidate],
+        top_damage_character_id: Option<[u8; 16]>,
+        boss: Option<(String, u64, oteryn_gameplay_content::content::BossPolicy)>,
+    ) -> Result<Vec<ItemMintOutcome>> {
         if candidate.request.cause.purpose_key != CORPSE_MATERIALIZATION_PURPOSE_KEY {
             return Err(ItemMintError::InvalidInput);
         }
@@ -916,13 +991,14 @@ impl DurabilityRoot {
         if candidate.request.cause.draw_ordinal != 0 || candidate.corpse_entry.is_some() {
             return Err(ItemMintError::InvalidInput);
         }
-        audit::check_uuid_v7(&top_damage_character_id)?;
+        if let Some(owner) = top_damage_character_id {
+            audit::check_uuid_v7(&owner)?;
+        } else if !children.is_empty() || boss.is_some() {
+            return Err(ItemMintError::InvalidInput);
+        }
         // SPELL-LOCK-2 §1.2: the Ground (or corpse entry) this writes takes advisory key 33,
         // so the lane must be the death's Channel, held to the end of the transaction.
-        permit.check_channel(
-            candidate.request.cause.death.world_id,
-            candidate.request.cause.death.channel_id,
-        )?;
+        permit.check_scope(candidate.request.cause.death.runtime_scope)?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| ItemMintError::AuthorityRejected)?;
@@ -973,7 +1049,7 @@ impl DurabilityRoot {
                         let stored_top_damage = stored_top_damage
                             .map(|value| uuid_text(&value))
                             .transpose()?;
-                        if stored_top_damage != Some(top_damage_character_id) {
+                        if stored_top_damage != top_damage_character_id {
                             return Ok(Err(ItemMintError::ConflictingCause));
                         }
                         let committed = decode_receipt(&row)?;
@@ -1039,13 +1115,7 @@ impl DurabilityRoot {
                             permit,
                             &recovery,
                             &node,
-                            (
-                                crate::foundation::RuntimeScopeRefV1::channel(
-                                    death.world_id,
-                                    death.channel_id,
-                                ),
-                                death.scope_ownership_generation.get(),
-                            ),
+                            (death.runtime_scope, death.scope_ownership_generation.get()),
                             &frozen.request.ground,
                             &frozen.item_instance_id,
                         )
@@ -1058,13 +1128,25 @@ impl DurabilityRoot {
                         Ok(tuple) => tuple,
                         Err(error) => return Ok(Err(error.into())),
                     };
-                    insert_corpse_mint(&mut tx, permit, &frozen, tuple, top_damage_character_id)
-                        .await?;
+                    match top_damage_character_id {
+                        Some(owner) => {
+                            insert_corpse_mint(&mut tx, permit, &frozen, tuple, owner).await?
+                        }
+                        None => {
+                            insert_mint_with_corpse_attribution(
+                                &mut tx, permit, &frozen, tuple, None,
+                            )
+                            .await?
+                        }
+                    }
                     if let Some((spawn, cycle, policy)) = &boss {
                         let death = &frozen.request.cause.death;
                         let key = super::boss_encounter::BossClockKey {
                             world: death.world_id,
-                            channel: death.channel_id,
+                            channel: death
+                                .runtime_scope
+                                .channel_id()
+                                .ok_or(DurabilityError::InvalidStoredState)?,
                             spawn: spawn.clone(),
                         };
                         super::boss_encounter::advance_death_in_transaction(
@@ -1167,10 +1249,7 @@ impl DurabilityRoot {
         };
         // SPELL-LOCK-2 §1.2: the Ground (or corpse entry) this writes takes advisory key 33,
         // so the lane must be the death's Channel, held to the end of the transaction.
-        permit.check_channel(
-            candidate.request.cause.death.world_id,
-            candidate.request.cause.death.channel_id,
-        )?;
+        permit.check_scope(candidate.request.cause.death.runtime_scope)?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| ItemMintError::AuthorityRejected)?;
@@ -1353,7 +1432,10 @@ fn validate_request(
     audit::check_content_key(&request.content_revision)?;
     audit::check_content_key(&request.ruleset_revision)?;
     audit::check_content_key(&request.sim_revision)?;
-    if request.quantity == 0 || cause.death.actor_local_generation == 0 {
+    if request.quantity == 0
+        || cause.death.actor_local_generation == 0
+        || cause.death.world_id != cause.death.runtime_scope.world_id()
+    {
         return Err(ItemMintError::InvalidInput);
     }
     audit::TransactionResourceUsage::MINT.check()?;
@@ -1391,7 +1473,10 @@ fn intent_binding(
     let death = &cause.death;
     let mut semantic = vec![INTENT_BINDING_VERSION];
     semantic.extend_from_slice(death.world_id.as_bytes());
-    semantic.extend_from_slice(death.channel_id.as_bytes());
+    if matches!(death.runtime_scope, RuntimeScopeRefV1::Instance { .. }) {
+        semantic.extend_from_slice(b"INSTANCE\0");
+    }
+    semantic.extend_from_slice(death.scope_id());
     semantic.extend_from_slice(&death.scope_ownership_generation.get().to_be_bytes());
     semantic.extend_from_slice(&death.actor_local_id.to_be_bytes());
     semantic.extend_from_slice(&death.actor_local_generation.to_be_bytes());
@@ -1455,7 +1540,10 @@ fn mint_message(
 ) -> OneItemMintV1 {
     let death = &request.cause.death;
     let world = death.world_id.as_bytes().to_vec();
-    let channel = death.channel_id.as_bytes().to_vec();
+    let (channel, instance) = match death.runtime_scope {
+        RuntimeScopeRefV1::Channel { channel_id, .. } => (channel_id.as_bytes().to_vec(), None),
+        RuntimeScopeRefV1::Instance { instance_id, .. } => (Vec::new(), Some(instance_id.to_vec())),
+    };
     let generation = death.scope_ownership_generation.get();
     OneItemMintV1 {
         after: Some(OneItemStateV1 {
@@ -1467,7 +1555,7 @@ fn mint_message(
             key_number: 0,
         }),
         destination: corpse_entry.is_none().then(|| OneItemGroundV1 {
-            instance_id: None,
+            instance_id: instance.clone(),
             world_id: world.clone(),
             channel_id: channel.clone(),
             spatial_position: request.ground.spatial_position.clone(),
@@ -1486,6 +1574,7 @@ fn mint_message(
             death_occurrence: Some(CreatureDeathOccurrenceRefV1 {
                 world_id: world,
                 channel_id: channel,
+                instance_id: instance,
                 scope_ownership_generation: generation,
                 actor_local_id: death.actor_local_id,
                 actor_local_generation: death.actor_local_generation,
@@ -1509,7 +1598,13 @@ async fn lock_cause(
 ) -> std::result::Result<(), DurabilityError> {
     let mut key = Vec::new();
     key.extend_from_slice(cause.death.world_id.as_bytes());
-    key.extend_from_slice(cause.death.channel_id.as_bytes());
+    if matches!(
+        cause.death.runtime_scope,
+        RuntimeScopeRefV1::Instance { .. }
+    ) {
+        key.extend_from_slice(b"INSTANCE\0");
+    }
+    key.extend_from_slice(cause.death.scope_id());
     key.extend_from_slice(&cause.death.scope_ownership_generation.get().to_be_bytes());
     key.extend_from_slice(&cause.death.actor_local_id.to_be_bytes());
     key.extend_from_slice(&cause.death.actor_local_generation.to_be_bytes());
@@ -1601,7 +1696,7 @@ async fn insert_reservation(
     // The fence generation ($3 again) is the death's own generation (D52).
     bind_cause!(
         sqlx::query(
-            "INSERT INTO game_item_mint_reservations(death_world_id, death_channel_id, \
+            "INSERT INTO game_item_mint_reservations(death_world_id, death_channel_id, death_scope_kind, death_instance_id, \
                death_scope_ownership_generation, death_actor_local_id, \
                death_actor_local_generation, loot_table_family, loot_table_production_key, \
                loot_table_revision_ref, loot_purpose_key, draw_ordinal, intent_binding, \
@@ -1609,12 +1704,12 @@ async fn insert_reservation(
                fence_scope_ownership_generation, fence_holder_node_id, \
                fence_holder_registration_revision, work_units_used, reserved_at, \
                type2_schema_revision) \
-             VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3::text::numeric(20,0), \
-               $4, $5::text::numeric(20,0), $6, $7, $8, $9, $10, $11, \
-               encode($12,'hex')::uuid, encode($13,'hex')::uuid, encode($14,'hex')::uuid, \
-               $15, $16, $3::text::numeric(20,0), encode($17,'hex')::uuid, \
-               $18::text::numeric(20,0), 0, \
-               floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $19)",
+             VALUES (encode($1,'hex')::uuid, CASE WHEN $11::smallint=1 THEN encode($2,'hex')::uuid END, $11::smallint, CASE WHEN $11::smallint=2 THEN encode($2,'hex')::uuid END, $3::text::numeric(20,0), \
+               $4, $5::text::numeric(20,0), $6, $7, $8, $9, $10, $12, \
+               encode($13,'hex')::uuid, encode($14,'hex')::uuid, encode($15,'hex')::uuid, \
+               $16, $17, $3::text::numeric(20,0), encode($18,'hex')::uuid, \
+               $19::text::numeric(20,0), 0, \
+               floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $20)",
         ),
         &request.cause
     )
@@ -1648,17 +1743,27 @@ async fn fence_is_live(
 ) -> std::result::Result<bool, DurabilityError> {
     let fact = node.fact();
     let assignment = sqlx::query(
-        "SELECT 1 FROM game_runtime_scope_assignments \
+        "SELECT 1 FROM game_runtime_scope_assignments a \
          WHERE scope_key = $1 AND world_id = encode($2,'hex')::uuid \
-           AND channel_id = encode($3,'hex')::uuid AND state = 1 \
+           AND coalesce(channel_id,activity_instance_id) = encode($3,'hex')::uuid AND state = 1 \
            AND ownership_generation = $4::text::numeric(20,0) \
            AND holder_node_id = encode($5,'hex')::uuid \
            AND holder_registration_revision = $6::text::numeric(20,0) \
+           AND (a.scope_kind=1 OR (a.scope_kind=3 AND EXISTS ( \
+               SELECT 1 FROM game_activity_handoff_groups g \
+               JOIN game_activity_runtime_entries e USING(handoff_id) \
+               JOIN game_activity_handoff_participants p USING(handoff_id) \
+               WHERE g.world_id=a.world_id AND g.instance_id=a.activity_instance_id \
+                 AND g.ownership_generation=a.ownership_generation AND g.state=2 \
+                 AND e.holder_node_id=a.holder_node_id \
+                 AND e.holder_registration_revision=a.holder_registration_revision \
+                 AND NOT EXISTS (SELECT 1 FROM game_activity_runtime_returns r \
+                     WHERE r.handoff_id=p.handoff_id AND r.character_id=p.character_id)))) \
          FOR SHARE",
     )
-    .bind(scope_key(death.world_id, death.channel_id).as_slice())
+    .bind(assignment_scope_key(death.runtime_scope).as_slice())
     .bind(death.world_id.as_bytes().as_slice())
-    .bind(death.channel_id.as_bytes().as_slice())
+    .bind(death.scope_id().as_slice())
     .bind(death.scope_ownership_generation.get().to_string())
     .bind(fact.node_id().as_bytes().as_slice())
     .bind(fact.registration_revision().to_string())
@@ -1682,19 +1787,22 @@ async fn corpse_cap_recount(
         "SELECT pg_advisory_xact_lock(hashtextextended(\
          'oteryn:corpse-cap:' || encode($1,'hex'), 0))",
     )
-    .bind(scope_key(death.world_id, death.channel_id).as_slice())
+    .bind(assignment_scope_key(death.runtime_scope).as_slice())
     .execute(&mut **tx)
     .await?;
     let count: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_item_ground_locations g \
            JOIN game_item_mint_receipts r ON r.item_instance_id = g.item_instance_id \
            JOIN game_item_instances i ON i.item_instance_id = g.item_instance_id \
-          WHERE g.world_id = encode($1,'hex')::uuid AND g.channel_id = encode($2,'hex')::uuid \
+          WHERE g.world_id = encode($1,'hex')::uuid \
+            AND (($4::smallint=1 AND g.scope_kind=1 AND g.channel_id=encode($2,'hex')::uuid) \
+              OR ($4::smallint=2 AND g.scope_kind=2 AND g.instance_id=encode($2,'hex')::uuid)) \
             AND r.loot_purpose_key = $3 AND i.lifecycle = 1",
     )
     .bind(death.world_id.as_bytes().as_slice())
-    .bind(death.channel_id.as_bytes().as_slice())
+    .bind(death.scope_id().as_slice())
     .bind(CORPSE_MATERIALIZATION_PURPOSE_KEY)
+    .bind(death.scope_kind())
     .fetch_one(&mut **tx)
     .await?;
     Ok(count)
@@ -1735,24 +1843,25 @@ async fn insert_mint_with_corpse_attribution(
     let request = &frozen.request;
     let death = &request.cause.death;
     // SPELL-LOCK-2 §1.2: the Ground INSERT fires the key-33 owner lock of the death's Channel.
-    permit.check_channel(death.world_id, death.channel_id)?;
+    permit.check_scope(death.runtime_scope)?;
     insert_item_instance(tx, frozen).await?;
     sqlx::query(
         "INSERT INTO game_item_ground_locations(item_instance_id, world_id, channel_id, \
            runtime_scope_ownership_generation, spatial_position, corpse_ref, map_revision, \
-           content_revision, native_room_placement_context) \
-         VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
-           $4::text::numeric(20,0), $5, $6, $7, $8, $9)",
+           content_revision, native_room_placement_context, scope_kind, instance_id) \
+         VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, CASE WHEN $10::smallint=1 THEN encode($3,'hex')::uuid END, \
+           $4::text::numeric(20,0), $5, $6, $7, $8, $9, $10::smallint, CASE WHEN $10::smallint=2 THEN encode($3,'hex')::uuid END)",
     )
     .bind(frozen.item_instance_id.as_slice())
     .bind(death.world_id.as_bytes().as_slice())
-    .bind(death.channel_id.as_bytes().as_slice())
+    .bind(death.scope_id().as_slice())
     .bind(death.scope_ownership_generation.get().to_string())
     .bind(request.ground.spatial_position.as_slice())
     .bind(request.ground.corpse_ref.as_slice())
     .bind(&request.ground.map_revision)
     .bind(&request.ground.content_revision)
     .bind(request.ground.native_room_placement_context.as_slice())
+    .bind(death.scope_kind())
     .execute(&mut **tx)
     .await?;
     insert_receipt(tx, frozen, top_damage_character_id, None).await?;
@@ -1773,17 +1882,17 @@ async fn insert_corpse_loot_mint(
     let death = &frozen.request.cause.death;
     // SPELL-LOCK-2 §1.2: the entry INSERT fires the key-33 owner lock of the corpse's Ground
     // root, so the lane must be that root's Channel.
-    let root: Option<(String, String)> = sqlx::query_as(
-        "SELECT world_id::text, channel_id::text FROM game_item_ground_locations \
+    let root = sqlx::query(
+        "SELECT world_id::text, channel_id::text, scope_kind, instance_id::text FROM game_item_ground_locations \
           WHERE item_instance_id = encode($1,'hex')::uuid",
     )
     .bind(placement.corpse_item_instance_id.as_slice())
     .fetch_optional(&mut **tx)
     .await?;
-    let Some((root_world, root_channel)) = root else {
+    let Some(root) = root else {
         return Err(DurabilityError::InvalidStoredState);
     };
-    permit.check_stored_channel(&uuid_text(&root_world)?, &uuid_text(&root_channel)?)?;
+    permit.check_scope(decode_ground_scope(&root)?)?;
     insert_item_instance(tx, frozen).await?;
     sqlx::query(
         "INSERT INTO game_item_corpse_container_entries(item_instance_id, world_id, \
@@ -1894,21 +2003,21 @@ async fn insert_receipt(
     let request = &frozen.request;
     let death = &request.cause.death;
     sqlx::query(
-        "INSERT INTO game_item_mint_receipts(death_world_id, death_channel_id, \
+        "INSERT INTO game_item_mint_receipts(death_world_id, death_channel_id, death_scope_kind, death_instance_id, \
            death_scope_ownership_generation, death_actor_local_id, \
            death_actor_local_generation, loot_table_family, loot_table_production_key, \
            loot_table_revision_ref, loot_purpose_key, draw_ordinal, intent_binding, \
            transaction_id, event_id, item_instance_id, occurred_at, envelope_sha256, \
            committed_at, corpse_top_damage_character_id, \
            destination_parent_item_instance_id, destination_ordinal) \
-         VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3::text::numeric(20,0), $4, \
-           $5::text::numeric(20,0), $6, $7, $8, $9, $10, $11, encode($12,'hex')::uuid, \
-           encode($13,'hex')::uuid, encode($14,'hex')::uuid, $15, $16, \
+         VALUES (encode($1,'hex')::uuid, CASE WHEN $11::smallint=1 THEN encode($2,'hex')::uuid END, $11::smallint, CASE WHEN $11::smallint=2 THEN encode($2,'hex')::uuid END, $3::text::numeric(20,0), $4, \
+           $5::text::numeric(20,0), $6, $7, $8, $9, $10, $12, encode($13,'hex')::uuid, \
+           encode($14,'hex')::uuid, encode($15,'hex')::uuid, $16, $17, \
            floor(extract(epoch FROM statement_timestamp())*1000)::bigint, \
-           encode($17,'hex')::uuid, encode($18,'hex')::uuid, $19::text::numeric(20,0))",
+           encode($18,'hex')::uuid, encode($19,'hex')::uuid, $20::text::numeric(20,0))",
     )
     .bind(death.world_id.as_bytes().as_slice())
-    .bind(death.channel_id.as_bytes().as_slice())
+    .bind(death.scope_id().as_slice())
     .bind(death.scope_ownership_generation.get().to_string())
     .bind(i64::from(death.actor_local_id))
     .bind(death.actor_local_generation.to_string())
@@ -1917,6 +2026,7 @@ async fn insert_receipt(
     .bind(&request.cause.loot_table.revision_ref)
     .bind(&request.cause.purpose_key)
     .bind(i64::from(request.cause.draw_ordinal))
+    .bind(death.scope_kind())
     .bind(frozen.intent_binding.as_slice())
     .bind(frozen.transaction_id.as_slice())
     .bind(frozen.event_id.as_slice())
@@ -1999,7 +2109,7 @@ async fn corpse_parent_is_live(
             WHERE cr.item_instance_id = encode($1,'hex')::uuid \
               AND cr.loot_purpose_key = $2 \
               AND cr.death_world_id = encode($3,'hex')::uuid \
-              AND cr.death_channel_id = encode($4,'hex')::uuid \
+              AND cr.death_scope_id = encode($4,'hex')::uuid AND cr.death_scope_kind=$8 \
               AND cr.death_scope_ownership_generation = $5::text::numeric(20,0) \
               AND cr.death_actor_local_id = $6 \
               AND cr.death_actor_local_generation = $7::text::numeric(20,0) \
@@ -2008,10 +2118,11 @@ async fn corpse_parent_is_live(
     .bind(placement.corpse_item_instance_id.as_slice())
     .bind(CORPSE_MATERIALIZATION_PURPOSE_KEY)
     .bind(death.world_id.as_bytes().as_slice())
-    .bind(death.channel_id.as_bytes().as_slice())
+    .bind(death.scope_id().as_slice())
     .bind(death.scope_ownership_generation.get().to_string())
     .bind(i64::from(death.actor_local_id))
     .bind(death.actor_local_generation.to_string())
+    .bind(death.scope_kind())
     .fetch_one(&mut **tx)
     .await?)
 }
@@ -2218,6 +2329,31 @@ mod tests {
     }
 
     #[test]
+    fn instance_corpse_audit_decodes_the_tagged_death_scope() -> std::result::Result<(), AuditError>
+    {
+        use prost::Message;
+        let mut message = mint_message(&request(), None, id(9));
+        let source = message.source.as_mut().ok_or(AuditError::InvalidInput)?;
+        let death = source
+            .death_occurrence
+            .as_mut()
+            .ok_or(AuditError::InvalidInput)?;
+        death.channel_id.clear();
+        let mut bytes = death.encode_to_vec();
+        bytes.extend_from_slice(&[50, 16]); // additive instance_id field 6
+        bytes.extend_from_slice(&id(4));
+        *death = CreatureDeathOccurrenceRefV1::decode(bytes.as_slice())
+            .map_err(|_| AuditError::InvalidInput)?;
+        let ground = message
+            .destination
+            .as_mut()
+            .ok_or(AuditError::InvalidInput)?;
+        ground.channel_id.clear();
+        ground.instance_id = Some(id(4).to_vec());
+        audit::check_mint(&message)
+    }
+
+    #[test]
     fn frozen_mint_message_is_admissible_and_in_the_death_scope() {
         let message = mint_message(&request(), None, id(9));
         audit::check_mint(&message).expect("admissible MINT");
@@ -2225,6 +2361,148 @@ mod tests {
         assert_eq!(ground.world_id, id(1).to_vec());
         assert_eq!(ground.channel_id, id(2).to_vec());
         assert_eq!(ground.runtime_scope_ownership_generation, 1);
+    }
+
+    #[test]
+    fn instance_corpse_mint_scope_is_tagged_and_round_trips_without_a_channel() {
+        let channel = request();
+        let mut instance = channel.clone();
+        instance.cause.death.runtime_scope =
+            RuntimeScopeRefV1::instance(instance.cause.death.world_id, id(2))
+                .expect("typed Instance");
+        assert_ne!(
+            intent_binding(&channel, None).expect("Channel intent"),
+            intent_binding(&instance, None).expect("Instance intent"),
+            "equal UUIDs and local death fields never alias the two namespaces"
+        );
+        let mint = mint_message(&instance, None, id(9));
+        let wire = audit::encode_mint_event(
+            MintEventIdentity {
+                event_id: id(7),
+                transaction_id: id(8),
+                occurred_at_unix_ms: 1,
+                server_build_id: SERVER_BUILD_ID,
+            },
+            mint.clone(),
+            audit::Type2EventTuple::V1,
+        )
+        .expect("Instance audit");
+        let (envelope, decoded) = audit::decode_envelope(&wire).expect("strict audit round trip");
+        assert_eq!(decoded, mint);
+        assert_eq!(envelope.channel_id, None);
+        assert_eq!(envelope.instance_id, Some(id(2).to_vec()));
+        let mut wrong_ground = mint.clone();
+        wrong_ground
+            .destination
+            .as_mut()
+            .expect("Ground")
+            .instance_id = Some(id(3).to_vec());
+        assert_eq!(
+            audit::check_mint(&wrong_ground),
+            Err(AuditError::InvalidInput)
+        );
+        let mut borrowed_ground = mint.clone();
+        let ground = borrowed_ground.destination.as_mut().expect("Ground");
+        ground.instance_id = None;
+        ground.channel_id = id(2).to_vec();
+        assert_eq!(
+            audit::check_mint(&borrowed_ground),
+            Err(AuditError::InvalidInput),
+            "equal UUIDs do not turn Instance death provenance into Channel Ground"
+        );
+        let mut mixed = mint.clone();
+        mixed
+            .source
+            .as_mut()
+            .expect("source")
+            .death_occurrence
+            .as_mut()
+            .expect("death")
+            .channel_id = id(2).to_vec();
+        assert_eq!(audit::check_mint(&mixed), Err(AuditError::InvalidInput));
+        let mut empty = mint.clone();
+        empty
+            .source
+            .as_mut()
+            .expect("source")
+            .death_occurrence
+            .as_mut()
+            .expect("death")
+            .instance_id = None;
+        assert_eq!(audit::check_mint(&empty), Err(AuditError::InvalidInput));
+        for malformed in [Vec::new(), vec![0; 16], id(2)[..15].to_vec()] {
+            let mut malformed_scope = mint.clone();
+            malformed_scope
+                .source
+                .as_mut()
+                .expect("source")
+                .death_occurrence
+                .as_mut()
+                .expect("death")
+                .instance_id = Some(malformed);
+            assert_eq!(
+                audit::check_mint(&malformed_scope),
+                Err(AuditError::InvalidInput)
+            );
+        }
+    }
+
+    #[test]
+    fn instance_corpse_audit_rejects_duplicate_and_unknown_death_scope_fields() {
+        use prost::Message;
+        fn message_field(out: &mut Vec<u8>, tag: u64, value: &[u8]) {
+            prost::encoding::encode_varint((tag << 3) | 2, out);
+            prost::encoding::encode_varint(value.len() as u64, out);
+            out.extend_from_slice(value);
+        }
+        fn payload(mint: &OneItemMintV1, death: &[u8]) -> Vec<u8> {
+            let mut source = mint.source.clone().expect("source");
+            let mut source_bytes = Vec::new();
+            message_field(&mut source_bytes, 1, source.typed_cause.as_bytes());
+            message_field(&mut source_bytes, 2, death);
+            source.typed_cause.clear();
+            source.death_occurrence = None;
+            source_bytes.extend_from_slice(&source.encode_to_vec());
+            let mut skeleton = mint.clone();
+            skeleton.source = None;
+            skeleton.before_semantically_absent = false;
+            let mut mint_bytes = skeleton.encode_to_vec();
+            message_field(&mut mint_bytes, 3, &source_bytes);
+            mint_bytes.extend_from_slice(&[32, 1]);
+            let mut wire = vec![8, 1];
+            message_field(&mut wire, 2, &mint_bytes);
+            wire
+        }
+        let mut request = request();
+        request.cause.death.runtime_scope =
+            RuntimeScopeRefV1::instance(request.cause.death.world_id, id(2)).expect("Instance");
+        let mint = mint_message(&request, None, id(9));
+        let death = mint
+            .source
+            .as_ref()
+            .expect("source")
+            .death_occurrence
+            .as_ref()
+            .expect("death")
+            .encode_to_vec();
+        let canonical = payload(&mint, &death);
+        assert_eq!(
+            canonical,
+            audit::OneItemTransactionV1 {
+                interpretation_revision: audit::INTERPRETATION_REVISION,
+                operation: Some(audit::OneItemOperationV1::Mint(mint.clone())),
+            }
+            .encode_to_vec()
+        );
+        assert!(audit::decode_payload(&canonical).is_ok());
+        for field in [6, 7] {
+            let mut changed = death.clone();
+            message_field(&mut changed, field, &id(2));
+            assert_eq!(
+                audit::decode_payload(&payload(&mint, &changed)),
+                Err(AuditError::InvalidInput)
+            );
+        }
     }
 
     fn placement(ordinal: u32) -> CorpseContainerPlacement {

@@ -117,6 +117,9 @@ struct PaletteGround {
 /// The Tibia appearance id a palette key names (`oteryn:{item|terrain}.tibia.i<N>` and
 /// `donor:crystalserver@<rev>:item/<N>`); `None` for any other key or an id above `u16`.
 pub fn palette_appearance(key: &str) -> Option<u16> {
+    if let Some(surface) = crate::content::qualified_static_surface(key) {
+        return Some(surface.source_id);
+    }
     let digits = if let Some(rest) = key.strip_prefix("oteryn:") {
         rest.strip_prefix("item.tibia.i")
             .or_else(|| rest.strip_prefix("terrain.tibia.i"))?

@@ -61,7 +61,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// One owner pass over every held target: at most one swing per attacker (`DEADLINE_STATE`
     /// catch-up), never a backlog.
     pub(in crate::gameplay_transport) async fn drain_auto_attacks(&self) {
-        let Some(room) = self.rooms.gate_auto_attack() else {
+        let Some(room) = self.effective_rooms().gate_auto_attack() else {
             return;
         };
         let Some(content) = self
@@ -105,6 +105,78 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let objects = self.door.lock().await;
         let mut attack = self.states.attack.lock().await;
         attack.prune(&runtime);
+        // Only lineages already held by the real attack owner are read. The
+        // snapshot grants neither a swing nor payment; those are selected below.
+        let source_players: Vec<_> = attack
+            .entries
+            .iter()
+            .filter_map(|entry| {
+                let (target, lineage) = entry.state.held_target_lineage()?;
+                if entry
+                    .state
+                    .next_due(constants.attack_interval_micros())
+                    .is_some_and(|due| due > now)
+                {
+                    return None;
+                }
+                let target = runtime.companion_snapshot(target).ok()?;
+                content.policies().soul_war_health_policy(
+                    &target.state.policy.definition_key,
+                    &target.state.policy.definition_revision,
+                )?;
+                let control = runtime
+                    .player_control_facts(entry.actor, entry.session)
+                    .ok()?;
+                if control.control_loss.is_some() {
+                    return None;
+                }
+                Some((entry.actor, entry.session, lineage))
+            })
+            .collect();
+        let mut unavailable_source_players = std::collections::BTreeSet::new();
+        if !source_players.is_empty() {
+            let Some(active) = self.active_generation else {
+                return;
+            };
+            let read = if let Ok(pass) = self.root.try_issue_semantic_pass() {
+                let mut context = (
+                    self,
+                    &mut *runtime,
+                    &*states,
+                    &pvp_permit,
+                    active,
+                    room,
+                    &source_players,
+                );
+                pass.run_with_context(&mut context,move |holder,deadline,context| Box::pin(async move {
+                use crate::durability::spell_item_transaction::{begin_spell_owner_transaction,assert_spell_item_scope_in_transaction,check_scope_transaction};
+                let (owner,runtime,states,permit,active,room,sources)=context;
+                let mut tx=begin_spell_owner_transaction(holder,deadline).await?;
+                let authority=assert_spell_item_scope_in_transaction(&mut tx,permit,owner.root,owner.character,owner.holder,
+                    runtime.binding().runtime_scope(),runtime.binding().scope_generation().get()).await
+                    .map_err(|_|crate::durability::DurabilityError::Unavailable)?;
+                crate::gameplay_transport::soul_war_callbacks::player_source::publish_auto_sources(
+                    &mut tx,owner.root,&authority,active,room,runtime,states,sources,now.get()).await?;
+                check_scope_transaction(&mut tx,&authority).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
+                tx.rollback().await?;
+                Ok(())
+            })).await
+            } else {
+                Err(crate::durability::DurabilityError::Unavailable)
+            };
+            if read.is_err() {
+                // An unavailable source enrichment refuses its own affected
+                // attackers. It cannot suppress unrelated ordinary combat.
+                unavailable_source_players.extend(
+                    source_players
+                        .iter()
+                        .map(|(actor, _, _)| actor.placement_identity()),
+                );
+            }
+            if runtime.owner_fence().is_err() {
+                return;
+            }
+        }
         let ChannelAttackStates {
             entries,
             blocks,
@@ -135,6 +207,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let mut pvp_hits = Vec::new();
         for entry in entries.iter_mut() {
+            if unavailable_source_players.contains(&entry.actor.placement_identity()) {
+                continue;
+            }
             let state_before = entry.state.clone();
             let ordinal_before = entry.next_ordinal;
             let Some(mut selected) =
@@ -509,9 +584,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 // The creature's content defence and armor (ATTACK-0 §5, `monster.cpp:242-251`);
                 // a creature without them takes no hit (fail closed).
-                let (Some(defense), Some(armor)) =
-                    (snapshot.state.policy.defense, snapshot.state.policy.armor)
-                else {
+                let (Some(defense), Some(armor)) = (
+                    runtime.effective_creature_defense(&snapshot).ok(),
+                    snapshot.state.policy.armor,
+                ) else {
                     continue;
                 };
                 // CREATURE-RESIST-MELEE-1: a creature immune to physical damage meets the swing
@@ -538,12 +614,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     continue;
                 }
                 let creature_max_health = u64::try_from(snapshot.maximum_health).unwrap_or(0);
+                let cruelty_drain = match runtime.soul_war_health_callback(target) {
+                    Ok(Some(policy)) if policy.is_cruelty() => {
+                        match runtime.soul_war_cruelty_drain(&snapshot) {
+                            Ok(value) => Some(value.unwrap_or(2)),
+                            Err(_) => continue,
+                        }
+                    }
+                    Ok(_) => None,
+                    Err(_) => continue,
+                };
                 let ranged_magnitude = if let Some(ranged) = &selected.weapon.ranged {
                     ranged::creature_damage(
                         ranged,
                         &snapshot.state.policy,
                         damage,
                         (&root, constants, entry.actor, swing.lineage, ordinal),
+                        cruelty_drain,
                         states
                             .get(&runtime, entry.actor, entry.session)
                             .and_then(|state| {
@@ -609,6 +696,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     magnitude
                 };
                 let landed = if selected.weapon.ranged.is_none() {
+                    let Some(landed) = super::cruelty_health_component(landed, cruelty_drain)
+                    else {
+                        continue;
+                    };
+                    // A zero event result exits Game's HP path before Wheel.
+                    if cruelty_drain.is_some() && landed == 0 {
+                        continue;
+                    }
                     if let Some(state) = states.get(&runtime, entry.actor, entry.session) {
                         let Some((primary, _)) = state.finish_wheel_attack_components(
                             landed,
@@ -718,7 +813,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // The owner clock of this turn, in ms, stamps the hit's contributor and, for a lethal
                 // hit, the death time the kill reward reads (§1.2).
                 let committed = crate::ability::commit::commit_exact_owner_swing_damage(
-                    &mut runtime.borrow_exact_actor_commit_at(now.get() / 1_000),
+                    &mut runtime.borrow_exact_actor_commit_at_us(now.get()),
                     &resolved,
                     &plan,
                     entry.actor,
@@ -910,14 +1005,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             swing.lineage.command_id().get(),
                             outcome.charm_key
                         );
-                        if let Ok(child) = runtime.commit_source_damage(
+                        if let Ok(child) = runtime.commit_source_damage_at_us(
                             target,
                             entry.actor,
                             entry.session,
                             stream.as_bytes(),
                             u64::from(ordinal),
                             amount,
-                            now.get() / 1_000,
+                            now.get(),
                         ) {
                             if child.applied {
                                 states.analyser.impact_amount(

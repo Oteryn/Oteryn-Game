@@ -144,6 +144,7 @@ fn scenario() -> TestResult {
         let rotation = u32::try_from(now)? / ROTATION_SECONDS;
         let state = Record {
             progress: Progress {
+                lifetime_levels: None,
                 rotation: rotation - 1,
                 level: 25,
                 start: 25,
@@ -249,7 +250,8 @@ fn scenario() -> TestResult {
                     read.state,
                     forged,
                     1,
-                    None
+                    None,
+                    None,
                 )
                 .await
                 .is_err(),
@@ -297,7 +299,27 @@ fn reaudit_arena_lifecycle_postgres_real_wave_and_exempt_death() -> TestResult {
     );
     Ok(())
 }
-fn physical() -> TestResult {
+pub(super) fn physical() -> TestResult {
+    physical_at(0)
+}
+
+pub(super) fn physical_at(starting_wave: u32) -> TestResult {
+    physical_context(starting_wave, true, false)
+}
+
+pub(super) fn physical_unqualified() -> TestResult {
+    physical_context(0, false, false)
+}
+
+pub(super) fn physical_hazards() -> TestResult {
+    physical_context(0, true, true)
+}
+
+fn physical_context(
+    starting_wave: u32,
+    mechanics_test_context: bool,
+    large_hazards: bool,
+) -> TestResult {
     use super::fixture::{debug, id, run};
     use super::{Dependencies, prepare_current_session};
     use crate::durability::character_progression::{
@@ -494,10 +516,16 @@ fn physical() -> TestResult {
             let state = states
                 .get_mut(&runtime, deps.actor, session)
                 .ok_or("player")?;
+            let full = (facts.max_health, facts.max_mana);
             *state = state
                 .after_level_up(facts)
                 .ok_or("level-up vitals successor")?;
-            state.restore_saved_vitals(200, 100);
+            if large_hazards {
+                // The receipt case advances owner time with full vitals from the real build.
+                state.restore_saved_vitals(full.0, full.1);
+            } else {
+                state.restore_saved_vitals(200, 100);
+            }
         }
         let xp_before = owner
             .root
@@ -505,15 +533,50 @@ fn physical() -> TestResult {
             .await?
             .ok_or("progression")?
             .total_experience;
+        if starting_wave != 0 {
+            let now: i64 =
+                sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+                    .fetch_one(&harness.pool)
+                    .await?;
+            let seeded = crate::durability::tibiadrome::Record {
+                progress: crate::durability::tibiadrome::Progress {
+                    rotation: u32::try_from(now)? / crate::durability::tibiadrome::ROTATION_SECONDS,
+                    start: starting_wave,
+                    ..Default::default()
+                },
+                ..Default::default()
+            };
+            sqlx::query("INSERT INTO game_character_tibiadrome(character_id,body) VALUES(encode($1,'hex')::uuid,$2) ON CONFLICT(character_id) DO UPDATE SET body=EXCLUDED.body")
+                .bind(id(41).as_slice()).bind(serde_json::to_value(seeded)?).execute(&harness.pool).await?;
+        }
+        owner
+            .states
+            .tibiadrome
+            .mechanics_test_context
+            .store(mechanics_test_context, std::sync::atomic::Ordering::Release);
+        owner
+            .states
+            .tibiadrome
+            .mechanics_test_hazards
+            .store(large_hazards, std::sync::atomic::Ordering::Release);
         let entered = drome_exchange(
             &owner,
             &mut admitted,
             oteryn_protocol_oteryn::arena::DromeAction::Enter,
         )
         .await?;
+        if !mechanics_test_context {
+            assert_eq!(
+                (entered.disposition, entered.phase),
+                (6, 0),
+                "unqualified Svargrond profiles must not admit a Drome battle"
+            );
+            assert!(!owner.runtime.lock().await.is_tibiadrome(deps.actor));
+            return Ok(());
+        }
         assert_eq!(
             (entered.disposition, entered.phase, entered.wave),
-            (1, 1, 1)
+            (1, 1, starting_wave)
         );
         assert_eq!(
             drome_exchange(
@@ -534,6 +597,47 @@ fn physical() -> TestResult {
                 std::time::Instant::now() + std::time::Duration::from_secs(9),
             );
         }
+        if large_hazards {
+            return super::srx3_drome_hazards::large_hazards_receipt(
+                &mut owner,
+                &mut admitted,
+                &harness,
+            )
+            .await;
+        }
+        let mut panel = oteryn_dev_client::client_ui::arena::ArenaPanel {
+            selected: true,
+            ..Default::default()
+        };
+        let request = oteryn_dev_client::client_ui::arena::request(
+            &mut panel,
+            oteryn_dev_client::client_ui::arena::Intent::Action(
+                oteryn_protocol_oteryn::arena::ArenaAction::Drome(
+                    oteryn_protocol_oteryn::arena::DromeAction::Status,
+                ),
+            ),
+        )
+        .ok_or("native phase refresh")?;
+        let command_id = admitted.continuity.next_command_id;
+        let (status, payload) = super::guild_wire::exchange(
+            &owner,
+            &mut admitted,
+            command_id,
+            request.kind,
+            &request.payload,
+        )
+        .await?;
+        assert!(oteryn_dev_client::client_ui::arena::apply_result(
+            &mut panel,
+            &oteryn_dev_client::client_runtime::raw_feature::GatedCommandResult {
+                command_id,
+                status,
+                server_sequence: 1,
+                payload,
+            },
+        ));
+        assert_eq!(panel.drome.ok_or("decoded native combat phase")?.phase, 2);
+        assert!(oteryn_dev_client::client_ui::arena::panel_text(&panel).contains("Fighting: wave"));
         let targets: Vec<_> = {
             let runtime = deps.runtime.lock().await;
             runtime
@@ -545,6 +649,74 @@ fn physical() -> TestResult {
                 .collect()
         };
         assert_eq!(targets.len(), 4);
+        {
+            let mut runtime = deps.runtime.lock().await;
+            for target in &targets {
+                // ARENA1 A4 / ARENA1-RL-20: round(base_hit * 1.039^wave).
+                // These actors were spawned and scaled by the production Drome tick.
+                assert_eq!(
+                    runtime
+                        .encounter_source_damage(*target, 1_000, 0)
+                        .map_err(debug)?,
+                    (
+                        if starting_wave == 0 {
+                            1_000
+                        } else {
+                            92_907_061
+                        },
+                        false
+                    ),
+                    "spawned wave must use its accepted source scaling"
+                );
+                let before = runtime.companion_snapshot(*target).map_err(debug)?;
+                let base = runtime
+                    .companion_policy(&before.state.policy.definition_key)
+                    .map_err(debug)?;
+                if starting_wave == 0 {
+                    assert_eq!(before.maximum_health, base.maximum_health);
+                }
+                assert!(runtime.scale_tibiadrome_opponent(*target, 301).is_err());
+                assert_eq!(
+                    runtime.companion_snapshot(*target).map_err(debug)?,
+                    before,
+                    "out-of-range waves cannot mutate a live opponent"
+                );
+                for (wave, expected) in [
+                    (0, 1_000),
+                    (1, 1_039),
+                    (10, 1_466),
+                    (100, 45_873),
+                    (300, 96_530_436),
+                ] {
+                    runtime
+                        .scale_tibiadrome_opponent(*target, wave)
+                        .map_err(debug)?;
+                    assert_eq!(
+                        runtime
+                            .encounter_source_damage(*target, 1_000, 0)
+                            .map_err(debug)?,
+                        (expected, false)
+                    );
+                    if wave == 1 {
+                        assert_eq!(
+                            runtime
+                                .companion_snapshot(*target)
+                                .map_err(debug)?
+                                .maximum_health,
+                            (base.maximum_health * 1_039 + 500) / 1_000
+                        );
+                    }
+                }
+                runtime
+                    .scale_tibiadrome_opponent(*target, starting_wave)
+                    .map_err(debug)?;
+                assert_eq!(
+                    runtime.companion_snapshot(*target).map_err(debug)?,
+                    before,
+                    "scaling is based on the admitted profile, never the previous scaled HP"
+                );
+            }
+        }
         {
             let mut runtime = deps.runtime.lock().await;
             let outsider_session =
@@ -600,7 +772,59 @@ fn physical() -> TestResult {
             runtime.remove_test_actor(outsider).map_err(debug)?;
         }
         for target in targets {
-            fixture::fight(&mut owner, &mut admitted, deps.actor, target).await?;
+            if starting_wave == 0 {
+                fixture::fight(&mut owner, &mut admitted, deps.actor, target).await?;
+            } else {
+                use crate::foundation::runtime_actor_spell_types::{
+                    OwnerCombatBatch, OwnerCombatChange, OwnerCombatEffect, SpellOccurrenceBinding,
+                };
+                let mut runtime = deps.runtime.lock().await;
+                let now = owner.owner_now();
+                let batch = OwnerCombatBatch {
+                    caster: deps.actor,
+                    attacker: crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                        .map_err(debug)?,
+                    current_lease_generation: fence.character_lease_generation,
+                    command: crate::foundation::CommandRef::new(
+                        session,
+                        crate::foundation::CommandId::new(900 + u64::from(target.actor_local_id()))
+                            .map_err(debug)?,
+                    ),
+                    occurrence: SpellOccurrenceBinding {
+                        id: "srx3:drome-ceiling-lethal".into(),
+                        revisions: ["r1", "r1", "r1", "r1", "r1"].map(str::to_owned),
+                    },
+                    binding: b"srx3-drome-ceiling-lethal".to_vec(),
+                    anchor: None,
+                    now_us: Some(now),
+                    now_ms: now.get() / 1_000,
+                    effects: vec![OwnerCombatEffect {
+                        target,
+                        sub_ordinal: 0,
+                        change: OwnerCombatChange::Damage {
+                            target_atom: runtime
+                                .creature_spell_target_atom(target)
+                                .map_err(debug)?,
+                            magnitude: runtime.companion_snapshot(target).map_err(debug)?.health,
+                        },
+                    }],
+                    deferred: None,
+                };
+                let staged = runtime.stage_spell_batch(&batch).map_err(debug)?;
+                let receipt = runtime.commit_spell_batch(staged).map_err(debug)?;
+                assert!(receipt.applied);
+                assert_eq!(
+                    receipt.effects[0]
+                        .health
+                        .ok_or("actual canonical lethal HP receipt")?
+                        .health_after,
+                    0,
+                    "the real canonical batch must actually kill the scaled opponent"
+                );
+                let mut death = runtime.borrow_combat_death();
+                let lethal = death.committed_lethal_receipt(target).map_err(debug)?;
+                death.project_committed_lethal(lethal).map_err(debug)?;
+            }
         }
         assert!(owner.drome_sync(session, false).await);
         let status = drome_exchange(
@@ -609,7 +833,30 @@ fn physical() -> TestResult {
             oteryn_protocol_oteryn::arena::DromeAction::Status,
         )
         .await?;
+        if starting_wave == 299 {
+            assert_eq!(
+                (status.level, status.start, status.wave, status.phase),
+                (300, 295, 300, 0)
+            );
+            assert!(status.cooldown > 0);
+            let runtime = deps.runtime.lock().await;
+            assert!(
+                !runtime
+                    .visible_entities()
+                    .creatures
+                    .iter()
+                    .any(|c| runtime.is_tibiadrome(c.actor))
+            );
+            return Ok(());
+        }
         assert_eq!((status.level, status.start), (1, 1));
+        super::srx3_drome::lifetime_highscore_job(
+            std::sync::Arc::new(harness.root.clone()),
+            &harness.pool,
+            deps.admitted.world_id,
+            fence.character_id,
+        )
+        .await?;
         assert_eq!(
             owner
                 .root

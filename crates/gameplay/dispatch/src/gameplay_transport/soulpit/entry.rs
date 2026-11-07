@@ -68,9 +68,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return Ok(None);
             };
-            let Some(at) =
-                super::super::bundle_map_position(&mut runtime, self.movement_cells, actor)
-            else {
+            let Some(at) = super::super::bundle_map_position(
+                &mut runtime,
+                self.effective_movement_cells(),
+                actor,
+            ) else {
                 return Ok(None);
             };
             let facts = at.map.facts.pinned();
@@ -154,7 +156,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let current = oteryn_gameplay_domain::domain::map_position::TilePos {
                 x: u16::try_from(at.at.x).map_err(|_| ())?,
                 y: u16::try_from(at.at.y).map_err(|_| ())?,
-                floor: i8::try_from(at.at.floor).map_err(|_| ())?,
+                floor: match at.at.floor {
+                    -8 | 8 => -8,
+                    _ => return Ok(Some(outcome(UseDisposition::TooFar))),
+                },
             };
             if soulpit::entry_slot(current) != Some(0) {
                 return Ok(Some(outcome(UseDisposition::TooFar)));

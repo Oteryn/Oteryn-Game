@@ -5,7 +5,7 @@ use super::RoomPosition;
     non_upper_case_globals,
     reason = "the packet API fixes this exported name"
 )]
-pub const Ichgahal_KEY: &str = "oteryn:creature.ichgahal";
+pub const ICHGAHAL_KEY: &str = "oteryn:creature.ichgahal";
 pub const MUSHROOM_KEY: &str = "oteryn:creature.mushroom";
 pub const ELDER_BLOODJAW_KEY: &str = "oteryn:creature.elder_bloodjaw";
 pub const MUSHROOM_FLOOR: u8 = 4;

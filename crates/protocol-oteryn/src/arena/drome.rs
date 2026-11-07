@@ -82,9 +82,8 @@ impl DromeResult {
         out
     }
     pub fn decode(payload: &[u8]) -> Result<Self, ArenaWireError> {
-        if payload.len() > super::MAX_MATCH_RESULT_BYTES {
-            return Err(ArenaWireError::LimitExceeded);
-        }
+        let scalar = super::drome_hazards::scalar_result(payload)?;
+        let payload = scalar.as_slice();
         let [
             version,
             disposition,

@@ -952,7 +952,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let Ok(mut familiar) = prepare_familiar(
                 &runtime,
-                self.movement_cells,
+                self.effective_movement_cells(),
                 binding,
                 FamiliarEvent::Cast,
                 &facts,
@@ -1935,7 +1935,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| ())?;
             let familiar = prepare_lifecycle_familiar(
                 &runtime,
-                Some(self.movement_cells),
+                Some(self.effective_movement_cells()),
                 binding,
                 &facts,
                 unix,

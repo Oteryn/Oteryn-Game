@@ -1770,3 +1770,11 @@ fn world_totals_watermark_requires_durable_sampling_coverage() {
     assert!(sent[0].1.contains(r#""family":"world_totals""#));
     assert!(sent[0].1.contains(r#""complete_through":"1790000000""#));
 }
+
+#[test]
+fn srx3_drome_lifetime_highscore_category_thirteen_keeps_existing_public_publisher() {
+    let mut snapshot = highscores(vec![]);
+    snapshot.category = 13;
+    assert!(encode_highscores(AUTHORITY, &snapshot).is_ok());
+    assert!(HIGHSCORE_CATEGORIES.contains(&("tibiadrome", 13)));
+}

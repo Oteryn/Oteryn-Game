@@ -1,6 +1,6 @@
 //! Closed adapters for source-specific rules inside the fenced quest writer.
 //!
-//! A rule consumes exactly its three locked tracks and returns their complete
+//! A rule consumes exactly its closed set of locked tracks and returns their complete
 //! next snapshot. It never obtains values from a session cache or writes state.
 
 use super::{QuestEffect, QuestEffectKind, QuestRefusal, cults_of_tibia, unnatural_selection};
@@ -12,6 +12,8 @@ use std::collections::BTreeMap;
 pub enum NativeRule {
     CultsSymbol { symbol: u8 },
     UnnaturalDance { tile: u8 },
+    SoulWarRemorse,
+    SoulWarEnergy,
 }
 
 impl NativeRule {
@@ -19,17 +21,20 @@ impl NativeRule {
         match self {
             Self::CultsSymbol { .. } => cults_of_tibia::QUEST,
             Self::UnnaturalDance { .. } => unnatural_selection::QUEST,
+            Self::SoulWarRemorse | Self::SoulWarEnergy => super::soul_war::source_items::QUEST,
         }
     }
 
-    pub const fn tracks(self) -> [&'static str; 3] {
+    pub fn tracks(self) -> Vec<&'static str> {
         match self {
-            Self::CultsSymbol { .. } => [
+            Self::CultsSymbol { .. } => vec![
                 cults_of_tibia::MISSION,
                 cults_of_tibia::TEMP,
                 cults_of_tibia::OBJECTS,
             ],
-            Self::UnnaturalDance { .. } => unnatural_selection::TRACKS,
+            Self::UnnaturalDance { .. } => unnatural_selection::TRACKS.to_vec(),
+            Self::SoulWarRemorse => vec![super::soul_war::source_items::REMORSE],
+            Self::SoulWarEnergy => super::soul_war::source_items::ENERGY_TRACKS.to_vec(),
         }
     }
 
@@ -38,6 +43,8 @@ impl NativeRule {
         match self {
             Self::CultsSymbol { symbol } => out.extend_from_slice(&[1, symbol]),
             Self::UnnaturalDance { tile } => out.extend_from_slice(&[2, tile]),
+            Self::SoulWarRemorse => out.push(3),
+            Self::SoulWarEnergy => out.push(4),
         }
     }
 
@@ -45,14 +52,15 @@ impl NativeRule {
         match self {
             Self::CultsSymbol { symbol } => symbol < cults_of_tibia::SYMBOL_COUNT,
             Self::UnnaturalDance { tile } => tile >= 1 && tile <= 9,
+            Self::SoulWarRemorse | Self::SoulWarEnergy => true,
         }
     }
 
-    /// Only one closed rule may own all three effects of this transition.
+    /// Only one closed rule may own the complete effects of this transition.
     pub fn valid_effects(self, quest: &str, effects: &[QuestEffect]) -> bool {
         self.valid_id()
             && quest == self.quest()
-            && effects.len() == 3
+            && effects.len() == self.tracks().len()
             && effects
                 .iter()
                 .all(|effect| effect.effect == QuestEffectKind::Native(self))
@@ -86,7 +94,7 @@ impl NativeRule {
                         objects: read(cults_of_tibia::OBJECTS)?,
                     },
                 )?;
-                [snapshot.mission, snapshot.temp, snapshot.objects]
+                vec![snapshot.mission, snapshot.temp, snapshot.objects]
             }
             Self::UnnaturalDance { tile } => {
                 let snapshot = unnatural_selection::apply_dance(
@@ -97,10 +105,45 @@ impl NativeRule {
                         questline: read(unnatural_selection::QUESTLINE_TRACK)?,
                     },
                 )?;
-                [
+                vec![
                     snapshot.dance_status,
                     snapshot.mission03,
                     snapshot.questline,
+                ]
+            }
+            Self::SoulWarRemorse => {
+                use super::soul_war::source_items::{Kind, REMORSE, SourceItemState};
+                let before = u8::try_from(read(REMORSE)?).map_err(|_| QuestRefusal::OutOfRange)?;
+                let plan = SourceItemState {
+                    remorse: before,
+                    ..Default::default()
+                }
+                .apply(Kind::Remorse, 0, true)
+                .ok_or(QuestRefusal::OutOfRange)?;
+                vec![i64::from(plan.after.remorse)]
+            }
+            Self::SoulWarEnergy => {
+                use super::soul_war::source_items::{ENERGY_TRACKS, Kind, SourceItemState};
+                let mut floors = 0;
+                for (index, track) in ENERGY_TRACKS.iter().skip(1).enumerate() {
+                    match read(track)? {
+                        0 => {}
+                        1 => floors |= 1 << index,
+                        _ => return Err(QuestRefusal::OutOfRange),
+                    }
+                }
+                let plan = SourceItemState {
+                    energy: read(ENERGY_TRACKS[0])?,
+                    floors,
+                    ..Default::default()
+                }
+                .apply(Kind::Energy, 0, true)
+                .ok_or(QuestRefusal::OutOfRange)?;
+                vec![
+                    plan.after.energy,
+                    i64::from(plan.after.floors & 1 != 0),
+                    i64::from(plan.after.floors & 2 != 0),
+                    i64::from(plan.after.floors & 4 != 0),
                 ]
             }
         };
@@ -230,6 +273,48 @@ mod tests {
         ] {
             assert!(serde_json::from_str::<NativeRule>(text).is_err());
         }
+        Ok(())
+    }
+    #[test]
+    fn srx3_source_items_native_remorse_rule_uses_exact_locked_track_set() -> Result<(), String> {
+        let rule = NativeRule::SoulWarRemorse;
+        let values =
+            BTreeMap::from([(super::super::soul_war::source_items::REMORSE.to_owned(), 1)]);
+        let after = rule.evaluate(&values).map_err(|e| format!("{e:?}"))?;
+        assert_eq!(
+            after.get(super::super::soul_war::source_items::REMORSE),
+            Some(&0)
+        );
+        let mut extra = values;
+        extra.insert("oteryn:unrelated".into(), 0);
+        assert_eq!(rule.evaluate(&extra), Err(QuestRefusal::NotSupported));
+        Ok(())
+    }
+    #[test]
+    fn srx3_source_items_native_energy_rule_preserves_completed_item_counter() -> Result<(), String>
+    {
+        let rule = NativeRule::SoulWarEnergy;
+        let tracks = super::super::soul_war::source_items::ENERGY_TRACKS;
+        let values = tracks
+            .into_iter()
+            .zip([69, 0, 0, 0])
+            .map(|(k, v)| (k.to_owned(), v))
+            .collect();
+        let after = rule.evaluate(&values).map_err(|e| format!("{e:?}"))?;
+        assert_eq!(
+            tracks.map(|k| after.get(k).copied()),
+            [Some(0), Some(1), Some(1), Some(1)]
+        );
+        let values = tracks
+            .into_iter()
+            .zip([1000, 0, 0, 1])
+            .map(|(k, v)| (k.to_owned(), v))
+            .collect();
+        let after = rule.evaluate(&values).map_err(|e| format!("{e:?}"))?;
+        assert_eq!(
+            tracks.map(|k| after.get(k).copied()),
+            [Some(1001), Some(0), Some(0), Some(1)]
+        );
         Ok(())
     }
 }
