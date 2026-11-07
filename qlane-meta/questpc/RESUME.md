@@ -1,3 +1,21 @@
+## Draconia route provenance checkpoint — implementation still in progress
+Verified primary201189f sources against retained9f5a72 corpus: three entire files
+identical; portal rows38003-38006 semantically identical despite other table edits.
+Source hashes/URLs/line mappings:cloud-draconia-route-source-validation.json.
+This checkpoint publishes no route implementation and claims no mechanic/title green.
+
+Working tree contains new draconia_route.rs plus quest_world_callbacks.rs/scenario.rs
+fixture changes. Six-case RED loop session40842: portal38003/38004 actual PG RED
+45.92s/46.22s, expected source-not-destination. Cases38005/38006 still running after
+rebuild. Pressure29002/29003 first probes reached PG but failed setup
+MovementNonCardinal; do NOT count these as intended RED. Guest setup now creates
+and pins the second admitted actor directly at the gate, preserving proper lease.
+Rerun those two actual PG probes after session40842 finishes, then add production
+six-anchor capture/eight movement callbacks. No production route fix applied yet.
+Source plans:/tmp/questpc-draconia-pressure-next-plan.md. Corrected extra ground
+palette metadata (required walkable/speed); no test assertion weakened. Continue
+through GREEN, source-proof rebind/generation, strict checks, commit/fetch/merge/push.
+
 ## Anchor/craft merge fully checked — 2026-11-07
 Preserved local289804c01 four native Draconia anchors and remote22eab7c56 Corym
 forging. Only metadata conflicted; both evidence records and ownership exclusions

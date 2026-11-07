@@ -9207,6 +9207,12 @@
         35012
       ],
       "next": "Source pressure gates and four route portals, then level/NPC/container stock composition."
+    },
+    "draconia_source_route": {
+      "state": "source_equivalence_verified_portal_red_observed_party_probe_pending",
+      "source_validation": "qlane-meta/questpc/cloud-draconia-route-source-validation.json",
+      "implementation_published": false,
+      "next": "Finish six actual RED cases; pressure setup has been corrected. Then add eight source movement callbacks and six exact bindings, regenerate source proofs, run GREEN and strict checks."
     }
   },
   "cross_lane_qualified_elsewhere": {

@@ -344,3 +344,14 @@ https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2
 Fresh owner-lane scan finds34 distinct locally listed titles QUALIFIED elsewhere;
 27 remain locally UNFINISHED but are explicitly excluded from implementation here.
 Local counts are not promoted by an unmerged external implementation.
+
+Draconia route provenance checkpoint: three primary files at Crystal201189f are
+byte-identical to retained9f5a72 corpus blobs (pressure handler, teleport handler,
+plate table). The teleport table differs elsewhere; its four owned UID38003-38006
+rows are semantically identical, including destination/effect. Hashes, URLs and
+line mappings are retained in cloud-draconia-route-source-validation.json.
+Pressure source is player-only remove-if-present on entry, create-if-absent on exit;
+no personal claim or additional party counter is substituted. Primary URLs:
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/movements/others/remove-create_item.lua
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/movements/others/teleport.lua
+This checkpoint publishes provenance only; route implementation remains uncommitted.

@@ -1,0 +1,128 @@
+{
+  "primary_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "retained_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+  "source_files": [
+    {
+      "path": "data-global/scripts/movements/others/remove-create_item.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/movements/others/remove-create_item.lua",
+      "sha256": "861e45bd2ac8e804f245a48fc80df2834621ea13b818f94f2dec7482d752984c",
+      "git_blob_sha1": "c56bbceed500fe88421fa0bb809ec2835ccb4c34"
+    },
+    {
+      "path": "data-global/scripts/movements/others/teleport.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/movements/others/teleport.lua",
+      "sha256": "2cabe2c1f698d4e1fac8af6918c525854e4acd418d4b466bea7da1c447bc7746",
+      "git_blob_sha1": "c430e446311c87fbf3750f923a33970f9204e2ab"
+    },
+    {
+      "path": "data-global/startup/tables/tile.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/tile.lua",
+      "sha256": "f6e1d120063105d19303c9e9c8a57b40a6419cc51c4998be58984c42dc67a2a7",
+      "git_blob_sha1": "e8780ad80e10d09eba2db1138e1cac4ba1d4b67b"
+    },
+    {
+      "path": "data-global/startup/tables/teleport.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/teleport.lua",
+      "sha256": "9e8f807264ec6ab85e263976136666ff38c195f1921cc30e73fd4431370fe87e",
+      "git_blob_sha1": "cfbfc04755c4cfd2665aa1d963bcc7416e23707d"
+    }
+  ],
+  "whole_file_identical": [
+    "data-global/scripts/movements/others/remove-create_item.lua",
+    "data-global/scripts/movements/others/teleport.lua",
+    "data-global/startup/tables/tile.lua"
+  ],
+  "teleport_rows_semantically_identical": [
+    {
+      "uid": 38003,
+      "value": {
+        "itemId": 1949,
+        "itemPos": {
+          "x": 32675,
+          "y": 31646,
+          "z": 10
+        },
+        "destination": {
+          "x": 32725,
+          "y": 31589,
+          "z": 12
+        },
+        "effect": {
+          "expr": "CONST_ME_TELEPORT"
+        }
+      },
+      "primary_line": 628,
+      "retained_line": 648
+    },
+    {
+      "uid": 38004,
+      "value": {
+        "itemId": 1949,
+        "itemPos": {
+          "x": 32669,
+          "y": 31653,
+          "z": 10
+        },
+        "destination": {
+          "x": 32679,
+          "y": 31673,
+          "z": 10
+        },
+        "effect": {
+          "expr": "CONST_ME_TELEPORT"
+        }
+      },
+      "primary_line": 634,
+      "retained_line": 654
+    },
+    {
+      "uid": 38005,
+      "value": {
+        "itemId": 1949,
+        "itemPos": {
+          "x": 32794,
+          "y": 31576,
+          "z": 5
+        },
+        "destination": {
+          "x": 32812,
+          "y": 31577,
+          "z": 5
+        },
+        "effect": {
+          "expr": "CONST_ME_TELEPORT"
+        }
+      },
+      "primary_line": 640,
+      "retained_line": 660
+    },
+    {
+      "uid": 38006,
+      "value": {
+        "itemId": 1949,
+        "itemPos": {
+          "x": 32812,
+          "y": 31576,
+          "z": 5
+        },
+        "destination": {
+          "x": 32794,
+          "y": 31577,
+          "z": 5
+        },
+        "effect": {
+          "expr": "CONST_ME_TELEPORT"
+        }
+      },
+      "primary_line": 646,
+      "retained_line": 666
+    }
+  ],
+  "boundary": "No raw source copied into repository. Existing pinned corpus supports offline binding regeneration; four newer primary teleport rows are exactly equivalent. Route implementation and six-case verification remain in progress; no mechanic or title qualification claimed.",
+  "result": "SOURCE_FACTS_VERIFIED",
+  "implementation_published": false
+}
