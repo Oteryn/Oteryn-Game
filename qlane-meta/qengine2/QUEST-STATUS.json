@@ -3029,7 +3029,9 @@
             "authoring": "31passed93.254s",
             "check": "items+dispatch allfeatures30.44s",
             "clippy": "items+dispatch alltargets/allfeatures -Dwarnings1m35s",
-            "fmt": "cargo fmt all check passed"
+            "fmt": "cargo fmt all check passed",
+            "content_integration": "123passed3.58s after recovering disk space",
+            "world_repository": "5passed82.80s"
           }
         }
       },

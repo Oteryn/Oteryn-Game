@@ -847,3 +847,9 @@ source PG storiesGREEN171.08s plus retained three stock taming regressions.
 Do not redo this step. Remaining S06 work: four construction source rules and
 stock mount-item variants (parts/random/direct). Next generic engine step W15b
 has actual PG RED65.609s and prepared code/SQL under /tmp. Counts44/66.
+
+Required final content integration123passed3.58s and world repository5passed
+82.80s against131outfits/250mounts/201nativegrants. Initial auxiliary link hit
+full disk; removed only inactive older finalized Rust incremental sessions,
+retaining working/newest caches, recovered7.1GB, exact retry passed. All source
+acquisition step gates now complete. Continue W15b additional-root claim MINT.
