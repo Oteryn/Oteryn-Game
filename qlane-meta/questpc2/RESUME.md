@@ -98,3 +98,42 @@ Never treat link SIGBUS/ENOSPC as PG RED. Ignore zombie compiler processes
 when proving no active compiler. Latest successful native code rebuild1m00s.
 Next: full source exploration GREEN and checks ->commit/fetch/merge/push, then
 real client combat/defenders/reward bundle; continue all33, no final.
+
+## Active 10:47 UTC checkpoint; keep working
+
+Full runtime/data is staged but NOT committed: commit metadata with --only
+three lane files to avoid accidentally publishing runtime before full GREEN.
+Last runtime d4b4ebe77; last source checkpoint86c4c6be7. Counts2/33 unchanged.
+Native ladder adapter bundle_ladder.rs now implemented generically using
+existing movement proof/collision/occupancy/PZ/stair cooldown. Source literal
+ladder USE RED73.99s NothingToUse; later74.19s passed real ascent+replay but
+no flat wall-walk->poison connection. Native source wall walk is disconnected;
+correct route descends original trapdoor, crosses ground7 courtyard, central
+stairs. Source frontier revealed exactly5 passable static decorations omitted
+from native profiles: grass21935, archways1626/1627, buttresses1634/1635.
+Pinned flags prove them walkable; no wall facts/default policy/geometry edited.
+Generic source gate/traversal capture scope includes6new Items (with ladder),
+retains old5111/5112 exactly. 4tests RED9.544s->GREEN9.318s; final register
+write/check43+43 pass. The earlier read-only check was stopped when selection
+became obsolete; final fresh check passes. All old native profiles equal;6adds.
+
+Latest PG /tmp/questpc2-elvenbane-complete-exploration-pg.log actually ran
+76.98s/server180006, basement phase1/native stairs/ladder stale refusal/
+ascent/full-position command replay all pass, then generic Desert STEP helper
+asserts diagonal receipt>0. Missing runtime env flag in this invocation:
+OTERYN_STEP_WAIT_RECEIPTS=1 (same flag as original earned Desert driver).
+DO NOT weaken assertion. Immediately rerun exact test with that env flag.
+Current positive pins: repo pin-refresh and pin-check pass digest
+808f55a33aedd1493c4e3ab78fdf66a7e7724f52db2fa1ef89da8e916c685717;
+logs /tmp/questpc2-elvenbane-exploration-final-pin-{refresh,check}.log.
+Current native exe and newest READY live, compile1m26s. New adapter compiler
+check22.72s pass, but final checks/clippy after current visibility recheck
+and full fixture need run before runtime commit. Clippy snapshot preserved
+/tmp/questpc2-ladder-clippy-retention.json; original empty; restore if empty
+before clippy. Old inactive1ac feature-mode cache explicitly retired (ledger);
+no active compiler. Other obsolete archive retirements documented /tmp/*retired.json.
+Rootfree~1.3GB, RAM temp~5.7GB; prune superseded READY after native compile,
+heavy native compiler and pin tools sequential; no broad clean/profile changes.
+After exploration GREEN final checks+focused guard, push runtime immediately,
+then real client Dragon+five defenders and atomic7rewards/once replay. No final,
+no external dependency deferral. All work remains authorized.

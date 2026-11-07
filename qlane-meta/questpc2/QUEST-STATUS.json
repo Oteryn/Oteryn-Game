@@ -1919,7 +1919,7 @@
   "elvenbane_exploration_authoring_checkpoint": {
     "state": "AUTHORING",
     "last_runtime_publication": "d4b4ebe77",
-    "published_scope": "Verified source/admission findings and resume checkpoint only; exploration and ladder runtime/data remain local pending full GREEN.",
+    "published_scope": "Verified source/proof/resume checkpoint only. Runtime/data remains staged locally pending complete exploration GREEN.",
     "postgres_reds": [
       {
         "version": 180006,
@@ -1938,10 +1938,22 @@
       }
     ],
     "source_xml": "imports/canary/items-xml/items.xml:3918-3920; SHA256 1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
-    "source_tests": "3source admission tests RED7.276s -> GREEN6.734s; exact ladder class/flags/custody/binding, existing doors still checked.",
+    "source_tests": "4tests RED9.544s ->GREEN9.318s; earlier3test ladder GREEN6.734s.",
     "source_profile_review": "Exactly one1948 native profile added; every preexisting native profile byte-value unchanged.",
     "current_case": "/tmp/questpc2-elvenbane-exploration-ladder-pg.log",
-    "registration": "/tmp/questpc2-elvenbane-ladder-registration.log: write PASS43, check in flight.",
-    "next": "Complete basement/poison/Dragon-floor real source movement GREEN, focused checks and push runtime. Then generic ladder USE if required, actual Dragon+five defenders, atomic seven-item reward/replay; qualify whole Elvenbane."
+    "registration": "Final traversal registration write+check PASS43 each.",
+    "next": "Run OTERYN_STEP_WAIT_RECEIPTS=1 exact source exploration PG; final fmt/check/clippy+guard regression; commit/fetch/merge/push runtime. Then actual six earned native kills and atomic seven-item reward, whole Elvenbane qualification, remaining owned entries.",
+    "source_profiles": "Exactly six additions1626/1627/1634/1635/1948/21935; all preexisting native profiles unchanged. Exact pinned flags establish walkable, static, non-pickup Ground custody.",
+    "pins": {
+      "refresh": "PASS",
+      "check": "PASS",
+      "digest": "808f55a33aedd1493c4e3ab78fdf66a7e7724f52db2fa1ef89da8e916c685717"
+    },
+    "latest_postgres_red": {
+      "version": 180006,
+      "seconds": 76.98,
+      "log": "/tmp/questpc2-elvenbane-complete-exploration-pg.log",
+      "finding": "Basement, native ladder ascent/stale refusal/full-position replay passed. Courtyard diagonal step requires OTERY\u039d_STEP_WAIT_RECEIPTS=1 (ASCII env name documented RESUME); invocation omitted receipt flag used by original Desert driver. Assertion unchanged; rerun with flag."
+    }
   }
 }

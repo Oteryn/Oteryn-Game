@@ -331,3 +331,34 @@ RED7.276s ->GREEN6.734s; exact one native profile addition, all existing
 profiles preserved. Current peer heads listed RESUME have no1948 profile.
 No map flag, stairs direction, field condition or default-unknown policy
 was relaxed. Full source exploration PG remains pending.
+
+Native ladder USE source: retained donor corpus manifest binds Canary04b83
+data/scripts/actions/items/ladder_up.lua:5-17 SHA256
+730bc7664484e953b6efc3c8faeba9936d355c5cdde91d1f3e0686f714f4df13
+(blob5ec5f7c5b67e2983e660a3154908f0cef2e1cee1). It selects native Ladder
+IDs and calls Position:moveUpstairs(), then PZ-checks selected destination.
+data/libs/functions/position.lua:22-49 SHA256
+d933c6df3c0d0e0e974048bf0a58063f14d7f872adca2d5bb0250d6cdc261920
+prefers south upstairs then N/E/W/SW/SE/NW/NE; duplicated west is immaterial
+in one locked turn. No source copy is added. New adapter uses native class
+LADDER, static non-pickup/immovable unbound map entry, exact map revision,
+current control/death/idle, movement proof collision/occupancy/PZ and existing
+stair cooldown. Quest callback has priority; scripted/bound ladders do not
+fall through to generic ascent. Source geometry and unknown defaults stay.
+Explicit real source ladder USE PG RED73.99s/server180006 returned
+NothingToUse vs requiredCommitted; stale-revision refusal already passed.
+New adapter check22.72s passes; integration GREEN pending. Source fixture
+now selects existing371 diagonal capability, uses existing profile-aware
+Desert STEP helper (visibility only widened), keeps real protocol movement.
+
+Final source traversal admission closure: XML:3517-3519 archway1626/1627;
+XML:3544 buttress1634/1635; XML:3918-3920 ladder1948; XML:43330 grass21935;
+pinned XML1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2.
+Same pinned client2dfa943b... and exact bindings1d19709c... independently prove
+static/non-pickup/walkable flags. Four tests RED9.544s ->GREEN9.318s, final
+registration write/check43 pass, every old native profile retained. Native
+world pins refreshed/checked to808f55a3... via repository compiler. Latest
+PG76.98s/180006 passes basement/native ladder/stale/full-position replay then
+requires existing diagonal receipt runtime flag OTERYN_STEP_WAIT_RECEIPTS=1.
+Fixture keeps that receipt assertion; rerun with same flag as Desert driver.
+No whole quest or exploration GREEN claimed before this final rerun.
