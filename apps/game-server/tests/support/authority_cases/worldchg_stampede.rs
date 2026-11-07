@@ -17,7 +17,7 @@ fn worldchg_postgres_stampede_daily_gate_reaches_existing_raid_runner() -> fixtu
             let result = exercise(&h).await;
             h.cleanup().await?;
             result?;
-            println!("WORLDCHG-Q PG EXECUTED: Stampede inactive/active epochs, native raid RNG,16-elephant wave,reload,held Furyosa denied; elapsed={:?}", start.elapsed());
+            println!("WORLDCHG-Q PG EXECUTED: Stampede inactive/active epochs, native raid RNG,16-elephant wave,reload,inactive Furyosa denied; elapsed={:?}", start.elapsed());
             Ok::<(), Box<dyn std::error::Error>>(())
         }).map_err(fixture::debug)
     })?.join().map_err(|_| "stampede PG thread failed")?.map_err(Into::into)
@@ -30,7 +30,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
     let world = fixture::scope()?.world_id();
     // Locate adjacent real deterministic days, without changing selection or stored decisions.
     let inactive = (1..1000_u64).find(|epoch| {
-        matches!((changes::roll(world,*epoch,0), changes::roll(world,*epoch+1,0)), (Ok(a),Ok(b)) if !a.stampede && b.stampede)
+        matches!((changes::roll(world,*epoch,0), changes::roll(world,*epoch+1,0)), (Ok(a),Ok(b)) if !a.stampede && b.stampede && a.fury_gates.is_none() && b.fury_gates.is_none())
     }).ok_or("adjacent inactive/active days")?;
     let active = inactive + 1;
     for epoch in [inactive, active] {
@@ -107,7 +107,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             calendar_window: None,
         }],
     };
-    // The accepted Furyosa W6 precondition stays false while its native gates are held.
+    // The accepted Furyosa W6 precondition stays false while its current static layer is inactive.
     // Its real sourced definition precedes Stampede to catch any ungated schedule mutation.
     let fury_key = ProductionKey::new("raid:furyfate.furyosa").map_err(fixture::debug)?;
     let fury = catalogue
@@ -171,7 +171,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         .bind(world.as_bytes().as_slice()).bind(fury_key.as_str()).fetch_one(&h.pool).await?;
     assert_eq!(
         fury_schedules, 0,
-        "held Furyosa must not consume a check or create a schedule"
+        "inactive Furyosa must not consume a check or create a schedule"
     );
     assert!(
         h.root

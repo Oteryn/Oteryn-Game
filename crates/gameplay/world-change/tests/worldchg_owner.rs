@@ -104,7 +104,15 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
             }
         } else {
             assert_eq!(entry["status"], "HELD");
-            assert!(!is_active(&all, key), "{key}");
+            if key == "fury_gates" {
+                assert_eq!(
+                    is_active(&all, key),
+                    all.fury_gates.is_some(),
+                    "main's admitted static layers remain independent of variant qualification"
+                );
+            } else {
+                assert!(!is_active(&all, key), "{key}");
+            }
         }
     }
     assert_eq!((ready, qualified), (0, 18));
@@ -290,9 +298,9 @@ fn worldchg_portal_candidates_preserve_sourced_pairs_without_claiming_native_adm
                 }
             );
         }
-        // Source facts do not bypass the still-unimplemented W1/native gate consumers.
+        // Candidate facts alone cannot activate a closed day; main static Fury selection is tested separately.
         assert!(!oteryn_gameplay_world_change::owner::is_active(
-            &oteryn_gameplay_world_change::daily::DailyWorldChanges::roll(7, 6, 13, |_| 0),
+            &oteryn_gameplay_world_change::daily::DailyWorldChanges::roll(7, 6, 13, |_| u64::MAX),
             record["key"].as_str().ok_or("key")?,
         ));
     }
@@ -360,4 +368,16 @@ fn worldchg_final_six_native_bindings_qualify_only_their_current_world_state()
         assert!(!is_active(&completed, &format!("{}@1", kind.key())));
     }
     Ok(())
+}
+
+#[test]
+fn main_fury_static_layer_requirement_tracks_the_persisted_day() {
+    use oteryn_gameplay_world_change::{daily::DailyWorldChanges, owner::is_active};
+    let mut day = DailyWorldChanges::roll(7, 6, 13, |_| u64::MAX);
+    assert!(day.fury_gates.is_none());
+    assert!(!is_active(&day, "fury_gates"));
+    day.fury_gates = Some("fury_gates/thais");
+    assert!(is_active(&day, "fury_gates"));
+    day.fury_gates = None;
+    assert!(!is_active(&day, "fury_gates"));
 }

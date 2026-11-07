@@ -370,8 +370,6 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     fluid_container_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import monk_reward_profiles
     monk_reward_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
-    import world_contribution_item_profiles
-    world_contribution_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import podium_item_profiles
     podium_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import quick_loot_item_profiles
@@ -419,6 +417,8 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     world_change_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import qengine_reward_item_profiles
     qengine_reward_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import world_contribution_item_profiles
+    world_contribution_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Shop/chest admission adds ranged Items after the earlier owner overlays.
     # Complete their existing source authoring too before pinning the provider.
     ranged_item_profiles.apply_native(root, generated)

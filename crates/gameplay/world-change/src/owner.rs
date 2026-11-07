@@ -98,6 +98,8 @@ pub fn is_active(day: &DailyWorldChanges, key: &str) -> bool {
         "oriental_trader" => day.oriental_trader.is_some(),
         "grimvale" => day.grimvale_full_moon,
         "stampede" => day.stampede,
+        // Main already admits these epoch-bound static layers independently.
+        "fury_gates" => day.fury_gates.is_some(),
         // Flower Month's waves are still held; the NPC alone is not completion.
         _ => false,
     }

@@ -235,7 +235,12 @@ mod tests {
         };
         let checked = crate::map::boot::check(bytes.clone(), boot_pins.clone())?;
         let unqualified = roll(world(), 0, JUNE_13);
-        let bound = prepare_map(bind_layers(checked, &unqualified)?, world(), &unqualified);
+        let bound = prepare_map(
+            bind_layers(checked, &unqualified)?,
+            world(),
+            &unqualified,
+            None,
+        );
         let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])?;
         let booted = bound.boot(world(), channel, crate::map::boot::tests::items)?;
         assert!(booted.base().active_layers().is_empty());
