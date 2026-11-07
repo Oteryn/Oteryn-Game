@@ -100,9 +100,14 @@ def reconcile(existing, observed):
 def admit(root,generated,profile_path,manifest_path,order,canonical):
     packet=capture(root)
     generated[PROOF]=(json.dumps(packet,ensure_ascii=False,indent=2)+'\n').encode()
+    admit_records(root,generated,profile_path,manifest_path,order,canonical,packet['records'])
+
+
+def admit_records(root,generated,profile_path,manifest_path,order,canonical,records):
+    """Merge qualified physical profiles while preserving existing native owners."""
     document=json.loads(generated[profile_path])
     present={r['production_definition']['production_key']:r for r in document['records']}
-    for record in packet['records']:
+    for record in records:
         key=record['production_definition']['production_key']
         if key in present:
             merged = reconcile(present[key], record)

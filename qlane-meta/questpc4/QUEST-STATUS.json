@@ -10601,5 +10601,31 @@
     "note": "Do not claim e1ca present in this exception publication; finish within next30minute cycle.",
     "workspace_check": "PASS3m14s /tmp/questpc4-emergency-workspace-check.log",
     "fmt": "PASS /tmp/questpc4-emergency-fmt.log"
+  },
+  "prepush2_f641_integration": {
+    "main": "f641d8d6c",
+    "state": "VALIDATING",
+    "royal_fix": "Reuse main e1ca3e003 force_generic_plan and jit=off; remove lane1259 migration. Exact inputs and 2000ms deadline unchanged.",
+    "conflicts": "Preserve every L6 scenario plus incoming NPC scenarios; retain60 QENGINE profiles and add1 QNPCFX profile; regenerate derived item/Grizzly/spell manifests using repository tooling.",
+    "permit_integration": "World input owner retains SpellLanePermit/channel checks; NPC owner retains its private fenced permit and refuses ground input. Common unchanged row mutation moved to37-line input_rows.rs.",
+    "pg_before_f641": {
+      "postgres": "18.6",
+      "passed": 5,
+      "log": "/tmp/questpc4-prepush2-own-pg.log",
+      "carried_missing_seconds": 58.774643017,
+      "carried_present_seconds": 70.505129227,
+      "mead_seconds": 106.975709124,
+      "dragon_seconds": 174.281447048,
+      "royal_seconds": 241.105758826
+    },
+    "audit": "PASS /tmp/questpc4-prepush2-mint-audit.log 0.56s",
+    "equipment_before_f641": "PASS119.88s; incoming QNPCFX adds exactly1 profile and its existing source assertions retained.",
+    "pending": [
+      "Final workspace check and fmt",
+      "Serialized pin refresh",
+      "Fresh three-crate unit run after main invalidated prior candidate",
+      "Post-merge NPC hand-in and carried-key PG cases",
+      "Item/Mount equivalence and quest-authoring freshness"
+    ]
   }
 }

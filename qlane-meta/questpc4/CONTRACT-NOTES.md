@@ -164,3 +164,8 @@ Dragon Slayer PG14fcc failure reproduced locally in80.02s at qengine_kill_storie
 SUPERSEDES local1259 proposal: owner reports MAINRED1107B #3024 merged as e1ca3e00; merged it and removed the unpublished1259 migration. Reuse main's exact transaction-local force_generic_plan/JIT-off recipe implementation (quest_world_callback/reward_inputs.rs), with all guard predicates and the2000ms deadline retained. No competing Royal implementation remains in the final tree. Existing local Royal green before this reuse is historical performance evidence; final validation targets main's implementation.
 
 Emergency override21:19UTC: e1ca integration above was preserved locally then ABORTED at owner's explicit direction for the immediate compiling-state push. Thus the old1259 helper is historical production in this exception snapshot; remove it when e1ca is restored immediately after publication. Do not claim main's Royal implementation is already present in the exception snapshot.
+
+
+## Main integration decision (2026-11-07 21:38 UTC)
+
+Reuse main e1ca3e003 Royal Costume fix and f641d8d6c NPC/VIP fixes. Delete lane1259; no competing Royal optimization remains. Preserve exact source prices,2000ms transaction deadline and all existing assertions. NPC hand-in consumes carried custody under its own fenced private permit; ground deletion still requires the existing channel SpellLanePermit. Shared row SQL is unchanged and extracted to37-line input_rows.rs only to reconcile the two independently landed owner APIs.

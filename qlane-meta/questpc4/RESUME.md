@@ -1,3 +1,11 @@
+## Current integration: main f641d8d6c (2026-11-07 21:38 UTC)
+
+Emergency checkpoint7e6da7b25 was pushed21:23UTC. Main e1ca3e003 then merged locally as358859cb5; current f641d8d6c merge conflicts are resolved. Reuse main Royal payment fix and VIP fix. Lane1259 migration is deleted. Preserve all L6 routes and incoming NPC routes,60QENGINE profiles plus1QNPCFX profile; derived conflicts regenerated with owning tooling. Main's new NPC carried hand-in calls the unchanged mutation through new37-line input_rows.rs; world caller retains SpellLanePermit/channel checks, NPC caller explicitly refuses ground. No permit fabricated or weakened.
+
+Five actual PG18.6 cases PASS406.87s overall: missingkey58.774643017s, presentkey70.505129227s, Mead106.975709124s, Dragon174.281447048s, Royal241.105758826s (/tmp/questpc4-prepush2-own-pg.log). These ran e1ca integration without1259; do not claim f641 final proof yet. Mint auditPASS0.56s and pre-f641equipmentPASS119.88s. Old crate unit run interrupted after main changed its candidate;2manifest reads hit regeneration windows,313passes. Rerun identical crate set on final candidate; never remove tests.
+
+Final checks currently /tmp/questpc4-f641-final-workspace-check.log and fmt; serialized pins then fresh3crateunits /tmp/questpc4-f641-crate-units.log; postmerge NPC acceptance/carried-key PG /tmp/questpc4-f641-integration-pg.log. Regenerated binding and variant packet alreadyPASS. Item/Mount equivalence +authoring freshness running. Push by21:53UTC; PREPUSH-2 allows still-running units to be listed pending once regeneration/check/fmt pass. Before push fresh-fetch main and own branch with explicit refspec (origin tracks only main), merge any advance. Author+committer blakinio and required trailers. Continue after push, counts4QUALIFIED/17IN_PROGRESS/2external.
+
 ## Current memory-bounded admission verification (2026-11-07)
 
 Flow2 compile SIGKILL(signal9) while pin-check consumed~7.5GiB in17GiB/no-swap container. No PG cases ran, no skip/green claim. Pin check finished PASS newa36ca9460fcf4aa15127bfcf164b5d984629c2c38040db554c75eade9386ff01/31102612bytes (new6food defs occurinWorld; owning refresh correctlychangedpin). Keep generatedpin. Flow3 retry CARGO_BUILD_JOBS=1 session76050 /tmp/questpc4-world-admission-flow3.log now compiling after locks; no parallel pin process.
