@@ -810,6 +810,7 @@ async fn wardrobe(
         .ok_or("wardrobe outfit")?;
     let seed = RewardCallback {
         carried_item: None,
+        carried_exchange: false,
         minimum_level: None,
         requires_completed_quests: vec![],
         requires_addons: vec![],

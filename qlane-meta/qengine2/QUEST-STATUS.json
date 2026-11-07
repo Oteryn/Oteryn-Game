@@ -3172,7 +3172,8 @@
       "NPC and carried-use callback lookup",
       "world use and step-in callback lookup",
       "definition hashing includes binding identities",
-      "catalogue extension preserves authored bindings and hashes"
+      "catalogue extension preserves authored bindings and hashes",
+      "retained reward callback collisions rejected at catalogue admission; four own registry tests GREEN"
     ],
     "remaining": [
       "real-dispatch PostgreSQL qualification",
@@ -3181,6 +3182,19 @@
       "native content admission"
     ],
     "peer_reuse_audit": "26 origin lane heads inspected; questpc3 262618b3cd9fce9de09ee83064de6f31e95aa8e7 conditional kill progression and questpc7 653feac452d8dbb2cf03edbfc733a1bf59bd77d7 world reward composition identified for reuse",
-    "qualification_counts_unchanged": true
+    "qualification_counts_unchanged": true,
+    "carried_exchange": {
+      "state": "WIP; focused PostgreSQL GREEN queued after workspace compile gate",
+      "api": "RewardCallback.carried_exchange (default false), existing QuestRewardAdmission and consumption/MINT transaction",
+      "red_pg_seconds": 70.008946262,
+      "red_pg_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-authored-bindings success=false",
+      "red_pg_error": "unknown field carried_exchange",
+      "collision_red": "binding.attach(&base).is_err() failed before admission fix",
+      "registry_units_green": 4,
+      "migration": 1552,
+      "reuse": "questpc3 9936a44dd27374dfcd9c5430888c972b0d35e5ef bounded exchange input selection and SQL proof; opt-in preserves original legacy-tool tests",
+      "focused_green_log": "/tmp/qengine2-authored-pg-green.log",
+      "counts_unchanged": true
+    }
   }
 }

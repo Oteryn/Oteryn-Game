@@ -748,6 +748,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-authored-bindings" {
+        return super::authored_quest_bindings::exercise(owner, admitted, h).await;
+    }
     if name == "qengine-rewards-l13-rift-story" {
         return super::qengine_endgame_stories::rift(owner, admitted, h, authority).await;
     }

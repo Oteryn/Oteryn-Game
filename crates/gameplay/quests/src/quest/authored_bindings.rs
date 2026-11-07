@@ -245,6 +245,8 @@ impl Bindings {
             source: self.clone(),
             world,
         }));
+        // Reject collisions with retained callbacks before this catalogue can be admitted.
+        super::reward_callbacks::load_for(&catalogue)?;
         Ok(catalogue)
     }
 
@@ -279,3 +281,6 @@ fn digest(value: &str) -> bool {
             .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
         && value.bytes().any(|b| b != b'0')
 }
+
+#[cfg(test)]
+mod tests;

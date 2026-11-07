@@ -1,0 +1,66 @@
+{
+  "priority": "reported number of quests unblocked; equal counts retain request order",
+  "quests_remain_owned_by_requesting_lanes": true,
+  "features": [
+    {
+      "feature": "authored_trigger_and_delivery_bindings",
+      "quests_reported": 68,
+      "state": "IN_PROGRESS",
+      "api": "quest::authored_bindings::Bindings::attach; catalogue-scoped callback resolution",
+      "remaining": [
+        "real-dispatch PostgreSQL qualification",
+        "generic kill bindings",
+        "world item delivery",
+        "explicit native content admission"
+      ]
+    },
+    {
+      "feature": "definition_ready_reward_claim_use",
+      "quests_reported": 42,
+      "state": "QUEUED",
+      "remaining": [
+        "bind canonical claim selectors to existing reward MINT through ordinary dispatch"
+      ]
+    },
+    {
+      "feature": "ground_item_mint_and_ground_use_with",
+      "quests_reported": 1,
+      "state": "QUEUED",
+      "requesting_lane": "questpc3",
+      "quest": "The Beginning Quest",
+      "evidence": "d98761117ec6e9bf7e164e489e1b1dfd5ad82a75:qlane-meta/questpc3/ENGINE-REQUESTS.md:8-24"
+    },
+    {
+      "feature": "world_callback_transaction_clock_operations",
+      "quests_reported": 1,
+      "state": "QUEUED",
+      "requesting_lane": "questpc3",
+      "quest": "Threatened Dreams Quest",
+      "evidence": "d98761117ec6e9bf7e164e489e1b1dfd5ad82a75:qlane-meta/questpc3/ENGINE-REQUESTS.md:8-24"
+    },
+    {
+      "feature": "conditional_world_reward_achievement",
+      "quests_reported": 1,
+      "state": "QUEUED",
+      "requesting_lane": "questpc3",
+      "quest": "The First Dragon Quest",
+      "evidence": "d98761117ec6e9bf7e164e489e1b1dfd5ad82a75:qlane-meta/questpc3/ENGINE-REQUESTS.md:8-24"
+    },
+    {
+      "feature": "annual_npc_dialogue_calendar_gate",
+      "quests_reported": 1,
+      "state": "QUEUED",
+      "requesting_lane": "questpc3",
+      "quest": "The First Dragon Quest",
+      "evidence": "d98761117ec6e9bf7e164e489e1b1dfd5ad82a75:qlane-meta/questpc3/ENGINE-REQUESTS.md:8-24"
+    },
+    {
+      "feature": "live_creature_item_use_transform_and_credit",
+      "quests_reported": 1,
+      "state": "QUEUED",
+      "requesting_lane": "questpc3",
+      "quest": "The Tainted Souls Quest",
+      "evidence": "d98761117ec6e9bf7e164e489e1b1dfd5ad82a75:qlane-meta/questpc3/ENGINE-REQUESTS.md:8-24"
+    }
+  ]
+}
