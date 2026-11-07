@@ -5,7 +5,7 @@ import questl2_exchange_prayers as prayers
 import questl2_exchange_recipes as recipes
 
 
-NPCS = tuple(sorted({'an_old_dragon_lord', 'dorian', 'gamon', 'hairycles', 'jorge', 'kroox', 'rabaz', *prayers.PRIESTS, *recipes.NPCS}))
+NPCS = tuple(sorted({'amber', 'norma', 'an_old_dragon_lord', 'dorian', 'gamon', 'hairycles', 'jorge', 'kroox', 'rabaz', *prayers.PRIESTS, *recipes.NPCS}))
 NPC_FILES = {'oteryn:npc.an_old_dragonlord': 'an_old_dragon_lord'}
 
 

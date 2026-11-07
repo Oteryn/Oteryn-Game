@@ -15,6 +15,7 @@ import tarfile
 import xml.etree.ElementTree as ET
 from jsonschema import Draft202012Validator
 import questl2_rewards
+import questl2_shared_engine
 
 ROOT = Path(__file__).resolve().parents[3]
 PIN = '9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d'
@@ -361,6 +362,7 @@ def build():
         take=[(6101,1),(6102,1),(6100,1),(6099,1)],outfit=('pirate',2),topic=5)
     offers.append({'npc':'oteryn:npc.ariella','keywords':['task'],'topic':0,'next_topic':5,
         'storage':[storage(hat,1,2)],'reply':['Did you bring the shirt, sabre, hat and eye patch?']})
+    questl2_shared_engine.append(add, storage, callbacks, offers, declarations, inputs, PIN, sha)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
@@ -431,11 +433,21 @@ def validate_callbacks(document):
     declarations=document.get('tracks',[])
     declared=set()
     readonly={r['track'] for c in document['callbacks'] for r in c.get('requires',[])}
-    written={r['track'] for c in document['callbacks'] for r in c['storage']}
+    owners={}
+    for c in document['callbacks']:
+        groups=[(c['quest'],c['storage']+c.get('state_ops',[]))]+[(p['quest'],p['storage']+p.get('state_ops',[])) for p in c.get('participants',[])]
+        all_keys=[x['track'] for _,states in groups for x in states]
+        if len(all_keys)>16 or len(set(all_keys))!=len(all_keys) or len(c.get('participants',[]))>3:
+            raise ValueError('invalid atomic quest participant effects '+c['key'])
+        for owner,states in groups:
+            for state in states:owners.setdefault(state['track'],set()).add(owner)
+    written=set(owners)
     for track in declarations:
+        writable=track.get('writable',False)
         if (track['key'] in declared or not track['min']<=track['initial']<=track['max']
-            or track['key'] not in readonly or track['key'] in written):
-            raise ValueError('invalid reward prerequisite declaration '+track['key'])
+            or (writable and owners.get(track['key'])!={track['quest']})
+            or (not writable and (track['key'] not in readonly or track['key'] in written))):
+            raise ValueError('invalid reward track declaration '+track['key'])
         declared.add(track['key'])
     keys=set()
     for callback in document['callbacks']:
@@ -451,7 +463,7 @@ def validate_callbacks(document):
             or any(r['minimum']>r['maximum'] for r in requires)
             or any(s['minimum']>s['maximum'] for s in storage)
             or any(s.get('set_if') is not None and (not s['minimum']<=s['set_if']<=s['maximum'] or s.get('preserve',False)) for s in storage)
-            or (not callback.get('repeatable',False)
+            or (not callback.get('repeatable',False) and not callback.get('state_ops')
                 and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
             or (callback.get('repeatable',False)
                 and ((not callback['take'] and not callback.get('fee')) or not callback['give']

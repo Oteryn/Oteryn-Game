@@ -65,6 +65,15 @@ pub(super) fn prepare(
                     && c.topic == topic.number
                     && c.keywords.contains(&text)
                     && eligible(&c.storage)
+                    && c.state_ops
+                        .iter()
+                        .all(|op| op.advisory_holds(catalogue, tracks))
+                    && c.participants.iter().all(|p| {
+                        eligible(&p.storage)
+                            && p.state_ops
+                                .iter()
+                                .all(|op| op.advisory_holds(catalogue, tracks))
+                    })
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
             });
             if let Some(callback) = selected.next() {

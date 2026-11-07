@@ -177,6 +177,9 @@ fn questl2_exchange_fixed_source_journey() -> TestResult {
     scenario("qengine-rewards-exchange-fixed")
 }
 
+#[path = "qengine_rewards/questl2_shared_engine.rs"]
+mod questl2_shared_engine;
+
 #[path = "qengine_rewards/questl2_botany.rs"]
 mod questl2_botany;
 
@@ -295,6 +298,9 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l4-royal-costume-base" => &["outfit", "yes", "armor"],
         "l4-royal-costume-shield" => &["outfit", "yes", "shield"],
         "l4-royal-costume-crown" => &["outfit", "yes", "crown"],
+        "l6-citizen-rook-backpack-start" => &["addon","backpack"],
+        "l6-citizen-rook-backpack-materials" => &["backpack"],
+        "l6-citizen-rook-hat-start" | "l6-citizen-rook-hat" => &["hat"],
         "l4-pirate-sabre-start" => &["task", "yes"],
         "l4-pirate-eye-patches" => &["eye patches"],
         "l4-pirate-peg-legs" => &["peg legs"],
@@ -769,6 +775,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name=="qengine-rewards-l2-engine-shared" {
+        return questl2_shared_engine::exercise(owner,admitted,h).await;
+    }
     if name=="qengine-rewards-l2-botany" {
         return questl2_botany::exercise(owner,admitted,h).await;
     }

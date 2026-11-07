@@ -151,3 +151,16 @@ requires Obsidian Knife 5908 for the plant branch and a carried almanach 11699.
 Appearance 10735 advances stage 1 to 2; only then does appearance 10697 advance
 2 to 3. Both tools and plants remain intact. Rabaz is deployed at the reviewed
 source promotion-candidate cell (33009,31532,10).
+
+L2 shared callback state owners reuse QENGINE2 commits 6ad33a4b1 and
+e9d98947f: bounded counter operations, server-time stamps/elapsed predicates,
+and up to three explicitly declared foreign quest participants. Migration
+1148 combines their deferred proofs; 1147 is already occupied on npcfix.
+The combined operation limit remains sixteen, preserving the eleven-track
+Father completion. Foreign writes retain the same fenced Character revision,
+source plan, content pins and PostgreSQL transaction as their primary reward.
+The focused reference journey uses the pinned Amber/Norma Rook Citizen story,
+not an L2 quest qualification. Only its elapsed timer is advanced by a test-only
+native transition; assertions keep every other progress value unchanged.
+Source file/line/SHA references are generated into each callback and the
+writable foreign-track declaration from the committed donor corpus.

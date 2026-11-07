@@ -482,6 +482,36 @@
         "Existing paid/bulk/deadline NPC exchanges retain their full journey"
       ],
       "qualification_scope": "World map USE participant; complete Father quest qualification is not inferred."
+    },
+    {
+      "name": "bounded counters, transaction-clock timers and atomic foreign quest participants",
+      "status": "QUALIFIED",
+      "migration": 1148,
+      "reused_engine_commits": [
+        "6ad33a4b1",
+        "e9d98947f"
+      ],
+      "postgres_test": "questl2_shared_counter_timer_foreign_owner_player_journey",
+      "postgres_version": "18.6",
+      "red": {
+        "duration_seconds": 2.814890475,
+        "result": "unsupported state_ops and participants"
+      },
+      "green": {
+        "duration_seconds": 77.612949698,
+        "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-engine-shared",
+        "passed": 1,
+        "failed": 0
+      },
+      "proves": [
+        "Actual Amber and Norma NPC hand-ins from unstarted quest state",
+        "Foreign counter increment and reset commit with primary reward",
+        "Early elapsed-timer collection refuses without granting",
+        "Timer-only test clock arrangement preserves all other quest progress",
+        "Both earned addons publish to the native client catalogue",
+        "Exact Citizen base and both addon unlock keys"
+      ],
+      "eleven_track_regression_seconds": 45.13778713
     }
   ],
   "entries": [
@@ -1737,6 +1767,17 @@
       "formatting_log": "/tmp/l2-botany-fmt-final.log",
       "pin_check_log": "/tmp/l2-botany-pin-check.log",
       "world_pin_digest": "62c88d908453297f90650d434a6060736b4d3b562b0af1909f42ff31da36a295"
+    },
+    "shared_state_owner_slice": {
+      "postgres_log": "/tmp/l2-shared-engine-green3.log",
+      "clippy_log": "/tmp/l2-shared-clippy.log",
+      "clippy_all_targets": true,
+      "clippy_deny_warnings": true,
+      "authoring_passed": 23,
+      "authoring_log": "/tmp/l2-shared-authoring3.log",
+      "domain_passed": 1,
+      "world_pin_check": "/tmp/l2-shared-pin-check.log",
+      "migration_clash_check": "Seventy fetched remote heads: npcfix occupies 1147; 1148 unused before this slice."
     }
   },
   "cross_lane_inspection": {
