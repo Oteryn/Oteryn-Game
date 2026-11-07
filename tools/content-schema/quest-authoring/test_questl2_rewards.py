@@ -134,6 +134,28 @@ class LaneL2Rewards(unittest.TestCase):
             items.admit(q.ROOT, generated, items.PROFILE, 'content/spells.manifest.json',
                         lambda r: r['production_definition']['production_key'], q.encoded)
 
+    def test_source_equipment_extension_preserves_the_native_provider(self):
+        import qengine_reward_item_profiles as items
+        profiles = json.loads(self.outputs[items.PROFILE])
+        row = next(r for r in profiles['records'] if r['production_definition']['production_key'] == 'oteryn:item.tibia.i3079')
+        pattern = row['semantics']['equipment']['value']['patterns']['value'][0]
+        self.assertEqual(pattern['primary_slot'], {'state': 'KNOWN', 'value': 'FEET'})
+        self.assertEqual(pattern['level'], {'state': 'KNOWN', 'value': 0})
+        self.assertEqual(pattern['vocations'], {'state': 'KNOWN', 'value': []})
+        self.assertEqual(row['attributes']['speed_bonus'], 20)
+        proposed = next(r for r in json.loads(self.outputs[items.PROOF])['records'] if r['production_definition']['production_key'] == 'oteryn:item.tibia.i3079')
+        import copy
+        constrained = copy.deepcopy(row)
+        constrained['semantics']['equipment']['value']['patterns']['value'][0]['level'] = {'state': 'KNOWN', 'value': 42}
+        with self.assertRaisesRegex(ValueError, 'EQUIPMENT_CONFLICT'):
+            items.extend_equipment(constrained, proposed)
+        refined = items.extend_equipment(row, proposed)
+        self.assertEqual(refined['attributes'], row['attributes'])
+        self.assertEqual(refined['authoring'], row['authoring'])
+        for section in row['semantics']:
+            if section != 'equipment':
+                self.assertEqual(refined['semantics'][section], row['semantics'][section])
+
     def test_native_manifest_uses_the_repository_canonical_serializer(self):
         import register_spell_families as native
         raw = self.outputs['content/spells.manifest.json']

@@ -250,8 +250,17 @@ The shared PG harness initializes players one tile west of its anchor. L2 delive
 anchors account for that offset, and every journey asserts its initial player cell
 before issuing commands. Equipment predicates use durable semantic slot codes
 from `crates/protocol-oteryn/src/item_view.rs:210`, rather than wire ordinals.
-Native hotkey equipment negotiates capability179 and its declared dependencies
-12/14. Steal From Thieves fills every backpack slot with separate one-coin stacks;
-100-coin filler stacks unintentionally exceeded the starter character carrying capacity
-when adding the source 400-ounce bag. Slot count and atomic two-output refusal
-assertions are retained. Both nested moves select an actual main-backpack entry.
+Native hotkey equipment negotiates capability179 and dependencies12/14. Slot
+exhaustion uses separate non-stackable blank scrolls2815 (0.5oz each): 100-coin
+stacks exceeded carrying capacity with the 400oz quest bag, while one-coin mint
+outputs coalesced. Full-slot and atomic two-output assertions are retained.
+Both nested moves select actual main-backpack custody.
+Boots3079 had a known FEET slot but unknown requirements, which correctly refused
+native equipment. The pinned Canary items.xml moveevent declares feet with no
+level/vocation restriction. Source qualification now refines only equipment
+UNKNOWN fields; it preserves every other native provider field and rejects
+contradictory known requirements. XML SHA256 is recorded in the generated proof.
+Boots source witness: `imports/canary/items-xml/items.xml:7224-7236`, SHA256
+`1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2`.
+The explicit moveevent feet slot has no level/vocation attributes; the existing
+native source importer records its constructor defaults as level0 and no vocations.

@@ -4,6 +4,7 @@ Uses the existing native source importer and exact canonical identity bindings.
 Known canonical facts win. No use effect, subtype, timer or custom script is
 inferred, and the canonical Item admission records remain unchanged.
 """
+import copy
 import hashlib
 import json
 import sys
@@ -16,8 +17,10 @@ import grizzly_shop_profiles as accepted
 sys.path.insert(0, str(ROOT / 'tools/content-schema/quest-authoring'))
 import questl2_rewards
 
+EQUIPMENT_IDS = {3079}
+
 IDS = {133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701,
-       6099, 6100, 6101, 6102, 6126, 12599, 12601, 12803, 22516, 22721, 28792, 28793} | questl2_rewards.ITEMS
+       6099, 6100, 6101, 6102, 6126, 12599, 12601, 12803, 22516, 22721, 28792, 28793} | questl2_rewards.ITEMS | EQUIPMENT_IDS
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'
@@ -97,6 +100,19 @@ def capture(root=ROOT):
         'records':records}
 
 
+def extend_equipment(prior, record):
+    """Refine source-qualified equipment requirements without replacing a provider."""
+    equipment = record['semantics']['equipment']
+    if (prior['production_definition'] != record['production_definition']
+            or prior['admission'] != record['admission']
+            or equipment.get('state') != 'KNOWN'
+            or accepted.accepted_first(prior['semantics']['equipment'], equipment) != equipment):
+        raise ValueError('QENGINE_REWARD_ITEM_EQUIPMENT_CONFLICT')
+    refined = copy.deepcopy(prior)
+    refined['semantics']['equipment'] = copy.deepcopy(equipment)
+    return refined
+
+
 def admit(root,generated,profile_path,manifest_path,order,canonical):
     packet=capture(root)
     generated[PROOF]=(json.dumps(packet,ensure_ascii=False,indent=2)+'\n').encode()
@@ -107,6 +123,9 @@ def admit(root,generated,profile_path,manifest_path,order,canonical):
         if key in present:
             prior = present[key]
             if prior == record:
+                continue
+            if int(key.rsplit('i', 1)[-1]) in EQUIPMENT_IDS:
+                document['records'][document['records'].index(prior)] = extend_equipment(prior, record)
                 continue
             # A source-qualified recipe can promote an inert canonical shell;
             # never replace a richer provider or contradict its known facts.

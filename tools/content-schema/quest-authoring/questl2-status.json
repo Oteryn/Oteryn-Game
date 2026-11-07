@@ -2511,20 +2511,21 @@
       "pending_build_log": "/tmp/l2-merged668-check.log"
     },
     "delivery_batch_wip": {
-      "compilation": "Merged dispatch test binary compiled successfully in 6m00s; /tmp/l2-delivery-green6.log",
-      "postgres_log": "/tmp/l2-delivery-green6.log",
-      "exact_red_point": "Steal From Thieves: second chest USE returns Rejected after freeing one main-backpack entry (expected Committed). Troll Sabotage: native hotkey equipment response decodes as Malformed after reaching the helmet gate.",
+      "compilation": "Current full dispatch test binary compiled successfully in 5m15s; /tmp/l2-delivery-green7.log. Three native PG journeys are running.",
+      "postgres_log": "/tmp/l2-delivery-green7.log",
+      "exact_red_point": "Last full run: Steal From Thieves expected 20 occupied slots but one-coin mint outputs coalesced into two total entries; Troll Sabotage equipped the helmet but boots3079 returned SlotMismatch because native requirements were UNKNOWN.",
       "cartography_qualified": true,
       "clippy_final": "/tmp/l2-delivery-clippy5.log",
       "pins_final_pending": true,
       "handoff_merge": "Preserved remote 352325ea9; merged dispatch and all its tests compile (cargo check --tests, 2m48s, /tmp/l2-handoff-wip-check.log). Full combined PG run remains pending.",
       "corrected_red_points": [
-        "Negotiate hotkey capability179 dependencies12/14 and assert command348 is selected",
-        "Use separate one-coin filler stacks so full-slot refusal is independent of the source 400-ounce bag weight",
-        "Both nested coin moves select main-backpack custody explicitly"
+        "Use 19 separate lightweight non-stackable scrolls2815 to fill the main backpack; retain exact full-slot and atomic hand-in assertions",
+        "Source-qualify boots3079 equipment requirements using a generic monotonic field extension which preserves all unrelated provider facts and rejects conflicting known requirements"
       ],
       "rerun_status": "Three full journeys running; previous red points remain unqualified until they complete.",
-      "authoring_tests_passed": 49
+      "authoring_tests_passed": 50,
+      "lane_authoring_log": "/tmp/l2-equipment-authoring.log",
+      "shared_authoring_log": "/tmp/l2-equipment-qengine-tests.log"
     }
   },
   "cross_lane_inspection": {

@@ -489,7 +489,7 @@ async fn steal(
     .map_err(debug)?;
     let capacity = facts.container_capacity.ok_or("backpack capacity")?;
     for n in 1..capacity {
-        supply(owner, admitted, 3031, 1, 14000 + u64::from(n), position).await?;
+        supply(owner, admitted, 2815, 1, 14000 + u64::from(n), position).await?;
     }
     assert_eq!(
         sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_container_entries")
@@ -500,8 +500,15 @@ async fn steal(
     use_at(owner, admitted, chest, UseDisposition::Rejected).await?;
     assert_eq!(stage(h, TRACK).await?, 1);
     assert_eq!(quantity(h, 235).await?, 0);
-    let coin:sqlx::types::Uuid=sqlx::query_scalar("SELECT i.item_instance_id FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id) JOIN game_item_container_slots s ON e.parent_item_instance_id=s.item_instance_id AND e.character_id=s.character_id WHERE i.definition_production_key='oteryn:item.tibia.i3031' LIMIT 1").fetch_one(&h.pool).await?;
-    into_bag(owner, admitted, *coin.as_bytes(), *nested.as_bytes(), 14500).await?;
+    let filler:sqlx::types::Uuid=sqlx::query_scalar("SELECT i.item_instance_id FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id) JOIN game_item_container_slots s ON e.parent_item_instance_id=s.item_instance_id AND e.character_id=s.character_id WHERE i.definition_production_key='oteryn:item.tibia.i2815' LIMIT 1").fetch_one(&h.pool).await?;
+    into_bag(
+        owner,
+        admitted,
+        *filler.as_bytes(),
+        *nested.as_bytes(),
+        14500,
+    )
+    .await?;
     use_at(owner, admitted, chest, UseDisposition::Committed).await?;
     assert_eq!(stage(h, TRACK).await?, 2);
     assert_eq!(quantity(h, 235).await?, 1);
@@ -518,8 +525,15 @@ async fn steal(
     assert_eq!(quantity(h, 235).await?, 1);
     assert_eq!(quantity(h, 3725).await?, 0);
     assert_eq!(stage(h, TRACK).await?, 2);
-    let coin:sqlx::types::Uuid=sqlx::query_scalar("SELECT i.item_instance_id FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id) JOIN game_item_container_slots s ON e.parent_item_instance_id=s.item_instance_id AND e.character_id=s.character_id WHERE i.definition_production_key='oteryn:item.tibia.i3031' LIMIT 1").fetch_one(&h.pool).await?;
-    into_bag(owner, admitted, *coin.as_bytes(), *nested.as_bytes(), 14501).await?;
+    let filler:sqlx::types::Uuid=sqlx::query_scalar("SELECT i.item_instance_id FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id) JOIN game_item_container_slots s ON e.parent_item_instance_id=s.item_instance_id AND e.character_id=s.character_id WHERE i.definition_production_key='oteryn:item.tibia.i2815' LIMIT 1").fetch_one(&h.pool).await?;
+    into_bag(
+        owner,
+        admitted,
+        *filler.as_bytes(),
+        *nested.as_bytes(),
+        14501,
+    )
+    .await?;
     assert_eq!(
         wire_grant(owner, admitted, npc, finish).await?.0,
         NpcIntentDisposition::Ok
@@ -527,7 +541,8 @@ async fn steal(
     assert_eq!(stage(h, TRACK).await?, 3);
     assert_eq!(quantity(h, 235).await?, 0);
     assert_eq!(quantity(h, 3725).await?, 100);
-    assert_eq!(quantity(h, 3031).await?, i64::from(capacity - 1) + 100);
+    assert_eq!(quantity(h, 3031).await?, 100);
+    assert_eq!(quantity(h, 2815).await?, i64::from(capacity - 1));
     use_at(owner, admitted, chest, UseDisposition::Rejected).await?;
     Ok(())
 }
