@@ -207,6 +207,11 @@ impl NpcTalkBook {
     /// Entries for every NPC with generated replies. An NPC with an admitted Dialogue is left out
     /// until a dialogue packet reads it.
     pub fn from_model(model: &NpcServiceModel) -> Self {
+        Self::from_model_with_native_quests(model, &[])
+    }
+
+    /// Admit source greetings for NPCs whose stateful rules have a native executor.
+    pub fn from_model_with_native_quests(model: &NpcServiceModel, native_npcs: &[&str]) -> Self {
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
                 "{}\0{}\0{}\0{}\0{}",
@@ -375,6 +380,22 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
+            } else if native_npcs.contains(&reference.key.as_str()) && npc.dialogue.is_some() {
+                // Conditional native greeting rules own the text. An absent literal
+                // greeting still admits focus so that their reply or dismissal runs.
+                let greeting = npc
+                    .bank_dialogue
+                    .as_ref()
+                    .and_then(|dialogue| dialogue.greet.first())
+                    .cloned()
+                    .unwrap_or_default();
+                let farewell = npc
+                    .bank_dialogue
+                    .as_ref()
+                    .and_then(|dialogue| dialogue.farewell.first())
+                    .cloned()
+                    .unwrap_or_else(|| "Farewell.".into());
+                (greeting, farewell, None, Vec::new())
             } else {
                 continue;
             };
@@ -397,7 +418,8 @@ impl NpcTalkBook {
                     farewell_reply,
                     source_name_templates: dark_messages.is_some()
                         || isle_messages.is_some()
-                        || reward_callback_npc(&reference.key),
+                        || reward_callback_npc(&reference.key)
+                        || native_npcs.contains(&reference.key.as_str()),
                     source_walkaway: if dark_messages.is_some() {
                         Some(dark_trails::WALKAWAY.into())
                     } else {

@@ -231,6 +231,8 @@ pub fn load_embedded_quest_state(
         super::rotten_blood::ACCESS_DOOR_TRACK.into(),
         "storage:Quest.U13_20.RottenBlood.AccessDoor".into(),
     );
+    lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
+        .map_err(QuestLoadError::Json)?;
     Ok(lowered)
 }
 
@@ -412,6 +414,13 @@ mod tests {
             (track.quest.as_str(), track.initial, track.min, track.max),
             (QUEST, 0, 0, 1)
         );
+        // Keep the observed completion domain and the pre-existing wider
+        // integer counter domain; the source sentinel must not lower either min.
+        for (suffix, max) in [("status", 2), ("progress", i64::from(i32::MAX))] {
+            let key = format!("oteryn:quest-progress/quest/u8_6/afathers_burden/{suffix}");
+            let track = lowered.catalogue().track(&key).expect("Father track");
+            assert_eq!((track.initial, track.min, track.max), (0, 0, max));
+        }
         assert_eq!(
             lowered.source_track(QUEST_LOG),
             Some("canary:quest-progress/quest/u8_6/afathers_burden/quest_log")
