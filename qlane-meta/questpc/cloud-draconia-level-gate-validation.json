@@ -78,7 +78,9 @@
     },
     {
       "path": "qlane-meta/questpc/cloud-draconia-level-gate-green.log",
-      "sha256": "7aa988f31d3b83bb7d1018e61dce3548a910f84f4fdd19379f4556bf460c9219"
+      "sha256": "5c9bbc66e5492ca292f1bf9838b4d0e992ff72a3c41b99997833131ad0da2510",
+      "raw_sha256": "7aa988f31d3b83bb7d1018e61dce3548a910f84f4fdd19379f4556bf460c9219",
+      "normalization": "Terminal blank lines only; all original proof lines retained."
     },
     {
       "path": "qlane-meta/questpc/cloud-draconia-level-gate-check.log",
@@ -90,7 +92,9 @@
     },
     {
       "path": "qlane-meta/questpc/cloud-draconia-level-gate-world-unit.log",
-      "sha256": "5ff957287a03b54f63d43a502546f804c97a5b8f8513198e18adc5beae399a97"
+      "sha256": "1bed90fbc9627900cad6660fde6814312f854eb780957a1f55f7aed073ef6551",
+      "raw_sha256": "5ff957287a03b54f63d43a502546f804c97a5b8f8513198e18adc5beae399a97",
+      "normalization": "Terminal blank lines only; all original proof lines retained."
     },
     {
       "path": "qlane-meta/questpc/cloud-draconia-level-gate-pins.log",

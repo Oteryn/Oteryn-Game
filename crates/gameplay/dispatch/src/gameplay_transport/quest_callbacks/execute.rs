@@ -20,6 +20,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         slot: Option<&mut RevisionSlot>,
         optional_pvp: Option<bool>,
         read_only_gate: Option<&ReadOnlyGate>,
+        carried_tool: Option<[u8; 16]>,
     ) -> UseDisposition {
         if !runtime
             .player_control_facts(actor, session)
@@ -208,6 +209,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             let context = QuestWorldContext {
+                carried_tool,
                 map_revision: crate::map::overlay::map_revision(map.overlay.base()),
                 content_revision: format!(
                     "sha256:{}",
@@ -298,9 +300,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
-        // A progress-only source departure has no Channel projection. Its
-        // receipt recovery must preserve newer revisions at the shared origin.
-        if callback.is_guarded_source_departure() {
+        // Progress-only callbacks have no Channel projection. Retained tools must
+        // preserve the ordinary door owner's current appearance and revision.
+        if callback.is_guarded_source_departure() || callback.is_progress_only_tool() {
             if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
                 pending.remove(&session);
             }

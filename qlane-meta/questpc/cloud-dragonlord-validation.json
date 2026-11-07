@@ -65,15 +65,21 @@
     },
     {
       "path": "qlane-meta/questpc/cloud-dragonlord-rollback-green.log",
-      "sha256": "2422295b4e2a6fc79269bb7c77020b393f757b16261f743bc6e0f3dc70110413"
+      "sha256": "62e2bda7ea2d6874125a432a3decfb2b0239d84ebcfaf55e16759665a68e0451",
+      "raw_sha256": "2422295b4e2a6fc79269bb7c77020b393f757b16261f743bc6e0f3dc70110413",
+      "normalization": "Terminal blank lines removed only; all proof lines preserved."
     },
     {
       "path": "qlane-meta/questpc/cloud-dragonlord-unit-quests.log",
-      "sha256": "c885e98d425e43b5f29534c2db7c9afea7dc1d11b28bb0e83b4d630483741149"
+      "sha256": "ab406884be1545f662a4204484d4ee9b93cf7b934c3fba0e4e822ff349780d04",
+      "raw_sha256": "c885e98d425e43b5f29534c2db7c9afea7dc1d11b28bb0e83b4d630483741149",
+      "normalization": "Terminal blank lines removed only; all proof lines preserved."
     },
     {
       "path": "qlane-meta/questpc/cloud-dragonlord-unit-npc.log",
-      "sha256": "dd0d46f228e6f72fe046f6006e57d6a20892c5c62b64151dd15688f99852666f"
+      "sha256": "5fe776e088ed94cc559cfceeb47485da0fd5fdc8f6654fd71275325bc28fc084",
+      "raw_sha256": "dd0d46f228e6f72fe046f6006e57d6a20892c5c62b64151dd15688f99852666f",
+      "normalization": "Terminal blank lines removed only; all proof lines preserved."
     },
     {
       "path": "qlane-meta/questpc/cloud-dragonlord-check.log",
@@ -97,5 +103,22 @@
     }
   ],
   "whole_title_promoted": false,
-  "review": "PASS: no remaining findings; original failed recovery probe retained and corrected through production recovery API."
+  "review": "PASS: no remaining findings; original failed recovery probe retained and corrected through production recovery API.",
+  "terminal_blank_line_normalization": {
+    "qlane-meta/questpc/cloud-dragonlord-rollback-green.log": {
+      "raw_sha256": "2422295b4e2a6fc79269bb7c77020b393f757b16261f743bc6e0f3dc70110413",
+      "normalized_sha256": "62e2bda7ea2d6874125a432a3decfb2b0239d84ebcfaf55e16759665a68e0451",
+      "normalization": "Terminal blank lines removed only; all proof lines preserved."
+    },
+    "qlane-meta/questpc/cloud-dragonlord-unit-npc.log": {
+      "raw_sha256": "dd0d46f228e6f72fe046f6006e57d6a20892c5c62b64151dd15688f99852666f",
+      "normalized_sha256": "5fe776e088ed94cc559cfceeb47485da0fd5fdc8f6654fd71275325bc28fc084",
+      "normalization": "Terminal blank lines removed only; all proof lines preserved."
+    },
+    "qlane-meta/questpc/cloud-dragonlord-unit-quests.log": {
+      "raw_sha256": "c885e98d425e43b5f29534c2db7c9afea7dc1d11b28bb0e83b4d630483741149",
+      "normalized_sha256": "ab406884be1545f662a4204484d4ee9b93cf7b934c3fba0e4e822ff349780d04",
+      "normalization": "Terminal blank lines removed only; all proof lines preserved."
+    }
+  }
 }

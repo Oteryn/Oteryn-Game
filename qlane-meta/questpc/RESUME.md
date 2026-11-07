@@ -1,3 +1,7 @@
+Ownership refresh: Hidden Threats Quest is QUALIFIED in questpc7 at ee0f48730d3e864796dfa69f691fd643f1284c5a (HIDDEN-PG-PROOF.json, actual PostgreSQL18.6 RED43.512682362s/GREEN45.593580772s). Apply owner SKIP rule; room drafts are uncommitted /tmp files and must not be implemented as duplicate lane work. Current owner snapshots recorded for questpc2–8 and qengine2. Next select other unfinished owned entries after level-gate integration push.
+
+GREEN integration:5b3d0a14e native Draconia level25 gate merged with Corym doors and Dragonlord exchange. Combined fmt/check/strict clippy,5source-binding/2profile units, source/profile generation and pins passed. Evidence: cloud-hidden-level-integration-validation.json. Parent real-PG proofs retained; imported logs normalized only at EOF with raw hashes preserved. Publish fast-forward, then source research/RED for next owned batch; Hidden Threats is SKIP under current questpc7 qualification.
+
 ## Elathriel RED/source checkpoint — 2026-11-07
 Actual PostgreSQL18.6 RED3=247.98s: carried,bank,full-backpack probes fail on
 framed hi NoConversation. Evidence cloud-elathriel-red-validation.json.
@@ -33,6 +37,8 @@ rewardcallbacks modules/SQL0999+1096. Select reusable engine hunks preserving lo
 Corym participant, Dragonlord, world callbacks and atomicFather11; no new handoff.
 Then generic shared skeleton5972 stockkey3001, final complete route composition.
 
+GREEN integration: fed544841 Dragonlord greeting exchange and45th NPC placement merged with156de0c70 Corym doors/Draconia routes. Combined fmt/check/strict clippy, exact catalogue history, greeting/custody units, generation and pins passed. Parent real-PG proofs retained; all44 prior placements unchanged. Evidence: cloud-hidden-dragonlord-integration-validation.json. Next: draft room scene/tests enter real PostgreSQL RED before generic source-room implementation.
+
 ## Dragonlord slice GREEN — 2026-11-07
 Source-bound greeting uses existing generic atomic item-exchange owner: one3723
 consumed, one3206 granted, exact Dragonfetish!=1 guard, flag1, immediate focus end.
@@ -52,6 +58,10 @@ level-door owner already interprets25. Source verified offline; plan
 profiles with existing tooling; focused PG RED/GREEN levels24/25/26, no bypass.
 Then reuse freshqpc6 exact paid-key owner for Elathriel5000->copper2970 action3012;
 then generic shared skeleton5972 containerstock key3001. Own every missing feature.
+
+GREEN integration: Corym retained-key door batch099836485 plus Draconia route b37aa848a. Combined fmt/check/strict clippy, source-binding/history units, source generation/tree, pins and actual PostgreSQL WorksDoor01 saved-definition regression passed. Evidence: cloud-hidden-doors-integration-validation.json. Both parents retained; no whole-title promotion. Next: native NPC door composition and reusable Cave Spider timed-room admission, four creature spawns and cleanup.
+
+Next room implementation source check: Canary04b83b51 tile.cpp1685–1704 runs native teleport before STEP_IN on the original tile; movement.cpp290 binds that original tile position. Preserve the native first-entry teleport to33056/32004/z11 and route the original entrance event using the final fenced actor snapshot. Second entry33039/32103/z12 lies inside occupancy bounds and counts its own entrant. Source: https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/items/tile.cpp#L1685-L1704 . Draft normalized room facts and implementation notes are in /tmp/questpc-hidden-room-capsule-draft.json and /tmp/questpc-hidden-room-implementation-plan.md; temporary source originals must not be committed. Runtime positions use legacy positive floors; native callback/map positions use signed negative floors.
 
 ## Dragonlord evidence checkpoint — 2026-11-07
 Three actual PostgreSQL18.6 RED probes retained (83.05/83.99/84.14s).
@@ -203,6 +213,38 @@ this note and QUEST-STATUS, commit merge with owner trailers, fetch/merge again 
 remote moved and push HEAD:claude/happy-davinci-ijz3wy-questpc-pc2 immediately.
 Last published local checkpoint886ac871c (~06:40UTC); target next push by07:10UTC.
 Then continue source pressure/portal batch; do not end. Source plans retained below.
+
+## Three Corym WorksDoor unlocks GREEN — 2026-11-07
+
+Actual PG18.6: all3 exact source doors unlock with retained key and oldNPC13
+immutable saves; unknown saved definition remains closed. Replay, handledrepeat,
+unchanged key, conditional message, sourceflag and immediate ordinarydoor access
+all pass. Evidence: cloud-hidden-doors-validation.json (actual durations/hashes).
+FullCorymNPC and classic nativeKey3004 PG regressions, source/history/NPC units,
+fmt/check/strictClippy3crates, deterministic generation and pinrefresh/check pass.
+No whole-title promotion; counts remain60QUALIFIED/117UNFINISHED/1excluded unless
+incoming remote title qualifications change them. Cross-lane exact skip list/sha
+is authoritative (last checked qengine2 30QUALIFIED/20localoverlap).
+
+Generic support now exists: explicit source-track bindings, bounded source-cohort
+loader, strict append-only definition history/defaults, retained exactItemID
+callbacks, shared heldSpellLanePermit, progress-only projection and coherent
+session copy refresh outside locks (normal use and recovery). No DBguard weakening,
+repinning or BURN/MINT. Canonical repeats return handledsuccess; only bookkeeping
+receipt repeats, never flag/key/success text. CurrentTibiaHashd88cf742...5f2d;
+known savedNPC13hash8c649465...e084. Source worlds/maps exactpinned capsule.
+
+Next batch: Ratter/Servant actualdoor USE gates plus CaveSpider room entry,
+occupancy/spawns, five-minute cleanup and actual boss/loot path. Known source
+facts /tmp/questpc-hidden-next-plan.md and /tmp/questpc-hidden-source (use fresh/
+prefixed Canary door Lua; old unprefixed door script is Crystal). Room helper
+false means ANY creature occupancy including entrant. Rescue9->10 on entry,
+no invented killflag. Reuse/refactor grizzly room owner; all shared support ours.
+Fetch qengine2 before a new generic feature, skip QUALIFIED elsewhere. Publish
+this batch as prescribed now, merge concurrent pc2 changes, FFpush/readback;
+continue without ending while owned entries remain.
+
+---
 
 ## Craft and native upper doors merged GREEN — 2026-11-07
 

@@ -87,4 +87,3 @@ POSTGRES_CASE_COMPLETED draconia_level_gate level=25 duration=45.779121602s
 ok
 
 test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 2596 filtered out; finished in 138.28s
-

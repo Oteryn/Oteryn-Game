@@ -63,4 +63,3 @@ test map::facts::source_bindings::tests::source_door_bindings_are_exact_and_pres
 test map::facts::source_bindings::tests::source_binding_capture_is_bounded_and_rejects_ambiguous_or_untyped_attributes ... ok
 
 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 219 filtered out; finished in 0.05s
-

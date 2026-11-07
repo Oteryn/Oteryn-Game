@@ -1,0 +1,36 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.10s
+     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_quests-83ac356503a3a145)
+
+running 29 tests
+test quest::npc_rules::marlin_trophy::tests::pemaret_source_revision_cannot_authorize_another_quest ... ok
+test quest::npc_rules::tests::absent_foreign_track_prevents_fallback_reward ... ok
+cargo:rerun-if-changed=/tmp/oteryn-npc-registry-93952/crates/gameplay/quests/../../../content/dialogues/quest-rules
+test quest::npc_rules::tests::build_npc_programs::tests::absent_source_directory_generates_a_valid_empty_registry ... ok
+test quest::npc_rules::tests::build_npc_programs::tests::each_added_program_is_mounted_in_stable_order ... ok
+test quest::npc_rules::tests::build_npc_programs::tests::empty_registry_needs_no_quest_file ... ok
+test quest::npc_rules::tests::catalogue_rejects_unknown_schema_fields_and_foreign_writes ... ok
+test quest::npc_rules::marlin_trophy::tests::pemaret_old_source_requires_exact_custody ... ok
+test quest::npc_rules::tests::crystal_msg_contains_rejects_any_word_prefixed_occurrence ... ok
+test quest::npc_rules::tests::empty_terminal_rule_preserves_source_first_branch_priority ... ok
+test quest::npc_rules::tests::continuation_reads_staged_tracks_topics_and_items ... ok
+test quest::npc_rules::hidden_threats::tests::corym_start_is_three_atomic_writes_and_never_rewinds_later_progress ... ok
+test quest::npc_rules::tests::failed_later_consumption_produces_no_partial_plan ... ok
+test quest::npc_rules::tests::fluid_consumption_requires_the_exact_subtype ... ok
+test quest::npc_rules::tests::father_acceptance_refuses_all_eleven_atomic_writes_without_splitting ... ok
+test quest::npc_rules::tests::hero_greeting_plans_the_source_access_write ... ok
+test quest::npc_rules::tests::money_bank_consumption_matches_crystal_inventory_first ... ok
+test quest::npc_rules::tests::ignored_remove_item_result_preserves_the_source_reward ... ok
+test quest::npc_rules::tests::native_bigfoot_resolution_is_required_and_bounded_before_plan ... ok
+test quest::npc_rules::tests::outer_keyword_barrier_blocks_later_yes ... ok
+test quest::npc_rules::tests::pinned_source_ranges_are_valid_but_inverted_ranges_are_rejected ... ok
+test quest::npc_rules::tests::program_digest_changes_with_the_actual_reply_and_not_whitespace ... ok
+test quest::npc_rules::tests::source_time_guard_and_cooldown_use_supplied_epoch_seconds ... ok
+test quest::npc_rules::hidden_threats::tests::corym_programme_requires_every_exact_pinned_source ... ok
+test quest::npc_rules::tests::storage_owner_preserves_order_and_rejects_unowned_effects ... ok
+test quest::npc_rules::tests::storage_owner_refuses_inventory_dependent_fallbacks ... ok
+test quest::npc_rules::tests::unqualified_hazard_receipt_and_mount_contracts_are_rejected ... ok
+test quest::npc_rules::tests::storage_owner_commits_exact_father_acceptance_without_raising_general_cap ... ok
+test quest::npc_rules::tests::every_registered_source_program_passes_the_closed_schema ... ok
+test quest::npc_rules::tests::npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_rollback ... ok
+
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 247 filtered out; finished in 1.50s

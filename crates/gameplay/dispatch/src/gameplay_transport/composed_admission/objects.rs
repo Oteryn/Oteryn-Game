@@ -22,6 +22,42 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read_item_use_inventory(self.character, self.holder, fence)
             .await
             .ok()?;
+        let tool = inventory
+            .equipment
+            .iter()
+            .chain(
+                inventory
+                    .backpack
+                    .iter()
+                    .flat_map(|bag| bag.entries.iter().map(|entry| &entry.item)),
+            )
+            .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
+            .find(|item| item.item_instance_id == instance && item.quantity == 1);
+        if let Some(tool) = tool
+            && self
+                .active_generation
+                .and_then(|generation| generation.native_gameplay())
+                .is_some_and(|native| {
+                    native
+                        .item_policy(
+                            &tool.definition.production_key,
+                            &tool.definition.revision_ref,
+                        )
+                        .is_some()
+                })
+            && let Some(outcome) = self
+                .use_quest_callback_tool(
+                    actor,
+                    command,
+                    map,
+                    target,
+                    Some((instance, &tool.definition)),
+                    Some(&_permit),
+                )
+                .await
+        {
+            return Some(outcome);
+        }
         let action = inventory.key_action(instance)?;
         let mut runtime = self.runtime.lock().await;
         let Ok(states) = self.states.spell_states.try_lock() else {

@@ -221,6 +221,18 @@ pub(super) fn inexact_source_set(transition: &str, track: &str) -> Option<i64> {
 pub fn load_embedded_quest_state(
     content_revision: &str,
 ) -> Result<LoweredQuestState, QuestLoadError> {
+    load_embedded_quest_state_at_layer(content_revision, 2)
+}
+
+/// Reconstruct one bounded immutable source-cohort prefix. This supports historical
+/// save interpretation and qualification without changing a stored definition pin.
+pub fn load_embedded_quest_state_at_layer(
+    content_revision: &str,
+    layer: u8,
+) -> Result<LoweredQuestState, QuestLoadError> {
+    if layer > 2 {
+        return Err(QuestLoadError::Json("unknown catalogue layer".into()));
+    }
     let mut lowered = parse_quest_state(EMBEDDED, content_revision)?;
     lowered.catalogue =
         super::world_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
@@ -254,9 +266,43 @@ pub fn load_embedded_quest_state(
     );
     lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
         .map_err(QuestLoadError::Json)?;
+    lowered.catalogue = super::world_callbacks::extend_layers(lowered.catalogue, layer)
+        .map_err(QuestLoadError::Json)?;
+    for callback in super::world_callbacks::load()
+        .map_err(QuestLoadError::Json)?
+        .into_iter()
+        .filter(|callback| callback.catalogue_layer <= layer)
+    {
+        for storage in &callback.storage {
+            let Some(source) = &storage.source_track else {
+                continue;
+            };
+            if !lowered
+                .catalogue
+                .track(&storage.track)
+                .is_some_and(|track| track.quest == callback.quest)
+            {
+                return Err(QuestLoadError::Json(
+                    "source binding has no matching catalogue track".into(),
+                ));
+            }
+            if let Some(prior) = lowered.source_tracks.get(&storage.track) {
+                if prior != source {
+                    return Err(QuestLoadError::Json(
+                        "conflicting source track binding".into(),
+                    ));
+                }
+            } else {
+                lowered
+                    .source_tracks
+                    .insert(storage.track.clone(), source.clone());
+            }
+        }
+    }
     // Preserve source captures and their counts; only the production catalogue
     // and its executable bindings are filtered by the owner's target scope.
     let npc_legacy = std::mem::take(&mut lowered.catalogue.npc_legacy);
+    let predecessors = std::mem::take(&mut lowered.catalogue.predecessors);
     lowered.catalogue = QuestStateCatalogue::new(
         content_revision,
         lowered
@@ -276,6 +322,7 @@ pub fn load_embedded_quest_state(
     )
     .map_err(QuestLoadError::Catalogue)?;
     lowered.catalogue.npc_legacy = npc_legacy;
+    lowered.catalogue.predecessors = predecessors;
     lowered
         .source_tracks
         .retain(|key, _| lowered.catalogue.track(key).is_some());

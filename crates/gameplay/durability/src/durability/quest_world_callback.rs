@@ -9,6 +9,9 @@ use sqlx::Row;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct QuestWorldContext {
+    /// Exact carried instance selected by the fenced item USE admission.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub carried_tool: Option<[u8; 16]>,
     pub map_revision: String,
     pub content_revision: String,
     pub placement_context: Vec<u8>,
@@ -79,6 +82,7 @@ impl super::DurabilityRoot {
                      FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2",
                 ).bind(fence.character_id.as_bytes().as_slice()).bind(&callback.quest)
                     .fetch_optional(&mut *tx).await?;
+                let mut historical_defaults = None;
                 if let Some(pin) = pin {
                     let pin = super::quest_state::QuestStateRecord {
                         pinned_content_revision: pin.try_get("pinned_content_revision")?,
@@ -89,6 +93,8 @@ impl super::DurabilityRoot {
                     if !read_only_pin_allows(&pin, &catalogue, &callback.quest)? {
                         return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
                     }
+                    historical_defaults = oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
+                        &catalogue, &callback.quest, &pin.definition_hash).cloned();
                 }
                 for storage in &callback.storage {
                     let Some(track) = catalogue.track(&storage.track).filter(|track| track.quest == callback.quest) else {
@@ -99,7 +105,8 @@ impl super::DurabilityRoot {
                          WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND quest_key=$3",
                     ).bind(fence.character_id.as_bytes().as_slice()).bind(&storage.track)
                         .bind(&callback.quest).fetch_optional(&mut *tx).await?;
-                    if !(storage.minimum..=storage.maximum).contains(&value.unwrap_or(track.initial)) {
+                    if !(storage.minimum..=storage.maximum).contains(&value.unwrap_or_else(|| historical_defaults.as_ref()
+                        .and_then(|defaults| defaults.get(&storage.track)).copied().unwrap_or(track.initial))) {
                         return Ok(Ok(false));
                     }
                 }
@@ -120,7 +127,14 @@ fn read_only_pin_allows(
         .ok_or(DurabilityError::InvalidStoredState)?;
     // QUEST-STATE-0 §6: unchanged definitions retain their historical content
     // pin; completed quests keep access even when the definition changes.
-    Ok(stored.definition_hash == current_hash || stored.completed)
+    Ok(stored.definition_hash == current_hash
+        || stored.completed
+        || oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
+            catalogue,
+            quest,
+            &stored.definition_hash,
+        )
+        .is_some())
 }
 
 struct Input {
@@ -335,6 +349,9 @@ async fn consume_inputs(
     // Resolve and lock every input before any write, including replacement preconditions.
     let mut inputs = Vec::new();
     if let Some(required) = &callback.item_on_target {
+        if required.retain != context.carried_tool.is_some() {
+            return Ok(false);
+        }
         let row = sqlx::query(
             "SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item, \
              c.location,c.kind,i.quantity FROM \
@@ -342,12 +359,14 @@ async fn consume_inputs(
              JOIN game_item_instances i ON i.item_instance_id=c.item \
              WHERE i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 \
              AND i.definition_family='Item' AND i.definition_production_key=$3 \
-             AND i.quantity >= $4 ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i",
+             AND i.quantity >= $4 AND ($5::bytea IS NULL OR i.item_instance_id=encode($5,'hex')::uuid) \
+             ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i",
         )
         .bind(fence.character_id.as_bytes().as_slice())
         .bind(world_id.as_bytes().as_slice())
         .bind(&required.item)
         .bind(i64::from(required.count))
+        .bind(context.carried_tool.as_ref().map(|id| id.as_slice()))
         .fetch_optional(&mut **tx)
         .await?;
         let Some(row) = row else { return Ok(false) };
@@ -364,6 +383,11 @@ async fn consume_inputs(
             return Ok(false);
         }
         lock_location(tx, InputPermit::Spell(permit), &input).await?;
+        if required.retain {
+            // Presence-only tools use the same custody locks and fenced Quest owner.
+            // No item write, BURN or MINT participant is introduced.
+            return Ok(input.count == 1 && input.quantity == 1 && input.replacement.is_none());
+        }
         if callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE {
             // Crystal actions_sacrifice.lua:15-18: stage one needs a real
             // carried tear but consumes none. All other stages use the same

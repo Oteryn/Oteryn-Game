@@ -1,0 +1,336 @@
+{
+  "result": "GREEN",
+  "base_head": "22eab7c56581afcb3f3fa1e1e174d970e5b9d86e",
+  "postgres_version": 180006,
+  "scope": [
+    "WorksDoor01 action45974 retained-key unlock",
+    "WorksDoor02 action45975 retained-key unlock",
+    "WorksDoor03 action45976 retained-key unlock"
+  ],
+  "negative_regression": "Unrecognized saved definition remains closed; immutable pin and key preserved.",
+  "source_capsule": "tools/content-schema/quest-authoring/samples/native-rewards/hidden-threats-doors.json",
+  "source_capsule_sha256": "7a8b37a76cfd650eefc9bc6a4c3beeb34c5029da957c7472b94ba7d0fe579879",
+  "source": {
+    "lines": 30,
+    "path": "data-otservbr-global/scripts/quests/hidden_threats/action-corym_works_doors.lua",
+    "repository": "opentibiabr/canary",
+    "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "sha256": "263b50458d596e4900dfa491997f184ef6c88879034a61c52aae42c983f42184",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/hidden_threats/action-corym_works_doors.lua"
+  },
+  "saved_npc13_definition": "8c6494650b3d22ccd66d6893c77f8b0ad16b06dfcd69725316150c1be49ee084",
+  "current_definition": "d88cf742f5c102803aae4396c5e5485eddc9cf1ff589e9adc089b98221c65f2d",
+  "source_files_sha256": {
+    "content/quests/hidden-threats-callbacks.json": "11ea81bed9498f863b8077b9124bc28b10efa0ec516abec20f3192bf603478bd",
+    "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects.rs": "924193dccf1aa0c7743a5d693d0dabff522da93fc6d8c8958d3aa4ec4d66c995",
+    "crates/gameplay/dispatch/src/gameplay_transport/grizzly_boss.rs": "a6fcb908c10b522a038951b9b32591e8ed56d576045712713cfbb0016dea610c",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_durability.rs": "304b5fa16d6a0493cd245ef0e5df752be98cfb9c109bd3ce0fc94e9c545e8630",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hidden_threats_doors.rs": "c3c5e0036210a91593e86e3720e05a91a97333661cc6fa311608b471c037f114",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs": "b34c9aa074ff4936008cfa4c8bf4a38a5a9bbfde217661a1c9341f0be768cb23",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/unnatural_selection.rs": "5cdec36b120a2d9088d78a8ece549ac0b3c4d9bf7629fe4a86818666f602bc88",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs": "a696099436e159084fac7610f8f995a51fa7ba4c8309d9c45ef2a395af646d30",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/underwater_drowning.rs": "f585e491582890d4c8fcffcf60602dfc782051932cc1b10f789020be80edeb36",
+    "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs": "5187077167aae009e6cd2cc7d97e714fddf3c917bd227a10e36902b41c4cd4fc",
+    "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs": "0022ffe3f2617e148b053b42247f31dc631521c9fb7951489a963da84e24f5ec",
+    "crates/gameplay/durability/src/durability/quest_world_callback.rs": "8ae88353626f8859d4d3988b769aec0a571a1a0fa94eb02cdc27b35e168750a3",
+    "crates/gameplay/quests/src/quest/catalogue_history.rs": "9460aced8cf38dae5a2ad7381729bb5f9bcd2097f17cfaa966906c05ba9db164",
+    "crates/gameplay/quests/src/quest/loader.rs": "876d1098ee8cd80a0af7c7e07ab2269b0bc81c9fbc5d978ab34b4fb872725eb4",
+    "crates/gameplay/quests/src/quest/mod.rs": "033fd19197adef353e0e849a3d547102fcd734eb272360ed42a53336f28c9efe",
+    "crates/gameplay/quests/src/quest/npc_rules.rs": "220d64d7448df9d3790a418d81f75b6e445e5694f11976bd998d2dd0fefa8dbd",
+    "crates/gameplay/quests/src/quest/rotten_blood.rs": "e17c61a2eff915c394479081261017d1eca466e29e96dc6db1847e59be54bc85",
+    "crates/gameplay/quests/src/quest/world_callbacks.rs": "8ad7c795076ea4f68750534f180590a6e34a11b93395c5f93a1eeb66c3bb33be",
+    "crates/gameplay/quests/src/quest/world_callbacks/native.rs": "7cd3077705039a885e880b2d2d53a560331f090994f42b92a645b762befc2316",
+    "crates/gameplay/quests/src/quest/world_callbacks/retained_tests.rs": "b89cf77c23992d8b329a195847a1cd4f20510ada2ba4030cebe2d5db520cb3a2",
+    "tools/content-schema/quest-authoring/hidden_threats_world.py": "c9f342f7de3587f722f0972358c893d92bc602df154db95a3acfce016081008f",
+    "tools/content-schema/quest-authoring/samples/native-rewards/hidden-threats-doors.json": "7a8b37a76cfd650eefc9bc6a4c3beeb34c5029da957c7472b94ba7d0fe579879",
+    "tools/content-schema/quest-authoring/test_hidden_threats_world.py": "67588524d29920e13c7f7a5bbbcde901f571091b85dff20efcd4a6b300c17dc8"
+  },
+  "logs": {
+    "red": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-red.log",
+      "sha256": "42c86f266d421f6cf9e863e2e412a8b596593c1bc0f3785c14eb5dfd86183587",
+      "raw_sha256": "42c86f266d421f6cf9e863e2e412a8b596593c1bc0f3785c14eb5dfd86183587",
+      "normalization": "terminal blank lines only; any capture padding explicitly marked",
+      "markers": [
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_doors::hidden_threats_doors_works01_retains_key_and_unlocks_exact_source_door ... POSTGRES_CASE_STARTED hidden_threats_doors case=Works01 version=180006",
+        "POSTGRES_CASE_FAILED hidden_threats_doors case=Works01 duration=47.567291714s"
+      ],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 5m 20s",
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2585 filtered out; finished in 47.57s"
+      ]
+    },
+    "fixture-extent": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-fixture-extent.log",
+      "sha256": "8c9147f0e4149b48baa11c3b54bf44f8f106c2deff37b28daafe40d12b632906",
+      "raw_sha256": "8c9147f0e4149b48baa11c3b54bf44f8f106c2deff37b28daafe40d12b632906",
+      "normalization": "terminal blank lines only; any capture padding explicitly marked",
+      "markers": [
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_doors::hidden_threats_doors_works01_retains_key_and_unlocks_exact_source_door ... POSTGRES_CASE_STARTED hidden_threats_doors case=Works01 version=180006",
+        "POSTGRES_CASE_FAILED hidden_threats_doors case=Works01 duration=44.469951019s"
+      ],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 5m 28s",
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2585 filtered out; finished in 44.47s"
+      ]
+    },
+    "immutable-pin-candidate": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-immutable-pin-candidate.log",
+      "sha256": "16ac42bb728e62f4b7033069cbea3ffa0db0f48531d916d7b5613668a1b745f7",
+      "raw_sha256": "16ac42bb728e62f4b7033069cbea3ffa0db0f48531d916d7b5613668a1b745f7",
+      "normalization": "terminal blank lines only; any capture padding explicitly marked",
+      "markers": [
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_doors::hidden_threats_doors_works01_retains_key_and_unlocks_exact_source_door ... POSTGRES_CASE_STARTED hidden_threats_doors case=Works01 version=180006",
+        "POSTGRES_CASE_FAILED hidden_threats_doors case=Works01 duration=46.37724905s"
+      ],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 6m 53s",
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2585 filtered out; finished in 46.38s"
+      ]
+    },
+    "source-witness-candidate": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-source-witness-candidate.log",
+      "sha256": "14f7a261081aafd6dbaf80a0b110df608ebc963eac39b880264126ef5626bd3b",
+      "raw_sha256": "14f7a261081aafd6dbaf80a0b110df608ebc963eac39b880264126ef5626bd3b",
+      "normalization": "terminal blank lines only; any capture padding explicitly marked",
+      "markers": [],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.10s",
+        "test result: FAILED. 20 passed; 1 failed; 0 ignored; 0 measured; 255 filtered out; finished in 2.96s"
+      ]
+    },
+    "lane-candidate": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-lane-candidate.log",
+      "sha256": "27e6156613af6b52d70bd40af3979a02f0b17e4f66035e7757c5893af875686d",
+      "raw_sha256": "27e6156613af6b52d70bd40af3979a02f0b17e4f66035e7757c5893af875686d",
+      "normalization": "terminal blank lines only; any capture padding explicitly marked",
+      "markers": [
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_doors::hidden_threats_doors_unknown_saved_definition_stays_closed ... POSTGRES_CASE_STARTED hidden_threats_doors case=Unknown version=180006",
+        "POSTGRES_CASE_COMPLETED hidden_threats_doors case=Unknown duration=57.992183223s",
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_doors::hidden_threats_doors_works01_retains_key_and_unlocks_exact_source_door ... POSTGRES_CASE_STARTED hidden_threats_doors case=Works01 version=180006",
+        "POSTGRES_CASE_FAILED hidden_threats_doors case=Works01 duration=57.45266062s",
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_doors::hidden_threats_doors_works02_retains_key_and_unlocks_exact_source_door ... POSTGRES_CASE_STARTED hidden_threats_doors case=Works02 version=180006",
+        "POSTGRES_CASE_FAILED hidden_threats_doors case=Works02 duration=57.635852873s",
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_doors::hidden_threats_doors_works03_retains_key_and_unlocks_exact_source_door ... POSTGRES_CASE_STARTED hidden_threats_doors case=Works03 version=180006",
+        "POSTGRES_CASE_FAILED hidden_threats_doors case=Works03 duration=58.267225077s"
+      ],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 6m 48s",
+        "test result: FAILED. 1 passed; 3 failed; 0 ignored; 0 measured; 2583 filtered out; finished in 231.35s"
+      ]
+    },
+    "cache-candidate": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-cache-candidate.log",
+      "sha256": "e55841e10d41d821757f07613a579cdaa7168f46196a307e94ca316f59d74323",
+      "raw_sha256": "e55841e10d41d821757f07613a579cdaa7168f46196a307e94ca316f59d74323",
+      "normalization": "terminal blank lines only; any capture padding explicitly marked",
+      "markers": [
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_doors::hidden_threats_doors_unknown_saved_definition_stays_closed ... POSTGRES_CASE_STARTED hidden_threats_doors case=Unknown version=180006",
+        "POSTGRES_CASE_COMPLETED hidden_threats_doors case=Unknown duration=48.193683195s",
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_doors::hidden_threats_doors_works01_retains_key_and_unlocks_exact_source_door ... POSTGRES_CASE_STARTED hidden_threats_doors case=Works01 version=180006",
+        "POSTGRES_CASE_FAILED hidden_threats_doors case=Works01 duration=48.062576363s",
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_doors::hidden_threats_doors_works02_retains_key_and_unlocks_exact_source_door ... POSTGRES_CASE_STARTED hidden_threats_doors case=Works02 version=180006",
+        "POSTGRES_CASE_FAILED hidden_threats_doors case=Works02 duration=49.311185423s",
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_doors::hidden_threats_doors_works03_retains_key_and_unlocks_exact_source_door ... POSTGRES_CASE_STARTED hidden_threats_doors case=Works03 version=180006",
+        "POSTGRES_CASE_FAILED hidden_threats_doors case=Works03 duration=48.415945841s"
+      ],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 5m 20s",
+        "test result: FAILED. 1 passed; 3 failed; 0 ignored; 0 measured; 2583 filtered out; finished in 193.98s"
+      ]
+    },
+    "history": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-history.log",
+      "sha256": "e9123b6ba8be9834e3457afba596a3372489816c49a36f41a8bf90ab46b2c3f6",
+      "raw_sha256": "471cad390db42b803033208dadad4861399185da690c981eefb7c54b7d8225dd",
+      "normalization": "terminal blank lines only; any capture padding explicitly marked",
+      "markers": [],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.08s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 273 filtered out; finished in 2.37s"
+      ]
+    },
+    "world-units": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-world-units.log",
+      "sha256": "ad5436e3f276384267b672bdc0aa03c241dbd9bfc4915c16a34dd8cec5ca57c8",
+      "raw_sha256": "6fb07ff49df84ecad0e62ceb39ddfd9a9aaf399f88b51b03abc1f7f56d24eb7d",
+      "normalization": "terminal blank lines only; any capture padding explicitly marked",
+      "markers": [],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.09s",
+        "test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 255 filtered out; finished in 2.88s"
+      ]
+    },
+    "green": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-green.log",
+      "sha256": "30450c9ce534cdcc4fb61229d90aed30689a41af268078f58a3e9bcd696ee40d",
+      "raw_sha256": "79c0b04504d6997bd921d8b5cfa773247f934187c6f0184521b223584dcff3ba",
+      "normalization": "terminal blank lines only; any capture padding explicitly marked",
+      "markers": [
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_doors::hidden_threats_doors_unknown_saved_definition_stays_closed ... POSTGRES_CASE_STARTED hidden_threats_doors case=Unknown version=180006",
+        "POSTGRES_CASE_COMPLETED hidden_threats_doors case=Unknown duration=47.842758158s",
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_doors::hidden_threats_doors_works01_retains_key_and_unlocks_exact_source_door ... POSTGRES_CASE_STARTED hidden_threats_doors case=Works01 version=180006",
+        "POSTGRES_CASE_COMPLETED hidden_threats_doors case=Works01 duration=48.743920004s",
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_doors::hidden_threats_doors_works02_retains_key_and_unlocks_exact_source_door ... POSTGRES_CASE_STARTED hidden_threats_doors case=Works02 version=180006",
+        "POSTGRES_CASE_COMPLETED hidden_threats_doors case=Works02 duration=49.260591486s",
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_doors::hidden_threats_doors_works03_retains_key_and_unlocks_exact_source_door ... POSTGRES_CASE_STARTED hidden_threats_doors case=Works03 version=180006",
+        "POSTGRES_CASE_COMPLETED hidden_threats_doors case=Works03 duration=49.293051948s"
+      ],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 5m 19s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 2583 filtered out; finished in 195.14s"
+      ]
+    },
+    "npc-units": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-npc-units.log",
+      "sha256": "04f5a8f39152f541c0e9bce88c02157207c7f24951dfa80efe38708aa29d28ab",
+      "raw_sha256": "7900b903a38502b5866f165fb443fdda2c37719477093e802b334e25985b3a19",
+      "normalization": "terminal blank lines only; any capture padding explicitly marked",
+      "markers": [],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.10s",
+        "test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 247 filtered out; finished in 1.50s"
+      ]
+    },
+    "npc-regression": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-npc-regression.log",
+      "sha256": "2241065b62587c29f36fac9ad68e58be36445e7bd311cdf4239a3c69a4085d93",
+      "raw_sha256": "9a3bb15c8c084ff2a8750d7273061252779b17865a97103683fa141988f7f4dd",
+      "normalization": "terminal blank lines only; any capture padding explicitly marked",
+      "markers": [
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_npcs::hidden_threats_source_npc_rare_earth_exchange_is_atomic_and_replays ... POSTGRES_CASE_STARTED quest_source_objects mint=false version=180006",
+        "POSTGRES_CASE_STARTED hidden_threats_source_npc_acceptance version=180006",
+        "POSTGRES_CASE_COMPLETED hidden_threats_source_npcs phase=2 duration=91.036295482s"
+      ],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.24s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2586 filtered out; finished in 91.04s"
+      ]
+    },
+    "key-regression": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-key-regression.log",
+      "sha256": "5763bec0d07da0b54be1867262f3616afe901ca90f442dc8455565dc92b79bad",
+      "raw_sha256": "216a65f653eb74b7df363b964f9439f79ede614865cc4bf92a6b80c15c1b7079",
+      "normalization": "terminal blank lines only; any capture padding explicitly marked",
+      "markers": [
+        "test gameplay_transport::monk_save::postgres_tests::m06_keys::draconia_source_upper_key_door_3004 ... POSTGRES_CASE_STARTED source_key_door_Some((32809, 31593, -6, 3004)) server_version=18.6 (Debian 18.6-1.pgdg13+2)",
+        "POSTGRES_CASE_COMPLETED source_key_door_Some((32809, 31593, -6, 3004)) wire_commands=6 transitions=3 duration=42.45283479s"
+      ],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.23s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2586 filtered out; finished in 46.96s"
+      ]
+    },
+    "fmt": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-fmt.log",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "normalization": "terminal blank lines only; any capture padding explicitly marked",
+      "markers": [],
+      "results": []
+    },
+    "check": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-check.log",
+      "sha256": "b0513fa8b3e7079c081fe7eefcb4262ae7e491901e61f9982808f6dd8fd5fa94",
+      "raw_sha256": "b0513fa8b3e7079c081fe7eefcb4262ae7e491901e61f9982808f6dd8fd5fa94",
+      "normalization": "terminal blank lines only; any capture padding explicitly marked",
+      "markers": [],
+      "results": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 13s"
+      ]
+    },
+    "clippy": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-clippy.log",
+      "sha256": "36d657a5cd4b8b69167cc9d572fab6d99453cf14bc45272e4dcbdab509ce3087",
+      "raw_sha256": "36d657a5cd4b8b69167cc9d572fab6d99453cf14bc45272e4dcbdab509ce3087",
+      "normalization": "terminal blank lines only; any capture padding explicitly marked",
+      "markers": [],
+      "results": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3m 23s"
+      ]
+    },
+    "python": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-python.log",
+      "sha256": "82a070f22064ce1524345221e61b2bd76178d32bbf2fcb73eb9ada55aba57207",
+      "raw_sha256": "82a070f22064ce1524345221e61b2bd76178d32bbf2fcb73eb9ada55aba57207",
+      "normalization": "terminal blank lines only; any capture padding explicitly marked",
+      "markers": [],
+      "results": [
+        "Ran 3 tests in 0.329s"
+      ]
+    },
+    "generation": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-generation.log",
+      "sha256": "24d16ca257f22932fc6987812d7909d845b5e5144e23fdd5f3a2d83ed795485e",
+      "raw_sha256": "24d16ca257f22932fc6987812d7909d845b5e5144e23fdd5f3a2d83ed795485e",
+      "normalization": "terminal blank lines only; any capture padding explicitly marked",
+      "markers": [],
+      "results": [
+        "PASS Hidden Threats retained-key callbacks=3",
+        "PASS item_conversion records=145 check=True",
+        "PASS registered spell import files=40 activation=false"
+      ]
+    },
+    "pin-refresh": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-pin-refresh.log",
+      "sha256": "7ee6cd5093c9c3830982cc5b8b98aa582156b79bd0da1a22221fbef8200a5a2a",
+      "raw_sha256": "7ee6cd5093c9c3830982cc5b8b98aa582156b79bd0da1a22221fbef8200a5a2a",
+      "normalization": "terminal blank lines only; any capture padding explicitly marked",
+      "markers": [],
+      "results": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.11s"
+      ]
+    },
+    "pin-check": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-pin-check.log",
+      "sha256": "17a06e68c78177cb63eba7848443a634026811f45948c2f0d82a96ae39a99620",
+      "raw_sha256": "17a06e68c78177cb63eba7848443a634026811f45948c2f0d82a96ae39a99620",
+      "normalization": "terminal blank lines only; any capture padding explicitly marked",
+      "markers": [],
+      "results": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.11s"
+      ]
+    }
+  },
+  "authority": "Actual fenced carried ItemID and unchanged quantity1 key; existing World/Quest transaction, locks and receipt owners. No BURN/MINT, new SQL authority or pin mutation.",
+  "engine_support": [
+    "bounded immutable source-cohort loader and exact additive predecessor/default compatibility",
+    "explicit donor-track bindings with collision rejection",
+    "retained carried-instance callbacks sharing the held SpellLanePermit",
+    "progress-only callbacks preserve normal door projection and refresh coherent session progress after locks are released"
+  ],
+  "boundary": "Three exact-source unlock components plus unknown-definition regression; full Hidden Threats still needs NPC gate USE and Cave Spider room/ending. Canonical handled repeats retain an operation receipt without progress/key changes or repeated success text.",
+  "shared_engine_audit": {
+    "before_implementation": "32f18b86b2ed86d0a37ef1e1ca38b8e3822754b6",
+    "latest_observed": {
+      "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+      "sha": "d44f015c12e29f6ffa16f3de2e220b0dac232716",
+      "titles": [
+        "Afflicted Outfits Quest",
+        "Assassin Outfits Quest",
+        "Battle Mage Outfits Quest",
+        "Beggar Outfits Quest",
+        "Brotherhood Outfits Quest",
+        "Citizen Outfits Quest on Rook",
+        "Crystal Warlord Outfits Quest",
+        "Dark Trails Quest",
+        "Demon Outfits Quest",
+        "Dream Warden Outfits Quest",
+        "Druid Outfits Quest",
+        "Druid Outfits Quest on Rook",
+        "Elementalist Outfits Quest",
+        "Festive Outfits Quest",
+        "Formorgar Mines Quest",
+        "Glooth Engineer Outfits Quest",
+        "Golden Outfits Quest",
+        "Hunter Outfits Quest",
+        "Knight Outfits Quest",
+        "Mage Outfits Quest"
+      ],
+      "rule": "Skip per current owner; this does not claim those implementations are merged here.",
+      "qualified_count": 30,
+      "local_overlap_count": 20
+    },
+    "reuse_boundary": "Recent exact carried-document USE is a self-use reward participant; current world-target retained-tool feature was absent when implementation began. Check latest again before the encounter batch."
+  }
+}

@@ -18,6 +18,7 @@ pub use objects::{ObjectEffects, ObjectMutation};
 // Exact corpus-backed sources additionally verified by source_world_objects.py.
 // This admits only these files, not arbitrary callbacks at a different revision.
 const SOURCE_WORLD_REFS: &[&str] = &[
+    "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/scripts/quests/hidden_threats/action-corym_works_doors.lua",
     "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/hidden_threats/movement-chests_check.lua",
     "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/mintwallin_quest/actions_devil_helmet_lever.lua",
     "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua",
@@ -70,6 +71,9 @@ pub struct Offering {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Storage {
+    /// Explicit donor track identity for additions absent from the original lowering.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_track: Option<String>,
     pub track: String,
     pub minimum: i64,
     pub maximum: i64,
@@ -85,6 +89,10 @@ pub struct Storage {
     pub read_only: bool,
 }
 
+fn is_zero(value: &u8) -> bool {
+    *value == 0
+}
+
 fn is_false(value: &bool) -> bool {
     !*value
 }
@@ -93,12 +101,15 @@ mod native;
 use native::valid_native_callback;
 
 /// One carried item applied to the selected world object.  This deliberately is not a
-/// recipe language: the source is consumed or changed exactly once by the receipt owner.
+/// recipe language: the receipt owner consumes/replaces the source or locks a retained tool.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct ItemOnTarget {
     pub item: String,
     pub count: u16,
+    /// Lock a real carried tool without consuming or replacing it.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub retain: bool,
     pub replacement: Option<String>,
     pub target_replacement: Option<u16>,
 }
@@ -123,6 +134,9 @@ pub struct MonkReward {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Callback {
+    /// Ordered additive cohorts applied after the frozen NPC programme.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub catalogue_layer: u8,
     pub key: String,
     pub quest: String,
     pub trigger: Trigger,
@@ -244,6 +258,20 @@ impl Callback {
         resolved.then_some(bound)
     }
 
+    /// A retained tool changes Quest progress without projecting a world-object state.
+    /// Ordinary door appearances and revisions remain owned by the door handler.
+    #[must_use]
+    pub fn is_progress_only_tool(&self) -> bool {
+        self.item_on_target
+            .as_ref()
+            .is_some_and(|item| item.retain && item.target_replacement.is_none())
+            && self.lever.is_none()
+            && self.objects.is_none()
+            && self.eject_occupants.is_none()
+            && self.passages.is_empty()
+            && self.teleport.is_none()
+    }
+
     /// A pure quest-state predicate, with no Quest mutation or receipt.
     #[must_use]
     pub fn is_read_only(&self) -> bool {
@@ -272,6 +300,18 @@ pub fn load() -> Result<Vec<Callback>, String> {
         != callbacks.len()
     {
         return Err("duplicate world callback across source shards".into());
+    }
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/hidden-threats-callbacks.json"
+    ))?);
+    if callbacks
+        .iter()
+        .map(|callback| &callback.key)
+        .collect::<BTreeSet<_>>()
+        .len()
+        != callbacks.len()
+    {
+        return Err("duplicate world callback across additive source shards".into());
     }
     callbacks.retain(|callback| super::in_runtime_scope(&callback.quest));
     if callbacks.len() >= MAX_CALLBACKS {
@@ -403,6 +443,8 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     })
             })
             || (!callback.offerings.is_empty() && callback.storage.is_empty())
+            || callback.catalogue_layer > 2
+            || (callback.catalogue_layer > 0 && callback.storage.iter().any(|storage| storage.source_track.is_none()))
             || callback.sources.is_empty()
             || !callback.sources.iter().any(|source| {
                 // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
@@ -411,7 +453,8 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || SOURCE_WORLD_REFS.contains(&source.as_str())
             })
             || callback.item_on_target.as_ref().is_some_and(|item| {
-                item.target_replacement == Some(0)
+                (item.retain && (item.count != 1 || item.replacement.is_some() || item.target_replacement.is_some() || !callback.offerings.is_empty()))
+                    || item.target_replacement == Some(0)
                     || (item.replacement.is_some() && item.count != 1)
                     || callback.storage.is_empty()
                     || callback.trigger != Trigger::Use
@@ -468,6 +511,9 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             })
             || callback.storage.iter().any(|s| {
                 !super::valid_quest_key(&s.track)
+                    || s.source_track.as_ref().is_some_and(|source| source.len() > 256 || !source.is_ascii()
+                        || source.contains(['\n','\r','\0'])
+                        || !(source.starts_with("canary:quest-progress/") || source.starts_with("crystalserver:quest-progress/") || source.starts_with("kv:")))
                     || s.minimum > s.maximum
                     || s.set_if.is_some_and(|value| {
                         !(s.minimum..=s.maximum).contains(&value)
@@ -485,7 +531,32 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
 
 pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let callbacks = load()?;
-    extend_callbacks(catalogue, &callbacks)
+    let early = callbacks
+        .into_iter()
+        .filter(|callback| callback.catalogue_layer == 0)
+        .collect::<Vec<_>>();
+    extend_callbacks(catalogue, &early)
+}
+
+/// Append ordered source cohorts without changing any predecessor semantics.
+pub(super) fn extend_layers(
+    mut catalogue: QuestStateCatalogue,
+    maximum_layer: u8,
+) -> Result<QuestStateCatalogue, String> {
+    let callbacks = load()?;
+    for layer in 1..=maximum_layer {
+        let cohort = callbacks
+            .iter()
+            .filter(|callback| callback.catalogue_layer == layer)
+            .cloned()
+            .collect::<Vec<_>>();
+        if cohort.is_empty() {
+            continue;
+        }
+        let next = extend_callbacks(catalogue.clone(), &cohort)?;
+        catalogue = catalogue.with_additive_extension(next)?;
+    }
+    Ok(catalogue)
 }
 
 fn extend_callbacks(
@@ -1099,3 +1170,6 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod retained_tests;

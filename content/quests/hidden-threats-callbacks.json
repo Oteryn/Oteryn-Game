@@ -1,0 +1,137 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "catalogue_layer": 1,
+      "key": "oteryn:quest-callback/hidden-threats/works-door01",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33025,
+          "y": 32008,
+          "floor": -12
+        },
+        "unique": null,
+        "action": 45974,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "source_track": "canary:quest-progress/quest/u11_50/hidden_threats/corym_works_door01",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_works_door01",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1,
+          "set_if": -1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i27269",
+        "count": 1,
+        "retain": true,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "The forged key unlocks the door.",
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/scripts/quests/hidden_threats/action-corym_works_doors.lua"
+      ]
+    },
+    {
+      "catalogue_layer": 1,
+      "key": "oteryn:quest-callback/hidden-threats/works-door02",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33045,
+          "y": 32007,
+          "floor": -12
+        },
+        "unique": null,
+        "action": 45975,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "source_track": "canary:quest-progress/quest/u11_50/hidden_threats/corym_works_door02",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_works_door02",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1,
+          "set_if": -1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i27269",
+        "count": 1,
+        "retain": true,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "The forged key unlocks the door.",
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/scripts/quests/hidden_threats/action-corym_works_doors.lua"
+      ]
+    },
+    {
+      "catalogue_layer": 1,
+      "key": "oteryn:quest-callback/hidden-threats/works-door03",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33001,
+          "y": 32047,
+          "floor": -12
+        },
+        "unique": null,
+        "action": 45976,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "source_track": "canary:quest-progress/quest/u11_50/hidden_threats/corym_works_door03",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_works_door03",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1,
+          "set_if": -1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i27269",
+        "count": 1,
+        "retain": true,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "The forged key unlocks the door.",
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/scripts/quests/hidden_threats/action-corym_works_doors.lua"
+      ]
+    }
+  ]
+}

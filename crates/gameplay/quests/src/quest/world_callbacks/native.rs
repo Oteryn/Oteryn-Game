@@ -122,6 +122,11 @@ impl Callback {
                     None
                 }
             }
+            None if self.storage.iter().any(|storage| storage.set_if.is_some())
+                && changes.iter().all(|change| change.before == change.after) =>
+            {
+                None
+            }
             None => self.success_message.as_deref(),
         }
     }

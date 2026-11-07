@@ -1,0 +1,46 @@
+{
+  "status": "GREEN",
+  "local": "099836485422414fcf700c98175de8384e432c8b",
+  "incoming": "b37aa848ae16d63f23ca4942fcbca4e4227e2720",
+  "logs": {
+    "fmt": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-integration-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "check": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-integration-check.log",
+      "sha256": "f26c1c2821c4d58876275f19123e1a21217aee7e0ae8ab38cb72749e7f13c61e"
+    },
+    "clippy": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-integration-clippy.log",
+      "sha256": "2636ce81dfce9e1f18d87c528939c046eee5b3e56c84495281dd84be1f0d708d"
+    },
+    "units": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-integration-units.log",
+      "sha256": "57064294ed4a1ca30afb51a44cbb0aee1c7cb1212f7469307db51a23393fb56e"
+    },
+    "generation": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-integration-generation.log",
+      "sha256": "6bc00a067d7c26bc49dd2fab38f3234c787dc88b16c526ed0acb27564bc4c43a"
+    },
+    "pin": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-integration-pin.log",
+      "sha256": "d25b947761b249724ddb0b4dfc28088d9e573826a74091e1caa70a5dee9ef8b5"
+    },
+    "history": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-integration-history.log",
+      "sha256": "32449efa240a787d47402366357032699df53d6d55557437217c6a2a0704fa73"
+    },
+    "pg": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-integration-pg.log",
+      "sha256": "6adbe57856e68ad1d471cef5ddd9afd1f7f64f303ee9d95046ba53217ecbcdfa"
+    },
+    "tree": {
+      "path": "qlane-meta/questpc/cloud-hidden-doors-integration-tree.log",
+      "sha256": "4b1a51f1f00f83f5e1ea3ce860719e88e9df6fdbf9c8e82a29016b5982a7a8f2"
+    }
+  },
+  "regression": "Actual PostgreSQL18.6/180006; WorksDoor01 through exact NPC13 saved definition, retained key, replay, repeat and subsequent ordinary door USE. Parent batch retains four-case PG proof.",
+  "counts": "No whole-title promotion; both parent source-component qualifications retained.",
+  "review": "Runtime merges cleanly; exact-root source bindings preserve existing native attributes; all incoming top-level status keys and full Draconia row retained. Source callback generation and immutable source tree checked. No old tests weakened."
+}

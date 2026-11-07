@@ -401,6 +401,57 @@ The focused PG scene supplies only initial canonical actor levels24/25/26 and
 unbound source door identity/position; the production source binder and wire owner
 must establish the action and evaluate the predicate. It does not certify XP gains.
 
+## Active Corym WorksDoor source contract — 2026-11-07
+
+Canonical source is Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b:
+https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/hidden_threats/action-corym_works_doors.lua
+Fresh bytes match263b50458d596e4900dfa491997f184ef6c88879034a61c52aae42c983f42184
+(30lines/1108bytes). The unprefixed temporary file is older Crystal source;
+use the canonical/fresh copy. Canonical matches storage IDs45974/75/76 and
+returns true even on repeat; only a negative flag becomes1 and emits success text.
+The key27269 is retained unchanged. Action/position select the native placement
+across its existing open/closed appearances; source does not guard appearance.
+
+Registration source:
+https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/startup/tables/door_quest.lua
+SHA bfcfdf9c66ae540922f5e05aace80106d1f1e2945b1f06ad4a35bf7da14191d1.
+Storage source:
+https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/lib/core/storages.lua
+SHA05a6f2a9116e8a230d9cf6bc8e15fd306b1cca8b4520e80beb9d7a9809786d0b.
+All3 native map roots and existing quest-door bindings match those canonical IDs.
+No raw originals will be committed. A handled SET_IF repeat may retain the generic
+Quest operation receipt; progress/key remain unchanged and success text requires
+an actual flag change. This is internal receipt bookkeeping, not a source reward.
+
+Reuse audit qengine2@93ee8fe847c65f030f47ce245105229fa63b61c0:27QUALIFIED,
+18overlap skipped by ownership. Latest delta adds outfit reward-bag acquisition,
+not retained world tools or additive catalogue compatibility. Reuse the local
+fenced callback/tool presence locks and SET_IF owner. Runtime implementation waits
+for actual PostgreSQL RED; compiler failures and memory-killed builds do not count.
+
+### Retained tool and save compatibility implementation
+
+The actual admitted carried ItemID is bound into the existing fenced callback
+context and locked by the Root input participant. Retention leaves the item row
+unchanged. The key route passes its held SpellLanePermit into the callback so
+inventory proof and flag commit share one lane acquisition. Progress-only tools
+leave door projection to the ordinary door owner, then refresh coherent quest
+session state after runtime/revision locks are released; recovery uses the same
+refresh. This makes the next normal door USE observe its committed access flag.
+
+The bounded cohort loader reconstructs the actual NPC13 catalogue at layer0.
+Historical fixtures create their immutable pin through that owner's real commit.
+Exact additive history preserves all prior track/transition semantics and missing
+track defaults. Explicit donor-track bindings reject collisions. Read-only gates
+honor the same historical defaults as writers and NPC rules. Source-witness tests
+cover the new bindings alongside the original action classes.
+
+Actual PG18.6 all4cases pass194.57s: unknown definition48.022567361s, WorksDoor01
+48.62128968s, WorksDoor02 48.642059144s, WorksDoor03 49.279037075s. The positives
+cover old saved pins, actual key use, wrong-item/plain-carry refusal, unchanged key,
+exact replay, source handled repeats, message conditions and immediate normal door
+access. Final strict checks, NPC/key regressions and pins are still in progress.
+
 ### Elathriel exact paid Hellgate key (2026-11-07)
 Primary: https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/elathriel.lua#L193-L238
 SHA25624dbbbe1ee2bcb74f74462ce131dd10cdf45801d53ecb586bd63993e1450cd7d.

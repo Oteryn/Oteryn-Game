@@ -1,0 +1,66 @@
+{
+  "status": "GREEN",
+  "local": "c414bb2bb978418bbcd064e36c0af6837593f485",
+  "incoming": "5b3d0a14e8ff04c1da8a13f9258c6a04cc560980",
+  "logs": {
+    "fmt": {
+      "path": "qlane-meta/questpc/cloud-hidden-level-integration-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "normalization": "EOF blank lines only"
+    },
+    "check": {
+      "path": "qlane-meta/questpc/cloud-hidden-level-integration-check.log",
+      "sha256": "2def54b02ec69e8edce9ea0aeefb19fea6e88eb7b687b52746a864e72dcbd8dc",
+      "raw_sha256": "2def54b02ec69e8edce9ea0aeefb19fea6e88eb7b687b52746a864e72dcbd8dc",
+      "normalization": "EOF blank lines only"
+    },
+    "clippy": {
+      "path": "qlane-meta/questpc/cloud-hidden-level-integration-clippy.log",
+      "sha256": "ad498a81ffe24649b82e89a4c29e00e72138a7211dd15136f69e34c2fea497ba",
+      "raw_sha256": "ad498a81ffe24649b82e89a4c29e00e72138a7211dd15136f69e34c2fea497ba",
+      "normalization": "EOF blank lines only"
+    },
+    "units": {
+      "path": "qlane-meta/questpc/cloud-hidden-level-integration-units.log",
+      "sha256": "a3e15a7f58001ac2e7b9a0f6d8eb633171e4953a85e76dc3933c29d41da1a6ad",
+      "raw_sha256": "35a95d8d14bc19f0700726d77d0cddc7ce1f13e48bf138cbb464fe5686d05ef4",
+      "normalization": "EOF blank lines only"
+    },
+    "generation": {
+      "path": "qlane-meta/questpc/cloud-hidden-level-integration-generation.log",
+      "sha256": "82fc678cfa9fd9edd2643d75910445f085bbde4594d0ef28d6e5a79368365de8",
+      "raw_sha256": "82fc678cfa9fd9edd2643d75910445f085bbde4594d0ef28d6e5a79368365de8",
+      "normalization": "EOF blank lines only"
+    },
+    "profile-units": {
+      "path": "qlane-meta/questpc/cloud-hidden-level-integration-profile-units.log",
+      "sha256": "f309c113a69c7d7043af5f2ba35e5a687578cb9651f03edf591b5d8e0166007a",
+      "raw_sha256": "f309c113a69c7d7043af5f2ba35e5a687578cb9651f03edf591b5d8e0166007a",
+      "normalization": "EOF blank lines only"
+    },
+    "pin": {
+      "path": "qlane-meta/questpc/cloud-hidden-level-integration-pin.log",
+      "sha256": "f756e6eebe2264c910426cb6b1200fa073667b50b429da494b757c02a5303b73",
+      "raw_sha256": "f756e6eebe2264c910426cb6b1200fa073667b50b429da494b757c02a5303b73",
+      "normalization": "EOF blank lines only"
+    }
+  },
+  "parent_pg": [
+    "qlane-meta/questpc/cloud-hidden-doors-integration-validation.json",
+    "qlane-meta/questpc/cloud-dragonlord-validation.json",
+    "qlane-meta/questpc/cloud-draconia-level-gate-validation.json"
+  ],
+  "pg_boundary": "No new source entries in this merge. Preserve parent real PostgreSQL18.6 RED/GREEN proofs: Corym49.643924516s regression plus original4cases195.14s; Dragonlord selected3cases255.022765273s; level25 gate3RED133.17s/3GREEN138.28s. Combined changed-crate checks, source bindings/profiles and pins rerun.",
+  "checks": {
+    "fmt": "PASS",
+    "check_all_targets_all_features": "PASS",
+    "strict_clippy": "PASS -D warnings",
+    "source_binding_units": 5,
+    "profile_units": 2,
+    "source_generation": "PASS",
+    "pins": "PASS bb0700fefb815beadb1a64e5b1ae0a46d2183197c4aeb56875902f2effe59a0c"
+  },
+  "ownership": "Fresh questpc2\u20138 plus qengine2 snapshots:76 qualified titles,44 local overlaps. Hidden Threats QUALIFIED questpc7 ee0f48730; apply SKIP and leave room drafts outside repository. No whole-title promotion in this integration.",
+  "review": "Source capture union remains exact-position/item/nonhouse and preserves native attrs. Only5102/5103 source profiles added; previous records preserved. All imported proof lines retained, only terminal blank lines removed with raw hashes retained."
+}

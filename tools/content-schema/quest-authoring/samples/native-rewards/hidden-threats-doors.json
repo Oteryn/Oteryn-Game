@@ -1,0 +1,120 @@
+{
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "conservative_rules": [
+    "The source key is retained unchanged. Only source-negative storage (represented by initial -1) becomes1; source0/1 repeats are handled successfully without changing progress or the key.",
+    "The generic SET_IF quest owner retains an operation receipt for a handled repeat; success text is emitted only for an actual flag change.",
+    "Action and position identify the native door across its existing closed/open states; the source script does not test target appearance.",
+    "Exact additive catalogue predecessors preserve earlier NPC-programme saves; no changed or arbitrary definition hash is admitted."
+  ],
+  "doors": [
+    {
+      "action": 45974,
+      "item": 1642,
+      "map_path": "content/world/placements/region-z12-x129-y125.b3",
+      "map_sha256": "610a677b67117f155bc8ebb49f75f2f8e6325ca538b365fa8e75e11820fcf2f1",
+      "number": 1,
+      "position": [
+        33025,
+        32008,
+        12
+      ],
+      "roots": [
+        [
+          103,
+          0,
+          null
+        ],
+        [
+          1642,
+          0,
+          {
+            "action": 45974
+          }
+        ]
+      ],
+      "storage_line": 2510,
+      "table_line": 685,
+      "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_works_door01"
+    },
+    {
+      "action": 45975,
+      "item": 1642,
+      "map_path": "content/world/placements/region-z12-x129-y125.b3",
+      "map_sha256": "610a677b67117f155bc8ebb49f75f2f8e6325ca538b365fa8e75e11820fcf2f1",
+      "number": 2,
+      "position": [
+        33045,
+        32007,
+        12
+      ],
+      "roots": [
+        [
+          103,
+          0,
+          null
+        ],
+        [
+          1642,
+          0,
+          {
+            "action": 45975
+          }
+        ]
+      ],
+      "storage_line": 2511,
+      "table_line": 689,
+      "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_works_door02"
+    },
+    {
+      "action": 45976,
+      "item": 1644,
+      "map_path": "content/world/placements/region-z12-x128-y125.b3",
+      "map_sha256": "0a439fea95ddab78f0b30f0e226299fcd261838ed48b857a590e81ed1bc6aa14",
+      "number": 3,
+      "position": [
+        33001,
+        32047,
+        12
+      ],
+      "roots": [
+        [
+          103,
+          0,
+          null
+        ],
+        [
+          1644,
+          0,
+          {
+            "action": 45976
+          }
+        ]
+      ],
+      "storage_line": 2512,
+      "table_line": 693,
+      "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_works_door03"
+    }
+  ],
+  "key": 27269,
+  "registration_sources": [
+    {
+      "path": "data-otservbr-global/startup/tables/door_quest.lua",
+      "sha256": "bfcfdf9c66ae540922f5e05aace80106d1f1e2945b1f06ad4a35bf7da14191d1",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/startup/tables/door_quest.lua"
+    },
+    {
+      "path": "data-otservbr-global/lib/core/storages.lua",
+      "sha256": "05a6f2a9116e8a230d9cf6bc8e15fd306b1cca8b4520e80beb9d7a9809786d0b",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/lib/core/storages.lua"
+    }
+  ],
+  "schema": 1,
+  "source": {
+    "lines": 30,
+    "path": "data-otservbr-global/scripts/quests/hidden_threats/action-corym_works_doors.lua",
+    "repository": "opentibiabr/canary",
+    "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "sha256": "263b50458d596e4900dfa491997f184ef6c88879034a61c52aae42c983f42184",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/hidden_threats/action-corym_works_doors.lua"
+  }
+}
