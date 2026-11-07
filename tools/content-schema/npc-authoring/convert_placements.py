@@ -5,7 +5,8 @@ Writes content/world/npc-placements/ (index.json, held.json and placements-*.jso
 NPC keys of npc_placement_scope.json, and only those that the NPC catalogue admits. A cell shared
 with another placement is held (SCHEDULE_VARIANT, SHARED_CELL) instead of written; one NPC listed
 twice at one cell and direction is one record. A wiki-origin placement has no direction in the
-source and is written as north. The source is OTS_HYPOTHESIS_ONLY migration evidence: only
+source and is written as north. Optional placement_cells narrows a scoped NPC to
+a distinct subset of its candidate cells; it cannot introduce coordinates or bypass holds. The source is OTS_HYPOTHESIS_ONLY migration evidence: only
 normalized facts are written. Fails closed on an unadmitted key or an out-of-range position.
 
     python convert_placements.py [--check]
@@ -129,6 +130,21 @@ def convert() -> dict[str, str]:
     if unadmitted:
         sys.exit(f"not an admitted NPC definition: {unadmitted}")
 
+    # A candidate can include both the Global world and an example map. Scope
+    # may select known cells, but never introduce a cell or bypass sharing rules.
+    selections = scope.get("placement_cells", {})
+    if not isinstance(selections, dict) or not set(selections) <= set(npcs):
+        sys.exit("placement_cells names an unscoped NPC")
+    selected_cells = {}
+    for npc, cells in selections.items():
+        if not isinstance(cells, list) or not cells:
+            sys.exit(f"{npc}: placement selection is empty")
+        selected = {cell_of(cell) for cell in cells}
+        available = {cell_of(p["position"]) for p in candidates.get(npc, {}).get("placements", [])}
+        if len(selected) != len(cells) or not selected <= available:
+            sys.exit(f"{npc}: placement selection is not a distinct subset of source cells")
+        selected_cells[npc] = selected
+
     # Every candidate placement counts for cell sharing, scoped or not.
     occupancy = defaultdict(list)
     for key, candidate in candidates.items():
@@ -148,6 +164,8 @@ def convert() -> dict[str, str]:
             continue
         for placement in candidate["placements"]:
             cell = cell_of(placement["position"])
+            if npc in selected_cells and cell not in selected_cells[npc]:
+                continue
             direction = (placement["direction"] or "NORTH").lower()
             sharers = set(occupancy[cell])
             if len(sharers) > 1:

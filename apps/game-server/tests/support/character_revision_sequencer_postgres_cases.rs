@@ -230,8 +230,15 @@ impl Harness {
         reason = "C19b native dispatch scenarios create a root under the new interpretation"
     )]
     pub(super) async fn create_newhaven(admin: String, tag: &str) -> TestResult<Self> {
-        Self::create_seeded_with_starter(admin, tag, false, false, CreationFixture::Historical, "newhaven-starter-r1")
-            .await
+        Self::create_seeded_with_starter(
+            admin,
+            tag,
+            false,
+            false,
+            CreationFixture::Historical,
+            "newhaven-starter-r1",
+        )
+        .await
     }
     async fn create_seeded(
         admin: String,
@@ -273,7 +280,16 @@ impl Harness {
                 .map_err(debug)?;
         }
         let node = registered_node(&root, 1).await?;
-        seed_character(&pool, &root, &node, initialized, seed_session, creation, starter).await?;
+        seed_character(
+            &pool,
+            &root,
+            &node,
+            initialized,
+            seed_session,
+            creation,
+            starter,
+        )
+        .await?;
         Ok(Self {
             database,
             root,

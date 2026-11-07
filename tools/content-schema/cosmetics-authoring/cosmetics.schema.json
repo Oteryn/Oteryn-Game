@@ -489,6 +489,22 @@
             "maxLength": 128,
             "pattern": "^[ -~]+$"
           }
+        },
+        "sex": {
+          "enum": [
+            "female",
+            "male"
+          ]
+        },
+        "outfit_aliases": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
         }
       }
     }

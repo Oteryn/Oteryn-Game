@@ -4,22 +4,22 @@
     "path": "content/creatures/definitions/spell-native-profiles.json",
     "record_count": 1870,
     "schema": "OTERYN_NATIVE_CREATURE_PROFILES/v1",
-    "sha256": "1e40953c191d6e1033ef51cc7efa2f4e593559b8a8f3beda74745208f561ee46",
-    "source_definitions_sha256": "16bc8a7235cbce7cab228a1d35cf59936a30052e91774033effa2dda160742a9"
+    "sha256": "06b0bee295bf0d09d5b3c87827d66cc276771bc79a3c0a05cf8cfebf4c1282a5",
+    "source_definitions_sha256": "5e72bdb573c69dd4ca96d3e77290fe074f8798b8d031ceb6e77e7f516f4afb19"
   },
   "qualification": "DONOR_ATTESTED_NOT_GLOBAL_VERIFIED",
   "records": {
-    "authored": 5115,
+    "authored": 5099,
     "count": 5776,
     "path": "content/abilities/source-imports/monster-attack-authoring.jsonl",
     "schema": "OTERYN_MONSTER_ATTACK_AUTHORING/v1",
-    "sha256": "28425cb86a0af53a5221e1d17580d918b8c7b2add39e131e8ff3be5e50947667",
-    "unavailable": 661,
+    "sha256": "4e5d1de19099f50fbde21949351ccb09e116c101f93ff5cc2b669ca1eb68272f",
+    "unavailable": 677,
     "unavailable_by_reason": {
       "attack_count_differs_from_donor": 24,
       "conflicting_creature_bindings": 33,
       "donor_ability_has_no_effects": 36,
-      "donor_health_conflict": 295,
+      "donor_health_conflict": 311,
       "no_unique_donor_bundle": 269,
       "source_provenance_ambiguous": 4
     }

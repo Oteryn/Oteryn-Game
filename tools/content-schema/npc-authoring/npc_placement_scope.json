@@ -1,6 +1,6 @@
 {
   "schema": "OTERYN_NPC_PLACEMENT_SCOPE/v1",
-  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; NPCFIX: current-playable NPC-AUDIT-1 population at exact TibiaWiki sector cells, excluding historical/event-only spawns",
+  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QENGINE2-L1: Cael, Cranky Lizard Crone, Palimuth and Yalahari outfit hand-ins at the existing Global source candidate cells; alternate example-map cells are excluded by explicit selection; QENGINE2-L1-02: Dedoras, Muriel, The First Dragon and Broken Servant Sentry source-bound outfit stories at existing Global candidate cells QENGINE2-L1-03: Avar Tar and Ezebeth source outfit reward conversations at admitted captured placements. QENGINE2-L1-04A: Irmana paid Nobleman addon source conversations at admitted captured placement. QENGINE2-L1-04B: source Percybald Royal Costume donation at admitted captured placement. QENGINE2-L1-04C: captured Raymond Striker,Duncan,Morgan,Ariella Pirate outfit progression. QENGINE2-L1-05: source Oriental gender-specific hand-ins at captured placements. QENGINE2-L1-05B: Hjaern Norseman and Formorgar outfit source hand-ins at captured placement.; NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; NPCFIX: current-playable NPC-AUDIT-1 population at exact TibiaWiki sector cells, excluding historical/event-only spawns",
   "npcs": [
     "oteryn:npc.a_beggar",
     "oteryn:npc.a_behemoth",
@@ -36,14 +36,18 @@
     "oteryn:npc.an_ominous_bat",
     "oteryn:npc.anaztassja_moroia",
     "oteryn:npc.anna",
+    "oteryn:npc.ariella",
     "oteryn:npc.asphota",
     "oteryn:npc.asralius",
+    "oteryn:npc.avar_tar",
     "oteryn:npc.baltim",
     "oteryn:npc.beatrice",
     "oteryn:npc.benjamin",
     "oteryn:npc.bertha",
     "oteryn:npc.billy",
     "oteryn:npc.blind_orc",
+    "oteryn:npc.broken_servant_sentry",
+    "oteryn:npc.cael",
     "oteryn:npc.candra",
     "oteryn:npc.captain_breezelda",
     "oteryn:npc.captain_corsarah",
@@ -71,8 +75,10 @@
     "oteryn:npc.chuckles",
     "oteryn:npc.cipfried",
     "oteryn:npc.cledwyn",
+    "oteryn:npc.cranky_lizard_crone",
     "oteryn:npc.dallheim",
     "oteryn:npc.dankwart",
+    "oteryn:npc.dedoras",
     "oteryn:npc.demonguard",
     "oteryn:npc.dhira",
     "oteryn:npc.dixi",
@@ -111,6 +117,7 @@
     "oteryn:npc.etzel",
     "oteryn:npc.eustacio",
     "oteryn:npc.eustacios_spy_rat",
+    "oteryn:npc.ezebeth",
     "oteryn:npc.fabiana",
     "oteryn:npc.fayla",
     "oteryn:npc.ferryman_kamil",
@@ -149,6 +156,7 @@
     "oteryn:npc.gunther",
     "oteryn:npc.h_l",
     "oteryn:npc.haani",
+    "oteryn:npc.habdel",
     "oteryn:npc.hagor",
     "oteryn:npc.hanna",
     "oteryn:npc.hardek",
@@ -160,9 +168,12 @@
     "oteryn:npc.hemor_the_guard",
     "oteryn:npc.henricus",
     "oteryn:npc.hexel",
+    "oteryn:npc.hjaern",
     "oteryn:npc.hoaxette",
     "oteryn:npc.humnog_the_guard",
     "oteryn:npc.hyacinth",
+    "oteryn:npc.irmana",
+    "oteryn:npc.ishina",
     "oteryn:npc.isika",
     "oteryn:npc.iwan",
     "oteryn:npc.jack_the_worker",
@@ -220,6 +231,9 @@
     "oteryn:npc.milos",
     "oteryn:npc.minzy",
     "oteryn:npc.mirabell",
+    "oteryn:npc.miraia",
+    "oteryn:npc.morgan",
+    "oteryn:npc.muriel",
     "oteryn:npc.murim",
     "oteryn:npc.muzir",
     "oteryn:npc.myzzi",
@@ -257,6 +271,7 @@
     "oteryn:npc.paulette",
     "oteryn:npc.paulie",
     "oteryn:npc.pemaret",
+    "oteryn:npc.percybald",
     "oteryn:npc.peremin",
     "oteryn:npc.pescadu",
     "oteryn:npc.peter",
@@ -270,6 +285,8 @@
     "oteryn:npc.pydar",
     "oteryn:npc.rashid",
     "oteryn:npc.ray",
+    "oteryn:npc.raymond_striker",
+    "oteryn:npc.razan",
     "oteryn:npc.riddler",
     "oteryn:npc.robert",
     "oteryn:npc.robson",
@@ -289,6 +306,7 @@
     "oteryn:npc.taya",
     "oteryn:npc.telas_golem",
     "oteryn:npc.tezila",
+    "oteryn:npc.the_first_dragon",
     "oteryn:npc.the_oracle",
     "oteryn:npc.the_orc_king",
     "oteryn:npc.thomas",
@@ -326,6 +344,22 @@
     "oteryn:npc.zurak"
   ],
   "position_conflicts": [],
+  "placement_cells": {
+    "oteryn:npc.palimuth": [
+      {
+        "x": 32801,
+        "y": 31223,
+        "z": 7
+      }
+    ],
+    "oteryn:npc.yalahari": [
+      {
+        "x": 32801,
+        "y": 31188,
+        "z": 7
+      }
+    ]
+  },
   "retail_placements": [
     {
       "npc": "oteryn:npc.a_beggar",

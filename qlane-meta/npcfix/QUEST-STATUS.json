@@ -8295,7 +8295,19 @@
       ]
     },
     "followup": "Found legacy1096_npc_atomic_quest_effects.sql is still tracked and semantically duplicates1230. Remove1096, retain1230 byte unchanged; add1239 optional-fluid shape fix. Rebuild and focused PG checks required; do not claim registry finished until pushed.",
-    "state": "1096_DUPLICATE_REMOVED_AND1239_ADDED_IN_WORKTREE; POST_MERGE_FULL_PG_PENDING"
+    "state": "MAIN0999\u20131008_BYTE_IDENTICAL; NO1200\u20131205; REMOVED_OLD_COMPLETE_FUNCTION_VARIANTS1231_1232; REVALIDATION_PENDING",
+    "main_qengine_versions": [
+      999,
+      1000,
+      1001,
+      1002,
+      1003,
+      1004,
+      1005,
+      1006,
+      1007,
+      1008
+    ]
   },
   "prepared_physical_batches": [
     {
@@ -8810,8 +8822,8 @@
       "oteryn-world-bundle-compiler"
     ],
     "next_command": "cargo nextest run: all21 packages, PostgreSQL enabled, no fail-fast,2 test threads; after coherent repository regeneration",
-    "state": "PRE3020_RUN_SUPERSEDED_BY_OWNER_MERGE_INSTRUCTION; NOT_A_COMPLETE_PASS",
-    "main_commit": "bbb3e06d04875fc1e63f024b853194f7580cc875",
+    "state": "MAIN1AE_QENGINE_CORE_ADOPTED; NPCFIX_EXTENSIONS_REINTEGRATING; VALIDATION_PENDING",
+    "main_commit": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
     "local_merge": "838c481cb",
     "last_push": "b12367d4e",
     "compilation_resource_note": "Earlier focused rebuild failed signal9 SIGKILL while a heavy world pin compiler was active in16GiB. No GREEN claimed. Serialize regeneration and Rust builds; CARGO_BUILD_JOBS=1.",

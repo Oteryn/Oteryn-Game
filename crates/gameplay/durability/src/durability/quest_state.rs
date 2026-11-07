@@ -546,6 +546,7 @@ mod hero_of_bounac;
 mod observations;
 pub use observations::{RewardClockReadiness, RewardReadiness};
 mod planegazer_finale;
+pub mod native_kills;
 pub mod rotten_blood;
 pub mod rotten_blood_access;
 pub mod soul_war;

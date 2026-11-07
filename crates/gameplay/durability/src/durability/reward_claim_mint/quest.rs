@@ -13,13 +13,19 @@ use oteryn_gameplay_quests::quest::reward_callbacks::{PROVENANCE, RewardCallback
 pub(crate) fn prepare_achievement(
     callback: Option<&RewardCallback>,
 ) -> std::result::Result<Option<AchievementGrantRequest>, DurabilityError> {
-    let Some(key) = callback.and_then(|c| c.achievement.as_ref()) else {
-        return Ok(None);
-    };
+    let Some(callback)=callback else {return Ok(None);};
+    if callback.achievement.is_none() && callback.achievement_progress.is_empty() {return Ok(None);}
+
     let catalogue = oteryn_gameplay_progression::achievement_catalogue::parse_shards(
         &oteryn_gameplay_progression::achievement_catalogue::SHARDS,
     )
     .map_err(|_| DurabilityError::InvalidStoredState)?;
+    for progress in &callback.achievement_progress {
+        if catalogue.get(&progress.key).is_none_or(|entry|entry.retired) {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+    }
+    let Some(key)=callback.achievement.as_ref() else {return Ok(None);};
     let entry = catalogue
         .get(key)
         .ok_or(DurabilityError::InvalidStoredState)?;
@@ -43,20 +49,19 @@ pub(crate) fn outfit_compatible(
     native: &NativeGameplayState,
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::OutfitReward,
 ) -> bool {
-    let Some(cosmetics) = native.cosmetics() else {
-        return false;
-    };
+    let Some(cosmetics) = native.cosmetics() else { return false; };
     (0..=2).all(|addon| {
-        if addon != 0 && reward.addons & (1 << (addon - 1)) == 0 {
-            return true;
-        }
-        let key = format!("{}/quest-grant/{addon}", reward.outfit);
-        let target = if addon == 0 {
-            EarnedCosmetic::Outfit(&reward.outfit)
-        } else {
-            EarnedCosmetic::Addon(&reward.outfit, addon)
-        };
-        cosmetics.earned_unlock(&key, PROVENANCE, target) == UnlockFact::Compatible
+        if addon != 0 && reward.addons & (1 << (addon - 1)) == 0 { return true; }
+        let key = reward.grant_key(addon);
+        let target = if addon == 0 { EarnedCosmetic::Outfit(&reward.outfit) }
+            else { EarnedCosmetic::Addon(&reward.outfit, addon) };
+        (match reward.sex {
+            None=>cosmetics.earned_unlock(&key,PROVENANCE,target),
+            Some(sex)=>cosmetics.earned_unlock_for_sex(&key,PROVENANCE,target,match sex {
+                oteryn_gameplay_quests::quest::reward_callbacks::CreationSex::Female=>crate::domain::appearance::Sex::Female,
+                oteryn_gameplay_quests::quest::reward_callbacks::CreationSex::Male=>crate::domain::appearance::Sex::Male,
+            }),
+        }) == UnlockFact::Compatible
     })
 }
 
@@ -72,13 +77,22 @@ pub struct QuestRewardFeePayment {
     pub occurred_at_unix_ms: i64,
 }
 
+/// Exact selected carried instance and ingress bytes, bound to its consumption proof.
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct QuestCarriedUse {
+    pub source: [u8;16],
+    pub intent: Vec<u8>,
+}
+
 /// The runtime supplies its admitted generation and the normal wheel-aware capacity lookup.
 #[derive(Clone, Copy)]
 pub struct QuestRewardAdmission<'a> {
-    pub permit: &'a super::super::spell_owner_commit::SpellLanePermit,
-    pub fee_payment: Option<&'a QuestRewardFeePayment>,
     pub native: &'a NativeGameplayState,
     pub weights: &'a dyn super::super::item_transfer::ItemWeightLookup,
+    pub fee_payment: Option<&'a QuestRewardFeePayment>,
+    pub actor_conditions: Option<&'a super::QuestActorConditionProof>,
+    pub carried_use: Option<&'a QuestCarriedUse>,
 }
 
 #[allow(
@@ -94,28 +108,92 @@ pub(crate) async fn apply(
     callback: &RewardCallback,
     admission: QuestRewardAdmission<'_>,
     achievement: Option<&AchievementGrantRequest>,
+    catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
+    reserve_primary_state: bool,
 ) -> std::result::Result<bool, DurabilityError> {
     let super::super::quest_state::QuestCause::Command(command) = request.cause else {
         return Ok(false);
     };
-    admission.permit.check_scope(fence.runtime_scope)?;
+    if callback.carried_item.is_some() != admission.carried_use.is_some()
+        || admission.carried_use.is_some_and(|use_|use_.source == [0;16] || use_.intent.is_empty() || use_.intent.len()>4096) {
+        return Ok(false);
+    }
     if admission.weights.generation_digest() != admission.native.source_digest() {
         return Ok(false);
     }
-    if callback
-        .outfit
-        .as_ref()
-        .is_some_and(|reward| !outfit_compatible(admission.native, reward))
-    {
+    if callback.cosmetic_targets().any(|reward| !outfit_compatible(admission.native, reward)) {
         return Ok(false);
     }
-    let resolved = if callback.bulk.is_some() {
-        let Some(resolved) = super::quest_bulk::resolve(tx, fence, callback, admission.native).await? else {
-            return Ok(false);
+    if !callback.requires_actor_conditions.is_empty() && admission.actor_conditions.is_none_or(|proof|
+        !proof.permits(fence,request,admission.native.source_digest(),&callback.requires_actor_conditions)) {
+        return Ok(false);
+    }
+    if let Some(minimum)=callback.minimum_level {
+        let level:Option<i64>=sqlx::query_scalar("SELECT level::bigint FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
+            .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+        if level.is_none_or(|level|level<i64::from(minimum)) {return Ok(false);}
+    }
+    if !callback.forbids_addons.is_empty() || !callback.forbids_outfits.is_empty() {
+        // Keep a negative ownership predicate stable through costs and grant.
+        // Reuse the account grant owner's lock; another character cannot win
+        // the same addon after this read and still let this transaction charge.
+        let account:sqlx::types::Uuid=sqlx::query_scalar(
+            "SELECT account_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
+        ).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        super::super::character_appearance::lock_account_grants(tx,account).await?;
+        let Some(cosmetics)=admission.native.cosmetics() else {return Ok(false);};
+        for outfit in &callback.forbids_outfits {
+            if super::super::character_appearance::podium_cosmetic_owned(tx,fence.character_id,cosmetics,EarnedCosmetic::Outfit(outfit)).await? {
+                return Ok(false);
+            }
+        }
+        for reward in &callback.forbids_addons {
+            let Some(count)=cosmetics.outfit_addon_count(&reward.outfit) else {return Ok(false);};
+            for addon in 1..=2 {
+                if reward.addons & (1 << (addon-1)) != 0 && addon>count {return Ok(false);}
+                if reward.addons & (1 << (addon-1)) != 0
+                    && super::super::character_appearance::cosmetic_owned_for_sex(
+                        tx,fence.character_id,cosmetics,EarnedCosmetic::Addon(&reward.outfit,addon),reward.sex.map(|sex|match sex {
+                        oteryn_gameplay_quests::quest::reward_callbacks::CreationSex::Female=>crate::domain::appearance::Sex::Female,
+                        oteryn_gameplay_quests::quest::reward_callbacks::CreationSex::Male=>crate::domain::appearance::Sex::Male,
+                    })
+                    ).await? { return Ok(false); }
+            }
+        }
+    }
+    if !callback.requires_outfits.is_empty() {
+        let Some(cosmetics) = admission.native.cosmetics() else { return Ok(false); };
+        for outfit in &callback.requires_outfits {
+            if !super::super::character_appearance::podium_cosmetic_owned(
+                tx, fence.character_id, cosmetics, EarnedCosmetic::Outfit(outfit)
+            ).await? { return Ok(false); }
+        }
+    }
+    if !callback.requires_addons.is_empty() {
+        let Some(cosmetics)=admission.native.cosmetics() else {return Ok(false);};
+        for reward in &callback.requires_addons {
+            for addon in 1..=2 {
+                if reward.addons & (1 << (addon-1)) != 0
+                    && !super::super::character_appearance::cosmetic_owned_for_sex(
+                        tx,fence.character_id,cosmetics,EarnedCosmetic::Addon(&reward.outfit,addon),reward.sex.map(|sex|match sex {
+                        oteryn_gameplay_quests::quest::reward_callbacks::CreationSex::Female=>crate::domain::appearance::Sex::Female,
+                        oteryn_gameplay_quests::quest::reward_callbacks::CreationSex::Male=>crate::domain::appearance::Sex::Male,
+                    })).await? {return Ok(false);}
+            }
+        }
+    }
+    if let Some(required) = callback.creation_sex {
+        use oteryn_gameplay_quests::quest::reward_callbacks::CreationSex;
+        let sex = super::super::character_appearance::item_action_sex(tx,fence.character_id).await?;
+        let expected = match required {
+            CreationSex::Female => crate::domain::appearance::Sex::Female,
+            CreationSex::Male => crate::domain::appearance::Sex::Male,
         };
-        Some(resolved)
-    } else { None };
-    let callback = resolved.as_ref().map(|(callback, _)| callback).unwrap_or(callback);
+        if sex != expected { return Ok(false); }
+    }
+    if !super::quest_participants::apply(tx,fence,request,callback,catalogue,reserve_primary_state).await? {
+        return Ok(false);
+    }
     if let Some(fee) = &callback.fee {
         use crate::durability::item_fee_burn::{FeeBurnCause, FeeBurnRequest, FeeBurnError, burn_quest_reward_fee_in_transaction};
         let Some(payment) = admission.fee_payment else { return Ok(false); };
@@ -142,32 +220,26 @@ pub(crate) async fn apply(
             .bind(&callback.key).bind(i64::try_from(fee.gold).map_err(|_|DurabilityError::InvalidStoredState)?)
             .bind(fee.include_bank).bind(committed.to_string()).execute(&mut **tx).await?;
     }
-    if !super::super::quest_world_callback::consume_reward_inputs(
-        tx,
-        admission.permit,
-        fence,
-        request,
-        callback,
-    )
-    .await?
+    if !super::super::quest_world_callback::consume_reward_inputs(tx, fence, request, callback, admission.carried_use)
+        .await?
     {
         return Ok(false);
     }
     let mut grant_keys = Vec::new();
-    if let Some(reward) = &callback.outfit {
+    for reward in callback.cosmetic_targets() {
         let occurrence = serde_json::to_vec(&(
             command.game_session_id().as_bytes(),
             command.command_id().get(),
             &callback.key,
         ))
         .map_err(|_| DurabilityError::InvalidStoredState)?;
-        grant_keys = super::super::character_appearance::grant_callback_outfit(
+        grant_keys.extend(super::super::character_appearance::grant_callback_outfit(
             tx,
             fence.character_id,
             &occurrence,
             reward,
         )
-        .await?;
+        .await?);
     }
     let minted = if let Some(reward) = &callback.give {
         let Some(transaction) =
@@ -179,6 +251,14 @@ pub(crate) async fn apply(
     } else {
         None
     };
+    let progress_event=Sha256::new().chain_update(fence.character_id.as_bytes())
+        .chain_update(command.game_session_id().as_bytes())
+        .chain_update(command.command_id().get().to_be_bytes())
+        .chain_update(callback.key.as_bytes()).finalize();
+    for progress in &callback.achievement_progress {
+        super::super::account_achievement::add_progress(tx,fence.character_id,&progress.key,
+            progress.target,"oteryn:quest-reward",&progress_event).await?;
+    }
     if let Some(achievement) = achievement {
         let mut grant = achievement.clone();
         grant.source.event_id = Sha256::new()
@@ -191,12 +271,8 @@ pub(crate) async fn apply(
             .await?
             .map_err(|_| DurabilityError::InvalidStoredState)?;
     }
-    let mut source_plan = serde_json::to_value(callback).map_err(|_| DurabilityError::InvalidStoredState)?;
-    if let Some((_, draw)) = &resolved {
-        source_plan["bulk_result"] = serde_json::to_value(draw).map_err(|_| DurabilityError::InvalidStoredState)?;
-    }
     sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,CASE WHEN $6::bytea IS NULL THEN NULL ELSE encode($6,'hex')::uuid END,$7)")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(source_plan).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
+        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(serde_json::to_value(callback).map_err(|_|DurabilityError::InvalidStoredState)?).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
     Ok(true)
 }
 
@@ -248,66 +324,18 @@ async fn mint(
             .map(|b| format!("{b:02x}"))
             .collect::<String>()
     );
-    let claim_key = if callback.repeatable {
-        let session = command
-            .game_session_id()
-            .as_bytes()
-            .iter()
-            .map(|byte| format!("{byte:02x}"))
-            .collect::<String>();
-        format!(
-            "{}/occurrence/{session}/{}",
-            callback.key,
-            command.command_id().get()
-        )
-    } else {
-        callback.key.clone()
-    };
-    let temporal = |key: &str| -> std::result::Result<_, DurabilityError> {
-        let facts = resolve(key)?;
-        let policy = admission
-            .native
-            .item_policy(
-                &facts.definition.production_key,
-                &facts.definition.revision_ref,
-            )
-            .ok_or(DurabilityError::InvalidStoredState)?;
-        let maximum = if policy.record().admission.stack_class
-            == crate::content::native_gameplay::NativeItemStackClass::NonStackable
-        {
-            1
-        } else {
-            u32::MAX
-        };
-        let decay = super::super::native_world_items::qualify_item_decay(
-            &policy.record().semantics.temporal,
-            maximum,
-        )
-        .map_err(|_| DurabilityError::InvalidStoredState)?;
-        Ok(decay.map(
-            |decay| oteryn_gameplay_quests::quest::reward_callbacks::RewardDecay {
-                duration_millis: decay.duration_millis,
-                target: decay.target.map(|target| {
-                    oteryn_gameplay_quests::quest::reward_callbacks::DecayTarget {
-                        family: target.family,
-                        key: target.production_key,
-                        revision: target.revision_ref,
-                    }
-                }),
-            },
-        ))
-    };
-    if temporal(&reward.item)? != reward.decay
-        || reward
-            .contents
-            .iter()
-            .chain(&reward.backpack_outputs)
-            .any(|item| !matches!(temporal(&item.item), Ok(None)))
-    {
-        return Ok(None);
-    }
+    // The MINT owner still permits each claim exactly once. A repeatable paid
+    // exchange supplies its own stable per-command occurrence, not a bypass of
+    // the claim ledger or its pending/reservation checks.
+    let claim_key=if callback.is_paid_exchange() {
+        let digest=Sha256::new().chain_update(b"oteryn:quest-exchange:v1\0")
+            .chain_update(fence.character_id.as_bytes())
+            .chain_update(command.game_session_id().as_bytes())
+            .chain_update(command.command_id().get().to_string().as_bytes())
+            .chain_update(b":").chain_update(callback.key.as_bytes()).finalize();
+        format!("oteryn:quest-exchange/{}",digest.iter().map(|b|format!("{b:02x}")).collect::<String>())
+    } else {callback.key.clone()};
     let request = RewardClaimMintRequest {
-        backpack_outputs: !reward.backpack_outputs.is_empty(),
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),
@@ -317,7 +345,8 @@ async fn mint(
         source_placement: callback.key.clone(),
         item: resolve(&reward.item)?,
         quantity: u32::from(reward.count),
-        contents: (if reward.backpack_outputs.is_empty() { &reward.contents } else { &reward.backpack_outputs })
+        contents: reward
+            .contents
             .iter()
             .map(|i| {
                 Ok(RewardClaimMintContent {
@@ -396,18 +425,5 @@ async fn mint(
     )
     .map_err(|_| DurabilityError::InvalidStoredState)?;
     apply_claim(tx, &frozen, &reservation, destination, &envelope, tuple).await?;
-    if let Some(decay) = &reward.decay {
-        let expires = reservation
-            .occurred_at_unix_ms
-            .checked_add(i64::from(decay.duration_millis))
-            .ok_or(DurabilityError::InvalidStoredState)?;
-        sqlx::query("INSERT INTO game_spell_item_temporal_schedules(item_instance_id,source_transaction_id,source_ordinal,duration_millis,expires_at_unix_ms,definition_family,definition_production_key,definition_revision,target_family,target_production_key,target_revision,content_digest) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,$3,$4,$5,$6,$7,$8,$9,$10,$11)")
-            .bind(reservation.item_instance_id.as_slice()).bind(reservation.transaction_id.as_slice())
-            .bind(i64::from(decay.duration_millis)).bind(expires).bind(&frozen.request.item.definition.family)
-            .bind(&frozen.request.item.definition.production_key).bind(&frozen.request.item.definition.revision_ref)
-            .bind(decay.target.as_ref().map(|t|t.family.as_str())).bind(decay.target.as_ref().map(|t|t.key.as_str()))
-            .bind(decay.target.as_ref().map(|t|t.revision.as_str())).bind(admission.native.source_digest().as_slice())
-            .execute(&mut **tx).await?;
-    }
     Ok(Some(reservation.transaction_id))
 }

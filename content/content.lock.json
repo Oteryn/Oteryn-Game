@@ -19,7 +19,7 @@
     "Behavior": 3145,
     "Charm": 25,
     "Creature": 1863,
-    "Dialogue": 839,
+    "Dialogue": 836,
     "Document": 1609,
     "Effect": 5797,
     "Encounter": 108,
@@ -28,7 +28,7 @@
     "Item": 34111,
     "Loot": 1290,
     "Mount": 252,
-    "NPC": 1290,
+    "NPC": 1282,
     "Presentation": 3145,
     "Proficiency": 443,
     "Quest": 352,
@@ -36,8 +36,8 @@
     "Service.Bank": 1,
     "Service.Blessing": 4,
     "Service.Promotion": 4,
-    "Service.Trade": 327,
-    "Service.Travel": 59,
+    "Service.Trade": 324,
+    "Service.Travel": 56,
     "StarterKit": 1,
     "item_conversion": 129
   },
@@ -47,10 +47,10 @@
     "taxonomy": 12252
   },
   "legacy_blobs": {
-    "declarations": "4e8ec2591b6df1a5a7ab0e494a545175f07bf9d2",
+    "declarations": "64dbc962d8e20470c6441aa04b11c21fbbd74a38",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "d8b4494706de894558d959d4321e619affa53c04",
-    "reference": "cb4363a29f724318b3d5b2cc77119bd04db52b8c",
+    "imports": "ff16932786c5189e02e11b08456f09f87eaa6565",
+    "reference": "45d4938e30c6b19bd9e29e6b9f2aa387596524bd",
     "sources": "71e382c6864316e918f77fda32002224b0be1806"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "e772d5c4f26cb707dd66b0fe2912801a3daa5db033ef0484dd1e9fe1fb3efc83"
+          "sha256": "06b0bee295bf0d09d5b3c87827d66cc276771bc79a3c0a05cf8cfebf4c1282a5"
         },
         {
           "creates_canonical_identities": false,
@@ -234,7 +234,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3639,
+          "record_count": 3625,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "eef103b7609e6f4e23ed27ff6b901df36504c77c628ae2d0ac515364138d8ef3"
+          "sha256": "8dddf732916bffc7a8151ac772e73e4a9f47ca4d51768d76245295232557c5fd"
         },
         {
           "creates_canonical_identities": false,

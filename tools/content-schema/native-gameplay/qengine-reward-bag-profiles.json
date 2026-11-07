@@ -1,0 +1,198 @@
+{
+  "schema": "OTERYN_QENGINE_REWARD_BAG_PROFILES/v1",
+  "sources": [
+    {
+      "path": "data-global/scripts/actions/valuables/random_items.lua",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "14fc3cf10ca10338aa4479a5371bb3dd7b9b0dede3353a4dec92ffdd11c7023b"
+    }
+  ],
+  "bags": [
+    {
+      "constant": "QENGINE_GNOMISH_SUPPLY",
+      "bag": "oteryn:item.tibia.i15698",
+      "playable": true,
+      "selection": "weighted",
+      "picks": 1,
+      "roll_max": 10001,
+      "donor": "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/actions/valuables/random_items.lua:49-80:sha256:14fc3cf10ca10338aa4479a5371bb3dd7b9b0dede3353a4dec92ffdd11c7023b",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i3723",
+          "name": "",
+          "weight": 1440,
+          "minimum": 20,
+          "maximum": 20
+        },
+        {
+          "item": "oteryn:item.tibia.i16103",
+          "name": "",
+          "weight": 994,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i16143",
+          "name": "",
+          "weight": 836,
+          "minimum": 15,
+          "maximum": 15
+        },
+        {
+          "item": "oteryn:item.tibia.i15793",
+          "name": "",
+          "weight": 815,
+          "minimum": 15,
+          "maximum": 15
+        },
+        {
+          "item": "oteryn:item.tibia.i16167",
+          "name": "",
+          "weight": 751,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i236",
+          "name": "",
+          "weight": 611,
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i237",
+          "name": "",
+          "weight": 600,
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i266",
+          "name": "",
+          "weight": 529,
+          "minimum": 4,
+          "maximum": 4
+        },
+        {
+          "item": "oteryn:item.tibia.i268",
+          "name": "",
+          "weight": 518,
+          "minimum": 4,
+          "maximum": 4
+        },
+        {
+          "item": "oteryn:item.tibia.i238",
+          "name": "",
+          "weight": 465,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i239",
+          "name": "",
+          "weight": 404,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i7443",
+          "name": "",
+          "weight": 354,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i7439",
+          "name": "",
+          "weight": 311,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3035",
+          "name": "",
+          "weight": 304,
+          "minimum": 5,
+          "maximum": 5
+        },
+        {
+          "item": "oteryn:item.tibia.i5911",
+          "name": "",
+          "weight": 300,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i7440",
+          "name": "",
+          "weight": 279,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i16165",
+          "name": "",
+          "weight": 125,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i16257",
+          "name": "",
+          "weight": 111,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i16254",
+          "name": "",
+          "weight": 89,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3043",
+          "name": "",
+          "weight": 57,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3039",
+          "name": "",
+          "weight": 36,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i16242",
+          "name": "",
+          "weight": 29,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3037",
+          "name": "",
+          "weight": 29,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3041",
+          "name": "",
+          "weight": 7,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3038",
+          "name": "",
+          "weight": 7,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    }
+  ]
+}
