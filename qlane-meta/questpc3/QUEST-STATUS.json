@@ -850,7 +850,7 @@
         "sha256": "c172ebab19214e792f141fc1c38ef9f78b4cf3c508949bdb67d7a5a827533e2b"
       }
     ],
-    "current_batch": "threatened_inventory_04: Aurita vial, Taegen four-gem sun catcher, Valindara100-feather cloak",
+    "current_batch": "threatened_maps_05: Tooth Fairy gifts, milk-tooth map, six-species achievement, Tired Tree map",
     "effective_entries": [
       "oteryn:quest.the_beginning_quest",
       "oteryn:quest.the_first_dragon_quest",
@@ -1979,6 +1979,38 @@
         "verified_cause": "Native provider lacks25731/25733/25779. Shared profile importer omitted NPC rewards. Preserve already qualified native input policies such as7882; import missing inputs and all outputs through strict canonical checks.",
         "scope": "Pilgrimage stays QUALIFIED; four quests active; three inventory exchanges delivered.",
         "resolution": "Native policies and context-bound dialogue topics fixed; slice GREEN124571ms in745a9a273. Preserve the checkpoint as diagnosis history."
+      },
+      "threatened_maps_05": {
+        "status": "VALIDATING",
+        "authoring_red": "2tests0.815s fail: four missing callbacks and five unadmitted tooth inputs; /tmp/questpc3-threatened-map-authoring-red.log",
+        "postgres_red": {
+          "log": "/tmp/questpc3-threatened-map-red-level-fixture-fixed.log",
+          "duration_ms": 105178,
+          "marker": "THREATENED_MAP POSTGRES_ASSERTION_REACHED gifts=false milk=false collection=false map=false receipts=0",
+          "success": false
+        },
+        "prior_slice": "Published c2e4b0940; inventory GREEN124571ms and recovery regression125.89s; preserve",
+        "source_level": "Tooth Fairy mission requires30; gift and milk hand-in will carry generic bound minimum-level admission; collection has no level guard in retained Lua.",
+        "postgres_green": "First144080ms failed SQL23514 progression revision/receipt chain from hardcoded fixture level restoration; exact prior level restoration fixed, /tmp/questpc3-threatened-map-green-restored-level.log RUNNING",
+        "authoring_green": "PASS6tests11.251s /tmp/questpc3-threatened-map-authoring-final.log",
+        "native_profiles": "PASS15tests164.370s /tmp/questpc3-threatened-map-native-tests.log; register_spell_families regeneration PASS after unrelated Grizzly shard-input refresh",
+        "grizzly": "PASS7tests8.022s: exact old blob, all selected definitions unchanged; preserve53admitted/3rejected; /tmp/questpc3-threatened-map-grizzly-tests.log",
+        "placements": "PASS8tests0.390s;55NPC56records0held",
+        "level_gate": "Current actor read and locked durable progression check; source-bound minimum30 for presents and milk map; optional None retains prior binding bytes",
+        "check": "PASS quests/durability/dispatch allfeatures/tests9m51s including lock wait",
+        "clippy": "PASS quests/durability/dispatch allfeatures/alltargets -Dwarnings2m28s",
+        "pins": "RUNNING /tmp/questpc3-threatened-map-pins.log",
+        "invalid_setup_attempts": "First cleanup compile typo; second59.89s used Monk harmony with a Druid fixture and failed initialize. Both corrected; neither counted as RED.",
+        "reward_unit": "PASS2reward callbacks tests2.84s; minimum level changes definition binding"
+      },
+      "reward_minimum_level_foundation_05a": {
+        "status": "PUBLISHED_FOUNDATION",
+        "scope": "Reusable optional source-bound NPC reward/offer minimum level; actor check plus locked progression guard. Four content consumers remain validating, not qualified.",
+        "binding_unit": "PASS2tests2.84s",
+        "postgres_regression": "PASS real three-exchange inventory scenario /tmp/questpc3-minlevel-native-inventory-regression.log; preserves existing callbacks and atomic charges",
+        "check": "PASS allfeatures/tests",
+        "clippy": "PASS allfeatures/alltargets -Dwarnings",
+        "fmt": "PASS cargo fmt --all --check"
       }
     },
     "source_corrections": [

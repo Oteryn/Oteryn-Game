@@ -405,6 +405,12 @@ impl DurabilityRoot {
                     let Some(state) = state else {
                         return Ok(Err(CharacterProgressionError::MissingProgressionState));
                     };
+                    if let Some(minimum) = reward_callback.as_ref().and_then(|callback| callback.minimum_level)
+                        && state.try_get::<i64, _>("level")? < i64::from(minimum)
+                    {
+                        tx.rollback().await?;
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    }
                     if reward_callback.as_ref().is_some_and(|callback| callback.premium) {
                         let account: sqlx::types::Uuid = sqlx::query_scalar(
                             "SELECT account_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")

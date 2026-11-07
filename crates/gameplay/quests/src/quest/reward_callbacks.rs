@@ -58,6 +58,9 @@ pub struct RewardCallback {
     pub blessing: Option<String>,
     #[serde(default, skip_serializing_if = "is_false")]
     pub premium: bool,
+    /// Current locked progression must satisfy this source requirement.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub minimum_level: Option<u32>,
     #[serde(default, skip_serializing_if = "is_false")]
     pub completes: bool,
     pub reply: Vec<String>,
@@ -71,7 +74,7 @@ fn is_false(value: &bool) -> bool {
 fn reward_binding(callback: &RewardCallback) -> Result<[u8; 32], String> {
     // Speech and source citations are not durable reward terms. Every value and
     // admission participant is: changing one must invalidate an old quest pin.
-    let bytes = serde_json::to_vec(&(
+    let mut bytes = serde_json::to_vec(&(
         &callback.key,
         &callback.quest,
         &callback.npc,
@@ -90,6 +93,11 @@ fn reward_binding(callback: &RewardCallback) -> Result<[u8; 32], String> {
         callback.completes,
     ))
     .map_err(|error| error.to_string())?;
+    // Preserve every published binding for callbacks without a level gate.
+    if let Some(level) = callback.minimum_level {
+        bytes.extend_from_slice(b"\0minimum_level\0");
+        bytes.extend_from_slice(&level.to_be_bytes());
+    }
     Ok(Sha256::digest(bytes).into())
 }
 
@@ -140,6 +148,7 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || c.storage
                 .iter()
                 .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+            || c.minimum_level == Some(0)
             || c.experience
                 .is_some_and(|value| !(1..=super::QUESTGATE0_RL_05).contains(&value))
             || c.present.len() > 8
@@ -294,6 +303,9 @@ mod tests {
         assert_ne!(make(changed)?.definition_hash(&callback.quest), original);
         let mut changed = callback.clone();
         changed.premium = !changed.premium;
+        assert_ne!(make(changed)?.definition_hash(&callback.quest), original);
+        let mut changed = callback.clone();
+        changed.minimum_level = Some(30);
         assert_ne!(make(changed)?.definition_hash(&callback.quest), original);
         Ok(())
     }

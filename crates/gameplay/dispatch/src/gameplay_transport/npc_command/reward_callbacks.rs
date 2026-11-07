@@ -19,6 +19,8 @@ struct Offer {
     keywords: Vec<String>,
     topic: u16,
     next_topic: u16,
+    #[serde(default)]
+    minimum_level: Option<u32>,
     storage: Vec<Storage>,
     reply: Vec<String>,
 }
@@ -38,6 +40,13 @@ pub(super) fn prepare(
     if offers.schema != 1 {
         return None;
     }
+    let level = admission
+        .states
+        .spell_states
+        .try_lock()
+        .ok()?
+        .get(runtime, actor, command.game_session_id)
+        .map_or(0, |state| state.character_facts().level);
     quest_dialogue::prepare(
         admission,
         actor,
@@ -59,6 +68,8 @@ pub(super) fn prepare(
                 c.npc == context.2
                     && c.topic == topic.number
                     && c.keywords.contains(&text)
+                    && c.minimum_level
+                        .is_none_or(|minimum| minimum > 0 && level >= minimum)
                     && eligible(&c.storage)
             });
             if let Some(callback) = selected.next() {
@@ -75,6 +86,8 @@ pub(super) fn prepare(
                 c.npc == context.2
                     && c.topic == topic.number
                     && c.keywords.contains(&text)
+                    && c.minimum_level
+                        .is_none_or(|minimum| minimum > 0 && level >= minimum)
                     && eligible(&c.storage)
             })?;
             Some(Choice {
