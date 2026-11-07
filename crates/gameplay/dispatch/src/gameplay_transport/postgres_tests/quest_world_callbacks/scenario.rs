@@ -32,6 +32,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let curos = name.starts_with("uneasy-curos-");
     let source_death = name.starts_with("source-quest-death-");
     let route = name.starts_with("draconia-route-");
     let container_stock = name.starts_with("draconia-container-stock-");
@@ -46,7 +47,8 @@ fn scenario_case(
     let monk = name.starts_with("monk-guidance");
     let elathriel = name.starts_with("draconia-elathriel-");
     let dragonlord = name.starts_with("draconia-dragonlord-");
-    let classic_npc = elathriel
+    let classic_npc = curos
+        || elathriel
         || dragonlord
         || matches!(
             name,
@@ -721,6 +723,8 @@ fn scenario_case(
                 &owner, &admitted, &h, deps.actor, name,
             )
             .await?;
+        } else if curos {
+            super::super::uneasy_curos::exercise(&mut owner, &admitted, &h, name).await?;
         } else if elathriel {
             super::super::draconia_elathriel::exercise(&mut owner, &mut admitted, &h, name).await?;
         } else if dragonlord {

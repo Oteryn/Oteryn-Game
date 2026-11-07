@@ -1,3 +1,14 @@
+## Curos actual PG RED / compiled probes — 2026-11-07
+Corrected signedfloor target compiles3m32s. ActualPG18.6 marker3cases:
+start46.934988753s,precedence46.959623179s,missing46.988316868s RED. Exact
+error "native Curos placement missing from committed world source table".
+No productionCurosbindings yet; firstfloorfailure remains excluded.
+NEXT apply prepared/tmp/questpc-uneasy-curos-generator.py (startonly programme
+and literalgreet) and/tmp/questpc-quest-greetings-supplemental.rs genericclosed
+staticGreeting parser; registerbindings, addCurosscope/convertplacements.
+RebuildcompilerforNPCrevisionmaterialchange beforepinrefresh. Finalfocused3PG
+andfmt/check/strict thenpush. No titlepromotion untilremainingfullsource route.
+
 ## Curos source / corrected baseline checkpoint — 2026-11-07
 No new runtime changes beyondgreen7172d246e. Three Curos probes authored:
 prerequisite refusal, atomic twoflagstart/replay, precedingFrontierbranch.

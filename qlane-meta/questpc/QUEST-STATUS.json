@@ -8666,9 +8666,9 @@
     },
     "multi_player_proof": "cloud-source-death-multi-validation.json",
     "curos_baseline": {
-      "status": "SOURCE_VERIFIED_CORRECTED_PG_BASELINE_PENDING",
+      "status": "ACTUAL_PG_RED",
       "proof": "cloud-uneasy-curos-progress.json",
-      "excluded_error": "format: floor outside -15..0 (pre-PG fixture only)",
+      "red_point": "native Curos placement missing from committed world source table",
       "runtime_change": false
     }
   },

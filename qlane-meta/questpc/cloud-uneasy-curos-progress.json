@@ -1,11 +1,11 @@
 {
-  "status": "SOURCE_VERIFIED_CORRECTED_PG_BASELINE_PENDING",
+  "status": "WIP_COMPILES_ACTUAL_PG_RED",
   "runtime_change": false,
   "source_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/curos.lua",
   "source_sha256": "6feee8de2475788bca144210fd47cbf857b5dce3a16215ff2647e971bcd3a42e",
   "source_git_blob": "4fdffd8e90b8de6d2f17ce5c38c45020397c48c9",
   "source_bytes": 7139,
-  "test_compile": "PASS 4m56s before fixture floor correction",
+  "test_compile": "PASS corrected floor target3m32s",
   "excluded_failure": {
     "error": "format: floor outside -15..0",
     "postgres_marker_observed": false,
@@ -19,11 +19,22 @@
     "Completed prerequisite accepts two flags in one receipt, exact command replay once.",
     "Preceding New Frontier branch suppresses Uneasy start."
   ],
-  "published_code": "Source-death core/two-player qualification at7172d246e remains green. New Curos tests/runtime are not published by this documentation checkpoint.",
+  "published_code": "Compiled source-coordinate NPC probes; no new Curos production bindings yet.",
   "reuse_checked": {
     "npcfix": "c6caad19153b23400d6f750d208ff7cffa5f006b",
     "qnpcfx": "51d175bfbf23c25f7b8371fb2c6a841b1a609fd7",
     "qworld": "b06d40852060966d9d530d07cce0a062cba276aa"
   },
-  "next": "Actual PG RED for absent source placement, then enable Curos native placement, source-bound acceptance and greeting."
+  "next": "Actual PG RED for absent source placement, then enable Curos native placement, source-bound acceptance and greeting.",
+  "actual_pg_red": {
+    "version": "PostgreSQL18.6",
+    "error": "native Curos placement missing from committed world source table",
+    "cases_seconds": {
+      "start": 46.934988753,
+      "precedence": 46.959623179,
+      "missing": 46.988316868
+    },
+    "raw_sha256": "39f61912e9a7f9859f1acee81e695078aa1c86be2e7c3e0c14bd0e5afcc4a7d0",
+    "stored_sha256": "39f61912e9a7f9859f1acee81e695078aa1c86be2e7c3e0c14bd0e5afcc4a7d0"
+  }
 }
