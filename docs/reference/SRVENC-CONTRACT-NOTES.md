@@ -807,3 +807,19 @@ Preserved SRVENC parent/physical frame qualification and post-bundle boot
 ordering. Both lane-specific note files survive; no root note remains.
 The unpublished static Sugar catalogue draft was discarded in favor of this
 shared production owner;1102 remains unallocated. No second composition.
+
+## W02 compiled custody and publication checkpoint
+
+Migration1103 replaces the Channel-only corpse child lock with exact typed
+Instance ownership; carrier binding retains scope/generation/projection guards.
+Migration1104 makes the ENCX publication immutable and scoped by World, current
+content revision and physical origin frame/map/server artifact. Current fenced
+readers select that publication; Instance returns resolve the frozen origin.
+Independent source review found no concrete P0/P1; real-schema1101 substitution
+proof reran PASS0.150s. No command/capability/mechanic numbers allocated.
+
+WIP: production libraries compile in the focused dispatch build; its test target
+is currently red at an added Terrain optional-field fixture initializer. Actual
+PostgreSQL instance custody and scoped publication regressions remain pending.
+The source geometry/projectile closure and movement behavior checks continue
+in the next checkpoint. No full-row completion is claimed here.

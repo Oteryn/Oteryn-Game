@@ -385,14 +385,23 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         {
             return refuse(ActivityRefusal::ContentChanged);
         }
+        let origin_pin = {
+            let runtime = source.runtime.lock().await;
+            ActivityContentPin {
+                coordinate_frame_digest: runtime.content_pin().frame_binding_digest(),
+                map_revision_digest: runtime.map_revision_digest(),
+                server_artifact_digest: runtime.content_pin().server_artifact_digest(),
+            }
+        };
         let boss_definition = if boss_room {
             let owner = ActivityHandoffOwner::new(self.root.clone());
             let Some(definition) = owner
-                .read_boss_room(
+                .read_boss_room_with_pin(
                     self.character,
                     self.holder,
                     initiator.source,
                     &request.activity_key,
+                    origin_pin,
                 )
                 .await
                 .map_err(|_| ())?

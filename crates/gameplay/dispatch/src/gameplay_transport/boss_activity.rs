@@ -71,7 +71,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         {
             return self.boss_activity_result(retained);
         }
-        {
+        let origin_pin = {
             let runtime = self.runtime.lock().await;
             if runtime.binding().runtime_scope() != fence.runtime_scope
                 || runtime.binding().scope_generation() != fence.scope_ownership_generation
@@ -82,7 +82,12 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             {
                 return malformed();
             }
-        }
+            ActivityContentPin {
+                coordinate_frame_digest: runtime.content_pin().frame_binding_digest(),
+                map_revision_digest: runtime.map_revision_digest(),
+                server_artifact_digest: runtime.content_pin().server_artifact_digest(),
+            }
+        };
         if kind == wire::COMMAND_TYPE_BOSS_LEVER
             && oteryn_gameplay_encounters::bosses::endgame_entry::Encounter::from_boss_key(
                 &intent.boss_key,
@@ -110,7 +115,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         }
         let owner = ActivityHandoffOwner::new(self.root.clone());
         let Some(definition) = owner
-            .read_boss_room(self.character, self.holder, fence, &intent.boss_key)
+            .read_boss_room_with_pin(self.character, self.holder, fence, &intent.boss_key, origin_pin)
             .await
             .ok()?
         else {

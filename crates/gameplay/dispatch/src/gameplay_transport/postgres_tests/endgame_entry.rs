@@ -155,7 +155,7 @@ fn qualified_catalogue_scenario(require_primal: bool) -> TestResult {
             deps.initialize(&owner).await;
             let (controller, pin) = crate::content::native_gameplay::test_support::activated_loop_monster(deps.admitted.world_id, false);
             let candidates = crate::content::bosses::activity_template::captured_boss_levers().map_err(debug)?;
-            let (templates, diagnostics) = controller.qualify_initial_activity_template(pin.qualified_room(), "content-1", &candidates);
+            let (templates, diagnostics) = controller.qualify_initial_activity_template(pin.qualified_room(), pin.qualified_room(), "content-1", &candidates);
             let publisher = crate::durability::activity_handoff::ActivityHandoffOwner::new(h.root.clone());
             publisher.publish_qualified_boss_rooms(owner.holder, &templates).await?;
             publisher.publish_qualified_boss_rooms(owner.holder, &templates).await?;
@@ -172,7 +172,11 @@ fn qualified_catalogue_scenario(require_primal: bool) -> TestResult {
                 candidate.boss_key().filter(|key| key == "oteryn:boss.the_primal_menace")
             }).ok_or("captured Primal boss identity")?;
             let room = crate::durability::activity_handoff::ActivityHandoffOwner::new(h.root.clone())
-                .read_boss_room(owner.character, owner.holder, fence, &primal_key)
+                .read_boss_room_with_pin(owner.character, owner.holder, fence, &primal_key, crate::durability::activity_handoff::ActivityContentPin {
+                    coordinate_frame_digest: pin.qualified_room().frame_binding().digest(),
+                    map_revision_digest: pin.qualified_room().map_revision_digest(),
+                    server_artifact_digest: pin.qualified_room().compiled().server_digest(),
+                })
                 .await?;
             assert!(room.is_some(), "W10 production Primal Ordeal room is missing from the durable catalogue");
             Ok(())

@@ -9,21 +9,34 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         templates: &[QualifiedActivityRoomTemplate],
     ) -> Result<()> {
-        let cell = |p: oteryn_gameplay_content::content::LogicalCell| {
-            serde_json::json!({"x": p.x, "y": p.y, "floor": p.z})
-        };
-        let mut rows: Vec<_> = templates.iter().map(|t| (
-            t.boss_key().to_owned(), t.creature_key().to_owned(),
-            t.content_revision().to_owned(), t.template_key().to_owned(),
-            t.template_revision().to_owned(), t.minimum_players() as i16,
-            t.maximum_players() as i16, i64::from(t.minimum_level()),
-            i64::from(t.cooldown_seconds()), i64::from(t.time_limit_seconds()),
-            i64::from(t.after_kill_seconds()),
-            serde_json::Value::Array(t.lever_positions().iter().copied().map(cell).collect()),
-            serde_json::Value::Array(t.entry_positions().iter().copied().map(cell).collect()),
-            cell(t.exit_position()), cell(t.boss_position()),
-        )).collect();
-        rows.sort_by(|a, b| a.0.cmp(&b.0));
+        let cell = |p: oteryn_gameplay_content::content::LogicalCell| serde_json::json!({"x": p.x, "y": p.y, "floor": p.z});
+        let mut rows = Vec::with_capacity(templates.len());
+        for t in templates {
+            let policy = serde_json::json!({
+                "boss_key": t.boss_key(), "boss_creature_key": t.creature_key(),
+                "content_revision": t.content_revision(), "room_template_key": t.template_key(),
+                "template_revision": t.template_revision(), "minimum_players": t.minimum_players(),
+                "maximum_players": t.maximum_players(), "minimum_level": t.minimum_level(),
+                "cooldown_seconds": t.cooldown_seconds(), "time_limit_seconds": t.time_limit_seconds(),
+                "after_kill_seconds": t.after_kill_seconds(),
+                "lever_positions": t.lever_positions().iter().copied().map(cell).collect::<Vec<_>>(),
+                "entry_positions": t.entry_positions().iter().copied().map(cell).collect::<Vec<_>>(),
+                "exit_position": cell(t.exit_position()), "boss_position": cell(t.boss_position()),
+                "reward_key": t.boss_key(), "enabled": true,
+            });
+            rows.push((
+                t.boss_key().to_owned(),
+                t.room().movement_cells().scope().world_id,
+                ActivityContentPin {
+                    coordinate_frame_digest: t.room().frame_binding().digest(),
+                    map_revision_digest: t.room().map_revision_digest(),
+                    server_artifact_digest: t.room().compiled().server_digest(),
+                },
+                t.activation_frame_binding_digest(),
+                policy,
+            ));
+        }
+        rows.sort_by(|a, b| (&a.0, a.1.as_bytes()).cmp(&(&b.0, b.1.as_bytes())));
         let node = node.clone();
         self.root.try_issue_semantic_pass()?.run(move |holder, deadline| {
             Box::pin(async move {
@@ -32,9 +45,24 @@ impl ActivityHandoffOwner {
                 if !prove_current_incarnation(&mut tx, &node).await? {
                     return Err(DurabilityError::Unavailable);
                 }
-                for r in rows {
-                    sqlx::query("INSERT INTO game_boss_room_catalogue (boss_key,boss_creature_key,content_revision,room_template_key,template_revision,minimum_players,maximum_players,minimum_level,cooldown_seconds,time_limit_seconds,after_kill_seconds,lever_positions,entry_positions,exit_position,boss_position,reward_key,enabled) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$1,true) ON CONFLICT(boss_key) DO UPDATE SET boss_creature_key=EXCLUDED.boss_creature_key,content_revision=EXCLUDED.content_revision,room_template_key=EXCLUDED.room_template_key,template_revision=EXCLUDED.template_revision,minimum_players=EXCLUDED.minimum_players,maximum_players=EXCLUDED.maximum_players,minimum_level=EXCLUDED.minimum_level,cooldown_seconds=EXCLUDED.cooldown_seconds,time_limit_seconds=EXCLUDED.time_limit_seconds,after_kill_seconds=EXCLUDED.after_kill_seconds,lever_positions=EXCLUDED.lever_positions,entry_positions=EXCLUDED.entry_positions,exit_position=EXCLUDED.exit_position,boss_position=EXCLUDED.boss_position,enabled=true")
-                        .bind(r.0).bind(r.1).bind(r.2).bind(r.3).bind(r.4).bind(r.5).bind(r.6).bind(r.7).bind(r.8).bind(r.9).bind(r.10).bind(r.11).bind(r.12).bind(r.13).bind(r.14).execute(&mut *tx).await?;
+                for (key, world, pin, activation_frame, policy) in rows {
+                    // The global row is only the historical FK identity. It is
+                    // never overwritten or used instead of a scoped publication.
+                    sqlx::query("INSERT INTO game_boss_room_catalogue SELECT r.* FROM jsonb_populate_record(NULL::game_boss_room_catalogue,$1) r ON CONFLICT(boss_key) DO NOTHING")
+                        .bind(&policy).execute(&mut *tx).await?;
+                    let inserted = sqlx::query("INSERT INTO game_boss_room_publications SELECT r.*,encode($2,'hex')::uuid,$3,$4,$5,$6 FROM jsonb_populate_record(NULL::game_boss_room_catalogue,$1) r ON CONFLICT(world_id,boss_key,content_revision,origin_frame_digest,origin_map_digest,server_artifact_digest) DO NOTHING")
+                        .bind(&policy).bind(world.as_bytes().as_slice())
+                        .bind(pin.coordinate_frame_digest.as_slice()).bind(pin.map_revision_digest.as_slice())
+                        .bind(pin.server_artifact_digest.as_slice()).bind(activation_frame.as_slice())
+                        .execute(&mut *tx).await?.rows_affected();
+                    if inserted == 0 {
+                        let equal: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_boss_room_publications p WHERE p.world_id=encode($1,'hex')::uuid AND p.boss_key=$2 AND p.content_revision=$3 AND p.origin_frame_digest=$4 AND p.origin_map_digest=$5 AND p.server_artifact_digest=$6 AND p.activation_frame_digest=$7 AND to_jsonb(p)-ARRAY['world_id','origin_frame_digest','origin_map_digest','server_artifact_digest','activation_frame_digest']=$8)")
+                            .bind(world.as_bytes().as_slice()).bind(&key).bind(policy["content_revision"].as_str())
+                            .bind(pin.coordinate_frame_digest.as_slice()).bind(pin.map_revision_digest.as_slice())
+                            .bind(pin.server_artifact_digest.as_slice()).bind(activation_frame.as_slice()).bind(&policy)
+                            .fetch_one(&mut *tx).await?;
+                        if !equal { return Err(DurabilityError::Unavailable); }
+                    }
                 }
                 commit_semantic_transaction(tx, deadline).await?;
                 Ok(())
