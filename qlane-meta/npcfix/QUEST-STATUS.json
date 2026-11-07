@@ -7528,7 +7528,7 @@
       "fluid_item_other_fields_preserved": true
     },
     "format": "cargo fmt --all -- --check PASS",
-    "compile_checkpoint": "Runtime Rust source unchanged from 8369545b0 source successfully compiled into actual PG RED139.14s; byte-identical migration renames published5f2468d69. Current migration-namespace rebuild is still running; no fresh GREEN claimed."
+    "compile_checkpoint": "Fresh migration-embedded source build PASS14m12s; Ahmet and compatibility PG still running, strict five-crate checks pending."
   },
   "migration_registry": {
     "lane": "npcfix",
@@ -7603,6 +7603,24 @@
       }
     ],
     "qbase_files_carried": [],
-    "verification_state": "RENAMED_BYTE_IDENTICAL; DUPLICATE_CHECK_PASS; FRESH_PG_BUILD_RUNNING"
+    "verification_state": "QUALIFIED: BYTE_IDENTICAL_RENUMBER; DUPLICATE_PASS; FRESH_POSTGRES_PASS; REGENERATED_PIN_PASS",
+    "postgres": {
+      "test": "npcfix_eleven_track_postgres_atomic_receipt_replay_and_rollback",
+      "marker": "POSTGRES_STARTED NPCFIX eleven-track acceptance",
+      "seconds": 40.94,
+      "log": "/tmp/npcfix-evidence/migration-registry-eleven-track-pg.log",
+      "sha256": "50f66e541d511ffb3d81faff3ab2899be82ad34b4d727199ce3613633354d87e"
+    },
+    "compile": "Fresh migration-embedded dispatch test build PASS14m12s",
+    "world_pin": {
+      "inputs_digest": "9a2a5db0021b35fd5a5dada9ac50e7d41b12d35138d34725d0de8008690b5250",
+      "pins": [
+        {
+          "bytes": 31812443,
+          "digest": "9e77d39c2877f3151a5f02df91e8a8dd342fd44ef74e093d98233fb27f356c7c",
+          "world": "oteryn"
+        }
+      ]
+    }
   }
 }
