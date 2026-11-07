@@ -3438,7 +3438,7 @@
     },
     "scope_note": "All LANE-L6 input source blockers remain obligations. Differences from selected recipe approximations are not authority to drop a blocker. Historical qengine ownership language is not treated as a reason to defer work now owned by L6.",
     "publication_branch": "claude/happy-davinci-ijz3wy-questpc4",
-    "latest_batch": "cloud-native-carried-portals-10",
+    "latest_batch": "cloud-other-native-portals-11",
     "mechanisms": {
       "reusable_tools_and_atomic_counters": {
         "status": "QUALIFIED",
@@ -3800,14 +3800,29 @@
         "status": "QUALIFIED",
         "scope": "Generic fenced physical absence/debit branch receipt and prepared movement; sourceUID3950/3951/3952 carried-key routes in composed PG room, exact replay and no invented Quest progress",
         "migration": "1065_carried_step_branches.sql",
-        "whole_quest": "No whole Ancient Tombs or native alias qualification from this slice"
+        "whole_quest": "No whole Ancient Tombs or native alias qualification from this slice",
+        "additional_recipe_migration": "1070_remaining_tomb_carried_recipes.sql",
+        "qualified_source_uids": [
+          3950,
+          3951,
+          3952,
+          3953,
+          3954,
+          3955,
+          3956
+        ],
+        "remaining_whole_quest_stages": "Other Ancient Tombs mechanisms remain; no whole-quest qualification"
       },
       "native_conditional_portal_binding": {
         "status": "QUALIFIED",
         "recipes": [
           3950,
           3951,
-          3952
+          3952,
+          3953,
+          3954,
+          3955,
+          3956
         ],
         "native_proof": {
           "status": "GREEN",
@@ -3843,7 +3858,55 @@
           "log": "/tmp/questpc4-native-green.log"
         },
         "selection": "exact position + ordinal1 + appearance1949 + original raw teleport; no UID synthesis; ambiguous selectors cannot suppress ordinary native movement",
-        "scope": "Three native post-boss routes only, not whole Tombs qualification"
+        "scope": "All7 source post-boss key routes; whole Tombs still IN_PROGRESS",
+        "additional_native_proof": {
+          "status": "GREEN",
+          "version": "18.6",
+          "result": "8 passed / 0 failed",
+          "batch_seconds": 154.14,
+          "cases": [
+            {
+              "marker": "l6-tomb-native-missing-3954",
+              "duration_seconds": 58.043282302
+            },
+            {
+              "marker": "l6-tomb-native-missing-3955",
+              "duration_seconds": 58.067807551
+            },
+            {
+              "marker": "l6-tomb-native-missing-3956",
+              "duration_seconds": 58.069009463
+            },
+            {
+              "marker": "l6-tomb-native-missing-3953",
+              "duration_seconds": 58.073784956
+            },
+            {
+              "marker": "l6-tomb-native-present-3955",
+              "duration_seconds": 77.168794023
+            },
+            {
+              "marker": "l6-tomb-native-present-3956",
+              "duration_seconds": 81.488848769
+            },
+            {
+              "marker": "l6-tomb-native-present-3953",
+              "duration_seconds": 85.619947182
+            },
+            {
+              "marker": "l6-tomb-native-present-3954",
+              "duration_seconds": 96.073458306
+            }
+          ],
+          "log": "/tmp/questpc4-other-native-final-green.log",
+          "assertions": [
+            "Exact source24h decay-to0/no-charge item policies for all keys",
+            "Native original raw teleport attributes and reachable raw/script endpoints; no synthetic UID",
+            "Exact source present/missing movement, exact one-key debit or proven absence",
+            "Unchanged nonempty Quest tracks/receipts; immutable same-XID full audit",
+            "Wire replay does not move twice; durable original receipt replays after input retirement/leaving source"
+          ]
+        }
       }
     },
     "active_counts": {
@@ -3854,116 +3917,140 @@
       "qualified_here": 3
     },
     "latest_batch_checks": {
-      "postgres": "14 focused cases passed, explicit18.6 markers/durations",
-      "floor_tests": "13 passed / 0 failed1.31s",
-      "fmt": "PASS",
-      "check": "PASS quests/world/dispatch all targets/features2m48s",
-      "clippy": "PASS quests/world/dispatch all targets/features -D warnings; Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 51s",
-      "pin_check": "PASS; World7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37 unchanged",
-      "diff": "PASS",
-      "scope": "Three verified native conditional portals, not whole Tombs completion"
+      "postgres": "9 passed / 0 failed; explicit PostgreSQL18.6 markers and durations",
+      "content_tests": "123 passed / 0 failed2.50s",
+      "world_tests": "5 passed / 0 failed53.15s",
+      "fmt": "PASS cargo fmt --all -- --check plus explicit changed leaves",
+      "check": "PASS content/quests/durability/dispatch all targets/features3m29s",
+      "clippy": "PASS content/quests/durability/dispatch all targets/features -D warnings3m18s",
+      "pin_check": "PASS unchanged7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37,31102360bytes",
+      "migration_duplicates": "PASS; fresh allocator main916/openPR969; own1070 unclaimed",
+      "native_profiles": {
+        "before": 3627,
+        "after": 3631,
+        "old_changed_or_missing": 0,
+        "exact_additions": [
+          3235,
+          3236,
+          3239,
+          3241
+        ],
+        "owning_capture": "PASS source XML SHA + current client pin + source semantics, write/check",
+        "owning_regeneration": "PASS native-only registered42 files/write/check/freshness"
+      },
+      "scope": "4 added native routes, 7 total source key routes; no whole title completed"
     },
     "current_attempt": {
+      "id": "cloud-other-native-portals-11",
       "status": "GREEN",
-      "scope": "Exact native B3 bindings for carried Tomb routes3950..3952",
-      "decision": "Pinned source script decides both destinations; exact position/ordinal/appearance/raw teleport aliases, no destination wildcard. Preserve ordinary step gates and original native destinations in PG fixtures.",
-      "red_log": "/tmp/questpc4-native-red.log",
-      "whole_quest_qualified": false,
+      "scope": "Remaining four native Tomb post-boss routes3953..3956, exact source24h keys3239/3235/3241/3236, immutable generic receipt recipes",
+      "red_log": "/tmp/questpc4-other-native-red.log",
+      "stage": "All focused gates GREEN; commit then exact fresh fetch, merge/revalidate if moved, immediate fast-forward push",
+      "remaining_whole_entries": 17,
       "red": {
-        "version": "PostgreSQL18.6",
-        "duration_seconds": 55.51,
-        "observed": "Present key follows raw fallback33231,32705,z8 rather than scripted success33182,32714,z14",
-        "result": "1 failed / 0 passed; real database marker"
+        "version": "18.6",
+        "duration_seconds": 55.19,
+        "result": "0 passed / 1 failed",
+        "actual": "raw33206,32592,z8",
+        "expected": "script33025,32868,z8",
+        "marker": "POSTGRES_DATABASE_READY l6_carried_step"
+      },
+      "migration": "1070_remaining_tomb_carried_recipes.sql",
+      "migration_claim": "Allocator main916/openPR969; own reserved1060..1079; choose1070 to avoid concurrent lower allocations. No published migration edits.",
+      "native_profiles": {
+        "before": 3627,
+        "after": 3631,
+        "old_changed_or_missing": 0,
+        "exact_additions": [
+          3235,
+          3236,
+          3239,
+          3241
+        ],
+        "owning_capture": "PASS source XML SHA + current client pin + source semantics, write/check",
+        "owning_regeneration": "PASS native-only registered42 files/write/check/freshness"
+      },
+      "first_green_attempt": {
+        "log": "/tmp/questpc4-other-native-green.log",
+        "result": "6 passed / 2 failed116.67s",
+        "failure": "Route3954 fixture expected fallback ground415; actual exact B3 ground423. Both cases failed before branch execution. All other source branches green."
+      },
+      "source_correction": {
+        "tile": [
+          33133,
+          32642,
+          8
+        ],
+        "source_item_id": 423,
+        "attributes": null,
+        "depth": 0,
+        "house": 0,
+        "flags": 0,
+        "source": "content/world/placements/region-z08-x129-y127.b3",
+        "sha256": "26ed14e6d9c0b9a853e18a541704c8c0b206e85c3e96e129decee76db0582ae2",
+        "proof": "independent repository world_region_codec.py exact tile decode; strict expectation corrected, not removed"
       },
       "postgres": {
         "status": "GREEN",
         "version": "18.6",
-        "result": "6 passed / 0 failed",
-        "batch_seconds": 113.83,
+        "result": "8 passed / 0 failed",
+        "batch_seconds": 154.14,
         "cases": [
           {
-            "marker": "l6-tomb-native-missing-3952",
-            "duration_seconds": 57.899168143
+            "marker": "l6-tomb-native-missing-3954",
+            "duration_seconds": 58.043282302
           },
           {
-            "marker": "l6-tomb-native-missing-3950",
-            "duration_seconds": 57.900240452
+            "marker": "l6-tomb-native-missing-3955",
+            "duration_seconds": 58.067807551
           },
           {
-            "marker": "l6-tomb-native-present-3950",
-            "duration_seconds": 57.928357499
+            "marker": "l6-tomb-native-missing-3956",
+            "duration_seconds": 58.069009463
           },
           {
-            "marker": "l6-tomb-native-missing-3951",
-            "duration_seconds": 57.934100849
+            "marker": "l6-tomb-native-missing-3953",
+            "duration_seconds": 58.073784956
           },
           {
-            "marker": "l6-tomb-native-present-3951",
-            "duration_seconds": 55.9060981
+            "marker": "l6-tomb-native-present-3955",
+            "duration_seconds": 77.168794023
           },
           {
-            "marker": "l6-tomb-native-present-3952",
-            "duration_seconds": 55.924824775
+            "marker": "l6-tomb-native-present-3956",
+            "duration_seconds": 81.488848769
+          },
+          {
+            "marker": "l6-tomb-native-present-3953",
+            "duration_seconds": 85.619947182
+          },
+          {
+            "marker": "l6-tomb-native-present-3954",
+            "duration_seconds": 96.073458306
           }
         ],
-        "log": "/tmp/questpc4-native-green.log"
+        "log": "/tmp/questpc4-other-native-final-green.log",
+        "assertions": [
+          "Exact source24h decay-to0/no-charge item policies for all keys",
+          "Native original raw teleport attributes and reachable raw/script endpoints; no synthetic UID",
+          "Exact source present/missing movement, exact one-key debit or proven absence",
+          "Unchanged nonempty Quest tracks/receipts; immutable same-XID full audit",
+          "Wire replay does not move twice; durable original receipt replays after input retirement/leaving source"
+        ]
       },
-      "stage": "All focused gates GREEN; commit and exact fresh-fetch fast-forward push immediately",
-      "id": "cloud-native-carried-portals-10",
-      "regressions": {
-        "legacy": {
-          "result": "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 2616 filtered out; finished in 107.05s",
-          "cases": [
-            {
-              "marker": "l6-tomb-carried-3950",
-              "duration_seconds": 54.924970112
-            },
-            {
-              "marker": "l6-tomb-carried-present-3950",
-              "duration_seconds": 54.990869799
-            },
-            {
-              "marker": "l6-tomb-carried-3952",
-              "duration_seconds": 54.999338649
-            },
-            {
-              "marker": "l6-tomb-carried-3951",
-              "duration_seconds": 55.004920903
-            },
-            {
-              "marker": "l6-tomb-carried-present-3951",
-              "duration_seconds": 52.080313255
-            },
-            {
-              "marker": "l6-tomb-carried-present-3952",
-              "duration_seconds": 52.053957289
-            }
-          ]
-        },
-        "small_ruby": {
-          "result": "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2621 filtered out; finished in 55.38s",
-          "cases": [
-            {
-              "marker": "l6-small-ruby",
-              "duration_seconds": 55.381366213
-            }
-          ]
-        },
-        "mead": {
-          "result": "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2621 filtered out; finished in 56.99s",
-          "cases": [
-            {
-              "marker": "l6/waterskin-of-mead",
-              "duration_seconds": 56.988570317
-            }
-          ]
-        }
+      "check": "PASS content/quests/durability/dispatch all targets/features3m29s",
+      "fmt": "PASS cargo fmt --all -- --check plus explicit changed leaves",
+      "clippy": "PASS content/quests/durability/dispatch all targets/features -D warnings3m18s",
+      "legacy_regression": {
+        "result": "1 passed / 0 failed",
+        "marker": "POSTGRES_CASE_COMPLETED l6-tomb-native-present-3950",
+        "duration_seconds": 59.113666431,
+        "log": "/tmp/questpc4-other-native-legacy-pg.log"
       },
-      "floor_tests": "13 passed / 0 failed1.31s",
-      "fmt": "PASS cargo fmt --all -- --check plus explicit mounted-leaf rustfmt",
-      "check": "PASS quests/world/dispatch all targets/features2m48s",
-      "clippy": "PASS quests/world/dispatch all targets/features -D warnings; Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 51s",
-      "pin_check": "PASS; World7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37 unchanged"
+      "content_tests": "123 passed / 0 failed2.50s",
+      "world_tests": "5 passed / 0 failed53.15s",
+      "pin_check": "PASS unchanged7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37,31102360bytes",
+      "migration_duplicates": "PASS; fresh allocator main916/openPR969; own1070 unclaimed"
     },
     "authoring_state": "AUTHORING",
     "attempt_history": [
@@ -4873,12 +4960,114 @@
           "fmt_diff_numbers": "PASS"
         },
         "publication": "PUSHED5d078c61f"
+      },
+      {
+        "status": "GREEN",
+        "scope": "Exact native B3 bindings for carried Tomb routes3950..3952",
+        "decision": "Pinned source script decides both destinations; exact position/ordinal/appearance/raw teleport aliases, no destination wildcard. Preserve ordinary step gates and original native destinations in PG fixtures.",
+        "red_log": "/tmp/questpc4-native-red.log",
+        "whole_quest_qualified": false,
+        "red": {
+          "version": "PostgreSQL18.6",
+          "duration_seconds": 55.51,
+          "observed": "Present key follows raw fallback33231,32705,z8 rather than scripted success33182,32714,z14",
+          "result": "1 failed / 0 passed; real database marker"
+        },
+        "postgres": {
+          "status": "GREEN",
+          "version": "18.6",
+          "result": "6 passed / 0 failed",
+          "batch_seconds": 113.83,
+          "cases": [
+            {
+              "marker": "l6-tomb-native-missing-3952",
+              "duration_seconds": 57.899168143
+            },
+            {
+              "marker": "l6-tomb-native-missing-3950",
+              "duration_seconds": 57.900240452
+            },
+            {
+              "marker": "l6-tomb-native-present-3950",
+              "duration_seconds": 57.928357499
+            },
+            {
+              "marker": "l6-tomb-native-missing-3951",
+              "duration_seconds": 57.934100849
+            },
+            {
+              "marker": "l6-tomb-native-present-3951",
+              "duration_seconds": 55.9060981
+            },
+            {
+              "marker": "l6-tomb-native-present-3952",
+              "duration_seconds": 55.924824775
+            }
+          ],
+          "log": "/tmp/questpc4-native-green.log"
+        },
+        "stage": "All focused gates GREEN; commit and exact fresh-fetch fast-forward push immediately",
+        "id": "cloud-native-carried-portals-10",
+        "regressions": {
+          "legacy": {
+            "result": "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 2616 filtered out; finished in 107.05s",
+            "cases": [
+              {
+                "marker": "l6-tomb-carried-3950",
+                "duration_seconds": 54.924970112
+              },
+              {
+                "marker": "l6-tomb-carried-present-3950",
+                "duration_seconds": 54.990869799
+              },
+              {
+                "marker": "l6-tomb-carried-3952",
+                "duration_seconds": 54.999338649
+              },
+              {
+                "marker": "l6-tomb-carried-3951",
+                "duration_seconds": 55.004920903
+              },
+              {
+                "marker": "l6-tomb-carried-present-3951",
+                "duration_seconds": 52.080313255
+              },
+              {
+                "marker": "l6-tomb-carried-present-3952",
+                "duration_seconds": 52.053957289
+              }
+            ]
+          },
+          "small_ruby": {
+            "result": "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2621 filtered out; finished in 55.38s",
+            "cases": [
+              {
+                "marker": "l6-small-ruby",
+                "duration_seconds": 55.381366213
+              }
+            ]
+          },
+          "mead": {
+            "result": "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2621 filtered out; finished in 56.99s",
+            "cases": [
+              {
+                "marker": "l6/waterskin-of-mead",
+                "duration_seconds": 56.988570317
+              }
+            ]
+          }
+        },
+        "floor_tests": "13 passed / 0 failed1.31s",
+        "fmt": "PASS cargo fmt --all -- --check plus explicit mounted-leaf rustfmt",
+        "check": "PASS quests/world/dispatch all targets/features2m48s",
+        "clippy": "PASS quests/world/dispatch all targets/features -D warnings; Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 51s",
+        "pin_check": "PASS; World7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37 unchanged"
       }
     ],
     "last_pushed_batch": {
-      "head": "5d078c61f301d5317c3c86cd5edad8fb49af056b",
+      "head": "5ea9e52be062e3810c522789c567c0d4f3e27b9a",
       "status": "PUSHED",
-      "scope": "Spirit completion plus distinct published1064/1065 and combined carried/native engine gates"
+      "scope": "Three exact native carried-key portals; PG14/floor13/fmt/check/clippy/pins GREEN"
     },
     "native_portal_batch_10": {
       "status": "GREEN",

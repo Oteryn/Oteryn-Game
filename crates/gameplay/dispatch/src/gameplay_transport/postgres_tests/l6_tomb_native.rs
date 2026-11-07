@@ -97,7 +97,7 @@ fn l6_tomb_native_present_3952_uses_source_branch() -> TestResult {
         },
     )
 }
-fn run(name: &'static str, trigger: Position, expected: Position) -> TestResult {
+pub(super) fn run(name: &'static str, trigger: Position, expected: Position) -> TestResult {
     crate::bestiary_postgres_harness::configured_admin()
         .ok_or("native Tomb qualification requires PostgreSQL")?;
     let started = std::time::Instant::now();
@@ -121,6 +121,33 @@ pub(super) fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
     unique: u16,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    let recipe = oteryn_gameplay_quests::quest::carried_step::RECIPES
+        .iter()
+        .find(|r| r.unique == unique)
+        .ok_or("source carried recipe")?;
+    let policy = native
+        .item_policy(recipe.item, "definition-r1")
+        .ok_or("source key native policy")?;
+    assert_eq!(
+        policy.record().semantics.charges,
+        crate::content::ReferenceItemField::NotApplicable
+    );
+    let physical =
+        crate::durability::spell_items_abi::QualifiedItemDefinition::from_native_policy(policy)?;
+    assert!(
+        physical.materializable
+            && physical.movable
+            && physical.inventory_destination
+            && physical.ground_destination
+    );
+    assert_eq!(physical.stack_maximum, 1);
+    assert!(physical.container_capacity.is_none());
+    let decay = physical.decay.ok_or("source24h key lifetime")?;
+    assert_eq!(decay.duration_millis, 86_400_000);
+    assert!(
+        decay.target.is_none(),
+        "source key expires to0, no replacement item"
+    );
     use super::l6_world_pickups::{ExpectedTeleport, ExpectedTile, NativeCrop, native_scene};
     let (bytes, region, portal, success, missing, raw): (&'static [u8], _, _, _, _, _) =
         match unique {
@@ -156,6 +183,50 @@ pub(super) fn world(
                 (33126, 32591),
                 (33250, 32832),
                 (33131, 32566),
+            ),
+            3953 => (
+                include_bytes!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/../../../content/world/placements/region-z15-x129-y127.b3"
+                )),
+                (15, 129, 127),
+                (33146, 32668),
+                (33145, 32665),
+                (33025, 32868),
+                (33206, 32592),
+            ),
+            3954 => (
+                include_bytes!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/../../../content/world/placements/region-z14-x129-y128.b3"
+                )),
+                (14, 129, 128),
+                (33042, 32777),
+                (33041, 32774),
+                (33133, 32642),
+                (33133, 32642),
+            ),
+            3955 => (
+                include_bytes!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/../../../content/world/placements/region-z14-x130-y128.b3"
+                )),
+                (14, 130, 128),
+                (33350, 32830),
+                (33349, 32827),
+                (33131, 32566),
+                (33282, 32744),
+            ),
+            3956 => (
+                include_bytes!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/../../../content/world/placements/region-z14-x129-y128.b3"
+                )),
+                (14, 129, 128),
+                (33187, 33015),
+                (33186, 33012),
+                (33206, 32592),
+                (33250, 32832),
             ),
             _ => return Err("unknown source UID".into()),
         };
@@ -205,7 +276,10 @@ pub(super) fn world(
             region,
             bounds: (target.0, target.1, target.0 + 1, target.1 + 1),
             start: target,
-            expected: vec![tile(target, vec![415])],
+            expected: vec![tile(
+                target,
+                vec![if target == (33133, 32642) { 423 } else { 415 }],
+            )],
         });
     }
     let world = native_scene(

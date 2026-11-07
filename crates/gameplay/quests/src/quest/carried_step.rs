@@ -12,8 +12,8 @@ pub struct Recipe {
     pub source_line: u16,
 }
 
-// Crystal201189f movements_tomb_teleport.lua:3-20; repository source evidence
-// docs/agents/evidence/OTV2-20261102-quests-5-20261102/the_ancient_tombs.json:2090-2205.
+// Crystal201189f movements_tomb_teleport.lua:3-44; repository source evidence
+// docs/agents/evidence/OTV2-20261102-quests-5-20261102/the_ancient_tombs.json:2090-2365.
 pub const RECIPES: &[Recipe] = &[
     Recipe {
         key: "oteryn:quest-callback/ancient-tombs-key-3950",
@@ -65,6 +65,74 @@ pub const RECIPES: &[Recipe] = &[
             floor: -8,
         },
         source_line: 15,
+    },
+    Recipe {
+        key: "oteryn:quest-callback/ancient-tombs-key-3953",
+        unique: 3953,
+        item: "oteryn:item.tibia.i3239",
+        count: 1,
+        success: Position {
+            x: 33145,
+            y: 32665,
+            floor: -15,
+        },
+        missing: Position {
+            x: 33025,
+            y: 32868,
+            floor: -8,
+        },
+        source_line: 21,
+    },
+    Recipe {
+        key: "oteryn:quest-callback/ancient-tombs-key-3954",
+        unique: 3954,
+        item: "oteryn:item.tibia.i3235",
+        count: 1,
+        success: Position {
+            x: 33041,
+            y: 32774,
+            floor: -14,
+        },
+        missing: Position {
+            x: 33133,
+            y: 32642,
+            floor: -8,
+        },
+        source_line: 27,
+    },
+    Recipe {
+        key: "oteryn:quest-callback/ancient-tombs-key-3955",
+        unique: 3955,
+        item: "oteryn:item.tibia.i3241",
+        count: 1,
+        success: Position {
+            x: 33349,
+            y: 32827,
+            floor: -14,
+        },
+        missing: Position {
+            x: 33131,
+            y: 32566,
+            floor: -8,
+        },
+        source_line: 33,
+    },
+    Recipe {
+        key: "oteryn:quest-callback/ancient-tombs-key-3956",
+        unique: 3956,
+        item: "oteryn:item.tibia.i3236",
+        count: 1,
+        success: Position {
+            x: 33186,
+            y: 33012,
+            floor: -14,
+        },
+        missing: Position {
+            x: 33206,
+            y: 32592,
+            floor: -8,
+        },
+        source_line: 39,
     },
 ];
 
@@ -131,6 +199,54 @@ pub fn native_binding(key: &str) -> Option<NativeBinding> {
             Position {
                 x: 33131,
                 y: 32566,
+                floor: -8,
+            },
+        ),
+        3953 => (
+            Position {
+                x: 33146,
+                y: 32668,
+                floor: -15,
+            },
+            Position {
+                x: 33206,
+                y: 32592,
+                floor: -8,
+            },
+        ),
+        3954 => (
+            Position {
+                x: 33042,
+                y: 32777,
+                floor: -14,
+            },
+            Position {
+                x: 33133,
+                y: 32642,
+                floor: -8,
+            },
+        ),
+        3955 => (
+            Position {
+                x: 33350,
+                y: 32830,
+                floor: -14,
+            },
+            Position {
+                x: 33282,
+                y: 32744,
+                floor: -8,
+            },
+        ),
+        3956 => (
+            Position {
+                x: 33187,
+                y: 33015,
+                floor: -14,
+            },
+            Position {
+                x: 33250,
+                y: 32832,
                 floor: -8,
             },
         ),
