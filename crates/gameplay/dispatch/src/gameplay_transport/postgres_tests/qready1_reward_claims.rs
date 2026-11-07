@@ -93,7 +93,7 @@ fn retained_world(
         ) {
             Ok(world) => return Ok(world),
             Err(crate::map::boot::BootRefusal::StartNotEnterable) => continue,
-            Err(error) => return Err(debug(error).into()),
+            Err(error) => return Err(debug(error)),
         }
     }
     Err("source chest has no enterable adjacent tile".into())
