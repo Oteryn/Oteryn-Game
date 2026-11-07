@@ -2137,7 +2137,7 @@
           "file": "data-global/scripts/quests/threatened_dreams_quest/action_fairies_release.lua:1-67",
           "git_blob": "96e10ff0166fdc0d6c17fd584721173b973ae560",
           "sha256": "73a538f9be2e1afcd0d31632ab68689191229ba4049dc4562caa757587869243",
-          "selector": "AIDs40016\u201340020; config coordinates are source placements, not runtime position predicates",
+          "selector": "AIDs40016–40020; config coordinates are source placements, not runtime position predicates",
           "timer": "30sec, revert only if current appearance25797; intervening same-appearance uses retain earlier deadline",
           "counter": "canonical initial0 normalizes Lua absent/-1 branch to same first output1; capped5"
         },
@@ -2160,7 +2160,7 @@
         "first_pg_driver_failure": {
           "duration_ms": 65825,
           "exact_error": "async fn resumed after completion in test cancellation poll_fn",
-          "database_evidence": "5 actual source receipts; Fairy01\u201305 each1; FairiesCounter5; inspected then exact failed test DB dropped",
+          "database_evidence": "5 actual source receipts; Fairy01–05 each1; FairiesCounter5; inspected then exact failed test DB dropped",
           "fix": "latch stopped future completion; never poll it again; production mechanisms unchanged",
           "log": "/tmp/questpc3-fairies-green.log",
           "sha256": "8f1d6eb6285e30f8c4edd2349f22820dd55be8a545b4daa9dface3bba9b560df",
@@ -2798,7 +2798,7 @@
         ],
         "red_log": "/tmp/questpc3-beginning-equipment-red-marked.log",
         "whole_entry_status": "Beginning IN_PROGRESS; four owned whole quests remain; no engine deferral.",
-        "reuse": "Existing carried presence and native reward MINT/custody; equipment writers already serialize under Character root. No occupied-slot predicate found in refreshed qengine2/PC2/PC4\u20138/L2 callbacks.",
+        "reuse": "Existing carried presence and native reward MINT/custody; equipment writers already serialize under Character root. No occupied-slot predicate found in refreshed qengine2/PC2/PC4–8/L2 callbacks.",
         "first_red": {
           "log": "/tmp/questpc3-beginning-equipment-red.log",
           "sha256": "45de478a54e47db5abc09db3ee85089374c348c20d3e02850f37f7553822eafe",
@@ -4788,7 +4788,7 @@
           "file": "data-global/scripts/quests/threatened_dreams_quest/action_fairies_release.lua:1-67",
           "git_blob": "96e10ff0166fdc0d6c17fd584721173b973ae560",
           "sha256": "73a538f9be2e1afcd0d31632ab68689191229ba4049dc4562caa757587869243",
-          "selector": "AIDs40016\u201340020; config coordinates are source placements, not runtime position predicates",
+          "selector": "AIDs40016–40020; config coordinates are source placements, not runtime position predicates",
           "timer": "30sec, revert only if current appearance25797; intervening same-appearance uses retain earlier deadline",
           "counter": "canonical initial0 normalizes Lua absent/-1 branch to same first output1; capped5"
         },
@@ -4811,7 +4811,7 @@
         "first_pg_driver_failure": {
           "duration_ms": 65825,
           "exact_error": "async fn resumed after completion in test cancellation poll_fn",
-          "database_evidence": "5 actual source receipts; Fairy01\u201305 each1; FairiesCounter5; inspected then exact failed test DB dropped",
+          "database_evidence": "5 actual source receipts; Fairy01–05 each1; FairiesCounter5; inspected then exact failed test DB dropped",
           "fix": "latch stopped future completion; never poll it again; production mechanisms unchanged",
           "log": "/tmp/questpc3-fairies-green.log",
           "sha256": "8f1d6eb6285e30f8c4edd2349f22820dd55be8a545b4daa9dface3bba9b560df",
@@ -5172,6 +5172,64 @@
         "duplicate_migrations": "CLEAR; canonical main0999-1008 exact; no1200-1205 copies; own1220-1229",
         "clippy": "Original two test lints fixed; final extra rerun stopped/superseded by latest owner SPEED direction after environmental disk failures; CI owns remaining verification",
         "readback": "30-line test-only helper reuses existing bounded retry; only RootUnavailable retries; permanent refusals fail; no assertions removed"
+      },
+      "first_dragon_lava_19": {
+        "batch": "first_dragon_lava_19",
+        "phase": "QUALIFIED_MECHANISM: six native bindings real PostgreSQL18.6 GREEN; whole First Dragon remains IN_PROGRESS",
+        "entries": [
+          "sacrifice24939 Scale once",
+          "sacrifice24940 Tooth once",
+          "sacrifice24941 Horn once",
+          "sacrifice24942 Bones once",
+          "outer lava entrance requires AccessCave4",
+          "inner lava return requires AccessCave4"
+        ],
+        "engine_expansion": false,
+        "reuse_checked": {
+          "qengine2": "e5850715e",
+          "questpc4": "8bf3338ec"
+        },
+        "decisions": [
+          "Reuse canonical AccessCave initial0, equivalent to source unset normalization before+1",
+          "Four source distinct flags start-1; one selected Item BURN, flag write and counter increment are atomic",
+          "Both source positions and lava appearance25160 bind targets; unrelated equal-appearance tile is in range but must reject",
+          "Pinned retained item observations prove all four trophies stackable and exact existing weights; preserve other canonical facts"
+        ],
+        "red_log": "/tmp/questpc3-first-dragon-lava-red.log",
+        "red": {
+          "postgres": "18.6",
+          "duration_seconds": 61.65,
+          "result": "unearned native lava USE returned NothingToUse, expected source Rejected; source callback absent",
+          "log": "/tmp/questpc3-first-dragon-lava-red.log"
+        },
+        "checks": {
+          "workspace_all_targets": "PASS54.69s /tmp/questpc3-first-dragon-lava-paced-final-check.log",
+          "fmt": "PASS /tmp/questpc3-first-dragon-lava-paced-final-fmt.log",
+          "authoring": "PASS --check; Item admissions --check changed0",
+          "native_profiles": "PASS registered spell import files43",
+          "pins": "PASS repository world-bundle-compiler pin-refresh /tmp/questpc3-first-dragon-lava-pins.log",
+          "postgres_green": {
+            "log": "/tmp/questpc3-first-dragon-lava-paced-qualification-pg.log",
+            "sha256": "4c7bd889a9295e84f3c2eb561c60dd239c87b1c04824c9c41564be6ad34e8de9",
+            "postgres": "18.6",
+            "duration_ms": 55729,
+            "sacrifices": 4,
+            "portals": 2,
+            "receipts": 4,
+            "counter": 4,
+            "result": "PASS"
+          }
+        },
+        "partial_pg_proof": {
+          "version": "18.6",
+          "sacrifices": 4,
+          "consumption_receipts": 4,
+          "counter": 4,
+          "positive_entry_destination": "31994,32391,-9",
+          "log": "/tmp/questpc3-first-dragon-lava-green-final.log",
+          "remaining_red": "Immediate return USE hits the existing200ms world-action clock; now fixture advances2s before return"
+        },
+        "qualification": "Four selected-source BURNs, exact consumed-source replay, wrong target and fresh duplicate refusal, unearned/before-four portal refusal, both native destinations, unchanged appearance25160 and one USE revision per portal. No success progress seeded."
       }
     },
     "counts": {
@@ -5181,7 +5239,7 @@
     },
     "current_batch": {
       "batch": "first_dragon_lava_19",
-      "phase": "WIP compiling fixture correction checkpoint; four sacrifices proven; final paced portal PG qualification next",
+      "phase": "QUALIFIED_MECHANISM: six native bindings real PostgreSQL18.6 GREEN; whole First Dragon remains IN_PROGRESS",
       "entries": [
         "sacrifice24939 Scale once",
         "sacrifice24940 Tooth once",
@@ -5214,7 +5272,17 @@
         "authoring": "PASS --check; Item admissions --check changed0",
         "native_profiles": "PASS registered spell import files43",
         "pins": "PASS repository world-bundle-compiler pin-refresh /tmp/questpc3-first-dragon-lava-pins.log",
-        "postgres_green": "NEXT: final source appearance+version+pacing proof; no whole/cohort qualification yet"
+        "postgres_green": {
+          "log": "/tmp/questpc3-first-dragon-lava-paced-qualification-pg.log",
+          "sha256": "4c7bd889a9295e84f3c2eb561c60dd239c87b1c04824c9c41564be6ad34e8de9",
+          "postgres": "18.6",
+          "duration_ms": 55729,
+          "sacrifices": 4,
+          "portals": 2,
+          "receipts": 4,
+          "counter": 4,
+          "result": "PASS"
+        }
       },
       "partial_pg_proof": {
         "version": "18.6",
@@ -5224,7 +5292,8 @@
         "positive_entry_destination": "31994,32391,-9",
         "log": "/tmp/questpc3-first-dragon-lava-green-final.log",
         "remaining_red": "Immediate return USE hits the existing200ms world-action clock; now fixture advances2s before return"
-      }
+      },
+      "qualification": "Four selected-source BURNs, exact consumed-source replay, wrong target and fresh duplicate refusal, unearned/before-four portal refusal, both native destinations, unchanged appearance25160 and one USE revision per portal. No success progress seeded."
     },
     "diagnosis": {
       "log": "/tmp/questpc3-counter-diagnosis.log",
@@ -5399,23 +5468,10 @@
     },
     "metadata_recovery": "Latest head removed qlane-meta; recovered the five handoff records from c5cdcd6ae without reference dumps.",
     "next_batch_preparation": {
-      "id": "beginning-damage-lesson-01",
-      "scope": "SourceSantiago9->10/log8 and20physicalHP loss; reuseexistingnormal health/condition owner, retainedcause/receipt lifecycle, death/mana-shield rules; no directSQLhealthwriter",
-      "source": "Crystal201189f santiago.lua:180-188; addHealth(-20,COMBAT_PHYSICALDAMAGE)",
-      "existing_mechanism": "crates/gameplay/spell/src/spell/actor_conditions/item_actions.rs:33 stage_item_health_loss; novelty_item_owner.rs retained successor/receipt/death preparation and spell-idle/lifecycle patterns; quest_dialogue.rs committed/unknown/replay handling",
-      "required": "First refreshrelevantqengine/otherlaneheads/reuse, addrealNPCPGREDthenimplementgenericcallbackeffect; proveonce/replay/lost-ack andsourceprogress withnormalHPowner. OtherBeginningworlddelivery/trade/door remainowned, notblocked.",
-      "test_draft": "/tmp/questpc3-next-damage-test.py",
-      "dependency_heads": {
-        "qengine2": "3b0c2d9e23c68f1e1bece0f39643ba836077dfe2",
-        "questpc2": "8536146524ad9cc4af542c76049334c4b8dabdeb",
-        "questpc4": "18f87a584f777b2fbfc6e9e108d72218161f9e9b",
-        "questpc5": "dcc8f5272c6f6dcd5dda7cf68975e5f5bbd4e928",
-        "questpc6": "53d5648b88e48bed2b9f27545334c21ea6f37028",
-        "questpc7": "e7a5aac32f9dc903f7cb884414c66d4504ebcd3c",
-        "questpc8": "1d0b9e8d79fa5710b5ee61f9ef91afbe74ea736c",
-        "questl2": "96d03398ff4fa6a4b4600bce114209738e072d5f"
-      },
-      "upstream_check": "Refreshedqengine2,PC2/PC4-8/L2: no declarativeNPC/world-callbackhealth/vital effect. Reuseexistingstage_item_health_loss andretainedconditionowner."
+      "batch": "first_dragon_life_20",
+      "entries": 3,
+      "phase": "focused PG RED building; source AIDs25002-25004, no questline prerequisite; no callbacks authored yet",
+      "engine_expansion": false
     },
     "next_bridge_research": {
       "retained_lua_search": "/tmp/questpc3-beginning-all-hook-hits.json: no registered CarlosLog8 bridge hook across selected3248unique gameplayScript/lib blobs; retainedC++41677/TheBeginning search alsoempty",
@@ -5447,8 +5503,8 @@
       ],
       "remaining_scope": "Four wholequestsIN_PROGRESS. Bridge/log8, coat replacement, fiveGROUNDwood/cart; otherquest remainingcomponents per status. No further work by this thread."
     },
-    "ownership": "L4 per QSPLIT-PLAN; world changes excluded by current owner; original R\u2013S entries assigned to other split lanes are scope evidence only",
-    "phase": "OWNER STOP; handoff to r2",
+    "ownership": "L4 per QSPLIT-PLAN; world changes excluded by current owner; original R–S entries assigned to other split lanes are scope evidence only",
+    "phase": "Batch19 six-entry mechanism qualified; next batch20 three life-site StepIn bindings has uncommitted RED test draft",
     "previous_batch": {
       "id": "carlos-report-paid-fur-merge",
       "phase": "Forward1110 guard namespace/ACL hardening applied after actualPG RED; GREEN/regressions and deterministic gates running",
@@ -9820,7 +9876,7 @@
       },
       "review": "Read strict combined admission union, all unchanged conflicting Item weights, retained source observation guards, disjoint NPC producer prefixes, both new physical PG contracts and generated input witnesses. All three PG cases, 4callbackunits,15profiles,9authoring,actual15case/776creatureprey,check/strictClippy3crates,123content,5repository andpinchecks pass; no blocking finding."
     },
-    "updated_at": "2026-11-07T21:04:31.150234+00:00",
+    "updated_at": "2026-11-07T21:15:16.629587+00:00",
     "standing_validation_rule": {
       "owner_override": "Latest HARD RULE: push compiling state after cargo check --workspace --all-targets and fmt; CI owns full suites; push at least every30minutes",
       "before_each_push": [
@@ -9929,7 +9985,7 @@
   },
   "historical_inventory": {
     "snapshot": "c5cdcd6ae:qlane-meta/questpc3/QUEST-STATUS.json",
-    "scope": "R\u2013S; migrations1040\u20131059; no new commands/capabilities",
+    "scope": "R–S; migrations1040–1059; no new commands/capabilities",
     "counts": {
       "inventory": 56,
       "qualified": 19,
@@ -10460,7 +10516,7 @@
         ]
       }
     ],
-    "note": "Other original R\u2013S mechanisms belong to other split lanes. Do not reopen finished entries."
+    "note": "Other original R–S mechanisms belong to other split lanes. Do not reopen finished entries."
   },
   "phase": "AUTHORING",
   "quests": [
@@ -10730,7 +10786,7 @@
       "scope_disposition": "Other world-change lanes per current owner; preserve inherited qualification."
     }
   ],
-  "scope": "L4 per LANE-L4.json and QSPLIT-PLAN.md; skip other lanes and world-change owners. All shared features required by the five owned quests are this lane\u2019s implementation responsibility.",
+  "scope": "L4 per LANE-L4.json and QSPLIT-PLAN.md; skip other lanes and world-change owners. All shared features required by the five owned quests are this lane’s implementation responsibility.",
   "task_id": "questpc3-L4",
   "migration_registry_alignment": {
     "range": "1220-1229",
@@ -10746,7 +10802,7 @@
       "1228_quest_carried_world_rewards.sql",
       "1229_quest_movement_world_rewards.sql"
     ],
-    "status": "QUALIFIED: lane1220\u20131229, canonical QENGINE2 shared files unchanged; new StepIn MINT and prior selected USE rewards PostgreSQL18.6 proven",
+    "status": "QUALIFIED: lane1220–1229, canonical QENGINE2 shared files unchanged; new StepIn MINT and prior selected USE rewards PostgreSQL18.6 proven",
     "red_point": "Registry and treasure slice complete; whole four-quest scope remains active.",
     "post_rename_postgresql": {
       "marker": "REWARD-CLAIM-MINT-PG server_version_num=180006; POSTGRES_CASE_COMPLETED questl2-peer-outputs",
