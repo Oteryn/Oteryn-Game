@@ -451,7 +451,7 @@
       "npc": "Ahmet",
       "town": "Ankrahmun",
       "audit_status": "DIFF",
-      "work": "Retail actor PG-qualified. Filled-container source applied and compiled; fresh actual PG RED139.14s proves missing offer before materialization. Canonical catalogue now materialized via repository tooling; migration1238, fresh PG GREEN, oil compatibility, five-crate strict checks and generator checks are running. No qualification claimed until those pass.",
+      "work": "Retail actor PG-qualified. Generic filled-container purchase production path actual PG RED139.14s -> GREEN300.85s; exact prices/subtypes, wrong-price and bulk refusal, one-container mint, durable replay and unproven fluid mutations covered. Oil-use compatibility PG GREEN197.15s. Migration1238/pins verified. Strict five-crate check/Clippy and repository regeneration completion remain actively running; keep PENDING until gates pass.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/16",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "PENDING",
@@ -7462,7 +7462,7 @@
     "local_full_checkpoint": "git stash entry npcfix owner STOP: preserve local fluid source and generated checkpoint"
   },
   "active_fluid_work": {
-    "state": "MATERIALIZED; PIN_AND_SEMANTIC_GATES_PASS; FRESH_PG_BUILD_RUNNING",
+    "state": "FRESH_POSTGRES_GREEN; OIL_COMPATIBILITY_GREEN; STRICT_CRATE_AND_REPOSITORY_GATES_RUNNING",
     "entries": [
       "Ahmet"
     ],
@@ -7528,7 +7528,19 @@
       "fluid_item_other_fields_preserved": true
     },
     "format": "cargo fmt --all -- --check PASS",
-    "compile_checkpoint": "Fresh migration-embedded source build PASS14m12s; Ahmet and compatibility PG still running, strict five-crate checks pending."
+    "compile_checkpoint": "Fresh migration-embedded source build PASS14m12s; Ahmet and compatibility PG still running, strict five-crate checks pending.",
+    "postgres_green": {
+      "marker": "POSTGRES_STARTED NPCFIX postage ahmet",
+      "seconds": 300.85,
+      "log": "/tmp/npcfix-evidence/fluid-registry-green.log",
+      "sha256": "18fbe92737eb14ad9abb53cfd89bf5a05d6e62c392d3b8aa7e3265580ba3a45a"
+    },
+    "oil_compatibility": {
+      "marker": "GAP-SV2/I10 PostgreSQL",
+      "seconds": 197.15,
+      "log": "/tmp/npcfix-evidence/fluid-registry-oil-pg.log",
+      "sha256": "8e839257696b397636782675603e4e107d0e0778fcbec9eae9961ad54f90bc83"
+    }
   },
   "migration_registry": {
     "lane": "npcfix",
