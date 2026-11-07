@@ -985,3 +985,17 @@ pin-check PASS169.669s. Generated artifacts came only from repository tools.
 Allocated Terrain records8614-8692, WorldBundle format8; no commands/capabilities.
 WIP full production Sugar/publication/native projection PostgreSQL rerun is next;
 this checkpoint compiles and does not claim full-row completion yet.
+
+## W02 production source chain PostgreSQL GREEN
+
+`srvenc_source_sugar_daddy_template_creates_instance_and_settles_personal_rewards_postgres`
+PASS151.794s: actual source B3 stands/entry, wire178, independently ready owned
+Instance factory, unchanged native Sugar profile, committed source corpse48416,
+primed Ground cache refresh/real projection, personal entitlements/replay and
+literal60second return/wire179 with reward retention. The shared publisher
+`srvenc_boss_publication_postgres_scopes_replay_conflict_and_current_reader`
+PASS177.012s proves multiple revisions/Worlds, equal replay, current fence/pin,
+immutable publication/metadata and conflict refusal. Corpse-generation projection
+unit PASS0.016s independently rejects foreign frame/scope and stale fields.
+Source comments/captures retain donor file:line evidence; no fixture profile,
+source probability, geometry, ownership or current-fence guard was relaxed.
