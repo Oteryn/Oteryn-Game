@@ -2318,7 +2318,7 @@
         "resolution": "Native policies and context-bound dialogue topics fixed; slice GREEN124571ms in745a9a273. Preserve the checkpoint as diagnosis history."
       },
       "threatened_maps_05": {
-        "status": "VALIDATING",
+        "status": "GREEN",
         "authoring_red": "2tests0.815s fail: four missing callbacks and five unadmitted tooth inputs; /tmp/questpc3-threatened-map-authoring-red.log",
         "postgres_red": {
           "log": "/tmp/questpc3-threatened-map-red-level-fixture-fixed.log",
@@ -2328,17 +2328,29 @@
         },
         "prior_slice": "Published c2e4b0940; inventory GREEN124571ms and recovery regression125.89s; preserve",
         "source_level": "Tooth Fairy mission requires30; gift and milk hand-in will carry generic bound minimum-level admission; collection has no level guard in retained Lua.",
-        "postgres_green": "First144080ms failed SQL23514 progression revision/receipt chain from hardcoded fixture level restoration; exact prior level restoration fixed, /tmp/questpc3-threatened-map-green-restored-level.log RUNNING",
+        "postgres_green": {
+          "log": "/tmp/questpc3-threatened-map-green-prior-level.log",
+          "duration_ms": 116806,
+          "marker": "THREATENED_MAP POSTGRES_ASSERTION_REACHED gifts=true milk=true collection=true map=true receipts=4",
+          "success": true,
+          "achievement_grants": 1,
+          "minimum_level_refusal": 29
+        },
         "authoring_green": "PASS6tests11.251s /tmp/questpc3-threatened-map-authoring-final.log",
-        "native_profiles": "PASS15tests164.370s /tmp/questpc3-threatened-map-native-tests.log; register_spell_families regeneration PASS after unrelated Grizzly shard-input refresh",
-        "grizzly": "PASS7tests8.022s: exact old blob, all selected definitions unchanged; preserve53admitted/3rejected; /tmp/questpc3-threatened-map-grizzly-tests.log",
+        "native_profiles": "PASS merged15tests123.455s and6authoring/admission tests8.824s; native registration41files;5newpolicies and0existingmodified/removed",
+        "grizzly": "Reuse incoming refresh_native_profile_shards.py: baseHEAD exact old witnesses, selected rows and JSONtypes unchanged, --checkPASS;6tests0.018s. No custom helper retained.",
         "placements": "PASS8tests0.390s;55NPC56records0held",
         "level_gate": "Current actor read and locked durable progression check; source-bound minimum30 for presents and milk map; optional None retains prior binding bytes",
-        "check": "PASS quests/durability/dispatch allfeatures/tests9m51s including lock wait",
-        "clippy": "PASS quests/durability/dispatch allfeatures/alltargets -Dwarnings2m28s",
-        "pins": "RUNNING /tmp/questpc3-threatened-map-pins.log",
+        "check": "PASS dispatch allfeatures/tests3m30s final exact fixture; /tmp/questpc3-threatened-map-final-check.log",
+        "clippy": "PASS dispatch allfeatures/alltargets -Dwarnings2m10s merged source; /tmp/questpc3-threatened-map-merged-clippy.log",
+        "pins": "PASS merged repo pin-refresh; world8ab70e56a4cb9ebccbc24cd7b4ee5fb6ee4e3f22dc1b65d3580938db15905682",
         "invalid_setup_attempts": "First cleanup compile typo; second59.89s used Monk harmony with a Druid fixture and failed initialize. Both corrected; neither counted as RED.",
-        "reward_unit": "PASS2reward callbacks tests2.84s; minimum level changes definition binding"
+        "reward_unit": "PASS2reward callbacks tests2.84s; minimum level changes definition binding",
+        "merge": "Remote0746ef43c tutorial source loot merged and pushed6bbb82ebe; optional level foundationadd7faf92 included. Preserve tutorial admissions and native corpse policies.",
+        "fmt": "PASS cargo fmt --all --check final",
+        "derived": "Repo loot refresh4entries, prey simulation15cases776creatures, regenerated4derivedfiles, native manifest15referencesverified; no full test suite",
+        "fixture": "Prior level50 staged only at CharacterRevision1 before quest receipts. During negative case durable29 refuses against actor50, then exact prior level restored. No quest reward or success is seeded.",
+        "scope": "Four source exchanges complete; whole Threatened Dreams remains IN_PROGRESS. Continue source hand-ins/light/barrier/final reward and optional tails; no global completion here."
       },
       "reward_minimum_level_foundation_05a": {
         "status": "PUBLISHED_FOUNDATION",
@@ -2347,7 +2359,10 @@
         "postgres_regression": "PASS real three-exchange inventory scenario /tmp/questpc3-minlevel-native-inventory-regression.log; preserves existing callbacks and atomic charges",
         "check": "PASS allfeatures/tests",
         "clippy": "PASS allfeatures/alltargets -Dwarnings",
-        "fmt": "PASS cargo fmt --all --check"
+        "fmt": "PASS cargo fmt --all --check",
+        "commit": "add7faf92",
+        "merged_pushed": "6bbb82ebe",
+        "postgres_duration_ms": 125358
       }
     },
     "source_corrections": [

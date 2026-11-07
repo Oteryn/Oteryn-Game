@@ -3,6 +3,8 @@
 //! requirements and demand actual physical hand-ins, rewards and receipts through dispatch.
 #[path = "threatened_dreams/inventory.rs"]
 mod inventory;
+#[path = "threatened_dreams/maps.rs"]
+mod maps;
 
 use super::classic_quests::{install, progress, talk};
 use super::fixture::Harness;

@@ -128,6 +128,18 @@
       "walkaway": "Safe travels."
     },
     {
+      "npc": "oteryn:npc.tired_tree",
+      "greet": "Welcome, |PLAYERNAME|. How can I help you?",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.tooth_fairy",
+      "greet": "Welcome, |PLAYERNAME|. How can I help you?",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    },
+    {
       "npc": "oteryn:npc.valindara",
       "greet": "Welcome, |PLAYERNAME|. How can I help you?",
       "farewell": "Safe travels, |PLAYERNAME|.",

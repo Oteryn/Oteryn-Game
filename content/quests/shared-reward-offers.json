@@ -419,6 +419,31 @@
       "reply": [
         "Use a dead tree, drag the branch along the ground to my cart, then use it with the cart."
       ]
+    },
+    {
+      "npc": "oteryn:npc.tooth_fairy",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "minimum_level": 30,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission04/tooth_fairy",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "You've got me, I really have a little problem here. What gave it away? My sorrowful expression? Yes, I thought so. This is what troubles me: I'm the tooth fairy. Well, this wouldn't be a problem at all under normal circumstances. ...",
+        "I love gathering children's milk teeth and bringing presents for them. Until now, I did so by using a spell. This spell teleported me into the children's bedrooms and - after carrying out my duty - back to my secret realm. ...",
+        "But then I made the mistake of using a magical portal and entering this part of the world. Everything is strange and different here and the worst thing: my spells don't work! It will take some time until I can use the portal again. ...",
+        "Thus I'm stuck here for a while. But there are some children who lost their first milk tooth and are now waiting for their presents. Without my spells, I'm feeling utterly helpless. ...",
+        "I don't dare going to their homes at night but I know they will be sad about the missing presents. Would you help me?"
+      ]
     }
   ]
 }

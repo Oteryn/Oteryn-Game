@@ -111,6 +111,48 @@ def apply_admissions(definitions):
     tutorial.apply_admissions(definitions)
 
 
+    # Only these missing portable teeth: retained observation hashes qualify
+    # stackability while canonical physical facts remain authoritative.
+    tooth_facts = {
+        10196: (100, True, 'bbbe5725f7933524d629ef908a5fc8351dc99ebe188c43db0864c688ad579f53'),
+        10275: (88, True, '8f121093abd38c5642bdca74357b71e6da9bb83f02fae108195365750cd14892'),
+        22052: (160, True, '87237a4b313c69127bc8351f060e5d25582fc89ce8985f8d1db32df67bd2329c'),
+        22649: (200, False, '3bb14ba4447e0cbc00897bd0f256c30be60638bed08579ec6eb98f0d37be81c1'),
+        5893: (500, True, 'eaaabb6611f391323ddd23141a18992e2d9abf0718e005ea28447de562500344'),
+    }
+    source = Path(__file__).resolve().parents[2] / 'imports/tibiawiki/facts/items-stats.json'
+    observations = json.loads(source.read_bytes())['records']
+    for ident, (weight, stackable, digest) in tooth_facts.items():
+        key = f'oteryn:item.tibia.i{ident}'
+        candidates = [row for row in definitions if row['identity']['key'] == key]
+        evidence = observations[key]
+        if len(candidates) != 1 or evidence['item_id'] != ident or len(evidence['observations']) != 1:
+            raise ValueError(f'Threatened tooth identity changed: {key}')
+        observation = evidence['observations'][0]
+        if (observation['content_sha256'] != digest
+                or observation['fields']['stackable'].lower() != ('yes' if stackable else 'no')
+                or observation['fields']['weight'] != f'{weight / 100:.2f}'):
+            raise ValueError(f'Threatened tooth source changed: {key}')
+        item = candidates[0]
+        target_class = 'StackCapable' if stackable else 'NonStackable'
+        expected_stack = known({'stackable': known(stackable),
+                                'stack_max': known(100) if stackable else {'state': 'NOT_APPLICABLE'}})
+        old_stack = item['semantics']['stack']
+        compatible_stack = old_stack == {'state': 'UNKNOWN'} or old_stack == expected_stack
+        if old_stack.get('state') == 'KNOWN':
+            compatible_stack |= old_stack == known({'stackable': known(stackable), 'stack_max': {'state': 'UNKNOWN'}})
+        if (item['identity'] != {'family': 'Item', 'key': key, 'revision': 'definition-r1'}
+                or item['semantics']['physical'] != known({'weight': known(weight),
+                    'movable': known(True), 'pickupable': known(True)})
+                or not compatible_stack
+                or (item['materializable'], item['stack_class']) not in
+                   ((False, 'Unknown'), (True, target_class))):
+            raise ValueError(f'Threatened tooth core facts changed: {key}')
+        item['semantics']['stack'] = expected_stack
+        item['materializable'] = True
+        item['stack_class'] = target_class
+
+
 def refresh_tree(root, check=False):
     """Apply strict admissions to existing canonical shards without rebuilding World."""
     index = json.loads((root / 'content/items/index.json').read_text())
