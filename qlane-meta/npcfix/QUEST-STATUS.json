@@ -3547,7 +3547,7 @@
   },
   "next_batch": "Push immediately, then continue existing placement-only rows in3-6-entry historical RED/current GREEN batches; retain all cumulative assertions.",
   "shared_engine_lookup": {
-    "owner_rule": "Shared engine features are this lane’s responsibility when required. Never leave an entry unfinished for missing engine support.",
+    "owner_rule": "Shared engine features are this lane\u2019s responsibility when required. Never leave an entry unfinished for missing engine support.",
     "qengine2": {
       "head": "9d3c3869f",
       "found": [
@@ -3729,5 +3729,18 @@
       "self_review": "Only Edgar-Ellen canonical declaration changed; no identities added/removed. All pre-existing reward item profiles exactly preserved;15 reviewed passive profiles added with canonical weights and other custody conflict guards retained. No compiler/collision bypass, binary, workflow, repository-tool edit, test deletion or weakened assertion.",
       "next": "Push immediately, then continue existing placement-only rows in3-6-entry historical RED/current GREEN batches; retain all cumulative assertions."
     }
+  },
+  "npcfix_active_workshop": {
+    "entries": [
+      "A Fading Memory",
+      "Altar",
+      "A Sweaty Cyclops"
+    ],
+    "local_source_commit": "d1ab73204",
+    "merging_with": "43c59ddb9",
+    "state": "MERGED_SOURCE_REVALIDATING_IN_MAIN_CHECKOUT",
+    "work": "Incoming cooldown source and malformed-clock PG are retained. Generic bank+item atomic payments, delayed craft clocks, fresh database-time literal wait replies, and strict real map actors already locally validated. Incoming1144 unchanged; workshop extension1145. Fading physical32952,31440,3 already implemented and PG-qualified in main checkout; avoid duplicate Fading physical/UI work. Other entries remain active. Latest43c59ddb9 literal UI delivery acknowledged and will be reused in main; avoid duplicate Fading UI/physical work.",
+    "local_proof": "PG6/183.57s plus funded missing parts96.27s and existing bank96.20s; quest261/fee43/NPC25; fmt/check/clippy and pins. Combined quest263 and native42 reproduction now pass; combined PG8/check/clippy running.",
+    "normal_profile": "This checkout retained normal unoptimized+debuginfo profiles and existing env.sh. Only stopped-build incremental caches were removed."
   }
 }
