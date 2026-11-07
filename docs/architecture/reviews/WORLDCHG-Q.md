@@ -128,4 +128,10 @@ git diff --check
 
 ## Review
 
-Whole-diff review covers current authority, row/physical lock order, bounded reads, receipts/rollback/replay, no source-value duplication, native geometry/provenance and map/spawn end paths. Independent exact-head review is recorded after final local validation. This report does not claim an independent verdict before that run.
+Local whole-diff review covered current authority, row/physical lock order, bounded reads, receipts/rollback/replay, no source-value duplication, native geometry/provenance and map/spawn end paths. The genuinely independent advisory review was attempted once on frozen code head `76424fff16b2a78f8c1b39082b4d6b6fd6253d56`, after all focused checks passed, using `codex exec --ephemeral --sandbox read-only --model gpt-6.1-sol -c 'model_reasoning_effort="high"'`. It failed before reviewer startup:
+
+```text
+Error: failed to initialize in-process app-server client: Read-only file system (os error 30)
+```
+
+Result: **not independently reviewed**; no independent findings or verdict are claimed. External AI assistance is advisory under bound META3.1 policy and is not a status or merge authority. This branch publication opens no PR and makes no production/merge-readiness claim. The subsequent documentation commit records this exact startup failure without changing the tested code.
