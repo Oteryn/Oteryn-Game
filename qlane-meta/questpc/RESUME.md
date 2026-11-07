@@ -1,3 +1,24 @@
+## Owner migration registry GREEN — 2026-11-07
+Applied exactQENGINE0999-1006; QBASErenames1200-1205; lane1290-1296.
+All21file names/SHA256/SQLxSHA384 in cloud-migration-registry-validation.json;
+readablelist MIGRATION-REGISTRY.md. Qengine shared8 exact at69609ef78 and
+latest1b6001748. Qbase6 canonical unchanged. LocalFatherXPambiguityfix moved
+1296; atomic11-track write preserved. Own1294 restores only the zero-effect
+source-reward arm afterQBASE1202; exactFather11 allowance retained. Own1295
+delegates non-monetary behavior to shared1004 helper rather than copying it.
+ActualPostgreSQL18.6 GREEN6: paid bank112.30354905s,coins112.329491051s,
+full112.357608831s; Father89.140870329s,Marlin86.550823373s,stock49.89713987s.
+All17requiredschemaIDs asserted; runtime-role orphan23514 and unchanged shared
+barter helper proven. InitialactualPG3order failure retained honestly.
+Repository duplicate check/embedded sqlx identity/fmt/check/strictClippy/pins PASS.
+PR3020 remainsOPEN: continue consuming shared as-is. After it merges, merge
+origin/main and remove any obsolete copies/variants, keeping lane extensions129x.
+No writes to oldquestpc branch. Before EVERYpush fetch exacttarget and merge
+FETCH_HEAD; no force/rebase/main pushes/PR creation.
+NEXT resume framed stock opening/withdrawal and finalDraconia route composition;
+then remaining owned titles. Current60QUALIFIED/117UNFINISHED plus1excluded;
+40unfinished areSKIP under fresh other-lane86QUALIFIED titles.
+
 ## Migration registry custody / actual PG RED checkpoint — 2026-11-07
 Runtime rename implementation remains local pending finalPG/strict. Canonical
 map MIGRATION-REGISTRY.md; exactQENGINE8/QBASE6 hashes, staged duplicate check,

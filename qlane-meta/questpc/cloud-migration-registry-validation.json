@@ -1,0 +1,321 @@
+{
+  "scope": "owner migration number registry questpc-pc2",
+  "result": "PASS",
+  "pr3020": "OPEN; no main merge required yet",
+  "qengine_ref": "1b60017488357d7cc52842924f02cd3117e829e1",
+  "files": [
+    {
+      "file": "apps/game-server/migrations/0999_quest_reward_callbacks.sql",
+      "version": 999,
+      "sha256": "971451326e9473f01ab8587c18040f69d39740b6af944f62ac6b3df04ae9f294",
+      "sqlx_sha384": "edec9249a80e08baa87bed7a93e709d0038c4798216e38b8a607288562e1f98a7a8145673ba19a7aa5bd9de82e2ad7c3"
+    },
+    {
+      "file": "apps/game-server/migrations/1000_quest_reward_payments.sql",
+      "version": 1000,
+      "sha256": "a041c1f4ad97c8642a81d0a06d2e834b10ae54a55bed7d93b98ec1141dbd9311",
+      "sqlx_sha384": "f031f9b383f94ccb2b468bd90d0205a0d61866d3267a591706758b74a440c230bc0287d806f2f7ed5c46691ea4dda5b4"
+    },
+    {
+      "file": "apps/game-server/migrations/1001_quest_reward_participants.sql",
+      "version": 1001,
+      "sha256": "de9d7f8d779b1b5d24105139c2b781afd09ad0067aa15ef904ef3267bd4c38e5",
+      "sqlx_sha384": "fed1507bb51d99e87955b2b1b833ee6fe9428f8cb6b4bf95a98b73666b0d0f573ecef9919304ae95b87d845699489121"
+    },
+    {
+      "file": "apps/game-server/migrations/1002_quest_reward_state_operations.sql",
+      "version": 1002,
+      "sha256": "7ccf2726dbe7637c646573a004a265b0e1c484aa5330dee42894b96fb2a27ba8",
+      "sqlx_sha384": "7a43792de62e005fa20c232b20a6763cec10ce7c6d8f18df2a9ecad6e5351562c7dc4256e7892752c059ea229c7348f3"
+    },
+    {
+      "file": "apps/game-server/migrations/1003_quest_reward_target_sets.sql",
+      "version": 1003,
+      "sha256": "56c9fd32ab49a247e41b66c2e0a4b4df6613e6366f6667bd00edf28d190704bf",
+      "sqlx_sha384": "0014f9930da18a4d08651ce0682414994923573b226f36bf0d8675089042f06dea54d8e707766defcc0f9ac17e954378"
+    },
+    {
+      "file": "apps/game-server/migrations/1004_quest_paid_item_exchanges.sql",
+      "version": 1004,
+      "sha256": "4a5da4833971b005a99adee986114a609744ad03e4441d06c724754e8a911800",
+      "sqlx_sha384": "99f60940ebd9b834095140677bd1f1ca536e4944a9c3f0bafe4d6b8826c941144afcda238936a29a3dea22a6ed08bc76"
+    },
+    {
+      "file": "apps/game-server/migrations/1005_quest_carried_use_proofs.sql",
+      "version": 1005,
+      "sha256": "77fe7b21e135c99a69b6e7ab26d14ff62c0f73dd01b1986bfba45912713fb023",
+      "sqlx_sha384": "306416cd8f89881aa431e60d461c9a47f73a7864e0ec79c8c4e7bd810d72d50b77dd1c67de8948317ef6ca2009f8aee6"
+    },
+    {
+      "file": "apps/game-server/migrations/1006_quest_owned_base_predicates.sql",
+      "version": 1006,
+      "sha256": "2490e09e46f2f4bebb50cdebc2ae17183646f3e111f9cdafc9208bd6da6b21b2",
+      "sqlx_sha384": "0f1c28185ddd53c936ca9df8d30a62c4a8522acc0e19adef806bf499ef84377e88bac54853b43f3c2ff992902c22d407"
+    },
+    {
+      "file": "apps/game-server/migrations/1200_quest_finish.sql",
+      "version": 1200,
+      "sha256": "19cbc47c9b675b8527658d001d94fb66e3c494b4f4519de4d6b69a37cf15ada4",
+      "sqlx_sha384": "db94049089a2e7ce47fc46dfa7c5187d3e7cbe8f43eef69ff65a1fb34b2cfaaf44b5e24f2b997653e960667d32ca0ad6"
+    },
+    {
+      "file": "apps/game-server/migrations/1201_corruptor_lifecycle.sql",
+      "version": 1201,
+      "sha256": "01bea81b0c68c863301828f9e190bbf7235426c0ea2d1da55f47ebc3eb285907",
+      "sqlx_sha384": "c1bd0765ec3630e56e63860070ad45f0c3120f1d85cf1794fb00c11d8b22b8cdaec4d8456bd5ee1a4cb15d1502eb6541"
+    },
+    {
+      "file": "apps/game-server/migrations/1202_questpc_npc_revision.sql",
+      "version": 1202,
+      "sha256": "557e97c2d6530e7cb9104d2cdaffbc3fd2b17a68446fd1575419117f5429be41",
+      "sqlx_sha384": "790dad728cb4ed980823ad6ed1d10a1e8f72494519bcf58569c58589b947726798d44fdd3c675c441babc86a275ce174"
+    },
+    {
+      "file": "apps/game-server/migrations/1203_questpc_viola.sql",
+      "version": 1203,
+      "sha256": "2fcccdb63dc6bc5da0b285392b090204caa1d670d51243cad3c67b39f4563b28",
+      "sqlx_sha384": "7162e38faf7cd91422d00fda8521a99bcb83b9bef53e3cc8ec8ba1360ff0e5fd30c49fc35d8dfd32acbc1d005e34cfe1"
+    },
+    {
+      "file": "apps/game-server/migrations/1204_questpc_viola_book.sql",
+      "version": 1204,
+      "sha256": "53b825590b3894684d38333b98e7b8e419c8a9d749e9e325d45a2c1575a43ab1",
+      "sqlx_sha384": "46686dbd093028f689c036083fe71ff6e5689cfab6c7b311f06e01beda01e6c5aeb3af8667eadc662e942f05e6f4aa10"
+    },
+    {
+      "file": "apps/game-server/migrations/1205_fathers_burden_items.sql",
+      "version": 1205,
+      "sha256": "8c5da07a907b1325c5fe10d0263ecb26d62e198f968fd1a1f5d8b9faad84ed0d",
+      "sqlx_sha384": "ee716785355878f4b0b1db56cec6543409b7e58e3d38491357eba2e4e92b391bf656ba4308dff1081ea572fd72f1833c"
+    },
+    {
+      "file": "apps/game-server/migrations/1290_marlin_trophy_exchange.sql",
+      "version": 1290,
+      "sha256": "5a94f1a4e48d3027f0d014ce44fe34ad82bbddc31b444fe17506f655d99c3183",
+      "sqlx_sha384": "302ed4125b235bcaa4f89fb972825404224c4e8fd9dca5f1a00f3e703a9d10ee67bace6760df8f60390124a899196bf5"
+    },
+    {
+      "file": "apps/game-server/migrations/1291_raid_token_exchange.sql",
+      "version": 1291,
+      "sha256": "28395f34634210f9c0e113b5871e687e0d41c5b8926c260cdbda5c8388af1e09",
+      "sqlx_sha384": "3cc00304d7216779dd303474e8e2ef5190ed9fdbec9aae58fd48d84be55edd6554070894939c810bca4400e361f44dee"
+    },
+    {
+      "file": "apps/game-server/migrations/1292_map_key_binding.sql",
+      "version": 1292,
+      "sha256": "2dfdaf4232252ec7943b6d6c9f03b4670107cab99d804839f6974b81df8db7e4",
+      "sqlx_sha384": "8e98d95402f2c1dcd697d9061f46f2d3058851782db04b0a0faf18f44312f61d138327ad9a81dcb6e967834d1b190dd5"
+    },
+    {
+      "file": "apps/game-server/migrations/1293_quest_npc_item_sources.sql",
+      "version": 1293,
+      "sha256": "6f6e070cf0e60d99fd38719b06381d68cb20ae09e6b12b7c20c42a28638d588c",
+      "sqlx_sha384": "7f98c0d96f1191cc7dbe2f6c976b756a084e17c371ec1460cd0b803f399415edb4e0229e2801562046b825b27ab13477"
+    },
+    {
+      "file": "apps/game-server/migrations/1294_quest_stateless_paid_receipts.sql",
+      "version": 1294,
+      "sha256": "65dc05abcbc3dc297893660ab4b418d0249919097a85450de50791cf70de92dd",
+      "sqlx_sha384": "75bb07dd1f835afcc7c8a4d672264a1bd4f9f778c1f30204e8955b047bf87793a1131f392d0b6ecde2809f928154b705"
+    },
+    {
+      "file": "apps/game-server/migrations/1295_quest_paid_sale_mint_occurrences.sql",
+      "version": 1295,
+      "sha256": "bd76f790932fcda6d368ce995992e21355ba1c08bbdea414efe5d7c35cf861d3",
+      "sqlx_sha384": "32d47f26d6b309e3a8188f08bd0bd56f92a41a22ebeb3cf07409587d4f5ce94b472796d8991c579ca07e9af56aec328f"
+    },
+    {
+      "file": "apps/game-server/migrations/1296_fathers_burden_xp_binding.sql",
+      "version": 1296,
+      "sha256": "a7cb25f4ef30113e30de64f0590fc90e85480603182d8d500597c2aa4379046e",
+      "sqlx_sha384": "2862096dd416f2930f8b03d440f2465c2ca5bcd9bf802afa658466287e31e9549837bf86ec77495c22987f0f53b90173"
+    }
+  ],
+  "shared_content": {
+    "apps/game-server/migrations/1200_quest_finish.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-questpc6",
+      "sha256": "19cbc47c9b675b8527658d001d94fb66e3c494b4f4519de4d6b69a37cf15ada4",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/1201_corruptor_lifecycle.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-questpc6",
+      "sha256": "01bea81b0c68c863301828f9e190bbf7235426c0ea2d1da55f47ebc3eb285907",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/1202_questpc_npc_revision.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-questpc6",
+      "sha256": "557e97c2d6530e7cb9104d2cdaffbc3fd2b17a68446fd1575419117f5429be41",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/1203_questpc_viola.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-questpc6",
+      "sha256": "2fcccdb63dc6bc5da0b285392b090204caa1d670d51243cad3c67b39f4563b28",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/1204_questpc_viola_book.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-questpc6",
+      "sha256": "53b825590b3894684d38333b98e7b8e419c8a9d749e9e325d45a2c1575a43ab1",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/1205_fathers_burden_items.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-questpc6",
+      "sha256": "8c5da07a907b1325c5fe10d0263ecb26d62e198f968fd1a1f5d8b9faad84ed0d",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/0999_quest_reward_callbacks.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+      "sha256": "971451326e9473f01ab8587c18040f69d39740b6af944f62ac6b3df04ae9f294",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/1000_quest_reward_payments.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+      "sha256": "a041c1f4ad97c8642a81d0a06d2e834b10ae54a55bed7d93b98ec1141dbd9311",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/1001_quest_reward_participants.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+      "sha256": "de9d7f8d779b1b5d24105139c2b781afd09ad0067aa15ef904ef3267bd4c38e5",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/1002_quest_reward_state_operations.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+      "sha256": "7ccf2726dbe7637c646573a004a265b0e1c484aa5330dee42894b96fb2a27ba8",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/1003_quest_reward_target_sets.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+      "sha256": "56c9fd32ab49a247e41b66c2e0a4b4df6613e6366f6667bd00edf28d190704bf",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/1004_quest_paid_item_exchanges.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+      "sha256": "4a5da4833971b005a99adee986114a609744ad03e4441d06c724754e8a911800",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/1005_quest_carried_use_proofs.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+      "sha256": "77fe7b21e135c99a69b6e7ab26d14ff62c0f73dd01b1986bfba45912713fb023",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/1006_quest_owned_base_predicates.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+      "sha256": "2490e09e46f2f4bebb50cdebc2ae17183646f3e111f9cdafc9208bd6da6b21b2",
+      "content_unchanged": true
+    }
+  },
+  "pg": [
+    {
+      "case": "draconia-elathriel-bank",
+      "postgres": "18.6",
+      "duration_seconds": 112.30354905,
+      "result": "GREEN"
+    },
+    {
+      "case": "draconia-elathriel-coins",
+      "postgres": "18.6",
+      "duration_seconds": 112.329491051,
+      "result": "GREEN"
+    },
+    {
+      "case": "draconia-elathriel-full",
+      "postgres": "18.6",
+      "duration_seconds": 112.357608831,
+      "result": "GREEN"
+    },
+    {
+      "case": "draconia_container_stock_shared",
+      "postgres": "18.6",
+      "duration_seconds": 49.89713987,
+      "result": "GREEN"
+    },
+    {
+      "case": "marlin_trophy_carried_fish_exchange_is_atomic_once_and_replays",
+      "postgres": "18.6",
+      "duration_seconds": 86.550823373,
+      "result": "GREEN"
+    },
+    {
+      "case": "fathers_burden_eight_handins_cape_experience_and_replay",
+      "postgres": "18.6",
+      "duration_seconds": 89.140870329,
+      "result": "GREEN"
+    }
+  ],
+  "logs": {
+    "paid_pg": {
+      "path": "cloud-migration-registry-paid_pg.log",
+      "raw_sha256": "200f4a580b4a27cba4975faddebe4334728d12ffef1ab3f8a8ea86e6da845b65",
+      "sha256": "8e14a30a8c87e04e43c9e8486d7144df3e4706923bf765c6f5ed620fec9c100c",
+      "normalization": "EOF only"
+    },
+    "regressions_pg": {
+      "path": "cloud-migration-registry-regressions_pg.log",
+      "raw_sha256": "df9f8951ca7ef4e04762db36751f85f60fb3358e230793dbcdb0ff1fc7522935",
+      "sha256": "4a1d1bd92a0c436dce1d8a7c1b06c41a90d796f2cc0bc0cca951a76111720f46",
+      "normalization": "EOF only"
+    },
+    "identity": {
+      "path": "cloud-migration-registry-identity.log",
+      "raw_sha256": "04f3bc65fedb868580f42517b563fb050a47de3c28ff6892dd3f3730344ab484",
+      "sha256": "7f9fa3127c6d4ea613970c042e1ae78c8658532d386fe7db5d848658262b422b",
+      "normalization": "EOF only"
+    },
+    "duplicates": {
+      "path": "cloud-migration-registry-duplicates.log",
+      "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "normalization": "EOF only"
+    },
+    "fmt": {
+      "path": "cloud-migration-registry-fmt.log",
+      "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "normalization": "EOF only"
+    },
+    "generation": {
+      "path": "cloud-migration-registry-generation.log",
+      "raw_sha256": "374beaff4948e4afc639699fc833d70dd183aa887562951152c05b4fb89b8750",
+      "sha256": "374beaff4948e4afc639699fc833d70dd183aa887562951152c05b4fb89b8750",
+      "normalization": "EOF only"
+    },
+    "pins": {
+      "path": "cloud-migration-registry-pins.log",
+      "raw_sha256": "74bbfa74e1d45b0ef0cf9721cf6b83879b3726546089cb629f3ff906164543ed",
+      "sha256": "74bbfa74e1d45b0ef0cf9721cf6b83879b3726546089cb629f3ff906164543ed",
+      "normalization": "EOF only"
+    },
+    "clippy": {
+      "path": "cloud-migration-registry-clippy.log",
+      "raw_sha256": "384634c7a9060954b1971641a4446b8706573e471b7a24f2c7a522458a95b884",
+      "sha256": "384634c7a9060954b1971641a4446b8706573e471b7a24f2c7a522458a95b884",
+      "normalization": "EOF only"
+    },
+    "check": {
+      "path": "cloud-migration-registry-check.log",
+      "raw_sha256": "3861e9a375c052f4b501c38fa327c11af7cc1de80cae9ee12341a9f73c3a7610",
+      "sha256": "3861e9a375c052f4b501c38fa327c11af7cc1de80cae9ee12341a9f73c3a7610",
+      "normalization": "EOF only"
+    }
+  },
+  "checks": {
+    "duplicates": "PASS repository staged-tree script and worktree versions",
+    "embedded_sqlx_identity": "PASS all final version IDs; checksums regenerated by sqlx macro during actual PG rebuild",
+    "shared_content": "QENGINE8 and QBASE6 byte-identical to owners",
+    "pins": "PASS unchanged174f5942b036a38769872612f292957daa670bfb2a3a96f3b6a2aec395d32a62",
+    "fmt": "PASS",
+    "clippy": "PASS both crates all targets/features -D warnings4m15s including lock wait",
+    "check": "PASS both crates1m16s"
+  },
+  "review": {
+    "findings": [],
+    "preserved": [
+      "all11 Father tracks and one atomic write",
+      "shared files unchanged; local XP ambiguity fix isolated1296",
+      "existing receipt shape retained; only source-reward arm restored afterQBASE1202",
+      "deferred exact source/fee/MINT proof and runtime-role orphan23514",
+      "shared barter helper retained and verified equal under runtime role",
+      "no duplicate/reused shared versions; live Rust schema/file references updated"
+    ]
+  },
+  "initial_red": "cloud-migration-registry-progress.json"
+}

@@ -283,9 +283,17 @@ async fn unpaired_stateless_receipt_is_rejected(h: &Harness) -> TestResult {
     sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
         .execute(&mut *tx)
         .await?;
+    let shared_barter_preserved: bool = sqlx::query_scalar("SELECT game_quest_reward_mint_claim_key(encode($1,'hex')::uuid,encode($2,'hex')::uuid,17,'oteryn:quest-reward/shared-barter',$3::jsonb)=game_quest_reward_mint_claim_key_qengine_base(encode($1,'hex')::uuid,encode($2,'hex')::uuid,17,'oteryn:quest-reward/shared-barter',$3::jsonb)")
+        .bind(super::fixture::id(41).as_slice()).bind(super::fixture::id(50).as_slice())
+        .bind(serde_json::json!({"storage":[],"take":[{"item":"oteryn:item.tibia.i3723","count":1}],"give":{"item":"oteryn:item.tibia.i3206","count":1}}))
+        .fetch_one(&mut *tx).await?;
+    assert!(
+        shared_barter_preserved,
+        "monetary extension must preserve shared barter claims"
+    );
     sqlx::query("INSERT INTO game_character_quest_receipts(character_id,cause_kind,cause_id,cause_ordinal,transition_key,quest_key,request_binding,pinned_content_revision,definition_hash,completes,track_keys,values_before,values_after,original_character_revision,committed_character_revision,level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,committed_at) SELECT character_id,'command',game_character_uuid_v7(),999999,'oteryn:quest-reward/forged-stateless','oteryn:quest.draconia_quest',decode('00','hex'),'test-1',decode(repeat('00',32),'hex'),false,ARRAY[]::text[],ARRAY[]::bigint[],ARRAY[]::bigint[],1000000,1000001,1,1,0,0,'test-1','test-1','test-1','test-1','test-1','test-1','test-1','test-1',1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
         .bind(super::fixture::id(41).as_slice()).execute(&mut *tx).await?;
-    let error = sqlx::query("SET CONSTRAINTS game_quest_stateless_paid_complete IMMEDIATE")
+    let error = sqlx::query("SET CONSTRAINTS game_quest_reward_value_only_complete, game_quest_stateless_paid_complete IMMEDIATE")
         .execute(&mut *tx)
         .await
         .err()
@@ -296,7 +304,7 @@ async fn unpaired_stateless_receipt_is_rejected(h: &Harness) -> TestResult {
     assert_eq!(database.code().as_deref(), Some("23514"));
     assert_eq!(
         database.message(),
-        "stateless paid quest lacks exact same-transaction source, fee and MINT"
+        "value-only quest lacks exact same-transaction source"
     );
     tx.rollback().await?;
     eprintln!("POSTGRES_STATELESS_ORPHAN_REFUSED sqlstate=23514 runtime_role=true");
@@ -310,7 +318,7 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     let installed: bool = sqlx::query_scalar(
-        "SELECT count(*)=2 FROM _sqlx_migrations WHERE version IN (1097,1098) AND success",
+        "SELECT count(*)=17 FROM _sqlx_migrations WHERE version IN (999,1000,1001,1002,1003,1004,1005,1006,1200,1201,1202,1203,1204,1205,1294,1295,1296) AND success",
     )
     .fetch_one(&h.pool)
     .await?;
@@ -318,7 +326,9 @@ pub(super) async fn exercise(
         installed,
         "the actual PG schema must include the stateless paid receipt proof"
     );
-    eprintln!("POSTGRES_STATELESS_PAID_SCHEMA migration1097=true migration1098=true");
+    eprintln!(
+        "POSTGRES_MIGRATION_REGISTRY qengine8=true qbase6=true lane_paid3=true migration1294=true migration1295=true migration1296=true"
+    );
     unpaired_stateless_receipt_is_rejected(h).await?;
     let [npc] = super::classic_quests::install(owner, admitted, ["oteryn:npc.elathriel"]).await?;
     let mut selected = admitted

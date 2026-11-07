@@ -16,7 +16,7 @@ END $migration$;
 
 CREATE FUNCTION game_father_values_proven() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE q game_character_quest_receipts%ROWTYPE; craft game_item_craft_records%ROWTYPE;
-        cape game_reward_claim_mint_receipts%ROWTYPE; material TEXT; expected_track TEXT; expected_rule TEXT; required_xp BIGINT;
+        cape game_reward_claim_mint_receipts%ROWTYPE; material TEXT; expected_track TEXT; expected_rule TEXT; amount BIGINT;
 BEGIN
  IF TG_TABLE_NAME='game_character_quest_receipts' THEN q:=NEW;
  ELSIF TG_TABLE_NAME='game_item_craft_records' THEN
@@ -41,7 +41,7 @@ BEGIN
     AND track_key='oteryn:quest-progress/quest/u8_6/afathers_burden/progress' AND value=8)
   THEN RAISE EXCEPTION 'Father completion requires eight hand-ins and one cape' USING ERRCODE='23514'; END IF;
   IF NOT EXISTS(SELECT 1 FROM game_item_instances WHERE item_instance_id=cape.item_instance_id AND definition_family='Item' AND definition_production_key='oteryn:item.tibia.i11701' AND quantity=1 AND lifecycle=1 AND minted_transaction_id=cape.transaction_id) THEN RAISE EXCEPTION 'Father requires the exact fresh cape' USING ERRCODE='23514'; END IF;
-  required_xp:=8000;
+  amount:=8000;
  ELSE
   SELECT * INTO craft FROM game_item_craft_records WHERE character_id=q.character_id AND game_session_id=q.cause_id
    AND command_id=q.cause_ordinal AND recipe='oteryn:npc-handoff.father-material';
@@ -64,11 +64,11 @@ BEGIN
     IS DISTINCT FROM q.values_before[array_position(q.track_keys,'oteryn:quest-progress/quest/u8_6/afathers_burden/progress')]+1
   THEN RAISE EXCEPTION 'Father hand-in requires its exact material and progress' USING ERRCODE='23514'; END IF;
   PERFORM game_item_craft_complete(craft.transaction_id);
-  required_xp:=2500;
+  amount:=2500;
  END IF;
  IF NOT EXISTS(SELECT 1 FROM game_character_quest_xp_obligations x WHERE x.character_id=q.character_id
   AND x.cause_id=q.cause_id AND x.cause_ordinal=q.cause_ordinal AND x.transition_key=q.transition_key
-  AND x.amount=required_xp AND x.xmin=pg_current_xact_id()::xid)
+  AND x.amount=amount AND x.xmin=pg_current_xact_id()::xid)
  THEN RAISE EXCEPTION 'Father values require their atomic quest XP obligation' USING ERRCODE='23514'; END IF;
  RETURN NULL;
 END $$;

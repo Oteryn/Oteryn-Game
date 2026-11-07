@@ -1,5 +1,7 @@
--- Reuse QENGINE 1004's claim identity without bypassing once-only MINT claims.
--- The exact paid CommandRef becomes the opportunity; replay retains the same ID.
+-- Extend the shared occurrence helper only for repeatable monetary sales.
+-- The original shared barter/one-shot helper and all its proofs stay unchanged.
+ALTER FUNCTION game_quest_reward_mint_claim_key(UUID,UUID,NUMERIC,TEXT,JSONB)
+    RENAME TO game_quest_reward_mint_claim_key_qengine_base;
 CREATE FUNCTION game_quest_reward_mint_claim_key(v_character UUID,v_cause UUID,v_ordinal NUMERIC,
     v_transition TEXT,v_plan JSONB) RETURNS TEXT LANGUAGE SQL IMMUTABLE AS $function$
     SELECT CASE WHEN v_plan->'repeatable'='true'::jsonb
@@ -10,16 +12,10 @@ CREATE FUNCTION game_quest_reward_mint_claim_key(v_character UUID,v_cause UUID,v
         convert_to('oteryn:quest-exchange:v1','UTF8')||decode('00','hex')
         ||uuid_send(v_character)||uuid_send(v_cause)
         ||convert_to(v_ordinal::text||':'||v_transition,'UTF8')),'hex')
-    ELSE v_transition END
+    ELSE game_quest_reward_mint_claim_key_qengine_base(v_character,v_cause,v_ordinal,v_transition,v_plan) END
 $function$;
 DO $migration$
-DECLARE body TEXT; old TEXT:='m.claim_production_key=NEW.transition_key';
 BEGIN
-    SELECT pg_get_functiondef('game_quest_reward_complete()'::regprocedure) INTO STRICT body;
-    IF (length(body)-length(replace(body,old,'')))/length(old)<>1 THEN
-        RAISE EXCEPTION 'quest MINT completion proof shape changed'; END IF;
-    EXECUTE replace(body,old,
-        'm.claim_production_key=game_quest_reward_mint_claim_key(NEW.character_id,NEW.cause_id,NEW.cause_ordinal,NEW.transition_key,NEW.plan)');
     EXECUTE format('ALTER FUNCTION game_quest_reward_mint_claim_key(UUID,UUID,NUMERIC,TEXT,JSONB) SET search_path=pg_catalog,%I,pg_temp',current_schema());
 END $migration$;
 REVOKE ALL ON FUNCTION game_quest_reward_mint_claim_key(UUID,UUID,NUMERIC,TEXT,JSONB) FROM PUBLIC;

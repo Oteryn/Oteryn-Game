@@ -10376,11 +10376,22 @@
     }
   },
   "migration_registry_progress": {
-    "state": "namespace/census PASS; actualPG3 RED order conflict repaired locally, finalPG/strict running",
+    "state": "PASS: registry applied; six actualPG cases and strict checks GREEN",
     "range": "1290-1299",
-    "shared_qengine": "0999-1006 exact69609ef78",
-    "qbase": "1200-1205 exact canonical; own variable repair1296",
-    "evidence": "cloud-migration-registry-progress.json",
-    "runtime_published": false
+    "used_lane_versions": [
+      1290,
+      1291,
+      1292,
+      1293,
+      1294,
+      1295,
+      1296
+    ],
+    "qengine": "0999-1006 exact shared content verified1b6001748",
+    "qbase": "1200-1205 exact canonical; own XP variable repair1296",
+    "evidence": "cloud-migration-registry-validation.json",
+    "file_list": "MIGRATION-REGISTRY.md",
+    "pr3020": "OPEN at final validation; consume shared files as-is until main merge",
+    "runtime_published": true
   }
 }

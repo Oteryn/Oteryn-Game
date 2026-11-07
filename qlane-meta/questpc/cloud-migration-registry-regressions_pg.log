@@ -1,0 +1,14 @@
+
+running 3 tests
+POSTGRES_CASE_STARTED draconia-container-stock-shared server_version=18.6 (Debian 18.6-1.pgdg13+2) native_trigger=Position { x: 32794, y: 31572, floor: -7 }
+POSTGRES_CONTAINER_STOCK_OWNER actual_postgresql=true
+POSTGRES_CASE_COMPLETED draconia_container_stock_shared duration=49.89713987s
+test gameplay_transport::monk_save::postgres_tests::draconia_container_stock::draconia_container_stock_shared_withdrawal ... ok
+test gameplay_transport::monk_save::postgres_tests::fathers_burden::fathers_burden_eight_handins_cape_experience_and_replay has been running for over 60 seconds
+test gameplay_transport::monk_save::postgres_tests::marlin_trophy::marlin_trophy_carried_fish_exchange_is_atomic_once_and_replays has been running for over 60 seconds
+POSTGRES_CASE_COMPLETED marlin_trophy_carried_fish_exchange_is_atomic_once_and_replays duration=86.550823373s
+test gameplay_transport::monk_save::postgres_tests::marlin_trophy::marlin_trophy_carried_fish_exchange_is_atomic_once_and_replays ... ok
+POSTGRES_CASE_COMPLETED fathers_burden_eight_handins_cape_experience_and_replay duration=89.140870329s
+test gameplay_transport::monk_save::postgres_tests::fathers_burden::fathers_burden_eight_handins_cape_experience_and_replay ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 2609 filtered out; finished in 89.14s

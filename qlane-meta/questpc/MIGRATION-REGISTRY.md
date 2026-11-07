@@ -1,13 +1,13 @@
-# questpc-pc2 migration registry authoring map
+# questpc-pc2 migration registry
 
 Owner reservation: questpc-pc2 uses1290–1299; QBASE1200–1209;
 QENGINE2 owns0999–1006. PR3020 was OPEN when this mapping was applied.
 Shared engine files are byte-identical to
-`origin/claude/happy-davinci-ijz3wy-qengine2` at69609ef78.
+`origin/claude/happy-davinci-ijz3wy-qengine2` at69609ef78 (reverified unchanged at1b6001748).
 The six QBASE files match the retained canonical questpc6 source at53d5648b8.
 No copy or variant occupies a second filename for any shared engine migration.
 
-| Target migration file (runtime renames validating) | Owner |
+| Active migration file | Owner |
 | --- | --- |
 | `0999_quest_reward_callbacks.sql` | QENGINE2: exact shared content |
 | `1000_quest_reward_payments.sql` | QENGINE2: exact shared content |
@@ -41,8 +41,7 @@ Live Rust filename references and schema-ID assertions use this registry.
 Historical raw PG logs retain their original version numbers and checksums;
 they describe the tested historical commits, not the current migration list.
 
-Runtime renames are still local until focused PG is GREEN.
-
-Validation: staged-tree duplicate check and embedded sqlx migration identity
-PASS; shared-content hashes checked. Focused PG and strict checks are running.
+Validation: staged-tree duplicate check, embedded sqlx migration identity,
+shared hashes, six actual PostgreSQL18.6 cases, fmt, both-crate cargo check and
+strict all-target/all-feature Clippy PASS. Full proof cloud-migration-registry-validation.json.
 No checksums or world pins are edited by hand.
