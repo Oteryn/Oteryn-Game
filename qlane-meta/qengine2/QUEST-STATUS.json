@@ -2401,5 +2401,16 @@
     "postgres_red": "/tmp/qengine2-batch9b-red.log:43.641406526s/44.064888606s",
     "postgres_green": "/tmp/qengine2-batch9b-green1.log:2 passed83.07s; Crystal83.055503896s/Soil83.067978133s",
     "verification": "6Rust bag units;24Python9.564s;1bag-catalogue test0.004s;check4crates1m15s;clippy58.91s;fmt/3reproducers/pin-refresh24ab pass. Source acquisition uses existing bag owner, exact25ranges/quantities; no probability/UID/command-admission bypass. Targeted server content/world followons running session87022."
+  },
+  "batch_l1_09_followon": {
+    "commit": "93ee8fe84",
+    "content_tests": "123 passed, 2.11s",
+    "world_repository_tests": "5 passed, 46.11s",
+    "pin_check": "passed; 24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25 unchanged",
+    "next_batch": [
+      "Golden Outfits Quest",
+      "Brotherhood Outfits Quest",
+      "Nightmare Outfits Quest"
+    ]
   }
 }
