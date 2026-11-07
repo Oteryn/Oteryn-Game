@@ -29,6 +29,10 @@ pub(super) const WORLD_PACKAGES: &[(&str, &str)] = &[
         "tools/world-bundle-compiler/",
     ),
     ("oteryn-world-bundle", "crates/world-bundle/"),
+    (
+        "oteryn-gameplay-world-change",
+        "crates/gameplay/world-change/",
+    ),
 ];
 
 fn lock_error(what: impl std::fmt::Display) -> Error {

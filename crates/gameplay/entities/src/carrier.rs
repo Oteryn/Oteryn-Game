@@ -59,6 +59,8 @@ mod channel_actor_position_tests;
 mod continuity;
 
 mod corpse_views;
+mod credited_kill_proof;
+pub use credited_kill_proof::NativeCreditedKillProof;
 
 mod creature_heal;
 

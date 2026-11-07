@@ -56,12 +56,19 @@ fn authored_candidates() -> Result<DailyCandidates, DurabilityError> {
     let mut probabilities = [None; 3];
     let mut grimvale = false;
     let mut stampede = None;
-    for entry in entries.iter().filter(|entry| entry["status"] == "READY" || entry["status"] == "QUALIFIED") {
+    for entry in entries
+        .iter()
+        .filter(|entry| entry["status"] == "READY" || entry["status"] == "QUALIFIED")
+    {
         let index = match entry["key"].as_str() {
             Some("stampede") if stampede.is_none() && entry["trigger"]["kind"] == "at_reset" => {
-                stampede = entry["trigger"]["chance_permille"].as_u64()
-                    .filter(|chance| *chance <= 1000).and_then(|chance| u16::try_from(chance).ok());
-                if stampede.is_none() { return Err(DurabilityError::InvalidStoredState); }
+                stampede = entry["trigger"]["chance_permille"]
+                    .as_u64()
+                    .filter(|chance| *chance <= 1000)
+                    .and_then(|chance| u16::try_from(chance).ok());
+                if stampede.is_none() {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
                 continue;
             }
             Some("thawing") => 0,
@@ -82,8 +89,12 @@ fn authored_candidates() -> Result<DailyCandidates, DurabilityError> {
                 grimvale = true;
                 continue;
             }
-            Some(key) if oteryn_gameplay_world_change::variants::definitions()
-                .map_err(|_| DurabilityError::InvalidStoredState)?.iter().any(|d| d.key == key) => {
+            Some(key)
+                if oteryn_gameplay_world_change::variants::definitions()
+                    .map_err(|_| DurabilityError::InvalidStoredState)?
+                    .iter()
+                    .any(|d| d.key == key) =>
+            {
                 continue;
             }
             _ => return Err(DurabilityError::InvalidStoredState),
@@ -120,18 +131,32 @@ fn authored_candidates() -> Result<DailyCandidates, DurabilityError> {
 /// Authored W6 preconditions, consumed by the existing raid scheduler before any draw/write.
 /// This adds no firing owner and does not replace a raid's own schedule or eligibility.
 pub fn raid_requirements() -> Result<std::collections::BTreeMap<String, String>, DurabilityError> {
-    let catalogue: serde_json::Value = serde_json::from_str(CATALOGUE_JSON)
-        .map_err(|_| DurabilityError::InvalidStoredState)?;
-    let entries = catalogue["entries"].as_array().filter(|entries| entries.len() <= 256)
+    let catalogue: serde_json::Value =
+        serde_json::from_str(CATALOGUE_JSON).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let entries = catalogue["entries"]
+        .as_array()
+        .filter(|entries| entries.len() <= 256)
         .ok_or(DurabilityError::InvalidStoredState)?;
     let mut requirements = std::collections::BTreeMap::new();
     for entry in entries {
-        let Some(binding) = entry.get("binding").filter(|binding| binding["kind"] == "raid") else { continue; };
-        let key = entry["key"].as_str().filter(|key| !key.is_empty() && key.len() <= 64)
+        let Some(binding) = entry
+            .get("binding")
+            .filter(|binding| binding["kind"] == "raid")
+        else {
+            continue;
+        };
+        let key = entry["key"]
+            .as_str()
+            .filter(|key| !key.is_empty() && key.len() <= 64)
             .ok_or(DurabilityError::InvalidStoredState)?;
-        let raid = binding["raid_key"].as_str().filter(|raid| !raid.is_empty() && raid.len() <= 512)
+        let raid = binding["raid_key"]
+            .as_str()
+            .filter(|raid| !raid.is_empty() && raid.len() <= 512)
             .ok_or(DurabilityError::InvalidStoredState)?;
-        if requirements.insert(raid.to_owned(), key.to_owned()).is_some() {
+        if requirements
+            .insert(raid.to_owned(), key.to_owned())
+            .is_some()
+        {
             return Err(DurabilityError::InvalidStoredState);
         }
     }
@@ -180,6 +205,24 @@ pub(super) async fn record(
     let timestamp: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM activated_at)*1000)::bigint FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_one(&mut **tx).await?;
     let mut selected = roll(world, epoch, timestamp)?;
+    if activate_variants {
+        for definition in oteryn_gameplay_world_change::variants::definitions()
+            .map_err(|_| DurabilityError::InvalidStoredState)?
+        {
+            if let Some(rule) = &definition.reset_tally {
+                let previous = if let Some(previous) = epoch.checked_sub(1) {
+                    tally(tx, world, previous, rule.resource).await?
+                } else {
+                    0
+                };
+                selected.variants.0[definition.slot] = Some(if previous >= rule.threshold {
+                    rule.at_or_above
+                } else {
+                    rule.below
+                });
+            }
+        }
+    }
     if !activate_variants {
         // Legacy daily effects may backfill from immutable reset time; new WVAR
         // content is admitted exclusively by reset finalization, never boot.
@@ -195,6 +238,17 @@ pub(super) async fn record(
         return Err(DurabilityError::InvalidStoredState);
     }
     Ok(selected)
+}
+
+/// Test fixture for the real reset-finalization writer; unavailable to production callers.
+#[cfg(feature = "test-support")]
+pub async fn record_reset_fixture(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+    epoch: u64,
+) -> Result<DailyWorldChanges, DurabilityError> {
+    lock_admission_relations(tx).await?;
+    record(tx, world, epoch, true).await
 }
 
 /// Reads a current decision in a caller-owned transaction. None is uninitialized,
@@ -224,12 +278,23 @@ impl DurabilityRoot {
         epoch: u64,
         position: oteryn_gameplay_world_change::variants::Position,
         gate: &G,
-    ) -> Result<Option<oteryn_gameplay_world_change::variants::Position>, crate::durability::character_progression::CharacterProgressionError> {
-        use crate::durability::{character_progression::{assert_gameplay_fence, CharacterProgressionError}, db::begin_type2_transaction};
-        if !matches!(fence.runtime_scope, crate::foundation::RuntimeScopeRefV1::Channel { .. }) {
+    ) -> Result<
+        Option<oteryn_gameplay_world_change::variants::Position>,
+        crate::durability::character_progression::CharacterProgressionError,
+    > {
+        use crate::durability::{
+            character_progression::{CharacterProgressionError, assert_gameplay_fence},
+            db::begin_type2_transaction,
+        };
+        if !matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Channel { .. }
+        ) {
             return Err(CharacterProgressionError::InvalidInput);
         }
-        let recovery = authority.record_for(self).map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
         let mut gate = gate;
         self.try_issue_semantic_pass()?.run_with_context(&mut gate, move |holder, deadline, gate| Box::pin(async move {
@@ -244,8 +309,18 @@ impl DurabilityRoot {
             } else { false };
             if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? { return Ok(Err(error)); }
             let Some(day) = load(&mut tx, fence.runtime_scope.world_id(), epoch).await? else { return Ok(Ok(None)); };
-            let portal = day.variants.active().flat_map(|v| &v.portals).find(|p| p.position == position);
+            let portal = day.variants.passage(position);
             let Some(portal) = portal else { return Ok(Ok(None)); };
+            if !portal.exit {
+                let definitions = oteryn_gameplay_world_change::variants::definitions()
+                    .map_err(|_| DurabilityError::InvalidStoredState)?;
+                if let Some(limit) = definitions.iter().find(|d| d.variants.iter().any(|v| v.portals.iter().any(|p| std::ptr::eq(p, portal))))
+                    .and_then(|d| d.entry_limit.as_ref()) {
+                    let count: Option<i64> = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
+                        .bind(fence.character_id.as_bytes().as_slice()).bind(&limit.track).fetch_optional(&mut **tx).await?;
+                    if count.unwrap_or(0) >= i64::from(limit.maximum) { return Ok(Ok(None)); }
+                }
+            }
             let level: Option<i64> = sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
                 .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
             let promoted = crate::durability::character_promotion::read_durable_promotion(&mut tx, fence.character_id).await?;

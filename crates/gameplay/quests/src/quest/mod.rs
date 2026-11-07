@@ -45,6 +45,7 @@ pub mod task_board;
 pub mod threatened_dreams;
 pub mod unnatural_selection;
 pub mod world_callbacks;
+pub mod world_change_kills;
 pub mod wrath_sleeping_dragon;
 
 use std::collections::{BTreeMap, BTreeSet};

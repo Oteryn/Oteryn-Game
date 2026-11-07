@@ -53,7 +53,18 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
             assert!(is_active(&all, key), "{key}");
         } else if entry["status"] == "QUALIFIED" {
             qualified += 1;
-            assert!(["stampede", "fury_gates", "nightmare_isles", "nomads"].contains(&key));
+            assert!(
+                [
+                    "stampede",
+                    "fury_gates",
+                    "nightmare_isles",
+                    "nomads",
+                    "awash",
+                    "down_the_drain",
+                    "river_runs_deep"
+                ]
+                .contains(&key)
+            );
             if key == "stampede" {
                 assert_eq!(entry["binding"]["raid_key"], "raid:porthope.stampede");
             }
@@ -64,7 +75,7 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
         }
     }
     assert_eq!(ready, 4);
-    assert_eq!(qualified, 4);
+    assert_eq!(qualified, 7);
     for key in [
         "river_runs_deep",
         "spider_nest",

@@ -91,6 +91,7 @@ fn underwater_row(portals: bool) -> TestResult<(Vec<u8>, crate::map::BundlePins)
         terrain: None,
     };
     let manifest = Manifest {
+        world_changes: None,
         subareas: Default::default(),
         format: FORMAT.into(),
         min_reader_version: VERSION,

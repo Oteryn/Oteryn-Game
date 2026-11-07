@@ -38,7 +38,27 @@ pub(super) struct Projection {
     manifest: Manifest,
 }
 
+pub(super) fn requires_decision(data: &[u8]) -> Result<bool, Error> {
+    #[derive(Deserialize)]
+    struct Presence {
+        world_changes: Option<serde::de::IgnoredAny>,
+    }
+    let length = data
+        .get(8..12)
+        .and_then(|bytes| <[u8; 4]>::try_from(bytes).ok())
+        .map(u32::from_le_bytes)
+        .ok_or_else(|| refusal("manifest length"))? as usize;
+    let bytes = data
+        .get(bundle::HEADER..bundle::HEADER + length)
+        .ok_or_else(|| refusal("manifest bounds"))?;
+    let presence: Presence = serde_json::from_slice(bytes).map_err(|_| refusal("manifest"))?;
+    Ok(presence.world_changes.is_some())
+}
+
 impl Projection {
+    pub(super) fn world_changes_admitted(&self) -> bool {
+        self.manifest.world_changes.is_some()
+    }
     pub(super) fn new(
         data: &[u8],
         daily: &DailyMap,
@@ -55,7 +75,26 @@ impl Projection {
             .ok_or_else(|| refusal("manifest bounds"))?;
         let mut manifest: Manifest =
             serde_json::from_slice(bytes).map_err(|_| refusal("manifest"))?;
+        if let Some(package) = &manifest.world_changes {
+            package.validate()?;
+            if package.digest != oteryn_gameplay_world_change::variants::recipe_digest() {
+                return Err(refusal(
+                    "World change package differs from active server content",
+                ));
+            }
+        } else if daily.variants.active().next().is_some() {
+            return Err(refusal(
+                "active World change has no admitted bundle package",
+            ));
+        }
         let mut needed = BTreeMap::new();
+        for portal in manifest
+            .world_changes
+            .iter()
+            .flat_map(|_| daily.variants.portals())
+        {
+            needed.entry(portal.appearance).or_insert(None);
+        }
         if daily.fungus
             && let Some(ground) = manifest
                 .palette
@@ -73,7 +112,7 @@ impl Projection {
                 .active()
                 .flat_map(|v| v.layers.iter().map(String::as_str)),
         ) {
-            for tile in source_layer(town)?.tiles {
+            for tile in source_layer(&manifest, town)?.tiles {
                 for (appearance, _, _) in tile.entries {
                     needed.entry(appearance).or_insert(None);
                 }
@@ -84,9 +123,14 @@ impl Projection {
                 needed.entry(*appearance).or_insert(None);
             }
         }
-        for tile in oteryn_gameplay_world_change::variants::definitions()
-            .map_err(refusal)?
+        for tile in manifest
+            .world_changes
             .iter()
+            .flat_map(|_| {
+                oteryn_gameplay_world_change::variants::definitions()
+                    .into_iter()
+                    .flatten()
+            })
             .flat_map(|d| &d.inactive_tiles)
         {
             for (appearance, _, _) in &tile.entries {
@@ -152,10 +196,15 @@ fn index(manifest: &Manifest, appearance: u16) -> Result<u32, Error> {
         .ok_or_else(|| refusal(&format!("unserved appearance {appearance}")))
 }
 
-fn source_layer(town: &str) -> Result<Layer, Error> {
-    let document: Layers = serde_json::from_str(include_str!(
-        "../../../../../content/encounters/world-changes/layers.json"
-    ))
+fn source_layer(manifest: &Manifest, town: &str) -> Result<Layer, Error> {
+    let document: Layers = serde_json::from_str(
+        manifest
+            .world_changes
+            .as_ref()
+            .map_or(oteryn_gameplay_world_change::variants::LAYERS, |p| {
+                p.layers.as_str()
+            }),
+    )
     .map_err(|_| refusal("invalid committed layers"))?;
     document
         .layers
@@ -168,9 +217,14 @@ fn layers(manifest: &Manifest, daily: &DailyMap) -> Result<BTreeMap<u32, Sector>
     let mut out = BTreeMap::<u32, Sector>::new();
     let mut tiles = Vec::new();
     tiles.extend(
-        oteryn_gameplay_world_change::variants::definitions()
-            .map_err(refusal)?
+        manifest
+            .world_changes
             .iter()
+            .flat_map(|_| {
+                oteryn_gameplay_world_change::variants::definitions()
+                    .into_iter()
+                    .flatten()
+            })
             .flat_map(|d| &d.inactive_tiles)
             .map(|t| LayerTile {
                 position: t.position,
@@ -184,7 +238,7 @@ fn layers(manifest: &Manifest, daily: &DailyMap) -> Result<BTreeMap<u32, Sector>
             .active()
             .flat_map(|v| v.layers.iter().map(String::as_str)),
     ) {
-        tiles.extend(source_layer(layer)?.tiles);
+        tiles.extend(source_layer(manifest, layer)?.tiles);
     }
     tiles.extend(
         daily
@@ -271,6 +325,99 @@ fn fungus(manifest: &Manifest, sector: &mut Sector, daily: &DailyMap) -> Result<
     Ok(())
 }
 
+fn project_sector(
+    manifest: &Manifest,
+    daily: &DailyMap,
+    mut sector: Sector,
+) -> Result<Sector, Error> {
+    sector.tiles.sort_by_key(|tile| (tile.y, tile.x));
+    fungus(manifest, &mut sector, daily)?;
+    for portal in manifest
+        .world_changes
+        .iter()
+        .flat_map(|_| daily.variants.portals())
+    {
+        let (x, y, z) = portal.position;
+        if sector.floor != -z {
+            continue;
+        }
+        if let Some(tile) = sector.tiles.iter_mut().find(|t| t.x == x && t.y == y) {
+            if tile.house != 0 {
+                return Err(refusal("variant portal overlaps a house"));
+            }
+            if let Some(item) = tile.items.iter_mut().find(|i| {
+                i.depth == 0
+                    && manifest
+                        .palette
+                        .get(i.palette as usize)
+                        .and_then(|p| palette_appearance(&p.key))
+                        == Some(portal.appearance)
+            }) {
+                item.attrs.action = portal.action;
+                item.attrs.unique = portal.unique;
+            } else {
+                tile.items.push(Item {
+                    palette: index(manifest, portal.appearance)?,
+                    depth: 0,
+                    attrs: Attrs {
+                        action: portal.action,
+                        unique: portal.unique,
+                        ..Attrs::default()
+                    },
+                });
+            }
+        }
+    }
+    // Managed passages are never admitted by raw base teleport attributes.
+    // Their current World/Character/session consumer is the sole entry owner.
+    for portal in manifest
+        .world_changes
+        .iter()
+        .flat_map(|_| {
+            oteryn_gameplay_world_change::variants::definitions()
+                .into_iter()
+                .flatten()
+        })
+        .flat_map(|d| &d.variants)
+        .flat_map(|v| &v.portals)
+    {
+        let (x, y, z) = portal.position;
+        if sector.floor == -z
+            && let Some(tile) = sector.tiles.iter_mut().find(|t| t.x == x && t.y == y)
+        {
+            for item in &mut tile.items {
+                item.attrs.teleport = None;
+            }
+        }
+    }
+    for tag in daily.variants.active().flat_map(|v| &v.tags) {
+        let (x, y, z) = tag.position;
+        if sector.floor != -z {
+            continue;
+        }
+        if let Some(tile) = sector.tiles.iter_mut().find(|t| t.x == x && t.y == y) {
+            if tile.house != 0 {
+                return Err(refusal("variant tag overlaps a house"));
+            }
+            let entry = tile
+                .items
+                .iter_mut()
+                .find(|i| {
+                    i.depth == 0
+                        && manifest
+                            .palette
+                            .get(i.palette as usize)
+                            .and_then(|p| palette_appearance(&p.key))
+                            == Some(tag.appearance)
+                })
+                .ok_or_else(|| refusal("variant return marker missing"))?;
+            entry.attrs.action = tag.action;
+            entry.attrs.unique = tag.unique;
+        }
+    }
+    Ok(sector)
+}
+
 /// Projects the same verified sectors for both the compact map and its fact owners. Nothing
 /// is written to the bundle or its pins; rebuilding from the original bytes restores the day.
 pub(super) fn visit(
@@ -283,6 +430,20 @@ pub(super) fn visit(
         return bundle::visit_budgeted(data, limits.caps, limits.budget, visitor);
     };
     let daily = &projection.daily;
+    let manifest = &projection.manifest;
+    let mut missing: std::collections::BTreeSet<_> = manifest
+        .world_changes
+        .iter()
+        .flat_map(|_| daily.variants.portals())
+        .map(|p| p.position)
+        .collect();
+    let mut projected = |sector: Sector| {
+        let sector = project_sector(manifest, daily, sector)?;
+        for tile in &sector.tiles {
+            missing.remove(&(tile.x, tile.y, -sector.floor));
+        }
+        visitor(manifest, sector)
+    };
     let mut pending = None;
     let mut visited = bundle::visit_budgeted(data, limits.caps, limits.budget, |_, mut sector| {
         let manifest = &projection.manifest;
@@ -295,7 +456,7 @@ pub(super) fn visit(
             .is_some_and(|(k, _)| *k < key(&sector))
         {
             if let Some((_, extra)) = pending.pop_first() {
-                visitor(manifest, extra)?;
+                projected(extra)?;
             }
         }
         if daily.trader == Some("oriental_trader/ankrahmun") && sector.floor == -6 {
@@ -336,56 +497,16 @@ pub(super) fn visit(
             }
             sector.tiles = tiles.into_values().collect();
         }
-        fungus(manifest, &mut sector, daily)?;
-        // Managed passages are never admitted by raw base teleport attributes.
-        // Their current World/Character/session consumer is the sole entry owner.
-        for portal in oteryn_gameplay_world_change::variants::definitions()
-            .map_err(refusal)?
-            .iter()
-            .flat_map(|d| &d.variants)
-            .flat_map(|v| &v.portals)
-        {
-            let (x, y, z) = portal.position;
-            if sector.floor == -z
-                && let Some(tile) = sector.tiles.iter_mut().find(|t| t.x == x && t.y == y)
-            {
-                for item in &mut tile.items {
-                    item.attrs.teleport = None;
-                }
-            }
-        }
-        for tag in daily.variants.active().flat_map(|v| &v.tags) {
-            let (x, y, z) = tag.position;
-            if sector.floor != -z {
-                continue;
-            }
-            if let Some(tile) = sector.tiles.iter_mut().find(|t| t.x == x && t.y == y) {
-                if tile.house != 0 {
-                    return Err(refusal("variant tag overlaps a house"));
-                }
-                let entry = tile
-                    .items
-                    .iter_mut()
-                    .find(|i| {
-                        i.depth == 0
-                            && manifest
-                                .palette
-                                .get(i.palette as usize)
-                                .and_then(|p| palette_appearance(&p.key))
-                                == Some(tag.appearance)
-                    })
-                    .ok_or_else(|| refusal("variant return marker missing"))?;
-                entry.attrs.action = tag.action;
-                entry.attrs.unique = tag.unique;
-            }
-        }
-        visitor(manifest, sector)
+        projected(sector)
     })?;
     visited.manifest = projection.manifest.clone();
     if let Some(pending) = pending {
         for sector in pending.into_values() {
-            visitor(&visited.manifest, sector)?;
+            projected(sector)?;
         }
+    }
+    if !missing.is_empty() {
+        return Err(refusal("variant portal anchor missing"));
     }
     Ok(visited)
 }

@@ -7,7 +7,7 @@
       "key": "awash",
       "title": "Awash World Change",
       "quest": "oteryn:quest.awash_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00100-00199.json",
@@ -20,6 +20,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "awash; source and assumption fields"
         }
       ],
       "source_refs": [
@@ -40,10 +44,13 @@
           "url": "https://tibia.fandom.com/index.php?curid=54770&oldid=1149364"
         }
       ],
-      "reason": "Pump/lever event membership, flooded/dry layer transition and shared reset rule are not bound.",
-      "missing_facts": [
-        "Pump/lever event membership, flooded/dry layer transition and shared reset rule are not bound."
-      ]
+      "reason": "Existing reset owner selects flooded/drained from previous-epoch atomic pump contributions; three exact donor pumps accept coal12600, threshold202 community total is an explicit conservative assumption. Twelve exact Scouts and bounded adjacent-floor entry use admitted WVAR recipes.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "world_change_variant",
+        "owner": "world_event::changes",
+        "recipe": "awash"
+      }
     },
     {
       "key": "bank_robbery",
@@ -361,7 +368,7 @@
       "key": "down_the_drain",
       "title": "Down the Drain Mini World Change",
       "quest": "oteryn:quest.authored.down_the_drain_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00200-00299.json",
@@ -378,6 +385,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "down_the_drain; source and assumption fields"
         }
       ],
       "source_refs": [
@@ -398,14 +409,17 @@
           "url": "https://tibia.fandom.com/index.php?curid=76219&oldid=887142"
         }
       ],
-      "reason": "W 15 fixes 307 permille. Native flooded/dry river topology, active spawn membership and world-state projection are absent.",
-      "missing_facts": [
-        "W 15 fixes 307 permille. Native flooded/dry river topology, active spawn membership and world-state projection are absent."
-      ],
+      "reason": "307permille per-reset flooded cave with eleven Water Elementals and inactive dry pads; seven exact donor placements, four offsets and entrance/return anchors are explicit conservative assumptions. Credited native dungeon kills use existing bounded Quest counter and receipts.",
+      "missing_facts": [],
       "trigger": {
         "kind": "at_reset",
         "chance_permille": 307,
         "duration": "until_next_reset"
+      },
+      "binding": {
+        "kind": "world_change_variant",
+        "owner": "world_event::changes",
+        "recipe": "down_the_drain"
       }
     },
     {
@@ -1280,7 +1294,7 @@
       "key": "river_runs_deep",
       "title": "River Runs Deep Mini World Change",
       "quest": "oteryn:quest.authored.river_runs_deep_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -1297,6 +1311,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "river_runs_deep; source and assumption fields"
         }
       ],
       "source_refs": [
@@ -1317,14 +1335,17 @@
           "url": "https://tibia.fandom.com/index.php?curid=76260&oldid=887153"
         }
       ],
-      "reason": "W 15 fixes 269 permille and fishing callback exists. Flooded/dry river layer and fishing-object/spawn membership are not bound.",
-      "missing_facts": [
-        "W 15 fixes 269 permille and fishing callback exists. Flooded/dry river layer and fishing-object/spawn membership are not bound."
-      ],
+      "reason": "269permille per-reset river layer includes exact102 fishing objects13989, reverting to bounded dry sand footprint when inactive. Native fishing validates current stored membership, consumes bait atomically, spends13989 to13988 for20minutes, and uses the sourced1percent Sandfish chance.",
+      "missing_facts": [],
       "trigger": {
         "kind": "at_reset",
         "chance_permille": 269,
         "duration": "until_next_reset"
+      },
+      "binding": {
+        "kind": "world_change_variant",
+        "owner": "world_event::changes",
+        "recipe": "river_runs_deep"
       }
     },
     {

@@ -220,6 +220,12 @@ mod tests {
     }
 
     fn physical_bundle() -> crate::map::boot::CheckedBundle {
+        physical_bundle_omitting(None)
+    }
+
+    fn physical_bundle_omitting(
+        omitted: Option<(i8, u16, u16)>,
+    ) -> crate::map::boot::CheckedBundle {
         use oteryn_world_bundle::sector::{Attrs, Item, Tile};
         use oteryn_world_bundle::writer::{
             self as bundle, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector,
@@ -246,6 +252,20 @@ mod tests {
                 }
             }
         }
+        for tile in oteryn_gameplay_world_change::variants::definitions()
+            .expect("recipes")
+            .iter()
+            .flat_map(|d| {
+                d.inactive_tiles
+                    .iter()
+                    .chain(d.variants.iter().flat_map(|v| &v.tiles))
+            })
+        {
+            if let Some((ground, _, _)) = tile.entries.first() {
+                grounds.insert(*ground);
+                appearances.insert(*ground);
+            }
+        }
         // The base bundle omits daily-only variants and decorations. The real boot must
         // resolve their references from the active Item catalogue, not a test-only palette.
         let palette: Vec<_> = appearances
@@ -259,7 +279,7 @@ mod tests {
                 key: format!("oteryn:item.tibia.i{id}"),
                 terrain: grounds.contains(&id).then_some(Terrain {
                     kind: TerrainKind::Ground,
-                    walkable: Some(id != 486),
+                    walkable: Some(!matches!(id, 486 | 622 | 4597..=4602 | 13988..=13989)),
                     ground_speed: Some(150),
                 }),
             })
@@ -338,10 +358,48 @@ mod tests {
                     ],
                 });
         }
+        for (x, y, z) in oteryn_gameplay_world_change::variants::definitions()
+            .expect("recipes")
+            .iter()
+            .flat_map(|d| &d.variants)
+            .flat_map(|v| &v.portals)
+            .flat_map(|p| [p.position, p.destination])
+        {
+            let ground = palette.iter().position(|p| p.id == 432).expect("ground") as u32;
+            let sector = sectors
+                .entry((-z, y / 32, x / 32))
+                .or_insert_with(|| Sector {
+                    floor: -z,
+                    sy: y / 32,
+                    sx: x / 32,
+                    tiles: Vec::new(),
+                });
+            if !sector.tiles.iter().any(|t| t.x == x && t.y == y) {
+                sector.tiles.push(Tile {
+                    x,
+                    y,
+                    flags: 0,
+                    house: 0,
+                    zones: Vec::new(),
+                    items: vec![Item {
+                        palette: ground,
+                        depth: 0,
+                        attrs: Attrs::default(),
+                    }],
+                });
+            }
+        }
         for sector in sectors.values_mut() {
             sector.tiles.sort_by_key(|t| (t.y, t.x));
         }
+        if let Some(sector) = omitted {
+            sectors.remove(&sector);
+        }
         let manifest = Manifest {
+            world_changes: Some(oteryn_world_bundle::world_changes::Package::new(
+                oteryn_gameplay_world_change::variants::RECIPES.into(),
+                oteryn_gameplay_world_change::variants::LAYERS.into(),
+            )),
             subareas: Default::default(),
             format: bundle::FORMAT.into(),
             min_reader_version: bundle::VERSION,
@@ -352,6 +410,7 @@ mod tests {
                 project_format_version: "OTERYN_WORLD_PROJECT/v2".into(),
                 world_schema_version: "world-schema-1".into(),
                 content_revision: "sp02".into(),
+                required_capabilities: vec![oteryn_world_bundle::world_changes::CAPABILITY.into()],
                 ..Identity::default()
             },
             world: Extent {
@@ -404,28 +463,101 @@ mod tests {
     }
 
     fn boot_physical(changes: &DailyWorldChanges) -> crate::map::boot::BundleWorld {
-        prepare_map(physical_bundle(), world(), changes)
-            .boot(
-                world(),
-                ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
-                    .expect("channel"),
-                |key| {
-                    let id: u32 = key.strip_prefix("oteryn:item.tibia.i")?.parse().ok()?;
-                    Some(crate::map::facts::ItemDefinition {
-                        reference: std::num::NonZeroU32::new(id + 1)?,
-                        solid: Some(false),
-                        blocks_projectile: false,
-                        pickupable: false,
-                        door: false,
-                    })
-                },
-            )
-            .expect("physical boot")
+        try_boot_physical(physical_bundle(), changes).expect("physical boot")
+    }
+
+    fn try_boot_physical(
+        bundle: crate::map::boot::CheckedBundle,
+        changes: &DailyWorldChanges,
+    ) -> Result<crate::map::boot::BundleWorld, crate::map::boot::BootRefusal> {
+        prepare_map(bundle, world(), changes).boot(
+            world(),
+            ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+                .expect("channel"),
+            |key| {
+                let id: u32 = key.strip_prefix("oteryn:item.tibia.i")?.parse().ok()?;
+                Some(crate::map::facts::ItemDefinition {
+                    reference: std::num::NonZeroU32::new(id + 1)?,
+                    solid: Some(false),
+                    blocks_projectile: false,
+                    pickupable: false,
+                    door: false,
+                })
+            },
+        )
+    }
+
+    #[test]
+    fn wvar_closed_entrances_keep_walkable_exit_landings() {
+        let mut day = DailyWorldChanges::roll(7, 1, 1, |_| u64::MAX);
+        day.variants = Default::default();
+        let map = boot_physical(&day);
+        for position in [(32516, 32018, 10), (32589, 32303, 8)] {
+            let route = day.variants.passage(position).expect("permanent exit");
+            let (x, y, z) = route.destination;
+            assert!(
+                map.base()
+                    .tile(x, y, -z)
+                    .is_some_and(|tile| tile.walkable())
+            );
+        }
+        let definition = oteryn_gameplay_world_change::variants::definitions()
+            .expect("definitions")
+            .iter()
+            .find(|d| d.key == "awash")
+            .expect("awash");
+        day.variants.0[definition.slot] = Some(1);
+        day.variants.1 = oteryn_gameplay_world_change::variants::recipe_digest();
+        let flooded = boot_physical(&day);
+        assert!(
+            !flooded
+                .base()
+                .tile(32516, 32018, -9)
+                .expect("closed entrance")
+                .walkable()
+        );
+        assert!(
+            flooded
+                .base()
+                .tile(32515, 32018, -9)
+                .expect("safe landing")
+                .walkable()
+        );
+    }
+
+    #[test]
+    fn wvar_missing_portal_anchor_refuses_boot() {
+        let mut day = DailyWorldChanges::roll(7, 1, 1, |_| u64::MAX);
+        day.variants = Default::default();
+        let bundle = physical_bundle_omitting(Some((-13, 31785 / 32, 33290 / 32)));
+        assert!(try_boot_physical(bundle, &day).is_err());
+    }
+
+    #[test]
+    fn wvar_layer_only_sector_binds_persistent_return() {
+        use crate::map::view::{MapFacts, placement_key};
+        let mut day = DailyWorldChanges::roll(7, 1, 1, |_| u64::MAX);
+        day.variants = Default::default();
+        let bundle = physical_bundle_omitting(Some((-8, 32303 / 32, 32589 / 32)));
+        let map = try_boot_physical(bundle, &day).expect("layer-only return");
+        let at = TilePos {
+            x: 32589,
+            y: 32303,
+            floor: -8,
+        };
+        let tile = map.base().tile(at.x, at.y, at.floor).expect("return tile");
+        assert!(tile.ids().iter().enumerate().any(|(ordinal, id)| {
+            map.facts()
+                .base_entry(at, ordinal as u8, *id)
+                .is_some_and(|entry| entry.appearance_id == 1949)
+                && placement_key(at, ordinal as u8)
+                    .is_some_and(|key| map.facts().quest_callback_matches(key, None, None, None))
+        }));
     }
 
     #[test]
     fn wvar_maps_restore_portal_markers_select_one_camp_and_revert() {
-        use crate::map::view::placement_key;
+        use crate::map::view::{MapFacts, placement_key};
         use oteryn_gameplay_world_change::variants;
         let mut day = DailyWorldChanges::roll(7, 1, 1, |_| u64::MAX);
         day.variants = Default::default();
@@ -437,6 +569,36 @@ mod tests {
                 day.variants.1 = variants::recipe_digest();
                 let map = boot_physical(&day);
                 let restart = boot_physical(&day);
+                for portal in &variant.portals {
+                    let (dx, dy, dz) = portal.destination;
+                    assert!(
+                        map.base()
+                            .tile(dx, dy, -dz)
+                            .is_some_and(|tile| tile.walkable()),
+                        "passage destination must have walkable ground: {} {} {:?}",
+                        definition.key,
+                        variant.key,
+                        portal.destination
+                    );
+                    let (x, y, z) = portal.position;
+                    let at = TilePos { x, y, floor: -z };
+                    let tile = map.base().tile(x, y, -z).expect("portal tile");
+                    assert!(
+                        tile.ids()
+                            .iter()
+                            .zip(tile.depths())
+                            .filter(|(_, d)| **d == 0)
+                            .enumerate()
+                            .any(|(o, (id, _))| map
+                                .facts()
+                                .base_entry(at, o as u8, *id)
+                                .is_some_and(|e| e.appearance_id == portal.appearance))
+                    );
+                    assert!(
+                        map.floors().teleport(at).is_none(),
+                        "raw teleport cannot bypass current passage admission"
+                    );
+                }
                 for tag in &variant.tags {
                     let (x, y, z) = tag.position;
                     let pos = TilePos { x, y, floor: -z };

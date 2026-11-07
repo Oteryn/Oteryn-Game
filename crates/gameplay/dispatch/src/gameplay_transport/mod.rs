@@ -195,6 +195,7 @@ mod tutorial_session;
 mod vip_presence;
 mod vocation_choice;
 pub mod weapon_proficiency;
+mod world_change_kills;
 mod world_change_variants;
 mod world_event;
 mod world_map;

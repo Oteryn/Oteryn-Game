@@ -8,6 +8,7 @@ pub mod npc;
 pub mod sector;
 pub mod spawn;
 pub mod subarea;
+pub mod world_changes;
 #[cfg(feature = "writer")]
 pub mod writer;
 

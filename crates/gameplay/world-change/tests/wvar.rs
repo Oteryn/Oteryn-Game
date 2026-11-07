@@ -52,3 +52,19 @@ fn wvar_portal_pairs_preserve_return_markers_and_eligibility()
     }
     Ok(())
 }
+
+#[test]
+fn wvar_closed_change_keeps_only_its_safe_return() -> Result<(), Box<dyn std::error::Error>> {
+    let selected = variants::Selected::default();
+    assert!(selected.passage((32680, 31719, 7)).is_none());
+    assert_eq!(
+        selected.passage((33290, 31785, 13)).map(|p| p.destination),
+        Some((32680, 31720, 7))
+    );
+    assert!(selected.passage((32516, 32018, 9)).is_none());
+    assert_eq!(
+        selected.passage((32516, 32018, 10)).map(|p| p.destination),
+        Some((32515, 32018, 9))
+    );
+    Ok(())
+}

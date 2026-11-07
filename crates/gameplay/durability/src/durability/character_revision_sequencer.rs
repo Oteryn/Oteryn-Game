@@ -23,6 +23,7 @@
 mod appearance_revision;
 mod arena_match;
 mod atelier;
+mod world_change_kills;
 
 use std::collections::HashMap;
 use std::future::Future;

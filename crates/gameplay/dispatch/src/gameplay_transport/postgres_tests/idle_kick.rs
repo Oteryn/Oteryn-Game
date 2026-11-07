@@ -65,6 +65,7 @@ fn bundle() -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
         TerrainKind,
     };
     let manifest = Manifest {
+        world_changes: None,
         format: writer::FORMAT.into(),
         min_reader_version: writer::VERSION,
         projection_class: "server".into(),

@@ -4,7 +4,7 @@
     "key": "fury_gates",
     "chance_permille": 343,
     "source": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/world_changes/fury_gates.lua; portal-bindings-candidate.json sources with exact line/SHA256 witnesses; EVENTS-WORLD-1 W15",
-    "assumption": null,
+    "assumption": " Explicit return remains usable after closure; if a shared return has no current selected entrance, the first authored safe surface return is used.",
     "variants": [
       {
         "key": "abdendriel",
@@ -44,7 +44,8 @@
             "min_level": 60,
             "appearance": 6116,
             "action": 9710,
-            "unique": null
+            "unique": null,
+            "exit": false
           },
           {
             "position": [
@@ -62,7 +63,8 @@
             "min_level": 0,
             "appearance": 776,
             "action": 9715,
-            "unique": null
+            "unique": null,
+            "exit": true
           }
         ]
       },
@@ -104,7 +106,8 @@
             "min_level": 60,
             "appearance": 6117,
             "action": 9710,
-            "unique": null
+            "unique": null,
+            "exit": false
           },
           {
             "position": [
@@ -122,7 +125,8 @@
             "min_level": 0,
             "appearance": 776,
             "action": 9715,
-            "unique": null
+            "unique": null,
+            "exit": true
           }
         ]
       },
@@ -164,7 +168,8 @@
             "min_level": 60,
             "appearance": 6116,
             "action": 9710,
-            "unique": null
+            "unique": null,
+            "exit": false
           },
           {
             "position": [
@@ -182,7 +187,8 @@
             "min_level": 0,
             "appearance": 776,
             "action": 9715,
-            "unique": null
+            "unique": null,
+            "exit": true
           }
         ]
       },
@@ -224,7 +230,8 @@
             "min_level": 60,
             "appearance": 6117,
             "action": 9710,
-            "unique": null
+            "unique": null,
+            "exit": false
           },
           {
             "position": [
@@ -242,7 +249,8 @@
             "min_level": 0,
             "appearance": 776,
             "action": 9715,
-            "unique": null
+            "unique": null,
+            "exit": true
           }
         ]
       },
@@ -284,7 +292,8 @@
             "min_level": 60,
             "appearance": 6116,
             "action": 9710,
-            "unique": null
+            "unique": null,
+            "exit": false
           },
           {
             "position": [
@@ -302,7 +311,8 @@
             "min_level": 0,
             "appearance": 776,
             "action": 9715,
-            "unique": null
+            "unique": null,
+            "exit": true
           }
         ]
       },
@@ -344,7 +354,8 @@
             "min_level": 60,
             "appearance": 6116,
             "action": 9710,
-            "unique": null
+            "unique": null,
+            "exit": false
           },
           {
             "position": [
@@ -362,7 +373,8 @@
             "min_level": 0,
             "appearance": 776,
             "action": 9715,
-            "unique": null
+            "unique": null,
+            "exit": true
           }
         ]
       },
@@ -404,7 +416,8 @@
             "min_level": 60,
             "appearance": 6116,
             "action": 9710,
-            "unique": null
+            "unique": null,
+            "exit": false
           },
           {
             "position": [
@@ -422,7 +435,8 @@
             "min_level": 0,
             "appearance": 776,
             "action": 9715,
-            "unique": null
+            "unique": null,
+            "exit": true
           }
         ]
       },
@@ -464,7 +478,8 @@
             "min_level": 60,
             "appearance": 6116,
             "action": 9710,
-            "unique": null
+            "unique": null,
+            "exit": false
           },
           {
             "position": [
@@ -482,7 +497,8 @@
             "min_level": 0,
             "appearance": 776,
             "action": 9715,
-            "unique": null
+            "unique": null,
+            "exit": true
           }
         ]
       },
@@ -524,7 +540,8 @@
             "min_level": 60,
             "appearance": 6117,
             "action": 9710,
-            "unique": null
+            "unique": null,
+            "exit": false
           },
           {
             "position": [
@@ -542,7 +559,8 @@
             "min_level": 0,
             "appearance": 776,
             "action": 9715,
-            "unique": null
+            "unique": null,
+            "exit": true
           }
         ]
       },
@@ -584,7 +602,8 @@
             "min_level": 60,
             "appearance": 6116,
             "action": 9710,
-            "unique": null
+            "unique": null,
+            "exit": false
           },
           {
             "position": [
@@ -602,7 +621,8 @@
             "min_level": 0,
             "appearance": 776,
             "action": 9715,
-            "unique": null
+            "unique": null,
+            "exit": true
           }
         ]
       }
@@ -613,7 +633,7 @@
     "key": "nightmare_isles",
     "chance_permille": 1000,
     "source": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/world_changes/nightmare_isles.lua; portal-bindings-candidate.json sources with exact line/SHA256 witnesses; EVENTS-WORLD-1 W15",
-    "assumption": null,
+    "assumption": " Explicit return remains usable after closure; if a shared return has no current selected entrance, the first authored safe surface return is used.",
     "variants": [
       {
         "key": "ankrahmun-north",
@@ -653,7 +673,8 @@
             "min_level": 0,
             "appearance": 10840,
             "action": null,
-            "unique": 64003
+            "unique": 64003,
+            "exit": false
           },
           {
             "position": [
@@ -671,7 +692,8 @@
             "min_level": 0,
             "appearance": 10840,
             "action": null,
-            "unique": 35020
+            "unique": 35020,
+            "exit": true
           }
         ]
       },
@@ -713,7 +735,8 @@
             "min_level": 0,
             "appearance": 10840,
             "action": null,
-            "unique": 64002
+            "unique": 64002,
+            "exit": false
           },
           {
             "position": [
@@ -731,7 +754,8 @@
             "min_level": 0,
             "appearance": 10840,
             "action": null,
-            "unique": 35020
+            "unique": 35020,
+            "exit": true
           }
         ]
       },
@@ -773,7 +797,8 @@
             "min_level": 0,
             "appearance": 10842,
             "action": null,
-            "unique": 64001
+            "unique": 64001,
+            "exit": false
           },
           {
             "position": [
@@ -791,7 +816,8 @@
             "min_level": 0,
             "appearance": 10840,
             "action": null,
-            "unique": 35020
+            "unique": 35020,
+            "exit": true
           }
         ]
       }
@@ -1225,7 +1251,8 @@
               7
             ],
             "creature": "oteryn:creature.nomad_blue",
-            "respawn_ms": 90000
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
           },
           {
             "position": [
@@ -1234,7 +1261,8 @@
               7
             ],
             "creature": "oteryn:creature.nomad_blue",
-            "respawn_ms": 90000
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
           },
           {
             "position": [
@@ -1243,7 +1271,8 @@
               7
             ],
             "creature": "oteryn:creature.nomad_blue",
-            "respawn_ms": 90000
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
           },
           {
             "position": [
@@ -1252,7 +1281,8 @@
               7
             ],
             "creature": "oteryn:creature.nomad_blue",
-            "respawn_ms": 90000
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
           },
           {
             "position": [
@@ -1261,7 +1291,8 @@
               7
             ],
             "creature": "oteryn:creature.nomad_blue",
-            "respawn_ms": 90000
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
           },
           {
             "position": [
@@ -1270,7 +1301,8 @@
               7
             ],
             "creature": "oteryn:creature.dog",
-            "respawn_ms": 90000
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
           }
         ],
         "npcs": [],
@@ -1671,7 +1703,8 @@
               7
             ],
             "creature": "oteryn:creature.nomad_female",
-            "respawn_ms": 90000
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
           },
           {
             "position": [
@@ -1680,7 +1713,8 @@
               7
             ],
             "creature": "oteryn:creature.nomad_female",
-            "respawn_ms": 90000
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
           },
           {
             "position": [
@@ -1689,7 +1723,8 @@
               7
             ],
             "creature": "oteryn:creature.nomad_female",
-            "respawn_ms": 90000
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
           },
           {
             "position": [
@@ -1698,7 +1733,8 @@
               7
             ],
             "creature": "oteryn:creature.nomad_female",
-            "respawn_ms": 90000
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
           }
         ],
         "npcs": [],
@@ -1879,7 +1915,8 @@
               7
             ],
             "creature": "oteryn:creature.nomad_blue",
-            "respawn_ms": 90000
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
           },
           {
             "position": [
@@ -1888,7 +1925,8 @@
               7
             ],
             "creature": "oteryn:creature.nomad_blue",
-            "respawn_ms": 90000
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
           },
           {
             "position": [
@@ -1897,7 +1935,8 @@
               7
             ],
             "creature": "oteryn:creature.nomad_blue",
-            "respawn_ms": 90000
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
           },
           {
             "position": [
@@ -1906,7 +1945,8 @@
               7
             ],
             "creature": "oteryn:creature.nomad_blue",
-            "respawn_ms": 90000
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
           }
         ],
         "npcs": [],
@@ -1926,7 +1966,8 @@
               7
             ],
             "creature": "oteryn:creature.nomad_blue",
-            "respawn_ms": 90000
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
           },
           {
             "position": [
@@ -1935,7 +1976,8 @@
               7
             ],
             "creature": "oteryn:creature.nomad_blue",
-            "respawn_ms": 90000
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
           },
           {
             "position": [
@@ -1944,11 +1986,5098 @@
               7
             ],
             "creature": "oteryn:creature.nomad_blue",
-            "respawn_ms": 90000
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
           }
         ],
         "npcs": [],
         "portals": []
+      }
+    ]
+  },
+  {
+    "slot": 3,
+    "key": "awash",
+    "chance_permille": 1000,
+    "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world.otbm sha256:c0549a4c94e1706861252a6cd7db7a3545cdd2f96259f405c5481e45d02a3f85; https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world-monster.xml lines:118902,119039,119055,119056,119059,119146,119183,119186,119213,119220,119331,119356 sha256:f90e82203a112c9068d4ed123e3e5bb4c1b9743f2c2d3bcb12039ac8ebd9ad4e; https://tibia.fandom.com/index.php?curid=54770&oldid=1149364; Crystal@201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm SHA256 c0549a4c94e1706861252a6cd7db7a3545cdd2f96259f405c5481e45d02a3f85; data/items/items.xml:30799 water pumps12666..12668;:30671 coal12600 SHA2568a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
+    "assumption": "The three exact native water pumps consume one carried Coal12600 per successful use through the existing atomic item-craft owner. Conservative source interpretation:202coal is the COMMUNITY TOTAL across the three pumps, since retained wiki facts do not disambiguate total/per-pump. The existing World owner stores title-specificawash_coal and selects drained only at the next save; otherwiseflooded. Entry/return positions use bounded adjacent donor-floor anchors; twelve Scout placements retain exact donor coordinates. Explicit return remains usable after closure; if a shared return has no current selected entrance, the first authored safe surface return is used. The inferred return lands on a maintained adjacent dry352pad at32515,32018,9; it never lands on the flooded closed entrance.",
+    "variants": [
+      {
+        "key": "drained",
+        "weight": 1,
+        "layers": [],
+        "tiles": [
+          {
+            "position": [
+              32576,
+              32014,
+              10
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                10113,
+                null,
+                null
+              ],
+              [
+                577,
+                null,
+                null
+              ],
+              [
+                6379,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32560,
+              32017,
+              10
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                499,
+                null,
+                null
+              ],
+              [
+                1855,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32516,
+              32018,
+              10
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                499,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32515,
+              32023,
+              10
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                499,
+                null,
+                null
+              ],
+              [
+                6374,
+                null,
+                null
+              ],
+              [
+                1855,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32541,
+              32018,
+              10
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                351,
+                null,
+                null
+              ],
+              [
+                6384,
+                null,
+                null
+              ],
+              [
+                1856,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32573,
+              32020,
+              10
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                499,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32512,
+              32026,
+              10
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                499,
+                null,
+                null
+              ],
+              [
+                6379,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32524,
+              32023,
+              10
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                499,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32557,
+              32024,
+              10
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                499,
+                null,
+                null
+              ],
+              [
+                6385,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32506,
+              32025,
+              10
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                499,
+                null,
+                null
+              ],
+              [
+                6382,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32573,
+              32028,
+              10
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                499,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32549,
+              32029,
+              10
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                499,
+                null,
+                null
+              ],
+              [
+                6380,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32558,
+              32007,
+              9
+            ],
+            "flags": null,
+            "entries": [
+              [
+                352,
+                null,
+                null
+              ],
+              [
+                12666,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32560,
+              32014,
+              9
+            ],
+            "flags": null,
+            "entries": [
+              [
+                352,
+                null,
+                null
+              ],
+              [
+                12667,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32567,
+              32024,
+              9
+            ],
+            "flags": null,
+            "entries": [
+              [
+                351,
+                null,
+                null
+              ],
+              [
+                12666,
+                null,
+                null
+              ]
+            ]
+          }
+        ],
+        "tags": [],
+        "spawns": [
+          {
+            "position": [
+              32576,
+              32014,
+              10
+            ],
+            "creature": "oteryn:creature.deepling_scout",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32560,
+              32017,
+              10
+            ],
+            "creature": "oteryn:creature.deepling_scout",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32516,
+              32018,
+              10
+            ],
+            "creature": "oteryn:creature.deepling_scout",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32515,
+              32023,
+              10
+            ],
+            "creature": "oteryn:creature.deepling_scout",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32541,
+              32018,
+              10
+            ],
+            "creature": "oteryn:creature.deepling_scout",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32573,
+              32020,
+              10
+            ],
+            "creature": "oteryn:creature.deepling_scout",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32512,
+              32026,
+              10
+            ],
+            "creature": "oteryn:creature.deepling_scout",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32524,
+              32023,
+              10
+            ],
+            "creature": "oteryn:creature.deepling_scout",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32557,
+              32024,
+              10
+            ],
+            "creature": "oteryn:creature.deepling_scout",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32506,
+              32025,
+              10
+            ],
+            "creature": "oteryn:creature.deepling_scout",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32573,
+              32028,
+              10
+            ],
+            "creature": "oteryn:creature.deepling_scout",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32549,
+              32029,
+              10
+            ],
+            "creature": "oteryn:creature.deepling_scout",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          }
+        ],
+        "npcs": [],
+        "portals": [
+          {
+            "position": [
+              32516,
+              32018,
+              9
+            ],
+            "destination": [
+              32516,
+              32018,
+              10
+            ],
+            "premium": false,
+            "promoted": false,
+            "min_level": 0,
+            "appearance": 1949,
+            "action": null,
+            "unique": null,
+            "exit": false
+          },
+          {
+            "position": [
+              32516,
+              32018,
+              10
+            ],
+            "destination": [
+              32515,
+              32018,
+              9
+            ],
+            "premium": false,
+            "promoted": false,
+            "min_level": 0,
+            "appearance": 1949,
+            "action": null,
+            "unique": null,
+            "exit": true
+          }
+        ]
+      },
+      {
+        "key": "flooded",
+        "weight": 1,
+        "layers": [],
+        "tiles": [
+          {
+            "position": [
+              32516,
+              32018,
+              9
+            ],
+            "flags": null,
+            "entries": [
+              [
+                622,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32558,
+              32007,
+              9
+            ],
+            "flags": null,
+            "entries": [
+              [
+                352,
+                null,
+                null
+              ],
+              [
+                12666,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32560,
+              32014,
+              9
+            ],
+            "flags": null,
+            "entries": [
+              [
+                352,
+                null,
+                null
+              ],
+              [
+                12667,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32567,
+              32024,
+              9
+            ],
+            "flags": null,
+            "entries": [
+              [
+                351,
+                null,
+                null
+              ],
+              [
+                12666,
+                null,
+                null
+              ]
+            ]
+          }
+        ],
+        "tags": [],
+        "spawns": [],
+        "npcs": [],
+        "portals": []
+      }
+    ],
+    "reset_tally": {
+      "resource": "awash_coal",
+      "threshold": 202,
+      "at_or_above": 0,
+      "below": 1
+    },
+    "stations": [
+      {
+        "position": [
+          32558,
+          32007,
+          9
+        ],
+        "appearance": 12666,
+        "material": "oteryn:item.tibia.i12600",
+        "resource": "awash_coal",
+        "after": 12666,
+        "yield_item": null
+      },
+      {
+        "position": [
+          32560,
+          32014,
+          9
+        ],
+        "appearance": 12667,
+        "material": "oteryn:item.tibia.i12600",
+        "resource": "awash_coal",
+        "after": 12667,
+        "yield_item": null
+      },
+      {
+        "position": [
+          32567,
+          32024,
+          9
+        ],
+        "appearance": 12666,
+        "material": "oteryn:item.tibia.i12600",
+        "resource": "awash_coal",
+        "after": 12666,
+        "yield_item": null
+      }
+    ],
+    "inactive_tiles": [
+      {
+        "position": [
+          32515,
+          32018,
+          9
+        ],
+        "flags": null,
+        "entries": [
+          [
+            352,
+            null,
+            null
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "slot": 4,
+    "key": "down_the_drain",
+    "chance_permille": 307,
+    "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world.otbm sha256:c0549a4c94e1706861252a6cd7db7a3545cdd2f96259f405c5481e45d02a3f85; https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world-monster.xml lines:68388,68435,68438,68621,68633,68766,68836 sha256:f90e82203a112c9068d4ed123e3e5bb4c1b9743f2c2d3bcb12039ac8ebd9ad4e; https://tibia.fandom.com/index.php?curid=76219&oldid=887142",
+    "assumption": "W15 fixes307permille; wiki says11WaterElementals. Seven positions are sourced; four nearby offsets and surface/return selectors are conservative assumptions. The source cave terrain is preserved. Inactive reset replaces the eleven owned wet spawn pads with sand231; this bounded footprint is the conservative dry topology. Explicit return remains usable after closure; if a shared return has no current selected entrance, the first authored safe surface return is used. Native source entry4599 is water; the inferred route therefore reserves four bounded dry352 landing/portal pads, with a separate surface return at32587,32303,7, in both states. This explicit conservative bridge keeps the entrance and escape physically usable.",
+    "variants": [
+      {
+        "key": "flooded",
+        "weight": 1,
+        "layers": [],
+        "tiles": [
+          {
+            "position": [
+              32580,
+              32301,
+              8
+            ],
+            "flags": null,
+            "entries": [
+              [
+                10113,
+                null,
+                null
+              ],
+              [
+                6218,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32588,
+              32303,
+              8
+            ],
+            "flags": null,
+            "entries": [
+              [
+                10113,
+                null,
+                null
+              ],
+              [
+                310,
+                null,
+                null
+              ],
+              [
+                6217,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32597,
+              32303,
+              8
+            ],
+            "flags": null,
+            "entries": [
+              [
+                4515,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32598,
+              32312,
+              8
+            ],
+            "flags": null,
+            "entries": [
+              [
+                4515,
+                null,
+                null
+              ],
+              [
+                6218,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32585,
+              32313,
+              8
+            ],
+            "flags": null,
+            "entries": [
+              [
+                10113,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32596,
+              32321,
+              8
+            ],
+            "flags": null,
+            "entries": [
+              [
+                10113,
+                null,
+                null
+              ],
+              [
+                308,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32585,
+              32325,
+              8
+            ],
+            "flags": null,
+            "entries": [
+              [
+                10113,
+                null,
+                null
+              ],
+              [
+                618,
+                null,
+                null
+              ],
+              [
+                6217,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32582,
+              32301,
+              8
+            ],
+            "flags": null,
+            "entries": [
+              [
+                10113,
+                null,
+                null
+              ],
+              [
+                6218,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32590,
+              32303,
+              8
+            ],
+            "flags": null,
+            "entries": [
+              [
+                10113,
+                null,
+                null
+              ],
+              [
+                1034,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32599,
+              32303,
+              8
+            ],
+            "flags": null,
+            "entries": [
+              [
+                10113,
+                null,
+                null
+              ],
+              [
+                310,
+                null,
+                null
+              ],
+              [
+                6218,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32598,
+              32314,
+              8
+            ],
+            "flags": null,
+            "entries": [
+              [
+                10113,
+                null,
+                null
+              ],
+              [
+                312,
+                null,
+                null
+              ],
+              [
+                6217,
+                null,
+                null
+              ]
+            ]
+          }
+        ],
+        "tags": [],
+        "spawns": [
+          {
+            "position": [
+              32580,
+              32301,
+              8
+            ],
+            "creature": "oteryn:creature.water_elemental",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32588,
+              32303,
+              8
+            ],
+            "creature": "oteryn:creature.water_elemental",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32597,
+              32303,
+              8
+            ],
+            "creature": "oteryn:creature.water_elemental",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32598,
+              32312,
+              8
+            ],
+            "creature": "oteryn:creature.water_elemental",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32585,
+              32313,
+              8
+            ],
+            "creature": "oteryn:creature.water_elemental",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32596,
+              32321,
+              8
+            ],
+            "creature": "oteryn:creature.water_elemental",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32585,
+              32325,
+              8
+            ],
+            "creature": "oteryn:creature.water_elemental",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32582,
+              32301,
+              8
+            ],
+            "creature": "oteryn:creature.water_elemental",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32590,
+              32303,
+              8
+            ],
+            "creature": "oteryn:creature.water_elemental",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32599,
+              32303,
+              8
+            ],
+            "creature": "oteryn:creature.water_elemental",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32598,
+              32314,
+              8
+            ],
+            "creature": "oteryn:creature.water_elemental",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          }
+        ],
+        "npcs": [],
+        "portals": [
+          {
+            "position": [
+              32588,
+              32303,
+              7
+            ],
+            "destination": [
+              32588,
+              32303,
+              8
+            ],
+            "premium": false,
+            "promoted": false,
+            "min_level": 0,
+            "appearance": 1949,
+            "action": null,
+            "unique": null,
+            "exit": false
+          },
+          {
+            "position": [
+              32589,
+              32303,
+              8
+            ],
+            "destination": [
+              32587,
+              32303,
+              7
+            ],
+            "premium": false,
+            "promoted": false,
+            "min_level": 0,
+            "appearance": 1949,
+            "action": null,
+            "unique": null,
+            "exit": true
+          }
+        ]
+      }
+    ],
+    "inactive_tiles": [
+      {
+        "position": [
+          32580,
+          32301,
+          8
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            6218,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          32588,
+          32303,
+          8
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            310,
+            null,
+            null
+          ],
+          [
+            6217,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          32597,
+          32303,
+          8
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          32598,
+          32312,
+          8
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            6218,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          32585,
+          32313,
+          8
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          32596,
+          32321,
+          8
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            308,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          32585,
+          32325,
+          8
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            618,
+            null,
+            null
+          ],
+          [
+            6217,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          32582,
+          32301,
+          8
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            6218,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          32590,
+          32303,
+          8
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            1034,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          32599,
+          32303,
+          8
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            310,
+            null,
+            null
+          ],
+          [
+            6218,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          32598,
+          32314,
+          8
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            312,
+            null,
+            null
+          ],
+          [
+            6217,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          32588,
+          32303,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            352,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          32587,
+          32303,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            352,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          32588,
+          32303,
+          8
+        ],
+        "flags": null,
+        "entries": [
+          [
+            352,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          32589,
+          32303,
+          8
+        ],
+        "flags": null,
+        "entries": [
+          [
+            352,
+            null,
+            null
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "slot": 5,
+    "key": "river_runs_deep",
+    "chance_permille": 269,
+    "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world.otbm sha256:c0549a4c94e1706861252a6cd7db7a3545cdd2f96259f405c5481e45d02a3f85; https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world-monster.xml lines:tile-coordinate witnesses in authored recipe sha256:f90e82203a112c9068d4ed123e3e5bb4c1b9743f2c2d3bcb12039ac8ebd9ad4e; https://tibia.fandom.com/index.php?curid=76260&oldid=887153; Crystal@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/fishing.lua:148-175,203-209 sha256:75bde535d8b9530fd57b4dde5f741e19264f6ed118789d4641321933a628e02f; data/items/items.xml:384 sand231 sha256:8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
+    "assumption": "W15 fixes269permille. Exact source desert-fishing objects13989 in the334xx/315xx floor11 river are the bounded membership. The inactive counterpart is conservative; dry replaces fishing water with source items.xml's sand231, removing fishing-object membership and changing ground topology. The accepted269permille draw activates flowing water only; the dry counterpart is the inactive reset composition.",
+    "variants": [
+      {
+        "key": "flowing",
+        "weight": 1,
+        "layers": [],
+        "tiles": [
+          {
+            "position": [
+              33432,
+              31523,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4450,
+                null,
+                null
+              ],
+              [
+                4448,
+                null,
+                null
+              ],
+              [
+                4463,
+                null,
+                null
+              ],
+              [
+                4461,
+                null,
+                null
+              ],
+              [
+                4491,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33433,
+              31523,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4467,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33421,
+              31524,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4465,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33421,
+              31525,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4461,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33425,
+              31525,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4460,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33430,
+              31525,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4449,
+                null,
+                null
+              ],
+              [
+                4464,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33431,
+              31525,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33424,
+              31526,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33427,
+              31526,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4450,
+                null,
+                null
+              ],
+              [
+                4463,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33429,
+              31526,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4449,
+                null,
+                null
+              ],
+              [
+                4464,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33430,
+              31526,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33431,
+              31526,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33434,
+              31526,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33435,
+              31526,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33436,
+              31526,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4446,
+                null,
+                null
+              ],
+              [
+                4457,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33423,
+              31527,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33424,
+              31527,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33425,
+              31527,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33426,
+              31527,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33434,
+              31527,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33435,
+              31527,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33423,
+              31528,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33424,
+              31528,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33425,
+              31528,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33436,
+              31528,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33438,
+              31528,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4450,
+                null,
+                null
+              ],
+              [
+                4463,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33439,
+              31528,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4445,
+                null,
+                null
+              ],
+              [
+                4460,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33441,
+              31528,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33418,
+              31529,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4462,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33419,
+              31529,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4463,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33420,
+              31529,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4460,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33423,
+              31529,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33438,
+              31529,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33440,
+              31529,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33441,
+              31529,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4459,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33419,
+              31530,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4462,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33420,
+              31530,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33422,
+              31530,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33441,
+              31530,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4446,
+                null,
+                null
+              ],
+              [
+                4457,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33440,
+              31531,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33441,
+              31531,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4450,
+                null,
+                null
+              ],
+              [
+                4463,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33419,
+              31532,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4449,
+                null,
+                null
+              ],
+              [
+                4452,
+                null,
+                null
+              ],
+              [
+                4464,
+                null,
+                null
+              ],
+              [
+                4462,
+                null,
+                null
+              ],
+              [
+                4496,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33420,
+              31532,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33421,
+              31532,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33440,
+              31532,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33441,
+              31532,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33442,
+              31532,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4446,
+                null,
+                null
+              ],
+              [
+                4457,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33419,
+              31533,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4448,
+                null,
+                null
+              ],
+              [
+                4461,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33420,
+              31533,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33442,
+              31533,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4450,
+                null,
+                null
+              ],
+              [
+                4463,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33419,
+              31534,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4449,
+                null,
+                null
+              ],
+              [
+                4464,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33442,
+              31534,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33442,
+              31535,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33444,
+              31535,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4463,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33418,
+              31536,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4461,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33442,
+              31536,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33442,
+              31537,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33419,
+              31538,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33416,
+              31539,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4465,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33419,
+              31539,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33416,
+              31540,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4461,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33442,
+              31540,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33419,
+              31541,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33441,
+              31541,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33443,
+              31541,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4476,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33420,
+              31542,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33443,
+              31542,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4457,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33420,
+              31543,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4452,
+                null,
+                null
+              ],
+              [
+                4462,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33421,
+              31543,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33440,
+              31543,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33442,
+              31543,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4458,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33439,
+              31545,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33441,
+              31545,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4451,
+                null,
+                null
+              ],
+              [
+                4450,
+                null,
+                null
+              ],
+              [
+                4459,
+                null,
+                null
+              ],
+              [
+                4463,
+                null,
+                null
+              ],
+              [
+                4476,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33420,
+              31546,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4448,
+                null,
+                null
+              ],
+              [
+                4461,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33422,
+              31546,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33423,
+              31546,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33439,
+              31546,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33440,
+              31546,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33420,
+              31547,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4461,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33421,
+              31547,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33437,
+              31547,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33425,
+              31548,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33427,
+              31548,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33434,
+              31548,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33436,
+              31548,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33439,
+              31548,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4447,
+                null,
+                null
+              ],
+              [
+                4458,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33425,
+              31549,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4452,
+                null,
+                null
+              ],
+              [
+                4462,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33427,
+              31549,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33430,
+              31549,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33431,
+              31549,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33433,
+              31549,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33434,
+              31549,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33435,
+              31549,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33436,
+              31549,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33427,
+              31550,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4459,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33428,
+              31550,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4458,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33429,
+              31550,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4462,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33430,
+              31550,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33431,
+              31550,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33426,
+              31551,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4459,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33432,
+              31551,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ],
+              [
+                4462,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33433,
+              31551,
+              11
+            ],
+            "flags": 8,
+            "entries": [
+              [
+                13989,
+                null,
+                null
+              ]
+            ]
+          }
+        ],
+        "tags": [],
+        "spawns": [],
+        "npcs": [],
+        "portals": []
+      }
+    ],
+    "inactive_tiles": [
+      {
+        "position": [
+          33432,
+          31523,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4450,
+            null,
+            null
+          ],
+          [
+            4448,
+            null,
+            null
+          ],
+          [
+            4463,
+            null,
+            null
+          ],
+          [
+            4461,
+            null,
+            null
+          ],
+          [
+            4491,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33433,
+          31523,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4467,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33421,
+          31524,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4465,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33421,
+          31525,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4461,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33425,
+          31525,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4460,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33430,
+          31525,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4449,
+            null,
+            null
+          ],
+          [
+            4464,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33431,
+          31525,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33424,
+          31526,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33427,
+          31526,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4450,
+            null,
+            null
+          ],
+          [
+            4463,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33429,
+          31526,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4449,
+            null,
+            null
+          ],
+          [
+            4464,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33430,
+          31526,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33431,
+          31526,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33434,
+          31526,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33435,
+          31526,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33436,
+          31526,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4446,
+            null,
+            null
+          ],
+          [
+            4457,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33423,
+          31527,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33424,
+          31527,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33425,
+          31527,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33426,
+          31527,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33434,
+          31527,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33435,
+          31527,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33423,
+          31528,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33424,
+          31528,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33425,
+          31528,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33436,
+          31528,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33438,
+          31528,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4450,
+            null,
+            null
+          ],
+          [
+            4463,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33439,
+          31528,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4445,
+            null,
+            null
+          ],
+          [
+            4460,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33441,
+          31528,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33418,
+          31529,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4462,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33419,
+          31529,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4463,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33420,
+          31529,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4460,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33423,
+          31529,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33438,
+          31529,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33440,
+          31529,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33441,
+          31529,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4459,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33419,
+          31530,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4462,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33420,
+          31530,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33422,
+          31530,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33441,
+          31530,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4446,
+            null,
+            null
+          ],
+          [
+            4457,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33440,
+          31531,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33441,
+          31531,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4450,
+            null,
+            null
+          ],
+          [
+            4463,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33419,
+          31532,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4449,
+            null,
+            null
+          ],
+          [
+            4452,
+            null,
+            null
+          ],
+          [
+            4464,
+            null,
+            null
+          ],
+          [
+            4462,
+            null,
+            null
+          ],
+          [
+            4496,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33420,
+          31532,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33421,
+          31532,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33440,
+          31532,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33441,
+          31532,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33442,
+          31532,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4446,
+            null,
+            null
+          ],
+          [
+            4457,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33419,
+          31533,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4448,
+            null,
+            null
+          ],
+          [
+            4461,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33420,
+          31533,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33442,
+          31533,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4450,
+            null,
+            null
+          ],
+          [
+            4463,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33419,
+          31534,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4449,
+            null,
+            null
+          ],
+          [
+            4464,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33442,
+          31534,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33442,
+          31535,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33444,
+          31535,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4463,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33418,
+          31536,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4461,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33442,
+          31536,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33442,
+          31537,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33419,
+          31538,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33416,
+          31539,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4465,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33419,
+          31539,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33416,
+          31540,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4461,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33442,
+          31540,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33419,
+          31541,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33441,
+          31541,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33443,
+          31541,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4476,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33420,
+          31542,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33443,
+          31542,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4457,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33420,
+          31543,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4452,
+            null,
+            null
+          ],
+          [
+            4462,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33421,
+          31543,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33440,
+          31543,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33442,
+          31543,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4458,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33439,
+          31545,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33441,
+          31545,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4451,
+            null,
+            null
+          ],
+          [
+            4450,
+            null,
+            null
+          ],
+          [
+            4459,
+            null,
+            null
+          ],
+          [
+            4463,
+            null,
+            null
+          ],
+          [
+            4476,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33420,
+          31546,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4448,
+            null,
+            null
+          ],
+          [
+            4461,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33422,
+          31546,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33423,
+          31546,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33439,
+          31546,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33440,
+          31546,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33420,
+          31547,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4461,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33421,
+          31547,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33437,
+          31547,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33425,
+          31548,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33427,
+          31548,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33434,
+          31548,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33436,
+          31548,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33439,
+          31548,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4447,
+            null,
+            null
+          ],
+          [
+            4458,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33425,
+          31549,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4452,
+            null,
+            null
+          ],
+          [
+            4462,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33427,
+          31549,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33430,
+          31549,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33431,
+          31549,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33433,
+          31549,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33434,
+          31549,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33435,
+          31549,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33436,
+          31549,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33427,
+          31550,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4459,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33428,
+          31550,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4458,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33429,
+          31550,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4462,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33430,
+          31550,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33431,
+          31550,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33426,
+          31551,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4459,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33432,
+          31551,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ],
+          [
+            4462,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33433,
+          31551,
+          11
+        ],
+        "flags": 8,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
       }
     ]
   }

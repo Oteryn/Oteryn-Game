@@ -45,6 +45,8 @@ impl Scratch {
                 "-z",
                 "--",
                 "content/world",
+                "content/encounters/world-changes",
+                "crates/gameplay/world-change",
                 "content/cyclopedia",
                 "content/assets/files",
                 "imports/cipsoft-staticdata/map/subareas",
@@ -199,11 +201,11 @@ fn derive_identity_takes_each_field_from_its_source_and_refuses_bad_sources() {
         identity["world_schema_version"],
         manifest["semantic_schema_version"]
     );
+    assert_eq!(manifest["required_features"], json!([]));
     assert_eq!(
         identity["required_capabilities"],
-        manifest["required_features"]
+        json!([oteryn_world_bundle::world_changes::CAPABILITY])
     );
-    assert_eq!(identity["required_capabilities"], json!([]));
     assert_eq!(
         identity["min_runtime_version"],
         bundle::RUNTIME_VERSION.to_string()

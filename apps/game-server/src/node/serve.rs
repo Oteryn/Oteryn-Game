@@ -2490,19 +2490,51 @@ pub(crate) async fn realize_bundle_spawns(
             ))
         })
         .ok_or_else(refuse)?;
-    realize_activation_paced(runtime, sources, signalled).await
+    let gates = world.activation_spawn_gates().ok_or_else(refuse)?;
+    realize_activation_paced_with_gates(runtime, sources, &gates, signalled).await
 }
 
 /// Realizes `sources` as one activation paced at most one `CREATUREAI0-RL-14` window per
 /// 50 ms owner window (see [`realize_bundle_spawns`]).
+#[cfg(test)]
 async fn realize_activation_paced(
     runtime: &mut ChannelRuntimeV1,
     sources: Vec<crate::map::boot::BundleSpawnFacts>,
     signalled: &CancellationToken,
 ) -> Result<Option<(usize, u64)>, BootError> {
+    realize_activation_paced_with_gates(runtime, sources, &[], signalled).await
+}
+
+async fn realize_activation_paced_with_gates(
+    runtime: &mut ChannelRuntimeV1,
+    sources: Vec<crate::map::boot::BundleSpawnFacts>,
+    gates: &[crate::map::boot::BundleSpawnGate],
+    signalled: &CancellationToken,
+) -> Result<Option<(usize, u64)>, BootError> {
     let refuse = || BootError::Readiness("creature spawn realization");
+    let definitions = sources
+        .into_iter()
+        .map(|source| {
+            let gate = source
+                .0
+                .first()
+                .filter(|_| source.0.len() == 1)
+                .and_then(|point| {
+                    gates
+                        .iter()
+                        .find(|gate| gate.target.0 == point.0 && gate.target.1 == point.2)
+                });
+            let definition =
+                oteryn_gameplay_entities::carrier::SpawnDefinition::from_activation_source(source)?;
+            match gate {
+                Some(gate) => definition.with_kill_prerequisites(gate.guards.clone()),
+                None => Ok(definition),
+            }
+        })
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|_| refuse())?;
     runtime
-        .begin_activation_spawn_sources(sources)
+        .begin_spawn_definitions(definitions)
         .map_err(|_| refuse())?;
     let origin = tokio::time::Instant::now();
     let mut windows = 0u64;

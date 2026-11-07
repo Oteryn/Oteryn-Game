@@ -916,7 +916,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/creatures/definitions/spell-native-profiles.json",
-          "record_count": 1870,
+          "record_count": 1871,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_CREATURE_PROFILES/v1",
@@ -924,7 +924,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "06b0bee295bf0d09d5b3c87827d66cc276771bc79a3c0a05cf8cfebf4c1282a5"
+          "sha256": "05ce47b38b9b35fd955d2c4d0e9f35cf7f0c5d0c1ba7414bdaec954619d56c47"
         },
         {
           "creates_canonical_identities": false,
@@ -995,7 +995,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3566,
+          "record_count": 3567,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1003,7 +1003,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "eae491325d6900ae48cb9731e68f27999a8d9657a732bd433ca0c26e668d8dc1"
+          "sha256": "6c03a4d45c57be85b6ad83552a260d850ea1af9b7a460410fd93c86df27c52b8"
         },
         {
           "creates_canonical_identities": false,
@@ -1023,7 +1023,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/presentations/definitions/spell-native-profiles.json",
-          "record_count": 1870,
+          "record_count": 1871,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_PRESENTATION_PROFILES/v1",
@@ -1031,7 +1031,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#PresentationProfilesDocument"
           },
-          "sha256": "b94a936eeac887eeeb807bf81ba5ae1bbd482d665404c247319421464c5bcea8"
+          "sha256": "a5441d5a50722b7865ab00964adb365cf1d97e79dccbe5cbc83cb7a2b6fca353"
         },
         {
           "creates_canonical_identities": false,

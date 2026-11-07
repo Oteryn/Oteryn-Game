@@ -120,6 +120,8 @@ pub struct PendingKillSettlement {
     /// Nonreward Instance death metadata captured before releasing the lethal turn.
     pub(super) activity_death: Option<CapturedActivityDeath>,
     pub(super) grizzly: Option<Arc<super::grizzly_kills::FrozenGrizzlyDeath>>,
+    pub(super) world_change_kill:
+        Option<crate::durability::quest_state::world_change_kills::NativeWorldChangeKill>,
     /// §1.5: `no_progression_binding` is logged once per death.
     no_progression_logged: bool,
 }
@@ -194,6 +196,7 @@ impl PendingKillSettlement {
             boss_reward: None,
             activity_death: None,
             grizzly: None,
+            world_change_kill: None,
             no_progression_logged: false,
         }
     }
@@ -362,6 +365,7 @@ pub enum TakeOutcome {
 pub struct KillSettlementQueue(
     Arc<Mutex<KillQueueState>>,
     pub(super) Arc<Mutex<super::grizzly_kills::GrizzlyCaptureCache>>,
+    pub(super) Arc<Mutex<Option<super::world_change_kills::CaptureBinding>>>,
 );
 
 #[derive(Debug, Clone)]
@@ -1391,7 +1395,9 @@ pub fn record_creature_kill(
             // invents an XP amount, loot table, corpse Item or Bestiary race.
             let boss = sink.rewards.boss(&creature);
             if boss.is_none()
-                && (top.present().is_none() || !super::grizzly_kills::tracks_creature(&creature))
+                && (top.present().is_none()
+                    || !(super::grizzly_kills::tracks_creature(&creature)
+                        || super::world_change_kills::tracks_creature(&creature)))
             {
                 refuse(reason.as_str(), &creature);
                 // Echo's first-species callback precedes ordinary loot admission in the
@@ -1422,6 +1428,7 @@ pub fn record_creature_kill(
                             boss_reward: None,
                             activity_death: None,
                             grizzly: None,
+                            world_change_kill: None,
                             no_progression_logged: false,
                         },
                     );
@@ -1743,6 +1750,7 @@ pub fn record_creature_kill(
         task_board_recipients: Arc::default(),
         talisman: Arc::default(),
         grizzly: None,
+        world_change_kill: None,
         activity_observed_at: observed_at.filter(|at| at.get() / 1000 == facts.death_at_ms),
         activity_at_death,
         damage_shares,
@@ -1769,6 +1777,7 @@ fn accept_kill(
     mut entry: PendingKillSettlement,
 ) -> AppendOutcome {
     super::grizzly_kills::capture(runtime, queue, &mut entry);
+    super::world_change_kills::capture(runtime, queue, &mut entry);
     let target = entry.target;
     let creature = entry.creature.clone();
     let outcome = queue.append(entry);
@@ -2340,6 +2349,12 @@ struct DurableKillSettle<'s, 'a, 'f, 'g> {
 }
 impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
     async fn settle(&self, entry: &PendingKillSettlement, inflight_before: usize) -> SettleReport {
+        if !self.admission.credit_world_change_death(entry).await {
+            return SettleReport {
+                verdict: SettleVerdict::Retry,
+                no_progression: false,
+            };
+        }
         let report = super::grizzly_kills::settle(
             self.admission,
             entry,

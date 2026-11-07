@@ -45,6 +45,13 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
     // no test-edited activation JSON or chance override grants admission.
     let mut cases = Vec::new();
     for d in definitions {
+        if d.reset_tally.is_some() {
+            assert_eq!(
+                d.key, "awash",
+                "threshold changes have their own real reset case"
+            );
+            continue;
+        }
         for (index, v) in d.variants.iter().enumerate() {
             let epoch = (1..100_000_u64)
                 .find(|epoch| {
@@ -63,9 +70,9 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
                 .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).execute(&h.pool).await?;
         // Fixture of the reset-finalization write; the exact unmodified
         // production selection is serialized, not a hand-built activation.
-        sqlx::query("INSERT INTO game_world_change_days(world_id,reset_epoch,decision) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3) ON CONFLICT DO NOTHING")
-                .bind(world.as_bytes().as_slice()).bind(epoch.to_string())
-                .bind(serde_json::to_value(changes::roll(world,epoch,(epoch * 86400000) as i64)?)?).execute(&h.pool).await?;
+        let mut reset = h.pool.begin().await?;
+        changes::record_reset_fixture(&mut reset, world, epoch).await?;
+        reset.commit().await?;
         let day = h
             .root
             .world_changes(world, epoch)
@@ -222,7 +229,90 @@ async fn seed_epoch(h: &fixture::Harness, epoch: u64) -> fixture::TestResult {
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind([7u8;32].as_slice()).bind(timestamp as f64).execute(&h.pool).await?;
     sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,$2::text::numeric) ON CONFLICT(world_id) DO UPDATE SET reset_epoch=excluded.reset_epoch")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).execute(&h.pool).await?;
-    sqlx::query("INSERT INTO game_world_change_days(world_id,reset_epoch,decision) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3) ON CONFLICT DO NOTHING")
-        .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind(serde_json::to_value(changes::roll(world,epoch,timestamp*1000)?)?).execute(&h.pool).await?;
+    let mut reset = h.pool.begin().await?;
+    changes::record_reset_fixture(&mut reset, world, epoch).await?;
+    reset.commit().await?;
+    Ok(())
+}
+
+#[test]
+fn wvar_postgres_awash_tallies_select_only_at_save() -> fixture::TestResult {
+    let Some(admin) = fixture::configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new().stack_size(64<<20).spawn(move ||->Result<(),String>{
+        fixture::runtime().map_err(fixture::debug)?.block_on(async {
+            let start=std::time::Instant::now();
+            let h=fixture::Harness::create(admin,"wvar_awash",true).await?;
+            let result=exercise_awash(&h).await;
+            h.cleanup().await?;result?;
+            println!("WVAR POSTGRES_CASE_COMPLETED water-threshold legacy-empty,201-flooded,202-drained,persisted-decision,closed-entry,safe-return; duration={:?}",start.elapsed());
+            Ok::<(),Box<dyn std::error::Error>>(())
+        }).map_err(fixture::debug)
+    })?.join().map_err(|_|"awash PG thread failed")?.map_err(Into::into)
+}
+
+async fn exercise_awash(h: &fixture::Harness) -> fixture::TestResult {
+    let world = fixture::scope()?.world_id();
+    let seal = h.recovery.seal_current().map_err(fixture::debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(fixture::debug)?;
+    // Historical totals are fixture input. Live item/debit/receipt admission is
+    // exercised separately through the native craft owner, never forged here.
+    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'map-1',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp(0),'1970-01')")
+        .bind(world.as_bytes().as_slice()).bind([7u8;32].as_slice()).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,0)")
+        .bind(world.as_bytes().as_slice())
+        .execute(&h.pool)
+        .await?;
+    assert!(
+        h.root
+            .world_changes(world, 0)
+            .await?
+            .ok_or("legacy day")?
+            .variant("awash")
+            .is_none()
+    );
+    for (epoch, total, next, expected) in [(0_i64, 201_i64, 1_u64, 1), (1, 202, 2, 0)] {
+        sqlx::query("INSERT INTO game_world_change_tallies(world_id,reset_epoch,resource,tally) VALUES(encode($1,'hex')::uuid,$2::text::numeric,'awash_coal',$3::text::numeric)")
+            .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind(total.to_string()).execute(&h.pool).await?;
+        seed_epoch(h, next).await?;
+        let day = h
+            .root
+            .world_changes(world, next)
+            .await?
+            .ok_or("persisted day")?;
+        assert_eq!(day.variant("awash"), Some(expected));
+        assert_eq!(h.root.world_changes(world, next).await?, Some(day));
+        for (position, destination) in [
+            (
+                (32516, 32018, 9),
+                if expected == 0 {
+                    Some((32516, 32018, 10))
+                } else {
+                    None
+                },
+            ),
+            ((32516, 32018, 10), Some((32515, 32018, 9))),
+        ] {
+            assert_eq!(
+                h.root
+                    .world_change_passage(
+                        &authority,
+                        &h.node,
+                        fixture::fence(1)?,
+                        next,
+                        position,
+                        &Premium(true)
+                    )
+                    .await
+                    .map_err(fixture::debug)?,
+                destination
+            );
+        }
+    }
     Ok(())
 }
