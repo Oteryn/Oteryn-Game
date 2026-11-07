@@ -14,8 +14,8 @@ use super::item_mint_audit::{
     self as mint, AuditError, CausationRefV1, CausationV1, EnvelopeCommandRefV1, EventEnvelopeV1,
     ITEM_LIFECYCLE_LIVE, OneItemGroundV1, OneItemOperationV1, OneItemStateV1, OneItemTransactionV1,
     RL07_ENVELOPE_BYTES_MAX, RL07_PAYLOAD_BYTES_MAX, TransactionEventRefV1,
-    TransactionResourceUsage, check_content_key, check_definition, check_technical_bytes,
-    check_technical_text, check_uuid_v7, encode_bounded,
+    TransactionResourceUsage, check_content_key, check_definition, check_key_number,
+    check_technical_bytes, check_technical_text, check_uuid_v7, encode_bounded,
 };
 use super::item_transfer_audit::{GAMEITEM01_STACK_QUANTITY_MAX, OneItemCommandRefV1};
 use prost::Message;
@@ -163,9 +163,8 @@ pub fn check_map_item_mint(value: &OneItemMapItemMintV1) -> Result<(), AuditErro
     check_uuid_v7(&command.game_session_id)?;
     check_uuid_v7(&entry.world_id)?;
     check_uuid_v7(&entry.channel_id)?;
-    // A map-authored key is never materializable (WORLD-INTERACTION-0 §4.4).
+    check_key_number(after)?;
     if !value.before_semantically_absent
-        || after.key_number != 0
         || after.lifecycle != ITEM_LIFECYCLE_LIVE
         || after.quantity == 0
         || after.quantity > GAMEITEM01_STACK_QUANTITY_MAX

@@ -1,0 +1,79 @@
+{
+  "result": "PASS",
+  "slice": "Shared map key binding durable writer",
+  "qualified_titles_added": 0,
+  "pg": {
+    "server_version_num": 180006,
+    "red": {
+      "failed": 3,
+      "passed": 0,
+      "total_seconds": 10.96,
+      "reason": "Existing map MINT loses trusted source binding: actual None versus expected key3008/key3002/key3007"
+    },
+    "green": {
+      "passed": 3,
+      "failed": 0,
+      "total_seconds": 11.86,
+      "cases": {
+        "copper_3008_seconds": 0.176070066,
+        "golden_3002_seconds": 0.176981674,
+        "silver_3007_seconds": 0.205534434
+      },
+      "assertions": [
+        "immutable key row and typed audit agree",
+        "exact command replay retains one item/key/receipt/audit",
+        "changed binding conflicts",
+        "another command cannot retake same shared placement",
+        "unactivated epoch refused",
+        "activated reset pointer permits fresh stock"
+      ]
+    },
+    "regression": {
+      "passed": 2,
+      "total_seconds": 5.17,
+      "includes": "one real-PG existing unbound map MINT/capacity/replay regression and one pure migration-number check"
+    }
+  },
+  "validation": {
+    "fmt": "PASS cargo fmt on changed crates",
+    "check": "PASS changed crates all targets/all features29.62s",
+    "clippy": "PASS changed crates all targets/all features,-D warnings41.53s",
+    "units": "3 passed0.01s; pure validation/intent units, not PG",
+    "pins": "PASS unchanged world digest2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968"
+  },
+  "boundary": "Durable owner only. Production map wrapper still passes None until the next wire-qualified slice. Activated reset pointer is fixture setup, not reset activation-writer proof. Whole Draconia remains active work.",
+  "logs": {
+    "red": {
+      "log": "qlane-meta/questpc/cloud-map-key-red.log",
+      "sha256": "42687b9f994add3c0746f6589f94b425cc96d40c35300036dbe952513c9277a8"
+    },
+    "green": {
+      "log": "qlane-meta/questpc/cloud-map-key-green.log",
+      "sha256": "ebe60f539025eb29567e7755397c1b6ead9bc48a263ec895feedd970e6170bea"
+    },
+    "fmt": {
+      "log": "qlane-meta/questpc/cloud-map-key-fmt.log",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    "check": {
+      "log": "qlane-meta/questpc/cloud-map-key-check.log",
+      "sha256": "45c45a59c2d3a315adf0fd9ec5fef330b56d340752fddcb7a89a28c84816b481"
+    },
+    "clippy": {
+      "log": "qlane-meta/questpc/cloud-map-key-clippy.log",
+      "sha256": "e3d190cc8207e15da1e839a7c51d80719e37077415e10b68b03fc431990cf323"
+    },
+    "units": {
+      "log": "qlane-meta/questpc/cloud-map-key-units.log",
+      "sha256": "d0d2e752bb30cb4bb178dd5eaa1701cc92bcfa108ab601eb281ea7b85a7c09ef"
+    },
+    "pins": {
+      "log": "qlane-meta/questpc/cloud-map-key-pins.log",
+      "sha256": "819efa1fa679910f05f3e6f015bf582f68917fba97d28020e210e14376467f4a"
+    },
+    "regression": {
+      "log": "qlane-meta/questpc/cloud-map-key-regression.log",
+      "sha256": "f9596e8e50c8fab9dbbc48e2f5c0a739322d43a4c34c84203bc8721f811cf6e6"
+    }
+  }
+}

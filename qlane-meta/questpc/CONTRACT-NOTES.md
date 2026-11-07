@@ -180,3 +180,18 @@ and Draconia. Integration preserves that exact approved base and removes the
 now-redundant intermediate shard; no callback is lost. The native source-world
 shard remains loaded with cross-shard uniqueness and the combined runtime cap.
 No source-fix approval or guard is weakened during this integration.
+
+Map-authored key materialization follows the pinned Crystal key Item types2967-2973
+(and only those exact native Item definitions in the map wrapper). Source XML:
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml
+Each declares type=key. Its source action number is the immutable carried key
+number, matching key-door comparison:
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/doors/key_door.lua
+Retain base-digest/placement/channel/reset-epoch stock, not personal quest claims.
+Only one nonstackable noncontainer key may be bound; unrelated action/UID/door,
+house, contents, text, charges and teleport restrictions remain. The durable
+writer accepts a trusted binding, includes it in typed evidence and intent, and
+writes the immutable key row atomically with its map MINT receipt. Existing
+unbound intent bytes stay unchanged. This owner-authorized feature amends the
+older reward-claim-only restriction; it does not infer any quest key placement.
+Refreshed qengine2 and questpc6 have no map key binding implementation to reuse.

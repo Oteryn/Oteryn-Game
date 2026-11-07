@@ -1003,6 +1003,7 @@ async fn pick_origin(
         placement_key: crate::map::view::placement_key(pos, 1).ok_or("key")?,
         reset_epoch: 0,
         item,
+        key_number: None,
         quantity: 1,
         content_revision: format!(
             "sha256:{}",

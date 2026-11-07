@@ -1,3 +1,26 @@
+## Shared map key durable writer GREEN — 2026-11-07
+Three real PostgreSQL18.6 cases RED10.96s / GREEN11.86s: silver3007,
+copper3008, golden3002. Key row and typed audit retain the source number;
+exact replay writes once, altered binding conflicts, competing command cannot
+take shared stock, unactivated reset epoch refuses, activated pointer replenishes.
+The activated pointer is fixture setup, not reset activation writer evidence.
+Existing unbound map MINT/capacity/replay PG regression and migration-number check
+pass5.17s. Three intent/validation units pass0.01s (pure units). fmt/check29.62s/
+strict clippy41.53s pass on dispatch+durability all targets/all features; pins
+unchanged2cabea56... . Full logs/hashes:cloud-map-key-validation.json.
+
+Adds migration1007 for same-transaction map MINT key admission, preserving both
+reward-claim paths and immutable key guards. Optional tagged intent suffix leaves
+old unbound intent bytes unchanged. Production wrapper still passes None: this
+is the reusable durable foundation, not a whole-title qualification.
+Counts remain60QUALIFIED/117UNFINISHED/1excludedDawnportBLOCKED.
+
+NEXT: exact source key2967-2973 binding in BundleFacts/eligible map entry and
+real command9 pickup. Preserve all unrelated bound-attribute/house/content refusals,
+shared placement/reset stock and reconnect rehide. Add wire PG RED/GREEN for key
+pickup, crash replay and no-room refusal. Then Draconia party switches and rewards.
+Pinned XML/key-door URLs and conservative boundary in CONTRACT-NOTES.md.
+
 ## Source-world bridge/current-predicate merge GREEN — 2026-11-07
 Merged remote f90b14f25 with local a01933b31 in a08555946, preserving all source-world
 bridge/native claim guards/reward bindings/occupant ejection, selector.positions,
