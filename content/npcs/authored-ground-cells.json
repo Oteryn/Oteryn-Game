@@ -1,0 +1,142 @@
+{
+  "schema": "OTERYN_AUTHORED_GROUND_CELLS/v1",
+  "coordinate_frame": "global-target-2026-09-27",
+  "provenance": {
+    "kind": "FIRST_PARTY_NPC_FLOOR_SUPPORT",
+    "assumption": "The pinned Summer and Winter fragments do not contain the two sourced NPC cells. Provide a minimal three-by-three floor at each retail coordinate using the captured Book World paper ground50362. This is conservative authored support, not a claim about the full retail room layout. Existing captured tiles are never replaced.",
+    "npc_sources": [
+      {
+        "name": "Emberwing (NPC)",
+        "url": "https://www.tibiawiki.com.br/api.php?format=json&action=parse&prop=wikitext&page=Emberwing%20%28NPC%29",
+        "sha256": "631abc228fb1ee3bd41047112ccff0edc926adc9e4a925c810b9c2ca202f7f2a"
+      },
+      {
+        "name": "Grovebeast (NPC)",
+        "url": "https://www.tibiawiki.com.br/api.php?format=json&action=parse&prop=wikitext&page=Grovebeast%20%28NPC%29",
+        "sha256": "7fb46273c286c3cc959233a76ef9bb37426d3fef3372bda633bb0abab7f85f64"
+      }
+    ],
+    "ground_source": {
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/world/maps.7z",
+      "sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "member": "summer-update-2025.otbm",
+      "member_sha256": "d4b4baeedbccdae35011e197a78cab557ec6de774aeb52a1e47cec0646e99a26",
+      "observed_ground_cell": [
+        32551,
+        32623,
+        11
+      ],
+      "appearance": 50362
+    }
+  },
+  "cells": [
+    {
+      "x": 32573,
+      "y": 32621,
+      "z": 11,
+      "ground": "oteryn:terrain.tibia.i50362"
+    },
+    {
+      "x": 32574,
+      "y": 32621,
+      "z": 11,
+      "ground": "oteryn:terrain.tibia.i50362"
+    },
+    {
+      "x": 32575,
+      "y": 32621,
+      "z": 11,
+      "ground": "oteryn:terrain.tibia.i50362"
+    },
+    {
+      "x": 32573,
+      "y": 32622,
+      "z": 11,
+      "ground": "oteryn:terrain.tibia.i50362"
+    },
+    {
+      "x": 32574,
+      "y": 32622,
+      "z": 11,
+      "ground": "oteryn:terrain.tibia.i50362"
+    },
+    {
+      "x": 32575,
+      "y": 32622,
+      "z": 11,
+      "ground": "oteryn:terrain.tibia.i50362"
+    },
+    {
+      "x": 32573,
+      "y": 32623,
+      "z": 11,
+      "ground": "oteryn:terrain.tibia.i50362"
+    },
+    {
+      "x": 32574,
+      "y": 32623,
+      "z": 11,
+      "ground": "oteryn:terrain.tibia.i50362"
+    },
+    {
+      "x": 32575,
+      "y": 32623,
+      "z": 11,
+      "ground": "oteryn:terrain.tibia.i50362"
+    },
+    {
+      "x": 32621,
+      "y": 32621,
+      "z": 11,
+      "ground": "oteryn:terrain.tibia.i50362"
+    },
+    {
+      "x": 32622,
+      "y": 32621,
+      "z": 11,
+      "ground": "oteryn:terrain.tibia.i50362"
+    },
+    {
+      "x": 32623,
+      "y": 32621,
+      "z": 11,
+      "ground": "oteryn:terrain.tibia.i50362"
+    },
+    {
+      "x": 32621,
+      "y": 32622,
+      "z": 11,
+      "ground": "oteryn:terrain.tibia.i50362"
+    },
+    {
+      "x": 32622,
+      "y": 32622,
+      "z": 11,
+      "ground": "oteryn:terrain.tibia.i50362"
+    },
+    {
+      "x": 32623,
+      "y": 32622,
+      "z": 11,
+      "ground": "oteryn:terrain.tibia.i50362"
+    },
+    {
+      "x": 32621,
+      "y": 32623,
+      "z": 11,
+      "ground": "oteryn:terrain.tibia.i50362"
+    },
+    {
+      "x": 32622,
+      "y": 32623,
+      "z": 11,
+      "ground": "oteryn:terrain.tibia.i50362"
+    },
+    {
+      "x": 32623,
+      "y": 32623,
+      "z": 11,
+      "ground": "oteryn:terrain.tibia.i50362"
+    }
+  ]
+}

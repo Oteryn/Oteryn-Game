@@ -325,32 +325,7 @@
     "oteryn:npc.zumtah",
     "oteryn:npc.zurak"
   ],
-  "position_conflicts": [
-    {
-      "npc": "oteryn:npc.emberwing",
-      "evidence": [
-        {
-          "wiki": {
-            "title": "Emberwing (NPC)",
-            "revid": 1124889
-          },
-          "reason": "Retail Book World NPCs share one cell; no admitted mutually exclusive scene selector."
-        }
-      ]
-    },
-    {
-      "npc": "oteryn:npc.grovebeast_npc",
-      "evidence": [
-        {
-          "wiki": {
-            "title": "Grovebeast (NPC)",
-            "revid": 1124890
-          },
-          "reason": "Retail Book World NPCs share one cell; no admitted mutually exclusive scene selector."
-        }
-      ]
-    }
-  ],
+  "position_conflicts": [],
   "retail_placements": [
     {
       "npc": "oteryn:npc.a_beggar",
@@ -1484,15 +1459,16 @@
     {
       "npc": "oteryn:npc.emberwing",
       "position": {
-        "x": 32551,
-        "y": 32623,
+        "x": 32574,
+        "y": 32622,
         "z": 11
       },
       "wiki": {
         "title": "Emberwing (NPC)",
-        "revid": 1124889
-      },
-      "held_reason": "POSITION_CONFLICT"
+        "revid": 427831,
+        "pageid": 64880,
+        "repository": "tibiawiki.com.br"
+      }
     },
     {
       "npc": "oteryn:npc.emiliana",
@@ -2104,15 +2080,16 @@
     {
       "npc": "oteryn:npc.grovebeast_npc",
       "position": {
-        "x": 32551,
-        "y": 32623,
+        "x": 32622,
+        "y": 32622,
         "z": 11
       },
       "wiki": {
         "title": "Grovebeast (NPC)",
-        "revid": 1124890
-      },
-      "held_reason": "POSITION_CONFLICT"
+        "revid": 427839,
+        "pageid": 64882,
+        "repository": "tibiawiki.com.br"
+      }
     },
     {
       "npc": "oteryn:npc.guardian_of_the_deep_seas",
