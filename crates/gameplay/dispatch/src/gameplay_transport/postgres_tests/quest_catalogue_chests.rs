@@ -423,7 +423,7 @@ pub(super) fn phase_a_cohort(quests: &[&str]) -> TestResult {
 // Wiki titles can name a standalone chest within a larger donor quest (for
 // example Braindeath's BPTheUndeathStare). Keep every authored placement.
 pub(super) fn exact_claim_cohort(claims: &[&str]) -> TestResult {
-    let selected: Vec<_> = cases()?
+    let selected: Vec<_> = cases_including(|key| claims.contains(&key))?
         .into_iter()
         .filter(|case| claims.contains(&case.claim.as_str()))
         .collect();

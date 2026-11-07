@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "scope": "Three Demon Helmet once rewards plus the existing prerequisite Parchment Room bag and its exact nested key6010. Access/combat composition remains active.",
+  "red": {
+    "test_seconds": 3.54,
+    "postgres_server_version": "18.6",
+    "error": "missing exact source acquisition selector6029"
+  },
+  "green": {
+    "filter": "questpc5_demon_helmet_four_source_acquisitions_and_cold_replay",
+    "test_seconds": 78.09,
+    "postgres_server_version": "18.6",
+    "registration_seconds": 4.343173142,
+    "claim_seconds": {
+      "demon_helmet": 6.428664875,
+      "demon_shield": 6.600665707,
+      "steel_boots": 6.42966103,
+      "parchment_room_bag": 6.532391741
+    },
+    "assertions": "Real USE, stale-fence/atomic refusal, exact contents and nested6010 binding, custody/once receipts, duplicate replay and cold reconnect preserve item identities."
+  },
+  "checks": {
+    "physical_source_tests": 3,
+    "producer_reproduction": "PASS",
+    "cargo_fmt": "PASS",
+    "cargo_check_dispatch": "PASS29.91s",
+    "clippy_dispatch_all_targets_all_features": "PASS41.00s",
+    "repository_pin_refresh_and_check": "PASS"
+  },
+  "world_digest": "0cdf35ac82223c666f05cb15ffb90fd05d6563bc5c5c854bee124f23a413fd25"
+}

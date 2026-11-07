@@ -261,6 +261,18 @@
     },
     {
       "position": [
+        33063,
+        31624,
+        15
+      ],
+      "item": 2474,
+      "attribute": "unique",
+      "value": 6076,
+      "source": "data-global/startup/tables/chest.lua",
+      "line": 1161
+    },
+    {
+      "position": [
         33226,
         31671,
         13
@@ -270,6 +282,42 @@
       "value": 30025,
       "source": "data-global/startup/tables/lever.lua",
       "line": 977
+    },
+    {
+      "position": [
+        33313,
+        31574,
+        15
+      ],
+      "item": 2472,
+      "attribute": "unique",
+      "value": 6029,
+      "source": "data-global/startup/tables/chest.lua",
+      "line": 799
+    },
+    {
+      "position": [
+        33313,
+        31575,
+        15
+      ],
+      "item": 2472,
+      "attribute": "unique",
+      "value": 6030,
+      "source": "data-global/startup/tables/chest.lua",
+      "line": 806
+    },
+    {
+      "position": [
+        33313,
+        31576,
+        15
+      ],
+      "item": 2472,
+      "attribute": "unique",
+      "value": 6031,
+      "source": "data-global/startup/tables/chest.lua",
+      "line": 813
     }
   ]
 }

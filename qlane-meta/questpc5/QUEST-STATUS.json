@@ -412,6 +412,13 @@
         "duration_seconds": 68.87,
         "scope": "Exact source expertise gates for Demon and Devil Helmet; whole quest routes remain active.",
         "proof": "cloud-helmet-levels-proof.json"
+      },
+      {
+        "filter": "questpc5_demon_helmet_four_source_acquisitions_and_cold_replay",
+        "result": "PASS",
+        "duration_seconds": 78.09,
+        "scope": "Exact native prerequisite bag/key and all three once rewards; whole combat route remains active.",
+        "proof": "cloud-demon-source-acquisitions-proof.json"
       }
     ],
     "source_key_access_evidence": "cloud-helmet-source-keys-proof.json",
