@@ -184,6 +184,7 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
             let catalogue = std::sync::Arc::new(QuestStateCatalogue::new("content-1", vec![QuestTrack {
                 key: storage.track.clone(), quest: callback.quest.clone(), initial: -1, min: -1, max: 13,
             }], vec![QuestTransition {
+                world_change: None,
                 key: seed.into(), quest: callback.quest.clone(), effects: vec![QuestEffect {
                     track: storage.track.clone(), from: QuestComparison::Between(-1, 13), effect: QuestEffectKind::Set(stage),
                 }], completes: false, experience: None,

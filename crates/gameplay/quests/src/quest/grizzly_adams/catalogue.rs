@@ -119,6 +119,7 @@ pub fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue,
 
 fn marker(key: String, experience: Option<i64>) -> QuestTransition {
     QuestTransition {
+        world_change: None,
         key,
         quest: QUEST.into(),
         completes: false,

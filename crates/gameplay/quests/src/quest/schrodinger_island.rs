@@ -11,7 +11,7 @@ pub const ENTER: &str = "oteryn:quest-callback/srv6-schrodinger-island";
 
 pub(crate) fn callback() -> Callback {
     Callback {
-        key: ENTER.into(),
+        world_change: None,        key: ENTER.into(),
         quest: QUEST.into(),
         trigger: Trigger::StepIn,
         use_range: 1,

@@ -749,6 +749,7 @@ fn extend_callbacks(
                 return Err(format!("foreign participant operation {}", callback.key));
             }
             transitions.push(QuestTransition {
+                world_change: None,
                 key: participant_key(&callback.key, index),
                 quest: participant.quest.clone(),
                 effects: participant
@@ -799,6 +800,7 @@ fn extend_callbacks(
             .collect();
         if !callback.storage.is_empty() || !callback.state_ops.is_empty() {
             transitions.push(QuestTransition {
+                world_change: None,
                 key: format!("oteryn:quest-reward-rule/{digest}"),
                 quest: callback.quest.clone(),
                 effects: vec![QuestEffect {
@@ -850,6 +852,7 @@ fn extend_callbacks(
             }
         }
         transitions.push(QuestTransition {
+            world_change: None,
             key: callback.key.clone(),
             quest: callback.quest.clone(),
             effects: callback

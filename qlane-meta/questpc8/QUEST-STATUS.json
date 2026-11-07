@@ -1431,9 +1431,9 @@
       "proof": "ENGINE-REQUESTS.md",
       "boundary": "Latest owner rule reserves large shared features to qengine2; ownership reassignment may move this not-started quest.",
       "last_upstream_check": {
-        "main": "669d5af52",
-        "qengine2": "e5850715e",
-        "result": "Requested capability not present; awaiting owning engine implementation or coordinator transfer."
+        "main": "1138720b1",
+        "qengine2": "a1ea4e48d",
+        "result": "Authored binding envelope exists; requested carried-output/peer or item-look capability still absent."
       }
     }
   },
@@ -1680,9 +1680,9 @@
       "proof": "ENGINE-REQUESTS.md",
       "boundary": "Latest owner rule reserves large shared features to qengine2; ownership reassignment may move this not-started quest.",
       "last_upstream_check": {
-        "main": "669d5af52",
-        "qengine2": "e5850715e",
-        "result": "Requested capability not present; awaiting owning engine implementation or coordinator transfer."
+        "main": "1138720b1",
+        "qengine2": "a1ea4e48d",
+        "result": "Authored binding envelope exists; requested carried-output/peer or item-look capability still absent."
       }
     }
   },

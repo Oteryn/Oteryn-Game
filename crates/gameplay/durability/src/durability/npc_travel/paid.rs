@@ -58,6 +58,11 @@ async fn quote(
     {
         return Ok(Err(TravelRefusal::UnavailableRoute));
     }
+    if let Some(change) = &route.world_change
+        && !crate::durability::world_event::change_active(tx, fence.runtime_scope.world_id(), change).await?
+    {
+        return Ok(Err(TravelRefusal::UnavailableRoute));
+    }
     if route.yalahar_gate || route.yalahar_town_gate.is_some() {
         let town = route.yalahar_town_gate.as_deref().unwrap_or("ab_dendriel");
         let track = format!("oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/{town}");
@@ -174,6 +179,11 @@ impl DurabilityRoot {
             {return Ok(Err(CharacterProgressionError::InvalidInput));}
             let mut hash = Sha256::new();
             hash.update(b"oteryn:paid-travel-binding:v1");
+            if let Some(change) = &route.world_change {
+                hash.update(b"world-change");
+                hash.update((change.len() as u64).to_be_bytes());
+                hash.update(change.as_bytes());
+            }
             for text in [&route.service, &route.route.key, &route.keyword, &route.route.destination.coordinate_frame] {
                 hash.update((text.len() as u64).to_be_bytes());
                 hash.update(text.as_bytes());

@@ -1,3 +1,19 @@
+# Main1138720b1 QWORLD integration green20:37UTC
+
+AUTHORING: merged QWORLD#3026, migrations1320-1322, from origin/main1138720b1.
+Both Rust conflicts resolved preserving lane fields and adding main's optional
+world_change default. First all-target check identified missing field in7 lane
+transition constructors; all now explicitlyNone, retaining non-seasonal semantics.
+Second cargo check --workspace --all-targets PASS2m50s;fmt PASS. Commit/push now.
+No native tests weakened or skipped; no additional suite run under owner speed rule.
+
+Qualified packet count remains21/23 (18here,3elsewhere). Colours/Wrath remain
+owner-directed engine requests. Checked QENGINE2a1ea4e48d: its new catalogue-scoped
+binding envelope does not add carried reward outputs/live-peer predicates or
+item-look disguise. Do not merge unrelated unneeded engine work. Ownership/upstream
+question remains pending; no reassignment notification has arrived. No large
+engine replacement is authorized in this lane. ENGINE-REQUESTS.md records both.
+
 # Main669 integration green20:20UTC
 
 Resolved all22 JSON conflicts and regenerated affected binding/completion outputs

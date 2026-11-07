@@ -161,6 +161,7 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                 .map(|byte| format!("{byte:02x}"))
                 .collect();
         transitions.push(QuestTransition {
+            world_change: None,
             key: format!("oteryn:quest-death-plan/{digest}"),
             quest: objective.quest.clone(),
             effects: vec![QuestEffect {
@@ -172,6 +173,7 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
             experience: None,
         });
         transitions.push(QuestTransition {
+            world_change: None,
             key: objective.key.clone(),
             quest: objective.quest.clone(),
             completes: false,
