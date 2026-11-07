@@ -7351,7 +7351,7 @@
       }
     },
     "paradox_story_batch_26": {
-      "status": "COMPILED_LESSON_RED_WIP_CHECKPOINT",
+      "status": "PG_GREEN_COMPILER_GATES_PENDING",
       "previous_pushed_head": "bc9c9ce60d6460ecb1d4faa833afa7ca6ef13335",
       "decision_at": "2026-11-07 14:34 UTC",
       "scope": "Four selected ordered NPC progression contacts: Zoltan,Padreia,Lubo,prisoner lesson; three native cases ordered/premature/replay. Oldrak level/premium gate reused.",
@@ -7378,7 +7378,7 @@
         "classification": "Fixture setup failure, not missing-story behavioral RED",
         "fixes": "Reserve six slots only for native story; use native story start as initial trigger/floor; use paradox-story family to reuse existing premium fixture setup."
       },
-      "checkpoint_head": "8c21dc1d3",
+      "checkpoint_head": "fab5b397f",
       "fixture_correction": "Six reserved actor slots only for native story; qengine scenario trigger/native entry matches Oldrak start/floor6; paradox-story name family reuses existing premium fixture setup. Catalogue admission and actor-capacity enforcement retained.",
       "behavioral_red": {
         "postgres_version": "18.6",
@@ -7390,10 +7390,10 @@
         "log": "/tmp/questpc4-paradox-story-red3.log"
       },
       "implementation": "Four bound ordered NPC callbacks with level30/premium and exact predecessor; three read-only prisoner topic offers; final yes/topic8 advances story4->5 and names Mathemagician achievement.",
-      "green_session": 75088,
-      "green_log": "/tmp/questpc4-paradox-story-green.log",
+      "green_session": 74866,
+      "green_log": "/tmp/questpc4-paradox-story-green2.log",
       "gate_session": 35152,
-      "gate_script": "/tmp/questpc4-paradox-story-gates.sh",
+      "gate_script": "/tmp/questpc4-paradox-story-final-gates.sh",
       "first_green_attempt": {
         "postgres_version": "18.6",
         "cases_passed": 0,
@@ -7414,7 +7414,20 @@
           "postgres_version": "18.6"
         }
       },
-      "gates": "Obsolete gates stopped before targeted diagnostic; no final clippy/check claim."
+      "gates": "Final repaired-source check/clippy, security/frozen/source units and two final legacy PG regressions still running.",
+      "repair": "Use existing qengine_rewards::wire_reward NPC0-RL-04 pattern: send/read each command and wait one second after four messages; reuse liveness-probe acknowledgement. Preserve limiter, all word assertions, native contacts and all state/grant/replay assertions.",
+      "diagnostic": "Stopped obsolete diagnostic-only compile after existing wire helper exposed exact four-message rate-window rule; no diagnostic result claimed. Test-only production selector trace removed.",
+      "green": {
+        "postgres_version": "18.6",
+        "marker": "POSTGRES_DATABASE_READY l6_paradox_story",
+        "cases": 3,
+        "seconds": 146.73,
+        "ordered_seconds": 129.552873261,
+        "out_of_order_seconds": 141.530770232,
+        "lesson_guard_seconds": 146.729469554,
+        "proof": "All contacts/story5, exact account achievement fact and grantrequest1, byte reply replay and fresh repeated lesson produce no new rows.",
+        "log": "/tmp/questpc4-paradox-story-green2.log"
+      }
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",

@@ -204,7 +204,7 @@ fn offer_words(key: &str) -> &'static [&'static str] {
     }
 }
 
-async fn acknowledge_probe(
+pub(super) async fn acknowledge_probe(
     client: &mut tokio::io::DuplexStream,
     generation: u64,
     payload: &[u8],

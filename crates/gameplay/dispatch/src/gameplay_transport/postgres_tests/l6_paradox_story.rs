@@ -277,32 +277,59 @@ async fn conversation(
         })
         .collect::<TestResult<Vec<_>>>()?;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    for frame in frames {
-        client
-            .write_all(&u32::try_from(frame.len())?.to_be_bytes())
-            .await?;
-        client.write_all(&frame).await?;
-    }
+    let generation = admitted.continuity.connection_generation;
+    let labels = words.iter().map(|w| (*w).to_owned()).collect::<Vec<_>>();
     let reader = tokio::spawn(async move {
         let result: TestResult<Vec<Reply>> = async {
             let mut replies = Vec::new();
-            while replies.len() < commands.len() {
-                let mut prefix = [0; 4];
-                client.read_exact(&mut prefix).await?;
-                let mut frame = vec![0; u32::from_be_bytes(prefix) as usize];
-                client.read_exact(&mut frame).await?;
-                let envelope = decode_wire_envelope(&frame).map_err(debug)?;
-                if envelope.message_type() == MessageType::CommandResult {
-                    let command = oteryn_protocol_oteryn::decode_command_result(envelope.payload())
-                        .map_err(debug)?;
-                    let expected = &commands[replies.len()];
-                    assert_eq!(command.command_id, expected.0);
-                    replies.push(Reply {
-                        id: command.command_id,
-                        payload: expected.1.clone(),
-                        body: command.payload.to_vec(),
-                        disposition: decode_npc_intent_result(command.payload).map_err(debug)?,
-                    });
+            let mut window = tokio::time::Instant::now();
+            for (index, frame) in frames.iter().enumerate() {
+                // NPC0-RL-04: use the same four-message window as wire_reward.
+                if index != 0 && index % 4 == 0 {
+                    tokio::time::sleep_until(window + std::time::Duration::from_secs(1)).await;
+                    window = tokio::time::Instant::now();
+                }
+                client
+                    .write_all(&u32::try_from(frame.len())?.to_be_bytes())
+                    .await?;
+                client.write_all(frame).await?;
+                loop {
+                    let mut prefix = [0; 4];
+                    client.read_exact(&mut prefix).await?;
+                    let mut frame = vec![0; u32::from_be_bytes(prefix) as usize];
+                    client.read_exact(&mut frame).await?;
+                    let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                    if envelope.message_type() == MessageType::LivenessProbe {
+                        super::qengine_rewards::acknowledge_probe(
+                            &mut client,
+                            generation,
+                            envelope.payload(),
+                        )
+                        .await?;
+                    }
+                    if envelope.message_type() == MessageType::CommandResult {
+                        let command =
+                            oteryn_protocol_oteryn::decode_command_result(envelope.payload())
+                                .map_err(debug)?;
+                        let expected = &commands[replies.len()];
+                        assert_eq!(command.command_id, expected.0);
+                        eprintln!(
+                            "PARADOX_STORY_REPLY word={:?} result={:?}",
+                            labels[replies.len()],
+                            decode_npc_intent_result(command.payload).map_err(debug)?
+                        );
+                        replies.push(Reply {
+                            id: command.command_id,
+                            payload: expected.1.clone(),
+                            body: command.payload.to_vec(),
+                            disposition: decode_npc_intent_result(command.payload)
+                                .map_err(debug)?,
+                        });
+                        break;
+                    }
+                }
+                if (index + 1) % 4 == 0 {
+                    window = tokio::time::Instant::now();
                 }
             }
             client.shutdown().await?;
@@ -455,10 +482,16 @@ pub(super) async fn exercise(
         &["hi", "math", "yes", "green", "yes"],
     )
     .await?;
+    eprintln!("PARADOX_STORY_AFTER_LESSON progress={}", progress(h).await?);
     assert!(
         lesson
             .iter()
-            .all(|r| r.disposition == NpcIntentDisposition::Ok)
+            .all(|r| r.disposition == NpcIntentDisposition::Ok),
+        "lesson dispositions {:?}",
+        lesson
+            .iter()
+            .map(|r| (r.id, r.disposition))
+            .collect::<Vec<_>>()
     );
     assert_eq!(progress(h).await?, 5);
     let achievements: i64 = sqlx::query_scalar(
