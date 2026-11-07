@@ -1,0 +1,57 @@
+{
+  "status": "QUALIFIED",
+  "scope": "Whole selected premium once personal three-cache programme, excluding global daily camp rotation",
+  "postgres": {
+    "server_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "red": {
+      "log": "/tmp/questpc5-nomads-whole-red3.log",
+      "duration_seconds": 51.052321802,
+      "error": "six selected exploration/cache bindings must exist:0!=6"
+    },
+    "green": {
+      "log": "/tmp/questpc5-nomads-whole-green.log",
+      "duration_seconds": 54.444058006,
+      "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-nomads-mini success=true",
+      "assertions": [
+        "no quest or reward progress seeded",
+        "real STEP exploration precedes each literal world cache USE",
+        "missing current Premium cannot start route or deliver terminal reward",
+        "Ham3582x10 and Fish3578x50 exact native MINTs",
+        "FurBag7343x1, Emerald3032x3, BlackPearl3027x1, Topaz9057x1, SilverAmulet3054x1",
+        "all five terminal outputs independent in main backpack; no nested Fur Bag contents",
+        "each cache once; exactly six committed route receipts",
+        "quest completion and canonical account Chest Robber exactly once"
+      ]
+    }
+  },
+  "generic_mechanisms": [
+    "Source-checked permanent personal quest objects projected during World compilation without rewriting source B3",
+    "Optional bounded terminal world achievement, committed through existing fenced account writer after successful native MINT in same transaction",
+    "Reused canonical questpc8 independent backpack MINT outputs and shared migration1300"
+  ],
+  "checks": {
+    "compiler_rust_units": "PASS3 including actual retained source cells and provenance/collision guards",
+    "compiler_clippy": "PASS all targets/features -D warnings2.17s",
+    "authoring_python": "PASS1",
+    "gameplay_check": "PASS all targets/features three changed crates2m43s",
+    "pins": {
+      "inputs_digest": "613147f74a744a1ea8865c2eb08112ed4b383992f0ebbcb2196a53a3983a73b7",
+      "pins": [
+        {
+          "bytes": 31102076,
+          "digest": "639485b04a204b8efe593cbf76c0af353d3ad058d390d7f13bbb863dca3ce97c",
+          "world": "oteryn"
+        }
+      ]
+    },
+    "gameplay_achievement_unit": "PASS1; terminal literal USE/native reward/key bounds and legacy serialization",
+    "gameplay_clippy": "PASS three changed gameplay crates all targets/features -D warnings2m54s",
+    "fmt": "PASS cargo fmt --all --check",
+    "generator": "PASS qengine_rewards.py --check",
+    "duplicates": "PASS repository duplicate-migration check",
+    "migration_changes": "NONE"
+  },
+  "assumptions": "Explicit selected route offsets, newly authored fixed caches and ambiguous Ham/Fish resolution documented in CONTRACT-NOTES.md and QUEST-STATUS.json; no historical exact camp position claim",
+  "migration_policy": "No new migration; lane files1270/1271/1272 unchanged; shared1300 preserved byte-for-byte",
+  "product_commit": "eed7cbc68bc80423ec26488f5d54674d71d7e509"
+}

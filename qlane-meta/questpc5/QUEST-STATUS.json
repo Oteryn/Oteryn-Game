@@ -218,12 +218,11 @@
     "canonical": "oteryn:quest.authored.nomads_mini_world_change",
     "title": "Nomads Mini World Change",
     "mechanism": "native_item_identity_charges_lifetime",
-    "status": "UNFINISHED",
-    "blocker": "Active whole-route implementation: reusable independent native backpack output mechanism now PG GREEN51.634868574s on18.6. Next author and prove three ordered personal camp exploration/cache USE stages and terminal Chest Robber achievement. Global daily camp variants remain owned by world lanes.",
+    "status": "QUALIFIED",
     "from_lanes": [
       "questpc2"
     ],
-    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "qualification_scope": "Whole selected premium once personal route: real STEP exploration and literal USE of three source-checked authored caches; exact10Ham/50Fish and terminal FurBag+four independent item outputs; same-transaction canonical account Chest Robber and quest completion, refusal/order/once proofs. Explicit authored camp offsets and food-name bindings are documented assumptions; global random daily camps are not selected.",
     "input_canonical": "unresolved:questpc2:nomads_mini_world_change",
     "canonical_location": {
       "path": "content/quests/definitions/quests-00300-00351.json",
@@ -251,13 +250,16 @@
       "integration_state": "COMPILES_PG_FACTORY_RED_INVALID_STORED_STATE_51_32S",
       "integration_red_log": "/tmp/questpc5-backpack-outputs-green.log"
     },
-    "active_checkpoint": "Source-checked authored object projection3 Rust tests PASS (including actual retained source cells); compiler strict Clippy PASS; ordered authoring Python1 PASS; pin-refresh and independent pin-check PASS639485b04a204b8efe593cbf76c0af353d3ad058d390d7f13bbb863dca3ce97c. Gameplay all-target check and actual whole PG GREEN attempt running; prior actual PG RED51.052321802s remains evidence. No qualification yet.",
+    "active_checkpoint": "QUALIFIED: actual PG18.6 RED51.052321802s -> GREEN54.444058006s; compiler source guards/materialization3 Rust units; achievement guard1 Rust unit; authoring1 Python unit; generator/fmt/check/strict clippy/pin verification all PASS. Producteed7cbc68.",
     "backpack_output_component_proof": "cloud-backpack-outputs-proof.json",
     "assumptions": [
       "Selected once personal route intentionally replaces random daily camp availability, per retained recipe adaptations.",
       "Exact old camp/chest coordinates absent; use documented source-checked Oteryn offsets and newly authored permanent native chests.",
       "Resolve ambiguous Ham/Fish reward-name intents to admitted native Items3582/3578 at exact10/50; preserve historical ambiguity as source evidence."
-    ]
+    ],
+    "qualification_proof": "cloud-nomads-mini-whole-proof.json",
+    "whole_postgres_seconds": 54.444058006,
+    "world_pin": "639485b04a204b8efe593cbf76c0af353d3ad058d390d7f13bbb863dca3ce97c"
   },
   {
     "canonical": "oteryn:quest.authored.noodles_is_gone_mini_world_change",
