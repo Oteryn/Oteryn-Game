@@ -181,13 +181,14 @@ pub(super) async fn concurrent_and_control_loss<'a>(
         exchange(address, exact, &raw),
     )
     .await;
-    let concurrent: Vec<[u8; 16]> = [first?, second?, third?]
-        .iter()
-        .filter_map(accepted_session)
-        .collect();
+    let replies = [first?, second?, third?];
+    let concurrent: Vec<[u8; 16]> = replies.iter().filter_map(accepted_session).collect();
     let accepted = concurrent.len();
-    if accepted != 1 || committed_admissions(url).await? != 2 {
-        return Err(format!("concurrent same-grant admission accepted {accepted}").into());
+    let committed = committed_admissions(url).await?;
+    if accepted != 1 || committed != 2 {
+        return Err(format!(
+            "concurrent same-grant admission accepted {accepted}, committed {committed}, replies={replies:?}"
+        ).into());
     }
     evidence("concurrent_same_grant attempts=3 accepted=1 admissions=2");
 

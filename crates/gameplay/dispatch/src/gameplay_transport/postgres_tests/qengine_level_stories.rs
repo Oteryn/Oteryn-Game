@@ -189,6 +189,7 @@ pub(super) async fn exercise(
         let track = tracks.get(key).ok_or("parent owner")?;
         let transition = format!("oteryn:quest-transition/qengine2-story/l11-parent-{index}");
         transitions.push(QuestTransition {
+            world_change: None,
             key: transition.clone(),
             quest: track.quest.clone(),
             effects: vec![QuestEffect {
