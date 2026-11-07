@@ -2582,7 +2582,9 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 no_progression: false,
             };
         };
-        if entry.row.as_ref().is_some_and(|row| row.race.is_some())
+        let has_source_quest = oteryn_gameplay_quests::quest::kill_callbacks::load()
+            .is_ok_and(|bindings| bindings.iter().any(|b| b.creature == entry.creature));
+        if (entry.row.as_ref().is_some_and(|row| row.race.is_some()) || has_source_quest)
             && admission
                 .freeze_task_board_recipients(&permit, entry)
                 .await
@@ -2654,6 +2656,12 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                     .credit_frozen_task_board_recipients(entry, race.key())
                     .await
             {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            }
+            if !admission.credit_source_quest_kill(entry).await {
                 return SettleReport {
                     verdict: SettleVerdict::Retry,
                     no_progression: false,
@@ -3054,6 +3062,12 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             && !admission
                 .credit_frozen_task_board_recipients(&entry, race.key())
                 .await
+        {
+            report.verdict = SettleVerdict::Retry;
+        }
+        if report.verdict == SettleVerdict::Final
+            && outcome.is_ok()
+            && !admission.credit_source_quest_kill(&entry).await
         {
             report.verdict = SettleVerdict::Retry;
         }

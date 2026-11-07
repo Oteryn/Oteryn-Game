@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "creature": "oteryn:creature.renegade_orc",
+      "transition": "oteryn:quest-transition/quest/u8_54/an_uneasy_alliance/quest_door/creature_event_1",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/an_uneasy_alliance/creaturescripts_renegade_orc_kill.lua:1-15:sha256:cfbb7215d0d987b18e8c3e53dabf2954c4b523527121cd8185739745f73c5c99"
+      ]
+    }
+  ]
+}

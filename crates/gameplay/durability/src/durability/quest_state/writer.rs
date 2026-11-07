@@ -188,6 +188,13 @@ impl DurabilityRoot {
         if request.transition_key.starts_with("oteryn:quest-npc/") {
             return Err(CharacterProgressionError::InvalidInput);
         }
+        if !matches!(request.cause, QuestCause::CreatureDeath(_))
+            && oteryn_gameplay_quests::quest::kill_callbacks::load()
+                .map_err(|_| CharacterProgressionError::InvalidInput)?
+                .iter().any(|c| c.transition == request.transition_key)
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         let reward_callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         if reward_callbacks.iter().any(|c| c.participants.iter().enumerate().any(|(i,_)|

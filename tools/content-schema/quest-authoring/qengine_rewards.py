@@ -39,7 +39,8 @@ def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
         'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', *questl2_rewards.NPCS)]
-    paths += ['data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
+    paths += ['data-global/scripts/quests/an_uneasy_alliance/creaturescripts_renegade_orc_kill.lua',
+              'data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua']
     result = {}
@@ -382,6 +383,7 @@ def build():
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),
             'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
+    generated['content/quests/shared-kill-callbacks.json']=encoded(questl2_knowledge.kill_bindings(inputs,PIN))
     greetings=[]
     for npc in sorted({c['npc'] for c in callbacks}):
         path=questl2_rewards.source_path(npc)

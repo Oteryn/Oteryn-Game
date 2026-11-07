@@ -2913,6 +2913,21 @@
         "status": "PASS",
         "log": "/tmp/l2-regalia-pin-check.log"
       }
+    },
+    "shared_kill_progress": {
+      "status": "PENDING_NATIVE_JOURNEY_PROOF",
+      "domain_tests": {
+        "passed": 1,
+        "failed": 0,
+        "duration_seconds": 1.32,
+        "log": "/tmp/l2-kill-domain.log"
+      },
+      "compile": {
+        "status": "PASS",
+        "duration": "2m34s",
+        "log": "/tmp/l2-kill-compile.log"
+      },
+      "remaining": "Native Alliance mission issuance -> Renegade Orc death -> source tower device -> two tomes."
     }
   }
 }

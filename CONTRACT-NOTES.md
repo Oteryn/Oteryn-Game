@@ -317,3 +317,21 @@ using the existing finite weight-precedence check. Parts31572–31575 retain
 850 each. Yonan's three conditional greeting branches repeat the same literal
 text; the producer deduplicates identical literals and still rejects differing
 ambiguous greetings. Success text is the exact donor line209.
+
+Native creature callbacks bind canonical typed transitions through shared-kill-
+callbacks.json. Renegade Orc uses the existing creature_event_1 transition
+(quest_door 0 -> 1), with the pinned Crystal onDeath witness above. Credits
+are descendants of native settled deaths, reuse captured recipient occurrences,
+and filter positive captured damage plus original session/lease identity.
+The writer rejects a command or USE cause for registered creature callbacks.
+Full native Alliance kill proof is pending; the mechanism is not yet qualified.
+
+The missing second Alliance tome is the source tower chest: Crystal
+data-global/startup/tables/chest.lua:1375-1380, SHA256
+0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca,
+chest6104 at33154,31297,z3, one10217, TomesOfKnowledge.TopTower.
+The same source table:2740-2804 provides eight more one-tome chests;
+container_quest.lua:92-98, SHA256
+c18f0caf3d2c9f1d0c084722dfcb55523dbb1811166863a4f72d052bd2ae24b9,
+adds the chest at33343,31610,z1. Together these ten physical books and
+Curos/Zalamon's one-tome NPC grants supply Cael's twelve source deliveries.
