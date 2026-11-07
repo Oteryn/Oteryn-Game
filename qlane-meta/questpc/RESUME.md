@@ -1,3 +1,27 @@
+## Draconia engine support green — 2026-11-07
+Reused questpc6c651c87d5 failure_teleport andbe812420e exact SET_IF support,
+retaining this branch's newer objects/StepOut and23 authored inputs. Five realPG
+cases PASS102.11s onPostgreSQL18.6: blocked failure landing45.72262623s, authored
+landing/replay44.745471535s, exact1->0 reset3.858968746s, absent-1 preserved3.846971042s,
+later2 preserved3.930033136s. Two missing-field RED cases7.30s after database creation.
+Existing field defaults and effect hash tags are preserved; new conditional tag6
+binds both literals. Source failure landing uses the existing sealed movement owner.
+
+ChecksPASS: changed crates alltarget/allfeature check41.25s; strict clippy53.27s;
+three source/schema/hash unit tests0.01s;7batch3 Python tests and18batch4 Python tests;
+23generated source packets unchanged; cargo fmt; pin refresh unchanged2cabea56... .
+Exact logs/hashes/reuse:cloud-conditional-validation.json. No whole-title promotion.
+Counts remain59QUALIFIED/118UNFINISHED/1excludedDawnportBLOCKED.
+
+NEXT: reuse questpc6@3bfd85606 Item3206 native profile plus Draconia escape35012
+callback and its four PG source cases (missing offering, absent flag, exact1, later2).
+Existing local registry has only Draconia's two lever callbacks. The new escape must
+burn one3206 at32816,31601,z9, reset Dragonfetish only1->0, teleport to32701,31639,z6;
+missing offering uses authored failure32818,31599,z9. Source source-gap script and
+qpc6 profile/source evidence are retained; no donor corpus copies. Then implement
+four-lever exit UID35011, shared resettable keys, party switches and all four rewards.
+Use10-minute fact cap and push each tested mechanic slice immediately.
+
 ## Devil Helmet qualified — 2026-11-07
 Original source contractQUALIFIED: UID25030 entry creates one435 if absent;
 departure removes it, including real USE departure. Source tests cover fresh and

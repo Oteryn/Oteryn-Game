@@ -64,7 +64,7 @@ CALLBACK_FIELDS = {
     'key', 'quest', 'trigger', 'selector', 'lever', 'reversible', 'passages',
     'teleport', 'storage', 'minimum_level', 'experience', 'monk_reward',
     'offerings', 'item_on_target', 'return_on_failure', 'failure_message',
-    'success_message', 'native_rule', 'sources', 'objects',
+    'success_message', 'native_rule', 'sources', 'objects', 'failure_teleport',
 }
 CALLBACK_REQUIRED = {
     'key', 'quest', 'trigger', 'selector', 'reversible', 'passages',
@@ -280,19 +280,28 @@ def validate_callback(callback, directory):
                 key + ': invalid lever')
     if callback.get('teleport') is not None:
         position(callback['teleport'], key + ': teleport')
+    if callback.get('failure_teleport') is not None:
+        position(callback['failure_teleport'], key + ': failure_teleport')
+        require(callback['trigger'] == 'step_in' and callback['return_on_failure'],
+                key + ': failure teleport requires a returning STEP')
     for field in ('passages', 'storage', 'offerings'):
         require(isinstance(callback[field], list) and len(callback[field]) <= MAX_EFFECTS,
                 key + ': invalid or excessive ' + field)
     seen = set()
     for storage in callback['storage']:
         fields(storage, {'track', 'minimum', 'maximum', 'set'},
-               {'track', 'minimum', 'maximum', 'set', 'preserve', 'read_only'}, key + ': storage')
+               {'track', 'minimum', 'maximum', 'set', 'preserve', 'read_only', 'set_if'}, key + ': storage')
         require(valid_key(storage['track']) and storage['track'] not in seen, key + ': duplicate or invalid track')
         seen.add(storage['track'])
         require(all(integer(storage[field], -(2 ** 63), 2 ** 63 - 1) for field in ('minimum', 'maximum', 'set'))
                 and storage['minimum'] <= storage['maximum'], key + ': invalid storage range')
         require(type(storage.get('preserve', False)) is bool, key + ': invalid preserve')
         require(type(storage.get('read_only', False)) is bool, key + ': invalid read_only')
+        if storage.get('set_if') is not None:
+            require(integer(storage['set_if'], storage['minimum'], storage['maximum'])
+                    and not storage.get('preserve', False) and not storage.get('read_only', False)
+                    and callback.get('native_rule') is None,
+                    key + ': invalid conditional set')
     if any(entry.get('read_only', False) for entry in callback['storage']):
         require(all(entry.get('read_only', False) and not entry.get('preserve', False)
                     for entry in callback['storage'])

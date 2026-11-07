@@ -436,6 +436,7 @@ fn scenario_in_world(
                         minimum: 0,
                         maximum: 0,
                         set: 1,
+                        set_if: None,
                         preserve: false,
                         read_only: false,
                     }]
@@ -448,6 +449,7 @@ fn scenario_in_world(
                 monk_reward: None,
                 item_on_target: None,
                 return_on_failure: refused,
+                failure_teleport: None,
                 failure_message: None,
                 success_message: None,
                 native_rule: None,

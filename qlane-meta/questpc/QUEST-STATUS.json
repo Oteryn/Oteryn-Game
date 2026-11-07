@@ -3535,7 +3535,8 @@
           "Read full source wiki route: daily key stock and two-player floor switch progression remain mandatory; did not replace them with personal claims or qualify unchanged reward-only tests."
         ]
       },
-      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff"
+      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
+      "active_batch": "Reused failure_teleport and exact SetIf support from questpc6; five fresh PG cases passed102.11s, strict checks green. Next reuse Item3206 and source escape/offering, then compose the remaining shared keys, party switches and four-lever exit here."
     },
     {
       "title": "Dragon Corpse Quest",
@@ -8453,9 +8454,9 @@
   },
   "owner_execution_override": "Shared quest-engine, reward/binding, NPC, Item and callback features are owned here when needed. Check and reuse origin/claude/happy-davinci-ijz3wy-qengine2 first; historical outside-lane blockers are active implementation obligations, not final dispositions.",
   "latest_cloud_batch": {
-    "name": "Devil Helmet source sewer and five rewards",
-    "validation": "qlane-meta/questpc/cloud-devil-validation.json",
-    "qualified_titles_added": 1,
+    "name": "Generic source failure landings and exact storage resets",
+    "validation": "qlane-meta/questpc/cloud-conditional-validation.json",
+    "qualified_titles_added": 0,
     "counts": {
       "QUALIFIED": 59,
       "UNFINISHED": 118,
@@ -8682,6 +8683,82 @@
         "format": "PASS cargo fmt for changed crate and explicit mounted Rust files",
         "source_generation": "PASS 22 source packets, zero stale generated files",
         "pin_refresh": "PASS; unchanged 2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968"
+      }
+    },
+    "conditional_callback_recovery": {
+      "scope": "Reusable authored failure landing on returning STEP and exact conditional quest storage set; no whole-title promotion",
+      "result": "PASS",
+      "pg": {
+        "passed": 5,
+        "failed": 0,
+        "total_seconds": 102.11,
+        "server_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+        "cases": {
+          "conditional-failure-blocked": 45.72262623,
+          "conditional-failure-landing": 44.745471535,
+          "conditional-reset-match": 3.858968746,
+          "conditional-reset-absent": 3.846971042,
+          "conditional-reset-later": 3.930033136
+        }
+      },
+      "red": {
+        "failed": 2,
+        "seconds": 7.3,
+        "reason": "Both real-PG failure landing cases rejected unsupported failure_teleport; marker after SQL database creation"
+      },
+      "reuse": {
+        "failure_landing_commit": "c651c87d52acd0fcc56c5b426a1e9f27ab0b92ba",
+        "conditional_set_commit": "be812420e3c20d9dd8ae6c3c23a9c4acb942ceda",
+        "source_branch": "origin/claude/happy-davinci-ijz3wy-questpc6",
+        "adaptation": "Retain this lane objects/StepOut and23 source inputs; use256MiB thread wrapper with existing fixture run; do not duplicate source kernels. All original assertions retained.",
+        "qengine2_checked": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e"
+      },
+      "validation": {
+        "check": "PASS changed crates all targets/all features41.25s",
+        "clippy": "PASS changed crates all targets/all features,-D warnings53.27s",
+        "rust": "3 focused source-bound/schema/hash tests PASS0.01s; pure unit, not PG",
+        "python": "batch3:7 PASS0.002s; batch4:18 PASS0.513s; pure units, not PG",
+        "generated": "23 packets, zero stale outputs",
+        "format": "cargo fmt changed crates; mounted tests explicitly formatted; avoid unrelated Soul War formatting churn",
+        "pin": "PASS unchanged2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968"
+      },
+      "logs": {
+        "red": {
+          "log": "qlane-meta/questpc/cloud-conditional-red.log",
+          "sha256": "ffb68966bdee38871814ca67efe7ca0da9c9b6bcc34fc2d15d45ac574f191d73"
+        },
+        "green": {
+          "log": "qlane-meta/questpc/cloud-conditional-green.log",
+          "sha256": "c88077ddf9807e6fe1758a78fc69816b9484a7d44e6b011fab66139b1078c791"
+        },
+        "check": {
+          "log": "qlane-meta/questpc/cloud-conditional-check.log",
+          "sha256": "54dbf15db3670b5f2246b486d146a48c73f4852be8113882c518a9680635c472"
+        },
+        "clippy": {
+          "log": "qlane-meta/questpc/cloud-conditional-clippy.log",
+          "sha256": "df0df9ee5197a4df10d96188e11a710a2123a50cf03449e0b5362dfd5fe42f0e"
+        },
+        "rust": {
+          "log": "qlane-meta/questpc/cloud-conditional-rust.log",
+          "sha256": "dda487389803470e32fac59b5ee4f6df21fee29f7ae04b364478304c40c263db"
+        },
+        "python3": {
+          "log": "qlane-meta/questpc/cloud-conditional-python3.log",
+          "sha256": "74c03fc16fde9a2dfeff03db0ec8f472a5a8dfed04e9e982a912b4b7f64faee3"
+        },
+        "python4": {
+          "log": "qlane-meta/questpc/cloud-conditional-python4.log",
+          "sha256": "37f4966686749c8a48faf763221c4ee7a628073d2a226b568410d688bcf5c9e9"
+        },
+        "generated": {
+          "log": "qlane-meta/questpc/cloud-conditional-generated.log",
+          "sha256": "9cf9f5e6beb9f15854cc65285097df5ae846f796dacd2edf3014b79914843557"
+        },
+        "pin": {
+          "log": "qlane-meta/questpc/cloud-conditional-pin.log",
+          "sha256": "9d601ad50527052d1d904acdced6e7d2f7b544baf1a1aea6059a07fe746c355b"
+        }
       }
     }
   }

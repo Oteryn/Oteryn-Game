@@ -101,3 +101,18 @@ UID6141: one3269 at32466,32148,z15. UID5017 supplies2969/key3610 at32589,32100,z
 UID5016 supplies2969/key3667 at32576,32216,z15. Existing canonical claim selectors,
 positions, item IDs, quantities and key bindings were independently checked against
 these source rows. The original misspellingdevilhemet1/2/3 remains the claim identity.
+
+Draconia escape support reuses questpc6 commitsc651c87d5 andbe812420e. A returning
+STEP may name an explicit failure destination; the existing sealed movement owner
+validates its landing. If that landing is unavailable, retain the committed entry
+position and grant no Quest state or receipt; do not invent another destination.
+Absent failure_teleport preserves the old return-to-origin behavior.
+
+SET_IF compares the exact locked flag, writes its authored value only on equality,
+and retains every other flag value. It remains receipt-bearing and binds equality
+and replacement literals in definition-hash tag6; old effect encodings are unchanged.
+Pure read-only guards and native rules cannot be combined with set_if. This matches
+Draconia escape sourceDragonfetish1->0 while preserving absent-1 and later2:
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/draconia/movement-escape.lua
+Five focused PG cases102.11s prove safe/blocked landings, replay, exact reset, absent
+and later preservation. The final source escape/offering composition follows next.

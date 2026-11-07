@@ -35,6 +35,7 @@ fn scenario_case(
     let departure = name == "departure-map-regression";
     let dropdown = name.starts_with("source-dropdown");
     let devil = name.starts_with("devil-helmet-source");
+    let failure_landing = name.starts_with("conditional-failure-");
     let object_mutation = name.starts_with("object-mutation-");
     let mintwallin = name == "mintwallin-source";
     let monk = name.starts_with("monk-guidance");
@@ -58,6 +59,8 @@ fn scenario_case(
     let mut callback = callback(
         if classic_npc || departure || object_mutation || mintwallin || dropdown || devil {
             "behemoth"
+        } else if failure_landing {
+            "liquid-black-shortcut"
         } else if rotten_purchase {
             "rotten-blood/sacrifice"
         } else if monk {
@@ -68,6 +71,9 @@ fn scenario_case(
             name
         },
     )?;
+    if failure_landing {
+        callback.selector.position = Some(trigger);
+    }
     if target_swap {
         callback
             .item_on_target
@@ -247,7 +253,12 @@ fn scenario_case(
         } else {
             None
         };
-        let callback = if devil {
+        let callback = if failure_landing {
+            println!("POSTGRES_CASE_STARTED conditional_failure_landing database_created=true");
+            let mut value = serde_json::to_value(&callback)?;
+            value["failure_teleport"] = serde_json::json!({"x":32818,"y":31599,"floor":if name.ends_with("blocked") {-10}else{-9}});
+            serde_json::from_value::<Callback>(value)?
+        } else if devil {
             super::callback("devil-helmet-sewer-entry")?
         } else if object_mutation {
             println!("POSTGRES_CASE_STARTED quest_object_mutations database_created=true");
@@ -386,7 +397,7 @@ fn scenario_case(
                     ])
                     .is_ok()
             );
-        } else if lever_fixture || target_swap || object_mutation || mintwallin {
+        } else if lever_fixture || target_swap || object_mutation || mintwallin || failure_landing {
             assert!(
                 owner
                     .states
@@ -442,7 +453,25 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if devil {
+        if failure_landing {
+            super::super::conditional_callback_failure::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                if name.ends_with("blocked") {
+                    trigger
+                } else {
+                    Position {
+                        x: 32818,
+                        y: 31599,
+                        floor: -9,
+                    }
+                },
+            )
+            .await?;
+        } else if devil {
             super::super::devil_helmet_source::exercise(
                 &owner,
                 &mut admitted,
