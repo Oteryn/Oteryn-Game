@@ -3,8 +3,8 @@
   "lifecycle": "AUTHORING; owner-authorized local commits and fast-forward pushes to claude/happy-davinci-ijz3wy-qengine2 after each green batch",
   "qualification_boundary": "Whole L1 entry, not an isolated seeded reward stage. No entry is promoted before all of its required stages and relevant PG cases pass.",
   "counts": {
-    "qualified": 30,
-    "unfinished": 36,
+    "qualified": 33,
+    "unfinished": 33,
     "blocked": 0
   },
   "quests": [
@@ -273,7 +273,7 @@
     {
       "canonical": "oteryn:quest.authored.citizen_of_issavi_outfits_quest",
       "title": "Citizen of Issavi Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc",
@@ -290,7 +290,27 @@
           ]
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "remaining_work": null,
+      "qualification": {
+        "scope": "Whole selected programme via real NPC and ordinary carried USE; exact persisted level/Premium/parent eligibility, actual recipes, replay, source account grants and normal mask3",
+        "postgres_red": "/tmp/qengine2-batch11-red.log;3failed84.60s, all missing actual bindings; per-case41.65-42.99s",
+        "postgres_green": "/tmp/qengine2-batch11-green2.log;POSTGRES_CASE_COMPLETED duration=81.221030042s success=true;3passed157.67s",
+        "proofs": [
+          "level2 refusal even with completed separate parent; exact level250/100 earned through real XP owner",
+          "Current Premium refusal before stage/value/cost",
+          "actual NPC desk/base grants and source5pomegranate/1ice-shield costs or exact one-token ordinary USE",
+          "literal command replay; one base/two immutable addon facts; normal native catalogue mask3",
+          "storage-free base cannot repeat; second carried addon refuses before first, retains token",
+          "owned addon retains fresh material; SQL1006 rejects unpredicated free base23514; original guards stay enabled"
+        ],
+        "assumptions": [
+          "Explicit Makeshift min100 requirement wins contradictory adaptation text saying zero.",
+          "Unresolved Issavi attire-keeper role binds Eshaya, its original Wanted report contact; veil addon1 then scabbard addon2 as ordered chosen accessory programme.",
+          "Gnomadness is the chosen Hub desk role; physical NPC interaction witnesses Hub visit, without claiming a recovered source outfit callback."
+        ],
+        "source_notes": "CONTRACT-NOTES.md L1-11; pinned Vanys/Eshaya/Gnomadness Lua identities, chosen recipe roles and Canary XML item IDs cited there; separate parent quest tracks read-only",
+        "checks": "10Rust1.38s;27Python10.459s;3cratecheck15s;3crateclippy-Dwarnings1m00 retry/finaldispatch2m38;fmt/repro/pinrefresh+pincheck24ab unchanged;123content2.54s/5world65.87s;oldMageMalePG81.154574983s GREEN"
+      }
     },
     {
       "canonical": "oteryn:quest.citizen_outfits_quest_on_rook",
@@ -502,7 +522,7 @@
     {
       "canonical": "oteryn:quest.dream_warrior_outfits_quest",
       "title": "Dream Warrior Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc",
@@ -519,7 +539,27 @@
           ]
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "remaining_work": null,
+      "qualification": {
+        "scope": "Whole selected programme via real NPC and ordinary carried USE; exact persisted level/Premium/parent eligibility, actual recipes, replay, source account grants and normal mask3",
+        "postgres_red": "/tmp/qengine2-batch11-red.log;3failed84.60s, all missing actual bindings; per-case41.65-42.99s",
+        "postgres_green": "/tmp/qengine2-batch11-green2.log;POSTGRES_CASE_COMPLETED duration=88.225109935s success=true;3passed157.67s",
+        "proofs": [
+          "level2 refusal even with completed separate parent; exact level250/100 earned through real XP owner",
+          "Current Premium refusal before stage/value/cost",
+          "actual NPC desk/base grants and source5pomegranate/1ice-shield costs or exact one-token ordinary USE",
+          "literal command replay; one base/two immutable addon facts; normal native catalogue mask3",
+          "storage-free base cannot repeat; second carried addon refuses before first, retains token",
+          "owned addon retains fresh material; SQL1006 rejects unpredicated free base23514; original guards stay enabled"
+        ],
+        "assumptions": [
+          "Explicit Makeshift min100 requirement wins contradictory adaptation text saying zero.",
+          "Unresolved Issavi attire-keeper role binds Eshaya, its original Wanted report contact; veil addon1 then scabbard addon2 as ordered chosen accessory programme.",
+          "Gnomadness is the chosen Hub desk role; physical NPC interaction witnesses Hub visit, without claiming a recovered source outfit callback."
+        ],
+        "source_notes": "CONTRACT-NOTES.md L1-11; pinned Vanys/Eshaya/Gnomadness Lua identities, chosen recipe roles and Canary XML item IDs cited there; separate parent quest tracks read-only",
+        "checks": "10Rust1.38s;27Python10.459s;3cratecheck15s;3crateclippy-Dwarnings1m00 retry/finaldispatch2m38;fmt/repro/pinrefresh+pincheck24ab unchanged;123content2.54s/5world65.87s;oldMageMalePG81.154574983s GREEN"
+      }
     },
     {
       "canonical": "oteryn:quest.druid_outfits_quest",
@@ -1109,7 +1149,7 @@
     {
       "canonical": "oteryn:quest.makeshift_warrior_outfits_quest",
       "title": "Makeshift Warrior Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc",
@@ -1126,7 +1166,27 @@
           ]
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "remaining_work": null,
+      "qualification": {
+        "scope": "Whole selected programme via real NPC and ordinary carried USE; exact persisted level/Premium/parent eligibility, actual recipes, replay, source account grants and normal mask3",
+        "postgres_red": "/tmp/qengine2-batch11-red.log;3failed84.60s, all missing actual bindings; per-case41.65-42.99s",
+        "postgres_green": "/tmp/qengine2-batch11-green2.log;POSTGRES_CASE_COMPLETED duration=76.445057735s success=true;3passed157.67s",
+        "proofs": [
+          "level2 refusal even with completed separate parent; exact level250/100 earned through real XP owner",
+          "Current Premium refusal before stage/value/cost",
+          "actual NPC desk/base grants and source5pomegranate/1ice-shield costs or exact one-token ordinary USE",
+          "literal command replay; one base/two immutable addon facts; normal native catalogue mask3",
+          "storage-free base cannot repeat; second carried addon refuses before first, retains token",
+          "owned addon retains fresh material; SQL1006 rejects unpredicated free base23514; original guards stay enabled"
+        ],
+        "assumptions": [
+          "Explicit Makeshift min100 requirement wins contradictory adaptation text saying zero.",
+          "Unresolved Issavi attire-keeper role binds Eshaya, its original Wanted report contact; veil addon1 then scabbard addon2 as ordered chosen accessory programme.",
+          "Gnomadness is the chosen Hub desk role; physical NPC interaction witnesses Hub visit, without claiming a recovered source outfit callback."
+        ],
+        "source_notes": "CONTRACT-NOTES.md L1-11; pinned Vanys/Eshaya/Gnomadness Lua identities, chosen recipe roles and Canary XML item IDs cited there; separate parent quest tracks read-only",
+        "checks": "10Rust1.38s;27Python10.459s;3cratecheck15s;3crateclippy-Dwarnings1m00 retry/finaldispatch2m38;fmt/repro/pinrefresh+pincheck24ab unchanged;123content2.54s/5world65.87s;oldMageMalePG81.154574983s GREEN"
+      }
     },
     {
       "canonical": "oteryn:quest.authored.measuring_tibia_quest",
@@ -2498,7 +2558,7 @@
       "Citizen of Issavi Outfits Quest",
       "Makeshift Warrior Outfits Quest"
     ],
-    "status": "AUTHORING; full source stories running; no qualification before GREEN",
+    "status": "QUALIFIED",
     "postgres_red": "/tmp/qengine2-batch11-red.log;3failed84.60s;Issavi42.950690047s/Dream42.986363562s/Makeshift41.649993346s all missing bindings",
     "implemented": [
       "current persisted minimum_level gate shared by NPC and carried rewards",
@@ -2515,6 +2575,7 @@
       "Gnomadness is the chosen Hub desk role; physical NPC interaction witnesses Hub visit, without claiming a recovered source outfit callback."
     ],
     "checks": "10Rust1.38s;27Python10.459s;check15s;clippy retry1m00s after safe inactive compiler-cache cleanup resolved disk full;fmt/reproducers/pin-refresh24ab unchanged",
-    "next": "PG GREEN /tmp/qengine2-batch11-green1.log session36861 compiling; then filtered old value-only/carried regression, pin-check and targeted content followons."
+    "next": "Continue next owned entries; all current code and generated data green and pushed.",
+    "postgres_green": "/tmp/qengine2-batch11-green2.log;3passed157.67s"
   }
 }

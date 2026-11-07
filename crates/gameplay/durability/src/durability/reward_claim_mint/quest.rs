@@ -128,6 +128,11 @@ pub(crate) async fn apply(
         !proof.permits(fence,request,admission.native.source_digest(),&callback.requires_actor_conditions)) {
         return Ok(false);
     }
+    if let Some(minimum)=callback.minimum_level {
+        let level:Option<i64>=sqlx::query_scalar("SELECT level::bigint FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
+            .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+        if level.is_none_or(|level|level<i64::from(minimum)) {return Ok(false);}
+    }
     if !callback.forbids_addons.is_empty() || !callback.forbids_outfits.is_empty() {
         // Keep a negative ownership predicate stable through costs and grant.
         // Reuse the account grant owner's lock; another character cannot win
@@ -162,6 +167,19 @@ pub(crate) async fn apply(
             if !super::super::character_appearance::podium_cosmetic_owned(
                 tx, fence.character_id, cosmetics, EarnedCosmetic::Outfit(outfit)
             ).await? { return Ok(false); }
+        }
+    }
+    if !callback.requires_addons.is_empty() {
+        let Some(cosmetics)=admission.native.cosmetics() else {return Ok(false);};
+        for reward in &callback.requires_addons {
+            for addon in 1..=2 {
+                if reward.addons & (1 << (addon-1)) != 0
+                    && !super::super::character_appearance::cosmetic_owned_for_sex(
+                        tx,fence.character_id,cosmetics,EarnedCosmetic::Addon(&reward.outfit,addon),reward.sex.map(|sex|match sex {
+                        oteryn_gameplay_quests::quest::reward_callbacks::CreationSex::Female=>crate::domain::appearance::Sex::Female,
+                        oteryn_gameplay_quests::quest::reward_callbacks::CreationSex::Male=>crate::domain::appearance::Sex::Male,
+                    })).await? {return Ok(false);}
+            }
         }
     }
     if let Some(required) = callback.creation_sex {

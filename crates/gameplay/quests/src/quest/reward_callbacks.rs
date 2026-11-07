@@ -127,8 +127,12 @@ pub struct RewardCallback {
     pub creation_sex: Option<CreationSex>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub requires_premium: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub minimum_level: Option<u32>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub requires_outfits: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub requires_addons: Vec<OutfitReward>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub forbids_outfits: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -188,11 +192,15 @@ impl RewardCallback {
         // native backpack MINT in the same fenced transaction.
         (!self.take.is_empty() && self.give.is_some())
             || self.cosmetic_targets().any(|target| {
-                self.forbids_addons.iter().any(|guard| {
-                    target.outfit == guard.outfit
-                        && target.addons & guard.addons != 0
-                        && (target.sex.is_none() || target.sex == guard.sex.or(self.creation_sex))
-                })
+                (target.addons == 0
+                    && target.sex.is_none()
+                    && self.forbids_outfits.contains(&target.outfit))
+                    || self.forbids_addons.iter().any(|guard| {
+                        target.outfit == guard.outfit
+                            && target.addons & guard.addons != 0
+                            && (target.sex.is_none()
+                                || target.sex == guard.sex.or(self.creation_sex))
+                    })
             })
     }
 }
@@ -361,7 +369,6 @@ fn parse_document(text: &str) -> Result<Document, String> {
                         item: item.clone(),
                         count: 1,
                     }]
-                    || c.storage.is_empty()
                     || c.give.is_some()
                     || c.fee.is_some()
                     || !c.requires_actor_conditions.is_empty()
@@ -388,6 +395,17 @@ fn parse_document(text: &str) -> Result<Document, String> {
                 .len()
                 != c.forbids_addons.len()
             || c.forbids_addons.iter().any(|r| {
+                !slug(&r.outfit, "oteryn:outfit.", b"_", 128) || !(1..=3).contains(&r.addons)
+            })
+            || c.minimum_level == Some(0)
+            || c.requires_addons.len() > 8
+            || c.requires_addons
+                .iter()
+                .map(|r| (&r.outfit, r.addons, r.sex))
+                .collect::<BTreeSet<_>>()
+                .len()
+                != c.requires_addons.len()
+            || c.requires_addons.iter().any(|r| {
                 !slug(&r.outfit, "oteryn:outfit.", b"_", 128) || !(1..=3).contains(&r.addons)
             })
             || c.requires_outfits.len() > 8
@@ -622,6 +640,33 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn level_and_positive_addon_guards_preserve_one_shot_bases() -> Result<(), String> {
+        let original = super::load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-reward/l11-dream-warrior-base")
+            .ok_or("level base")?;
+        assert!(original.storage.is_empty());
+        for edit in 0..5 {
+            let mut row = serde_json::to_value(&original).map_err(|e| e.to_string())?;
+            match edit {
+                0 => row["minimum_level"] = 0.into(),
+                1 => row["forbids_outfits"] = serde_json::json!([]),
+                2 => row["forbids_outfits"] = serde_json::json!(["oteryn:outfit.knight"]),
+                3 => {
+                    row["requires_addons"] =
+                        serde_json::json!([{"outfit":"oteryn:outfit.knight","addons":0}])
+                }
+                _ => row["outfit"]["sex"] = "male".into(),
+            }
+            assert!(
+                super::parse(&serde_json::json!({"schema":1,"callbacks":[row]}).to_string())
+                    .is_err(),
+                "invalid level/base guard {edit}"
+            );
+        }
+        Ok(())
+    }
     #[test]
     fn carried_quest_tools_bind_exactly_one_input_and_negative_ownership() -> Result<(), String> {
         let original = super::load()?

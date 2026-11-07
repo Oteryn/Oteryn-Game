@@ -197,6 +197,27 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:27-59:durable-one-shot-owned-guard"
       ]
+    },
+    {
+      "key": "oteryn:quest-progress/chosen-source/kilmaresh_quest/s21",
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "owner:chosen-Kilmaresh-s21:report-three-Wanted-outlaws:read-only"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/makeshift_warrior/qualification",
+      "quest": "oteryn:quest.makeshift_warrior_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "writable": true,
+      "sources": [
+        "owner:chosen-Gnome-Deep-Hub-salvage-apprenticeship:s1-s2:gnomadness-role"
+      ]
     }
   ],
   "callbacks": [
@@ -1435,6 +1456,454 @@
           "addons": 1
         }
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/l11-dream-warrior-base",
+      "quest": "oteryn:quest.dream_warrior_outfits_quest",
+      "npc": "oteryn:npc.vanys",
+      "keywords": [
+        "dream warrior outfit"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.dream_warrior",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/vanys.lua:sha256:fbc0bb272ed67594e0d385ae0baf41271c81aca511b28455bd896c51f083e59a"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/ward_stones/questline",
+          "minimum": 3,
+          "maximum": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/main/the_summer_court",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "minimum_level": 250,
+      "requires_premium": true,
+      "forbids_outfits": [
+        "oteryn:outfit.dream_warrior"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l11-dream-warrior-first",
+      "quest": "oteryn:quest.dream_warrior_outfits_quest",
+      "npc": "oteryn:npc.vanys",
+      "keywords": [
+        "pomegranates"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i30169",
+          "count": 5
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.dream_warrior",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/vanys.lua:sha256:fbc0bb272ed67594e0d385ae0baf41271c81aca511b28455bd896c51f083e59a"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/ward_stones/questline",
+          "minimum": 3,
+          "maximum": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/main/the_summer_court",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "minimum_level": 250,
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.dream_warrior"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.dream_warrior",
+          "addons": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l11-dream-warrior-second",
+      "quest": "oteryn:quest.dream_warrior_outfits_quest",
+      "npc": "oteryn:npc.vanys",
+      "keywords": [
+        "ice shield"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i30168",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.dream_warrior",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/vanys.lua:sha256:fbc0bb272ed67594e0d385ae0baf41271c81aca511b28455bd896c51f083e59a"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/ward_stones/questline",
+          "minimum": 3,
+          "maximum": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/main/the_summer_court",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "minimum_level": 250,
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.dream_warrior"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.dream_warrior",
+          "addons": 2
+        }
+      ],
+      "requires_addons": [
+        {
+          "outfit": "oteryn:outfit.dream_warrior",
+          "addons": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l11-issavi-base",
+      "quest": "oteryn:quest.authored.citizen_of_issavi_outfits_quest",
+      "npc": "oteryn:npc.eshaya",
+      "keywords": [
+        "issavi attire"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.citizen_of_issavi",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/eshaya.lua:sha256:0b84914661498605630d5e98bfb74579760e035d280e5395862c14b975e749db",
+        "owner:chosen-Issavi-attire-keeper-role:Eshaya:Wanted-report-s21"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/kilmaresh_quest/s21",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "minimum_level": 250,
+      "requires_premium": true,
+      "forbids_outfits": [
+        "oteryn:outfit.citizen_of_issavi"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l11-issavi-first",
+      "quest": "oteryn:quest.authored.citizen_of_issavi_outfits_quest",
+      "npc": "oteryn:npc.eshaya",
+      "keywords": [
+        "document"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i37003",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.citizen_of_issavi",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/eshaya.lua:sha256:0b84914661498605630d5e98bfb74579760e035d280e5395862c14b975e749db",
+        "owner:chosen-Issavi-veil-addon1-scabbard-addon2:one-token-each"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/kilmaresh_quest/s21",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "minimum_level": 250,
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.citizen_of_issavi"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.citizen_of_issavi",
+          "addons": 1
+        }
+      ],
+      "carried_item": "oteryn:item.tibia.i37003"
+    },
+    {
+      "key": "oteryn:quest-reward/l11-issavi-second",
+      "quest": "oteryn:quest.authored.citizen_of_issavi_outfits_quest",
+      "npc": "oteryn:npc.eshaya",
+      "keywords": [
+        "document"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i37002",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.citizen_of_issavi",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/eshaya.lua:sha256:0b84914661498605630d5e98bfb74579760e035d280e5395862c14b975e749db",
+        "owner:chosen-Issavi-veil-addon1-scabbard-addon2:one-token-each"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/kilmaresh_quest/s21",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "minimum_level": 250,
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.citizen_of_issavi"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.citizen_of_issavi",
+          "addons": 2
+        }
+      ],
+      "requires_addons": [
+        {
+          "outfit": "oteryn:outfit.citizen_of_issavi",
+          "addons": 1
+        }
+      ],
+      "carried_item": "oteryn:item.tibia.i37002"
+    },
+    {
+      "key": "oteryn:quest-reward/l11-makeshift-base",
+      "quest": "oteryn:quest.makeshift_warrior_outfits_quest",
+      "npc": "oteryn:npc.gnomadness",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 11,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/makeshift_warrior/qualification",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.makeshift_warrior",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomadness.lua:sha256:e3411f8704927cc665340418f3b65fa40fdafa6d607364fde90827516b9f7279",
+        "owner:chosen-Gnome-Deep-Hub-salvage-apprenticeship:base-qualification"
+      ],
+      "minimum_level": 100,
+      "requires_premium": true,
+      "forbids_outfits": [
+        "oteryn:outfit.makeshift_warrior"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l11-makeshift-first",
+      "quest": "oteryn:quest.makeshift_warrior_outfits_quest",
+      "npc": "oteryn:npc.gnomadness",
+      "keywords": [
+        "document"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i27657",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.makeshift_warrior",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomadness.lua:sha256:e3411f8704927cc665340418f3b65fa40fdafa6d607364fde90827516b9f7279"
+      ],
+      "minimum_level": 100,
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.makeshift_warrior"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.makeshift_warrior",
+          "addons": 1
+        }
+      ],
+      "carried_item": "oteryn:item.tibia.i27657"
+    },
+    {
+      "key": "oteryn:quest-reward/l11-makeshift-second",
+      "quest": "oteryn:quest.makeshift_warrior_outfits_quest",
+      "npc": "oteryn:npc.gnomadness",
+      "keywords": [
+        "document"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i27656",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.makeshift_warrior",
+        "addons": 2
+      },
+      "achievement": "oteryn:achievement/cobbled_and_patched",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomadness.lua:sha256:e3411f8704927cc665340418f3b65fa40fdafa6d607364fde90827516b9f7279"
+      ],
+      "minimum_level": 100,
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.makeshift_warrior"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.makeshift_warrior",
+          "addons": 2
+        }
+      ],
+      "requires_addons": [
+        {
+          "outfit": "oteryn:outfit.makeshift_warrior",
+          "addons": 1
+        }
+      ],
+      "carried_item": "oteryn:item.tibia.i27656"
+    },
+    {
+      "key": "oteryn:quest-reward/l11-makeshift-start",
+      "quest": "oteryn:quest.makeshift_warrior_outfits_quest",
+      "npc": "oteryn:npc.gnomadness",
+      "keywords": [
+        "salvage"
+      ],
+      "topic": 0,
+      "next_topic": 11,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/makeshift_warrior/qualification",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomadness.lua:sha256:e3411f8704927cc665340418f3b65fa40fdafa6d607364fde90827516b9f7279",
+        "owner:chosen-Gnome-Deep-Hub-apprenticeship:meeting-admitted-Gnomadness-witnesses-exploration"
+      ],
+      "minimum_level": 100,
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/l2-battle-mage-base",

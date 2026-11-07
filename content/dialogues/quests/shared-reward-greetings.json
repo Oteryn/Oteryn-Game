@@ -189,12 +189,34 @@
       ]
     },
     {
+      "npc": "oteryn:npc.eshaya",
+      "greet": "Suon's and Bastesh's blessing, dear guest!",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Well, bye then.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/eshaya.lua:142:sha256:0b84914661498605630d5e98bfb74579760e035d280e5395862c14b975e749db",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/eshaya.lua:143:sha256:0b84914661498605630d5e98bfb74579760e035d280e5395862c14b975e749db"
+      ]
+    },
+    {
       "npc": "oteryn:npc.ezebeth",
       "greet": "Hello! I guess you are here for a {mission}.",
       "farewell": "Good bye, |PLAYERNAME|.",
       "walkaway": "Good bye.",
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ezebeth.lua:118:sha256:280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomadness",
+      "greet": "Hello and welcome in the Gnomprona Gardens",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomadness.lua:105:sha256:e3411f8704927cc665340418f3b65fa40fdafa6d607364fde90827516b9f7279",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
       ]
@@ -516,6 +538,17 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ustan.lua:364:sha256:441ed6570ee072e3e75ffa98af95aa653b3d6ec8836327f6a5927833c5faed89",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.vanys",
+      "greet": "Greetings hero. I guess you came to {talk}.",
+      "farewell": "Well, bye then.",
+      "walkaway": "Well, bye then.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/vanys.lua:167:sha256:fbc0bb272ed67594e0d385ae0baf41271c81aca511b28455bd896c51f083e59a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/vanys.lua:168:sha256:fbc0bb272ed67594e0d385ae0baf41271c81aca511b28455bd896c51f083e59a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/vanys.lua:169:sha256:fbc0bb272ed67594e0d385ae0baf41271c81aca511b28455bd896c51f083e59a"
       ]
     },
     {

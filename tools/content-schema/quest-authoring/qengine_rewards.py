@@ -32,7 +32,7 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master')]
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness')]
     paths += ['data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
               'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
@@ -798,6 +798,45 @@ def build():
                 callback['forbids_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':bit}]
             document_path='data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua'
             callback['sources'].append(f'crystal:{PIN}:{document_path}:1-69:sha256:{sha(inputs[document_path])}')
+    # L11: source task rewards plus explicitly selected Oteryn qualification desks.
+    dream_ready=[requirement(prefix+'u12_00/the_dream_courts/ward_stones/questline',3),
+        requirement(prefix+'u12_00/the_dream_courts/main/the_summer_court',1)]
+    wanted='oteryn:quest-progress/chosen-source/kilmaresh_quest/s21'
+    declarations.append({'key':wanted,'quest':'oteryn:quest.kilmaresh_quest','initial':0,'min':0,'max':1,
+        'sources':['owner:chosen-Kilmaresh-s21:report-three-Wanted-outlaws:read-only']})
+    desks=[('dream-warrior','dream_warrior_outfits_quest','vanys','dream_warrior',250,dream_ready,'dream warrior outfit'),
+        ('issavi','authored.citizen_of_issavi_outfits_quest','eshaya','citizen_of_issavi',250,[requirement(wanted,1)],'issavi attire')]
+    for label,quest,npc,family,level,ready,word in desks:
+        add('l11-'+label+'-base',quest,npc,[word],[],outfit=(family,0),requires=ready)
+        callbacks[-1].update(minimum_level=level,requires_premium=True,forbids_outfits=['oteryn:outfit.'+family])
+        if label=='issavi':callbacks[-1]['sources'].append('owner:chosen-Issavi-attire-keeper-role:Eshaya:Wanted-report-s21')
+    for label,quest,npc,family,level,ready,tokens,carried in [
+            ('dream-warrior','dream_warrior_outfits_quest','vanys','dream_warrior',250,dream_ready,[(30169,5),(30168,1)],False),
+            ('issavi','authored.citizen_of_issavi_outfits_quest','eshaya','citizen_of_issavi',250,[requirement(wanted,1)],[(37003,1),(37002,1)],True),
+            ('makeshift','makeshift_warrior_outfits_quest','gnomadness','makeshift_warrior',100,[],[(27657,1),(27656,1)],True)]:
+        for bit,(item,count) in enumerate(tokens,1):
+            add('l11-'+label+'-'+('first' if bit==1 else 'second'),quest,npc,
+                ['document'] if carried else ['pomegranates' if bit==1 else 'ice shield'],[],
+                take=[(item,count)],outfit=(family,bit),topic=0 if carried else 8,requires=ready,
+                achievement='oteryn:achievement/cobbled_and_patched' if label=='makeshift' and bit==2 else None)
+            callback=callbacks[-1];callback.update(minimum_level=level,requires_premium=True,
+                requires_outfits=['oteryn:outfit.'+family],forbids_addons=[{'outfit':'oteryn:outfit.'+family,'addons':bit}])
+            if bit==2:callback['requires_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':1}]
+            if carried:callback['carried_item']=f'oteryn:item.tibia.i{item}'
+            if label=='issavi':callback['sources'].append('owner:chosen-Issavi-veil-addon1-scabbard-addon2:one-token-each')
+        if not carried:
+            for words,before,after in [(['addon'],0,6),(['yes'],6,7),(['yes'],7,8)]:
+                source_offer(npc,words,before,after,[]);offers[-1]['requires']=ready
+    qualification=prefix+'makeshift_warrior/qualification'
+    declarations.append({'key':qualification,'quest':'oteryn:quest.makeshift_warrior_outfits_quest','initial':0,'min':0,'max':2,
+        'writable':True,'sources':['owner:chosen-Gnome-Deep-Hub-salvage-apprenticeship:s1-s2:gnomadness-role']})
+    add('l11-makeshift-start','makeshift_warrior_outfits_quest','gnomadness',['salvage'],[storage(qualification,0,1)],next_topic=11)
+    callbacks[-1].update(minimum_level=100,requires_premium=True)
+    callbacks[-1]['sources'].append('owner:chosen-Gnome-Deep-Hub-apprenticeship:meeting-admitted-Gnomadness-witnesses-exploration')
+    add('l11-makeshift-base','makeshift_warrior_outfits_quest','gnomadness',['yes'],[storage(qualification,1,2)],outfit=('makeshift_warrior',0),topic=11)
+    callbacks[-1].update(minimum_level=100,requires_premium=True,forbids_outfits=['oteryn:outfit.makeshift_warrior'])
+    callbacks[-1]['sources'].append('owner:chosen-Gnome-Deep-Hub-salvage-apprenticeship:base-qualification')
+    source_offer('gnomadness',['salvage'],0,11,[storage(qualification,1,1,preserve=True)])
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
@@ -897,7 +936,7 @@ def validate_callbacks(document):
     for callback in document['callbacks']:
         storage=callback['storage']
         if callback.get('carried_item') is not None and (
-                callback['take']!=[{'item':callback['carried_item'],'count':1}] or not storage
+                callback['take']!=[{'item':callback['carried_item'],'count':1}]
                 or callback.get('give') is not None or callback.get('fee') is not None
                 or callback.get('requires_actor_conditions')):
             raise ValueError('invalid carried quest tool '+callback['key'])
@@ -905,6 +944,7 @@ def validate_callbacks(document):
         value_guard=any(t['outfit']==g['outfit'] and t['addons'] & g['addons']
             and (t.get('sex') is None or t.get('sex')==(g.get('sex') or callback.get('creation_sex')))
             for t in targets for g in callback.get('forbids_addons',[]))
+        value_guard = value_guard or any(t['addons']==0 and t.get('sex') is None and t['outfit'] in callback.get('forbids_outfits',[]) for t in targets)
         value_guard = value_guard or (bool(callback['take']) and callback.get('give') is not None)
         if callback.get('outfits') and callback.get('outfit') is not None:
             raise ValueError('mixed legacy and target-set grants '+callback['key'])

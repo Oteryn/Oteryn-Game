@@ -14,6 +14,21 @@ class QuestRewards(unittest.TestCase):
         cls.author=json.loads(cls.outputs['content/cosmetics/outfits/authoring.json'])
         cls.schema=json.loads((q.ROOT/'tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json').read_text())
 
+    def test_l11_levels_one_shot_bases_and_selected_desks(self):
+        rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
+        for label,level in [('dream-warrior',250),('issavi',250),('makeshift',100)]:
+            for stage in ['base','first','second']:
+                row=rows[f'l11-{label}-{stage}'];self.assertEqual(row['minimum_level'],level);self.assertTrue(row['requires_premium'])
+            if label!='makeshift':
+                row=rows[f'l11-{label}-base'];self.assertEqual(row['storage'],[]);self.assertEqual(row['forbids_outfits'],[row['outfit']['outfit']])
+            self.assertEqual(rows[f'l11-{label}-second']['requires_addons'][0]['addons'],1)
+        for stage,item,count in [('first',30169,5),('second',30168,1)]:
+            self.assertEqual(rows[f'l11-dream-warrior-{stage}']['take'],[{'item':f'oteryn:item.tibia.i{item}','count':count}])
+        for field,value in [('minimum_level',0),('forbids_outfits',[]),('forbids_outfits',['oteryn:outfit.knight'])]:
+            bad=copy.deepcopy(self.callbacks)
+            next(c for c in bad['callbacks'] if c['key']=='oteryn:quest-reward/l11-dream-warrior-base')[field]=value
+            with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(bad)
+
     def test_l10_distinct_order_documents_and_exact_carried_binding(self):
         rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
         for family in ['brotherhood','nightmare']:
@@ -273,10 +288,10 @@ class QuestRewards(unittest.TestCase):
 
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
-        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-'))},
+        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-','l11-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),65)
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),110)
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),74)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),111)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 

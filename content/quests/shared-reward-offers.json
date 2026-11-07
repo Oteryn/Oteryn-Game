@@ -1219,6 +1219,26 @@
       ]
     },
     {
+      "npc": "oteryn:npc.gnomadness",
+      "keywords": [
+        "salvage"
+      ],
+      "topic": 0,
+      "next_topic": 11,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/makeshift_warrior/qualification",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.gnomally",
       "keywords": [
         "addition to the crystal warlord armor outfit"
@@ -3865,6 +3885,78 @@
       ],
       "reply": [
         "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.vanys",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [],
+      "reply": [
+        "Will you help me with this task?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/ward_stones/questline",
+          "minimum": 3,
+          "maximum": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/main/the_summer_court",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.vanys",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 7,
+      "storage": [],
+      "reply": [
+        "Will you help me with this task?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/ward_stones/questline",
+          "minimum": 3,
+          "maximum": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/main/the_summer_court",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.vanys",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "next_topic": 8,
+      "storage": [],
+      "reply": [
+        "Will you help me with this task?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/ward_stones/questline",
+          "minimum": 3,
+          "maximum": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/main/the_summer_court",
+          "minimum": 1,
+          "maximum": 1
+        }
       ]
     },
     {

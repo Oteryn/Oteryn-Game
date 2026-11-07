@@ -156,3 +156,46 @@ arranges that separate parent's qualifying fact. Both order ranks and account
 ownership are rechecked before costs. New per-character document claim facts
 record the successful one-shot USE; immutable account ownership still prevents
 another character paying for an already owned outfit or addon.
+
+L1-11 selected level programmes (no missing-fact hold):
+- Dream Warrior: Crystal9f data-global/npc/vanys.lua:83-157 SHA256
+  fbc0bb272ed67594e0d385ae0baf41271c81aca511b28455bd896c51f083e59a:
+  WardStones.Questline>=3 and SummerCourt=1 grant1146/1147; five
+  pomegranates30169 and one ice shield30168 grant addons1/2. The bounded
+  claim selector "dream warrior outfit" addresses that completed-task reward
+  without intercepting the separate parent's talk/task initiation menu. Its
+  readonly original tracks remain owned by The Dream Courts. The selected
+  programme explicitly adds level250/Premium. Refuse already-owned grants
+  before charging, correcting the donor's repeat-addon-charge behaviour.
+- Citizen of Issavi: the authored recipe names an unresolved attire-keeper
+  ROLE, not a source NPC. Bind it conservatively to Eshaya, the actual Wanted
+  report contact. NPC identity/greeting: Crystal9f data-global/npc/eshaya.lua
+  SHA256 0b84914661498605630d5e98bfb74579760e035d280e5395862c14b975e749db.
+  The original Kilmaresh selected s21 reports the three outlaw victories;
+  use that existing parent's chosen completion signal read-only. Do not
+  invent independent outlaw kills or rewrite the parent. Selected base level250,
+  Current Premium; eye-embroidered veil37003 addon1 then tagralt-inlaid
+  scabbard37002 addon2, one each. Item identities are pinned Canary items.xml
+  lines68951-68958 SHA2561cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2.
+  The addon-slot order is an explicit conservative binding of the selected
+  ordered accessory programme (the source recipe leaves native encoding open).
+- Makeshift: the recipe explicitly authors a Gnome Deep Hub qualification desk.
+  Bind that role to the admitted Gnomadness; reaching this physical NPC within
+  normal interaction range witnesses the selected exploration. Salvage request
+  and confirmation execute the authored apprenticeship before the base reward.
+  Crystal9f data-global/npc/gnomadness.lua SHA256
+  e3411f8704927cc665340418f3b65fa40fdafa6d607364fde90827516b9f7279
+  supplies NPC identity, not a falsely recovered outfit callback. The recipe's
+  requirements.min_level=100 wins over its contradictory adaptation text saying
+  zero; preserve the stricter explicit requirement and Current Premium.
+  Crude wood planks27657/addon1 and tinged pot27656/addon2 match
+  Crystal9f usable_outfit_items.lua:14-15 SHA256
+  69b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37.
+  Enforce the chosen first-before-second accessory sequence and award
+  Cobbled and Patched only when the first addon is already owned.
+Shared implementation: current persisted character level is read while its root
+is locked; required addons use the existing compatible account facts. Storage-free
+base claims require an exact neutral target/unowned-base predicate under the
+existing account grant lock, with SQL1006 retaining all original proof arms.
+Carried addons use the existing one-shot account predicate and exact input/ingress
+proof without manufacturing quest progress flags.

@@ -445,6 +445,42 @@
             "maxLength": 128,
             "pattern": "^oteryn:outfit\\.[a-z0-9_]+$"
           }
+        },
+        "minimum_level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "requires_addons": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "outfit",
+              "addons"
+            ],
+            "properties": {
+              "outfit": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^oteryn:outfit\\.[a-z0-9_]+$"
+              },
+              "addons": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3
+              },
+              "sex": {
+                "enum": [
+                  "female",
+                  "male"
+                ]
+              }
+            }
+          }
         }
       }
     },
