@@ -35,6 +35,7 @@ impl Application {
                 || play.link.achievement_notices_input(events)
                 || play.link.achievements_input(events)
                 || play.link.cast_control_input(events)
+                || play.link.cast_chat_input(events)
                 || play.link.chat_input(events)
                 || play.link.chat_public_input(events)
                 || play.link.boss_encounter_input(events)

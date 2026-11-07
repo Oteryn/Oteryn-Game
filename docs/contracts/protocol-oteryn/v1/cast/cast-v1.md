@@ -192,3 +192,11 @@ It contains no absolute position, actor identity or actionable handle. The
 native viewer stages the camera and scene until the final map chunk, and drops
 all staged/shown data on a slate, clear or terminal failure. Kind 34 is the next
 free nested kind (4) plus CLCAST's assigned lane offset (30).
+
+### CLCAST character consent read
+
+Message kind 52 is ConsentQuery, with no fields. Existing player command 503
+(capability 292) replies with ConsentState for the current fenced character.
+It cannot be carried by an observer envelope. Native settings read the current
+revision before enabling/disabling consent. Kind 52 is next free outer kind 22
+plus the assigned CLCAST lane offset 30; no new command or capability is used.

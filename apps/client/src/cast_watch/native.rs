@@ -83,7 +83,10 @@ impl Application {
                     self.panel.picture.clear();
                     self.panel.picture.ended = true;
                     self.panel.feedback = "Cast picture unavailable".into();
-                    self.drawn = None;
+                    self.drawn = self.assets.draw(&self.panel.picture, Instant::now()).ok();
+                    if let (Some(renderer), Some(drawn)) = (&mut self.renderer, &self.drawn) {
+                        renderer.set_atlas(drawn.atlas.clone());
+                    }
                     self.link.leave();
                 }
             }

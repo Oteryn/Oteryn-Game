@@ -716,3 +716,30 @@ OTERYN_WATCH_ROOT_CERT and OTERYN_WATCH_TICKET. TLS/ALPN uses the existing
 adapter. It never invokes character selection/admission or initializes private
 panels. Platform directory, account authentication, ticket issuance and stored
 preferences remain the accepted handoff; no Platform files are changed.
+
+CLCAST S17a character setting completion: Message kind **52** is
+ConsentQuery on existing command 503 / capability 292: next free outer Message
+kind 22 on main 9668e0a04 + lane offset 30. It has no fields and is forbidden in
+observer envelopes. The existing session/character-fenced preference owner reads
+and writes consent. Native Read/Allow shown/Hide me controls show confirmed state
+and use its revision; unknown consent cannot be optimistically enabled. This is
+the accepted S17 consent-default-off difference from Canary
+`src/creatures/players/livestream/livestream.cpp:486`, recorded in
+`docs/architecture/design/S17-CAST-DESIGN.md` section 6. No Platform write or
+migration is added. These controls are needed because the caster's own public
+actor is also covered by the consent-filtered projection.
+
+## CLCAST S17c — native live room and moderation
+
+Reuse capabilities 290/291, commands 504/505 and state domain 103; allocate no
+new numbers or migrations. Canary
+`src/creatures/players/livestream/livestream.cpp:388,396,431,441,674,692,724,812`
+provides opaque viewer names/presence, isolated live room delivery and
+mute/kick/ban evidence. Accepted S17 differences retain account-scoped moderation
+and durable owner-account bans in Game; the client sends only the opaque handle
+received in that caster's room, a confirmed cast revision and fresh operation
+key. It never sends a viewer account ID or routes cast text to gameplay chat.
+Domain 103 now has a strict native session decoder and revisioned event. The
+playing mailbox presents it immediately, including D=300, while viewer copies
+continue through the existing delay queue. Ctrl+Alt+Shift+H opens the native
+reply/mute/unmute/kick/ban form. Disconnect clears room history and pending UI.

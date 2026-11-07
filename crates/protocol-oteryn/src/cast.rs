@@ -1,5 +1,5 @@
 //! S17 strict candidate wire. Family 16 is distinct from dormant SPECTATE1 (15)
-//! and player commands. All offers remain off until composed qualification.
+//! and player commands. Offers require the composed native consumers.
 pub use crate::charm_wire::CyclopediaWireError as WireError;
 use crate::charm_wire::{push_message_field, push_varint_field, read_bytes, read_varint};
 mod media;
@@ -15,6 +15,8 @@ pub const COMMAND_TYPE_CAST_MODERATE: u32 = 505;
 pub const STATE_DOMAIN_CAST_VIEW: u32 = 102;
 pub const STATE_DOMAIN_CAST_CASTER_CHAT: u32 = 103;
 pub const CAST_OBSERVER_FAMILY: u64 = 16;
+/// CLCAST: next free Message kind 22 plus assigned lane offset 30.
+pub const MESSAGE_KIND_CAST_CONSENT_QUERY: u64 = 52;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Scene {
@@ -41,6 +43,7 @@ impl Selection {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Message {
+    ConsentQuery,
     Media {
         epoch: u64,
         sequence: u64,
@@ -125,7 +128,8 @@ impl Message {
     pub fn client_to_server(&self) -> bool {
         matches!(
             self,
-            Self::Start { .. }
+            Self::ConsentQuery
+                | Self::Start { .. }
                 | Self::Update { .. }
                 | Self::Stop { .. }
                 | Self::ConsentSet { .. }
@@ -140,6 +144,7 @@ impl Message {
     pub fn encode(&self) -> Result<Vec<u8>, WireError> {
         let mut b = Vec::new();
         let kind = match self {
+            Self::ConsentQuery => MESSAGE_KIND_CAST_CONSENT_QUERY,
             Self::Media { .. } => 21,
             Self::CasterState { .. } => 20,
             Self::CasterChatEmpty => 19,
@@ -330,7 +335,11 @@ impl Message {
                 push_message_field(&mut b, 2, handle);
                 line_field(&mut b, 3, text)?;
             }
-            Self::Leave | Self::Keepalive | Self::End | Self::CasterChatEmpty => {}
+            Self::Leave
+            | Self::Keepalive
+            | Self::End
+            | Self::CasterChatEmpty
+            | Self::ConsentQuery => {}
         }
         Ok(b)
     }
@@ -341,6 +350,7 @@ impl Message {
         let mut r = Reader { bytes, cursor: 0 };
         let kind = r.var(1)?;
         let result = match kind {
+            MESSAGE_KIND_CAST_CONSENT_QUERY => Self::ConsentQuery,
             21 => Self::Media {
                 epoch: r.var(2)?,
                 sequence: r.var(3)?,

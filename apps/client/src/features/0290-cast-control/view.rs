@@ -17,7 +17,13 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Password required (0/1, saved in account settings)",
                 "Saved access revision",
             ],
-            buttons: &["Start / apply", "Stop"],
+            buttons: &[
+                "Start / apply",
+                "Stop",
+                "Read consent",
+                "Allow shown",
+                "Hide me",
+            ],
             snapshot: |m| {
                 let p = &m.cast_control;
                 (
@@ -29,12 +35,12 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         u8::from(p.password).to_string(),
                         p.access_revision.to_string(),
                     ],
-                    oteryn_client_ui::cast_control::panel_text(p),
+                    oteryn_client_ui::cast_consent::panel_text(p),
                 )
             },
             set_open: |m, v| m.cast_control.open = v,
             submit: |m, commands, action, values| {
-                if action == 1 {
+                if action != 0 {
                     super::input::submit(m, commands, action);
                     return;
                 }

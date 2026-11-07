@@ -170,10 +170,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let facts = self.cast_facts(admitted).await?;
         let request = Message::decode(payload).ok()?;
         if kind == 503 {
-            let Message::ConsentSet { revision, allowed } = request else {
-                return None;
+            let change = match request {
+                Message::ConsentSet { revision, allowed } => Some((i64::try_from(revision).ok()?,allowed)),
+                Message::ConsentQuery => None,
+                _ => return None,
             };
-            let expected = i64::try_from(revision).ok()?;
             let fence =
                 character_gameplay_fence::current(self, admitted.game_session_id, false).await?;
             // The Root publishes the cross-worker denial floor and commits
@@ -184,7 +185,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     self.character,
                     self.holder,
                     fence,
-                    Some((expected, allowed)),
+                    change,
                 )
                 .await
                 .ok()?;

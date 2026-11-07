@@ -1,10 +1,12 @@
 {
   "mechanic": "0290-cast-control",
   "kind": "handlers",
-  "id": "0290-cast-control-unsupported",
-  "status": "unsupported",
-  "reason": "Native caster moderation is delivered in S17c.",
+  "id": "0290-cast-control-moderate",
+  "status": "supported",
   "commands": [
     505
-  ]
+  ],
+  "direction": "client_to_server",
+  "capability": 290,
+  "entry": "mod.rs::moderate"
 }

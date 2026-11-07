@@ -40,6 +40,24 @@ impl Picture {
     }
     pub fn apply(&mut self, message: Message, now: Instant) -> Result<(), &'static str> {
         message.encode().map_err(|_| "Invalid cast payload")?;
+        if self.ended && !matches!(message, Message::End) {
+            return Err("Cast ended");
+        }
+        let epoch = match &message {
+            Message::Scene { epoch, .. }
+            | Message::Slate { epoch, .. }
+            | Message::Media { epoch, .. }
+            | Message::State { epoch, .. }
+            | Message::ChatLine { epoch, .. } => Some(*epoch),
+            _ => None,
+        };
+        if epoch.is_some_and(|epoch| epoch != self.epoch) {
+            return Err("Cast epoch mismatch");
+        }
+        if matches!(&message,Message::Clear{epoch} if *epoch<self.epoch) {
+            return Err("Cast epoch rollback");
+        }
+
         self.expire(now);
         match message {
             Message::Clear { epoch } => {
@@ -95,6 +113,7 @@ impl Picture {
                     self.floor = Some(self.pending_floor.take().ok_or("Cast map without camera")?);
                     self.tiles = self.pending_tiles.take().ok_or("Cast map without reset")?;
                     self.actors = scene.actors;
+                    self.effects.clear();
                     self.slate = false;
                 }
             }

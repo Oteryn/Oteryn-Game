@@ -50,3 +50,46 @@ fn s17a_native_caster_panel_sends_start_and_confirmed_stop()
     assert!(!link.cast_control_panel().selected);
     Ok(())
 }
+
+#[test]
+fn s17a_native_consent_reads_and_uses_the_confirmed_character_revision()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut rx, outbox) = play_channel();
+    outbox.cast_control_initialize(false);
+    outbox.cast_consent_initialize(true);
+    link.cast_control_open();
+    let crate::combat_input::PlayCommand::ServerMechanic(query) = rx.try_recv()? else {
+        return Err("consent query".into());
+    };
+    assert_eq!((query.capability, query.command_type), (292, 503));
+    assert_eq!(
+        Message::decode(&query.payload).map_err(|e| format!("{e:?}"))?,
+        Message::ConsentQuery
+    );
+    outbox.cast_consent_result(&ServerMechanicResponse {
+        command_id: 1,
+        status: CommandStatus::Accepted,
+        server_sequence: 1,
+        payload: Message::ConsentState {
+            revision: 5,
+            allowed: false,
+        }
+        .encode()
+        .map_err(|e| format!("{e:?}"))?,
+    });
+    link.cast_control_request(3);
+    let crate::combat_input::PlayCommand::ServerMechanic(toggle) = rx.try_recv()? else {
+        return Err("consent toggle".into());
+    };
+    assert_eq!(
+        Message::decode(&toggle.payload).map_err(|e| format!("{e:?}"))?,
+        Message::ConsentSet {
+            revision: 5,
+            allowed: true
+        }
+    );
+    assert!(!link.cast_control_panel().allow_shown);
+    outbox.logged_out();
+    assert!(!link.cast_control_panel().consent_known);
+    Ok(())
+}

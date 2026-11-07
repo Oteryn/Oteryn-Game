@@ -5,6 +5,10 @@ pub use input::open_key;
 #[derive(Debug, Clone)]
 pub struct Panel {
     pub selected: bool,
+    pub consent_selected: bool,
+    pub consent_known: bool,
+    pub consent_revision: u64,
+    pub allow_shown: bool,
     pub open: bool,
     pub pending: bool,
     pub active: bool,
@@ -21,6 +25,10 @@ impl Default for Panel {
     fn default() -> Self {
         Self {
             selected: false,
+            consent_selected: false,
+            consent_known: false,
+            consent_revision: 0,
+            allow_shown: false,
             open: false,
             pending: false,
             active: false,
@@ -37,10 +45,19 @@ impl Default for Panel {
 }
 impl Panel {
     pub fn command(&self, action: usize) -> Result<Message, &'static str> {
-        if !self.selected || self.pending {
+        if self.pending
+            || (action <= 1 && !self.selected)
+            || (action >= 2 && !self.consent_selected)
+        {
             return Err("Cast controls unavailable");
         }
         let message = match action {
+            2 => Message::ConsentQuery,
+            3 | 4 if self.consent_known => Message::ConsentSet {
+                revision: self.consent_revision,
+                allowed: action == 3,
+            },
+            3 | 4 => return Err("Refresh character consent first"),
             0 if self.active => Message::Update {
                 revision: self.revision,
                 access_revision: self.access_revision,
@@ -67,6 +84,12 @@ impl Panel {
     }
     pub fn apply(&mut self, message: Message) -> Result<(), &'static str> {
         match message {
+            Message::ConsentState { revision, allowed } => {
+                self.consent_known = true;
+                self.consent_revision = revision;
+                self.allow_shown = allowed;
+                self.feedback.clear();
+            }
             Message::CasterState {
                 revision,
                 epoch,
@@ -99,7 +122,17 @@ impl Panel {
             self.viewers,
             self.delay,
             self.cap,
-            self.feedback
+            format!(
+                "Allow me to be shown in casts: {}\n{}",
+                if !self.consent_known {
+                    "unknown — refresh"
+                } else if self.allow_shown {
+                    "on"
+                } else {
+                    "off"
+                },
+                self.feedback
+            )
         )
     }
 }
@@ -112,4 +145,15 @@ pub fn command(panel: &Panel, action: usize) -> Result<Message, &'static str> {
 }
 pub fn panel_text(panel: &Panel) -> String {
     panel.text()
+}
+
+/// Moderation shares the confirmed caster revision, never viewer-supplied identity.
+pub fn moderate(
+    chat: &crate::cast_chat::Panel,
+    control: &Panel,
+    subject: &str,
+    action: u8,
+    key: [u8; 16],
+) -> Result<oteryn_client_runtime::server_mechanic::ServerMechanicCommand, &'static str> {
+    crate::cast_chat::protocol::command(chat, control, "", subject, action, key)
 }

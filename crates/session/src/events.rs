@@ -5,6 +5,7 @@ use super::*;
 /// session's domain store (FND-02 §14, §15), in the order it was applied.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SessionEvent {
+    CastCasterLine(AppliedDelta<cast_chat::CasterLine>),
     AnalyserFacts(AppliedDelta<Vec<analyser_transport::AnalyserFact>>),
     WorldWeather(AppliedDelta<world_weather::WorldWeather>),
     /// Every replaced domain, including those with a typed projection event.
@@ -73,6 +74,7 @@ impl SessionEvent {
     #[must_use]
     pub const fn domain_id(&self) -> u32 {
         match self {
+            Self::CastCasterLine(_) => 103,
             Self::AnalyserFacts(_) => 15,
             Self::PlayerTrade(_) => player_trade::STATE_DOMAIN_PLAYER_TRADE,
             Self::GatedSnapshotReplaced(snapshot) => snapshot.value.domain_id,
