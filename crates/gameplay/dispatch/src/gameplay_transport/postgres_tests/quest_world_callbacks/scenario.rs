@@ -49,6 +49,10 @@ fn scenario_case(
     let target_swap = name == "fish-napping-key-target-swap";
     let mut callback = callback(if bone_journey {
         "bone-pit-collect"
+    } else if name == "qengine-rewards-l2-father-scale" {
+        "l2-father-scale"
+    } else if name == "qengine-rewards-l2-father-sinew" {
+        "l2-father-sinew"
     } else if draconia_journey {
         "draconia-escape-35012"
     } else if draconia {
@@ -100,12 +104,16 @@ fn scenario_case(
     if stateless_destination.is_some() {
         assert_eq!(callback.selector.position, Some(trigger));
     }
-    let world = if draconia && !draconia_journey {
-        super::world_remote(&callback, trigger, 431, 0, Some(2772))?
-    } else if paired_plate {
-        super::world_ordinal(&callback, trigger, 431, 1)?
+    let world = if matches!(name, "qengine-rewards-l2-sam" | "qengine-rewards-l2-outfox") {
+        None
     } else {
-        world(&callback, trigger)?
+        Some(if draconia && !draconia_journey {
+            super::world_remote(&callback, trigger, 431, 0, Some(2772))?
+        } else if paired_plate {
+            super::world_ordinal(&callback, trigger, 431, 1)?
+        } else {
+            world(&callback, trigger)?
+        })
     };
     run(async |admin| {
         let h = if qengine_reward || outfit_world {
@@ -130,6 +138,13 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
+        let world = match world {
+            Some(world) => world,
+            None => super::super::qengine_rewards::questl2_journeys::world(
+                name,
+                generation.native_gameplay().ok_or("native journey")?,
+            )?,
+        };
         let world = if matches!(
             name,
             "qengine-rewards-l2-full-sam" | "qengine-rewards-l2-full-outfox"

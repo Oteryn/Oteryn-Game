@@ -173,6 +173,8 @@ async fn use_at(
     admitted: &mut AdmittedSession,
     p: Position,
 ) -> TestResult<(UseDisposition, u64, Vec<u8>, Vec<u8>)> {
+    // Honour the native 200 ms world-action window for a fresh USE.
+    tokio::time::sleep(std::time::Duration::from_millis(210)).await;
     let map = owner.bundle_map().ok_or("map")?;
     let key =
         oteryn_world_bundle::bundle::placement_key(p.floor, p.x, p.y, 1).ok_or("placement")?;
@@ -306,18 +308,26 @@ async fn sam(
     let (result, command, payload, bytes) = use_at(owner, admitted, chest).await?;
     assert_eq!(result, UseDisposition::Committed);
     assert_eq!(
+        stage(h, SAM).await?,
+        Some(3),
+        "world reward commits progress with armor"
+    );
+    let atomic: bool = sqlx::query_scalar("SELECT q.xmin=i.xmin FROM game_character_quest_tracks q JOIN game_item_instances i ON i.definition_production_key='oteryn:item.tibia.i3397' AND i.lifecycle=1 WHERE q.track_key=$1")
+        .bind(SAM).fetch_one(&h.pool).await?;
+    assert!(
+        atomic,
+        "armor and final quest flag share one PostgreSQL transaction"
+    );
+    assert_eq!(
         wire(owner, admitted, command, 2, payload).await?,
         bytes,
         "armor command replay"
     );
-    owner
-        .refresh_quest_session(admitted.game_session_id, false)
-        .await;
     assert_eq!(carried(h, 3397).await?, 1);
     assert_eq!(stage(h, SAM).await?, Some(3));
     assert_eq!(
         use_at(owner, admitted, chest).await?.0,
-        UseDisposition::NothingToUse
+        UseDisposition::Rejected
     );
     assert_eq!(carried(h, 3397).await?, 1);
     Ok(())

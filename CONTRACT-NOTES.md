@@ -34,3 +34,61 @@ that implementation, retaining fee, expiry and prerequisite extensions. Its
 main, engine and quest-lane refs for 1144 collisions. This is a shared mechanic
 slice; it does not alone qualify a quest. A source soul-orb trade may require
 more room than available; refuse the whole exchange without consuming orbs.
+
+### L2 Cyclops all-orb exchange
+
+Crystal 9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d,
+`data-global/npc/a_sweaty_cyclops.lua:188-213`,
+sha256 `bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a`,
+consumes every carried soul orb5944 and rolls separately per orb: 1/100 yields
+200 spectral bolts6528, otherwise100. The generic bulk owner preserves that
+rule and records every native server roll with the exact consumed count and
+output layout. A whole output set that cannot fit is refused atomically.
+The isolated PostgreSQL fixture replaces only the server RNG function to drive
+normal and bonus outcomes deterministically; it seeds neither quest progress
+nor earned outputs. Native orb/ammunition providers are reused unchanged.
+Migration1145 was checked against24 current main/engine/quest heads.
+
+### L2 world USE reward participants
+
+Reuse PC8 d90c1bfa29fac954fbdd08e014a6473d4a33de96's finite world
+USE reward composition through the existing complete native MINT owner.
+Migration1146 extends the installed receipt proof without changing published
+migrations; 24 current main/engine/quest heads were checked for allocation.
+World metadata must identify the same USE, quest, storage and complete output
+plan. The weaker context-free writer cannot execute a world value grant.
+Existing NPC fee, bulk and absolute-deadline proof arms remain active.
+
+Item-id registrations use a positive appearance selector and the resolved
+server map stack, including untagged placements; they require no fabricated
+position, action or unique id. The source Father corpse registrations are
+`data-global/scripts/quests/fathers_burden/actions_corpse.lua:2-3,13-19`,
+Crystal9f, sha256 ab1477d63aba338744198875b5746abc4c7092d90318331af3a2bad4732fa9a1.
+They issue scale11550/sinew11548 once per character, without a mission-start
+prerequisite, and retain the corpse. This slice proves the world grant
+participant; it does not independently qualify the complete Father quest.
+
+### L2 Sam and Outfox native access composition
+
+Source9f Sam111-117 (sha ed713aa63d597133355328a16e9c36d1b382c0e1d7e40dc199211f4fc4d14e6b)
+consumes3244 and refers the player to Kroox. Kroox63-67 (sha
+080ef330bea12ad63d9d9aecdf259e669df0eb448287907f583aa04fa5e64497) grants
+the mine permission and promises dwarven armor. The startup chest table3176-3178
+(sha0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca)
+locates chest9226 at32455,31968,z14. The shared world reward participant grants
+armor3397 there, requires the mine permission and NPC stage2, and atomically
+writes NPC stage3 with an internal once flag. The NPC completion follows
+`data-global/scripts/actions/other/others/quest_system2.lua:97-103,378`
+(sha04990d261d85479bf9a75de040f6c158bc6eb557018a7ad359374400c2a49635).
+The native gate at32455,31967,z14
+retains appearance1644/action40603 and its exact named storage.
+
+Budrik61-106 (sha0bad10f01b039dfb0a8f0460b36a0429c1eb498cb504b378ef4aaba005056aa5)
+issues Outfox, writes the Questline field, and exchanges139 for875. The old
+callback omitted `/questline`; the canonical door action41492 already reads
+the correct field. Its existing helmet claim6257 remains the reward owner.
+
+The full source-world fixture exposed a routing guard before qualified bundle
+owners, preventing native door/chest USE. Apply that guard only to the legacy
+fallback without a bundle. Qualified bundle handlers retain their digest,
+revision, actor/session, reach, storage, custody and MINT checks.

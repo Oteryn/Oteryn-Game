@@ -15,6 +15,8 @@ pub enum Facing {
 pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outfit_reward: Option<super::super::reward_callbacks::OutfitReward>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub item_reward: Option<super::super::reward_callbacks::ItemReward>,
     pub transform: Option<u16>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
@@ -86,6 +88,22 @@ pub struct Encounter {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects.item_reward.as_ref().is_some_and(|reward| {
+        callback.trigger != Trigger::Use
+            || callback.is_read_only()
+            || !callback.offerings.is_empty()
+            || callback.item_on_target.is_some()
+            || callback.monk_reward.is_some()
+            || effects.outfit_reward.is_some()
+            || callback.storage.is_empty()
+            || callback
+                .storage
+                .iter()
+                .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+            || !super::super::reward_callbacks::valid_item_reward(reward)
+    }) {
+        return false;
+    }
     let pos = |p: Position| (-15..=0).contains(&p.floor);
     let lever = callback.trigger == Trigger::Use && callback.lever.is_some();
     if effects.outfit_reward.as_ref().is_some_and(|r| {

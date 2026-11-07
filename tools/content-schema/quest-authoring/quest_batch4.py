@@ -232,8 +232,23 @@ def validate_native(callback, context):
 def validate_effects(callback, context):
     """The optional Channel effects share the Rust world_callbacks closed shape."""
     effects = callback.get('effects', {})
-    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter', 'outfit_reward'}
+    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter', 'outfit_reward', 'item_reward'}
     fields(effects, set(), allowed, context + ': effects')
+    item_reward = effects.get('item_reward')
+    if item_reward is not None:
+        from jsonschema import Draft202012Validator
+        schema = json.loads(Path(__file__).with_name('shared-reward-callbacks.schema.json').read_text())
+        Draft202012Validator({'$ref':'#/$defs/give','$defs':schema['$defs']}).validate(item_reward)
+        require(not (item_reward.get('contents') and item_reward.get('backpack_outputs')),
+                context + ': conflicting reward layout')
+        require(not item_reward.get('decay') or (item_reward['count']==1
+                and not item_reward.get('contents') and not item_reward.get('backpack_outputs')),
+                context + ': mixed timed output layout')
+        require(callback['trigger']=='use' and callback['storage'] and not callback.get('offerings')
+                and not callback.get('item_on_target') and not callback.get('monk_reward')
+                and not effects.get('outfit_reward') and not all(s.get('read_only',False) for s in callback['storage'])
+                and any(not s.get('preserve',False) and not s['minimum']<=s['set']<=s['maximum'] for s in callback['storage']),
+                context + ': world reward needs a finite source transition')
     outfit = effects.get('outfit_reward')
     if outfit is not None:
         fields(outfit, {'outfit','addons'}, {'outfit','addons'}, context + ': outfit reward')
@@ -333,8 +348,9 @@ def validate_callback(callback, directory):
     selector = callback['selector']
     selector_fields = {'position', 'unique', 'action', 'appearance'}
     fields(selector, set(), selector_fields, key + ': selector')
-    require(any(selector.get(field) is not None for field in ('position', 'unique', 'action')),
-            key + ': selector requires position, unique or action')
+    require(any(selector.get(field) is not None for field in ('position', 'unique', 'action', 'appearance')),
+            key + ': selector requires position, unique, action or appearance')
+    require(selector.get('appearance') != 0, key + ': zero selector appearance')
     if selector.get('position') is not None:
         position(selector['position'], key + ': selector')
     for field in ('unique', 'action', 'appearance'):

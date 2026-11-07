@@ -130,6 +130,11 @@ def append(callbacks, offers, inputs, pin):
                    'storage': [{'track': track, 'minimum': 1, 'maximum': 1, 'set': 1}],
                    'reply': [held], 'close_after': True})
 
+    fox = 'u8_1/to_outfox_afox_quest'
+    for callback in callbacks:
+        if callback['key'] == 'oteryn:quest-reward/outfox-helmet':
+            callback['storage'] = [state(fox,1,2)]
+            callback['sources'].append('crystal:'+pin+':data-global/npc/budrik.lua:68:sha256:'+hashlib.sha256(inputs['data-global/npc/budrik.lua']).hexdigest())
     sam = 'u7_5/sams_old_backpack/'
     add('sam-kroox', 'sam_s_old_backpack_quest', 'kroox',
         ['sam sent me', 'sam send me'],

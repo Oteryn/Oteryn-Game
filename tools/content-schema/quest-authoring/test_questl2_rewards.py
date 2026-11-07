@@ -102,6 +102,38 @@ class LaneL2Rewards(unittest.TestCase):
                       if r['production_definition']['production_key'] == 'oteryn:item.tibia.i23677')
         self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 2700)
 
+    def test_soul_orb_bulk_template_is_source_bound_and_closed(self):
+        import copy
+        from jsonschema.exceptions import ValidationError
+        row = self.callbacks['exchange-cyclops-soul-orbs']
+        self.assertEqual(row['bulk'], {'item':'oteryn:item.tibia.i5944',
+                         'output':'oteryn:item.tibia.i6528',
+                         'base':100, 'bonus':100, 'chance_percent':1})
+        self.assertIn(':197:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a',
+                      row['sources'][0])
+        for field, value in [('chance_percent',0), ('chance_percent',101), ('bonus',0),
+                             ('base',101), ('output','oteryn:item.tibia.i5944')]:
+            bad = copy.deepcopy(row)
+            bad['bulk'][field] = value
+            with self.assertRaises((ValueError,ValidationError)):
+                q.validate_callbacks({'schema':1, 'callbacks':[bad]})
+        for update in [{'repeatable':False}, {'take':[]}, {'fee':{'gold':1,'include_bank':True}}]:
+            bad = copy.deepcopy(row)
+            bad.update(update)
+            with self.assertRaises((ValueError,ValidationError)):
+                q.validate_callbacks({'schema':1, 'callbacks':[bad]})
+
+    def test_outfox_issue_and_return_use_the_native_door_track(self):
+        key = 'oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest'
+        start = self.callbacks['outfox-start']
+        finish = self.callbacks['outfox-helmet']
+        self.assertEqual(start['storage'][-1]['track'],key)
+        self.assertEqual(start['storage'][-1]['set'],1)
+        self.assertEqual(finish['storage'][0]['track'],key)
+        self.assertEqual(finish['storage'][0]['set'],2)
+        self.assertEqual(finish['take'],[{'item':'oteryn:item.tibia.i139','count':1}])
+        self.assertEqual(finish['give']['item'],'oteryn:item.tibia.i875')
+
     def test_sam_kroox_opens_both_source_tracks_without_minting_armor(self):
         callback = self.callbacks['sam-kroox']
         self.assertEqual(callback['npc'], 'oteryn:npc.kroox')

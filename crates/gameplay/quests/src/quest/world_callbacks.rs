@@ -268,7 +268,9 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || !keys.insert(&callback.key)
             || (selector.position.is_none()
                 && selector.unique.is_none()
-                && selector.action.is_none())
+                && selector.action.is_none()
+                && selector.appearance.is_none())
+            || selector.appearance == Some(0)
             || selector.position.is_some_and(|p| !valid_pos(p))
             || callback.teleport.is_some_and(|p| !valid_pos(p))
             || callback.failure_teleport.is_some_and(|p| {
