@@ -42,13 +42,19 @@ pub(super) struct GmProof<'a, 'f, 's> {
 
 impl GmProof<'_, '_, '_> {
     pub async fn verify(&self) -> TestResult<super::super::staff::Signing> {
-        self.initialize_level_one().await?;
+        self.initialize_level_one()
+            .await
+            .map_err(|error| format!("GM level1 initialization: {error:?}"))?;
         self.refuse(self.entry.clone(), "ordinary level1").await?;
         let mut forged = self.entry.clone();
         forged.participants[0].game_master = true;
         self.refuse(forged, "forged GM hint at level1").await?;
-        let signing = super::super::staff::Signing::new()?;
-        signing.bootstrap(self.h).await?;
+        let signing = super::super::staff::Signing::new()
+            .map_err(|error| format!("GM signing fixture: {error:?}"))?;
+        signing
+            .bootstrap(self.h)
+            .await
+            .map_err(|error| format!("GM trusted activation bootstrap: {error:?}"))?;
         let now = clock().ok_or("staff fixture clock")?.0;
         let character = self
             .source
@@ -78,7 +84,8 @@ impl GmProof<'_, '_, '_> {
                 false,
                 clock,
             )
-            .await?
+            .await
+            .map_err(|error| format!("GM signed principal binding: {error:?}"))?
             .ok_or("signed GM principal binding")?;
         assert_eq!(
             oteryn_protocol_oteryn::staff::decode_result(&result)?.code,
@@ -90,16 +97,62 @@ impl GmProof<'_, '_, '_> {
             group, 6,
             "the signed current ADMIN roster must bind its native GM group"
         );
-        // A retained group row is historical data once the configured activation
-        // is revoked. It must not grant a fresh rule exemption on its own.
-        self.h.root.configure_staff(None).await.map_err(debug)?;
-        self.refuse(self.entry.clone(), "revoked configured staff activation")
-            .await?;
-        self.h
+        let trusted = self
+            .h
             .root
-            .configure_staff(Some(signing.config.clone()))
+            .staff_live_status(self.authority, &self.h.node, self.source)
             .await
-            .map_err(debug)?;
+            .map_err(|error| format!("GM trusted current-session status: {error:?}"))?;
+        assert_eq!(trusted.group, 6);
+        assert!(!trusted.banned && !trusted.kicked);
+        // Staff configuration is immutable for one root. Match the existing
+        // staff restart fixture: a restarted owner without the configured
+        // activation must refuse, despite the same retained current group row.
+        {
+            use sqlx::ConnectOptions;
+            let options = self
+                .h
+                .pool
+                .connect_options()
+                .as_ref()
+                .clone()
+                .options([("role", "oteryn_game_runtime")]);
+            let runtime_url = options.to_url_lossy();
+            let revoked =
+                crate::durability::DurabilityRoot::connect_test_runtime(runtime_url.as_str())
+                    .map_err(|error| format!("GM revoked-owner root: {error:?}"))?;
+            assert!(
+                revoked
+                    .maintain_ready_once()
+                    .await
+                    .map_err(|error| format!("GM revoked-owner ready: {error:?}"))?
+            );
+            revoked
+                .configure_staff(None)
+                .await
+                .map_err(|error| format!("GM revoked-owner configuration: {error:?}"))?;
+            let seal = self.h.recovery.seal_current().map_err(debug)?;
+            let authority = revoked
+                .open_character_authority(&seal)
+                .await
+                .map_err(|error| format!("GM revoked-owner character authority: {error:?}"))?;
+            let owner = ActivityHandoffOwner::new(revoked.clone());
+            // This ordinary durable status reader independently proves this
+            // exact session, node, lease and scope before the exemption probe.
+            let current = revoked
+                .staff_live_status(&authority, &self.h.node, self.source)
+                .await
+                .map_err(|error| format!("GM revoked-owner current-session status: {error:?}"))?;
+            assert_eq!(current.group, 0);
+            assert!(!current.banned && !current.kicked);
+            self.refuse_with(
+                &owner,
+                &authority,
+                self.entry.clone(),
+                "revoked configured staff activation",
+            )
+            .await?;
+        }
         assert!(
             !self.entry.participants[0].game_master,
             "positive case must not rely on the caller hint"
@@ -108,10 +161,21 @@ impl GmProof<'_, '_, '_> {
     }
 
     async fn refuse(&self, entry: SoulpitEntryRequest, label: &str) -> TestResult {
+        self.refuse_with(self.owner, self.authority, entry, label)
+            .await
+    }
+
+    async fn refuse_with(
+        &self,
+        owner: &ActivityHandoffOwner,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        entry: SoulpitEntryRequest,
+        label: &str,
+    ) -> TestResult {
         assert_eq!(
-            self.owner
+            owner
                 .enter_soulpit(
-                    self.authority,
+                    authority,
                     &self.h.node,
                     self.permit,
                     self.group.clone(),
@@ -199,6 +263,9 @@ impl GmProof<'_, '_, '_> {
             initialized,
             ProgressionInitializationOutcome::Initialized(_)
         ));
+        let level:i64=sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
+            .bind(self.source.character_id.as_bytes().as_slice()).fetch_one(&self.h.pool).await?;
+        assert_eq!(level, 1);
         Ok(())
     }
 }

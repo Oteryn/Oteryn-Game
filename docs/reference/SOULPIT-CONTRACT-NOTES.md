@@ -786,8 +786,13 @@ with `-D warnings` (166.078 seconds); formatting (14.934 seconds), architecture
 
 The final parity sweep repaired the donor GM level exemption using the existing
 current Game staff projection. The staff producer remains outside this lane;
-the Soulpit consumer proves the current group at its locked entry. Focused GM,
-forged-hint and revocation proof is being validated separately.
+the Soulpit consumer proves the current group at its locked entry. The focused
+GM, forged-hint and unconfigured restarted-owner proof passes in 41.244 seconds.
+It proves each owner's exact session/fence through the normal durable status
+reader before checking exemptions. The immutable signed roster is hash-bound;
+only current group/head rows are share-locked. Direct checks under
+`oteryn_game_runtime` prove the roster lock is forbidden and the repaired
+group/head lock succeeds, preserving the existing read-only roster privileges.
 
 - Crystal `201189f` `data-global/scripts/quests/soulpit/soulpit_fight.lua:54-61`
   exempts current gamemasters from the level-8 entry requirement. The shared entry

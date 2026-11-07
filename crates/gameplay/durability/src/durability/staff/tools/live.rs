@@ -15,6 +15,9 @@ impl DurabilityRoot {
         let Some(trust) = self.staff_trust() else {
             return Ok(0);
         };
+        // Signed roster rows are immutable (0170); matching the trusted roster
+        // hash needs SELECT only. Lock the mutable group/head, not the roster:
+        // runtime intentionally has no UPDATE privilege on roster snapshots.
         let group: Option<i16> = sqlx::query_scalar(
             "SELECT g.group_id FROM game_staff_character_groups g \
              JOIN game_staff_control_heads h ON h.environment=g.environment AND h.activation_sha256=g.activation_sha256 \
@@ -22,7 +25,7 @@ impl DurabilityRoot {
              WHERE g.environment=$1 AND g.character_id=encode($2,'hex')::uuid \
                AND g.activation_sha256=$3 AND r.roster_sha256=$4 \
                AND g.group_id=CASE r.role WHEN 'GM' THEN 4 WHEN 'SENIOR_GM' THEN 5 WHEN 'ADMIN' THEN 6 END \
-             ORDER BY g.group_id DESC LIMIT 1 FOR SHARE OF g,h,r",
+             ORDER BY g.group_id DESC LIMIT 1 FOR SHARE OF g,h",
         )
         .bind(trust.environment())
         .bind(character.as_bytes().as_slice())
