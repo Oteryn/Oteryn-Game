@@ -2825,7 +2825,13 @@
     ],
     "remaining": [
       "Decaying Defender Outfits Quest"
-    ]
+    ],
+    "decaying_progress": {
+      "postgres": "/tmp/qengine2-restart13-decaying-green4.log:207.508569556s success=false",
+      "passed": "Native parent base; both real accessory USEs; exact custody/replay; canonical/native receipt assertions; Fully Decayed achievement.",
+      "exact_red": "Final normal appearance ChangeResult rejected. Stock cosmetics content_revision=s3b-content-1, Character root=content-1; strict content guard correctly refuses.",
+      "fix": "Use existing production_generation_with_source(content-1) in outfit-only parent variant; compiling all-target check session98749. Keep original parent case unchanged."
+    }
   },
   "restart_audit": {
     "base": "e7867e061eb765cc6d2b5f4f4366221b72191b2f",

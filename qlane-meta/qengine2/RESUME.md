@@ -740,3 +740,11 @@ Decay-only PG now compiling session39715, log restart13-decaying-green4. Its
 fresh owner-read item_fence fixes the uninitialized parent admission carrier;
 Revenant already had this fence from original source delivery. Publish green
 Revenant immediately, continueDecay then remaining entries andS06/W15b.
+
+15-minute evidence WIP: committed baseline remains compiling. Decay207.5086s
+now passes both accessory USEs/cost/replay/allfacts/achievement; final normal
+appearance correctly rejects content mismatch. Verified stock cosmetics
+s3b-content-1 versus Character root content-1 in retained failed test DB.
+Matching production-generation carrier fix is in working tree, all-target
+check session98749 not yet complete; publish its code immediately when compiled,
+then isolatedDecayPG. Exact red is content-revision guard, no longerEOF.
