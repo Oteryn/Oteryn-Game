@@ -134,3 +134,20 @@ refresh and dependent Quest-tree regeneration. Approved graphs/core digests and
 immutable/compiler inputs remain unchanged. All28 Quest changes are provenance
 sha256 leaves; no quest values/rules changed. Native admission is separate from
 this transcription receipt, whose native_runtime_admission remainsfalse.
+
+Draconia exit35011 exact source:
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/draconia/movement-exit_teleport.lua
+SHA25680af40ac459eb655670472a0391db78590d456827917d4a64e714947b64723a4,
+matching the retained source-gap blob. Four positions32802..32805,31584,z1 must
+contain2772,2773,2772,2773 respectively. Success goes32701,31639,z6; failure goes
+32803,31587,z1. The trigger is UID35011 only. Fixture32803,31586,z1 is controlled
+test geometry and is never added as a production selector alias.
+
+Generic object_conditions are bounded by the existing8-effect bound and require
+stateless callbacks: no storage, offering, portable item target, XP or native reward
+rule. They read one current pinned callback/door snapshot under the runtime owner;
+there is no await between this read-set and the map/movement commit. Only current
+immutable Channel Base/Added objects qualify. House/value/portable ground objects
+are outside this read-set; absent tiles, unreadable facts and missing appearances
+fail the condition. This conservative rule avoids treating unowned custody as a
+physical world predicate. Existing callbacks default to no conditions.

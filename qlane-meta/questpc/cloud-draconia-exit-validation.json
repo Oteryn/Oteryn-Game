@@ -1,0 +1,67 @@
+{
+  "result": "PG PASS; implementation in working tree, check/clippy/pin pipeline running",
+  "scope": "Generic bounded immutable placement predicates and original UID35011 alternating four-lever exit; no whole-title promotion",
+  "red_seconds": 3.45,
+  "pg": {
+    "cases": {
+      "draconia-exit-correct": 44.694929673,
+      "draconia-exit-wrong-0": 44.064131479,
+      "draconia-exit-wrong-1": 43.962059843,
+      "draconia-exit-wrong-2": 44.46737689,
+      "draconia-exit-wrong-3": 44.300377885,
+      "draconia-exit-live": 47.081677539
+    },
+    "total_seconds": 268.57,
+    "passed_scenes": 6,
+    "failed": 0
+  },
+  "source": {
+    "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/draconia/movement-exit_teleport.lua",
+    "sha256": "80af40ac459eb655670472a0391db78590d456827917d4a64e714947b64723a4"
+  },
+  "validation": {
+    "schema": "PASS1 pure unit0.01s",
+    "python": "PASS8batch3 and19batch4 pure units",
+    "generation": "PASS callback,23packet and40Native checks;4Quest shards regenerated/check clean",
+    "semantic_diff": "Only new exit callback; old callbacks/Native records unchanged;28Quest provenance hashes only",
+    "check_clippy_pin": "RUNNING"
+  },
+  "logs": {
+    "red": {
+      "log": "qlane-meta/questpc/cloud-draconia-exit-red.log",
+      "sha256": "81b4b69e9728d68c4e054c95f81e6e3f7290bbd4aa90741767e151de3e015c3b"
+    },
+    "green": {
+      "log": "qlane-meta/questpc/cloud-draconia-exit-green.log",
+      "sha256": "9d93f6004a3014829ac19e664274ff14539daaa3053cdfa755fda45124bafbfa"
+    },
+    "schema": {
+      "log": "qlane-meta/questpc/cloud-draconia-exit-schema.log",
+      "sha256": "f656fd4a850a58d5af7a4c1ee690ec01637a79dfe889e19d9ee8cd8079d2bb15"
+    },
+    "python3": {
+      "log": "qlane-meta/questpc/cloud-draconia-exit-python3.log",
+      "sha256": "75ff54e727b57e4bd7b88956ed0c92c4b9a416e6f0976707e8fb54aa385ac0bd"
+    },
+    "python4": {
+      "log": "qlane-meta/questpc/cloud-draconia-exit-python4.log",
+      "sha256": "18ae074998fd985c2cf9dcd3b747037c0e8125dc630a8365ed0590e645df3fd5"
+    },
+    "generated-review": {
+      "log": "qlane-meta/questpc/cloud-draconia-exit-generated-review.log",
+      "sha256": "b52f5c457911995bdf3c3022f4b8a28e696e04ffe4cdd64e9af61f4841b32bdf"
+    },
+    "generated-check": {
+      "log": "qlane-meta/questpc/cloud-draconia-exit-generated-check.log",
+      "sha256": "9cf9f5e6beb9f15854cc65285097df5ae846f796dacd2edf3014b79914843557"
+    },
+    "native-check": {
+      "log": "qlane-meta/questpc/cloud-draconia-exit-native-check.log",
+      "sha256": "e17883c3b904492b5238996447f88597b8e4d46e6c883b4445ed5f1e756d83aa"
+    },
+    "tree-check": {
+      "log": "qlane-meta/questpc/cloud-draconia-exit-tree-check.log",
+      "sha256": "4b1a51f1f00f83f5e1ea3ce860719e88e9df6fdbf9c8e82a29016b5982a7a8f2"
+    }
+  }
+}

@@ -1,3 +1,18 @@
+## Exit six-scene PG proof — implementation push pending strict pipeline
+Six real PostgreSQL scenes PASS268.57s: correct2772/2773/2772/2773 pattern; each
+individual wrong lever; wrong third lever corrected by actual USE, followed by
+successful re-entry. Replay and no Quest state/receipt writes checked. RED3.45s
+unknown object_conditions after DB creation. Schema1unit, Python8+19 tests,
+callback/23packet/40Native checks and4Quest-tree generated checks pass.
+
+IMPORTANT: this evidence-only commit preserves progress before the30-minute push
+interval. The new generic predicate/schema/runtime/source/test files remain in the
+working tree; they are not yet published. Cargo pipeline session38320 is running
+check/clippy/pin after PG success. Logs/tmp/questpc-draconia-exit-*.log; proof JSON
+cloud-draconia-exit-validation.json. Complete strict checks, archive final logs,
+update this state, commit all feature files and push immediately. Do not redo PG.
+Counts remain59QUALIFIED/118UNFINISHED/1excludedDawnportBLOCKED.
+
 ## Draconia escape/offering green — 2026-11-07
 Reused questpc6@3bfd85606 callback35012, native Item3206 profile/producer and four
 source PG cases. Runtime callback is compared with its authored source packet.
