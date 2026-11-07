@@ -93,7 +93,7 @@ BEGIN
   SELECT character_id FROM game_public_death_rechecks WHERE due_at_seconds<=cut_s
   ORDER BY due_at_seconds,character_id LIMIT 32
  ) due ORDER BY character_id LOOP
-  PERFORM pg_advisory_xact_lock(hashtextextended('pubproj-v2:deaths:'||c::text,0));
+  PERFORM game_public_v2_subject_lock('deaths',c::text);
   IF EXISTS(SELECT 1 FROM game_public_death_rechecks WHERE character_id=c AND due_at_seconds<=cut_s) THEN
    PERFORM game_public_v2_deaths(c);
    done:=done+1;

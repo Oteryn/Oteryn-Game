@@ -337,7 +337,8 @@ fn source_mp_only_drain_clamps_current_pool_replays_and_exhaustion_keeps_revisio
 }
 
 #[test]
-fn pubproj_creature_dot_keeps_frozen_identity_after_source_removal_and_hides_summon_species() {
+fn pubproj_creature_dot_keeps_frozen_identity_after_source_removal_and_hides_summon_species()
+-> Result<(), String> {
     use crate::durability::character_death::PublicDeathCause;
     use oteryn_gameplay_content::content::creature_policy::{
         CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags,
@@ -379,9 +380,9 @@ fn pubproj_creature_dot_keeps_frozen_identity_after_source_removal_and_hides_sum
                     runtime.content_pin().server_artifact_digest(),
                     vec![policy],
                 )
-                .expect("trusted loaded policy"),
+                .map_err(|error| format!("trusted loaded policy: {error:?}"))?,
             )
-            .expect("active content pin");
+            .map_err(|error| format!("active content pin: {error:?}"))?;
         let source = runtime
             .admit_pinned_monster_lab_creature(
                 MovementLocalPosition {
@@ -392,17 +393,17 @@ fn pubproj_creature_dot_keeps_frozen_identity_after_source_removal_and_hides_sum
                 "oteryn:creature.dragon",
                 20,
             )
-            .expect("native creature");
+            .map_err(|error| format!("native creature: {error:?}"))?;
         runtime
             .install_creature_policy(source, "oteryn:creature.dragon")
-            .expect("same exact native source");
+            .map_err(|error| format!("same exact native source: {error:?}"))?;
         if summoned {
             let current = runtime
                 .companion_snapshot(source)
-                .expect("native source snapshot");
+                .map_err(|error| format!("native source snapshot: {error:?}"))?;
             runtime
                 .compare_assign_companion(actor, session, &current)
-                .expect("qualified player master");
+                .map_err(|error| format!("qualified player master: {error:?}"))?;
         }
         wound(&mut states, actor, session, 5);
         let root = GameplayDecisionRoot::from_bytes([19; 32]);
@@ -428,7 +429,7 @@ fn pubproj_creature_dot_keeps_frozen_identity_after_source_removal_and_hides_sum
                 delayed: true,
             },
         )
-        .expect("bounded native damage condition");
+        .ok_or_else(|| "bounded native damage condition".to_owned())?;
         assert!(states.install_owned_source_condition_fixture(
             &runtime,
             actor,
@@ -442,12 +443,13 @@ fn pubproj_creature_dot_keeps_frozen_identity_after_source_removal_and_hides_sum
                 game_session_id: *session.as_bytes(),
             }
         } else {
-            PublicDeathCause::creature("oteryn:creature.dragon", "Dragon").expect("native identity")
+            PublicDeathCause::creature("oteryn:creature.dragon", "Dragon")
+                .ok_or_else(|| "native identity".to_owned())?
         };
         assert_eq!(native_public_death_cause(&runtime, source), Some(expected));
         runtime
             .remove_test_actor(source)
-            .expect("source generation removed before tick");
+            .map_err(|error| format!("source generation removed before tick: {error:?}"))?;
         assert!(
             native_public_death_cause(&runtime, source).is_none(),
             "no death-time source resolution is possible"
@@ -461,11 +463,11 @@ fn pubproj_creature_dot_keeps_frozen_identity_after_source_removal_and_hides_sum
                 oteryn_gameplay_foundation::foundation::condition::TickFacts::default(),
                 crate::foundation::owner_timer::SemanticTimeMicros::from_micros(1_000_000),
             )
-            .expect("native delayed damage owner");
+            .ok_or_else(|| "native delayed damage owner".to_owned())?;
         assert!(receipt.death.is_some());
         let death = states
             .player_death(&runtime, actor, session)
-            .expect("retained native death");
+            .ok_or_else(|| "retained native death".to_owned())?;
         assert_eq!(death.public_cause, Some(expected));
         assert_eq!(
             death
@@ -485,4 +487,5 @@ fn pubproj_creature_dot_keeps_frozen_identity_after_source_removal_and_hides_sum
             );
         }
     }
+    Ok(())
 }

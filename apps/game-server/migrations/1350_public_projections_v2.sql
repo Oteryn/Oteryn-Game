@@ -16,6 +16,24 @@ CREATE TABLE game_public_v2_outbox (
  FOREIGN KEY(family,world_id,subject) REFERENCES game_public_v2_heads(family,world_id,subject)
 );
 CREATE INDEX game_public_v2_outbox_age ON game_public_v2_outbox(family,created_ms,world_id,subject);
+-- Exact subject tuple locks preserve source serialization without allocating
+-- one shared advisory-lock entry per subject during large operator resyncs.
+-- Kinds and canonical subject order match the previous source lock namespaces.
+CREATE TABLE game_public_v2_subject_fences (
+ lock_kind TEXT NOT NULL CHECK(lock_kind IN('deaths','guild','house','online','kills')),
+ subject TEXT NOT NULL,
+ PRIMARY KEY(lock_kind,subject)
+);
+REVOKE ALL ON game_public_v2_subject_fences FROM PUBLIC;
+CREATE FUNCTION game_public_v2_subject_lock(p_kind TEXT,p_subject TEXT) RETURNS VOID
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+ INSERT INTO game_public_v2_subject_fences(lock_kind,subject) VALUES(p_kind,p_subject)
+ ON CONFLICT DO NOTHING;
+ PERFORM 1 FROM game_public_v2_subject_fences
+ WHERE lock_kind=p_kind AND subject=p_subject FOR UPDATE;
+END $$;
+
 -- Private immutable historical identity, captured by the fenced death transaction.
 CREATE TABLE game_public_death_killers (
  death_occurrence_id UUID NOT NULL REFERENCES game_character_death_receipts(death_occurrence_id),
@@ -76,7 +94,7 @@ CREATE FUNCTION game_public_v2_deaths(c UUID) RETURNS VOID LANGUAGE plpgsql SECU
 DECLARE p JSONB; recheck_at BIGINT; cut_s BIGINT;
 BEGIN
  PERFORM 1 FROM game_public_projection_epoch WHERE epoch_scope=1 FOR SHARE;
- PERFORM pg_advisory_xact_lock(hashtextextended('pubproj-v2:deaths:' || c::text,0));
+ PERFORM game_public_v2_subject_lock('deaths',c::text);
  cut_s:=floor(extract(epoch FROM clock_timestamp()))::bigint;
  -- Missing/unpublishable latest20 historical classification remains unknown
  -- until the actual window expires. Its indexed deadline requests a future
@@ -115,7 +133,7 @@ CREATE FUNCTION game_public_v2_guild(g UUID) RETURNS VOID LANGUAGE plpgsql SECUR
 DECLARE p JSONB;
 BEGIN
  PERFORM 1 FROM game_public_projection_epoch WHERE epoch_scope=1 FOR SHARE;
- PERFORM pg_advisory_xact_lock(hashtextextended('pubproj-v2:guild:' || g::text,0));
+ PERFORM game_public_v2_subject_lock('guild',g::text);
  SELECT jsonb_build_array(jsonb_build_object('world_id',x.world_id::text,'name',x.name,
  'state',CASE x.state WHEN 1 THEN 'FORMING' WHEN 2 THEN 'ACTIVE' WHEN 3 THEN 'DISBANDING' END,
  'founded_at',(x.created_at/1000)::text,
@@ -157,6 +175,9 @@ CREATE FUNCTION game_public_projection_resync(p_family TEXT,p_raise_epoch BOOLEA
 LANGUAGE plpgsql SECURITY INVOKER AS $$
 DECLARE e BIGINT; h RECORD; latest_payload JSONB;
 BEGIN
+ IF p_family IS NULL OR p_raise_epoch IS NULL THEN
+  RAISE EXCEPTION 'resync requires family and epoch mode' USING ERRCODE='22004';
+ END IF;
  IF p_family IN('character_deaths','guild','house') THEN
   IF p_raise_epoch THEN RAISE EXCEPTION 'only all may raise epoch' USING ERRCODE='22023'; END IF;
   SELECT projection_epoch INTO STRICT e FROM game_public_projection_epoch WHERE epoch_scope=1 FOR UPDATE;

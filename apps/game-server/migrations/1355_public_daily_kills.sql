@@ -105,7 +105,7 @@ LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE p JSONB; m NUMERIC; b NUMERIC;
 BEGIN
  PERFORM 1 FROM game_public_projection_epoch WHERE epoch_scope=1 FOR SHARE;
- PERFORM pg_advisory_xact_lock(hashtextextended('oteryn:statistics-kills:'||w::text||':'||d::text,1355));
+ PERFORM game_public_v2_subject_lock('kills',w::text||':'||d::text);
  INSERT INTO game_statistics_kill_days(world_id,day_start) VALUES(w,d) ON CONFLICT DO NOTHING;
  IF (SELECT erased FROM game_statistics_kill_days WHERE world_id=w AND day_start=d)
  OR NOT EXISTS(SELECT 1 FROM game_statistics_kill_worlds WHERE world_id=w AND coverage_from_ms<=d*1000) THEN
@@ -141,7 +141,7 @@ BEGIN
  PERFORM 1 FROM game_public_projection_epoch WHERE epoch_scope=1 FOR SHARE;
  FOR a IN SELECT DISTINCT ((value->>'occurred_ms')::bigint/86400000)*86400 AS day FROM jsonb_array_elements(events)
   UNION SELECT (cut/86400000)*86400 UNION SELECT (cut/86400000)*86400-86400 ORDER BY day LOOP
-  PERFORM pg_advisory_xact_lock(hashtextextended('oteryn:statistics-kills:'||w::text||':'||a.day::text,1355));
+  PERFORM game_public_v2_subject_lock('kills',w::text||':'||a.day::text);
  END LOOP;
  SELECT * INTO STRICT s FROM game_statistics_kill_sources WHERE scope_key=k AND generation=g FOR UPDATE;
  -- A lost final COMMIT acknowledgement may retry at a later polling clock.
@@ -208,7 +208,7 @@ BEGIN
  FOR h IN SELECT world_id,day_start FROM game_statistics_kill_days WHERE NOT erased AND day_start+86400<=cutoff
   ORDER BY world_id,day_start LIMIT 256 LOOP
   PERFORM 1 FROM game_public_projection_epoch WHERE epoch_scope=1 FOR SHARE;
-  PERFORM pg_advisory_xact_lock(hashtextextended('oteryn:statistics-kills:'||h.world_id::text||':'||h.day_start::text,1355));
+  PERFORM game_public_v2_subject_lock('kills',h.world_id::text||':'||h.day_start::text);
   UPDATE game_statistics_kill_days SET erased=true WHERE world_id=h.world_id AND day_start=h.day_start;
   DELETE FROM game_statistics_creature_daily_kills WHERE world_id=h.world_id AND day_start=h.day_start;
   PERFORM game_statistics_kill_day_touch(h.world_id,h.day_start);
@@ -232,6 +232,9 @@ ALTER FUNCTION game_public_projection_resync(TEXT,BOOLEAN) RENAME TO game_public
 CREATE FUNCTION game_public_projection_resync(f TEXT,raise_epoch BOOLEAN) RETURNS BIGINT LANGUAGE plpgsql AS $$
 DECLARE e BIGINT; h RECORD;
 BEGIN
+ IF f IS NULL OR raise_epoch IS NULL THEN
+  RAISE EXCEPTION 'resync requires family and epoch mode' USING ERRCODE='22004';
+ END IF;
  IF f='world_daily_kills' THEN
   IF raise_epoch THEN RAISE EXCEPTION 'only all may raise epoch' USING ERRCODE='22023'; END IF;
   SELECT projection_epoch INTO STRICT e FROM game_public_projection_epoch WHERE epoch_scope=1 FOR UPDATE;

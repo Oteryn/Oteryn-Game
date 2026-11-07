@@ -2,7 +2,7 @@
 
 Owner authorization: 2026-11-07, “1 tak, 2 zgoda”. Base: `d34807f5b`.
 Branch: `claude/happy-davinci-ijz3wy-pubproj`; migration allocation: 1350–1359;
-new numeric identifiers use next free on the base plus 50. None allocated yet.
+new numeric identifiers use next free on the base plus 50. Allocations are recorded below.
 Owner extended the task on 2026-11-07 with G-12 world_daily and both G-8
 statistics families; migrations 1360–1369 are additionally reserved if needed.
 
@@ -191,3 +191,25 @@ therefore cannot count physical deaths. Canary src/io/functions/iologindata_save
 200–206,364–378 provide persisted login/logout evidence. Authoritative intervals,
 UTC buckets, retention, source gaps and reserved keys follow the owner-approved
 Platform statistics rev 2 contract rather than inferred donor behavior.
+
+### Focused qualification repair
+
+Owner replaced full reverse-dependency nextest with own mechanic cases plus
+workspace all-target compilation and changed-crate clippy. The interrupted run
+exposed a null-family resync validation regression and shared advisory-lock
+exhaustion in the existing 10,000-Character resync fixture. Each wrapper now
+preserves SQLSTATE 22004 for null arguments. Online capture serializes exact
+Character identities with private tuple locks, retaining the same lock order
+without one shared lock-manager slot per Character. This changes serialization
+storage, not the owner-approved interval rule or donor login/logout semantics.
+
+The interrupted full run also reported Bazaar Transient results and an unrelated
+item-mint Ambiguous result under concurrent test/build load. These were collected
+without changing tests or deadlines; full-suite CI remains the owner's gate.
+
+The same tuple-lock primitive covers G-4 and World/day kill subjects, preserving
+all previous lock namespaces and canonical subject order. This also prevents a
+large all-family resync from exhausting the shared lock table after online
+capture has completed. Fence rows contain only canonical subject identity, no
+interval payload, ownership, creature dimension or counters; retention still
+erases the retained projection/source payload on its existing deadlines.

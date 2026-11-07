@@ -68,7 +68,7 @@ DECLARE w UUID; a UUID; i game_character_online_intervals%ROWTYPE;
 BEGIN
  -- Every source writer already owns its existing authority locks. This lock
  -- serializes derived interval ownership without granting gameplay authority.
- PERFORM pg_advisory_xact_lock(hashtextextended('oteryn:online-statistics:'||c::text,0));
+ PERFORM game_public_v2_subject_lock('online',c::text);
  SELECT account_id INTO a FROM game_character_roots WHERE character_id=c;
  SELECT r.world_id INTO w FROM game_character_roots r
  JOIN game_durability_admission_character_guards g ON g.character_id=r.character_id
@@ -208,6 +208,9 @@ CREATE FUNCTION game_public_projection_resync(p_family TEXT,p_raise_epoch BOOLEA
 LANGUAGE plpgsql SECURITY INVOKER AS $$
 DECLARE e BIGINT; s UUID;
 BEGIN
+ IF p_family IS NULL OR p_raise_epoch IS NULL THEN
+  RAISE EXCEPTION 'resync requires family and epoch mode' USING ERRCODE='22004';
+ END IF;
  IF p_family='character_online_sessions' THEN
   IF p_raise_epoch THEN RAISE EXCEPTION 'only all may raise epoch' USING ERRCODE='22023'; END IF;
   SELECT projection_epoch INTO STRICT e FROM game_public_projection_epoch WHERE epoch_scope=1 FOR UPDATE;
