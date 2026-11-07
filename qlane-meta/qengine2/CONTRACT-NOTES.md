@@ -270,3 +270,13 @@ Ferumbras but explicitly min_level0; omit its minimum_level predicate and qualif
 its token story at creation level. The two parent-earned accessory programmes
 retain their explicitly chosen min250. Rift's chosen stage sequence first/second
 is preserved even though Cledwyn's original source permits either addon order.
+
+L13 immutable base facts: accepted generic grant_callback_outfit contract
+(crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11-29;
+SQL1003:17-23,79-85) includes canonical base with addon grants. A previously
+earned native base remains a separate compatible immutable receipt. Qualifying
+assertions require exactly canonical0/1/2 plus that unchanged native receipt,
+not a broad global count that incorrectly conflates their distinct sources.
+Rotten parent Dependencies admission starts item_fence=None
+(monk_save_postgres_tests.rs:213), unlike SoulWar source delivery. Initialize
+the carried-USE phase from the fresh fenced owner read; no authority check bypass.

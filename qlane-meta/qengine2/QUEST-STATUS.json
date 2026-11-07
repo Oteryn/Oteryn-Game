@@ -3,8 +3,8 @@
   "lifecycle": "AUTHORING; owner-authorized local commits and fast-forward pushes to claude/happy-davinci-ijz3wy-qengine2 after each green batch",
   "qualification_boundary": "Whole L1 entry, not an isolated seeded reward stage. No entry is promoted before all of its required stages and relevant PG cases pass.",
   "counts": {
-    "qualified": 40,
-    "unfinished": 26,
+    "qualified": 41,
+    "unfinished": 25,
     "blocked": 0
   },
   "quests": [
@@ -1583,7 +1583,7 @@
     {
       "canonical": "oteryn:quest.revenant_outfits_quest",
       "title": "Revenant Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc3",
@@ -1593,7 +1593,22 @@
           ]
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "qualification": {
+        "batch": "L1-13B",
+        "postgres": "18.6",
+        "red": "restart13-red2:196.830992721s missing addon callback after earned native base",
+        "green": "/tmp/qengine2-restart13-green3.log:142.154759931s success=true",
+        "scope": [
+          "original Soul War native parent flow earns base and pending source reward; no subject progress or appearance seed",
+          "chosen min250 earned through XP owner; Current Premium authority fixture; real carried accessories",
+          "source skull34075 grants bit2, bracelet34076 grants bit1 in chosen order; second-before-first and missing Premium refusal",
+          "exact consumption, one retained skull, literal replay and owned retry refusal",
+          "three exact canonical facts plus unchanged original native base receipt; exact four-key account set",
+          "Unleash the Beast achievement and normal final mask3 appearance selection"
+        ],
+        "checks": "fmt; current3crate all-feature check9.64s; strict all-target/all-feature clippy1m11; prior10Rust4.38s/authoring29/reproduction/pin-refresh+pin-check24ab unchanged",
+        "boundary": "Existing parent physical encounter qualification remains with original owner; this composes its accepted native captured-death/XP/quest consumer and earned reward with all subject accessory actions."
+      }
     },
     {
       "canonical": "oteryn:quest.rift_warrior_outfits_quest",
@@ -2778,7 +2793,7 @@
       "Rift Warrior Outfits Quest"
     ],
     "postgres_red": "/tmp/qengine2-batch13-red2.log;3failed119.36s; Decaying115.012835105s,Revenant75.866553285s,Rift43.496484156s actual PostgreSQL markers; missing actual addon/base bindings after original parent base flow",
-    "progress": "Rift slice QUALIFIED and fully checked; publish immediately. Strengthen Revenant exact canonical/native receipt assertions; trace Decay EOF without weakening guards.",
+    "progress": "Rift and Revenant QUALIFIED and checked. Decay fresh carried item-fence fixture correction compiled; isolated actual PostgreSQL verification running.",
     "assumptions": [
       "Revenant ordered skull then bracelet uses actual source bits2 then1, not an invented slot1/slot2 encoding.",
       "Cledwyn is the chosen parent-completion attestation desk for Rift base; actual donor NPC only grants addons. Parent completion is read-only and separately owned."
@@ -2805,10 +2820,10 @@
       "qualification": "Rift PG green; final3-crate check/clippy in progress before QUALIFIED. Other2 remain UNFINISHED; no final-state deferral."
     },
     "qualified": [
-      "Rift Warrior Outfits Quest"
+      "Rift Warrior Outfits Quest",
+      "Revenant Outfits Quest"
     ],
     "remaining": [
-      "Revenant Outfits Quest",
       "Decaying Defender Outfits Quest"
     ]
   },

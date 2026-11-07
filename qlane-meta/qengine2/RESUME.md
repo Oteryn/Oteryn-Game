@@ -728,3 +728,15 @@ exact red remains43899cmd2 EOF235.579221306s. Root cause: parent fixture carried
 item_fence=None (Dependencies initializer); fresh owner-read item_fence now
 supplied at accessory boundary. Focused Decay PG verification next. Counts40/26/0
 until final checks qualify Revenant. No engine or SQL guards weakened.
+
+L1-13B Revenant QUALIFIED: actualPG142.154759931s success=true, full earned
+native parent base/source delivery and actual skull-bit2/bracelet-bit1 USE;
+CurrentPremium/min250/exact custody/replay/retained skull/owned retry, exact
+3canonicalfacts plus unchanged original native receipt, achievement and normal
+mask3 selection pass. 3crate check9.64 andstrict clippy1m11 passed; original
+10Rust/29authoring/repro/pin24ab evidence retained. Temporary diagnostics removed
+without any production guard change. Counts41QUALIFIED/25UNFINISHED/0BLOCKED.
+Decay-only PG now compiling session39715, log restart13-decaying-green4. Its
+fresh owner-read item_fence fixes the uninitialized parent admission carrier;
+Revenant already had this fence from original source delivery. Publish green
+Revenant immediately, continueDecay then remaining entries andS06/W15b.
