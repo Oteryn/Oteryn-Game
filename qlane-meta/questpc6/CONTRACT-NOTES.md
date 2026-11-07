@@ -9,3 +9,15 @@
 ## Continuation decision — 2026-11-07
 
 Freshly fetched owner packets still contain all 31 foreign entries; each matched exactly once by canonical identity or recorded title alias. The task branch has no newly assigned entry. Preserve the existing one QUALIFIED entry, foreign ownership and Dawnport exclusion. Do not duplicate another lane or invent new scope. This metadata-only verification does not rerun or newly claim the earlier PostgreSQL/build results. Exact refreshed source commits and JSON pointers are in cloud-scope-ownership.json.
+
+## Repeated continuation scope decision — 2026-11-07
+
+The active lane packet explicitly contains only the already QUALIFIED original
+Deeper Fibula source contract. The nested authored supplement is still BLOCKED;
+its chosen key/expertise/eight-dragon recipe is not certified by the source
+well/cache test. Preserve that limitation and do not reinterpret an unfinished
+supplement as new qualification. Under the current packet and the owner's
+instruction not to redo finished work, no new implementation entry is added.
+All 31 foreign assignments were checked against freshly fetched packet pointers;
+latest immutable revisions are in cloud-scope-ownership.json. No runtime tests
+were rerun for this metadata-only checkpoint.

@@ -16,23 +16,23 @@
   "source_branches": {
     "questpc2": {
       "branch": "claude/happy-davinci-ijz3wy-questpc2",
-      "commit": "1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9"
+      "commit": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf"
     },
     "qengine2": {
       "branch": "claude/happy-davinci-ijz3wy-qengine2",
-      "commit": "aae647c63b9022860699a5e2d31764881f38c472"
+      "commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c"
     },
     "questpc4": {
       "branch": "claude/happy-davinci-ijz3wy-questpc4",
-      "commit": "d9a95616349345c5fc565fedf07ab926652b6b4f"
+      "commit": "516de7b0dc2126e083cd49c60451c99fd6cca402"
     },
     "questpc5": {
       "branch": "claude/happy-davinci-ijz3wy-questpc5",
-      "commit": "b72bf9205739974903bdd07d49a53215664f2846"
+      "commit": "116da3f8dc64d988beb864b2632afc65cb1cef06"
     },
     "questl2": {
       "branch": "claude/happy-davinci-ijz3wy-questl2",
-      "commit": "bfb4a5c6c2ece41600c3deebb9832703f22f093b"
+      "commit": "c48ad3674cfa7138f3b49c4b199b0916043b701a"
     }
   },
   "new_ownership_evidence": [
@@ -42,8 +42,8 @@
       "lane": "L6",
       "disposition": "Skip; the live owner packet assigns this entry to another lane. No qualification is claimed here.",
       "source_path": "qlane-meta/questpc4/LANE-L6.json",
-      "source_commit": "d9a95616349345c5fc565fedf07ab926652b6b4f",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/d9a95616349345c5fc565fedf07ab926652b6b4f/qlane-meta/questpc4/LANE-L6.json"
+      "source_commit": "516de7b0dc2126e083cd49c60451c99fd6cca402",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/516de7b0dc2126e083cd49c60451c99fd6cca402/qlane-meta/questpc4/LANE-L6.json"
     },
     {
       "title": "Demon's Lullaby",
@@ -51,8 +51,8 @@
       "lane": "L2",
       "disposition": "Skip; the live owner packet assigns this entry to another lane. No qualification is claimed here.",
       "source_path": "tools/content-schema/quest-authoring/questl2-status.json",
-      "source_commit": "bfb4a5c6c2ece41600c3deebb9832703f22f093b",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/bfb4a5c6c2ece41600c3deebb9832703f22f093b/tools/content-schema/quest-authoring/questl2-status.json"
+      "source_commit": "c48ad3674cfa7138f3b49c4b199b0916043b701a",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/c48ad3674cfa7138f3b49c4b199b0916043b701a/tools/content-schema/quest-authoring/questl2-status.json"
     },
     {
       "title": "Draconia Quest",
@@ -60,8 +60,8 @@
       "lane": "L2",
       "disposition": "Skip; the live owner packet assigns this entry to another lane. No qualification is claimed here.",
       "source_path": "tools/content-schema/quest-authoring/questl2-status.json",
-      "source_commit": "bfb4a5c6c2ece41600c3deebb9832703f22f093b",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/bfb4a5c6c2ece41600c3deebb9832703f22f093b/tools/content-schema/quest-authoring/questl2-status.json"
+      "source_commit": "c48ad3674cfa7138f3b49c4b199b0916043b701a",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/c48ad3674cfa7138f3b49c4b199b0916043b701a/tools/content-schema/quest-authoring/questl2-status.json"
     },
     {
       "title": "Dreamer's Challenge Quest",
@@ -69,17 +69,17 @@
       "lane": "L6",
       "disposition": "Skip; the live owner packet assigns this entry to another lane. No qualification is claimed here.",
       "source_path": "qlane-meta/questpc4/LANE-L6.json",
-      "source_commit": "d9a95616349345c5fc565fedf07ab926652b6b4f",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/d9a95616349345c5fc565fedf07ab926652b6b4f/qlane-meta/questpc4/LANE-L6.json"
+      "source_commit": "516de7b0dc2126e083cd49c60451c99fd6cca402",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/516de7b0dc2126e083cd49c60451c99fd6cca402/qlane-meta/questpc4/LANE-L6.json"
     }
   ],
   "absent_original_lane_packet": "No LANE-*.json existed at start db355fae2; this audit preserves the actual committed ledger and verifies foreign allocation against fetched packets.",
   "continuation_refresh": {
     "date": "2026-11-07",
-    "own_branch_head_checked": "514f7de88",
+    "own_branch_head_checked": "2e42d08fa463eaa47045274ed5a41bd5b28a07b3",
     "verified_foreign_assignments": 31,
     "owned_pending": 0,
-    "decision": "Preserve confirmed foreign ownership and the completed local qualification. No new entry is assigned to questpc6; do not duplicate other lanes or repeat finished implementation.",
+    "decision": "Preserve the committed lane packet and qualified original source contract. The nested authored Fibula supplement remains unimplemented and is not newly qualified or added to the active lane packet. Follow the owner instruction not to redo finished entries; do not duplicate the 31 verified foreign assignments.",
     "verification": "All 31 current canonical/title aliases matched exactly one entry in freshly fetched owner packets. Packet statuses are frozen input and are not asserted as current qualification.",
     "entries": [
       {
@@ -87,7 +87,7 @@
         "canonical": "oteryn:quest.authored.chakoya_iceberg_mini_world_change",
         "owner": "questpc2",
         "source_path": "qlane-meta/questpc2/LANE-L3.json",
-        "source_commit": "1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9",
+        "source_commit": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
         "source_pointer": "/entries/4",
         "packet_title": "Chakoya Iceberg Mini World Change"
       },
@@ -96,7 +96,7 @@
         "canonical": "oteryn:quest.authored.child_of_destiny_quest",
         "owner": "questpc2",
         "source_path": "qlane-meta/questpc2/LANE-L3.json",
-        "source_commit": "1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9",
+        "source_commit": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
         "source_pointer": "/entries/5",
         "packet_title": "Child of Destiny Quest"
       },
@@ -105,7 +105,7 @@
         "canonical": "oteryn:quest.children_of_the_revolution_quest",
         "owner": "qengine2",
         "source_path": "qlane-meta/qengine2/LANE-L1.json",
-        "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
         "source_pointer": "/entries/10",
         "packet_title": "Children of the Revolution Quest"
       },
@@ -114,7 +114,7 @@
         "canonical": "oteryn:quest.chyllfroest_mini_world_change",
         "owner": "questpc4",
         "source_path": "qlane-meta/questpc4/LANE-L6.json",
-        "source_commit": "d9a95616349345c5fc565fedf07ab926652b6b4f",
+        "source_commit": "516de7b0dc2126e083cd49c60451c99fd6cca402",
         "source_pointer": "/entries/16",
         "packet_title": "Chyllfroest Mini World Change"
       },
@@ -123,7 +123,7 @@
         "canonical": "oteryn:quest.outfit_and_addon_quests",
         "owner": "qengine2",
         "source_path": "qlane-meta/qengine2/LANE-L1.json",
-        "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
         "source_pointer": "/entries/42",
         "packet_title": "Mage Outfits Quest"
       },
@@ -132,7 +132,7 @@
         "canonical": "oteryn:quest.citizen_outfits_quest_on_rook",
         "owner": "qengine2",
         "source_path": "qlane-meta/qengine2/LANE-L1.json",
-        "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
         "source_pointer": "/entries/12",
         "packet_title": "Citizen Outfits Quest on Rook"
       },
@@ -141,7 +141,7 @@
         "canonical": "oteryn:quest.authored.citizen_of_issavi_outfits_quest",
         "owner": "qengine2",
         "source_path": "qlane-meta/qengine2/LANE-L1.json",
-        "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
         "source_pointer": "/entries/11",
         "packet_title": "Citizen of Issavi Outfits Quest"
       },
@@ -150,7 +150,7 @@
         "canonical": "oteryn:quest.crystal_warlord_outfits_quest",
         "owner": "qengine2",
         "source_path": "qlane-meta/qengine2/LANE-L1.json",
-        "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
         "source_pointer": "/entries/13",
         "packet_title": "Crystal Warlord Outfits Quest"
       },
@@ -159,7 +159,7 @@
         "canonical": "oteryn:quest.cults_of_tibia_quest",
         "owner": "questpc2",
         "source_path": "qlane-meta/questpc2/LANE-L3.json",
-        "source_commit": "1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9",
+        "source_commit": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
         "source_pointer": "/entries/6",
         "packet_title": "Cults of Tibia Quest"
       },
@@ -168,7 +168,7 @@
         "canonical": "oteryn:quest.dangerous_depths_quest",
         "owner": "questpc2",
         "source_path": "qlane-meta/questpc2/LANE-L3.json",
-        "source_commit": "1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9",
+        "source_commit": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
         "source_pointer": "/entries/7",
         "packet_title": "Dangerous Depths Quest"
       },
@@ -177,7 +177,7 @@
         "canonical": "oteryn:quest.dark_trails_quest",
         "owner": "qengine2",
         "source_path": "qlane-meta/qengine2/LANE-L1.json",
-        "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
         "source_pointer": "/entries/14",
         "packet_title": "Dark Trails Quest"
       },
@@ -186,7 +186,7 @@
         "canonical": "oteryn:quest.decaying_defender_outfits_quest",
         "owner": "qengine2",
         "source_path": "qlane-meta/qengine2/LANE-L1.json",
-        "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
         "source_pointer": "/entries/15",
         "packet_title": "Decaying Defender Outfits Quest"
       },
@@ -195,7 +195,7 @@
         "canonical": "oteryn:quest.deeplings_worldchange",
         "owner": "questpc2",
         "source_path": "qlane-meta/questpc2/LANE-L3.json",
-        "source_commit": "1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9",
+        "source_commit": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
         "source_pointer": "/entries/8",
         "packet_title": "Deeplings World Change"
       },
@@ -204,7 +204,7 @@
         "canonical": "oteryn:quest.demon_helmet_quest",
         "owner": "questpc5",
         "source_path": "qlane-meta/questpc5/LANE-L5.json",
-        "source_commit": "b72bf9205739974903bdd07d49a53215664f2846",
+        "source_commit": "116da3f8dc64d988beb864b2632afc65cb1cef06",
         "source_pointer": "/entries/17",
         "packet_title": "Demon Helmet Quest"
       },
@@ -213,7 +213,7 @@
         "canonical": "oteryn:quest.demon_outfits_quest",
         "owner": "qengine2",
         "source_path": "qlane-meta/qengine2/LANE-L1.json",
-        "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
         "source_pointer": "/entries/16",
         "packet_title": "Demon Outfits Quest"
       },
@@ -222,7 +222,7 @@
         "canonical": "oteryn:quest.authored.demon_wars_world_change",
         "owner": "questpc2",
         "source_path": "qlane-meta/questpc2/LANE-L3.json",
-        "source_commit": "1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9",
+        "source_commit": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
         "source_pointer": "/entries/9",
         "packet_title": "Demon Wars World Change"
       },
@@ -231,7 +231,7 @@
         "canonical": "oteryn:quest.authored.demon_s_lullaby",
         "owner": "questl2",
         "source_path": "tools/content-schema/quest-authoring/questl2-status.json",
-        "source_commit": "bfb4a5c6c2ece41600c3deebb9832703f22f093b",
+        "source_commit": "c48ad3674cfa7138f3b49c4b199b0916043b701a",
         "source_pointer": "/entries/11",
         "packet_title": "Demon's Lullaby"
       },
@@ -240,7 +240,7 @@
         "canonical": "oteryn:quest.devil_helmet_quest",
         "owner": "questpc5",
         "source_path": "qlane-meta/questpc5/LANE-L5.json",
-        "source_commit": "b72bf9205739974903bdd07d49a53215664f2846",
+        "source_commit": "116da3f8dc64d988beb864b2632afc65cb1cef06",
         "source_pointer": "/entries/18",
         "packet_title": "Devil Helmet Quest"
       },
@@ -249,7 +249,7 @@
         "canonical": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
         "owner": "questpc2",
         "source_path": "qlane-meta/questpc2/LANE-L3.json",
-        "source_commit": "1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9",
+        "source_commit": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
         "source_pointer": "/entries/10",
         "packet_title": "Devovorga's Essence Mini World Change"
       },
@@ -258,7 +258,7 @@
         "canonical": "oteryn:quest.authored.down_the_drain_mini_world_change",
         "owner": "questpc2",
         "source_path": "qlane-meta/questpc2/LANE-L3.json",
-        "source_commit": "1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9",
+        "source_commit": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
         "source_pointer": "/entries/11",
         "packet_title": "Down the Drain Mini World Change"
       },
@@ -267,7 +267,7 @@
         "canonical": "oteryn:quest.authored.draccoon_herald_outfits_quest",
         "owner": "qengine2",
         "source_path": "qlane-meta/qengine2/LANE-L1.json",
-        "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
         "source_pointer": "/entries/17",
         "packet_title": "Draccoon Herald Outfits Quest"
       },
@@ -276,7 +276,7 @@
         "canonical": "oteryn:quest.draconia_quest",
         "owner": "questl2",
         "source_path": "tools/content-schema/quest-authoring/questl2-status.json",
-        "source_commit": "bfb4a5c6c2ece41600c3deebb9832703f22f093b",
+        "source_commit": "c48ad3674cfa7138f3b49c4b199b0916043b701a",
         "source_pointer": "/entries/12",
         "packet_title": "Draconia"
       },
@@ -285,7 +285,7 @@
         "canonical": "oteryn:quest.authored.dragon_slayer_outfits_quest",
         "owner": "qengine2",
         "source_path": "qlane-meta/qengine2/LANE-L1.json",
-        "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
         "source_pointer": "/entries/18",
         "packet_title": "Dragon Slayer Outfits Quest"
       },
@@ -294,7 +294,7 @@
         "canonical": "oteryn:quest.dream_warden_outfits_quest",
         "owner": "qengine2",
         "source_path": "qlane-meta/qengine2/LANE-L1.json",
-        "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
         "source_pointer": "/entries/19",
         "packet_title": "Dream Warden Outfits Quest"
       },
@@ -303,7 +303,7 @@
         "canonical": "oteryn:quest.dream_warrior_outfits_quest",
         "owner": "qengine2",
         "source_path": "qlane-meta/qengine2/LANE-L1.json",
-        "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
         "source_pointer": "/entries/20",
         "packet_title": "Dream Warrior Outfits Quest"
       },
@@ -312,7 +312,7 @@
         "canonical": "oteryn:quest.dreamer_s_challenge_quest",
         "owner": "questpc4",
         "source_path": "qlane-meta/questpc4/LANE-L6.json",
-        "source_commit": "d9a95616349345c5fc565fedf07ab926652b6b4f",
+        "source_commit": "516de7b0dc2126e083cd49c60451c99fd6cca402",
         "source_pointer": "/entries/17",
         "packet_title": "Dreamer's Challenge Quest"
       },
@@ -321,7 +321,7 @@
         "canonical": "oteryn:quest.druid_outfits_quest",
         "owner": "qengine2",
         "source_path": "qlane-meta/qengine2/LANE-L1.json",
-        "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
         "source_pointer": "/entries/21",
         "packet_title": "Druid Outfits Quest"
       },
@@ -330,7 +330,7 @@
         "canonical": "oteryn:quest.druid_outfits_quest_on_rook",
         "owner": "qengine2",
         "source_path": "qlane-meta/qengine2/LANE-L1.json",
-        "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
         "source_pointer": "/entries/22",
         "packet_title": "Druid Outfits Quest on Rook"
       },
@@ -339,7 +339,7 @@
         "canonical": "oteryn:quest.elemental_spheres_quest",
         "owner": "questpc2",
         "source_path": "qlane-meta/questpc2/LANE-L3.json",
-        "source_commit": "1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9",
+        "source_commit": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
         "source_pointer": "/entries/12",
         "packet_title": "Elemental Spheres Quest"
       },
@@ -348,7 +348,7 @@
         "canonical": "oteryn:quest.elementalist_outfits_quest",
         "owner": "qengine2",
         "source_path": "qlane-meta/qengine2/LANE-L1.json",
-        "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
         "source_pointer": "/entries/23",
         "packet_title": "Elementalist Outfits Quest"
       },
@@ -357,7 +357,7 @@
         "canonical": "oteryn:quest.authored.elvenbane_quest",
         "owner": "questpc2",
         "source_path": "qlane-meta/questpc2/LANE-L3.json",
-        "source_commit": "1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9",
+        "source_commit": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
         "source_pointer": "/entries/13",
         "packet_title": "Elvenbane Quest"
       }
