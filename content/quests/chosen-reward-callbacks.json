@@ -36,6 +36,48 @@
         "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
         "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
       ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/winterlight/stage",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "initial": 0,
+      "min": 0,
+      "max": 8,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/winterlight/issued",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "initial": 0,
+      "min": 0,
+      "max": 4,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/winterlight/kills",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ]
     }
   ],
   "callbacks": [

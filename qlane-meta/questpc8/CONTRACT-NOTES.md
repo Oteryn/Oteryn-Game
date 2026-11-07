@@ -662,3 +662,25 @@ rules. The full native test requires ordinary XP to increase on every one of
 five captured deaths. Source: https://tibia.fandom.com/wiki/Little_Corym_Charlatan
 and imports/canary/items-xml/items.xml#17449-17450 (SHA256
 1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2).
+
+Winterlight's permanent chosen route uses the native western bonfire30250 at
+(33743,31061,z8), nature vortex30223 at(33745,31059,z8), and southern bonfire30251
+at(33758,31074,z9), all ordinal1 without invented AIDs/UIDs. These are explicit
+Oteryn bindings for guaranteed supplies and four five-branch fires. Three real
+remains are consumed for the disguise. Its live appearance projects the admitted
+Percht Creature policy while the fenced Quest stage is2..7; ordinary condition
+and actor revision owners apply/remove it, and a durable reload reconstructs it.
+The fourth fire enables the existing native Queen guardian. Base Percht Raider
+and Wayfarer definitions reuse the scoped QENGINE2 authoring at233e6aaa6, with
+Citizen as the required fallback and only the two base quest-grant mappings.
+Sources: https://www.tibiawiki.com.br/Winterlight_Solstice and
+https://www.tibiawiki.com.br/Percht_Raider_Outfits_Quest ; pinned recipe
+https://tibia.fandom.com/index.php?curid=87280&oldid=1086717 .
+
+The accepted Branch30226 physical weight400 (4oz) agrees with
+https://www.tibiawiki.com.br/Branch_(The_Percht_Queen), while pinned XML says
+100000. The explicit custody correction binds the entire unchanged canonical
+Item digest and exact conflicting XML value; it only retains the accepted
+weight400. Other physical facts, intrinsic systems and accepted holds still
+use the original strict qualifier. Two regression tests cover actual custody
+and refusal on either changed canonical data or changed XML.

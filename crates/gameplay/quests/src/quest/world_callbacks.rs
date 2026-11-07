@@ -88,6 +88,75 @@ fn is_false(value: &bool) -> bool {
 mod native;
 use native::valid_native_callback;
 
+/// Creature appearance projected only while this committed Quest track is in range.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Disguise {
+    pub track: String,
+    pub minimum: i64,
+    pub maximum: i64,
+    pub creature: String,
+}
+
+impl Disguise {
+    fn valid_for(&self, callback: &Callback) -> bool {
+        self.minimum > 0
+            && self.maximum >= self.minimum
+            && self.maximum <= i64::from(u16::MAX)
+            && self
+                .creature
+                .strip_prefix("oteryn:creature.")
+                .is_some_and(|tail| {
+                    !tail.is_empty()
+                        && tail
+                            .bytes()
+                            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'_')
+                })
+            && callback.trigger == Trigger::Use
+            && callback.selector.position.is_some()
+            && !callback.is_read_only()
+            && callback.storage.iter().any(|s| {
+                s.track == self.track
+                    && !s.preserve
+                    && !s.read_only
+                    && s.maximum < self.minimum
+                    && s.set == self.minimum
+            })
+    }
+
+    pub fn active(&self, tracks: &std::collections::BTreeMap<String, i64>) -> bool {
+        tracks
+            .get(&self.track)
+            .is_some_and(|value| (self.minimum..=self.maximum).contains(value))
+    }
+}
+
+/// Ambiguous concurrent disguises fail closed; a registry order never chooses authority.
+pub fn active_disguise(
+    tracks: &std::collections::BTreeMap<String, i64>,
+) -> Result<Option<&'static Disguise>, String> {
+    static RULES: std::sync::OnceLock<Result<Vec<Disguise>, String>> = std::sync::OnceLock::new();
+    let rules = RULES
+        .get_or_init(|| {
+            let rules = load()?
+                .into_iter()
+                .filter_map(|callback| callback.disguise)
+                .collect::<Vec<_>>();
+            if rules.len() > 32 {
+                return Err("quest disguise bounds".into());
+            }
+            Ok(rules)
+        })
+        .as_ref()
+        .map_err(Clone::clone)?;
+    let mut active = rules.iter().filter(|rule| rule.active(tracks));
+    let first = active.next();
+    if active.next().is_some() {
+        return Err("ambiguous quest disguise".into());
+    }
+    Ok(first)
+}
+
 /// One carried item applied to the selected world object.  This deliberately is not a
 /// recipe language: the receipt owner locks the source and consumes, changes or retains it.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -132,6 +201,8 @@ pub struct Callback {
         skip_serializing_if = "is_default_use_range"
     )]
     pub use_range: u8,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub disguise: Option<Disguise>,
     /// Both lever appearances. None for a step tile. One-way levers refuse their second use.
     pub lever: Option<[u16; 2]>,
     pub reversible: bool,
@@ -261,6 +332,10 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || (callback.trigger != Trigger::Use
                 && selector.ordinal.is_some_and(|ordinal| ordinal != 0))
             || callback.teleport.is_some_and(|p| !valid_pos(p))
+            || callback
+                .disguise
+                .as_ref()
+                .is_some_and(|rule| !rule.valid_for(callback))
             || !effects::valid(callback)
             || unique_offerings.len() != callback.offerings.len()
             || unique_passages.len() != callback.passages.len()
@@ -1011,3 +1086,49 @@ mod reusable_tool_tests {
 
 #[cfg(test)]
 mod tool_tests;
+
+#[cfg(test)]
+mod disguise_tests {
+    use super::*;
+    #[test]
+    fn quest_disguise_requires_an_exact_earning_transition_and_bounded_native_identity()
+    -> Result<(), String> {
+        let mut callback = load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-callback/authored-venore-machine-9")
+            .ok_or("fixture callback")?;
+        let rule = Disguise {
+            track: callback.storage[0].track.clone(),
+            minimum: 10,
+            maximum: 12,
+            creature: "oteryn:creature.percht".into(),
+        };
+        assert!(rule.valid_for(&callback));
+        let legacy = serde_json::to_vec(&callback).map_err(|e| e.to_string())?;
+        callback.disguise = None;
+        assert_eq!(
+            serde_json::to_vec(&callback).map_err(|e| e.to_string())?,
+            legacy
+        );
+        for mut bad in [rule.clone(), rule.clone(), rule.clone(), rule.clone()]
+            .into_iter()
+            .enumerate()
+        {
+            match bad.0 {
+                0 => bad.1.minimum = 0,
+                1 => bad.1.maximum = 9,
+                2 => bad.1.maximum = 65536,
+                _ => bad.1.creature = "client:creature/percht".into(),
+            }
+            assert!(!bad.1.valid_for(&callback));
+        }
+        callback.storage[0].preserve = true;
+        assert!(!rule.valid_for(&callback));
+        let mut tracks = std::collections::BTreeMap::new();
+        for value in [9, 10, 12, 13] {
+            tracks.insert(rule.track.clone(), value);
+            assert_eq!(rule.active(&tracks), (10..=12).contains(&value));
+        }
+        Ok(())
+    }
+}

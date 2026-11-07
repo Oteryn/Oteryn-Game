@@ -498,6 +498,39 @@
         "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
         "OTERYN_AUTHORED_APPROXIMATION: five native Little Corym Charlatans in the source-verified walkable southern construction basement, not claimed source spawn IDs. Native captured death and present principal only; CONTRACT-NOTES.md."
       ]
+    },
+    {
+      "key": "oteryn:quest-death/authored-winterlight-queen",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "creature": "oteryn:creature.the_percht_queen",
+      "stage": "oteryn:quest-progress/chosen/winterlight/stage",
+      "stage_value": 7,
+      "counter": "oteryn:quest-progress/chosen/winterlight/kills",
+      "required": 1,
+      "minimum": {
+        "x": 33752,
+        "y": 31065,
+        "floor": -9
+      },
+      "maximum": {
+        "x": 33764,
+        "y": 31078,
+        "floor": -9
+      },
+      "guardian": {
+        "position": {
+          "x": 33757,
+          "y": 31073,
+          "floor": -9
+        },
+        "respawn_ms": 90000
+      },
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ]
     }
   ]
 }

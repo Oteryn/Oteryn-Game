@@ -81,6 +81,21 @@ def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
             "path": Path(os.path.relpath(path, "content")).as_posix(),
             "sha256": hashlib.sha256((root / path).read_bytes()).hexdigest(),
         }
+    source = root / "content/cosmetics/outfits/authoring.json"
+    output = "content/cosmetics/outfits/native-cosmetics.json"
+    if source.exists() or (root / output).exists() or "cosmetics" in manifest:
+        tool = root / "tools/content-schema/cosmetics-authoring/cosmetics_authoring.py"
+        spec = importlib.util.spec_from_file_location("canonical_cosmetics_registration", tool)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        qualified = module.materialized_outputs(root)
+        if output not in qualified:
+            raise ValueError("COSMETICS_PIN_REQUIRES_CANONICAL_AUTHORING")
+        generated.update(qualified)
+        manifest["cosmetics"] = {
+            "path": Path(os.path.relpath(output, "content")).as_posix(),
+            "sha256": hashlib.sha256(qualified[output]).hexdigest(),
+        }
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(manifest)
 
 

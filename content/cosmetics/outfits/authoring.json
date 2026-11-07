@@ -1,0 +1,2092 @@
+{
+  "schema": "OTERYN_CHARACTER_COSMETICS_AUTHORING/v1",
+  "profile": {
+    "kind": "reference",
+    "revision": "quest-cosmetics-r1",
+    "mount_speed_bonus": 10
+  },
+  "client_version": "15.30",
+  "document": {
+    "schema": "OTERYN_CHARACTER_COSMETICS/v1",
+    "content_revision": "s3b-content-1",
+    "source_manifest_sha256": "097cd666b8878f604bf30314080790c4b03866e3a99f4e80c0ca019807b24958",
+    "source_appearances_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+    "palette": {
+      "key": "oteryn:palette.outfit",
+      "revision": "rounded-hsi-133-v1",
+      "colours": [
+        [
+          255,
+          255,
+          255
+        ],
+        [
+          255,
+          212,
+          191
+        ],
+        [
+          255,
+          234,
+          191
+        ],
+        [
+          255,
+          255,
+          191
+        ],
+        [
+          234,
+          255,
+          191
+        ],
+        [
+          212,
+          255,
+          191
+        ],
+        [
+          191,
+          255,
+          191
+        ],
+        [
+          191,
+          255,
+          212
+        ],
+        [
+          191,
+          255,
+          234
+        ],
+        [
+          191,
+          255,
+          255
+        ],
+        [
+          191,
+          234,
+          255
+        ],
+        [
+          191,
+          212,
+          255
+        ],
+        [
+          191,
+          191,
+          255
+        ],
+        [
+          212,
+          191,
+          255
+        ],
+        [
+          234,
+          191,
+          255
+        ],
+        [
+          255,
+          191,
+          255
+        ],
+        [
+          255,
+          191,
+          234
+        ],
+        [
+          255,
+          191,
+          213
+        ],
+        [
+          255,
+          191,
+          191
+        ],
+        [
+          219,
+          219,
+          219
+        ],
+        [
+          191,
+          159,
+          143
+        ],
+        [
+          191,
+          175,
+          143
+        ],
+        [
+          191,
+          191,
+          143
+        ],
+        [
+          175,
+          191,
+          143
+        ],
+        [
+          159,
+          191,
+          143
+        ],
+        [
+          143,
+          191,
+          143
+        ],
+        [
+          143,
+          191,
+          159
+        ],
+        [
+          143,
+          191,
+          175
+        ],
+        [
+          143,
+          191,
+          191
+        ],
+        [
+          143,
+          175,
+          191
+        ],
+        [
+          143,
+          159,
+          191
+        ],
+        [
+          143,
+          143,
+          191
+        ],
+        [
+          159,
+          143,
+          191
+        ],
+        [
+          175,
+          143,
+          191
+        ],
+        [
+          191,
+          143,
+          191
+        ],
+        [
+          191,
+          143,
+          175
+        ],
+        [
+          191,
+          143,
+          159
+        ],
+        [
+          191,
+          143,
+          143
+        ],
+        [
+          182,
+          182,
+          182
+        ],
+        [
+          191,
+          128,
+          96
+        ],
+        [
+          191,
+          159,
+          96
+        ],
+        [
+          191,
+          191,
+          96
+        ],
+        [
+          159,
+          191,
+          96
+        ],
+        [
+          128,
+          191,
+          96
+        ],
+        [
+          96,
+          191,
+          96
+        ],
+        [
+          96,
+          191,
+          128
+        ],
+        [
+          96,
+          191,
+          159
+        ],
+        [
+          96,
+          191,
+          191
+        ],
+        [
+          96,
+          159,
+          191
+        ],
+        [
+          96,
+          127,
+          191
+        ],
+        [
+          96,
+          96,
+          191
+        ],
+        [
+          127,
+          96,
+          191
+        ],
+        [
+          159,
+          96,
+          191
+        ],
+        [
+          191,
+          96,
+          191
+        ],
+        [
+          191,
+          96,
+          159
+        ],
+        [
+          191,
+          96,
+          128
+        ],
+        [
+          191,
+          96,
+          96
+        ],
+        [
+          146,
+          146,
+          146
+        ],
+        [
+          191,
+          106,
+          64
+        ],
+        [
+          191,
+          149,
+          64
+        ],
+        [
+          191,
+          191,
+          64
+        ],
+        [
+          149,
+          191,
+          64
+        ],
+        [
+          106,
+          191,
+          64
+        ],
+        [
+          64,
+          191,
+          64
+        ],
+        [
+          64,
+          191,
+          106
+        ],
+        [
+          64,
+          191,
+          149
+        ],
+        [
+          64,
+          191,
+          191
+        ],
+        [
+          64,
+          149,
+          191
+        ],
+        [
+          64,
+          106,
+          191
+        ],
+        [
+          64,
+          64,
+          191
+        ],
+        [
+          106,
+          64,
+          191
+        ],
+        [
+          149,
+          64,
+          191
+        ],
+        [
+          191,
+          64,
+          191
+        ],
+        [
+          191,
+          64,
+          149
+        ],
+        [
+          191,
+          64,
+          106
+        ],
+        [
+          191,
+          64,
+          64
+        ],
+        [
+          109,
+          109,
+          109
+        ],
+        [
+          255,
+          85,
+          0
+        ],
+        [
+          255,
+          170,
+          0
+        ],
+        [
+          255,
+          255,
+          0
+        ],
+        [
+          170,
+          255,
+          0
+        ],
+        [
+          85,
+          255,
+          0
+        ],
+        [
+          0,
+          255,
+          0
+        ],
+        [
+          0,
+          255,
+          85
+        ],
+        [
+          0,
+          255,
+          170
+        ],
+        [
+          0,
+          255,
+          255
+        ],
+        [
+          0,
+          170,
+          255
+        ],
+        [
+          0,
+          85,
+          255
+        ],
+        [
+          0,
+          0,
+          255
+        ],
+        [
+          85,
+          0,
+          255
+        ],
+        [
+          170,
+          0,
+          255
+        ],
+        [
+          255,
+          0,
+          255
+        ],
+        [
+          255,
+          0,
+          170
+        ],
+        [
+          255,
+          0,
+          85
+        ],
+        [
+          255,
+          0,
+          0
+        ],
+        [
+          73,
+          73,
+          73
+        ],
+        [
+          191,
+          64,
+          0
+        ],
+        [
+          191,
+          128,
+          0
+        ],
+        [
+          191,
+          191,
+          0
+        ],
+        [
+          128,
+          191,
+          0
+        ],
+        [
+          64,
+          191,
+          0
+        ],
+        [
+          0,
+          191,
+          0
+        ],
+        [
+          0,
+          191,
+          64
+        ],
+        [
+          0,
+          191,
+          127
+        ],
+        [
+          0,
+          191,
+          191
+        ],
+        [
+          0,
+          127,
+          191
+        ],
+        [
+          0,
+          64,
+          191
+        ],
+        [
+          0,
+          0,
+          191
+        ],
+        [
+          64,
+          0,
+          191
+        ],
+        [
+          128,
+          0,
+          191
+        ],
+        [
+          191,
+          0,
+          191
+        ],
+        [
+          191,
+          0,
+          128
+        ],
+        [
+          191,
+          0,
+          64
+        ],
+        [
+          191,
+          0,
+          0
+        ],
+        [
+          36,
+          36,
+          36
+        ],
+        [
+          128,
+          42,
+          0
+        ],
+        [
+          128,
+          85,
+          0
+        ],
+        [
+          128,
+          128,
+          0
+        ],
+        [
+          85,
+          128,
+          0
+        ],
+        [
+          42,
+          128,
+          0
+        ],
+        [
+          0,
+          128,
+          0
+        ],
+        [
+          0,
+          128,
+          43
+        ],
+        [
+          0,
+          128,
+          85
+        ],
+        [
+          0,
+          128,
+          128
+        ],
+        [
+          0,
+          85,
+          128
+        ],
+        [
+          0,
+          42,
+          128
+        ],
+        [
+          0,
+          0,
+          128
+        ],
+        [
+          42,
+          0,
+          128
+        ],
+        [
+          85,
+          0,
+          128
+        ],
+        [
+          128,
+          0,
+          128
+        ],
+        [
+          128,
+          0,
+          85
+        ],
+        [
+          128,
+          0,
+          43
+        ],
+        [
+          128,
+          0,
+          0
+        ]
+      ],
+      "source": {
+        "reference": "tools/game-atlas-appearances/export.py#outfit_color",
+        "revision": "rounded-hsi-133-v1",
+        "sha256": "6b63350e37279d15e1ba09be021ec61be3977758b586217813606123998fca58"
+      }
+    },
+    "outfits": [
+      {
+        "key": "oteryn:outfit.citizen",
+        "revision": "crystal-9f5a72c-r1",
+        "female": {
+          "id": 136,
+          "source_record_sha256": "c75162dea7feab06e8e60d587c23073a64feef204a2f47092e0671e8ffd2db74"
+        },
+        "male": {
+          "id": 128,
+          "source_record_sha256": "70646a3166e00bed7e3b7b16bb416316985090f9026c73a3c292a9383f9abdf2"
+        },
+        "addon_count": 2,
+        "starter_female": true,
+        "starter_male": true,
+        "starter_addons_female": 0,
+        "starter_addons_male": 0,
+        "premium": false,
+        "unlock_sources": [
+          {
+            "reference": "crystal:data/XML/outfits.xml",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+          }
+        ],
+        "source": {
+          "reference": "crystal:data/XML/outfits.xml",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+        }
+      },
+      {
+        "key": "oteryn:outfit.percht_raider",
+        "revision": "crystal-9f5a72c-r1",
+        "female": {
+          "id": 1162,
+          "source_record_sha256": "a04d5acec584e5f94b9e931ca854afc64cc6b988622ad6e8c5fa6542017bd1c7"
+        },
+        "male": {
+          "id": 1161,
+          "source_record_sha256": "e5bacd7bd3dad561b78f89bac9081c49e9b66dd65115b33c656388f20c844bbe"
+        },
+        "addon_count": 2,
+        "starter_female": false,
+        "starter_male": false,
+        "starter_addons_female": 0,
+        "starter_addons_male": 0,
+        "premium": true,
+        "unlock_sources": [
+          {
+            "reference": "crystal:data/XML/outfits.xml",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+          }
+        ],
+        "source": {
+          "reference": "crystal:data/XML/outfits.xml",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+        }
+      },
+      {
+        "key": "oteryn:outfit.wayfarer",
+        "revision": "crystal-9f5a72c-r1",
+        "female": {
+          "id": 366,
+          "source_record_sha256": "23fdc6ce4b6b8901c181ec1cc31a91a9696a1682eb914c714899bf804840767a"
+        },
+        "male": {
+          "id": 367,
+          "source_record_sha256": "2134ff49914d2b8716c02b7872ac60aa73e03967d9e3afbfb6d1173e78bd7d18"
+        },
+        "addon_count": 2,
+        "starter_female": false,
+        "starter_male": false,
+        "starter_addons_female": 0,
+        "starter_addons_male": 0,
+        "premium": true,
+        "unlock_sources": [
+          {
+            "reference": "crystal:data/XML/outfits.xml",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+          }
+        ],
+        "source": {
+          "reference": "crystal:data/XML/outfits.xml",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+        }
+      }
+    ],
+    "mounts": [],
+    "grant_mappings": [
+      {
+        "grant_key": "oteryn:outfit.percht_raider/quest-grant/0",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:outfit.percht_raider"
+        },
+        "compatible_provenance": [
+          "crystal-9f5a72c-quest-rewards-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:outfit.wayfarer/quest-grant/0",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:outfit.wayfarer"
+        },
+        "compatible_provenance": [
+          "crystal-9f5a72c-quest-rewards-v1"
+        ]
+      }
+    ],
+    "fallbacks": {
+      "female": {
+        "outfit_key": "oteryn:outfit.citizen",
+        "colours": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "male": {
+        "outfit_key": "oteryn:outfit.citizen",
+        "colours": [
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  },
+  "promotions": [
+    {
+      "path": "/fallbacks/female",
+      "value": {
+        "outfit_key": "oteryn:outfit.citizen",
+        "colours": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "OWNER_DECISION",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/fallbacks/male",
+      "value": {
+        "outfit_key": "oteryn:outfit.citizen",
+        "colours": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "OWNER_DECISION",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/grant_mappings",
+      "value": [
+        {
+          "grant_key": "oteryn:outfit.percht_raider/quest-grant/0",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:outfit.percht_raider"
+          },
+          "compatible_provenance": [
+            "crystal-9f5a72c-quest-rewards-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:outfit.wayfarer/quest-grant/0",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:outfit.wayfarer"
+          },
+          "compatible_provenance": [
+            "crystal-9f5a72c-quest-rewards-v1"
+          ]
+        }
+      ],
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "OWNER_DECISION",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/2/addon_count",
+      "value": 2,
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/2/female",
+      "value": {
+        "id": 366,
+        "source_record_sha256": "23fdc6ce4b6b8901c181ec1cc31a91a9696a1682eb914c714899bf804840767a"
+      },
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/2/key",
+      "value": "oteryn:outfit.wayfarer",
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/2/male",
+      "value": {
+        "id": 367,
+        "source_record_sha256": "2134ff49914d2b8716c02b7872ac60aa73e03967d9e3afbfb6d1173e78bd7d18"
+      },
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/2/premium",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/2/revision",
+      "value": "crystal-9f5a72c-r1",
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/2/source",
+      "value": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      },
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/2/starter_addons_female",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/2/starter_addons_male",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/2/starter_female",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/2/starter_male",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/2/unlock_sources",
+      "value": [
+        {
+          "reference": "crystal:data/XML/outfits.xml",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+        }
+      ],
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/0/addon_count",
+      "value": 2,
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/0/female",
+      "value": {
+        "id": 136,
+        "source_record_sha256": "c75162dea7feab06e8e60d587c23073a64feef204a2f47092e0671e8ffd2db74"
+      },
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/0/key",
+      "value": "oteryn:outfit.citizen",
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/0/male",
+      "value": {
+        "id": 128,
+        "source_record_sha256": "70646a3166e00bed7e3b7b16bb416316985090f9026c73a3c292a9383f9abdf2"
+      },
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/0/premium",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/0/revision",
+      "value": "crystal-9f5a72c-r1",
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/0/source",
+      "value": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      },
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/0/starter_addons_female",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/0/starter_addons_male",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/0/starter_female",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/0/starter_male",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/0/unlock_sources",
+      "value": [
+        {
+          "reference": "crystal:data/XML/outfits.xml",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+        }
+      ],
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/1/addon_count",
+      "value": 2,
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/1/female",
+      "value": {
+        "id": 1162,
+        "source_record_sha256": "a04d5acec584e5f94b9e931ca854afc64cc6b988622ad6e8c5fa6542017bd1c7"
+      },
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/1/key",
+      "value": "oteryn:outfit.percht_raider",
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/1/male",
+      "value": {
+        "id": 1161,
+        "source_record_sha256": "e5bacd7bd3dad561b78f89bac9081c49e9b66dd65115b33c656388f20c844bbe"
+      },
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/1/premium",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/1/revision",
+      "value": "crystal-9f5a72c-r1",
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/1/source",
+      "value": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      },
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/1/starter_addons_female",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/1/starter_addons_male",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/1/starter_female",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/1/starter_male",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/1/unlock_sources",
+      "value": [
+        {
+          "reference": "crystal:data/XML/outfits.xml",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+        }
+      ],
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/palette",
+      "value": {
+        "key": "oteryn:palette.outfit",
+        "revision": "rounded-hsi-133-v1",
+        "colours": [
+          [
+            255,
+            255,
+            255
+          ],
+          [
+            255,
+            212,
+            191
+          ],
+          [
+            255,
+            234,
+            191
+          ],
+          [
+            255,
+            255,
+            191
+          ],
+          [
+            234,
+            255,
+            191
+          ],
+          [
+            212,
+            255,
+            191
+          ],
+          [
+            191,
+            255,
+            191
+          ],
+          [
+            191,
+            255,
+            212
+          ],
+          [
+            191,
+            255,
+            234
+          ],
+          [
+            191,
+            255,
+            255
+          ],
+          [
+            191,
+            234,
+            255
+          ],
+          [
+            191,
+            212,
+            255
+          ],
+          [
+            191,
+            191,
+            255
+          ],
+          [
+            212,
+            191,
+            255
+          ],
+          [
+            234,
+            191,
+            255
+          ],
+          [
+            255,
+            191,
+            255
+          ],
+          [
+            255,
+            191,
+            234
+          ],
+          [
+            255,
+            191,
+            213
+          ],
+          [
+            255,
+            191,
+            191
+          ],
+          [
+            219,
+            219,
+            219
+          ],
+          [
+            191,
+            159,
+            143
+          ],
+          [
+            191,
+            175,
+            143
+          ],
+          [
+            191,
+            191,
+            143
+          ],
+          [
+            175,
+            191,
+            143
+          ],
+          [
+            159,
+            191,
+            143
+          ],
+          [
+            143,
+            191,
+            143
+          ],
+          [
+            143,
+            191,
+            159
+          ],
+          [
+            143,
+            191,
+            175
+          ],
+          [
+            143,
+            191,
+            191
+          ],
+          [
+            143,
+            175,
+            191
+          ],
+          [
+            143,
+            159,
+            191
+          ],
+          [
+            143,
+            143,
+            191
+          ],
+          [
+            159,
+            143,
+            191
+          ],
+          [
+            175,
+            143,
+            191
+          ],
+          [
+            191,
+            143,
+            191
+          ],
+          [
+            191,
+            143,
+            175
+          ],
+          [
+            191,
+            143,
+            159
+          ],
+          [
+            191,
+            143,
+            143
+          ],
+          [
+            182,
+            182,
+            182
+          ],
+          [
+            191,
+            128,
+            96
+          ],
+          [
+            191,
+            159,
+            96
+          ],
+          [
+            191,
+            191,
+            96
+          ],
+          [
+            159,
+            191,
+            96
+          ],
+          [
+            128,
+            191,
+            96
+          ],
+          [
+            96,
+            191,
+            96
+          ],
+          [
+            96,
+            191,
+            128
+          ],
+          [
+            96,
+            191,
+            159
+          ],
+          [
+            96,
+            191,
+            191
+          ],
+          [
+            96,
+            159,
+            191
+          ],
+          [
+            96,
+            127,
+            191
+          ],
+          [
+            96,
+            96,
+            191
+          ],
+          [
+            127,
+            96,
+            191
+          ],
+          [
+            159,
+            96,
+            191
+          ],
+          [
+            191,
+            96,
+            191
+          ],
+          [
+            191,
+            96,
+            159
+          ],
+          [
+            191,
+            96,
+            128
+          ],
+          [
+            191,
+            96,
+            96
+          ],
+          [
+            146,
+            146,
+            146
+          ],
+          [
+            191,
+            106,
+            64
+          ],
+          [
+            191,
+            149,
+            64
+          ],
+          [
+            191,
+            191,
+            64
+          ],
+          [
+            149,
+            191,
+            64
+          ],
+          [
+            106,
+            191,
+            64
+          ],
+          [
+            64,
+            191,
+            64
+          ],
+          [
+            64,
+            191,
+            106
+          ],
+          [
+            64,
+            191,
+            149
+          ],
+          [
+            64,
+            191,
+            191
+          ],
+          [
+            64,
+            149,
+            191
+          ],
+          [
+            64,
+            106,
+            191
+          ],
+          [
+            64,
+            64,
+            191
+          ],
+          [
+            106,
+            64,
+            191
+          ],
+          [
+            149,
+            64,
+            191
+          ],
+          [
+            191,
+            64,
+            191
+          ],
+          [
+            191,
+            64,
+            149
+          ],
+          [
+            191,
+            64,
+            106
+          ],
+          [
+            191,
+            64,
+            64
+          ],
+          [
+            109,
+            109,
+            109
+          ],
+          [
+            255,
+            85,
+            0
+          ],
+          [
+            255,
+            170,
+            0
+          ],
+          [
+            255,
+            255,
+            0
+          ],
+          [
+            170,
+            255,
+            0
+          ],
+          [
+            85,
+            255,
+            0
+          ],
+          [
+            0,
+            255,
+            0
+          ],
+          [
+            0,
+            255,
+            85
+          ],
+          [
+            0,
+            255,
+            170
+          ],
+          [
+            0,
+            255,
+            255
+          ],
+          [
+            0,
+            170,
+            255
+          ],
+          [
+            0,
+            85,
+            255
+          ],
+          [
+            0,
+            0,
+            255
+          ],
+          [
+            85,
+            0,
+            255
+          ],
+          [
+            170,
+            0,
+            255
+          ],
+          [
+            255,
+            0,
+            255
+          ],
+          [
+            255,
+            0,
+            170
+          ],
+          [
+            255,
+            0,
+            85
+          ],
+          [
+            255,
+            0,
+            0
+          ],
+          [
+            73,
+            73,
+            73
+          ],
+          [
+            191,
+            64,
+            0
+          ],
+          [
+            191,
+            128,
+            0
+          ],
+          [
+            191,
+            191,
+            0
+          ],
+          [
+            128,
+            191,
+            0
+          ],
+          [
+            64,
+            191,
+            0
+          ],
+          [
+            0,
+            191,
+            0
+          ],
+          [
+            0,
+            191,
+            64
+          ],
+          [
+            0,
+            191,
+            127
+          ],
+          [
+            0,
+            191,
+            191
+          ],
+          [
+            0,
+            127,
+            191
+          ],
+          [
+            0,
+            64,
+            191
+          ],
+          [
+            0,
+            0,
+            191
+          ],
+          [
+            64,
+            0,
+            191
+          ],
+          [
+            128,
+            0,
+            191
+          ],
+          [
+            191,
+            0,
+            191
+          ],
+          [
+            191,
+            0,
+            128
+          ],
+          [
+            191,
+            0,
+            64
+          ],
+          [
+            191,
+            0,
+            0
+          ],
+          [
+            36,
+            36,
+            36
+          ],
+          [
+            128,
+            42,
+            0
+          ],
+          [
+            128,
+            85,
+            0
+          ],
+          [
+            128,
+            128,
+            0
+          ],
+          [
+            85,
+            128,
+            0
+          ],
+          [
+            42,
+            128,
+            0
+          ],
+          [
+            0,
+            128,
+            0
+          ],
+          [
+            0,
+            128,
+            43
+          ],
+          [
+            0,
+            128,
+            85
+          ],
+          [
+            0,
+            128,
+            128
+          ],
+          [
+            0,
+            85,
+            128
+          ],
+          [
+            0,
+            42,
+            128
+          ],
+          [
+            0,
+            0,
+            128
+          ],
+          [
+            42,
+            0,
+            128
+          ],
+          [
+            85,
+            0,
+            128
+          ],
+          [
+            128,
+            0,
+            128
+          ],
+          [
+            128,
+            0,
+            85
+          ],
+          [
+            128,
+            0,
+            43
+          ],
+          [
+            128,
+            0,
+            0
+          ]
+        ],
+        "source": {
+          "reference": "tools/game-atlas-appearances/export.py#outfit_color",
+          "revision": "rounded-hsi-133-v1",
+          "sha256": "6b63350e37279d15e1ba09be021ec61be3977758b586217813606123998fca58"
+        }
+      },
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "tools/game-atlas-appearances/export.py#outfit_color",
+        "revision": "rounded-hsi-133-v1",
+        "sha256": "6b63350e37279d15e1ba09be021ec61be3977758b586217813606123998fca58"
+      }
+    },
+    {
+      "path": "/source_appearances_sha256",
+      "value": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "imports/cipsoft-appearances/outfits/manifest.json",
+        "revision": "15.30",
+        "sha256": "097cd666b8878f604bf30314080790c4b03866e3a99f4e80c0ca019807b24958"
+      }
+    },
+    {
+      "path": "/source_manifest_sha256",
+      "value": "097cd666b8878f604bf30314080790c4b03866e3a99f4e80c0ca019807b24958",
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "imports/cipsoft-appearances/outfits/manifest.json",
+        "revision": "15.30",
+        "sha256": "097cd666b8878f604bf30314080790c4b03866e3a99f4e80c0ca019807b24958"
+      }
+    }
+  ]
+}

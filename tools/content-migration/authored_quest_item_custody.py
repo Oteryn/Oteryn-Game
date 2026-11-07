@@ -5,12 +5,39 @@ accepted holds remain intact; weapon, equipment and use readiness are not inferr
 """
 import copy
 import hashlib
+import json
 
 import grizzly_shop_profiles as grizzly
 import quest_reward_item_semantics as reward
 
 
 XML_SHA256 = '1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2'
+CORRECTIONS = 'tools/content-schema/native-gameplay/quest-custody-weight-corrections.json'
+
+
+def correct_weight(root, definition, node, row):
+    """An explicit source conflict may retain only an unchanged accepted weight."""
+    path = root / CORRECTIONS
+    if not path.exists():
+        return
+    packet = json.loads(path.read_bytes())
+    records = packet.get('records', [])
+    if (set(packet) != {'schema', 'records'} or packet['schema'] != 1
+            or not isinstance(records, list) or len(records) > 32
+            or len({record['item'] for record in records}) != len(records)):
+        raise ValueError('AUTHORED_CUSTODY_WEIGHT_CORRECTIONS')
+    for record in records:
+        if record['item'] != definition['identity']['key']:
+            continue
+        accepted = definition['semantics']['physical']['value']['weight']
+        if (set(record) != {'item', 'canonical_sha256', 'source_xml_weight', 'weight', 'sources'}
+                or hashlib.sha256(reward.canonical(definition)).hexdigest() != record['canonical_sha256']
+                or grizzly.source.attrs(node).get('weight') != str(record['source_xml_weight'])
+                or accepted != grizzly.source.K(record['weight'])
+                or type(record['weight']) is not int or not 0 <= record['weight'] <= 0xffffffff
+                or not record['sources'] or any(not isinstance(s, str) or not s for s in record['sources'])):
+            raise ValueError('AUTHORED_CUSTODY_WEIGHT_CORRECTION_BINDING')
+        row['semantics']['physical']['value']['weight'] = copy.deepcopy(accepted)
 
 
 def qualify(root, definition, xml_raw):
@@ -46,12 +73,13 @@ def qualify(root, definition, xml_raw):
     if physical is None:
         raise ValueError('AUTHORED_CUSTODY_PHYSICAL_SOURCE')
     row = source.profile(item_id, node, appearance, physical, index, None)
+    correct_weight(root, definition, node, row)
     if (not row['admission']['materializable']
             or row['admission']['legal_destinations'] != ['CharacterInventory', 'Ground']):
         raise ValueError('AUTHORED_CUSTODY_NOT_PORTABLE')
     for group in ('physical', 'stack', 'container'):
         if grizzly.known_conflict(definition['semantics'][group], row['semantics'][group]):
-            raise ValueError('AUTHORED_CUSTODY_CANONICAL_' + group.upper())
+            raise ValueError('AUTHORED_CUSTODY_CANONICAL_' + group.upper() + ':' + definition['identity']['key'])
     if definition['stack_class'] not in ('Unknown', row['admission']['stack_class']):
         raise ValueError('AUTHORED_CUSTODY_STACK_CONFLICT')
     # The importer may know source combat/use facts. This admission borrows only

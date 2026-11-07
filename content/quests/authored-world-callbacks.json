@@ -3460,6 +3460,731 @@
       },
       "success_message": "You oil this construction machine.",
       "use_range": 2
+    },
+    {
+      "key": "oteryn:quest-callback/authored-winterlight-gather",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33743,
+          "y": 31061,
+          "floor": -8
+        },
+        "appearance": 30250,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/stage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "premium_required": true,
+      "offerings": [],
+      "present": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You gather the three guaranteed disguise components.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i30337",
+          "count": 1,
+          "contents": [],
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i30185",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30186",
+              "count": 1
+            }
+          ]
+        }
+      },
+      "completes": false,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-winterlight-disguise",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33743,
+          "y": 31061,
+          "floor": -8
+        },
+        "appearance": 30250,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "premium_required": true,
+      "offerings": [],
+      "present": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You combine the remains into your Percht disguise.",
+      "effects": {
+        "carried_inputs": [
+          {
+            "item": "oteryn:item.tibia.i30337",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i30185",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i30186",
+            "count": 1
+          }
+        ]
+      },
+      "completes": false,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ],
+      "disguise": {
+        "track": "oteryn:quest-progress/chosen/winterlight/stage",
+        "minimum": 2,
+        "maximum": 7,
+        "creature": "oteryn:creature.percht"
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-winterlight-torch",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33743,
+          "y": 31061,
+          "floor": -8
+        },
+        "appearance": 30250,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "premium_required": true,
+      "offerings": [],
+      "present": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You take an uncharged Percht-warding torch.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i30214",
+          "count": 1,
+          "contents": [],
+          "backpack_outputs": []
+        }
+      },
+      "completes": false,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-winterlight-branches-1",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33745,
+          "y": 31059,
+          "floor": -8
+        },
+        "appearance": 30223,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/issued",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "premium_required": true,
+      "offerings": [],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i30214",
+          "count": 1
+        }
+      ],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You collect five branches for the next warm fire.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i30226",
+          "count": 5,
+          "contents": [],
+          "backpack_outputs": []
+        }
+      },
+      "completes": false,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-winterlight-fire-1",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33758,
+          "y": 31074,
+          "floor": -9
+        },
+        "appearance": 30251,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/issued",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "premium_required": true,
+      "offerings": [],
+      "present": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "Warm fire 1 of four thaws the Queen.",
+      "effects": {
+        "carried_inputs": [
+          {
+            "item": "oteryn:item.tibia.i30226",
+            "count": 5
+          }
+        ]
+      },
+      "completes": false,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i30214",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-winterlight-branches-2",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33745,
+          "y": 31059,
+          "floor": -8
+        },
+        "appearance": 30223,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/stage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/issued",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "premium_required": true,
+      "offerings": [],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i30214",
+          "count": 1
+        }
+      ],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You collect five branches for the next warm fire.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i30226",
+          "count": 5,
+          "contents": [],
+          "backpack_outputs": []
+        }
+      },
+      "completes": false,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-winterlight-fire-2",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33758,
+          "y": 31074,
+          "floor": -9
+        },
+        "appearance": 30251,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/stage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/issued",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "premium_required": true,
+      "offerings": [],
+      "present": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "Warm fire 2 of four thaws the Queen.",
+      "effects": {
+        "carried_inputs": [
+          {
+            "item": "oteryn:item.tibia.i30226",
+            "count": 5
+          }
+        ]
+      },
+      "completes": false,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i30214",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-winterlight-branches-3",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33745,
+          "y": 31059,
+          "floor": -8
+        },
+        "appearance": 30223,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/issued",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "premium_required": true,
+      "offerings": [],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i30214",
+          "count": 1
+        }
+      ],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You collect five branches for the next warm fire.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i30226",
+          "count": 5,
+          "contents": [],
+          "backpack_outputs": []
+        }
+      },
+      "completes": false,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-winterlight-fire-3",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33758,
+          "y": 31074,
+          "floor": -9
+        },
+        "appearance": 30251,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/issued",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "premium_required": true,
+      "offerings": [],
+      "present": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "Warm fire 3 of four thaws the Queen.",
+      "effects": {
+        "carried_inputs": [
+          {
+            "item": "oteryn:item.tibia.i30226",
+            "count": 5
+          }
+        ]
+      },
+      "completes": false,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i30214",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-winterlight-branches-4",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33745,
+          "y": 31059,
+          "floor": -8
+        },
+        "appearance": 30223,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/stage",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/issued",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "premium_required": true,
+      "offerings": [],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i30214",
+          "count": 1
+        }
+      ],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You collect five branches for the next warm fire.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i30226",
+          "count": 5,
+          "contents": [],
+          "backpack_outputs": []
+        }
+      },
+      "completes": false,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-winterlight-fire-4",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33758,
+          "y": 31074,
+          "floor": -9
+        },
+        "appearance": 30251,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/stage",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/issued",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": true
+        }
+      ],
+      "premium_required": true,
+      "offerings": [],
+      "present": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "Warm fire 4 of four thaws the Queen.",
+      "effects": {
+        "carried_inputs": [
+          {
+            "item": "oteryn:item.tibia.i30226",
+            "count": 5
+          }
+        ]
+      },
+      "completes": false,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i30214",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-winterlight-complete",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33758,
+          "y": 31074,
+          "floor": -9
+        },
+        "appearance": 30251,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/kills",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "premium_required": true,
+      "offerings": [],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i30214",
+          "count": 1
+        }
+      ],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "The Percht Queen is defeated. You earn the base Percht Raider outfit.",
+      "effects": {
+        "outfit_reward": {
+          "outfit": "oteryn:outfit.percht_raider",
+          "addons": 0
+        }
+      },
+      "completes": true,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ]
     }
   ]
 }

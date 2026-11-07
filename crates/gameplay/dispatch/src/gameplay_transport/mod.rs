@@ -149,6 +149,7 @@ mod pvp_live;
 mod quest_admission;
 mod quest_callbacks;
 mod quest_death_loot;
+mod quest_disguise;
 mod quest_log_source;
 mod raid_live;
 mod raid_live_world;

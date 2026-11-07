@@ -711,6 +711,16 @@ impl DurabilityRoot {
                     }
                     // Historical receipts return above without requiring a new grant
                     // participant. Fresh effects still require the admitted generation.
+                    if let Some(disguise) = callback.as_ref().and_then(|c| c.disguise.as_ref())
+                        && context.as_ref().and_then(|(_, _, native, _)| *native).is_none_or(|native|
+                            !native.policies().policies().iter().any(|policy|
+                                policy.definition_key == disguise.creature
+                                    && policy.definition_revision == "definition-r1"
+                                    && policy.outfit_appearance().is_some()))
+                    {
+                        tx.rollback().await?;
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    }
                     if let Some(reward) = callback.as_ref().and_then(|c| c.effects.outfit_reward.as_ref())
                         && context.as_ref().and_then(|(_, _, native, _)| *native).is_none_or(|native|
                             !super::super::reward_claim_mint::quest::outfit_compatible(native, reward))
