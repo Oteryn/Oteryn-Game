@@ -1,0 +1,565 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "addon",
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Sorry, the backpack I wear is not for sale. It's handmade from rare minotaur leather."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "addon",
+        "outfit",
+        "leather",
+        "backpack"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Ah, right, almost forgot about the backpack! Have you brought me 100 pieces of minotaur leather as requested?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "addon",
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Sorry, but I can only make one backpack per person, else I'd have to close my shop and open a leather manufactory."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "addon",
+        "outfit"
+      ],
+      "topic": 1,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Sorry, the backpack I wear is not for sale. It's handmade from rare minotaur leather."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "addon",
+        "outfit",
+        "leather",
+        "backpack"
+      ],
+      "topic": 1,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Ah, right, almost forgot about the backpack! Have you brought me 100 pieces of minotaur leather as requested?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "addon",
+        "outfit"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Sorry, but I can only make one backpack per person, else I'd have to close my shop and open a leather manufactory."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "addon",
+        "outfit"
+      ],
+      "topic": 2,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Sorry, the backpack I wear is not for sale. It's handmade from rare minotaur leather."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "addon",
+        "outfit",
+        "leather",
+        "backpack"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Ah, right, almost forgot about the backpack! Have you brought me 100 pieces of minotaur leather as requested?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "addon",
+        "outfit"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Sorry, but I can only make one backpack per person, else I'd have to close my shop and open a leather manufactory."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "addon",
+        "outfit"
+      ],
+      "topic": 3,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Sorry, the backpack I wear is not for sale. It's handmade from rare minotaur leather."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "addon",
+        "outfit",
+        "leather",
+        "backpack"
+      ],
+      "topic": 3,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Ah, right, almost forgot about the backpack! Have you brought me 100 pieces of minotaur leather as requested?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "addon",
+        "outfit"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Sorry, but I can only make one backpack per person, else I'd have to close my shop and open a leather manufactory."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "backpack",
+        "minotaur",
+        "leather"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Well, if you really like this backpack, I could make one for you, but minotaur leather is hard to come by these days. Are you willing to put some work into this?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "no"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Sorry, but I don't run a welfare office, you know... no pain, no gain."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "no"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I know, it's quite some work... don't lose heart, just keep killing minotaurs and you'll eventually get lucky. Would you rather like to buy a normal backpack for 10 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hanna",
+      "keywords": [
+        "addon",
+        "outfit",
+        "hat"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Pretty, isn't it? My friend Amber taught me how to make it, but I could help you with one if you like. What do you say?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hanna",
+      "keywords": [
+        "addon",
+        "outfit",
+        "hat"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Oh, you're back already? Did you bring a legion helmet, 100 chicken feathers and 50 honeycombs?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hanna",
+      "keywords": [
+        "addon",
+        "outfit",
+        "hat"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Pretty hat, isn't it?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hanna",
+      "keywords": [
+        "addon",
+        "outfit",
+        "hat"
+      ],
+      "topic": 1,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Pretty, isn't it? My friend Amber taught me how to make it, but I could help you with one if you like. What do you say?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hanna",
+      "keywords": [
+        "addon",
+        "outfit",
+        "hat"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Oh, you're back already? Did you bring a legion helmet, 100 chicken feathers and 50 honeycombs?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hanna",
+      "keywords": [
+        "addon",
+        "outfit",
+        "hat"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Pretty hat, isn't it?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hanna",
+      "keywords": [
+        "addon",
+        "outfit",
+        "hat"
+      ],
+      "topic": 2,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Pretty, isn't it? My friend Amber taught me how to make it, but I could help you with one if you like. What do you say?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hanna",
+      "keywords": [
+        "addon",
+        "outfit",
+        "hat"
+      ],
+      "topic": 2,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Oh, you're back already? Did you bring a legion helmet, 100 chicken feathers and 50 honeycombs?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hanna",
+      "keywords": [
+        "addon",
+        "outfit",
+        "hat"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Pretty hat, isn't it?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hanna",
+      "keywords": [
+        "no"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Aw, I guess you don't like feather hats. No big deal."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hanna",
+      "keywords": [
+        "no"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Maybe another time."
+      ]
+    }
+  ]
+}

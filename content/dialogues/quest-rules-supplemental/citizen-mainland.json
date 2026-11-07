@@ -1,0 +1,161 @@
+{
+  "schema": 1,
+  "program_key": "oteryn:quest-npc-program.citizen-mainland",
+  "quest": "oteryn:quest.outfit_and_addon_quests",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:68"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack_timer",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:68"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hanna.lua:68"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_backpack",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:68"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_hat",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hanna.lua:68"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/citizen/lubo/start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lubo",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        2
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Alright then, if you bring me 100 pieces of fine minotaur leather I will see what I can do for you. You probably have to kill really many minotaurs though... so good luck!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_backpack",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        },
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:101",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:68"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/citizen/hanna/start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.hanna",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        1
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Okay, here we go, listen closely! I need a few things... a basic hat of course, maybe a legion helmet would do. Then about 100 chicken feathers... and 50 honeycombs as glue. That's it, come back to me once you gathered it!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_hat",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hanna.lua:85",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hanna.lua:68"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/lubo.lua",
+      "sha256": "a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    },
+    {
+      "path": "data-global/npc/hanna.lua",
+      "sha256": "cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    }
+  ]
+}

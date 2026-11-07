@@ -1,0 +1,350 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/questpc-citizen-backpack-materials",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_backpack",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5878",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Great! Alright, I need a while to finish this backpack for you. Come ask me later, okay?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:112:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:114:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:118:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack_timer",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
+      "failure_reply": [
+        "Sorry, but that's not enough leather yet to make one of these backpacks. Would you rather like to buy a normal backpack for 10 gold?"
+      ],
+      "failure_next_topic": 0
+    },
+    {
+      "key": "oteryn:quest-reward/questpc-citizen-backpack",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "addon",
+        "outfit",
+        "backpack"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_backpack",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.citizen",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Just in time! Your backpack is finished. Here you go, I hope you like it."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:78:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:77:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:82:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:83:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack_timer",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 7201
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ],
+      "failure_reply": [
+        "Uh... I didn't expect you to return that early. Sorry, but I'm not finished yet with your backpack. I'm doing the best I can, promised."
+      ],
+      "failure_next_topic": 0
+    },
+    {
+      "key": "oteryn:quest-reward/questpc-citizen-hat",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.hanna",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_hat",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 0
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3374",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i5902",
+          "count": 50
+        },
+        {
+          "item": "oteryn:item.tibia.i5890",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.citizen",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Great job! That must have taken a lot of work. Okay, you put it like this... then glue like this... here!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hanna.lua:99:sha256:cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hanna.lua:101:sha256:cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hanna.lua:102:sha256:cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hanna.lua:103:sha256:cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc-citizen-backpack-topic1",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "addon",
+        "outfit",
+        "backpack"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_backpack",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.citizen",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Just in time! Your backpack is finished. Here you go, I hope you like it."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:78:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:77:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:82:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:83:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack_timer",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 7201
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ],
+      "failure_reply": [
+        "Uh... I didn't expect you to return that early. Sorry, but I'm not finished yet with your backpack. I'm doing the best I can, promised."
+      ],
+      "failure_next_topic": 0
+    },
+    {
+      "key": "oteryn:quest-reward/questpc-citizen-backpack-topic2",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "addon",
+        "outfit",
+        "backpack"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_backpack",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.citizen",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Just in time! Your backpack is finished. Here you go, I hope you like it."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:78:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:77:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:82:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:83:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack_timer",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 7201
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ],
+      "failure_reply": [
+        "Uh... I didn't expect you to return that early. Sorry, but I'm not finished yet with your backpack. I'm doing the best I can, promised."
+      ],
+      "failure_next_topic": 0
+    },
+    {
+      "key": "oteryn:quest-reward/questpc-citizen-backpack-topic3",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "addon",
+        "outfit",
+        "backpack"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_backpack",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.citizen",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Just in time! Your backpack is finished. Here you go, I hope you like it."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:78:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:77:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:82:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:83:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack_timer",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 7201
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ],
+      "failure_reply": [
+        "Uh... I didn't expect you to return that early. Sorry, but I'm not finished yet with your backpack. I'm doing the best I can, promised."
+      ],
+      "failure_next_topic": 0
+    }
+  ]
+}

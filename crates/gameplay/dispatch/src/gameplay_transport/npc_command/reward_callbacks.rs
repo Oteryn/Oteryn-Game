@@ -1,6 +1,8 @@
 //! Content selects a bounded exchange; the shared quest transaction owns every effect.
 use super::super::{ComposedFreshAdmission, connection::UseCommand};
 use super::quest_dialogue::{self, Choice, Step, Topic};
+mod questpc_sources;
+
 use super::*;
 use oteryn_gameplay_quests::quest::reward_callbacks;
 use oteryn_gameplay_quests::quest::world_callbacks::Storage;
@@ -37,14 +39,13 @@ pub(super) fn prepare(
         "../../../../../../content/quests/shared-reward-offers.json"
     ))
     .ok()?;
-    let extra: Offers = serde_json::from_str(include_str!(
-        "../../../../../../content/quests/questpc-draconia-reward-offers.json"
-    ))
-    .ok()?;
-    if extra.schema != 1 {
-        return None;
+    for text in questpc_sources::OFFERS {
+        let extra: Offers = serde_json::from_str(text).ok()?;
+        if extra.schema != 1 {
+            return None;
+        }
+        offers.offers.extend(extra.offers);
     }
-    offers.offers.extend(extra.offers);
     if offers.schema != 1 || offers.offers.iter().any(|o| o.requires.len() > 8) {
         return None;
     }

@@ -577,3 +577,18 @@ digests. Existing identity, source binding and custody must exactly match the
 source-derived cohort; conflicting binding/admission is rejected before mutation.
 Earlier Wiki/native facts remain authoritative. Added RED/GREEN regressions
 prove full-record retention, one provider identity and both digest updates.
+
+## Mainland Citizen source binding, compiling WIP
+Sources: https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/lubo.lua
+and https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/hanna.lua .
+Fetched bodies match existing archived corpus bytes exactly: Lubo SHA256
+`a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d`, Hanna
+`cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956`.
+Lubo:100 minotaur leathers5878, strictly more than7200seconds, Citizen addon1.
+Hanna:3374x1,5890x100,5902x50, Citizen addon2. Reuse existing QENGINE owners;
+refreshed qengine2/questpc2/3/4/5/7/8 contain no Lubo/Hanna callback implementation.
+Preserve existing zero initials/bounds. Reuse QENGINE Rook timer normalization:
+store the opaque start stamp and require elapsed>=7201seconds in the SQL owner.
+Lubo acceptance closes immediately through existing EndConversation0. Hanna
+partial recipes retain the shared material-refusal reply; verbatim per-item failure
+text is not claimed by the planned state/value proof. Own PG qualification pending.

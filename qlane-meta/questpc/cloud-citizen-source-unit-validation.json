@@ -1,0 +1,33 @@
+{
+  "state": "WIP: static source contracts and compatibility only; own PG story pending",
+  "pushed_base": "65c393c2477994cef2d973cb9ab03c75451d870e",
+  "unit_red": "citizen_regular_source_costs_clock_and_addons_are_distinct_from_rook: missing mainland Citizen source callback,0.026s",
+  "unit_green_summary": "Summary [   4.992s] 2 tests run: 2 passed, 307 skipped",
+  "source_review": [
+    {
+      "npc": "lubo",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/lubo.lua",
+      "sha256": "a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d",
+      "matches_existing_corpus": true
+    },
+    {
+      "npc": "hanna",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/hanna.lua",
+      "sha256": "cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956",
+      "matches_existing_corpus": true
+    }
+  ],
+  "pg_credit": false,
+  "production_helpers_lines": [
+    15,
+    22,
+    11
+  ],
+  "reused_engine": "Existing QENGINE exchange, timed-state, outfit and NPC storage owners. New files register content only.",
+  "compile_gate": {
+    "command": "cargo check --locked --workspace --all-targets",
+    "result": "PASS",
+    "duration": "2m21s",
+    "fmt": "cargo fmt --all -- --check PASS"
+  }
+}

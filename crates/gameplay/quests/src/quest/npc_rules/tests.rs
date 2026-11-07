@@ -581,7 +581,24 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     let active = extend(old.catalogue().clone(), &bindings)?;
     let runtime = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
     // Corym, Dragonlord and Curos add independently source-bound programmes.
-    assert_eq!(runtime.programs().len(), 11);
+    assert_eq!(runtime.programs().len(), 12);
+    let citizen = runtime
+        .programs()
+        .iter()
+        .find(|program| {
+            program.document.program_key.as_deref()
+                == Some("oteryn:quest-npc-program.citizen-mainland")
+        })
+        .ok_or("Citizen source programme")?;
+    assert_eq!(
+        citizen
+            .document
+            .rules
+            .iter()
+            .map(|rule| rule.npc.as_str())
+            .collect::<std::collections::BTreeSet<_>>(),
+        std::collections::BTreeSet::from(["oteryn:npc.hanna", "oteryn:npc.lubo"])
+    );
     assert_eq!(
         runtime
             .program("oteryn:quest.an_uneasy_alliance_quest")
@@ -620,7 +637,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
             .all(|rule| rule.npc.starts_with("oteryn:npc.corym_"))
     );
     // The historical frozen catalogue has no Draconia definition to alias.
-    assert_eq!(active.npc_legacy.len(), 9);
+    assert_eq!(active.npc_legacy.len(), 10);
     assert!(
         !active
             .npc_legacy
@@ -691,7 +708,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         .map_err(|e| e.to_string())?;
     let loaded = super::super::loader::load_embedded_quest_state("npc-legacy")
         .map_err(|e| format!("{e:?}"))?;
-    assert_eq!(loaded.catalogue().npc_legacy.len(), 10);
+    assert_eq!(loaded.catalogue().npc_legacy.len(), 11);
     assert!(
         loaded
             .catalogue()

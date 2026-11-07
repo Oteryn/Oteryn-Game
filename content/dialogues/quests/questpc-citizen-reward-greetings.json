@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "npcs": [
+    {
+      "npc": "oteryn:npc.lubo",
+      "greet": "Welcome to my adventurer shop, |PLAYERNAME|! What do you need? Ask me for a {trade} to look at my wares.",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:156:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hanna",
+      "greet": "Oh, please come in, |PLAYERNAME|. What do you need? Have a look at my wonderful {offers} in gems and jewellery.",
+      "farewell": "Good bye.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hanna.lua:121:sha256:cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956"
+      ]
+    }
+  ]
+}

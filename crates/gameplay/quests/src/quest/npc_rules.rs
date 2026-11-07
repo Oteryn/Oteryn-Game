@@ -430,6 +430,7 @@ impl NpcRuleCatalog {
                 let supplemental = Self::from_json_documents(&[
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/draconia.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/uneasy-curos.json"),
+                    super::questpc_sources::CITIZEN_PROGRAM,
                 ])?;
                 catalogue.programs.extend(supplemental.programs);
                 validate::catalogue(&catalogue)?;
@@ -438,6 +439,7 @@ impl NpcRuleCatalog {
                         || p.document.program_key.as_deref()
                             == Some("oteryn:quest-npc-program.draconia")
                         || p.document.program_key.as_deref() == Some("oteryn:quest-npc-program.uneasy-curos")
+                        || p.document.program_key.as_deref() == Some("oteryn:quest-npc-program.citizen-mainland")
                         || matches!(
                             p.document.quest.as_str(),
                             "oteryn:quest.a_father_s_burden_quest"

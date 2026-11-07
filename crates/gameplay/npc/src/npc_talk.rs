@@ -9,6 +9,7 @@ use std::collections::HashMap;
 
 mod dark_trails;
 mod isle_of_evil;
+mod questpc_sources;
 
 use crate::content::{NpcServiceModel, ProjectV2ServiceOffer};
 use crate::foundation::speech::ChatPosition;
@@ -26,10 +27,6 @@ const REWARD_CALLBACKS: &str =
     include_str!("../../../../content/quests/shared-reward-callbacks.json");
 const REWARD_GREETINGS: &str =
     include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json");
-const DRACONIA_CALLBACKS: &str =
-    include_str!("../../../../content/quests/questpc-draconia-reward-callbacks.json");
-const DRACONIA_GREETINGS: &str =
-    include_str!("../../../../content/dialogues/quests/questpc-draconia-reward-greetings.json");
 
 #[derive(serde::Deserialize)]
 struct RewardMessages {
@@ -48,7 +45,9 @@ fn reward_messages(key: &str) -> Option<&'static RewardMessages> {
     static DATA: std::sync::OnceLock<Option<Vec<RewardMessages>>> = std::sync::OnceLock::new();
     let rows = DATA.get_or_init(|| {
         let mut rows = Vec::new();
-        for text in [REWARD_GREETINGS, DRACONIA_GREETINGS] {
+        for text in
+            std::iter::once(REWARD_GREETINGS).chain(questpc_sources::GREETINGS.iter().copied())
+        {
             let document = serde_json::from_str::<Document>(text).ok()?;
             if document.schema != 1 || rows.len() + document.npcs.len() > 256 {
                 return None;
@@ -76,8 +75,8 @@ fn reward_callback_npc(key: &str) -> bool {
     static NPCS: std::sync::OnceLock<std::collections::BTreeSet<String>> =
         std::sync::OnceLock::new();
     NPCS.get_or_init(|| {
-        [REWARD_CALLBACKS, DRACONIA_CALLBACKS]
-            .into_iter()
+        std::iter::once(REWARD_CALLBACKS)
+            .chain(questpc_sources::CALLBACKS.iter().copied())
             .filter_map(|text| serde_json::from_str::<Document>(text).ok())
             .filter(|document| document.schema == 1 && document.callbacks.len() <= 256)
             .flat_map(|document| document.callbacks.into_iter().map(|c| c.npc))
@@ -234,8 +233,8 @@ impl NpcTalkBook {
                 crate::quest_greetings::revision_material(),
                 REWARD_CALLBACKS,
                 REWARD_GREETINGS,
-                DRACONIA_CALLBACKS,
-                DRACONIA_GREETINGS,
+                questpc_sources::CALLBACKS.join("\n"),
+                questpc_sources::GREETINGS.join("\n"),
             )),
             ..Self::default()
         };

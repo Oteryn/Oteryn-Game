@@ -8655,7 +8655,7 @@
     "whole_title_promoted": false
   },
   "continuation": {
-    "next": "Crystal40030 native source33155,31297,z3: bind verified startup action, sourcequestline3->4, reuse revision-checked movement decay10s. Then exact tome10217/finalmission and native door/boss route.",
+    "next": "Finish real-dispatch mainland Citizen story tests; use only existing shared owners. Await requested qengine2 capabilities and continue other owned work.",
     "runtime_change_since_4f151ba81": true,
     "red_point": null,
     "source": "Crystal 9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d data-global/scripts/quests/an_uneasy_alliance/creaturescripts_renegade_orc_kill.lua, blob 8d1ecd7810b863df6f44e9e4aead98264fe50395",
@@ -10748,9 +10748,35 @@
   "latest_count_report": {
     "total": 178,
     "done_pushed": 61,
-    "in_progress": 51,
-    "not_started": 65,
+    "in_progress": 46,
+    "not_started": 70,
     "excluded": 1,
-    "basis": "Packet ledger rows; incomplete quests with concrete quest callback or NPC programme content counted in progress. Published qualified rows at23ca47d8 counted DONE."
+    "basis": "Entry-specific audit: shared aggregate canonical keys do not start unrelated display entries; Lions Rock has concrete callbacks; Citizen mainland is now in progress. OWNED107 names."
+  },
+  "engine_requests": [
+    {
+      "quest": "An Uneasy Alliance Quest",
+      "feature": "Atomic quest USE transform with revision-fenced10-second reset using movement-decay queue",
+      "owner": "qengine2",
+      "status": "requested"
+    },
+    {
+      "quest": "Hot Cuisine Quest",
+      "feature": "Authoritative calendar month and delayed NPC closure1000ms",
+      "owner": "qengine2",
+      "status": "requested"
+    }
+  ],
+  "citizen_mainland_batch": {
+    "status": "WIP; source contract and activation compatibility unit tests green; own PG story not yet implemented or qualified",
+    "sources": [
+      "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/lubo.lua",
+      "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/hanna.lua"
+    ],
+    "reuse": "Existing QENGINE exchanges, elapsed-time state operations, outfit grants and native NPC storage receipts; only local content registration helpers added",
+    "pg_credit": false,
+    "generated_batch_finalization": "pending; no global matrix, pin or placement regeneration during authoring",
+    "owner_push_override": "2026-11-07: push compiling WIP after workspace all-targets check and fmt; full tests not required; every30minutes",
+    "compile_gate": "PASS cargo check --locked --workspace --all-targets in2m21s; cargo fmt --all -- --check PASS"
   }
 }

@@ -1,3 +1,18 @@
+## Current compiling WIP: mainland Citizen
+Last green main consolidation pushed65c393c2477994cef2d973cb9ab03c75451d870e.
+Citizen source cost/clock/addon test RED missing callback, then GREEN; exact NPC
+activation/legacy compatibility test also GREEN after adding one source programme.
+Four authored source JSON documents and three small local registration files reuse
+existing QENGINE behavior; no new generic engine schema/capability. PG story is
+NOT implemented or qualified yet; no quest promoted. Generated matrix/pins/placement
+finalization deferred to completed batch. Next implement native dialogue, exact
+cost/refusal, strict wait, both-addon and literal replay stories with QENGINE helpers.
+Owner newest rule: push compiling WIP within15minutes after workspace all-targets
+check and fmt, then at least every30minutes. Do not wait for full suites.
+ENGINE-REQUESTs sent: Uneasy timed USE transform/reset10s; Hot Cuisine calendar
+month and delayed closure1000ms. Shared capabilities belong to qengine2.
+Ownership alias audit:61DONE/46INPROGRESS/70NOTSTARTED/1excluded;107 OWNED names.
+
 ## Current owner work rules and collector
 Push green5–8 quest batches to this lane; wpkg collects them into its one PR.
 No PR from this lane. Merge main when coordinator announces collector merge.

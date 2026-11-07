@@ -1085,3 +1085,8 @@ mod tests {
         assert!(QuestStateCatalogue::empty("bad revision").is_none());
     }
 }
+
+#[cfg(test)]
+mod citizen_source_tests;
+
+mod questpc_sources;

@@ -248,15 +248,15 @@ fn embedded_document() -> Result<Document, String> {
         "../../../../../content/quests/shared-reward-callbacks.json"
     ))
     .map_err(|e| e.to_string())?;
-    let extra = parse_document(include_str!(
-        "../../../../../content/quests/questpc-draconia-reward-callbacks.json"
-    ))?;
-    let callbacks = source
-        .get_mut("callbacks")
-        .and_then(serde_json::Value::as_array_mut)
-        .ok_or("reward callback array")?;
-    for callback in extra.callbacks {
-        callbacks.push(serde_json::to_value(callback).map_err(|e| e.to_string())?);
+    for text in super::questpc_sources::CALLBACKS {
+        let extra = parse_document(text)?;
+        let callbacks = source
+            .get_mut("callbacks")
+            .and_then(serde_json::Value::as_array_mut)
+            .ok_or("reward callback array")?;
+        for callback in extra.callbacks {
+            callbacks.push(serde_json::to_value(callback).map_err(|e| e.to_string())?);
+        }
     }
     parse_document(&serde_json::to_string(&source).map_err(|e| e.to_string())?)
 }
@@ -553,11 +553,11 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
     let canonical = parse_document(include_str!(
         "../../../../../content/quests/shared-reward-callbacks.json"
     ))?;
-    let catalogue = extend_document(catalogue, canonical)?;
-    let supplemental = parse_document(include_str!(
-        "../../../../../content/quests/questpc-draconia-reward-callbacks.json"
-    ))?;
-    extend_additive_document(catalogue, supplemental)
+    let mut catalogue = extend_document(catalogue, canonical)?;
+    for text in super::questpc_sources::CALLBACKS {
+        catalogue = extend_additive_document(catalogue, parse_document(text)?)?;
+    }
+    Ok(catalogue)
 }
 
 fn extend_additive_document(
