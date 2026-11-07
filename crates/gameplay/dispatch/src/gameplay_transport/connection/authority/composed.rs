@@ -980,6 +980,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.pour_fluid(actor, command, source, target).await
     }
 
+    async fn use_quest_tool_on_map_by_definition(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        definition: std::num::NonZeroU32,
+        target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> Option<UseOutcome> {
+        crate::gameplay_transport::item_use::carried::use_definition_on_world(
+            self, actor, command, definition, &target,
+        )
+        .await
+    }
+
     async fn use_fluid_on_map(
         &self,
         actor: ExactActorRef,

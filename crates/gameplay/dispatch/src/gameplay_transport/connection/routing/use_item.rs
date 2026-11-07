@@ -191,6 +191,23 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     Some({
         match decoded {
             Ok(intent) if intent.use_with_map_item.is_some() => {
+                if let (
+                    UseTarget::ItemByDefinition(definition),
+                    Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(target)),
+                ) = (intent.target.clone(), intent.use_with_map_item.clone())
+                    && let Some(outcome) = authority.use_quest_tool_on_map_by_definition(
+                        actor,
+                        UseCommand {
+                            game_session_id: admitted.game_session_id,
+                            command_id: command.command_id,
+                            item_fence: admitted.item_fence,
+                        },
+                        definition,
+                        target,
+                    ).await
+                {
+                    return Some(Dispatch::Use(outcome));
+                }
                 let source = match intent.target {
                     UseTarget::Item(handle) => item_view.as_ref().and_then(|v| v.resolve(handle)),
                     _ => None,

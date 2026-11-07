@@ -549,6 +549,18 @@ pub trait FreshAdmissionAuthority {
         async move { Some(self.use_item(actor, command, item).await) }
     }
 
+    /// A pinned hotkey definition used on a selected world object. The quest
+    /// owner resolves its exact carried instance and retains the original intent.
+    fn use_quest_tool_on_map_by_definition(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _definition: std::num::NonZeroU32,
+        _target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { None }
+    }
+
     /// I10a: a carried fluid container used on a map source or ground tile.
     fn use_fluid_on_map(
         &self,

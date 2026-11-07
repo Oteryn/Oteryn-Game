@@ -730,6 +730,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: ItemKey,
         target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> Option<UseOutcome> {
+        if let Some(outcome) = carried::use_on_world(self, actor, command, source, &target).await {
+            return Some(outcome);
+        }
         let ItemKey::Instance(source) = source else {
             return None;
         };

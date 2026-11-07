@@ -48,3 +48,30 @@ receipt reconcile that attempt before accepting more input.
 `questpc3_threatened_light.py` is a source-backed producer using this shape.
 Its PostgreSQL dispatch test also covers lost acknowledgement, committed
 replay after a clock change, and conflicting source selection.
+
+## Applying a carried tool to a world object
+
+`trigger: "use_carried_on_target"` uses the same transaction and predicates,
+but requires the usual world selector. Native USE_WITH supports both an
+instance handle and a pinned hotkey definition. The dispatcher resolves the
+selected object against the current map/content/reset fence, checks its
+revision and reachability, and retains its position/key/revision beside the
+exact carried source. The original source choice, encoded target and expected
+revision enter a domain-separated 32-byte intent digest.
+
+Target selector terms enter the definition hash. Optional minimum level enters
+the binding only when present; existing self-use bindings and context JSON stay
+unchanged. A target-only context cannot authorize self-use, or conversely.
+Levers, passages, offerings, teleportation, native effects, shrine rewards,
+experience and target appearance replacement are excluded from these carried
+triggers. `return_on_failure` must be false. The target is read-only: a personal
+repair must not increment a shared map object's revision.
+
+A target recipe may retain the charged definition by replacing it with itself.
+This proves exact custody through the existing receipt owner without removing
+the tool. A terminal recipe can restore its empty definition. For a bounded
+five-charge source, author five exact counter states instead of adding a new
+expression language: counter5->4 through1->0, with a distinct per-player flag
+for each target. `questpc3_threatened_barriers.py` uses this shape for all fifteen
+source positions. Repeated targets, changed-target replay and wrong periods
+must grant no additional progress or value.

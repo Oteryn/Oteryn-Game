@@ -1835,7 +1835,7 @@
         ],
         "red_log": "/tmp/questpc3-beginning-equipment-red-marked.log",
         "whole_entry_status": "Beginning IN_PROGRESS; four owned whole quests remain; no engine deferral.",
-        "reuse": "Existing carried presence and native reward MINT/custody; equipment writers already serialize under Character root. No occupied-slot predicate found in refreshed qengine2/PC2/PC4–8/L2 callbacks.",
+        "reuse": "Existing carried presence and native reward MINT/custody; equipment writers already serialize under Character root. No occupied-slot predicate found in refreshed qengine2/PC2/PC4\u20138/L2 callbacks.",
         "first_red": {
           "log": "/tmp/questpc3-beginning-equipment-red.log",
           "sha256": "45de478a54e47db5abc09db3ee85089374c348c20d3e02850f37f7553822eafe",
@@ -2841,6 +2841,280 @@
       "skipped_world_owner": 17
     },
     "current_batch": {
+      "id": "threatened_barriers_08",
+      "phase": "GREEN: PostgreSQL 15 repairs/15 receipts in 89087ms; self-use regression 190131ms; fmt, check and strict Clippy passed",
+      "scope": "15 distinct per-player repairs, five charges per held tool, exact Native USE_WITH map target/time/source; final charge restores empty source, global map revision unchanged",
+      "test": "threatened_fifteen_distinct_barriers_decrement_exact_carried_tools",
+      "red_log": "/tmp/questpc3-barriers-red.log",
+      "fixture": "Prior NM7 and all3charged tools/counters5 only; actual15flags/counterdecrements/terminaltools must come from native dispatch. Fixture relocation uses existing sealed movement owner. Catalogue validates before expensive capture.",
+      "upstream": "qengine2=82278cf6c,PC5=f3f6a43fb,PC6=53d5648b8,L2=c9cdfd5ae checked; no carried-target/time/receipt owner. Reuse existing map resolver, minute math and Character replacement owner.",
+      "producer_draft": "/tmp/questpc3-next-barrier-producer.py NOT APPLIED; 75 exact-state source recipes under existing512cap.",
+      "whole_quests": "Four remain IN_PROGRESS; no feature deferral.",
+      "red_proof": {
+        "log": "/tmp/questpc3-barriers-red-fixed-trait.log",
+        "sha256": "c9fef2a0fc286d3f2d6d70123632c33fc55cd10e70c85f36009e68c11c6a6361",
+        "duration_ms": 104046,
+        "marker": "THREATENED_BARRIERS POSTGRES_ASSERTION_REACHED repairs=0 receipts=0",
+        "result": "All3families counter5/empty0; real fifteen-target assertions reached; no production support yet."
+      },
+      "implementation": "Generic UseCarriedOnTarget with exact source/target-intent digest, pinned map resolution/revision/reachability, existing Character replacement/clock/receipt/recovery owners. Native handles and definition hotkeys. Source75exact-state recipes,15flags; nonfinal retain charged,terminal restore empty; map never mutated. Optional target context serializes away for existing self-use, old hashes preserved; new selector/minlevel terms bound only when present.",
+      "checks_so_far": {
+        "check": "dispatch/allfeatures PASS2m17s /tmp/questpc3-barriers-check.log",
+        "binding_units": "4PASS0.02s, publishedself legacyencoding + targetselector/minlevel binding /tmp/questpc3-barriers-binding-units.log",
+        "authoring": "11PASS18.265s /tmp/questpc3-barriers-authoring.log",
+        "green_pending": "/tmp/questpc3-barriers-green.log; actual15target writes,wrongperiod/repeats/changedtarget/lostack/hotkeys and terminalphysicaltools",
+        "remaining_checks": "contextserialization unit/fmt/strictClippy3changedcrates /tmp/questpc3-barriers-{context-unit,fmt-check,clippy}.log"
+      },
+      "pin_scope": "No existing Item/native/world/compiler input changed; source world callbacks only, existing native policies cover all6charged/empty operands. Verify native producer --check; retain prior pin proof if inputs unchanged.",
+      "checks": {
+        "postgres_green": {
+          "log": "/tmp/questpc3-barriers-green.log",
+          "sha256": "d9ceeede30c57b46baf54e721b10f140de02fa1bfa9fad638e37cf25e5a3d473",
+          "result": "ActualPG89087ms repairs15/receipts15;all3counters0/empty1each;handle+hotkey,lostack,replay/conflict,wrongperiod/repeats,unchangedglobalmap"
+        },
+        "self_use_regression": {
+          "log": "/tmp/questpc3-barriers-light-regression.log",
+          "sha256": "fc2e62961382b796280b37cd7c3503d4a01572b278e9635c1fb235d5a8fc34dd",
+          "result": "ActualPG190131ms all6charging/cosmetic branches true;2receipts per family"
+        },
+        "context_unit": {
+          "log": "/tmp/questpc3-barriers-context-unit.log",
+          "sha256": "86fa60c604fce981a36e3e2b05b4d80acbfeff4ec567e662f39d01eba68ec0a7",
+          "result": "1passed; historical JSON has no target field"
+        },
+        "binding_units": {
+          "log": "/tmp/questpc3-barriers-binding-units.log",
+          "sha256": "ea86bafa3190953f69b9258016bb22daf0e6a91c20896debf42076ad7ef8b733",
+          "result": "4passed0.02s; oldselfbinding unchanged,newselector/minlevel bound"
+        },
+        "authoring": {
+          "log": "/tmp/questpc3-barriers-authoring.log",
+          "sha256": "48b5d02df34991512c1406727e84465e066fe701c19354e9a2cfba0d90f385e9",
+          "result": "11passed18.265s"
+        },
+        "native": {
+          "log": "/tmp/questpc3-barriers-native-check.log",
+          "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+          "result": "41producer drift checks PASS; no Item/profile changes"
+        },
+        "fmt": {
+          "log": "/tmp/questpc3-barriers-fmt-check.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "result": "cargo fmt --all -- --check PASS"
+        },
+        "check": {
+          "log": "/tmp/questpc3-barriers-check.log",
+          "sha256": "31e9ff0c7eb07bc64193814cc95e0b25592852950bd879558aa072073f68f392",
+          "result": "dispatch/allfeatures and changeddependencies PASS2m17s"
+        }
+      },
+      "review": "Read all implementation diffs: native instance/hotkey entrypoints,source+target intent binding,server map/revision/reachability,Runtime movement/control/trade/death fences,retained pending/receipt reconciliation,Root exact-instance atomic replacement and track effects,per-player15flags,no shared map mutation,legacy binding/context compatibility. No new persistence owner or migration.",
+      "clippy_proof": {
+        "log": "/tmp/questpc3-barriers-clippy.log",
+        "sha256": "280fe23d5e6be81c3251308818cb9d612ee2b155ba69b86620876260e179b326",
+        "duration": "5m48s",
+        "result": "PASS"
+      }
+    },
+    "diagnosis": {
+      "log": "/tmp/questpc3-counter-diagnosis.log",
+      "duration_seconds": 52.56,
+      "error": "Unavailable(CommitRejected)",
+      "cause": "Unchanged guard listed in receipt but skipped in track writes contradicts existing deferred receipt proof in 0056_character_quest_state.sql:167-178",
+      "fix": "Native receipts contain actual counter changes after locked guard evaluation; preserve SQL invariants and the original mission epoch."
+    },
+    "effective_entries": [
+      "oteryn:quest.the_beginning_quest",
+      "oteryn:quest.the_first_dragon_quest",
+      "oteryn:quest.the_tainted_soul",
+      "oteryn:quest.threatened_dreams_quest",
+      "oteryn:quest.pilgrimage_of_ashes"
+    ],
+    "excluded_world_owner_entries": [
+      {
+        "canonical": "oteryn:quest.authored.rathleton_quest",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.authored.river_runs_deep_mini_world_change",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.roshamuul_quest",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.authored.spider_nest_mini_world_change",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.authored.spirit_grounds_mini_world_change",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.authored.spring_into_life",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.stampede_mini_world_change",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.authored.the_fire_feathered_serpent_world_change",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.authored.the_great_expedition",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.authored.the_lightbearer",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.the_mages_tower_world_change",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.the_mummys_curse_world_change",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.their_masters_voice",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.thornfire_world_change",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.authored.twisted_waters_world_change",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.authored.war_against_the_hive_quest",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.authored.warpath_mini_world_change",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      }
+    ],
+    "integrating_remote_batch": {
+      "commit": "73a106fc5035885a844c81e8618900f80c028116",
+      "batch": {
+        "id": "sum-guards-01",
+        "status": "PG and cargo check GREEN; publishing immediately under current owner instruction; Clippy still running",
+        "entries": [
+          "oteryn:quest.threatened_dreams_quest"
+        ],
+        "mechanism": "Reusable bounded sum guard; atomic Maelyrra kill report through existing quest writer and NPC selector",
+        "whole_entry_qualifications": 0
+      },
+      "proof": {
+        "red": {
+          "log": "/tmp/questpc3-sum-red-fixture.log",
+          "sha256": "b1a339ad61fd98cc25c69f28cf07d3327acfb7959055bf9aa0a56dec51206549",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 3m 15s",
+            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=0 duration_ms=69020",
+            "  left: Refused(NotSupported)",
+            " right: Refused(StageMismatch)",
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2550 filtered out; finished in 69.18s"
+          ]
+        },
+        "postgres_green": {
+          "log": "/tmp/questpc3-sum-green.log",
+          "sha256": "b3ed5119fb7a9ff94dd1bbc050a5fd5676befae4345e3b434e948b46ffa37ad2",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 55s",
+            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=0 duration_ms=75422",
+            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=1 duration_ms=75462",
+            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=2 duration_ms=75607",
+            "QUEST_L4_SUM POSTGRES_CASE_COMPLETED duration_ms=75874 success=true",
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2550 filtered out; finished in 75.88s"
+          ]
+        },
+        "sum_units": {
+          "log": "/tmp/questpc3-sum-units.log",
+          "sha256": "e1f4d887f0fd6b69ca7c859ece7f581e349e43227d95b0178fc5070a131d17bc",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.73s",
+            "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 254 filtered out; finished in 0.00s"
+          ]
+        },
+        "selector": {
+          "log": "/tmp/questpc3-sum-selector.log",
+          "sha256": "4f3f801307e2d138b9030eee34f941bace15eb7f1f5c318fa8e230094074ff45",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.39s",
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 255 filtered out; finished in 1.15s"
+          ]
+        },
+        "cargo_check": {
+          "log": "/tmp/questpc3-sum-check.log",
+          "sha256": "0816c5768e5ca62bb30038365b16b02f02c5973b7c2fb8ac59f21d27bd9eaf38",
+          "evidence": [
+            "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 19s"
+          ]
+        },
+        "clippy": {
+          "status": "RUNNING",
+          "log": "/tmp/questpc3-sum-clippy.log",
+          "command": "cargo clippy --locked -p oteryn-gameplay-quests -p oteryn-gameplay-dispatch --all-features --all-targets -- -D warnings"
+        },
+        "fmt": "cargo fmt --all and cargo fmt --all -- --check passed; auto-mounted test formatted explicitly with rustfmt --edition 2024",
+        "invalid_red_attempts": "Connection refused before local PostgreSQL startup, then MissingProgressionState before fixture generation admission; neither counted as RED. Valid RED reached SQL after 69020ms and returned NotSupported rather than StageMismatch.",
+        "source": "Crystal npc/maelyrra.lua:94-100, blob SHA256 16acd67b566785af18a6a5cfce6d03a7a41a9f66717596774a3c309eca0eea88; retained tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz#/source_records/492 and content/dialogues/quests-2/threatened-dreams-source.json (201189f871d23597b82caf88fd611454a2ddefb8); OTS_HYPOTHESIS_ONLY"
+      },
+      "status": "GREEN combined validation; strict Clippy confirmed here, superseding remote pending-Clippy note.",
+      "combined_proof": "checks.npc_sum_integration"
+    },
+    "metadata_recovery": "Latest head removed qlane-meta; recovered the five handoff records from c5cdcd6ae without reference dumps.",
+    "next_batch_preparation": {
+      "id": "beginning-damage-lesson-01",
+      "scope": "SourceSantiago9->10/log8 and20physicalHP loss; reuseexistingnormal health/condition owner, retainedcause/receipt lifecycle, death/mana-shield rules; no directSQLhealthwriter",
+      "source": "Crystal201189f santiago.lua:180-188; addHealth(-20,COMBAT_PHYSICALDAMAGE)",
+      "existing_mechanism": "crates/gameplay/spell/src/spell/actor_conditions/item_actions.rs:33 stage_item_health_loss; novelty_item_owner.rs retained successor/receipt/death preparation and spell-idle/lifecycle patterns; quest_dialogue.rs committed/unknown/replay handling",
+      "required": "First refreshrelevantqengine/otherlaneheads/reuse, addrealNPCPGREDthenimplementgenericcallbackeffect; proveonce/replay/lost-ack andsourceprogress withnormalHPowner. OtherBeginningworlddelivery/trade/door remainowned, notblocked.",
+      "test_draft": "/tmp/questpc3-next-damage-test.py",
+      "dependency_heads": {
+        "qengine2": "3b0c2d9e23c68f1e1bece0f39643ba836077dfe2",
+        "questpc2": "8536146524ad9cc4af542c76049334c4b8dabdeb",
+        "questpc4": "18f87a584f777b2fbfc6e9e108d72218161f9e9b",
+        "questpc5": "dcc8f5272c6f6dcd5dda7cf68975e5f5bbd4e928",
+        "questpc6": "53d5648b88e48bed2b9f27545334c21ea6f37028",
+        "questpc7": "e7a5aac32f9dc903f7cb884414c66d4504ebcd3c",
+        "questpc8": "1d0b9e8d79fa5710b5ee61f9ef91afbe74ea736c",
+        "questl2": "96d03398ff4fa6a4b4600bce114209738e072d5f"
+      },
+      "upstream_check": "Refreshedqengine2,PC2/PC4-8/L2: no declarativeNPC/world-callbackhealth/vital effect. Reuseexistingstage_item_health_loss andretainedconditionowner."
+    },
+    "next_generic_reuse_research": {
+      "qengine2": "cd721d65c04118e9161d744d797ae98eb34b80af",
+      "questpc2": "a1a96a04fe99991f0a0eaedeb648583e1781c01b",
+      "facts": "Refreshed during Carlos RED compile. Reward callbacks have no absent/present_any/repeatable replacement predicate on either inspected branch. Existing world item replacement is a consumed-input transform, not absence-qualified spare MINT. QENGINE2 has multi-outfit/creation-sex/fee/quest-participant/requisite/condition mechanisms for later reuse; PC2 907bdacd9 generic party-rite may support FirstDragon lever (inspect and reuse needed subset when implementing, preserve current published binding domains). No engine deferral."
+    },
+    "ownership": "L4 per QSPLIT-PLAN; world changes excluded by current owner; original R\u2013S entries assigned to other split lanes are scope evidence only",
+    "phase": "AUTHORING",
+    "previous_batch": {
       "id": "light-health-carlos-data-merge",
       "phase": "GREEN; commit and fast-forward push now",
       "local_green": "69ac47188acdfe5860453477b7d1c852ed0611b5",
@@ -3088,313 +3362,8 @@
       "verification_scope": "Retain composed6physicalPG206305ms/check91s/strictClippy254s and incoming CarlosPG102489ms/check/Clippy proof; shared callback library rebuilt and all5units PASS1.44s on merged data. No behavioral change to light/health/chest implementations; no repeated full PG suite.",
       "whole_quests": "Four remain IN_PROGRESS; actual15barriers next."
     },
-    "diagnosis": {
-      "log": "/tmp/questpc3-counter-diagnosis.log",
-      "duration_seconds": 52.56,
-      "error": "Unavailable(CommitRejected)",
-      "cause": "Unchanged guard listed in receipt but skipped in track writes contradicts existing deferred receipt proof in 0056_character_quest_state.sql:167-178",
-      "fix": "Native receipts contain actual counter changes after locked guard evaluation; preserve SQL invariants and the original mission epoch."
-    },
-    "effective_entries": [
-      "oteryn:quest.the_beginning_quest",
-      "oteryn:quest.the_first_dragon_quest",
-      "oteryn:quest.the_tainted_soul",
-      "oteryn:quest.threatened_dreams_quest",
-      "oteryn:quest.pilgrimage_of_ashes"
-    ],
-    "excluded_world_owner_entries": [
-      {
-        "canonical": "oteryn:quest.authored.rathleton_quest",
-        "disposition": "SKIP_OTHER_OWNER",
-        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
-      },
-      {
-        "canonical": "oteryn:quest.authored.river_runs_deep_mini_world_change",
-        "disposition": "SKIP_OTHER_OWNER",
-        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
-      },
-      {
-        "canonical": "oteryn:quest.roshamuul_quest",
-        "disposition": "SKIP_OTHER_OWNER",
-        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
-      },
-      {
-        "canonical": "oteryn:quest.authored.spider_nest_mini_world_change",
-        "disposition": "SKIP_OTHER_OWNER",
-        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
-      },
-      {
-        "canonical": "oteryn:quest.authored.spirit_grounds_mini_world_change",
-        "disposition": "SKIP_OTHER_OWNER",
-        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
-      },
-      {
-        "canonical": "oteryn:quest.authored.spring_into_life",
-        "disposition": "SKIP_OTHER_OWNER",
-        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
-      },
-      {
-        "canonical": "oteryn:quest.stampede_mini_world_change",
-        "disposition": "SKIP_OTHER_OWNER",
-        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
-      },
-      {
-        "canonical": "oteryn:quest.authored.the_fire_feathered_serpent_world_change",
-        "disposition": "SKIP_OTHER_OWNER",
-        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
-      },
-      {
-        "canonical": "oteryn:quest.authored.the_great_expedition",
-        "disposition": "SKIP_OTHER_OWNER",
-        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
-      },
-      {
-        "canonical": "oteryn:quest.authored.the_lightbearer",
-        "disposition": "SKIP_OTHER_OWNER",
-        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
-      },
-      {
-        "canonical": "oteryn:quest.the_mages_tower_world_change",
-        "disposition": "SKIP_OTHER_OWNER",
-        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
-      },
-      {
-        "canonical": "oteryn:quest.the_mummys_curse_world_change",
-        "disposition": "SKIP_OTHER_OWNER",
-        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
-      },
-      {
-        "canonical": "oteryn:quest.their_masters_voice",
-        "disposition": "SKIP_OTHER_OWNER",
-        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
-      },
-      {
-        "canonical": "oteryn:quest.thornfire_world_change",
-        "disposition": "SKIP_OTHER_OWNER",
-        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
-      },
-      {
-        "canonical": "oteryn:quest.authored.twisted_waters_world_change",
-        "disposition": "SKIP_OTHER_OWNER",
-        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
-      },
-      {
-        "canonical": "oteryn:quest.authored.war_against_the_hive_quest",
-        "disposition": "SKIP_OTHER_OWNER",
-        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
-      },
-      {
-        "canonical": "oteryn:quest.authored.warpath_mini_world_change",
-        "disposition": "SKIP_OTHER_OWNER",
-        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
-      }
-    ],
-    "integrating_remote_batch": {
-      "commit": "73a106fc5035885a844c81e8618900f80c028116",
-      "batch": {
-        "id": "sum-guards-01",
-        "status": "PG and cargo check GREEN; publishing immediately under current owner instruction; Clippy still running",
-        "entries": [
-          "oteryn:quest.threatened_dreams_quest"
-        ],
-        "mechanism": "Reusable bounded sum guard; atomic Maelyrra kill report through existing quest writer and NPC selector",
-        "whole_entry_qualifications": 0
-      },
-      "proof": {
-        "red": {
-          "log": "/tmp/questpc3-sum-red-fixture.log",
-          "sha256": "b1a339ad61fd98cc25c69f28cf07d3327acfb7959055bf9aa0a56dec51206549",
-          "evidence": [
-            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 3m 15s",
-            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=0 duration_ms=69020",
-            "  left: Refused(NotSupported)",
-            " right: Refused(StageMismatch)",
-            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2550 filtered out; finished in 69.18s"
-          ]
-        },
-        "postgres_green": {
-          "log": "/tmp/questpc3-sum-green.log",
-          "sha256": "b3ed5119fb7a9ff94dd1bbc050a5fd5676befae4345e3b434e948b46ffa37ad2",
-          "evidence": [
-            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 55s",
-            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=0 duration_ms=75422",
-            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=1 duration_ms=75462",
-            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=2 duration_ms=75607",
-            "QUEST_L4_SUM POSTGRES_CASE_COMPLETED duration_ms=75874 success=true",
-            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2550 filtered out; finished in 75.88s"
-          ]
-        },
-        "sum_units": {
-          "log": "/tmp/questpc3-sum-units.log",
-          "sha256": "e1f4d887f0fd6b69ca7c859ece7f581e349e43227d95b0178fc5070a131d17bc",
-          "evidence": [
-            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.73s",
-            "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 254 filtered out; finished in 0.00s"
-          ]
-        },
-        "selector": {
-          "log": "/tmp/questpc3-sum-selector.log",
-          "sha256": "4f3f801307e2d138b9030eee34f941bace15eb7f1f5c318fa8e230094074ff45",
-          "evidence": [
-            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.39s",
-            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 255 filtered out; finished in 1.15s"
-          ]
-        },
-        "cargo_check": {
-          "log": "/tmp/questpc3-sum-check.log",
-          "sha256": "0816c5768e5ca62bb30038365b16b02f02c5973b7c2fb8ac59f21d27bd9eaf38",
-          "evidence": [
-            "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 19s"
-          ]
-        },
-        "clippy": {
-          "status": "RUNNING",
-          "log": "/tmp/questpc3-sum-clippy.log",
-          "command": "cargo clippy --locked -p oteryn-gameplay-quests -p oteryn-gameplay-dispatch --all-features --all-targets -- -D warnings"
-        },
-        "fmt": "cargo fmt --all and cargo fmt --all -- --check passed; auto-mounted test formatted explicitly with rustfmt --edition 2024",
-        "invalid_red_attempts": "Connection refused before local PostgreSQL startup, then MissingProgressionState before fixture generation admission; neither counted as RED. Valid RED reached SQL after 69020ms and returned NotSupported rather than StageMismatch.",
-        "source": "Crystal npc/maelyrra.lua:94-100, blob SHA256 16acd67b566785af18a6a5cfce6d03a7a41a9f66717596774a3c309eca0eea88; retained tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz#/source_records/492 and content/dialogues/quests-2/threatened-dreams-source.json (201189f871d23597b82caf88fd611454a2ddefb8); OTS_HYPOTHESIS_ONLY"
-      },
-      "status": "GREEN combined validation; strict Clippy confirmed here, superseding remote pending-Clippy note.",
-      "combined_proof": "checks.npc_sum_integration"
-    },
-    "metadata_recovery": "Latest head removed qlane-meta; recovered the five handoff records from c5cdcd6ae without reference dumps.",
-    "next_batch_preparation": {
-      "id": "beginning-damage-lesson-01",
-      "scope": "SourceSantiago9->10/log8 and20physicalHP loss; reuseexistingnormal health/condition owner, retainedcause/receipt lifecycle, death/mana-shield rules; no directSQLhealthwriter",
-      "source": "Crystal201189f santiago.lua:180-188; addHealth(-20,COMBAT_PHYSICALDAMAGE)",
-      "existing_mechanism": "crates/gameplay/spell/src/spell/actor_conditions/item_actions.rs:33 stage_item_health_loss; novelty_item_owner.rs retained successor/receipt/death preparation and spell-idle/lifecycle patterns; quest_dialogue.rs committed/unknown/replay handling",
-      "required": "First refreshrelevantqengine/otherlaneheads/reuse, addrealNPCPGREDthenimplementgenericcallbackeffect; proveonce/replay/lost-ack andsourceprogress withnormalHPowner. OtherBeginningworlddelivery/trade/door remainowned, notblocked.",
-      "test_draft": "/tmp/questpc3-next-damage-test.py",
-      "dependency_heads": {
-        "qengine2": "3b0c2d9e23c68f1e1bece0f39643ba836077dfe2",
-        "questpc2": "8536146524ad9cc4af542c76049334c4b8dabdeb",
-        "questpc4": "18f87a584f777b2fbfc6e9e108d72218161f9e9b",
-        "questpc5": "dcc8f5272c6f6dcd5dda7cf68975e5f5bbd4e928",
-        "questpc6": "53d5648b88e48bed2b9f27545334c21ea6f37028",
-        "questpc7": "e7a5aac32f9dc903f7cb884414c66d4504ebcd3c",
-        "questpc8": "1d0b9e8d79fa5710b5ee61f9ef91afbe74ea736c",
-        "questl2": "96d03398ff4fa6a4b4600bce114209738e072d5f"
-      },
-      "upstream_check": "Refreshedqengine2,PC2/PC4-8/L2: no declarativeNPC/world-callbackhealth/vital effect. Reuseexistingstage_item_health_loss andretainedconditionowner."
-    },
-    "next_generic_reuse_research": {
-      "qengine2": "cd721d65c04118e9161d744d797ae98eb34b80af",
-      "questpc2": "a1a96a04fe99991f0a0eaedeb648583e1781c01b",
-      "facts": "Refreshed during Carlos RED compile. Reward callbacks have no absent/present_any/repeatable replacement predicate on either inspected branch. Existing world item replacement is a consumed-input transform, not absence-qualified spare MINT. QENGINE2 has multi-outfit/creation-sex/fee/quest-participant/requisite/condition mechanisms for later reuse; PC2 907bdacd9 generic party-rite may support FirstDragon lever (inspect and reuse needed subset when implementing, preserve current published binding domains). No engine deferral."
-    },
-    "ownership": "L4 per QSPLIT-PLAN; world changes excluded by current owner; original R–S entries assigned to other split lanes are scope evidence only",
-    "phase": "AUTHORING",
-    "previous_batch": {
-      "authored_sources": {
-        "producer": "/tmp/questpc3-carlos-producer.py -> tools/content-schema/quest-authoring/questpc3_carlos_lessons.py",
-        "authoring_tests": "/tmp/questpc3-carlos-authoring-tests.py -> tools/content-schema/quest-authoring/test_questpc3_carlos_lessons.py",
-        "rule": "Producer and tests COPIED/APPLIED only after realPG RED; do not copy again"
-      },
-      "checks": {
-        "authoring": {
-          "log": "/tmp/questpc3-light-health-merge-authoring.log",
-          "result": "10 passed11.902s",
-          "sha256": "2fa2bc538bf0f6625cb7843e958426318d4fec53949eee666f45895552931038"
-        },
-        "carried_units": {
-          "log": "/tmp/questpc3-light-health-merge-carried-units.log",
-          "sha256": "5372b21b5588cac83e5f8ea117f0bd7f96526e544be345930444738c604c43b9",
-          "result": "3 passed0.02s"
-        },
-        "check": {
-          "log": "/tmp/questpc3-light-health-merge-check.log",
-          "result": "all5changedcrates/allfeatures PASS1m31s",
-          "sha256": "ed4eb3ffba513494f74984ab8a294823944ec8dc5510bc7b1ea0dc8e49b7a926"
-        },
-        "chest_units": {
-          "log": "/tmp/questpc3-light-health-merge-chest-units.log",
-          "sha256": "6491e165ab43e5555fb4ccb9c5108e848dc163767e8f9116f64b1ec97cb1272f",
-          "result": "2 passed2.71s"
-        },
-        "clippy": {
-          "log": "/tmp/questpc3-light-health-merge-clippy.log",
-          "result": "PASS all5changedcrates/allfeatures/alltargets -Dwarnings,4m14s",
-          "sha256": "1b706a23a6c292563b71163a437ed74f034dab5a2a2fbdeb439bfec2c6b6ec82"
-        },
-        "fmt": {
-          "log": "/tmp/questpc3-light-health-merge-fmt.log",
-          "result": "PASS",
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-        },
-        "native": {
-          "log": "/tmp/questpc3-light-health-merge-native.log",
-          "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
-          "result": "41 producer checks PASS"
-        },
-        "npc_units": {
-          "log": "/tmp/questpc3-carlos-npc-units.log",
-          "sha256": "d949dafa802d33df635a3d5577b3e39c08957a12cd3581e098743e516ce6a9e9",
-          "proof": "17 targeted native NPCtalk admission tests passed138.35s"
-        },
-        "postgres": {
-          "log": "/tmp/questpc3-light-health-merge-pg.log",
-          "sha256": "7386ae520532372b592b49fa4960da4cd2631dfb23766b9fbdf189838b5b0b8d",
-          "result": "all6physicalbranches true; receipts2perfamily;206305ms actual PostgreSQL, lostack/replay/conflict assertions retained"
-        },
-        "reward_units": {
-          "log": "/tmp/questpc3-light-health-merge-reward-units.log",
-          "sha256": "36742b1b626ddeb5eaf7102d42766aad5699ccc244df783e77d205bfb6194af7",
-          "result": "5 passed2.69s"
-        }
-      },
-      "checks_pending": "/tmp/questpc3-light-health-merge-{fmt,reward-units,carried-units,chest-units,check,clippy,native,authoring,pg}.log",
-      "id": "threatened-light-health-chest-merge",
-      "incoming": "6843827386ec154df1f27e805cc5383999b33baf",
-      "local_green": "31ba09543",
-      "native_placement": "Existing source placement32082,32263,7; reuse imported nativeNPC, no new placement or world data",
-      "next_dependency_check": {
-        "qengine2": {
-          "head": "cd721d65c04118e9161d744d797ae98eb34b80af",
-          "reward_callback_alternative_or_absence_matches": "",
-          "exit": 1
-        },
-        "questpc2": {
-          "head": "a1a96a04fe99991f0a0eaedeb648583e1781c01b",
-          "reward_callback_alternative_or_absence_matches": "",
-          "exit": 1
-        },
-        "questpc4": {
-          "head": "5d078c61f301d5317c3c86cd5edad8fb49af056b",
-          "reward_callback_alternative_or_absence_matches": "",
-          "exit": 1
-        },
-        "questpc5": {
-          "head": "f3f6a43fbbdb929bf2244a95cd2d5b80c743948e",
-          "reward_callback_alternative_or_absence_matches": "",
-          "exit": 1
-        },
-        "questpc6": {
-          "head": "53d5648b88e48bed2b9f27545334c21ea6f37028",
-          "reward_callback_alternative_or_absence_matches": "",
-          "exit": 1
-        },
-        "questpc7": {
-          "head": "cc44f84dd26c3357cbdac3c4accf48a3744f3baf",
-          "reward_callback_alternative_or_absence_matches": "",
-          "exit": 1
-        },
-        "questpc8": {
-          "head": "805a061415355a68a924b3b32d02023fe608fc97",
-          "reward_callback_alternative_or_absence_matches": "",
-          "exit": 1
-        }
-      },
-      "phase": "GREEN; commit merge and fast-forward push immediately",
-      "pin_scope": "No incoming staged change intersects compiler INPUT_PATHS; retain exact11159aa6 input/5feab142 world/31102319byte pin proof; no regeneration needed.",
-      "review": "Read incoming quest-health staging/fences/revision/death/lifecycle and NPC normal/refusal/unknown/recovery integration, source coat declaration/closed binding, reward hash optional extension, all merged paths. Both engines retain prior hashes when optional terms absent. No implementation conflict; Native41/source10/units5+3+2 and composed6physicalPG206305ms PASS. No new whole qualification.",
-      "scope": "Preserve six physical light transforms plus source coat chest and generic NPC health-loss lesson; four whole quests remain IN_PROGRESS.",
-      "source_hook_observation": "Crystal and Canary define onTradeRequest locally but never register CALLBACK_ON_TRADE_REQUEST; their onSell quest hook is also not wired to source progression. When implementing intended tutorial sale, document conservative source repair: actual committed sale of >=1meat/ham with Trade1/Greet6 advances to7; no report-only grant. Existing source Service already buys exactly3577/3582 at2gp each.",
-      "source_sha256": "0893e67944b91900a4cc5fb2e803895f63b1b436ab8556aa78097e00559f94fb"
-    },
     "previous_publication": {
-      "commit": "6843827386ec154df1f27e805cc5383999b33baf",
+      "commit": "8a403f83fc313479fd859b4ffb7e04cdfa327372",
       "pushed": true,
       "remote_verified": true
     },
@@ -4573,7 +4542,7 @@
       },
       "review": "Read strict combined admission union, all unchanged conflicting Item weights, retained source observation guards, disjoint NPC producer prefixes, both new physical PG contracts and generated input witnesses. All three PG cases, 4callbackunits,15profiles,9authoring,actual15case/776creatureprey,check/strictClippy3crates,123content,5repository andpinchecks pass; no blocking finding."
     },
-    "updated_at": "2026-11-07T06:44:22.010812+00:00"
+    "updated_at": "2026-11-07T07:23:51.757036+00:00"
   },
   "counts": {
     "scope_total": 22,
@@ -4584,7 +4553,7 @@
   },
   "historical_inventory": {
     "snapshot": "c5cdcd6ae:qlane-meta/questpc3/QUEST-STATUS.json",
-    "scope": "R–S; migrations1040–1059; no new commands/capabilities",
+    "scope": "R\u2013S; migrations1040\u20131059; no new commands/capabilities",
     "counts": {
       "inventory": 56,
       "qualified": 19,
@@ -5115,7 +5084,7 @@
         ]
       }
     ],
-    "note": "Other original R–S mechanisms belong to other split lanes. Do not reopen finished entries."
+    "note": "Other original R\u2013S mechanisms belong to other split lanes. Do not reopen finished entries."
   },
   "phase": "AUTHORING",
   "quests": [
@@ -5385,6 +5354,6 @@
       "scope_disposition": "Other world-change lanes per current owner; preserve inherited qualification."
     }
   ],
-  "scope": "L4 per LANE-L4.json and QSPLIT-PLAN.md; skip other lanes and world-change owners. All shared features required by the five owned quests are this lane’s implementation responsibility.",
+  "scope": "L4 per LANE-L4.json and QSPLIT-PLAN.md; skip other lanes and world-change owners. All shared features required by the five owned quests are this lane\u2019s implementation responsibility.",
   "task_id": "questpc3-L4"
 }

@@ -3,9 +3,13 @@ use super::super::connection::FreshAdmissionAuthority;
 use super::*;
 use crate::durability::item_transfer::ItemWeightLookup;
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
-use crate::durability::quest_world_callback::{CarriedUseContext, QuestWorldContext};
+use crate::durability::quest_world_callback::{
+    CarriedTargetContext, CarriedUseContext, QuestWorldContext,
+};
 use crate::foundation::{CommandId, CommandRef};
+use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::world_callbacks::{Position, Trigger};
+use oteryn_protocol_oteryn::world_object::WorldObjectTarget;
 
 #[derive(Clone)]
 pub(in crate::gameplay_transport) struct Pending {
@@ -18,8 +22,8 @@ pub(in crate::gameplay_transport) struct Pending {
     fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
 }
 
-fn selection(source: &UseSource) -> Option<Vec<u8>> {
-    match source {
+fn selection(source: &UseSource, target: Option<&WorldObjectTarget>) -> Option<Vec<u8>> {
+    let selection = match source {
         UseSource::Definition(definition) => {
             let mut bytes = vec![0];
             bytes.extend_from_slice(&definition.get().to_be_bytes());
@@ -31,6 +35,17 @@ fn selection(source: &UseSource) -> Option<Vec<u8>> {
             Some(bytes)
         }
         _ => None,
+    }?;
+    if let Some(target) = target {
+        let mut digest = Sha256::new();
+        digest.update(b"oteryn:carried-world-target-intent:v1\0");
+        digest.update(&selection);
+        digest.update(u16::try_from(target.placement.len()).ok()?.to_be_bytes());
+        digest.update(&target.placement);
+        digest.update(target.expected_revision.to_be_bytes());
+        Some(digest.finalize().to_vec())
+    } else {
+        Some(selection)
     }
 }
 
@@ -68,7 +83,53 @@ pub(super) async fn use_source(
     source: &UseSource,
 ) -> Option<Result<UseDisposition, UseDisposition>> {
     admission.quest_catalogue.as_ref()?;
-    run(admission, actor, command, source).await
+    run(admission, actor, command, source, None).await
+}
+
+pub(super) async fn use_on_world(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    source: ItemKey,
+    target: &WorldObjectTarget,
+) -> Option<UseOutcome> {
+    admission.quest_catalogue.as_ref()?;
+    let result = run(
+        admission,
+        actor,
+        command,
+        &UseSource::Handle(source),
+        Some(target),
+    )
+    .await?;
+    Some(outcome(result))
+}
+
+pub(in crate::gameplay_transport) async fn use_definition_on_world(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    definition: std::num::NonZeroU32,
+    target: &WorldObjectTarget,
+) -> Option<UseOutcome> {
+    admission.quest_catalogue.as_ref()?;
+    let result = run(
+        admission,
+        actor,
+        command,
+        &UseSource::Definition(definition),
+        Some(target),
+    )
+    .await?;
+    Some(outcome(result))
+}
+
+fn outcome(result: Result<UseDisposition, UseDisposition>) -> UseOutcome {
+    let (Ok(disposition) | Err(disposition)) = result;
+    UseOutcome {
+        disposition,
+        ..UseOutcome::rejected()
+    }
 }
 
 async fn run(
@@ -76,9 +137,10 @@ async fn run(
     actor: ExactActorRef,
     command: UseCommand,
     source: &UseSource,
+    target: Option<&WorldObjectTarget>,
 ) -> Option<Result<UseDisposition, UseDisposition>> {
-    let intent = selection(source)?;
-    let result = run_inner(admission, actor, command, source, intent).await;
+    let intent = selection(source, target)?;
+    let result = run_inner(admission, actor, command, source, intent, target).await;
     match result {
         Ok(value) => value.map(Ok),
         Err(error) => Some(Err(error)),
@@ -91,7 +153,13 @@ async fn run_inner(
     command: UseCommand,
     source: &UseSource,
     intent: Vec<u8>,
+    target: Option<&WorldObjectTarget>,
 ) -> Result<Option<UseDisposition>, UseDisposition> {
+    let trigger = if target.is_some() {
+        Trigger::UseCarriedOnTarget
+    } else {
+        Trigger::UseCarried
+    };
     let command_ref = CommandRef::new(
         command.game_session_id,
         CommandId::new(command.command_id).map_err(|_| UseDisposition::Rejected)?,
@@ -170,7 +238,7 @@ async fn run_inner(
     };
     if wanted.as_ref().is_some_and(|wanted| {
         !callbacks.iter().any(|callback| {
-            callback.trigger == Trigger::UseCarried
+            callback.trigger == trigger
                 && callback
                     .item_on_target
                     .as_ref()
@@ -213,7 +281,7 @@ async fn run_inner(
     let candidates: Vec<_> = callbacks
         .iter()
         .filter(|callback| {
-            callback.trigger == Trigger::UseCarried
+            callback.trigger == trigger
                 && callback
                     .item_on_target
                     .as_ref()
@@ -223,6 +291,32 @@ async fn run_inner(
     if candidates.is_empty() {
         return Ok(None);
     }
+    let map = admission.bundle_map().ok_or(UseDisposition::Rejected)?;
+    let target = if let Some(target) = target {
+        let source = super::super::world_map::MapViewSource {
+            overlay: &map.overlay,
+            facts: &map.facts,
+            content_generation: admission
+                .active_generation
+                .ok_or(UseDisposition::Rejected)?
+                .identity()
+                .client_artifact_digest(),
+            reset_epoch: admission.reset_epoch,
+        };
+        let resolved = super::super::world_map::resolve_map_target(&source, target, |_| None::<()>)
+            .map_err(|_| UseDisposition::StaleState)?;
+        Some(CarriedTargetContext {
+            position: Position {
+                x: resolved.pos.x,
+                y: resolved.pos.y,
+                floor: resolved.pos.floor,
+            },
+            placement_key: resolved.placement_key,
+            object_revision: target.expected_revision,
+        })
+    } else {
+        None
+    };
     // Ordinary consumables do not require quest admission. Only an authored
     // carried source enters the Character quest owner and its stronger fence.
     let fence = admission
@@ -257,7 +351,9 @@ async fn run_inner(
         .tracks()
         .clone();
     let mut eligible = candidates.into_iter().filter(|callback| {
-        callback.storage.iter().all(|storage| {
+        target.as_ref().is_none_or(|target| {
+            super::super::quest_callbacks::matches(map, callback, target.placement_key)
+        }) && callback.storage.iter().all(|storage| {
             (storage.minimum..=storage.maximum)
                 .contains(&tracks.get(&storage.track).copied().unwrap_or(-1))
         })
@@ -291,6 +387,21 @@ async fn run_inner(
             .checked_neg()
             .ok_or(UseDisposition::Rejected)?,
     };
+    if let Some(target) = &target {
+        let at = crate::map::overlay::TilePos {
+            x: actor_position.x,
+            y: actor_position.y,
+            floor: actor_position.floor,
+        };
+        let to = crate::map::overlay::TilePos {
+            x: target.position.x,
+            y: target.position.y,
+            floor: target.position.floor,
+        };
+        if !super::super::map_door::reachable(at, to) {
+            return Err(UseDisposition::TooFar);
+        }
+    }
     let recorded = admission
         .world_clock_utc_ms()
         .ok_or(UseDisposition::Rejected)?;
@@ -301,10 +412,17 @@ async fn run_inner(
     let minute = crate::foundation::world_time::tibian_minute(0, recorded)
         .ok_or(UseDisposition::Rejected)?;
     if !rule.actor_region.contains(actor_position) || !rule.time_window.contains(minute) {
+        if let Some(message) = &callback.failure_message {
+            admission
+                .states
+                .chat
+                .push_quest_feedback(command.game_session_id, message);
+        }
         return Err(UseDisposition::NotPossible);
     }
     let context = QuestWorldContext {
         carried: Some(CarriedUseContext {
+            target,
             source: instance,
             actor_position,
             recorded_utc_ms: recorded,
@@ -387,6 +505,17 @@ async fn commit(
         return UseDisposition::StaleState;
     }
     if fresh {
+        if let Some(target) = pending
+            .context
+            .carried
+            .as_ref()
+            .and_then(|carried| carried.target.as_ref())
+            && !admission.bundle_map().is_some_and(|map| {
+                map.facts.object_revision(target.placement_key) == target.object_revision
+            })
+        {
+            return UseDisposition::StaleState;
+        }
         let Some(gate) = states
             .item_uses
             .gate(&runtime, actor, command.game_session_id)
