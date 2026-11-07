@@ -6848,7 +6848,7 @@
       "remote_verified": true
     },
     "flame_native_batch_22": {
-      "status": "UNWIRED_METADATA_COMPILED_WIP",
+      "status": "COMPILED_RED_WIP_CHECKPOINT",
       "previous_pushed_head": "7d4378886272ae7306c3afd0a20f953fabe36106",
       "metadata": "content/quests/native-counterparts.json",
       "records": 8,
@@ -6856,7 +6856,23 @@
       "compilation": "RustunchangedfromallGREEN7d4378886; metadata notloadedyet. Do notclaimruntimeimplemented.",
       "next": "Pushreviewablecompiledmetadatacheckpoint, author5actualPGcomposedflame/gatecases RED, wire genericclosed sparse metadata loader withoutrewritinggeneratedstatecallbacks, all5PGGREEN+source/frozen/security/compilerchecks thenpush",
       "next_own_sql": 1259,
-      "whole_entries_remaining": 17
+      "whole_entries_remaining": 17,
+      "metadata_checkpoint_pushed_head": "412600ba4f240d5601bd4379b4712dbafa9db869",
+      "metadata_checkpoint_remote_verified": true,
+      "push_retry": "Initialpushremote rejected(failed), freshfetchprovedremoteunchanged7d4378886, immediateFFretrysucceeded412600ba4at12:49UTC; noforce/rebase",
+      "red_log": "/tmp/questpc4-native-flames-red.log",
+      "red_session": 42783,
+      "tests": "5composedcases missinglast/missingmiddle/all/unordered/repeat+replay. EveryflagactualSTEP, sealed fixtureonlyrelocation betweenoriginalnativepockets, noSQLflags.",
+      "implementation": "Sparsemetadata file stillunloaded; afteractualPGRED wireclosedgenerickeyedbinding/presentation loader, preservegeneratedoriginalstatecallbacks andlegalterminalbounds.",
+      "red": {
+        "version": "18.6",
+        "seconds": 56.58,
+        "marker": "POSTGRES_DATABASE_READY l6_native_flames",
+        "actual": "firstliteralnativeSTEP leavesflameflag-1",
+        "expected": "flameflag1 andblue13feedback",
+        "log": "/tmp/questpc4-native-flames-red.log",
+        "compiled": "4m52s"
+      }
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",
