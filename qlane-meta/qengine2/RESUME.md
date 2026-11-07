@@ -821,3 +821,10 @@ families, then assertion SQL failed because provenance lives on receipts, not
 unlock facts. Current exact redpoint: column content_revision does not exist.
 Fix query + starter-base expectations and rerun focused PG. Stock taming cases
 remain running; no qualification claimed for unfinished assertions.
+
+Provenance query now joins immutable receipts through the fact FK; expected
+new facts exclude bases already supplied to both sexes by starter content.
+Code compiles. Five source acquisition cases now reach exact selected facts
+and source provenance, then fail a transport codec with Malformed. Contextual
+replay/appearance diagnostics are running; no production admission was relaxed.
+Three retained stock taming cases pass again against131outfits/201nativegrants.

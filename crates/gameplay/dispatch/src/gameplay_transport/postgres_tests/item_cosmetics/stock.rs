@@ -1,5 +1,6 @@
 //! Stock acquisition proof; source choices are interpreted by the production item owner.
 use super::*;
+use crate::domain::appearance::{AppearanceContent, Sex};
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
 use oteryn_gameplay_items::item_cosmetics::{self, GrantKind};
 use std::num::NonZeroU32;
@@ -60,6 +61,30 @@ pub(super) async fn random_outfit(
         id(71),
     )
     .ok_or("selected source choice")?;
+    let content = owner
+        .active_generation
+        .and_then(crate::content::ActiveGeneration::native_gameplay)
+        .and_then(|native| native.cosmetics())
+        .ok_or("active cosmetics")?;
+    let prior_facts: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM game_account_appearance_unlocks")
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(prior_facts, 0, "fresh account has no earned cosmetic facts");
+    let mut expected = Vec::new();
+    for key in &selected.grants {
+        let grant = item_cosmetics::resolve(catalogue, content, key).map_err(debug)?;
+        // A source choice includes the base, but a base already supplied to both
+        // sexes by the starter catalogue needs no new immutable earned fact.
+        if grant.kind == GrantKind::Outfit
+            && content.outfit_is_starter(&grant.cosmetic_key, Sex::Female)
+            && content.outfit_is_starter(&grant.cosmetic_key, Sex::Male)
+        {
+            continue;
+        }
+        expected.push(key.clone());
+    }
+    expected.sort();
     let payload = encode_item_use_intent(&UseIntent {
         target: UseTarget::Item(std::num::NonZeroU64::new(1).ok_or("handle")?),
         use_with: None,
@@ -81,25 +106,21 @@ pub(super) async fn random_outfit(
         UseDisposition::Committed,
         "stock addon-doll source grants must be admitted"
     );
-    let grants: Vec<(String, String)> = sqlx::query_as(
-        "SELECT unlock_key,content_revision FROM game_account_appearance_unlocks ORDER BY unlock_key",
+    let grants: Vec<(String, String, String)> = sqlx::query_as(
+        "SELECT f.unlock_key,r.content_revision,r.source_kind FROM game_account_appearance_unlocks f JOIN game_account_appearance_unlock_receipts r USING(grant_occurrence_id,account_id,unlock_key) ORDER BY f.unlock_key",
     ).fetch_all(&h.pool).await?;
-    let keys: Vec<_> = grants.iter().map(|(key, _)| key.clone()).collect();
-    let mut expected = selected.grants.clone();
-    expected.sort();
+    let keys: Vec<_> = grants.iter().map(|(key, _, _)| key.clone()).collect();
     assert_eq!(
         keys, expected,
         "the exact selected source outcome, without mixing draws"
     );
-    assert!(
-        grants
-            .iter()
-            .all(|(_, provenance)| provenance == item_cosmetics::PROVENANCE)
-    );
+    assert!(grants.iter().all(
+        |(_, provenance, kind)| provenance == item_cosmetics::PROVENANCE && kind == "item_action"
+    ));
     let addon = catalogue
         .grants
         .iter()
-        .find(|g| keys.contains(&g.key) && g.kind == GrantKind::Outfit)
+        .find(|g| selected.grants.contains(&g.key) && g.kind == GrantKind::Outfit)
         .ok_or("source base")?;
     let observation = owner
         .appearance_observation(
@@ -129,7 +150,9 @@ pub(super) async fn random_outfit(
         mount_key: None,
     };
     let (next, replayed, _) =
-        super::super::rust_lottery::exchange(owner, admitted, command, &actual, None, None).await?;
+        super::super::rust_lottery::exchange(owner, admitted, command, &actual, None, None)
+            .await
+            .map_err(|e| format!("literal cosmetic replay: {e}"))?;
     admitted = next;
     assert_eq!(replayed, UseDisposition::Committed);
     let consumed: i64 =
@@ -157,11 +180,19 @@ pub(super) async fn random_outfit(
         &mut admitted,
         command,
         25,
-        change.encode().map_err(debug)?,
+        change.encode().map_err(|e| {
+            format!(
+                "appearance encode root={} prior={:?}: {e:?}",
+                change.expected_root_revision, change.prior
+            )
+        })?,
     )
-    .await?;
+    .await
+    .map_err(|e| format!("appearance wire: {e}"))?;
+    assert!(admitted.continuity.selected_capabilities.contains(25));
     assert!(matches!(
-        oteryn_protocol_oteryn::appearance::ChangeResult::decode(&result).map_err(debug)?,
+        oteryn_protocol_oteryn::appearance::ChangeResult::decode(&result)
+            .map_err(|e| format!("appearance result {result:?}: {e:?}"))?,
         oteryn_protocol_oteryn::appearance::ChangeResult::Committed(_)
     ));
     Ok(())
