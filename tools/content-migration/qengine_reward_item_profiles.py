@@ -41,6 +41,8 @@ def capture(root=ROOT):
         if r['definition']['identity']['key'] in keys}
     if definitions.keys()!=keys:
         raise ValueError('QENGINE_REWARD_ITEM_CANONICAL_SET')
+    admitted={r['production_definition']['production_key']:r
+              for r in json.loads((root/PROFILE).read_bytes())['records']}
     records=[]
     for item_id in sorted(IDS):
         node=xml[item_id]
@@ -56,6 +58,16 @@ def capture(root=ROOT):
             raise ValueError('QENGINE_REWARD_ITEM_FLUID_OWNER_REQUIRED')
         record=source.profile(item_id,node,objects[item_id],physical[item_id],bindings,None)
         definition=definitions[f'oteryn:item.tibia.i{item_id}']
+        # Accepted canonical weights outrank donor hypotheses. These two exact
+        # conflicts are pinned and checked, rather than admitting arbitrary drift.
+        weights = {23677: (2700, 200), 34210: (6660, 6659)}
+        if item_id in weights:
+            canonical_weight, source_weight = weights[item_id]
+            accepted_weight = definition['semantics']['physical']['value']['weight']
+            donor_weight = record['semantics']['physical']['value']['weight']
+            if accepted_weight != {'state': 'KNOWN', 'value': canonical_weight} or donor_weight != {'state': 'KNOWN', 'value': source_weight}:
+                raise ValueError('QENGINE_REWARD_ITEM_WEIGHT_PRECEDENCE_DRIFT')
+            record['semantics']['physical']['value']['weight'] = accepted_weight
         for group in ('physical','stack','container'):
             if accepted.known_conflict(definition['semantics'][group],record['semantics'][group]):
                 raise ValueError('QENGINE_REWARD_ITEM_CANONICAL_CONFLICT:'+group)
@@ -64,6 +76,13 @@ def capture(root=ROOT):
         if record['admission']['legal_destinations']!=['CharacterInventory','Ground']:
             raise ValueError('QENGINE_REWARD_ITEM_NOT_PORTABLE')
         record['semantics']=accepted.accepted_first(definition['semantics'],record['semantics'])
+        prior=admitted.get(f'oteryn:item.tibia.i{item_id}')
+        if prior is not None:
+            # The native shell carries accepted readability facts absent from
+            # this XML importer. Physical and equipment facts still come from
+            # their canonical definitions and source qualification above.
+            record['semantics']['readable_writeable']=accepted.accepted_first(
+                prior['semantics']['readable_writeable'],record['semantics']['readable_writeable'])
         records.append(record)
     records=source.bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,IDS)['records']
     return {'schema':'OTERYN_QENGINE_REWARD_ITEM_PROFILES/v1',
@@ -82,8 +101,19 @@ def admit(root,generated,profile_path,manifest_path,order,canonical):
     for record in packet['records']:
         key=record['production_definition']['production_key']
         if key in present:
-            if present[key]!=record:
+            prior = present[key]
+            if prior == record:
+                continue
+            # A source-qualified recipe can promote an inert canonical shell;
+            # never replace an already materializable provider or known facts.
+            if (prior['admission'] != {'materializable': False,
+                    'stack_class': record['admission']['stack_class'],
+                    'legal_destinations': ['Ground']}
+                    or prior['production_definition'] != record['production_definition']
+                    or accepted.accepted_first(prior['semantics'], record['semantics'])
+                       != record['semantics']):
                 raise ValueError('QENGINE_REWARD_ITEM_NATIVE_CONFLICT:'+key)
+            document['records'][document['records'].index(prior)] = record
         else:
             document['records'].append(record)
     document['records'].sort(key=order)

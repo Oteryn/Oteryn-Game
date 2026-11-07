@@ -1,5 +1,6 @@
 """L2 source hand-ins must survive ordinary shared-registry regeneration."""
 import json
+import re
 import unittest
 
 import qengine_rewards as q
@@ -13,6 +14,74 @@ class LaneL2Rewards(unittest.TestCase):
             c['key'].removeprefix('oteryn:quest-reward/'): c
             for c in json.loads(cls.outputs['content/quests/shared-reward-callbacks.json'])['callbacks']
         }
+
+    def test_all_jorge_souvenirs_match_the_pinned_menu(self):
+        donor = q.donor_inputs()['data-global/npc/jorge.lua'].decode()
+        expected = {(name.lower(), int(item)) for name, item in
+                    re.findall(r'\{ name = "([^"]+)", id = (\d+) \}', donor)}
+        actual = {(c['keywords'][0], int(c['give']['item'].rsplit('i', 1)[1]))
+                  for c in self.callbacks.values() if c['npc'] == 'oteryn:npc.jorge'}
+        self.assertEqual(len(expected), 37)
+        self.assertEqual(actual, expected)
+        for c in self.callbacks.values():
+            if c['npc'] == 'oteryn:npc.jorge':
+                self.assertTrue(c['repeatable'])
+                self.assertEqual(c['take'], [{'item': 'oteryn:item.tibia.i19083', 'count': 20}])
+                self.assertEqual(c['give']['count'], 1)
+
+    def test_souvenir_profiles_preserve_accepted_weights(self):
+        profiles = json.loads(self.outputs['content/items/definitions/spell-native-profiles.json'])
+        by_key = {r['production_definition']['production_key']: r for r in profiles['records']}
+        for item, weight in [(23677, 2700), (34210, 6660)]:
+            semantics = by_key[f'oteryn:item.tibia.i{item}']['semantics']
+            self.assertEqual(semantics['physical']['value']['weight']['value'], weight)
+
+    def test_promoted_souvenirs_keep_readability_and_equipment_facts(self):
+        profiles = json.loads(self.outputs['content/items/definitions/spell-native-profiles.json'])
+        by_key = {r['production_definition']['production_key']: r for r in profiles['records']}
+        for item in (31266, 31268):
+            row = by_key[f'oteryn:item.tibia.i{item}']
+            self.assertTrue(row['admission']['materializable'])
+            self.assertEqual(row['admission']['legal_destinations'], ['CharacterInventory', 'Ground'])
+            text = row['semantics']['readable_writeable']['value']
+            self.assertEqual(text['max_text_length']['value'], 99)
+            self.assertTrue(text['readable']['value'])
+        equipment = by_key['oteryn:item.tibia.i31268']['semantics']['equipment']['value']
+        self.assertEqual(equipment['patterns']['value'][0]['primary_slot']['value'], 'AMULET')
+
+    def test_souvenir_admission_cannot_replace_a_live_native_provider(self):
+        import qengine_reward_item_profiles as items
+        generated = dict(self.outputs)
+        profiles = json.loads(generated[items.PROFILE])
+        row = next(r for r in profiles['records']
+                   if r['production_definition']['production_key'] == 'oteryn:item.tibia.i31266')
+        row['attributes']['speed_bonus'] = 1
+        generated[items.PROFILE] = q.encoded(profiles)
+        with self.assertRaisesRegex(ValueError, 'QENGINE_REWARD_ITEM_NATIVE_CONFLICT'):
+            items.admit(q.ROOT, generated, items.PROFILE, 'content/spells.manifest.json',
+                        lambda r: r['production_definition']['production_key'], q.encoded)
+
+    def test_native_manifest_uses_the_repository_canonical_serializer(self):
+        import register_spell_families as native
+        raw = self.outputs['content/spells.manifest.json']
+        self.assertEqual(raw, native.spell_import.canonical_bytes(json.loads(raw)))
+
+    def test_native_weight_cannot_override_the_accepted_canonical_weight(self):
+        from pathlib import Path
+        from unittest.mock import patch
+        import qengine_reward_item_profiles as items
+        profiles = json.loads(self.outputs[items.PROFILE])
+        row = next(r for r in profiles['records']
+                   if r['production_definition']['production_key'] == 'oteryn:item.tibia.i23677')
+        row['semantics']['physical']['value']['weight']['value'] = 1
+        original = Path.read_bytes
+        def read(path):
+            return q.encoded(profiles) if path == q.ROOT / items.PROFILE else original(path)
+        with patch.object(Path, 'read_bytes', read):
+            packet = items.capture()
+        record = next(r for r in packet['records']
+                      if r['production_definition']['production_key'] == 'oteryn:item.tibia.i23677')
+        self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 2700)
 
     def test_sam_kroox_opens_both_source_tracks_without_minting_armor(self):
         callback = self.callbacks['sam-kroox']

@@ -75,9 +75,13 @@ receipt track stays at `-1` for each purchase. The carried-token cost admits eac
 purchase. A repeat's claim key binds the recipe, session and command ordinal;
 the database proves that identity against its same-transaction consumption and
 quest receipt. Ordinary once-only callbacks retain their recipe claim identity.
-This composition proves the repeat mechanism; qualification of Hunting for
-Tokens also requires the remaining souvenir menu.
-
+The complete 37-souvenir menu is parsed from the pinned Jorge table, with
+per-recipe file, line and SHA citations. Three PostgreSQL shards drive every
+recipe through one admitted player's NPC conversation and fenced item owner,
+including exact-command replay and insufficient-token refusal. The Abacus
+case additionally exercises a second paid occurrence. The native importer
+preserves accepted souvenir weights, readability and equipment facts when
+promoting inert canonical profiles.
 L1 adds Warmaster Serpent/Tribal Crest hand-ins (Cael), Wayfarer Old Cape/Sedge
 Hat hand-ins (Cranky Lizard Crone), and Yalaharian base/side-exclusive addons.
 Palimuth keeps the Vampiric Crest: this is `present`, never `take` plus a new MINT.

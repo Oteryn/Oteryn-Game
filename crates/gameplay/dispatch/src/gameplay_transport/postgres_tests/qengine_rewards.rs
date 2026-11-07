@@ -137,6 +137,19 @@ fn questl2_repeatable_token_exchange() -> TestResult {
     scenario("qengine-rewards-l2-token-abacus")
 }
 
+#[test]
+fn questl2_token_menu_first_thirteen() -> TestResult {
+    scenario("qengine-rewards-l2-token-menu-0")
+}
+#[test]
+fn questl2_token_menu_middle_thirteen() -> TestResult {
+    scenario("qengine-rewards-l2-token-menu-1")
+}
+#[test]
+fn questl2_token_menu_last_eleven() -> TestResult {
+    scenario("qengine-rewards-l2-token-menu-2")
+}
+
 #[path = "qengine_rewards/atomic_tracks.rs"]
 mod atomic_tracks;
 #[path = "qengine_rewards/repeatable.rs"]
@@ -208,7 +221,7 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l1-wayfarer-hat" => &["hat"],
         "hallowed-holy-water" => &["holy water"],
         "sam-backpack" => &["old backpack"],
-        "token-abacus" => &["souvenir"],
+        key if key.starts_with("token-") => &["souvenir"],
         key if key.starts_with("ape-") || key.starts_with("thieves-") => &["mission"],
         "deepling-helmet" => &[
             "flou", "explain", "yes", "no", "yes", "yes", "yes", "helmet",
@@ -453,12 +466,20 @@ pub(super) async fn seed(
         completes: false,
         experience: None,
     }];
-    transitions.push(
-        canonical
-            .transition(&callback.key)
-            .cloned()
-            .ok_or("reward transition")?,
-    );
+    // Keep every recipe sharing these exact quest predicates in one stable
+    // definition from the initial fixture write through the whole menu journey.
+    // Swapping catalogues after a write correctly refuses RevisionMismatch.
+    for recipe in oteryn_gameplay_quests::quest::reward_callbacks::load()?
+        .into_iter()
+        .filter(|recipe| recipe.quest == callback.quest && recipe.storage == callback.storage)
+    {
+        transitions.push(
+            canonical
+                .transition(&recipe.key)
+                .cloned()
+                .ok_or("reward transition")?,
+        );
+    }
     let catalogue = Arc::new(
         QuestStateCatalogue::new(canonical.content_revision(), tracks, transitions)
             .map_err(debug)?,
@@ -655,6 +676,7 @@ pub(super) async fn exercise(
         return atomic_tracks::exercise(owner, admitted, h).await;
     }
     let key = match name {
+        name if name.starts_with("qengine-rewards-l2-token-menu-") => "token-abacus",
         "qengine-rewards-l1-warmaster-tribal" => "l1-warmaster-tribal",
         "qengine-rewards-l1-wayfarer-hat" => "l1-wayfarer-hat",
         "qengine-rewards-l1-yalaharian-base-palimuth"
@@ -1089,6 +1111,9 @@ pub(super) async fn exercise(
     }
     if key == "token-abacus" {
         repeatable::exercise(owner, admitted, h, npc, &callback).await?;
+        if let Some(part) = name.strip_prefix("qengine-rewards-l2-token-menu-") {
+            repeatable::menu(owner, admitted, h, npc, part.parse()?).await?;
+        }
     }
     Ok(())
 }

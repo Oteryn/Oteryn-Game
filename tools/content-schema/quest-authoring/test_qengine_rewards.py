@@ -55,13 +55,13 @@ class QuestRewards(unittest.TestCase):
 
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
-        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith('l1-')},
-                         {'pirate-sabre', 'knight-sword', 'deepling-helmet', 'hallowed-holy-water', 'outfox-helmet', 'sam-backpack',
-                          'sam-kroox', 'token-abacus',
-                          *{'ape-' + name for name in ('moss', 'syrup', 'parchment', 'egg', 'mushroom', 'hair')},
-                          *{'thieves-' + name for name in ('tusks', 'vase', 'invitation', 'bridge', 'goblet', 'fish', 'letter')}})
+        original = {c['key'].split('/')[-1] for c in callbacks
+                    if not c['key'].split('/')[-1].startswith(('l1-', 'token-', 'ape-', 'thieves-'))
+                    and c['key'].split('/')[-1] != 'sam-kroox'}
+        self.assertEqual(original, {'pirate-sabre', 'knight-sword', 'deepling-helmet',
+                                   'hallowed-holy-water', 'outfox-helmet', 'sam-backpack'})
         self.assertEqual(sum(c['outfit'] is not None for c in callbacks),11)
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),18)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),54)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 

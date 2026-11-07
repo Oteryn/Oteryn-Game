@@ -818,10 +818,10 @@ async fn wardrobe(
         storage: callback.storage.clone(),
         take: vec![],
         present: vec![],
+        repeatable: false,
         give: None,
         outfit: Some(reward.clone()),
         achievement: None,
-        repeatable: false,
         reply: vec![],
         sources: vec![],
     };
