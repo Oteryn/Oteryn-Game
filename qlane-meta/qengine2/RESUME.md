@@ -624,3 +624,27 @@ check1m03s;strict clippy46.09s;fmt/reproducers;pin-refresh/check24ab unchanged;
 123content2.05s;5world45.13s passed. All slice checks green; commit/push now.
 Next proposed source programmes: Decaying Defender, Revenant, Rift Warrior;
 read chosen stages and reuse original parent/boss ownership, no parent redo.
+
+L1-13 AUTHORING: Decaying Defender/Revenant/Rift Warrior. Actual PG RED3failed
+119.36s in batch13-red2.log: Decaying115.012835105s,Revenant75.866553285s,
+Rift43.496484156s. First two reach new missing-addon bindings only AFTER the
+original parent base reward flow; no base entitlement seeding. Original parent
+tests remain unchanged via default scenario(false), optional new variants stop
+after testing their earned base plus our addons. Soul War's original native XP/
+captured-death consumer seam is reused without claiming new physical corpse or
+instance qualification. Native base account grants retain their original owners.
+Actual source accessory bits: Revenant skull34075=2 then bracelet34076=1;
+Decay43899=1 then43900=2. Cledwyn addons100tokens EACH; parent-completion base
+attestation is a documented chosen role. Full normal USE/NPC stories compiling;
+no new qualification yet. Counts36qualified/30unfinished/0blocked.
+L13 progress: Revenant whole source parent base plus carried accessories GREEN
+107.576753529s in batch13-green3.log. Rift exchanges green84.770133313s, but
+before qualification replace the provisional parent flag with a reusable read
+of existing game_character_quest_states.completed_character_revision. Add exact
+requires_completed_quests guard checked under the same Character root lock;
+no private parent track to wait for. New Rift PG assertion must RED on absent
+metadata before the engine change. Decaying EOF on first USE was the parent's
+protocol first_entry marker: runtime already positioned, new variant now aligns
+admitted marker/actor/fence. Parent variants use existing creation-sex-bound
+quest reward harness and normal starter bag initialization; no disabled guards.
+Current three-entry final qualification still active, counts36/30/0 unchanged.

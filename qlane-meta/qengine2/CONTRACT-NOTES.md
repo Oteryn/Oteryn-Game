@@ -231,3 +231,25 @@ writer for a stage refusal instead of generic legacy-dialogue fallthrough.
 Cyclops identity evidence: same Crystal9f data-global/npc/a_sweaty_cyclops.lua:1-14,
 SHA256bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a.
 The authored20+20trial is an owner-selected supplement, not a donor script claim.
+
+L13 endgame accessories: pinned Crystal9f9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d
+ data/scripts/actions/items/usable_outfit_items.lua:26-31 SHA256
+69b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37 binds
+Revenant skull34075 to native bit2 and bracelet34076 to bit1. Keep the chosen
+skull-before-bracelet sequence using those actual slot bits; do not swap the
+native encoding because the recipe calls its ordered steps first/second.
+Cursed wood43899 bit1 then darklight geode43900 bit2. Min250/Current Premium
+and original compatible native base facts precede consumption. Parent Soul War
+and Rotten Blood grant mechanisms and their account provenance remain unchanged.
+New PG variants compose at their earned native base reward checkpoint; the
+original parent cases retain all their assertions and historical-state checks.
+Rift Warrior: Cledwyn Lua:168-204 SHA256
+915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431 demands
+100silver tokens22516 for EACH addon, source looks845/846. Conservatively bind
+the chosen completed-Ferumbras base attestation to Cledwyn as an explicit role;
+his donor script itself only supplies addon exchanges. Parent completion remains
+read-only under the original Ferumbras quest owner; do not duplicate its world
+or boss mechanisms. Source NPC identities: flickering_soul.lua:1-6 SHA256
+67a704c084d2490ea37ad337d472a7f3075375f0a3a043b1a615be12d5ac2405;
+bloodshade_rotten.lua:1-6 SHA256
+153105638eeaa55321f4e30caf4f5796291c89329092b32b3d4e6d6f9103df7c.

@@ -2671,5 +2671,24 @@
       "Cave Explorer Outfits Quest": "95.757436472s success=true",
       "Fire-Fighter Outfits Quest": "95.848776751s success=true"
     }
+  },
+  "active_batch_l1_13": {
+    "status": "AUTHORING",
+    "entries": [
+      "Decaying Defender Outfits Quest",
+      "Revenant Outfits Quest",
+      "Rift Warrior Outfits Quest"
+    ],
+    "postgres_red": "/tmp/qengine2-batch13-red2.log;3failed119.36s; Decaying115.012835105s,Revenant75.866553285s,Rift43.496484156s actual PostgreSQL markers; missing actual addon/base bindings after original parent base flow",
+    "progress": "Revenant full actual parent base + carried accessories GREEN107.576753529s (batch13-green3); Rift source exchanges GREEN84.770133313s, but replacing provisional parent signal with generic read of existing quest_states completion before qualification. Decaying first carried USE EOF: fixed new test variant continuity to Positioned after its runtime already initialized position. All remain active until final checks/parent completion mechanism green.",
+    "assumptions": [
+      "Revenant ordered skull then bracelet uses actual source bits2 then1, not an invented slot1/slot2 encoding.",
+      "Cledwyn is the chosen parent-completion attestation desk for Rift base; actual donor NPC only grants addons. Parent completion is read-only and separately owned."
+    ],
+    "sources": [
+      "Crystal9f data/scripts/actions/items/usable_outfit_items.lua:26-31 SHA25669b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37",
+      "Crystal9f data-global/npc/cledwyn.lua:168-204 SHA256915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+    ],
+    "checks": "29Python33.514s;check1m03s;clippy1m27s/finaldispatch1m22s;10reward Rust units; source/placement reproducers pass. Pinrefresh/check and targeted content/world follow-ons in progress."
   }
 }
