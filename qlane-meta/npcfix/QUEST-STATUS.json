@@ -8294,7 +8294,8 @@
         }
       ]
     },
-    "followup": "Found legacy1096_npc_atomic_quest_effects.sql is still tracked and semantically duplicates1230. Remove1096, retain1230 byte unchanged; add1239 optional-fluid shape fix. Rebuild and focused PG checks required; do not claim registry finished until pushed."
+    "followup": "Found legacy1096_npc_atomic_quest_effects.sql is still tracked and semantically duplicates1230. Remove1096, retain1230 byte unchanged; add1239 optional-fluid shape fix. Rebuild and focused PG checks required; do not claim registry finished until pushed.",
+    "state": "1096_DUPLICATE_REMOVED_AND1239_ADDED_IN_WORKTREE; POST_MERGE_FULL_PG_PENDING"
   },
   "prepared_physical_batches": [
     {
@@ -8689,7 +8690,7 @@
     "cumulative_native_actors": 240
   },
   "active_shop_work": {
-    "state": "PG_RED626.52S; GENERIC_OPTIONAL_FLUID_FIX_AND_FIVE_PROFILES_IN_PROGRESS; NO_PROMOTION",
+    "state": "FIVE_PORTABLE_PROFILES_AND_OPTIONAL_FLUID_FIX_RESTORED_AFTER_MAIN; FULL_DEPENDENT_PG_PENDING; NO_PROMOTION",
     "entries": [
       "Dixi",
       "Lubo",
@@ -8764,6 +8765,77 @@
       "mechanism": "bound_ground.record projects pinned official ground and preserves exact existing canonical Item binding; Summer.outputs still rejects Item-bound ground",
       "focused_ground_tests": 17,
       "duration_seconds": 34.872
+    },
+    "extended_ground_unit": {
+      "tests": 5,
+      "seconds": 47.178,
+      "result": "PASS; producer not materialized"
     }
+  },
+  "owner_validation_rule": {
+    "effective": "2026-11-07 owner full reverse-dependent tests before every push",
+    "roots": [
+      "oteryn-game-server",
+      "oteryn-gameplay-content",
+      "oteryn-gameplay-dispatch",
+      "oteryn-gameplay-durability",
+      "oteryn-gameplay-entities",
+      "oteryn-gameplay-npc",
+      "oteryn-gameplay-quests",
+      "oteryn-gameplay-social",
+      "oteryn-gameplay-world",
+      "oteryn-world-bundle-compiler"
+    ],
+    "crates": [
+      "oteryn-game-server",
+      "oteryn-gameplay-characters",
+      "oteryn-gameplay-combat",
+      "oteryn-gameplay-combat-rules",
+      "oteryn-gameplay-content",
+      "oteryn-gameplay-content-promotion",
+      "oteryn-gameplay-dispatch",
+      "oteryn-gameplay-durability",
+      "oteryn-gameplay-encounter-rules",
+      "oteryn-gameplay-encounters",
+      "oteryn-gameplay-entities",
+      "oteryn-gameplay-items",
+      "oteryn-gameplay-monster-ai",
+      "oteryn-gameplay-npc",
+      "oteryn-gameplay-progression",
+      "oteryn-gameplay-quests",
+      "oteryn-gameplay-social",
+      "oteryn-gameplay-spell",
+      "oteryn-gameplay-spell-rules",
+      "oteryn-gameplay-world",
+      "oteryn-world-bundle-compiler"
+    ],
+    "next_command": "cargo nextest run: all21 packages, PostgreSQL enabled, no fail-fast,2 test threads; after coherent repository regeneration",
+    "state": "PRE3020_RUN_SUPERSEDED_BY_OWNER_MERGE_INSTRUCTION; NOT_A_COMPLETE_PASS",
+    "main_commit": "bbb3e06d04875fc1e63f024b853194f7580cc875",
+    "local_merge": "838c481cb",
+    "last_push": "b12367d4e",
+    "compilation_resource_note": "Earlier focused rebuild failed signal9 SIGKILL while a heavy world pin compiler was active in16GiB. No GREEN claimed. Serialize regeneration and Rust builds; CARGO_BUILD_JOBS=1.",
+    "regeneration_log": "/tmp/npcfix-evidence/owner-main-regeneration.log",
+    "known_failures_to_group": [
+      "Cosmetic catalogue whole-catalogue mount grant composition: KeyError outfit_key (4-test Python suite completed,1error).",
+      "Six-NPC full-anchor ground fixture: Anaztassja2admitted/5captured;9other captured NPC anchors have no source tile."
+    ],
+    "superseded_run": {
+      "tests_selected": 7964,
+      "ignored_reported": 44,
+      "archive": "/tmp/npcfix-evidence/owner-pre-3020-partial",
+      "known_failure": "bundle_spawn_owner_tests::a_bundle_spawned_rat_killed_by_a_lethal_hit_respawns_on_the_owner_turn",
+      "reason": "Owner requires main1ae39c7fb9bef09c3cd50d16410374f4134b1676 now. Gracefully interrupted before source reconciliation; collect full tests again after merge."
+    }
+  },
+  "main_cosmetic_integration": {
+    "main_outfits_preserved": 14,
+    "main_mounts_preserved": 8,
+    "main_grant_targets_preserved": 49,
+    "quest_outfit_pairs_preserved": 62,
+    "legacy_quest_grants_preserved": 182,
+    "merged_outfits": 63,
+    "merged_grants": 229,
+    "main_palette_fallbacks_and_profile_preserved": true
   }
 }

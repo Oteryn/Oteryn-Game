@@ -513,6 +513,12 @@ def validate_record(record):
         import npcfix_ground
         import summer_ground
 
+        import npcfix_extended_ground
+
+        if record["provenance"]["source_item_id"] == 50820:
+            expected = next(row for row in npcfix_extended_ground.records()
+                            if row["provenance"]["source_item_id"] == 50820)
+            return [] if record == expected else ["full-anchor ground differs from its official source"]
         if record["provenance"]["source_item_id"] in npcfix_ground.IDS:
             expected = next(
                 row for row in npcfix_ground.records()

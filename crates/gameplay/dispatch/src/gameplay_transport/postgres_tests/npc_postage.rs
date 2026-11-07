@@ -240,7 +240,7 @@ fn scenario(keys: &[&str]) -> TestResult {
                             crate::content::ProjectV2ServiceOfferDirection::SellToPlayer => NpcTradeSide::Buy,
                             crate::content::ProjectV2ServiceOfferDirection::BuyFromPlayer => NpcTradeSide::Sell,
                         };
-                        let count = u32::from(offer.count.unwrap_or(1));
+                        let count = offer.count.unwrap_or(1);
                         let unit_price = u32::try_from(offer.unit_price)?;
                         let offer_index = window.offers.iter().position(|o|
                             o.item_definition_ref == reference && o.side == side

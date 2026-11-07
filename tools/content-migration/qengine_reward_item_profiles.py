@@ -22,8 +22,9 @@ PASSIVE_CELL_IDS = {1063, 1780, 1855, 1857, 1858, 1867, 1899, 2362, 2576, 2585,
                     2586, 2587, 2588, 2595, 3891, 4768, 4772, 4795, 5593, 6218,
                     6383, 8695, 9823, 14117, 14783, 15049, 15051, 15854, 17396,
                     19958, 19965, 20250, 21935, 27976}
+NPCFIX_SHOP_IDS = {48251, 48254, 48256, 48273, 48544}
 IDS = {133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701,
-       12599, 12601, 12803, 28792, 28793, 8746} | npcfix_rewards.ITEMS | PASSIVE_CELL_IDS
+       12599, 12601, 12803, 28792, 28793, 8746} | npcfix_rewards.ITEMS | PASSIVE_CELL_IDS | NPCFIX_SHOP_IDS
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'
