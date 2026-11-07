@@ -2577,5 +2577,22 @@
     "checks": "10Rust1.38s;27Python10.459s;check15s;clippy retry1m00s after safe inactive compiler-cache cleanup resolved disk full;fmt/reproducers/pin-refresh24ab unchanged",
     "next": "Continue next owned entries; all current code and generated data green and pushed.",
     "postgres_green": "/tmp/qengine2-batch11-green2.log;3passed157.67s"
+  },
+  "active_batch_l1_12": {
+    "status": "AUTHORING",
+    "entries": [
+      "Dragon Slayer Outfits Quest",
+      "Cave Explorer Outfits Quest",
+      "Fire-Fighter Outfits Quest"
+    ],
+    "engine_reuse": "questpc3 native kill engine commit5e72a3f0b0e16803bc5cd999298e4ec83f05eed9; no other-lane bindings imported",
+    "postgres_red": "/tmp/qengine2-batch12-red.log:3failed86.02s; Dragon43.246433792s,Cave43.632589177s,Fire42.764418081s; missing actual start bindings",
+    "progress": "Native engine all-feature check1m19s and strict all-target clippy3m05s passed;28Python22.738s passed. First full native-death PG run failed InvalidCreatureTarget (84.525934906s/85.373272012s plus Fire); corrected fixture installs stock native companion policies. Latest full stories add literal NPC replay and exact item consumption. Qualification still pending.",
+    "assumptions": [
+      "Fixed Crystal Spider Spike assignment and Lava Lurker fiery assignment for selected unspecified creature groups.",
+      "Gnomadness physical Gnomprona contact; source greeting establishes location.",
+      "Cave donor base1000 and addon2000/3000 prices preserved; selected min80."
+    ],
+    "evidence": "qlane-meta/qengine2/CONTRACT-NOTES.md L12"
   }
 }

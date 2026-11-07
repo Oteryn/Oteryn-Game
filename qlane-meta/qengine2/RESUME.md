@@ -585,3 +585,19 @@ L1-11 timed checkpoint: DreamWarrior/CitizenIssavi/Makeshift allactualPGRED /tmp
 
 L1-11 QUALIFIED: DreamWarrior88.225109935s,Issavi81.221030042s,Makeshift76.445057735s actualPG /tmp/qengine2-batch11-green2.log 3passed157.67s. Wholeprogramme sourceNPC/min250or100/Premium/read-onlyparents/5pomegranates+shield or actualtokenUSE/cost/replay/base+bothaddons/normalmask3. Additionalbase-ownedretry,second-addon-before-first andretainedinput checks pass. SQL1006unpredicatedbase23514guardnegative passesonbothzeroeffectbasecases. OldMageMalezeroeffectsex/exact-hat regression81.154574983sGREEN. Sharedminimum_level/requiredaddoncatalogue predicates andowned-neutralbaseone-shot(emptyquesteffects)complete; carriedone-shotaddonsneednoinventedprogressflag.10Rust1.38/27Python10.459/check15s/3crateclippyretry1m00/finaldispatch2m38/fmt/repro/pinrefresh+pincheck24ab allgreen;servercontent1232.54/world565.87. No newcodewhilefinalPGexecutedexceptstrongertests,thenall3reexecutedGREEN. Counts33QUAL/33UNFINISHED/0BLOCKED. Commit/pushnow.
 NextbatchNOTimplementedyet. PromisingownentriesDragonSlayer/CaveExplorer/FireFighterneedgenericreal-death questkillcounters (ours) andsourceNPCbindings; inspectexistinggrizzly kill capture/settlement/sourceadmission andotherlanesbeforewriting. Nativecurrentgrizzly_kills.rs settle()creditsGrizzly beforeordinarybody; publicPendingKillSettlementsourceproofavailable. Needreuseexistingkillowner ratherthaninvent testcounterwrites. No newPGcases/productionL12 yet. AlternativelaterIlluminatedrequiresauthoringmissingcanonicaloutfit/NPCfromsourceclient+separateSummercomparison; do notrepin9f orrecordmissingfactblocker. Keepallremainingactionable, no finalturnuntilscopefinished.
+
+L1-12 AUTHORING: native hunting trials for Dragon Slayer/Cave Explorer/Fire-Fighter.
+33/66 remain QUALIFIED; no new entry qualified yet. Actual PG RED3failed86.02s,
+markers43.246433792/43.632589177/42.764418081s in batch12-red.log. Reuse generic
+engine from questpc3 5e72a3f0b (native capture, existing queue, revision sequencer,
+frozen party/mission epoch checks), without other-lane bindings. NPC starts and
+counter-goal-gated reports authored; cave fees source1000/2000/3000. Fixed selected
+Crystal Spider and Lava Lurker assignments documented in CONTRACT-NOTES. Full
+native-death stories (no direct quest counter writes) compiling; not green yet.
+L12 checkpoint: engine check1m19s and strict clippy3m05s passed;28Python22.738s
+passed. Full PG first failed InvalidCreatureTarget84.525934906/85.373272012s:
+fixture lacked stock native companion policies. Corrected fixture installation,
+selected protocol capabilities and Current Premium registration; added exact
+material consumption and literal NPC replay. Full stories compiling again in
+/tmp/qengine2-batch12-green3.log. Production L12 work remains uncommitted until
+green; this checkpoint records progress only. Continue without ending the turn.

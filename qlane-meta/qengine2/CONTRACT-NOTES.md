@@ -199,3 +199,23 @@ base claims require an exact neutral target/unowned-base predicate under the
 existing account grant lock, with SQL1006 retaining all original proof arms.
 Carried addons use the existing one-shot account predicate and exact input/ingress
 proof without manufacturing quest progress flags.
+
+L12 native hunting trials (AUTHORING; not yet qualified): reuse generic native
+kill settlement from questpc3 commit5e72a3f0b0e16803bc5cd999298e4ec83f05eed9,
+without importing its other-lane quest bindings. Frozen native death eligibility,
+original party observation, occurrence identity, live lease and mission epoch
+checks use the existing bounded kill queue and durable revision sequencer.
+Dragon Slayer: selected20dragons +20dragon lords,10green/10red scales; base only.
+Cave Explorer: selected20Spike creatures is conservatively a fixed Crystal Spider
+assignment. Chosen level80 overrides source lower thresholds. Retain actual source
+prices1000base/2000first/3000second (5000both addons): Crystal9f
+9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d data-global/npc/gnommander.lua:75-97,
+SHA25662e3088421dd6f06c1decf2f2ce0c3c296d4a106b670cfa8927eb936e0bb69eb.
+Fire-Fighter: selected10fiery creatures is conservatively a fixed Lava Lurker
+assignment; Gnomadness is the physical Gnomprona qualification contact, as actually
+located in Gnomprona Gardens by the same pinned source npc/gnomadness.lua:102-105,
+SHA256e3411f8704927cc665340418f3b65fa40fdafa6d607364fde90827516b9f7279.
+These fixed trials are explicit authored rules, not claims of recovered donor
+outfit scripts. Firefighting axe39544 and portable flame39545 retain existing
+canonical identities and native profiles. NPC dialogue accepts trials before any
+counter credit; no direct counter writes are used in the positive PG stories.
