@@ -1,6 +1,6 @@
--- Port the bounded native operations from QENGINE2 e9d98947f without introducing
--- its unrelated participant owner. Existing reward, MINT, fee and custody proofs remain intact.
-CREATE FUNCTION game_quest_reward_effects_valid(
+-- QUESTPC8 extends the shared validator with closed shapes and elapsed-less-than.
+-- Shared participant and state-operation triggers remain installed unchanged.
+CREATE OR REPLACE FUNCTION game_quest_reward_effects_valid(
     v_plan JSONB, v_keys TEXT[], v_before BIGINT[], v_after BIGINT[]
 ) RETURNS BOOLEAN LANGUAGE plpgsql STABLE AS $$
 DECLARE
@@ -109,35 +109,9 @@ BEGIN
 EXCEPTION WHEN invalid_text_representation OR numeric_value_out_of_range THEN RETURN false;
 END $$;
 
-CREATE FUNCTION game_quest_reward_state_ops_complete() RETURNS trigger LANGUAGE plpgsql AS $$
-DECLARE v_receipt game_character_quest_receipts%ROWTYPE;
-BEGIN
-    -- Legacy plans omit state_ops; preserve all their installed proof arms and hashes.
-    IF NOT (NEW.plan ? 'state_ops') THEN RETURN NULL; END IF;
-    IF jsonb_typeof(NEW.plan->'state_ops') IS DISTINCT FROM 'array' THEN
-        RAISE EXCEPTION 'quest source operations must be an array' USING ERRCODE='23514';
-    END IF;
-    IF jsonb_array_length(NEW.plan->'state_ops')=0 THEN RETURN NULL; END IF;
-    SELECT * INTO v_receipt FROM game_character_quest_receipts WHERE character_id=NEW.character_id
-        AND cause_id=NEW.cause_id AND cause_ordinal=NEW.cause_ordinal AND transition_key=NEW.transition_key;
-    IF NOT FOUND OR v_receipt.cause_kind<>'command' OR v_receipt.quest_key IS DISTINCT FROM NEW.plan->>'quest'
-        OR NEW.plan->>'key' IS DISTINCT FROM NEW.transition_key
-        OR v_receipt.created_xact_id<>pg_current_xact_id() OR NEW.created_xact_id<>pg_current_xact_id()
-        OR NOT game_quest_reward_effects_valid(NEW.plan,v_receipt.track_keys,v_receipt.values_before,v_receipt.values_after) THEN
-        RAISE EXCEPTION 'quest source operations lack exact same-transaction effects' USING ERRCODE='23514';
-    END IF;
-    RETURN NULL;
-END $$;
-CREATE CONSTRAINT TRIGGER game_quest_reward_state_ops_complete AFTER INSERT ON game_quest_reward_sources
-    DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_quest_reward_state_ops_complete();
 DO $migration$
-DECLARE v_function TEXT;
 BEGIN
-    FOREACH v_function IN ARRAY ARRAY['game_quest_reward_effects_valid(jsonb,text[],bigint[],bigint[])',
-        'game_quest_reward_state_ops_complete()'] LOOP
-        EXECUTE format('ALTER FUNCTION %s SET search_path=pg_catalog,%I,pg_temp',v_function,current_schema());
-        EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC',v_function);
-    END LOOP;
+    EXECUTE format('ALTER FUNCTION game_quest_reward_effects_valid(JSONB,TEXT[],BIGINT[],BIGINT[]) SET search_path=pg_catalog,%I,pg_temp',current_schema());
 END $migration$;
-GRANT EXECUTE ON FUNCTION game_quest_reward_effects_valid(JSONB,TEXT[],BIGINT[],BIGINT[]) TO oteryn_game_runtime;
-GRANT EXECUTE ON FUNCTION game_quest_reward_effects_valid(JSONB,TEXT[],BIGINT[],BIGINT[]) TO oteryn_game_control;
+REVOKE ALL ON FUNCTION game_quest_reward_effects_valid(JSONB,TEXT[],BIGINT[],BIGINT[]) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_quest_reward_effects_valid(JSONB,TEXT[],BIGINT[],BIGINT[]) TO oteryn_game_runtime,oteryn_game_control;

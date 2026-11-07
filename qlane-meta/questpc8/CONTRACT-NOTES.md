@@ -553,3 +553,17 @@ https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7
 https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/scott_the_scout.lua ;
 https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/frank_the_plank.lua .
 Fresh qengine2 head69609ef78 has no Venore circuit to reuse.
+
+## Coordinator migration-number registry
+
+Consume QENGINE2 head69609ef78 migrations0999-1006 byte-for-byte. The old
+questpc8 world-USE receipt allowance and immutable receipt evidence index are
+now additive1301, extending the installed completion proof in place without
+replacing target-set, paid-exchange or participant proof arms. The native
+backpack-output extension is1300. Extra closed shape/clock validation from
+this lane is1302; shared state-operation and participant triggers remain
+unchanged. The six QBASE files are1200-1205, byte-preserving renames, including
+the original atomic Father's Burden eleven-track receipt allowance. All
+active filename references and recorded path inventories are updated. No
+manual SQLx checksum pins exist here: the sole GAME_MIGRATOR embeds the
+renamed directory and its focused unit compares the full source number list.

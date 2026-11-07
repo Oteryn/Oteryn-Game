@@ -1,3 +1,23 @@
+# Migration registry applied; fresh embedded-ledger validation building
+
+All eight QENGINE2 migrations0999-1006 are byte-identical to69609ef78.
+Six QBASE files are renamed1200-1205 with unchanged contents. Questpc8 uses
+1300backpack outputs,1301world reward receipt extension/evidence index and
+1302closed state-operation validation/elapsed-less-than. Shared participant,
+target-set, paid-exchange and selected-instance proofs remain installed.
+No protected repository/workflow files changed. Duplicate script reports0.
+
+Venore source supply regression is GREEN40.057079738s on the prior embedded
+ledger, following RED37.99s. New embedded-ledger build/test is now running;
+that earlier GREEN is not claimed as new-layout validation. Eight reward
+callback units, default check and strict3-crate Clippy passed before renumber;
+fresh4-crate checks and embedded-ledger unit are queued. Native generation
+adds only17513/17514/17617; every existing Item profile is byte-identical.
+Original Norman,Scott,Frank placements are added and pins regenerated.
+19of23L7entries remain QUALIFIED; four remain. Finish registry validation and
+push immediately, then continue the full Venore circuit. Full-circuit data
+draft is /tmp/questpc8-author-venore-circuit.py, not yet applied. Do not end.
+
 # Compiling Venore supply checkpoint: actual PG RED37.99s
 
 The new focused test compiled (test build5m48s), initialized PostgreSQL, and

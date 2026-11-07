@@ -1,0 +1,61 @@
+{
+  "shared_qengine2_head": "e71a5d916",
+  "shared_migrations": [
+    {
+      "path": "apps/game-server/migrations/0999_quest_reward_callbacks.sql",
+      "sha256": "971451326e9473f01ab8587c18040f69d39740b6af944f62ac6b3df04ae9f294",
+      "qengine2_byte_identical": true
+    },
+    {
+      "path": "apps/game-server/migrations/1000_quest_reward_payments.sql",
+      "sha256": "a041c1f4ad97c8642a81d0a06d2e834b10ae54a55bed7d93b98ec1141dbd9311",
+      "qengine2_byte_identical": true
+    },
+    {
+      "path": "apps/game-server/migrations/1001_quest_reward_participants.sql",
+      "sha256": "de9d7f8d779b1b5d24105139c2b781afd09ad0067aa15ef904ef3267bd4c38e5",
+      "qengine2_byte_identical": true
+    },
+    {
+      "path": "apps/game-server/migrations/1002_quest_reward_state_operations.sql",
+      "sha256": "7ccf2726dbe7637c646573a004a265b0e1c484aa5330dee42894b96fb2a27ba8",
+      "qengine2_byte_identical": true
+    },
+    {
+      "path": "apps/game-server/migrations/1003_quest_reward_target_sets.sql",
+      "sha256": "56c9fd32ab49a247e41b66c2e0a4b4df6613e6366f6667bd00edf28d190704bf",
+      "qengine2_byte_identical": true
+    },
+    {
+      "path": "apps/game-server/migrations/1004_quest_paid_item_exchanges.sql",
+      "sha256": "4a5da4833971b005a99adee986114a609744ad03e4441d06c724754e8a911800",
+      "qengine2_byte_identical": true
+    },
+    {
+      "path": "apps/game-server/migrations/1005_quest_carried_use_proofs.sql",
+      "sha256": "77fe7b21e135c99a69b6e7ab26d14ff62c0f73dd01b1986bfba45912713fb023",
+      "qengine2_byte_identical": true
+    },
+    {
+      "path": "apps/game-server/migrations/1006_quest_owned_base_predicates.sql",
+      "sha256": "2490e09e46f2f4bebb50cdebc2ae17183646f3e111f9cdafc9208bd6da6b21b2",
+      "qengine2_byte_identical": true
+    }
+  ],
+  "qbase_migrations": [
+    "apps/game-server/migrations/1200_quest_finish.sql",
+    "apps/game-server/migrations/1201_corruptor_lifecycle.sql",
+    "apps/game-server/migrations/1202_questpc_npc_revision.sql",
+    "apps/game-server/migrations/1203_questpc_viola.sql",
+    "apps/game-server/migrations/1204_questpc_viola_book.sql",
+    "apps/game-server/migrations/1205_fathers_burden_items.sql"
+  ],
+  "lane_migrations": [
+    "apps/game-server/migrations/1300_questpc8_reward_backpack_outputs.sql",
+    "apps/game-server/migrations/1301_questpc8_world_reward_receipts.sql",
+    "apps/game-server/migrations/1302_questpc8_state_operation_validation.sql"
+  ],
+  "duplicate_numbers": [],
+  "validation_state": "Fresh embedded-ledger PostgreSQL validation building; no qualification claimed yet.",
+  "shared_pr_3020_state": "OPEN"
+}

@@ -84,6 +84,39 @@
         "oteryn-authored:chosen-secret-library-research:quest-r1",
         "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua"
       ]
+    },
+    {
+      "npc": "oteryn:npc.norman_the_foreman",
+      "greet": "Greetings, |PLAYERNAME|. Ask about construction jobs.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen sequential daily construction circuit; supplies use pinned source Item facts."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.scott_the_scout",
+      "greet": "Greetings, |PLAYERNAME|. Ask about construction jobs.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen sequential daily construction circuit; supplies use pinned source Item facts."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.frank_the_plank",
+      "greet": "Greetings, |PLAYERNAME|. Ask about construction jobs.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen sequential daily construction circuit; supplies use pinned source Item facts."
+      ]
     }
   ]
 }

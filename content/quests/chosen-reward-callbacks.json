@@ -592,6 +592,66 @@
         "Conservative chosen programme: fixed native palace ground23881 and object25051 stand for unavailable loose skull28489/hair28490 targets. Only carried ebony wood converts; fixed stations are not consumed. Charles raft assistance is an authored discussion, not a paid shortcut passage. The selected temple research counterpart is the source Liquid Death entrance. No fabricated source tags."
       ],
       "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/venore-daily/accept",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "npc": "oteryn:npc.norman_the_foreman",
+      "keywords": [
+        "construction jobs"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/kills",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i3003",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3457",
+          "count": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i17513",
+        "count": 1,
+        "contents": [],
+        "backpack_outputs": [
+          {
+            "item": "oteryn:item.tibia.i17617",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i17514",
+            "count": 1
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Take these supplies. Oil the saw, treadmill and crane at each site, north to south. Then deliver the grind stone to Scott and the kit to Frank."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen sequential daily construction circuit; supplies use pinned source Item facts."
+      ]
     }
   ]
 }
