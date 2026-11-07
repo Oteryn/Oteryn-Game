@@ -23,6 +23,7 @@ impl<S: SessionStream> Session<S> {
             }
         }
         match domain_id {
+            103 => crate::cast_chat::apply(self, server_sequence, payload),
             15 => crate::analyser_transport::apply(self, server_sequence, payload),
             100 => crate::spell_catalog::apply(self, server_sequence, payload),
             player_trade::STATE_DOMAIN_PLAYER_TRADE => {

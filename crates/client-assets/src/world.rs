@@ -13,9 +13,10 @@ pub const MANIFEST_SHA256: &str =
     "febaff9f4bd7e0f8a029736e446a81f1626805e895e7c2268018e0a9a8493fe4";
 pub const MANIFEST_PATH: &str = "imports/official/client-assets/15.30/manifest.json";
 /// The sha256 of `content/world/placements/index.json`, which pins every region file. A
-/// regenerated placement index must update it; a test compares it with the repository.
+/// `world-bundle-compiler pin-refresh` updates it after placement changes; a test
+/// compares it with the repository.
 pub const PLACEMENT_INDEX_SHA256: &str =
-    "27b0a500320f12dd12a93bf89ed6e32c9a11b2b3327a61cf76dfaa79ab9e2c65";
+    "de2e9a3f5a4fc65da878b038b5238157510444f9c296a1d36243b2c8f6fed98b";
 pub const PLACEMENT_INDEX_PATH: &str = "content/world/placements/index.json";
 const MAX_INDEX_BYTES: u64 = 8 * 1024 * 1024;
 pub const MAX_REGION_BYTES: u64 = 32 * 1024 * 1024;

@@ -1,15 +1,27 @@
 //! Combine earned facts with content's explicit grant compatibility declarations.
-use super::{AccountUnlocks, AppearanceContent, EarnedCosmetic, UnlockFact};
+use super::{AccountUnlocks, AppearanceContent, EarnedCosmetic, Sex, UnlockFact};
 
 pub struct EarnedCosmetics<'a, C> {
     pub content: &'a C,
     pub facts: &'a [(String, String)],
 }
-impl<C: AppearanceContent<String>> EarnedCosmetics<'_, C> {
+impl<'a, C: AppearanceContent<String>> EarnedCosmetics<'a, C> {
     fn resolve(&self, target: EarnedCosmetic<'_>) -> UnlockFact {
+        self.fact_for(target, None)
+    }
+    pub fn with_sex(self, sex: Sex) -> SexQualifiedEarnedCosmetics<'a, C> {
+        SexQualifiedEarnedCosmetics { inner: self, sex }
+    }
+    pub fn fact_for(&self, target: EarnedCosmetic<'_>, sex: Option<Sex>) -> UnlockFact {
         let mut result = UnlockFact::Absent;
         for (key, provenance) in self.facts {
-            match self.content.earned_unlock(key, provenance, target) {
+            let fact = match sex {
+                Some(sex) => self
+                    .content
+                    .earned_unlock_for_sex(key, provenance, target, sex),
+                None => self.content.earned_unlock(key, provenance, target),
+            };
+            match fact {
                 UnlockFact::Compatible => return UnlockFact::Compatible,
                 UnlockFact::Incompatible => result = UnlockFact::Incompatible,
                 UnlockFact::Absent => {}
@@ -30,20 +42,27 @@ impl<C: AppearanceContent<String>> AccountUnlocks<String> for EarnedCosmetics<'_
     }
 }
 
-/// A view for an authoritative consumer after it has read the real Character's sex.
-pub struct SexBoundEarnedCosmetics<'a, C> {
-    content: &'a C,
-    facts: &'a [(String, String)],
-    sex: super::Sex,
+/// Projects the same immutable account facts for the selecting character's sex.
+pub struct SexQualifiedEarnedCosmetics<'a, C> {
+    inner: EarnedCosmetics<'a, C>,
+    sex: Sex,
 }
-impl<'a, C: AppearanceContent<String>> EarnedCosmetics<'a, C> {
-    pub fn with_sex(&self, sex: super::Sex) -> SexBoundEarnedCosmetics<'a, C> {
-        SexBoundEarnedCosmetics {
-            content: self.content,
-            facts: self.facts,
-            sex,
-        }
+impl<C: AppearanceContent<String>> AccountUnlocks<String> for SexQualifiedEarnedCosmetics<'_, C> {
+    fn outfit(&self, key: &String) -> UnlockFact {
+        self.inner
+            .fact_for(EarnedCosmetic::Outfit(key), Some(self.sex))
     }
+    fn addon(&self, key: &String, addon: u8) -> UnlockFact {
+        self.inner
+            .fact_for(EarnedCosmetic::Addon(key, addon), Some(self.sex))
+    }
+    fn mount(&self, key: &String) -> UnlockFact {
+        self.inner
+            .fact_for(EarnedCosmetic::Mount(key), Some(self.sex))
+    }
+}
+
+impl<C: AppearanceContent<String>> EarnedCosmetics<'_, C> {
     /// NPC source predicates may ask about a concrete earned look of either sex.
     /// This never implements AccountUnlocks or authorizes an appearance selection.
     pub fn exact_source_look_addon(&self, look: u32, addon: u8) -> UnlockFact {
@@ -61,37 +80,9 @@ impl<'a, C: AppearanceContent<String>> EarnedCosmetics<'a, C> {
         result
     }
 }
-impl<C: AppearanceContent<String>> SexBoundEarnedCosmetics<'_, C> {
+
+impl<C: AppearanceContent<String>> SexQualifiedEarnedCosmetics<'_, C> {
     pub fn exact_source_look_addon(&self, look: u32, addon: u8) -> UnlockFact {
-        EarnedCosmetics {
-            content: self.content,
-            facts: self.facts,
-        }
-        .exact_source_look_addon(look, addon)
-    }
-    fn resolve(&self, target: EarnedCosmetic<'_>) -> UnlockFact {
-        let mut result = UnlockFact::Absent;
-        for (key, provenance) in self.facts {
-            match self
-                .content
-                .earned_unlock_for_sex(key, provenance, target, self.sex)
-            {
-                UnlockFact::Compatible => return UnlockFact::Compatible,
-                UnlockFact::Incompatible => result = UnlockFact::Incompatible,
-                UnlockFact::Absent => {}
-            }
-        }
-        result
-    }
-}
-impl<C: AppearanceContent<String>> AccountUnlocks<String> for SexBoundEarnedCosmetics<'_, C> {
-    fn outfit(&self, key: &String) -> UnlockFact {
-        self.resolve(EarnedCosmetic::Outfit(key))
-    }
-    fn addon(&self, key: &String, bit: u8) -> UnlockFact {
-        self.resolve(EarnedCosmetic::Addon(key, bit))
-    }
-    fn mount(&self, key: &String) -> UnlockFact {
-        self.resolve(EarnedCosmetic::Mount(key))
+        self.inner.exact_source_look_addon(look, addon)
     }
 }

@@ -12,7 +12,7 @@ pub enum Sex {
 
 #[path = "appearance/earned_cosmetics.rs"]
 mod earned_cosmetics;
-pub use earned_cosmetics::{EarnedCosmetics, SexBoundEarnedCosmetics};
+pub use earned_cosmetics::{EarnedCosmetics, SexQualifiedEarnedCosmetics};
 
 /// Head, body, legs and feet palette indices.
 pub type Colours = [u16; 4];
@@ -72,8 +72,7 @@ pub trait AppearanceContent<K> {
     ) -> UnlockFact {
         UnlockFact::Absent
     }
-    /// Resolve an exact source look only under the real Character's creation sex.
-    /// Legacy content delegates; exact-look mappings must be absent from unscoped resolution.
+    /// Sex-qualified earned facts are distinct; legacy neutral grants apply to either sex.
     fn earned_unlock_for_sex(
         &self,
         grant_key: &str,

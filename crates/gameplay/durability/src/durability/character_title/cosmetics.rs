@@ -60,9 +60,15 @@ impl Source {
             .filter(|fact| fact.source_kind == "quest")
             .map(|fact| (fact.unlock_key.clone(), fact.content_revision.clone()))
             .collect();
-        let facts: Vec<_> = grants.into_iter()
+        let facts: Vec<_> = grants
+            .into_iter()
             // Match the appearance owner's earned-unlock seam. Store does not authorize.
-            .filter(|fact| matches!(fact.source_kind.as_str(), "quest" | "npc" | "npc_wedding" | "mount_taming" | "item_action"))
+            .filter(|fact| {
+                matches!(
+                    fact.source_kind.as_str(),
+                    "quest" | "npc" | "npc_wedding" | "mount_taming" | "item_action"
+                )
+            })
             .map(|fact| (fact.unlock_key, fact.content_revision))
             .collect();
         let outfits = self.content.outfit_keys().filter_map(|key| {
@@ -103,31 +109,38 @@ fn project<'a, C: AppearanceContent<String>>(
         // PR #2782 Q3=B: count each earned canonical identity once. Crystal's
         // player_functions.cpp:3306-3311 / player.cpp:6840-6850 insert an outfitsMap entry
         // for an earned addon too. Native starter content alone is not an earned grant.
-        let base_granted = [Sex::Female, Sex::Male]
-            .into_iter()
-            .any(|sex| unlocks.with_sex(sex).outfit(&key) == UnlockFact::Compatible);
         let addon_count = content.outfit_addon_count(&key).unwrap_or(0);
-        let starter = [Sex::Female, Sex::Male]
-            .into_iter()
-            .any(|sex| content.outfit_is_starter(&key, sex));
-        let earned_starter_addon = starter
-            && [Sex::Female, Sex::Male].into_iter().any(|sex| {
-                (1..=addon_count)
-                    .any(|addon| unlocks.with_sex(sex).addon(&key, addon) == UnlockFact::Compatible)
-            });
-        if base_granted || earned_starter_addon {
+        let any_earned = [Sex::Female, Sex::Male].into_iter().any(|sex| {
+            unlocks.fact_for(
+                crate::domain::appearance::EarnedCosmetic::Outfit(&key),
+                Some(sex),
+            ) == UnlockFact::Compatible
+                || (content.outfit_is_starter(&key, sex)
+                    && (1..=addon_count).any(|addon| {
+                        unlocks.fact_for(
+                            crate::domain::appearance::EarnedCosmetic::Addon(&key, addon),
+                            Some(sex),
+                        ) == UnlockFact::Compatible
+                    }))
+        });
+        if any_earned {
             owned_outfits.insert(key.clone());
         }
         if addon_count < 2 {
             continue;
         }
         for (sex, look) in [Sex::Female, Sex::Male].into_iter().zip(looks) {
-            let scoped = unlocks.with_sex(sex);
             let base = content.outfit_is_starter(&key, sex)
-                || scoped.outfit(&key) == UnlockFact::Compatible;
+                || unlocks.fact_for(
+                    crate::domain::appearance::EarnedCosmetic::Outfit(&key),
+                    Some(sex),
+                ) == UnlockFact::Compatible;
             let addons = (1..=2).all(|addon| {
                 content.addon_is_starter(&key, sex, addon)
-                    || scoped.addon(&key, addon) == UnlockFact::Compatible
+                    || unlocks.fact_for(
+                        crate::domain::appearance::EarnedCosmetic::Addon(&key, addon),
+                        Some(sex),
+                    ) == UnlockFact::Compatible
             });
             if base && addons {
                 full_looks.insert(look);

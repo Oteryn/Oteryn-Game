@@ -3,6 +3,8 @@ mod account_achievements_tests;
 #[path = "tests/analyser.rs"]
 mod analyser_tests;
 mod appearance_session_tests;
+#[path = "cast_chat/tests.rs"]
+mod cast_chat_tests;
 #[path = "features/0083-channel-list/tests.rs"]
 mod channel_list_tests;
 #[path = "container_tree_tests.rs"]

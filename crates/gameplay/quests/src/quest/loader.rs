@@ -219,6 +219,10 @@ pub fn load_embedded_quest_state(
         super::dark_trails::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::isle_of_evil::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::native_kills::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue = super::spike_fame_acquisition::extend(lowered.catalogue)
         .map_err(|error| QuestLoadError::Json(format!("source Fame component: {error:?}")))?;
     lowered.catalogue = super::npc_cosmetic_final_acquisition::extend(lowered.catalogue)

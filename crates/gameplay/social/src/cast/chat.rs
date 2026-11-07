@@ -20,6 +20,9 @@ pub enum Content {
 }
 #[derive(Default)]
 pub(super) struct Room {
+    pub(super) last_roster: Vec<[u8; 16]>,
+    pub(super) roster_revision: u64,
+    pub(super) roster_at: u64,
     muted: HashSet<[u8; 16]>,
     pub(super) presence: VecDeque<ChatLine>,
     caster: VecDeque<ChatLine>,

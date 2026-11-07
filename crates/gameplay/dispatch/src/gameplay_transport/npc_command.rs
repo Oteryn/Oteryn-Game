@@ -56,6 +56,7 @@ mod npc_cosmetics;
 mod planegazer_finale;
 mod premium_purchase;
 mod quest_dialogue;
+mod reward_callbacks;
 mod seasonal_cake;
 mod service_context;
 mod session_transfer;
@@ -795,6 +796,11 @@ pub(super) async fn npc_bank_talk(
         drop(runtime);
         drop(_trade_permit);
         return grizzly::talk(admission, actor, command, intent, context).await;
+    }
+    if let Some(step) = reward_callbacks::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = dark_trails::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);

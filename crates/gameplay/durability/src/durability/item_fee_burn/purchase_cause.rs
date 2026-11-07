@@ -9,6 +9,7 @@ impl FeeBurnCause {
             Self::TaskBoardTalisman { .. } => 13,
             Self::Forge { .. } => 14,
             Self::QuestAccessPurchase { .. } => 15,
+            Self::QuestRewardPayment { .. } => 18,
             Self::HirelingService { .. } => 472,
             Self::HorseRental { .. } => 473,
             Self::NpcCosmeticPurchase { .. } => 474,
@@ -37,7 +38,8 @@ impl FeeBurnCause {
             | Self::HorseRental { occurrence }
             | Self::NpcCosmeticPurchase { occurrence, .. } => occurrence,
             Self::Forge { occurrence, .. } => occurrence,
-            Self::QuestAccessPurchase { occurrence }
+            Self::QuestRewardPayment { occurrence, .. }
+            | Self::QuestAccessPurchase { occurrence }
             | Self::PreyListReroll { occurrence, .. }
             | Self::PreyPickAgain { occurrence, .. }
             | Self::GemReveal { occurrence, .. }
@@ -64,6 +66,7 @@ impl FeeBurnCause {
             },
             Self::Forge { .. } => "oteryn:service.forge",
             Self::QuestAccessPurchase { .. } => "oteryn:service.quest.rotten-blood.access",
+            Self::QuestRewardPayment { callback, .. } => callback,
             Self::HirelingService { service, .. } | Self::NpcCosmeticPurchase { service, .. } => {
                 service
             }
@@ -107,6 +110,13 @@ impl FeeBurnCause {
                 Ok(())
             }
             Self::QuestAccessPurchase { .. } => Ok(()),
+            Self::QuestRewardPayment { callback, gold, .. }
+                if callback.starts_with("oteryn:quest-reward/")
+                    && callback.len() <= 128
+                    && (1..=1_000_000_000_000).contains(gold) =>
+            {
+                Ok(())
+            }
             Self::HorseRental { .. } => Ok(()),
             Self::NpcCosmeticPurchase { service, .. }
                 if super::super::npc_cosmetics::source_fee_price(service).is_some() =>
@@ -212,6 +222,22 @@ impl FeeBurnCause {
                 occurrence: occurrence.to_vec(),
                 atelier_proof: Vec::new(),
             }),
+            Self::QuestRewardPayment {
+                callback,
+                occurrence,
+                gold,
+                include_bank,
+            } => FeeBurnCauseV1::QuestRewardPayment(
+                super::super::item_fee_burn_audit::OneItemQuestRewardPaymentV1 {
+                    purchase: Some(OneItemNpcPurchaseV1 {
+                        service_key: callback.clone(),
+                        occurrence: occurrence.to_vec(),
+                        atelier_proof: Vec::new(),
+                    }),
+                    fee_gold_units: *gold,
+                    include_bank: *include_bank,
+                },
+            ),
             Self::PreyListReroll { occurrence, .. } | Self::PreyPickAgain { occurrence, .. } => {
                 FeeBurnCauseV1::PreyListReroll(OneItemNpcPurchaseV1 {
                     service_key: self.key().into(),

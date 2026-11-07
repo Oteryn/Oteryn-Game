@@ -30,6 +30,7 @@ fn snapshot(seed: u8, active: &[u8], revision: u64) -> TaskSnapshot {
         lease_generation: 2,
         observed_revision: revision,
         active_tasks: active.to_vec(),
+        native_counters: vec![],
         spike_main: None,
     }
 }

@@ -112,6 +112,8 @@ pub enum FeeBurnCauseV1 {
     BosstiarySlot(OneItemNpcPurchaseV1),
     #[prost(message, tag = "17")]
     ArenaEntry(OneItemNpcPurchaseV1),
+    #[prost(message, tag = "18")]
+    QuestRewardPayment(OneItemQuestRewardPaymentV1),
     #[prost(message, tag = "472")]
     HirelingService(OneItemNpcPurchaseV1),
     #[prost(message, tag = "473")]
@@ -127,7 +129,7 @@ mod npc_cash_cause;
 mod purchase_cause;
 pub(super) mod repair_cause;
 pub use imbuement_cause::{OneItemImbuementMaterialV1, OneItemImbuementV1};
-pub use purchase_cause::OneItemNpcPurchaseV1;
+pub use purchase_cause::{OneItemNpcPurchaseV1, OneItemQuestRewardPaymentV1};
 pub use repair_cause::OneItemTimedRepairV1;
 
 #[derive(Clone, PartialEq, Eq, Message)]
@@ -153,6 +155,7 @@ pub struct OneItemFeeBurnCauseV1 {
             15, // QuestAccessPurchase: Rotten Blood access, fixed 5m source
             16, // Bosstiary slot removal
             17, // Svargrond arena entry
+            18, // Source-bound Quest reward payment
             472, // HirelingService
             473, // HorseRental
             474, // NpcCosmeticPurchase
@@ -919,6 +922,26 @@ mod tests {
             minted(Coin::Gold, 21, 60, 4),
         ];
         value
+    }
+
+    #[test]
+    fn quest_reward_payment_binds_exact_price_and_native_carried_proof() -> Result<(), AuditError> {
+        let mut value = burn(vec![line(61,1,100,0,"definition-r1")],100);
+        let text = |bytes: &[u8]| sqlx::types::Uuid::from_slice(bytes).map(|id|id.to_string()).map_err(|_|AuditError::InvalidInput);
+        let proof = serde_json::json!({"character":value.character_id,"occurrence":uuid(70),
+            "coin_inputs":[{"item":text(&uuid(61))?,"surface":1,"parent":text(&value.backpack_item_instance_id)?,"slot":0,"ordinal":1,"selection_order":1}]});
+        value.cause = Some(OneItemFeeBurnCauseV1 { cause: Some(FeeBurnCauseV1::QuestRewardPayment(OneItemQuestRewardPaymentV1 {
+            purchase: Some(OneItemNpcPurchaseV1 { service_key: "oteryn:quest-reward/test".into(), occurrence:uuid(70), atelier_proof:serde_json::to_vec(&proof).map_err(|_|AuditError::InvalidInput)? }),
+            fee_gold_units:100, include_bank:false,
+        }))});
+        check_fee_burn(&value)?;
+        let mut mismatch=value.clone();
+        if let Some(FeeBurnCauseV1::QuestRewardPayment(cause))=mismatch.cause.as_mut().and_then(|c|c.cause.as_mut()) { cause.fee_gold_units=99; }
+        assert_eq!(check_fee_burn(&mismatch),Err(AuditError::InvalidInput));
+        let mut missing=value;
+        if let Some(FeeBurnCauseV1::QuestRewardPayment(cause))=missing.cause.as_mut().and_then(|c|c.cause.as_mut()) { cause.purchase.as_mut().ok_or(AuditError::InvalidInput)?.atelier_proof.clear(); }
+        assert_eq!(check_fee_burn(&missing),Err(AuditError::InvalidInput));
+        Ok(())
     }
 
     fn identity() -> FeeBurnEventIdentity<'static> {

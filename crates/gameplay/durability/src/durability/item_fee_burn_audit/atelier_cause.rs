@@ -20,6 +20,7 @@ pub(super) fn cause(value: &OneItemFeeBurnV1) -> Option<&OneItemNpcPurchaseV1> {
             | FeeBurnCauseV1::GemGradeUp(cause)
             | FeeBurnCauseV1::GemSwitchDomain(cause),
         ) => Some(cause),
+        Some(FeeBurnCauseV1::QuestRewardPayment(cause)) => cause.purchase.as_ref(),
         _ => None,
     }
 }

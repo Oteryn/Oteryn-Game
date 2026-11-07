@@ -6,6 +6,9 @@ use crate::content::ContentError;
 use serde::Deserialize;
 use std::path::Path;
 
+// Preserve main QENGINE2's existing 8 MiB authoring bound; descriptor and section limits remain independent.
+const MAX_AUTHORING_BYTES: usize = 8 * 1024 * 1024;
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Input {
@@ -45,7 +48,7 @@ pub(in crate::content::native_gameplay) fn materialize(
         qualify(&pinned, max)?;
         Ok::<_, ContentError>(pinned.bytes)
     };
-    let authoring = load(directory, &input.authoring, 2 * 1024 * 1024)?;
+    let authoring = load(directory, &input.authoring, MAX_AUTHORING_BYTES)?;
     let authoring: StrictValue =
         serde_json::from_slice(&authoring).map_err(|_| invalid("cosmetics authoring JSON"))?;
     let source = load(directory, &input.source_manifest, 16 * 1024)?;

@@ -9,7 +9,8 @@
 
 use crate::content::{DefinitionRevisionRef, ProductionKey};
 use crate::domain::appearance::{
-    AccountUnlocks, AppearanceContent, AppearanceSelection, Sex, UnlockFact, validate_selection,
+    AccountUnlocks, AppearanceContent, AppearanceSelection, EarnedCosmetic, Sex, UnlockFact,
+    validate_selection,
 };
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -226,6 +227,13 @@ impl CosmeticsCandidate {
             Sex::Male => outfit.male.id,
         })
     }
+    /// The explicit mapping target, without granting ownership or provenance compatibility.
+    pub fn authored_grant_target(&self, grant_key: &str) -> Option<EarnedCosmetic<'_>> {
+        let index = *self.grants.get(grant_key)?;
+        Some(grant_mappings::primary_target(
+            &self.document.grant_mappings[index],
+        ))
+    }
     pub fn mount_metadata(&self, key: &str) -> Option<(u32, u16, bool)> {
         let mount = &self.document.mounts[*self.mounts.get(key)?];
         Some((mount.look.id, mount.speed_bonus, mount.premium))
@@ -279,10 +287,10 @@ impl AppearanceContent<String> for CosmeticsCandidate {
         grant_mappings::resolve_for_sex(
             self.grants
                 .get(grant_key)
-                .map(|i| &self.document.grant_mappings[*i]),
+                .map(|index| &self.document.grant_mappings[*index]),
             provenance,
             target,
-            sex,
+            Some(sex),
         )
     }
     fn earned_source_look_addon(

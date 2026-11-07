@@ -7,7 +7,7 @@
     },
     {
       "path": "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs",
-      "sha256": "cccded8da320144ebc72dd227d7559817d202a377de90b10910cb61439f21709"
+      "sha256": "74ea8eac6cb3c8a5f493ce3322affde04bc4af4909a1917308ac161889a1295b"
     },
     {
       "path": "content/cosmetics/taming.json",
