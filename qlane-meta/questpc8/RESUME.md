@@ -1,3 +1,13 @@
+# Full Venore ordinary rewards PostgreSQL GREEN113.890788027s
+
+All five native corym deaths now commit ordinary XP; full nine-machine route,
+two hand-ins, exact1000XP/1000gold report, occurrence/replay/cold guards and
+72000-second boundary PASS. No kill_reward_refused occurs. Refreshed prey
+simulation15cases/776creatures and41-file registration PASS. Final generated
+drift, pins and strict rechecks are running. Qualify Venore after those pass,
+then continue Colours,Winterlight,Wrath. Current L7qualifiedcount stays19until
+that evidence is complete.
+
 # Corpse repair compiling; required prey-model regeneration running
 
 Actual PG RED109.475249632s: ordinary corym settlement still read old loot

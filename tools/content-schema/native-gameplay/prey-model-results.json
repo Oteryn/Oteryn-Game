@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "620faa0cafca4c6c06b8f354d2e949000623d73d6a2837576002a7819803f212",
+  "input_sha256": "89a479ab907c32cf8d565205a5f2f8ea828d78a651ce2df4cdf178cf46c8f19a",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -3045,7 +3045,6 @@
     "oteryn:creature.liodile",
     "oteryn:creature.lion",
     "oteryn:creature.lion_hydra",
-    "oteryn:creature.little_corym_charlatan",
     "oteryn:creature.lizard_chosen",
     "oteryn:creature.lizard_commander",
     "oteryn:creature.lizard_dragon_priest",
