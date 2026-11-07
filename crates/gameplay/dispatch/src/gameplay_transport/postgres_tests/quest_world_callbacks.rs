@@ -265,6 +265,12 @@ fn world_ordinal(
         .iter()
         .map(|p| p.position)
         .chain(callback.offerings.iter().map(|p| p.position))
+        .chain(
+            callback
+                .objects
+                .iter()
+                .flat_map(|objects| objects.mutations.iter().map(|m| m.position)),
+        )
         .chain(callback.teleport)
     {
         cells

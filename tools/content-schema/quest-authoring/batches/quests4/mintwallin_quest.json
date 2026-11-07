@@ -1,0 +1,142 @@
+{
+  "schema": 1,
+  "quest_directory": "mintwallin_quest",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/mintwallin-cyclops-lever",
+      "quest": "oteryn:quest.mintwallin_cyclops_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 30008,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "objects": {
+        "consume_trigger": true,
+        "mutations": [
+          {
+            "position": {
+              "x": 32592,
+              "y": 32105,
+              "floor": -14
+            },
+            "remove": null,
+            "create": 1270
+          },
+          {
+            "position": {
+              "x": 32592,
+              "y": 32106,
+              "floor": -14
+            },
+            "remove": null,
+            "create": 1270
+          },
+          {
+            "position": {
+              "x": 32593,
+              "y": 32104,
+              "floor": -14
+            },
+            "remove": 1271,
+            "create": null
+          },
+          {
+            "position": {
+              "x": 32594,
+              "y": 32104,
+              "floor": -14
+            },
+            "remove": 1271,
+            "create": null
+          },
+          {
+            "position": {
+              "x": 32595,
+              "y": 32104,
+              "floor": -14
+            },
+            "remove": 1271,
+            "create": null
+          },
+          {
+            "position": {
+              "x": 32596,
+              "y": 32104,
+              "floor": -14
+            },
+            "remove": 1271,
+            "create": null
+          },
+          {
+            "position": {
+              "x": 32597,
+              "y": 32104,
+              "floor": -14
+            },
+            "remove": 1271,
+            "create": null
+          },
+          {
+            "position": {
+              "x": 32598,
+              "y": 32104,
+              "floor": -14
+            },
+            "remove": 1271,
+            "create": null
+          },
+          {
+            "position": {
+              "x": 32599,
+              "y": 32104,
+              "floor": -14
+            },
+            "remove": 1271,
+            "create": null
+          },
+          {
+            "position": {
+              "x": 32600,
+              "y": 32104,
+              "floor": -14
+            },
+            "remove": 1271,
+            "create": null
+          },
+          {
+            "position": {
+              "x": 32601,
+              "y": 32104,
+              "floor": -14
+            },
+            "remove": 1271,
+            "create": null
+          }
+        ]
+      },
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/mintwallin_quest/actions_devil_helmet_lever.lua:7-20"
+      ]
+    }
+  ],
+  "runtime_exclusions": [],
+  "npc_source": {
+    "quest": "mintwallin_quest",
+    "runtime_admission": false,
+    "entries": []
+  },
+  "step_inventory": [],
+  "preserved_claims": []
+}

@@ -62,10 +62,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 // Floor-changing objects need the composed floor resolver; do not
                 // publish a visual-only hole before that source path is qualified.
-                if crate::map::floor::palette_mask(
-                    oteryn_world_bundle::bundle::Family::Terrain,
-                    &format!("oteryn:terrain.tibia.i{appearance}"),
-                ) != 0
+                if appearance == 435
+                    || crate::map::floor::palette_mask(
+                        oteryn_world_bundle::bundle::Family::Terrain,
+                        &format!("oteryn:terrain.tibia.i{appearance}"),
+                    ) != 0
                 {
                     return UseDisposition::Rejected;
                 }

@@ -1,0 +1,77 @@
+{
+  "test": "mintwallin_source_asymmetric_lever_and_reward_once_replay_and_refusal",
+  "marker": "POSTGRES_CASE_COMPLETED mintwallin_source_asymmetric_lever_and_reward_once_replay_and_refusal duration=90.529083079s",
+  "duration_seconds": 90.529083079,
+  "result": "1 passed; 0 failed",
+  "scope": "Original source asymmetric lever and native once reward contract; controlled source scenes, not deployed World route certification.",
+  "checks": [
+    "exact AID30008",
+    "lever consumed; repeat cannot commit",
+    "two1270 creations and solid collision",
+    "nine1271 removals and opened collision",
+    "no lever Quest receipt",
+    "exact one black pearl3028",
+    "native reward USE/replay/full-bag refusal"
+  ],
+  "red_seconds": 4.48,
+  "fixture_refusal_seconds": 45.17,
+  "source_sha256": "61944b37d0a86201ad45759b7abddf2e7b80389d4b0a04efe4a54db257d4742c",
+  "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/mintwallin_quest/actions_devil_helmet_lever.lua",
+  "other_lane_read": {
+    "ref": "questpc8",
+    "sha": "15b02adfd84de1508d5c4d89412bbdc9bdc107ca",
+    "status": "UNFINISHED"
+  },
+  "validation": {
+    "check": "PASS all targets/all features,32.24s",
+    "clippy": "PASS -Dwarnings all targets/all features,46.11s",
+    "rust_callbacks": "15 passed,2.36s",
+    "python": "16 passed",
+    "source_generation": "22 packets; zero drift",
+    "native_generation": "40 files; no source/profile drift",
+    "grizzly_generation": "30/30 map-qualified; unchanged",
+    "pins": "refreshed; unchanged2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968"
+  },
+  "logs": {
+    "red": {
+      "log": "qlane-meta/questpc/cloud-mintwallin-red.log",
+      "sha256": "f3e958c8d46e6ba741e530ce7bc11b14c351b358162a8e4a21b64cc49276a0ea"
+    },
+    "green": {
+      "log": "qlane-meta/questpc/cloud-mintwallin-green.log",
+      "sha256": "7d33be067651cfd1c0899917c5a7063f40aad96de86b0c1e11b9edbfd0565015"
+    },
+    "green-2": {
+      "log": "qlane-meta/questpc/cloud-mintwallin-green-2.log",
+      "sha256": "5a5b2c746369056b19946df02823bb3c09164a0e88e11ba46eae4e2f56a87ebf"
+    },
+    "authoring": {
+      "log": "qlane-meta/questpc/cloud-mintwallin-authoring.log",
+      "sha256": "721321dded11484604f16164866799af5cefff9e20686f61627df2eb82b5e112"
+    },
+    "native-generation": {
+      "log": "qlane-meta/questpc/cloud-mintwallin-native-generation.log",
+      "sha256": "e17883c3b904492b5238996447f88597b8e4d46e6c883b4445ed5f1e756d83aa"
+    },
+    "grizzly-generation": {
+      "log": "qlane-meta/questpc/cloud-mintwallin-grizzly-generation.log",
+      "sha256": "e910ba993d1027ecf744784e038109ba2de60af50bc222dab0b843bbe14e5d25"
+    },
+    "check": {
+      "log": "qlane-meta/questpc/cloud-mintwallin-check.log",
+      "sha256": "cb208fac1ba35dce096a7336ae5514eca3842ceceb365038c91fbfcc23fb3083"
+    },
+    "clippy": {
+      "log": "qlane-meta/questpc/cloud-mintwallin-clippy.log",
+      "sha256": "122dd78fb9c68868f129734163d0f6376a298c1c0b413da87740b0b20d446f50"
+    },
+    "units": {
+      "log": "qlane-meta/questpc/cloud-mintwallin-units.log",
+      "sha256": "bf69b9ada2a08a6eaa55a7f11654594ec3a687d3d8e0f9b6a4fe36519d8c2c9a"
+    },
+    "pins": {
+      "log": "qlane-meta/questpc/cloud-mintwallin-pins.log",
+      "sha256": "ee83ec453703898f21a0741efbaf4427cc28d9e9d5c25975ffef9aaf6c40d8d4"
+    }
+  }
+}

@@ -1,3 +1,30 @@
+## Mintwallin qualified — 2026-11-07
+Mintwallin Cyclops Quest original source contractQUALIFIED: exact AID30008 consumes
+its lever, creates two1270 walls, removes nine1271 walls; correct collision and
+repeat refusal; no fabricated Quest state. Its existing native once black-pearl
+claim runs through USE/replay/full-bag refusal. POSTGRES_CASE_COMPLETED
+mintwallin_source_asymmetric_lever_and_reward_once_replay_and_refusal90.529083079s.
+Fresh questpc8@15b02adfd remainsUNFINISHED for this title, so no qualified-owner
+overlap. Controlled source scenes, not a deployed World route assertion.
+
+All targeted checksPASS: check32.24s, alltarget/allfeature clippy-Dwarnings46.11s,
+15Rust callback units2.36s,16Python units,22source packets,40native files,30/30
+Grizzly rooms. Pin refreshed and unchanged2cabea56... . Exact logs/hashes/sourceURL
+in cloud-mintwallin-validation.json. RED4.48s missing callback afteractualPG;
+first candidate45.17s safely refused because fixture omitted an empty targettile.
+General scene builder now includes every declared object target; assertions were
+not relaxed. Source packet is generator-owned; no donor/binary copied.
+Counts:58QUALIFIED/119UNFINISHED/1excludedDawnportBLOCKED.
+
+NEXT: Devil Helmet. Known source UID25030 creates435at32482,32170,z14 onStepIn
+and removes it onStepOut. Existing generated floor catalogue has no435 row;
+explicit435refusal protects against visual-only holes. Inspect exact Crystal
+items.xml floor flags and add composed dynamic floor resolution, reusing qengine2
+mask-closure approach. Ten-minute fact cap; document conservative decisions in
+CONTRACT-NOTES.md. Source pressure tile position is registered only byUID; never
+invent a production coordinate alias from a fixture. Push each tested slice and
+at least every30minutes. No full suites, main push, PR or force/rebase.
+
 ## Object strict-check follow-up
 Published6baad72f8 now has PASS alltarget/allfeature check2m41s and clippy-Dwarnings
 2m30s, plus Rust schema unit1/1. Logs/hashes in cloud-objects-validation.json.

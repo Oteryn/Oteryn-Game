@@ -310,7 +310,7 @@ class QuestBatch4Tests(unittest.TestCase):
         self.assertEqual(generated.returncode, 0, generated.stderr)
         checked = subprocess.run([*command, '--check'], capture_output=True, text=True, check=False)
         self.assertEqual(checked.returncode, 0, checked.stderr)
-        self.assertEqual(len(list((self.root / tool.NPC_OUTPUT_DIRECTORY).glob('*.json'))), 21)
+        self.assertEqual(len(list((self.root / tool.NPC_OUTPUT_DIRECTORY).glob('*.json'))), 22)
 
     def test_selected_subset_preserves_other_callbacks_packets_and_source_outputs(self):
         name = 'lions_rock'
@@ -347,7 +347,7 @@ class QuestBatch4Tests(unittest.TestCase):
             (self.root / tool.INPUT_DIRECTORY / (name + '.json')).read_bytes(), original_packet,
         )
         self.assertEqual(tool.generate(self.root, check=True, selected=[name]), [])
-        with self.assertRaisesRegex(ValueError, 'exactly 21'):
+        with self.assertRaisesRegex(ValueError, 'exactly 22'):
             tool.generate(self.root)
 
         # A separately authored but unselected packet is neither read nor rewritten.
@@ -387,7 +387,7 @@ class QuestBatch4Tests(unittest.TestCase):
             self.assertEqual(checked.returncode, 0, checked.stderr)
         strict = subprocess.run([*command, '--check'], capture_output=True, text=True, check=False)
         self.assertNotEqual(strict.returncode, 0)
-        self.assertIn('exactly 21', strict.stderr)
+        self.assertIn('exactly 22', strict.stderr)
         conflicting = subprocess.run(
             [*command, '--available', '--quests', name], capture_output=True, text=True, check=False,
         )

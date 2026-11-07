@@ -3,8 +3,8 @@
   "scope": "Pinned wiki titles A..M; no numeric or N..Z titles",
   "lifecycle": "AUTHORING on claude/happy-davinci-ijz3wy-questpc-pc2; green batch commits and fast-forward pushes authorized; no frozen integration candidate.",
   "counts": {
-    "QUALIFIED": 57,
-    "UNFINISHED": 120,
+    "QUALIFIED": 58,
+    "UNFINISHED": 119,
     "BLOCKED": 1
   },
   "owner_excluded_with_blocked_status": 1,
@@ -8270,8 +8270,8 @@
       "title": "Mintwallin Cyclops Quest",
       "canonical": "oteryn:quest.mintwallin_cyclops_quest",
       "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/60/definition",
-      "status": "UNFINISHED",
-      "scope": "complete pinned quest path",
+      "status": "QUALIFIED",
+      "scope": "original source asymmetric access lever and native once reward contract",
       "reward_claims": [
         {
           "claim": "oteryn:reward-claim.kv.mintwallincyclops",
@@ -8296,10 +8296,89 @@
           "Compared source edge and create/remove/occupant requirements with the current production Callback/Trigger/Passage schema and current QENGINE allocation.",
           "Retained existing native reward receipts without promoting them to a complete path. Did not replace StepOut with StepIn, bypass party conditions or invent absent map entries."
         ],
-        "other_unfinished_composition": "The source contract includes item_consume and world_object; the chest scenario does not exercise that offering/access path."
+        "other_unfinished_composition": "The source contract includes item_consume and world_object; the chest scenario does not exercise that offering/access path.",
+        "resolved_by": "mintwallin_source_asymmetric_lever_and_reward_once_replay_and_refusal"
       },
-      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
-      "active_batch": "Source world-object composition; stateless StepOut foundation implemented and PG exercised. No whole-title promotion."
+      "active_batch": "Complete source composition qualified; no deployed World/frozen-head review assertion.",
+      "qualification": [
+        {
+          "test": "mintwallin_source_asymmetric_lever_and_reward_once_replay_and_refusal",
+          "marker": "POSTGRES_CASE_COMPLETED mintwallin_source_asymmetric_lever_and_reward_once_replay_and_refusal duration=90.529083079s",
+          "duration_seconds": 90.529083079,
+          "result": "1 passed; 0 failed",
+          "scope": "Original source asymmetric lever and native once reward contract; controlled source scenes, not deployed World route certification.",
+          "checks": [
+            "exact AID30008",
+            "lever consumed; repeat cannot commit",
+            "two1270 creations and solid collision",
+            "nine1271 removals and opened collision",
+            "no lever Quest receipt",
+            "exact one black pearl3028",
+            "native reward USE/replay/full-bag refusal"
+          ],
+          "red_seconds": 4.48,
+          "fixture_refusal_seconds": 45.17,
+          "source_sha256": "61944b37d0a86201ad45759b7abddf2e7b80389d4b0a04efe4a54db257d4742c",
+          "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/mintwallin_quest/actions_devil_helmet_lever.lua",
+          "other_lane_read": {
+            "ref": "questpc8",
+            "sha": "15b02adfd84de1508d5c4d89412bbdc9bdc107ca",
+            "status": "UNFINISHED"
+          },
+          "validation": {
+            "check": "PASS all targets/all features,32.24s",
+            "clippy": "PASS -Dwarnings all targets/all features,46.11s",
+            "rust_callbacks": "15 passed,2.36s",
+            "python": "16 passed",
+            "source_generation": "22 packets; zero drift",
+            "native_generation": "40 files; no source/profile drift",
+            "grizzly_generation": "30/30 map-qualified; unchanged",
+            "pins": "refreshed; unchanged2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968"
+          },
+          "logs": {
+            "red": {
+              "log": "qlane-meta/questpc/cloud-mintwallin-red.log",
+              "sha256": "f3e958c8d46e6ba741e530ce7bc11b14c351b358162a8e4a21b64cc49276a0ea"
+            },
+            "green": {
+              "log": "qlane-meta/questpc/cloud-mintwallin-green.log",
+              "sha256": "7d33be067651cfd1c0899917c5a7063f40aad96de86b0c1e11b9edbfd0565015"
+            },
+            "green-2": {
+              "log": "qlane-meta/questpc/cloud-mintwallin-green-2.log",
+              "sha256": "5a5b2c746369056b19946df02823bb3c09164a0e88e11ba46eae4e2f56a87ebf"
+            },
+            "authoring": {
+              "log": "qlane-meta/questpc/cloud-mintwallin-authoring.log",
+              "sha256": "721321dded11484604f16164866799af5cefff9e20686f61627df2eb82b5e112"
+            },
+            "native-generation": {
+              "log": "qlane-meta/questpc/cloud-mintwallin-native-generation.log",
+              "sha256": "e17883c3b904492b5238996447f88597b8e4d46e6c883b4445ed5f1e756d83aa"
+            },
+            "grizzly-generation": {
+              "log": "qlane-meta/questpc/cloud-mintwallin-grizzly-generation.log",
+              "sha256": "e910ba993d1027ecf744784e038109ba2de60af50bc222dab0b843bbe14e5d25"
+            },
+            "check": {
+              "log": "qlane-meta/questpc/cloud-mintwallin-check.log",
+              "sha256": "cb208fac1ba35dce096a7336ae5514eca3842ceceb365038c91fbfcc23fb3083"
+            },
+            "clippy": {
+              "log": "qlane-meta/questpc/cloud-mintwallin-clippy.log",
+              "sha256": "122dd78fb9c68868f129734163d0f6376a298c1c0b413da87740b0b20d446f50"
+            },
+            "units": {
+              "log": "qlane-meta/questpc/cloud-mintwallin-units.log",
+              "sha256": "bf69b9ada2a08a6eaa55a7f11654594ec3a687d3d8e0f9b6a4fe36519d8c2c9a"
+            },
+            "pins": {
+              "log": "qlane-meta/questpc/cloud-mintwallin-pins.log",
+              "sha256": "ee83ec453703898f21a0741efbaf4427cc28d9e9d5c25975ffef9aaf6c40d8d4"
+            }
+          }
+        }
+      ]
     },
     {
       "title": "Mystery of the Valley Quest",
@@ -8338,13 +8417,13 @@
     }
   ],
   "latest_pg": {
-    "log": "qlane-meta/questpc/cloud-elvenbane-final.log",
-    "log_sha256": "a5efae7deaeca15ad60505a0764d682dfc083cd9e1dcd088b34c36628204e210",
+    "log": "qlane-meta/questpc/cloud-mintwallin-green-2.log",
+    "log_sha256": "5a5b2c746369056b19946df02823bb3c09164a0e88e11ba46eae4e2f56a87ebf",
     "filters": [
-      "elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal"
+      "mintwallin_source_asymmetric_lever_and_reward_once_replay_and_refusal"
     ],
-    "result": "1 passed; 0 failed; four source placement markers plus cohort marker",
-    "duration_seconds": 65.031774375
+    "result": "1 passed; 0 failed",
+    "duration_seconds": 90.529083079
   },
   "owner_execution_override": "Shared quest-engine, reward/binding, NPC, Item and callback features are owned here when needed. Check and reuse origin/claude/happy-davinci-ijz3wy-qengine2 first; historical outside-lane blockers are active implementation obligations, not final dispositions.",
   "latest_cloud_batch": {
@@ -8381,7 +8460,7 @@
     "earlier_snapshot_merged": "6c09e0365110db6683f938dd08d5d584744cbf37",
     "merge_resolution": "Retained the current newer tree in all 86 overlapping paths. Earlier snapshot retained in ancestry.",
     "owner_rule": "All shared engine features remain in scope; historical outside-lane engine blockers are nonterminal and must be implemented or reused.",
-    "active": "Core object slice strict checks passed. Mintwallin whole-source PG RED is compiling; source callback not yet authored.",
+    "active": "Mintwallin original source composition qualified and publishing. Next Devil Helmet sewer435: verify source floor facts, add composed floor routing and source UID25030 entry/departure, then whole source PG.",
     "concurrent_remote_head": "4e12ac30e",
     "validation": {
       "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal -- --nocapture",

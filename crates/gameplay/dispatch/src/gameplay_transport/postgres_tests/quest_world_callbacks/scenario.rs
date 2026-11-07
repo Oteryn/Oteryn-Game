@@ -34,6 +34,7 @@ fn scenario_case(
 ) -> TestResult {
     let departure = name == "departure-map-regression";
     let object_mutation = name.starts_with("object-mutation-");
+    let mintwallin = name == "mintwallin-source";
     let monk = name.starts_with("monk-guidance");
     let classic_npc = matches!(
         name,
@@ -52,17 +53,19 @@ fn scenario_case(
     );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if classic_npc || departure || object_mutation {
-        "behemoth"
-    } else if rotten_purchase {
-        "rotten-blood/sacrifice"
-    } else if monk {
-        "monk-guidance"
-    } else if target_swap {
-        "fish-napping-key"
-    } else {
-        name
-    })?;
+    let mut callback = callback(
+        if classic_npc || departure || object_mutation || mintwallin {
+            "behemoth"
+        } else if rotten_purchase {
+            "rotten-blood/sacrifice"
+        } else if monk {
+            "monk-guidance"
+        } else if target_swap {
+            "fish-napping-key"
+        } else {
+            name
+        },
+    )?;
     if target_swap {
         callback
             .item_on_target
@@ -120,6 +123,53 @@ fn scenario_case(
                 replacement: None,
             });
     }
+    if mintwallin {
+        callback.objects = Some(
+            oteryn_gameplay_quests::quest::world_callbacks::ObjectEffects {
+                consume_trigger: true,
+                mutations: [32105, 32106]
+                    .into_iter()
+                    .map(
+                        |y| oteryn_gameplay_quests::quest::world_callbacks::ObjectMutation {
+                            position: Position {
+                                x: 32592,
+                                y,
+                                floor: -14,
+                            },
+                            remove: None,
+                            create: Some(1270),
+                        },
+                    )
+                    .collect(),
+            },
+        );
+        callback.selector.unique = None;
+        callback.selector.action = Some(30008);
+        callback.passages = (32593..=32601)
+            .map(
+                |x| oteryn_gameplay_quests::quest::world_callbacks::Passage {
+                    position: Position {
+                        x,
+                        y: 32104,
+                        floor: -14,
+                    },
+                    appearance: 1271,
+                    replacement: None,
+                },
+            )
+            .collect();
+        callback
+            .passages
+            .push(oteryn_gameplay_quests::quest::world_callbacks::Passage {
+                position: Position {
+                    x: 32590,
+                    y: 32104,
+                    floor: -14,
+                },
+                appearance: 1270,
+                replacement: None,
+            });
+    }
     let world = if departure {
         super::world_ordinal(&callback, trigger, 2772, 1)?
     } else {
@@ -142,6 +192,9 @@ fn scenario_case(
                 ]
             });
             serde_json::from_value::<Callback>(value)?
+        } else if mintwallin {
+            println!("POSTGRES_CASE_STARTED mintwallin_source database_created=true");
+            super::callback("mintwallin-cyclops-lever")?
         } else {
             callback.clone()
         };
@@ -250,7 +303,7 @@ fn scenario_case(
                     ])
                     .is_ok()
             );
-        } else if lever_fixture || target_swap || object_mutation {
+        } else if lever_fixture || target_swap || object_mutation || mintwallin {
             assert!(
                 owner
                     .states
@@ -306,7 +359,9 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if object_mutation {
+        if mintwallin {
+            super::super::mintwallin_source::exercise(&owner, &admitted, &h, trigger).await?;
+        } else if object_mutation {
             super::super::quest_object_mutations::exercise(&owner, &admitted, &h, name, trigger)
                 .await?;
         } else if departure {

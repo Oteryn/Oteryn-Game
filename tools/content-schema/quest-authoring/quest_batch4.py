@@ -5,7 +5,7 @@ The committed packets are authored inputs, not an executable Lua interpreter.
 Existing callback keys outside those inputs retain their values. The combined
 registry is sorted by key, matching the batch-three compiler.
 No dialogue manifest, NPC qualification, item, map or quest recipe is changed.
-The default requires all 21 packets. Explicit --quests and --available modes
+The default requires all 22 packets. Explicit --quests and --available modes
 support regenerating independently cherry-picked quest inputs.
 """
 import argparse
@@ -23,7 +23,7 @@ NPC_OUTPUT_DIRECTORY = Path('content/dialogues/quest-sources')
 QUEST_ORDER = (
     'cults_of_tibia', 'dreamers_challenge_quest', 'elemental_spheres',
     'formogar_mine_hoist', 'kilmaresh', 'koshei_the_deathless_quest',
-    'krailos', 'lions_rock', 'newhaven', 'rotten_blood_quest', 'spirit_hunters',
+    'krailos', 'lions_rock', 'mintwallin_quest', 'newhaven', 'rotten_blood_quest', 'spirit_hunters',
     'svargrond_arena', 'thais_lighthouse', 'the_explorer_society',
     'the_first_dragon', 'the_hunt_for_the_sea_serpent', 'the_lost_brother',
     'the_order_of_lion_quest', 'the_spike_tasks', 'tibia_tales',
@@ -39,6 +39,7 @@ QUEST_OWNERS = {
     'krailos': 'oteryn:quest.krailos_quest',
     # Existing Questline/InnerSanctum.Message tracks are owned by Tibia Tales.
     'lions_rock': 'oteryn:quest.tibia_tales',
+    'mintwallin_quest': 'oteryn:quest.mintwallin_cyclops_quest',
     'newhaven': 'oteryn:quest.newhaven_quest',
     'rotten_blood_quest': 'oteryn:quest/rotten-blood',
     'spirit_hunters': None,
@@ -353,7 +354,7 @@ def select_quests(root, selected=None, available=False):
     actual = {path.name for path in directory.glob('*.json')}
     expected = {name + '.json' for name in QUEST_ORDER}
     if selected is None and not available:
-        require(actual == expected, 'batch four requires exactly 21 named inputs; missing=' +
+        require(actual == expected, 'batch four requires exactly 22 named inputs; missing=' +
                 ','.join(sorted(expected - actual)) + '; foreign=' + ','.join(sorted(actual - expected)))
         return QUEST_ORDER
     require(actual <= expected, 'foreign batch-four input names: ' + ','.join(sorted(actual - expected)))

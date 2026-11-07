@@ -1167,6 +1167,29 @@ fn elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal() -> Tes
 }
 
 #[test]
+fn mintwallin_source_asymmetric_lever_and_reward_once_replay_and_refusal() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new().stack_size(256 << 20).spawn(|| -> Result<(), String> {
+        let started = std::time::Instant::now();
+        super::quest_world_callbacks::scenario("mintwallin-source",
+            oteryn_gameplay_quests::quest::world_callbacks::Position {x:32592,y:32107,floor:-14}, false)
+            .map_err(|error| error.to_string())?;
+        let selected: Vec<_> = cases().map_err(|error| error.to_string())?.into_iter()
+            .filter(|case| case.claim == "oteryn:reward-claim.kv.mintwallincyclops").collect();
+        assert_eq!(selected.len(),1);
+        assert_eq!(selected[0].root,"oteryn:item.tibia.i3028");
+        assert_eq!(selected[0].quantity,1);
+        assert!(selected[0].contents.is_empty());
+        execute(selected).map_err(|error| error.to_string())?;
+        println!("POSTGRES_CASE_COMPLETED mintwallin_source_asymmetric_lever_and_reward_once_replay_and_refusal duration={:?}",started.elapsed());
+        Ok(())
+    })?.join().map_err(|_| "Mintwallin source scenario panicked")??;
+    Ok(())
+}
+
+#[test]
 fn quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal() -> TestResult {
     let claims: BTreeSet<_> = [
         "desert2",

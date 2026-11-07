@@ -48,3 +48,15 @@ exact-match charge grants.
 - The current generated floor catalogue does not contain435. Explicitly refuse
   that appearance until its source floor facts and composed routing are implemented;
   absence from the catalogue must not silently make a sewer visual-only.
+
+## Mintwallin qualification
+
+- Production selector remains only AID30008, exactly as the source. The controlled
+  test lever at32592,32107,z14 is a fixture anchor, not a production position alias.
+- All11 declared mutation targets plus consumed trigger execute atomically. The
+  scene builder includes empty targettiles; a missing tile continues to refuse.
+- Source packet count grows21->22 with Mintwallin. Exact named-input gate and
+  corresponding expected-count tests grow together; no gate is weakened.
+- Fresh questpc8@15b02adfd status for Mintwallin isUNFINISHED. This lane's source
+  qualification does not certify a deployed complete World route or unrelated
+  authored stage approximations.
