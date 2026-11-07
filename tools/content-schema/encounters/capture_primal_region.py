@@ -59,12 +59,36 @@ def capture(raw):
         "required_positions": [list(p) for p in sorted(required)], "tiles": [rows[p] for p in sorted(rows)]}
 
 
+def attach_item_semantics(document, raw_bank, raw_xml):
+    expected = [("appearances", raw_bank, "37ce9c8ee497b7edffe809f40d02c5d12ec4ccf0"),
+                ("items XML", raw_xml, "ea4196beae8f77be898f05de89db81de134886b6")]
+    for name, raw, blob in expected:
+        actual = hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\0" + raw).hexdigest()
+        if actual != blob:
+            raise ValueError(f"pinned Crystal {name} blob mismatch")
+    # Reuse the repository item-loader projection. Crystal's source lever
+    # the_primal_manace.lua:8-20 remains the authority for region placements.
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "native-gameplay"))
+    import build_source_world as source_world
+    identities = {item["server_item_id"] for tile in document["tiles"] for item in tile["items"]}
+    policies = source_world.policies(raw_bank, raw_xml, identities)
+    by_id = {policy["server_item_id"]: policy for policy in policies}
+    for tile in document["tiles"]:
+        tile["semantics"] = source_world.tile_semantics(tile, by_id)
+    document["item_policies"] = policies
+    document["item_source_closure"] = [{"path": path, "git_blob": blob, "sha256": hashlib.sha256(raw).hexdigest()}
+        for path, (_, raw, blob) in zip(["data/items/appearances.dat", "data/items/items.xml"], expected)]
+    return document
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--map", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--appearances", type=Path, required=True)
+    parser.add_argument("--items", type=Path, required=True)
     args = parser.parse_args()
-    document = capture(args.map.read_bytes())
+    document = attach_item_semantics(capture(args.map.read_bytes()), args.appearances.read_bytes(), args.items.read_bytes())
     args.output.write_text(json.dumps(document, sort_keys=True, separators=(",", ":")) + "\n")
     print(f"Captured {len(document['tiles'])} source tiles; every required placement exists")
 

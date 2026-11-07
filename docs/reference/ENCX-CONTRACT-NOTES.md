@@ -725,3 +725,15 @@ contains 510 tiles: 504 arena cells plus required source entry/exit cells outsid
 that rectangle. Unknown selected attributes, duplicate cells, substituted bytes,
 missing placements and capacity overflow are rejected. This is source capture,
 not active map admission or creature qualification.
+
+### Primal item semantics capture
+
+The source-region generator now verifies pinned appearances blob
+`37ce9c8ee497b7edffe809f40d02c5d12ec4ccf0` and item XML blob
+`ea4196beae8f77be898f05de89db81de134886b6` before reusing the repository's
+item-loader projection. It emits 89 item policies for the 510 selected tiles.
+All required placements have ground and are not solid-blocked. One dynamic
+item remains explicit: source teleport 1949 at `(33567,32758,15)` has donor
+destination `(0,0,0)` and requires the encounter exit owner; it is not silently
+promoted to ordinary terrain or an invented destination. Three Python tests
+pass, including red-before-green item-source substitution coverage.
