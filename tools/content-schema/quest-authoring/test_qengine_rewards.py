@@ -226,5 +226,21 @@ class QuestRewards(unittest.TestCase):
                 self.assertTrue(row['admission']['materializable'])
                 self.assertIn('CharacterInventory',row['admission']['legal_destinations'])
 
+    def test_draconia_greeting_barter_uses_canonical_npc_and_excludes_only_flag_one(self):
+        rows = [c for c in self.callbacks['callbacks'] if c['key'].startswith('oteryn:quest-reward/draconia-fetish-')]
+        self.assertEqual(len(rows), 2)
+        for row in rows:
+            self.assertEqual(row['npc'], 'oteryn:npc.an_old_dragonlord')
+            self.assertEqual(row['take'], [{'item': 'oteryn:item.tibia.i3723', 'count': 1}])
+            self.assertEqual(row['give'], {'item': 'oteryn:item.tibia.i3206', 'count': 1, 'contents': []})
+            self.assertTrue(row['repeatable'])
+            self.assertEqual(row['storage'][0]['set'], 1)
+            self.assertIn('data-global/npc/an_old_dragon_lord.lua:72:sha256:85016cc0', row['sources'][0])
+        for value in [-1, 0, 1, 2, 9223372036854775807]:
+            matches = [r for r in rows if r['storage'][0]['minimum'] <= value <= r['storage'][0]['maximum']]
+            self.assertEqual(len(matches), 0 if value == 1 else 1)
+        self.assertEqual(q.questl2_rewards.source_path(rows[0]['npc']), 'data-global/npc/an_old_dragon_lord.lua')
+
+
 if __name__=='__main__':
     unittest.main()

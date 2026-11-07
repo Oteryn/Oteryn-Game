@@ -298,7 +298,7 @@
         "AHHH MUSHRRROOOMSSS! NOW MY PAIN WILL BE EASSSED FOR A WHILE! TAKE THISS AND LEAVE THE DRAGONSSS' CEMETERY AT ONCE!"
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/an_old_dragon_lord.lua:sha256:85016cc08856f49d94c507f43bc84f54801d3a2844946ae391015a0d8c84a052"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/an_old_dragon_lord.lua:72:sha256:85016cc08856f49d94c507f43bc84f54801d3a2844946ae391015a0d8c84a052"
       ],
       "repeatable": true,
       "close_after": true,
@@ -307,7 +307,7 @@
       ]
     },
     {
-      "key": "oteryn:quest-reward/draconia-fetish-other",
+      "key": "oteryn:quest-reward/draconia-fetish-later",
       "quest": "oteryn:quest.draconia_quest",
       "npc": "oteryn:npc.an_old_dragonlord",
       "keywords": [
@@ -342,7 +342,7 @@
         "AHHH MUSHRRROOOMSSS! NOW MY PAIN WILL BE EASSSED FOR A WHILE! TAKE THISS AND LEAVE THE DRAGONSSS' CEMETERY AT ONCE!"
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/an_old_dragon_lord.lua:sha256:85016cc08856f49d94c507f43bc84f54801d3a2844946ae391015a0d8c84a052"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/an_old_dragon_lord.lua:72:sha256:85016cc08856f49d94c507f43bc84f54801d3a2844946ae391015a0d8c84a052"
       ],
       "repeatable": true,
       "close_after": true,

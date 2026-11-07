@@ -228,7 +228,7 @@ fn world_ordinal(
     world_remote(callback, trigger, appearance, ordinal, None)
 }
 
-fn world_remote(
+pub(super) fn world_remote(
     callback: &Callback,
     trigger: Position,
     appearance: u16,
@@ -267,6 +267,19 @@ fn world_remote(
         cells
             .entry((position.floor, position.x, position.y))
             .or_default();
+    }
+    // Walkable approaches connect the source offering and remote control cells.
+    for position in callback.offerings.iter().map(|p| p.position).chain(
+        callback.remote_teleport.iter().flat_map(|remote| {
+            std::iter::once(remote.position)
+                .chain(remote.additional.iter().map(|condition| condition.position))
+        }),
+    ) {
+        for x in position.x.saturating_sub(1)..=position.x.saturating_add(1) {
+            for y in position.y.saturating_sub(1)..=position.y.saturating_add(1) {
+                cells.entry((position.floor, x, y)).or_default();
+            }
+        }
     }
     for passage in &callback.passages {
         if passage.replacement == Some(7767) {
@@ -462,6 +475,37 @@ fn world_remote(
                     ground_speed: None,
                 }),
             });
+        }
+    }
+    if let Some(remote) = &callback.remote_teleport {
+        for condition in &remote.additional {
+            let key = format!("oteryn:terrain.tibia.i{}", condition.appearance);
+            let palette =
+                if let Some(index) = data.manifest.palette.iter().position(|p| p.key == key) {
+                    u32::try_from(index)?
+                } else {
+                    let index = u32::try_from(data.manifest.palette.len())?;
+                    data.manifest.palette.push(bundle::PaletteEntry {
+                        key,
+                        family: bundle::Family::Terrain,
+                        id: index,
+                        terrain: Some(bundle::Terrain {
+                            kind: bundle::TerrainKind::Common,
+                            walkable: None,
+                            ground_speed: None,
+                        }),
+                    });
+                    index
+                };
+            let position = condition.position;
+            cells
+                .entry((position.floor, position.x, position.y))
+                .or_default()
+                .push(sector::Item {
+                    palette,
+                    depth: 0,
+                    attrs: Default::default(),
+                });
         }
     }
     let mut effect_appearances = Vec::new();

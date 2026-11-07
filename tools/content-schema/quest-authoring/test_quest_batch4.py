@@ -109,6 +109,64 @@ class QuestBatch4Tests(unittest.TestCase):
                 invalid[field] = value
                 with self.assertRaises(ValueError):
                     tool.validate_callback(invalid, 'thais_lighthouse')
+    def test_failure_teleport_requires_valid_native_position_and_returning_step(self):
+        row = callback('cults_of_tibia', 'failure-landing')
+        row['return_on_failure'] = True
+        row['failure_teleport'] = {'x': 32818, 'y': 31599, 'floor': -9}
+        tool.validate_callback(row, 'cults_of_tibia')
+        for field, value in [('trigger', 'use'), ('return_on_failure', False),
+                             ('failure_teleport', {'x': 1, 'y': 2, 'floor': -16})]:
+            with self.assertRaises(ValueError):
+                tool.validate_callback({**row, field: value}, 'cults_of_tibia')
+
+    def test_conditional_set_is_exact_and_cannot_be_a_read_only_guard(self):
+        row = callback('cults_of_tibia', 'conditional-reset')
+        row['storage'] = [{'track': 'oteryn:quest-progress/conditional-reset/flag',
+                           'minimum': -1, 'maximum': 2, 'set': 0, 'set_if': 1}]
+        tool.validate_callback(row, 'cults_of_tibia')
+        for patch in [{'set_if': 3}, {'set_if': True}, {'preserve': True}, {'read_only': True}]:
+            invalid = copy.deepcopy(row)
+            invalid['storage'][0].update(patch)
+            with self.assertRaises(ValueError):
+                tool.validate_callback(invalid, 'cults_of_tibia')
+
+    def test_remote_conditions_allow_stateless_routes_and_reject_overloading(self):
+        row = json.loads((Path(__file__).parent / 'batches/quests4/formogar_mine_hoist.json').read_text())['callbacks'][0]
+        row['storage'] = []
+        row['remote_teleport'] = {
+            'position': {'x': 32802, 'y': 31584, 'floor': -1}, 'appearance': 2772,
+            'destination': {'x': 32701, 'y': 31639, 'floor': -6},
+            'additional': [{'position': {'x': 32803, 'y': 31584, 'floor': -1}, 'appearance': 2773}],
+        }
+        tool.validate_callback(row, 'formogar_mine_hoist')
+        for edit in range(5):
+            invalid = copy.deepcopy(row)
+            condition = invalid['remote_teleport']['additional'][0]
+            if edit == 0:
+                condition['appearance'] = 0
+            elif edit == 1:
+                condition['position']['floor'] = -16
+            elif edit == 2:
+                condition['position'] = invalid['remote_teleport']['position']
+            elif edit == 3:
+                invalid['remote_teleport']['additional'] *= 8
+            else:
+                invalid['offerings'] = [{'position': {'x': 1, 'y': 2, 'floor': -1},
+                                         'item': 'oteryn:item.tibia.i3031', 'count': 1}]
+            with self.subTest(edit=edit), self.assertRaises(ValueError):
+                tool.validate_callback(invalid, 'formogar_mine_hoist')
+
+    def test_current_crystal_world_witness_requires_lines_and_sha_without_outfit(self):
+        source = ('crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:'
+                  'data-global/scripts/quests/draconia/movement-escape.lua:9-26:'
+                  'sha256:53f3313e99fb541c3e016b5ac09a2e372c0ad8a382786ccd79db6bb40a700312')
+        tool.provenance([source], 'world witness')
+        for invalid in [source.replace(':9-26', ''), source.replace(':9-26', ':26-9'),
+                        source.replace('9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d', 'untrusted'),
+                        source[:-1] + 'g']:
+            with self.subTest(source=invalid), self.assertRaises(ValueError):
+                tool.provenance([invalid], 'world witness')
+        tool.provenance([source.replace(':9-26', '')], 'legacy wardrobe witness', outfit=True)
 
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()

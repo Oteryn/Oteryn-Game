@@ -177,11 +177,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return UseDisposition::Rejected;
             };
-            if remote_tile
+            let mut remote_matches = remote_tile
                 .entries
                 .iter()
-                .any(|entry| entry.facts.appearance_id == remote.appearance)
-            {
+                .any(|entry| entry.facts.appearance_id == remote.appearance);
+            for condition in &remote.additional {
+                if !remote_matches {
+                    break;
+                }
+                let Ok(Some(condition_tile)) = crate::map::view::compose_tile(
+                    &map.overlay,
+                    &map.facts,
+                    tile(condition.position),
+                ) else {
+                    return UseDisposition::Rejected;
+                };
+                remote_matches = condition_tile
+                    .entries
+                    .iter()
+                    .any(|entry| entry.facts.appearance_id == condition.appearance);
+            }
+            if remote_matches {
                 destination = Some(remote.destination);
             }
         }

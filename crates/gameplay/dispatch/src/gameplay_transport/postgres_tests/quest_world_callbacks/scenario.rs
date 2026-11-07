@@ -22,9 +22,12 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let draconia = matches!(name, "draconia-player-journey" | "draconia-lever-exit");
+    let draconia_journey = name == "draconia-player-journey";
+    let failure_landing = name.starts_with("conditional-failure-");
     let paired_plate = name == "l5-thais-plate";
     let monk = name.starts_with("monk-guidance");
-    let qengine_reward = name.starts_with("qengine-rewards-");
+    let qengine_reward = name.starts_with("qengine-rewards-") || draconia_journey;
     let outfit_world = name.starts_with("l1-") && name.ends_with("-wardrobe");
     let classic_npc = qengine_reward
         || matches!(
@@ -43,13 +46,16 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let failure_landing = name.starts_with("conditional-failure-");
-    let mut callback = callback(if paired_plate {
+    let mut callback = callback(if draconia_journey {
+        "draconia-escape-35012"
+    } else if draconia {
+        "draconia-exit-35011"
+    } else if paired_plate {
         "thais-lighthouse-stairs-in"
-    } else if classic_npc {
-        "behemoth"
     } else if failure_landing {
         "liquid-black-shortcut"
+    } else if classic_npc {
+        "behemoth"
     } else if rotten_purchase {
         "rotten-blood/sacrifice"
     } else if monk {
@@ -91,7 +97,9 @@ fn scenario_case(
     if stateless_destination.is_some() {
         assert_eq!(callback.selector.position, Some(trigger));
     }
-    let world = if paired_plate {
+    let world = if draconia && !draconia_journey {
+        super::world_remote(&callback, trigger, 431, 0, Some(2772))?
+    } else if paired_plate {
         super::world_ordinal(&callback, trigger, 431, 1)?
     } else {
         world(&callback, trigger)?
@@ -246,7 +254,18 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if failure_landing {
+        if draconia {
+            super::super::draconia_quest::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                &callback,
+                trigger,
+                draconia_journey,
+            )
+            .await?;
+        } else if failure_landing {
             super::super::conditional_callback_failure::exercise(
                 &owner,
                 &mut admitted,
@@ -256,7 +275,11 @@ fn scenario_case(
                 if name.ends_with("blocked") {
                     trigger
                 } else {
-                    callback.failure_teleport.ok_or("failure landing")?
+                    Position {
+                        x: 32818,
+                        y: 31599,
+                        floor: -9,
+                    }
                 },
             )
             .await?;

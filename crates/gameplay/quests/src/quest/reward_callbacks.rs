@@ -449,7 +449,7 @@ mod tests {
         let source = include_str!("../../../../../content/quests/shared-reward-callbacks.json");
         let callbacks = load()?;
         assert!(callbacks.len() >= 6);
-        for edit in 0..7 {
+        for edit in 0..8 {
             let mut value: serde_json::Value =
                 serde_json::from_str(source).map_err(|e| e.to_string())?;
             match edit {
@@ -468,6 +468,7 @@ mod tests {
                 }
                 4 => value["callbacks"][0]["unknown"] = true.into(),
                 6 => value["callbacks"][0]["storage"][0]["read_only"] = true.into(),
+                7 => value["callbacks"][0]["storage"][0]["set_if"] = 1.into(),
                 _ => {
                     value["callbacks"][0]["take"] = serde_json::json!([{"item":"oteryn:item.tibia.i139","count":1},{"item":"oteryn:item.tibia.i139","count":1}])
                 }

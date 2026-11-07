@@ -128,6 +128,7 @@ fn questpc5_l5_remote_hoist_uses_current_tile_and_both_instructions() -> TestRes
         });
         callback.remote_teleport = Some(
             oteryn_gameplay_quests::quest::world_callbacks::RemoteTeleport {
+                additional: Vec::new(),
                 position: Position {
                     x: 32156,
                     y: 31125,

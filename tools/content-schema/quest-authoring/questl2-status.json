@@ -230,6 +230,89 @@
       "implementation_guards": [
         "Pending conclusion policy survives reconciliation and cannot close a newer context"
       ]
+    },
+    {
+      "name": "exact-value conditional storage effects",
+      "status": "QUALIFIED",
+      "source_commit": "be812420e3c20d9dd8ae6c3c23a9c4acb942ceda",
+      "red_before_change": {
+        "postgresql": "18.6",
+        "test": "quest_conditional_reset_preserves_absent_initial_flag_and_replays",
+        "duration_seconds": 2.86,
+        "observed": 0,
+        "expected": -1
+      },
+      "postgres": [
+        {
+          "marker": "POSTGRES_CASE_COMPLETED conditional-reset-later",
+          "duration_seconds": 3.728290096,
+          "passed": true,
+          "postgresql": "18.6"
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED conditional-reset-absent",
+          "duration_seconds": 3.733027436,
+          "passed": true,
+          "postgresql": "18.6"
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED conditional-reset-match",
+          "duration_seconds": 3.736739252,
+          "passed": true,
+          "postgresql": "18.6"
+        }
+      ],
+      "scope": "Generic effects, NPC source programmes, rewards and world callbacks; full Draconia journey is separately QUALIFIED."
+    },
+    {
+      "name": "bounded composed tile conjunctions and explicit callback recovery landing",
+      "status": "QUALIFIED",
+      "red_before_change": {
+        "postgresql": "18.6",
+        "duration_seconds": 44.82,
+        "test": "conditional_quest_failure_uses_authored_landing_and_replays_once",
+        "observed_cell": {
+          "x": 32817,
+          "y": 31598,
+          "floor": -9
+        },
+        "expected_cell": {
+          "x": 32818,
+          "y": 31599,
+          "floor": -9
+        }
+      },
+      "postgres": [
+        {
+          "marker": "POSTGRES_CASE_COMPLETED draconia-lever-exit",
+          "duration_seconds": 69.80870223,
+          "postgresql": "18.6",
+          "passed": true
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED draconia-player-journey",
+          "duration_seconds": 81.375123029,
+          "postgresql": "18.6",
+          "passed": true
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED conditional-failure-landing",
+          "duration_seconds": 45.492613937,
+          "postgresql": "18.6",
+          "passed": true
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED conditional-failure-blocked",
+          "duration_seconds": 45.501275796,
+          "postgresql": "18.6",
+          "passed": true
+        }
+      ],
+      "reuse_commits": [
+        "c651c87d52acd0fcc56c5b426a1e9f27ab0b92ba",
+        "be812420e3c20d9dd8ae6c3c23a9c4acb942ceda",
+        "3bfd856061e5aa89668747ec7405af8c2b8cf7f5"
+      ]
     }
   ],
   "entries": [
@@ -310,11 +393,68 @@
     },
     {
       "title": "Draconia",
-      "status": "PENDING",
-      "evidence": [],
-      "progress": {
-        "greeting_lifecycle": "PostgreSQL GREEN134.055955613s; exact payment, refusal, focus release and held-flag refusal",
-        "integration": "The remote branch66bea9a40 has published the full offering/alternative-exit journeys; merge and rerun them before push."
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "marker": "POSTGRES_CASE_COMPLETED draconia-lever-exit",
+          "duration_seconds": 69.80870223,
+          "postgresql": "18.6",
+          "passed": true
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED draconia-player-journey",
+          "duration_seconds": 81.375123029,
+          "postgresql": "18.6",
+          "passed": true
+        }
+      ],
+      "journey": [
+        "Fresh player has no seeded quest progress",
+        "Missing mushrooms refuse without items or quest receipts",
+        "NPC greeting consumes one mushroom and atomically issues the fetish and flag 1",
+        "Flag 1 prevents another paid issue",
+        "The player moves the actually issued fetish to the source offering cell through the fenced custody owner",
+        "Offering consumption, exact flag reset to 0 and exit share the callback transaction",
+        "Replayed exit and lever commands do not repeat effects",
+        "Each of four incorrect composed lever appearances prevents the alternative exit; restoring all four permits it"
+      ],
+      "legacy_levers_regression": {
+        "test": "classic_draconia_real_levers_open_and_restore_the_source_obstacles",
+        "passed": true,
+        "batch_duration_seconds": 89.75
+      },
+      "deployment": {
+        "npc": "oteryn:npc.an_old_dragonlord",
+        "cell": {
+          "x": 32796,
+          "y": 31558,
+          "floor": 2
+        },
+        "test": "test_l2_reward_and_programme_npcs_have_global_deployment_cells"
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/an_old_dragon_lord.lua:61-74:sha256:85016cc08856f49d94c507f43bc84f54801d3a2844946ae391015a0d8c84a052",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/draconia/movement-escape.lua:9-26:sha256:53f3313e99fb541c3e016b5ac09a2e372c0ad8a382786ccd79db6bb40a700312",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/draconia/movement-exit_teleport.lua:1-36:sha256:80af40ac459eb655670472a0391db78590d456827917d4a64e714947b64723a4"
+      ],
+      "post_merge_regression": [
+        {
+          "marker": "POSTGRES_CASE_COMPLETED draconia-lever-exit",
+          "duration_seconds": 109.142025186,
+          "postgresql": "18.6",
+          "passed": true
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED draconia-player-journey",
+          "duration_seconds": 132.364095502,
+          "postgresql": "18.6",
+          "passed": true
+        }
+      ],
+      "greeting_conclusion_evidence": {
+        "postgres_test": "questl2_draconia_greeting_item_lifecycle",
+        "seconds": 111.913960258,
+        "source_focus_rule": "All donor greeting branches return false; success and refusal close NPC focus."
       }
     },
     {
@@ -589,16 +729,16 @@
   ],
   "validation": {
     "quest_unit_tests": {
-      "passed": 273,
+      "passed": 274,
       "failed": 0,
-      "seconds": 24.56,
-      "log": "/tmp/l2-close-fee-quest-units.log"
+      "seconds": 24.31,
+      "log": "/tmp/l2-draconia-merged-quest-units.log"
     },
     "reward_authoring_tests": {
-      "passed": 47,
+      "passed": 48,
       "failed": 0,
-      "seconds": 34.307,
-      "log": "/tmp/l2-close-fee-authoring-final2.log"
+      "seconds": 35.166,
+      "log": "/tmp/l2-draconia-merged-reward-tests.log"
     },
     "l2_authoring_baseline": {
       "passed": 4,
@@ -651,11 +791,11 @@
       "checked": true,
       "digest": "95a27e96102f561e9fba4843e3d8cd7026fc3bff78f44ab0cb5fe416da327942",
       "bytes": 31102308,
-      "tool": "regenerate_content.py --resolve --no-stage --skip-checks; convert_placements.py; world-bundle-compiler pin-refresh and pin-check",
-      "regeneration_log": "/tmp/l2-close-fee-regenerate.log",
-      "pin_check_log": "/tmp/l2-close-fee-final-pin-check.log"
+      "tool": "convert_placements.py; regenerate_content.py --resolve --no-stage --skip-checks; world-bundle-compiler pin-check",
+      "regeneration_log": "/tmp/l2-draconia-merged-regenerate.log",
+      "pin_check_log": "/tmp/l2-draconia-merged-pin-check.log"
     },
-    "formatting": "cargo fmt --all --check passed; explicitly formatted auto-mounted PostgreSQL modules",
+    "formatting": "cargo fmt --all --check passed after full Draconia/payment integration",
     "content_tests": {
       "integration_rest_content": 123,
       "content_world_project_repository": 5,
@@ -731,8 +871,8 @@
     "npc_placement_tests": {
       "passed": 11,
       "failed": 0,
-      "seconds": 0.21,
-      "log": "/tmp/l2-close-fee-placements-final.log"
+      "seconds": 0.327,
+      "log": "/tmp/l2-draconia-merged-placements.log"
     },
     "build_resource_settings": {
       "incremental": false,
@@ -768,27 +908,14 @@
       "failed": 0
     },
     "latest_focused_postgres": {
-      "passed": 3,
+      "passed": 7,
       "failed": 0,
       "selected_skipped": 0,
-      "unselected": 2627,
-      "seconds": 247.537,
-      "log": "/tmp/l2-close-fee-pg-green.log",
+      "unselected": 2625,
+      "seconds": 483.562,
+      "log": "/tmp/l2-draconia-merged-pg.log",
       "postgres_server": "18.6 (Debian 18.6-1.pgdg13+2)",
-      "cases": [
-        {
-          "test": "questl2_draconia_greeting_item_lifecycle",
-          "seconds": 134.055955613
-        },
-        {
-          "test": "qengine_l4_nobleman_paid_outfit_story",
-          "seconds": 141.869044076
-        },
-        {
-          "test": "questl2_repeatable_token_exchange",
-          "seconds": 113.298902002
-        }
-      ]
+      "scope": "Both full Draconia exits, classic wall levers, source greeting conclusion, exact native payment story, paid token repeat and atomic Father acceptance/replay"
     },
     "latest_clippy": {
       "packages": [
@@ -799,7 +926,7 @@
       "all_targets": true,
       "deny_warnings": true,
       "exit_code": 0,
-      "log": "/tmp/l2-close-fee-clippy.log"
+      "log": "/tmp/l2-draconia-merged-clippy.log"
     },
     "verified_conditional_parent": {
       "commit": "ae8ae247a",
@@ -814,10 +941,8 @@
     },
     "merged_authoring": {
       "batch3": 7,
-      "batch4": 19,
-      "claims": 4,
-      "providers": 6,
-      "state_lowering": 12,
+      "batch4": 21,
+      "reward_authoring": 48,
       "failed": 0
     },
     "overlapping_conditional_remote": {
@@ -837,7 +962,13 @@
     "reward_reproducibility": {
       "passed": true,
       "tool": "qengine_rewards.py --check",
-      "log": "/tmp/l2-close-fee-reproduce.log"
+      "log": "/tmp/l2-draconia-merged-reproduce.log"
+    },
+    "native_fetish_provider_tests": {
+      "passed": 9,
+      "failed": 0,
+      "seconds": 7.096,
+      "log": "/tmp/l2-draconia-merged-emperor-tests.log"
     }
   },
   "cross_lane_inspection": {
@@ -883,6 +1014,32 @@
       "reviewed_head": "4ddf4bcff",
       "implementation": "Reusable exact native coin/bank payment participant and cross-quest read-only prerequisites; retain L2 repeatability, conditional writes and shared sixteen-track cap.",
       "migration": "1142_quest_reward_payments.sql, original1000 conflicts with imported corruptor lifecycle migration"
+    },
+    "draconia_remote_merge": {
+      "commit": "66bea9a4095aefbfb120d92366df9c20920195b1",
+      "scope": "Reuse full offering/alternative-exit journeys and generic composed remote-tile predicates; keep payment support and source greeting conclusion.",
+      "previous_remote_validation": {
+        "passed": 8,
+        "failed": 0,
+        "selected_skipped": 0,
+        "unselected": 2612,
+        "seconds": 485.917,
+        "log": "/tmp/l2-foundation-merge-pg.log",
+        "postgres_server": "18.6 (Debian 18.6-1.pgdg13+2)",
+        "scenarios": [
+          "conditional failure landing",
+          "blocked conditional failure landing",
+          "atomic source acceptance and replay",
+          "eight Father hand-ins, cape, XP, replay",
+          "exact reset match",
+          "absent reset preservation",
+          "later reset preservation",
+          "paid repeat token exchange"
+        ],
+        "atomic_acceptance_seconds": 212.269035909,
+        "father_handins_seconds": 235.933230805,
+        "repeat_exchange_seconds": 134.911461154
+      }
     }
   },
   "next_batch": {
