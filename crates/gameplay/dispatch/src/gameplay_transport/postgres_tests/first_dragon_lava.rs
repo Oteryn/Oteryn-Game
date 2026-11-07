@@ -6,7 +6,7 @@ use super::threatened_dreams::barriers::{
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::foundation::ChannelRuntimeV1;
-use oteryn_gameplay_quests::quest::world_callbacks::{Passage, Position};
+use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Passage, Position};
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTrack};
 use oteryn_gameplay_world::map::view::MapFacts;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
@@ -90,7 +90,7 @@ fn fixture_catalogue() -> TestResult<QuestStateCatalogue> {
         );
     }
     QuestStateCatalogue::new("content-1", tracks.into_values().collect(), transitions)
-        .map_err(|e| debug(e))
+        .map_err(debug)
 }
 fn scenario() -> TestResult {
     let catalogue = Arc::new(fixture_catalogue()?);
@@ -130,20 +130,24 @@ fn scenario() -> TestResult {
         geometry.item_on_target = None;
         geometry.carried_use = None;
         // These fields construct fixture geometry, never grants or executable offerings.
-        geometry.passages = [
-            (INNER, 25160),
-            (WRONG, 25160),
-            (INSIDE, 100),
-            (OUTSIDE, 100),
-        ]
-        .into_iter()
-        .map(|(at, appearance)| Passage {
-            position: position(at),
-            appearance,
-            replacement: None,
-        })
-        .collect();
-        geometry.offerings.clear();
+        geometry.passages = [(INNER, 25160), (WRONG, 25160)]
+            .into_iter()
+            .map(|(at, appearance)| Passage {
+                position: position(at),
+                appearance,
+                replacement: None,
+            })
+            .collect();
+        // Offering coordinates add empty walkable geometry; no Item is minted.
+        // A Passage with a new appearance would instead create a blocking wall.
+        geometry.offerings = [INSIDE, OUTSIDE]
+            .into_iter()
+            .map(|at| Offering {
+                position: position(at),
+                item: ITEMS[0].into(),
+                count: 1,
+            })
+            .collect();
         let world = super::quest_world_callbacks::world(&geometry, position(first))?;
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
@@ -259,8 +263,8 @@ fn scenario() -> TestResult {
             "wrong target never charges"
         );
         let mut completed = 0;
-        for i in 0..4 {
-            let source = source_instance(&owner, &admitted, ITEMS[i]).await?;
+        for (i, (item, flag)) in ITEMS.iter().zip(FLAGS).enumerate() {
+            let source = source_instance(&owner, &admitted, item).await?;
             let command = 38100 + u64::try_from(i)? * 10;
             let result = use_tool(
                 &mut owner,
@@ -271,15 +275,8 @@ fn scenario() -> TestResult {
             )
             .await?;
             if result == UseDisposition::Committed
-                && quantity(&h, ITEMS[i]).await? == 1
-                && progress(
-                    &owner,
-                    &admitted,
-                    &authority,
-                    &format!("{BASE}{}", FLAGS[i]),
-                )
-                .await?
-                    == 1
+                && quantity(&h, item).await? == 1
+                && progress(&owner, &admitted, &authority, &format!("{BASE}{flag}")).await? == 1
             {
                 completed += 1;
                 assert_eq!(
@@ -298,7 +295,7 @@ fn scenario() -> TestResult {
                     UseDisposition::Committed,
                     "exact consumed-source replay"
                 );
-                let spare = source_instance(&owner, &admitted, ITEMS[i]).await?;
+                let spare = source_instance(&owner, &admitted, item).await?;
                 use_tool(
                     &mut owner,
                     &admitted,
@@ -308,7 +305,7 @@ fn scenario() -> TestResult {
                 )
                 .await?;
                 assert_eq!(
-                    quantity(&h, ITEMS[i]).await?,
+                    quantity(&h, item).await?,
                     1,
                     "duplicate trophy never charges"
                 );
@@ -343,12 +340,18 @@ fn scenario() -> TestResult {
                 super::quest_world_callbacks::local(position(INSIDE))
             );
             portals += 1;
+            // Respect ordinary USE pacing before returning through the other source.
+            owner.clock_origin = owner
+                .clock_origin
+                .checked_sub(std::time::Duration::from_secs(2))
+                .ok_or("clock")?;
             let exit =
                 super::quest_world_callbacks::wire(&owner, &mut admitted, 4, 2, plain(INNER)?)
                     .await?;
-            if oteryn_protocol_oteryn::world_object::decode_use_result(&exit).map_err(debug)?
-                == UseDisposition::Committed
-            {
+            let exit_disposition =
+                oteryn_protocol_oteryn::world_object::decode_use_result(&exit).map_err(debug)?;
+            eprintln!("FIRST_DRAGON_LAVA return_disposition={exit_disposition:?}");
+            if exit_disposition == UseDisposition::Committed {
                 assert_eq!(
                     owner
                         .runtime
@@ -365,10 +368,24 @@ fn scenario() -> TestResult {
         for at in [OUTER, INNER] {
             let key = oteryn_world_bundle::bundle::placement_key(at.2, at.0, at.1, 1)
                 .ok_or("placement")?;
+            let map = owner.bundle_map().ok_or("map")?;
             assert_eq!(
-                owner.bundle_map().ok_or("map")?.facts.object_revision(key),
-                0,
-                "lava source never transforms"
+                map.facts.object_revision(key),
+                1,
+                "one committed USE per lava source"
+            );
+            let pos = crate::map::overlay::TilePos {
+                x: at.0,
+                y: at.1,
+                floor: at.2,
+            };
+            assert_eq!(
+                map.facts
+                    .base_entry(pos, 1, 1)
+                    .ok_or("current lava facts")?
+                    .appearance_id,
+                25160,
+                "committed lava USE preserves the actual appearance"
             );
         }
         let receipts:i64=sqlx::query_scalar("SELECT count(*) FROM game_quest_callback_consumptions WHERE transition_key LIKE 'oteryn:quest-transition/questpc3/first-dragon-lava/%'").fetch_one(&h.pool).await?;

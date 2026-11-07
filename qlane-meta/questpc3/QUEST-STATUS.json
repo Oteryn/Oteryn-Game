@@ -5181,7 +5181,7 @@
     },
     "current_batch": {
       "batch": "first_dragon_lava_19",
-      "phase": "WIP compiling checkpoint: six callbacks and strict four-item admissions authored; focused PG GREEN pending",
+      "phase": "WIP compiling fixture correction checkpoint; four sacrifices proven; final paced portal PG qualification next",
       "entries": [
         "sacrifice24939 Scale once",
         "sacrifice24940 Tooth once",
@@ -5209,12 +5209,21 @@
         "log": "/tmp/questpc3-first-dragon-lava-red.log"
       },
       "checks": {
-        "workspace_all_targets": "PASS2m12s /tmp/questpc3-first-dragon-lava-check-retry.log",
-        "fmt": "PASS /tmp/questpc3-first-dragon-lava-fmt-retry.log",
+        "workspace_all_targets": "PASS54.69s /tmp/questpc3-first-dragon-lava-paced-final-check.log",
+        "fmt": "PASS /tmp/questpc3-first-dragon-lava-paced-final-fmt.log",
         "authoring": "PASS --check; Item admissions --check changed0",
         "native_profiles": "PASS registered spell import files43",
         "pins": "PASS repository world-bundle-compiler pin-refresh /tmp/questpc3-first-dragon-lava-pins.log",
-        "postgres_green": "NOT_RUN_YET; immediately after checkpoint push"
+        "postgres_green": "NEXT: final source appearance+version+pacing proof; no whole/cohort qualification yet"
+      },
+      "partial_pg_proof": {
+        "version": "18.6",
+        "sacrifices": 4,
+        "consumption_receipts": 4,
+        "counter": 4,
+        "positive_entry_destination": "31994,32391,-9",
+        "log": "/tmp/questpc3-first-dragon-lava-green-final.log",
+        "remaining_red": "Immediate return USE hits the existing200ms world-action clock; now fixture advances2s before return"
       }
     },
     "diagnosis": {
@@ -9811,7 +9820,7 @@
       },
       "review": "Read strict combined admission union, all unchanged conflicting Item weights, retained source observation guards, disjoint NPC producer prefixes, both new physical PG contracts and generated input witnesses. All three PG cases, 4callbackunits,15profiles,9authoring,actual15case/776creatureprey,check/strictClippy3crates,123content,5repository andpinchecks pass; no blocking finding."
     },
-    "updated_at": "2026-11-07T20:35:20.468113+00:00",
+    "updated_at": "2026-11-07T21:04:31.150234+00:00",
     "standing_validation_rule": {
       "owner_override": "Latest HARD RULE: push compiling state after cargo check --workspace --all-targets and fmt; CI owns full suites; push at least every30minutes",
       "before_each_push": [
