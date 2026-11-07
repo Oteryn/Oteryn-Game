@@ -783,9 +783,10 @@
       ],
       "full_test_log": "/tmp/questpc5-main-dependent-baseline.log"
     },
-    "current_batch": "Ground/pot component and main integration GREEN; ten distinct actual PG18.6 cases passed, workspace/all-target check, strict changed-crate Clippy, fmt, duplicate and pin/generated checks passed. Commit/push this batch, then whole trial remains active.",
-    "migration_registry": "Main 0999-1008 unchanged; no 1200-1205 paths; lane distinct mechanisms 1270-1278, peer canonical 1300. Fresh PG checksum proof pending.",
-    "component_proof": "qlane-meta/questpc5/cloud-main-merge-proof.json"
+    "current_batch": "Migration ownership correction GREEN: fresh PostgreSQL 18.6 registry case passed in 4.635718145s without local prerequisite copies; workspace all-target check, strict changed-crate Clippy, fmt, duplicate and pin refresh/check passed. Whole Serpentine route work preserved separately for the next mechanic slice.",
+    "migration_registry": "Owner correction: lane ships only 1270-1276; remove foreign Father 1277, obsolete dependent repair 1278, and QUESTPC8 1300. Father and backpack-output integration require QNPCFX #3027 and QUESTPC8 from main; no local migration copies shipped.",
+    "component_proof": "qlane-meta/questpc5/cloud-main-merge-proof.json",
+    "migration_ownership_proof": "qlane-meta/questpc5/cloud-migration-ownership-proof.json"
   },
   {
     "canonical": "oteryn:quest.thais_lighthouse_quest",

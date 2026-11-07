@@ -1,0 +1,61 @@
+{
+  "status": "GREEN_MIGRATION_OWNERSHIP_CORRECTION",
+  "base_head": "e948ee0599dca58a8ae3c842cbf4a618ddfa4cfe",
+  "owner_direction": "Remove foreign 1277 and 1300; consume QNPCFX #3027 and QUESTPC8 after their owner-announced main merges.",
+  "removed": [
+    "1277_fathers_burden_items.sql",
+    "1278_fathers_burden_xp_guard.sql",
+    "1300_questpc8_reward_backpack_outputs.sql"
+  ],
+  "remaining_lane_migrations": [
+    "1270_spell_static_map_fields.sql",
+    "1271_quest_world_reward_sources.sql",
+    "1272_quest_finish.sql",
+    "1273_corruptor_lifecycle.sql",
+    "1274_questpc_npc_revision.sql",
+    "1275_questpc_viola.sql",
+    "1276_questpc_viola_book.sql"
+  ],
+  "obsolete_1278": "Only repaired the removed Father function. QNPCFX a3ebe0bcf77750943b2193b316380b935b7bf0f7:apps/game-server/migrations/1315_npc_fathers_burden_items.sql:71 already uses required_xp.",
+  "focused_postgres": {
+    "test": "questpc5_registered_migration_numbers_checksums_and_canonical_guards",
+    "passed": 1,
+    "server_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "marker": "POSTGRES_CASE_COMPLETED questpc5_migration_registry",
+    "duration_seconds": 4.635718145,
+    "log": "/tmp/questpc5-owner-drop-migrations-pg.log",
+    "schema": "Fresh schema; no local uncommitted prerequisite migration copies used."
+  },
+  "workspace_all_targets": {
+    "exit": 0,
+    "duration": "4m 14s",
+    "log": "/tmp/questpc5-owner-drop-migrations-check.log"
+  },
+  "fmt": {
+    "exit": 0,
+    "log": "/tmp/questpc5-owner-drop-migrations-fmt.log"
+  },
+  "duplicate_migrations": {
+    "exit": 0,
+    "method": ".claude/skills/oteryn-dev/scripts/dup-migrations.sh $(git write-tree)"
+  },
+  "pins": {
+    "refresh_exit": 0,
+    "check_exit": 0,
+    "log": "/tmp/questpc5-owner-drop-migrations-pin-check.log",
+    "unchanged": true
+  },
+  "scope": "Migration ownership correction only; preserved product code. Father and backpack-output integration consume their owning PRs from main, as explicitly directed by owner.",
+  "clippy": {
+    "exit": 0,
+    "crates": [
+      "oteryn-gameplay-dispatch",
+      "oteryn-game-server"
+    ],
+    "all_targets": true,
+    "all_features": true,
+    "deny_warnings": true,
+    "duration_including_build_lock_wait": "13m 16s",
+    "log": "/tmp/questpc5-owner-drop-migrations-clippy.log"
+  }
+}

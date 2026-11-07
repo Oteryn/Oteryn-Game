@@ -38,9 +38,6 @@ fn questpc5_registered_migration_numbers_checksums_and_canonical_guards() -> Tes
             (1274, include_str!("../../../../../../apps/game-server/migrations/1274_questpc_npc_revision.sql")),
             (1275, include_str!("../../../../../../apps/game-server/migrations/1275_questpc_viola.sql")),
             (1276, include_str!("../../../../../../apps/game-server/migrations/1276_questpc_viola_book.sql")),
-            (1277, include_str!("../../../../../../apps/game-server/migrations/1277_fathers_burden_items.sql")),
-            (1278, include_str!("../../../../../../apps/game-server/migrations/1278_fathers_burden_xp_guard.sql")),
-            (1300, include_str!("../../../../../../apps/game-server/migrations/1300_questpc8_reward_backpack_outputs.sql")),
         ];
         for (version, sql) in expected {
             let (success, checksum): (bool, Vec<u8>) =
@@ -73,15 +70,16 @@ fn questpc5_registered_migration_numbers_checksums_and_canonical_guards() -> Tes
             guard.contains("r.cause_kind='use'"),
             "literal world source extension is installed"
         );
-        let father: String = sqlx::query_scalar(
-            "SELECT pg_get_functiondef('game_father_values_proven()'::regprocedure)",
-        )
-        .fetch_one(&h.pool)
-        .await?;
-        assert!(
-            father.contains("x.amount=expected_xp"),
-            "local ambiguity repair belongs to the lane extension"
-        );
+        for name in [
+            "1277_fathers_burden_items.sql",
+            "1278_fathers_burden_xp_guard.sql",
+            "1300_questpc8_reward_backpack_outputs.sql",
+        ] {
+            let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../../apps/game-server/migrations")
+                .join(name);
+            assert!(!path.exists(), "foreign migration or obsolete repair: {name}");
+        }
         h.cleanup().await?;
         eprintln!(
             "POSTGRES_CASE_COMPLETED questpc5_migration_registry duration={:?}",
