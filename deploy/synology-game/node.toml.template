@@ -86,9 +86,6 @@ source_authority = "oteryn:game:primary"
 # Reuses the Platform endpoint and trust roots; never shares the LCFA epoch fence.
 [platform.public_projections]
 enabled = false
-world_daily_enabled = false
-character_online_sessions_enabled = false
-world_daily_kills_enabled = false
 source_authority = "oteryn:game:primary"
 client_certificate_file = "<BASE>/node/secrets/public-projections.crt"
 client_key_file = "<BASE>/node/secrets/public-projections.key"

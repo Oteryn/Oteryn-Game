@@ -451,14 +451,8 @@ struct Material {
     /// Public-projection publisher: its identity, source authority and epoch
     /// fence `F_pub`; `None` (absent or not enabled) disables it. Taken once
     /// by the serving loop.
-    public_projections: std::sync::Mutex<
-        Option<(
-            PublicProjectionDescriptor,
-            String,
-            std::path::PathBuf,
-            public_projections::v2::Activation,
-        )>,
-    >,
+    public_projections:
+        std::sync::Mutex<Option<(PublicProjectionDescriptor, String, std::path::PathBuf)>>,
     world_event_outcomes: std::sync::Mutex<Option<t94::Material>>,
     descriptor: DescriptorRegistration,
     launch: LaunchAuthorizationFile,
@@ -791,11 +785,6 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
                 descriptor,
                 public.source_authority.clone(),
                 public.epoch_fence_file.clone(),
-                public_projections::v2::Activation {
-                    world_daily: public.world_daily_enabled,
-                    character_online_sessions: public.character_online_sessions_enabled,
-                    world_daily_kills: public.world_daily_kills_enabled,
-                },
             ))
         }
         _ => None,
@@ -1157,15 +1146,10 @@ pub async fn public_store_readable(root: &DurabilityRoot) -> Option<bool> {
 async fn public_projections_loop(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
-    public: Option<(
-        PublicProjectionDescriptor,
-        String,
-        std::path::PathBuf,
-        public_projections::v2::Activation,
-    )>,
+    public: Option<(PublicProjectionDescriptor, String, std::path::PathBuf)>,
     stop: &CancellationToken,
 ) {
-    let Some((descriptor, source_authority, fence, activation)) = public else {
+    let Some((descriptor, source_authority, fence)) = public else {
         return;
     };
     match first(
@@ -1182,7 +1166,7 @@ async fn public_projections_loop(
         Some(true) => {}
     }
     event("event=public_projections state=started");
-    let mut publisher = public_projections::Publisher::new(
+    let publisher = public_projections::Publisher::new(
         SystemClock::default(),
         crate::durability::public_projections::PublicProjectionsStore { root, authority },
         MtlsPublicSink::new(descriptor),
@@ -1190,7 +1174,6 @@ async fn public_projections_loop(
         source_authority,
         crate::durability::account_characters_projection::MAX_CHARACTER_TRANSACTION,
     );
-    publisher.v2_activation = activation;
     first(publisher.run(), stop.cancelled()).await;
 }
 

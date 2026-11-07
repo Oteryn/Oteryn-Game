@@ -97,21 +97,9 @@ pub(super) async fn write_transition(
                 .bind(world.as_bytes().as_slice()).bind(key.as_str()).bind(firing.ordinal.to_string()).bind(state)
                 .execute(&mut **tx).await?;
         } else {
-            // PUBPROJ-C: only the typed fixed-slot planner advances the consumed
-            // slot on this new firing (encounter-rules/raid/schedule.rs:234-239).
-            // SourceScheduled calendar callbacks and random checks stay private.
-            let public_fixed_slot = after
-                .last_fixed_slot_ms
-                .filter(|slot| transition.before().last_fixed_slot_ms != Some(*slot));
-            let public_policy = if public_fixed_slot.is_some() {
-                2_i16
-            } else {
-                1_i16
-            };
-            sqlx::query("INSERT INTO public.game_world_raid_firings(world_id,raid_key,ordinal,firing_id,reset_epoch,fired_at_ms,deadline_ms,bundle_digest,state,public_daily_policy,public_fixed_slot_ms) VALUES(encode($1,'hex')::uuid,$2,$3::text::numeric,encode($4,'hex')::uuid,$5::text::numeric,$6,$7,$8,$9,$10,$11)")
+            sqlx::query("INSERT INTO public.game_world_raid_firings(world_id,raid_key,ordinal,firing_id,reset_epoch,fired_at_ms,deadline_ms,bundle_digest,state) VALUES(encode($1,'hex')::uuid,$2,$3::text::numeric,encode($4,'hex')::uuid,$5::text::numeric,$6,$7,$8,$9)")
                 .bind(world.as_bytes().as_slice()).bind(key.as_str()).bind(firing.ordinal.to_string()).bind(firing.firing_id.as_slice())
                 .bind(firing.reset_epoch.to_string()).bind(firing.fired_at_ms).bind(firing.deadline_ms).bind(firing.bundle_digest.as_slice()).bind(state)
-                .bind(public_policy).bind(public_fixed_slot)
                 .execute(&mut **tx).await?;
         }
     }

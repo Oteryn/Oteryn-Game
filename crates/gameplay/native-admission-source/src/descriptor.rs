@@ -62,7 +62,6 @@ pub enum Operation {
     PublishCharacterDeathsV2,
     PublishGuildV2,
     PublishHouseV2,
-    PublishWorldDailyV2,
     PublishPublicProjectionWatermarkV2,
     /// Public projection liveness watermark (same contract, §5.1).
     PublishPublicProjectionWatermarkV1,
@@ -123,7 +122,6 @@ impl Operation {
             Self::PublishCharacterDeathsV2 => "/internal/v2/game-public/character-deaths",
             Self::PublishGuildV2 => "/internal/v2/game-public/guild",
             Self::PublishHouseV2 => "/internal/v2/game-public/house",
-            Self::PublishWorldDailyV2 => "/internal/v2/game-public/world-daily",
             Self::PublishPublicProjectionWatermarkV2 => "/internal/v2/game-public/watermark",
             Self::PublishPublicProjectionWatermarkV1 => super::public_projections::WATERMARK_PATH,
             Self::PublishGameRestoreNoticeV1 => super::restore_notice::PATH,
@@ -184,7 +182,6 @@ impl Operation {
             Self::PublishCharacterDeathsV2 => 32_768,
             Self::PublishGuildV2 => 393_216,
             Self::PublishHouseV2 => 2_048,
-            Self::PublishWorldDailyV2 => super::public_projections::v2::world_daily::REQUEST_BYTES,
             Self::PublishPublicProjectionWatermarkV2 => 512,
             Self::PublishPublicProjectionWatermarkV1 => super::public_projections::WATERMARK_BYTES,
             Self::PublishGameRestoreNoticeV1 => super::restore_notice::NOTICE_BYTES,

@@ -1,16 +1,14 @@
 //! Bounded V2 delivery passes under independently reconciled Character authority.
 use super::*;
-use crate::native_admission_source::public_projections::v2::{Body, Facts, Family, Snapshot};
+use crate::native_admission_source::public_projections::v2::{Body, Family, Facts, Snapshot};
 
 impl DurabilityRoot {
     pub async fn next_public_v2(
-        &self,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        family: Family,
+        &self, authority: &ReconciledCharacterAuthority<'_, '_>, family: Family,
         held: &[String],
     ) -> Result<Option<Snapshot>> {
-        let recovery = authority.record_for(self)?;
-        let held = held.to_vec();
+        let recovery=authority.record_for(self)?;
+        let held=held.to_vec();
         self.try_issue_semantic_pass()?.run(move |holder,deadline| Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;
@@ -28,7 +26,6 @@ impl DurabilityRoot {
                         Family::CharacterDeaths=>Body::Deaths(serde_json::from_str(&payload).map_err(invalid)?),
                         Family::Guild=>Body::Guild(serde_json::from_str(&payload).map_err(invalid)?),
                         Family::House=>Body::House(serde_json::from_str(&payload).map_err(invalid)?),
-                        Family::WorldDaily=>Body::WorldDaily(serde_json::from_str(&payload).map_err(invalid)?),
                     };
                     Some(Snapshot { subject:row.try_get("subject")?, world_id:row.try_get("world_id")?,
                         projection_epoch:positive(row.try_get("projection_epoch")?).map_err(|_|super::super::DurabilityError::InvalidStoredState)?,
@@ -41,16 +38,11 @@ impl DurabilityRoot {
         })).await?
     }
     pub async fn ack_public_v2(
-        &self,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        snapshot: &Snapshot,
-    ) -> Result<()> {
-        let recovery = authority.record_for(self)?;
-        let family = snapshot.family();
-        let subject = snapshot.subject.clone();
-        let world = snapshot.world_id.clone();
-        let epoch = wide(snapshot.projection_epoch)?;
-        let revision = wide(snapshot.projection_revision)?;
+        &self, authority: &ReconciledCharacterAuthority<'_, '_>, snapshot:&Snapshot,
+    )->Result<()> {
+        let recovery=authority.record_for(self)?;
+        let family=snapshot.family();let subject=snapshot.subject.clone();let world=snapshot.world_id.clone();
+        let epoch=wide(snapshot.projection_epoch)?;let revision=wide(snapshot.projection_revision)?;
         self.try_issue_semantic_pass()?.run(move |holder,deadline| Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;
@@ -66,11 +58,9 @@ impl DurabilityRoot {
         })).await?
     }
     pub async fn public_v2_facts(
-        &self,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        family: Family,
-    ) -> Result<Facts> {
-        let recovery = authority.record_for(self)?;
+        &self,authority:&ReconciledCharacterAuthority<'_, '_>,family:Family,
+    )->Result<Facts> {
+        let recovery=authority.record_for(self)?;
         self.try_issue_semantic_pass()?.run(move |holder,deadline| Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;
