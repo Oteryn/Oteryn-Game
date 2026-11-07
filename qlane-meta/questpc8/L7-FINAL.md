@@ -1,3 +1,8 @@
+Voodoo chosen programme now QUALIFIED: PG RED2.85s/GREEN40.271014027s,
+exact native two-box grants, final checks/strict Clippy/fmt/generator/pins passed.
+Ten of23 L7 entries QUALIFIED,13 remain. Current QUEST-STATUS.json supersedes
+the historical run below. See cloud-voodoo-proof.json.
+
 Kormarak chosen programme now QUALIFIED: PG RED2.52s/GREEN36.476644642s,
 final check/strict Clippy/fmt/40-file drift/pin refresh passed. Nine of23 L7
 entries QUALIFIED,14 remain. See current QUEST-STATUS.json and cloud-kormarak-proof.json.
@@ -79,3 +84,8 @@ Unit: 1 passed, 0 failed, 0.01s. No full PG suite. No active cargo sessions.
 - Killing in the Name of... Quest (oteryn:quest.killing_in_the_name_of_quest): The chosen Crocodile-kill progression and final 10000-XP/5000-gold completion are not composed; the existing source hunting programme pays different rewards.
 
 The 20 unfinished entries are unimplemented obligations, not external authority blockers. The full round was not completed. The agent ran no Git mutation command, spawned no agent, and did not access credentials, Docker or excluded content.
+
+Native NPC integration checkpoint: Hunting placement gap closed; counts8here +3elsewhere,
+12active entries remain. Compiled Grizzly/Captain/Rashid, real PG join/task/replay,
+live weekday NPC units and all selected checks pass; see npc-placement-validation.json.
+This is a progress checkpoint, not a final lane completion or release claim.

@@ -1,3 +1,59 @@
+# Green native NPC / Voodoo convergence checkpoint
+
+Native Grizzly at32693,32767,z6 is compiled and PG join/task/replay passes47.402370339s
+(RED2.01s missing placement). Hunting is fully QUALIFIED again; the retained2003-death
+programme still proves10000XP/5000gold once-only completion. Counts:8qualified here,
+3elsewhere,12remaining. No final review/freeze yet; keep authoring the remaining12.
+
+Captain Waverider both source cells and Rashid all7weekday cells are compiled.
+The existing live world-clock loop now reconciles admitted Rashid cells at UTC
+rollover;8native NPC units cover stable identities, rotation, occupancy retry,
+missing source cells/admission and day/night regression. Bounded producer overrides
+preserve reference candidates and carry pinned source provenance. Captured Rashid
+shop offers remain non-executable until the native quest-access predicate is wired
+in the Travelling Trader body; physical placement does not certify that quest.
+
+Voodoo convergence76000980a retains both regression entry points on the existing
+stronger route/cold-replay harness;40.392130372s/40.257222994s (all6filter cases PASS).
+No duplicate production callback/death rows; profile3209 byte-identical in parents.
+Check55.08s, strict all-target Clippy172s, fmt,40-file native generator, placement
+producer, pin refresh/check PASS. Worldeef8f279; compiled NPC probe PASS6.342012945s,
+32NPCs; exact new cells verified. See npc-placement-validation.json. This green
+batch is committed with the pending remote merge; fetch/fast-forward push it, then
+continue. On resume, use git log/origin to confirm publication before new work.
+
+Next concrete authoring: Magic Sword multi-guardian rooms and exact two caches;
+Mystery of the Valley fragment/statue native custody and Lai; Travelling Trader
+native exchanges/access. Latest qengine2 is0cf799d19, with generic payment/presence,
+foreign quest participants and atomic counters/native timers: reuse these.
+Lai canonical presentation is already qualified outfit1817; its canonical NPC has
+no dialogue. Its pinned Dakbugs Lua exists atc74bf2380718b4f659a6a19a5f42bf76e7abe63f,
+data-otservbr-global/npc/lai.lua (research copy only/tmp/questpc8-lai.lua); do not copy
+its unrelated held outfit callbacks. Never invent canonical appearance fields.
+
+# Active native NPC / Voodoo convergence batch
+
+PG Grizzly placement RED2.01s (count0), GREEN47.402370339s native join/task/replay.
+Captured Grizzly/Captain placements and exact pinned seven-cell Rashid schedule
+are generated:36keys44placements0holds. Generic bounded placement overrides
+retain their own immutable provenance and leave captured candidates unchanged.
+Live weekday-loop RED is building; compile/pin/check/Clippy/fmt remain. Voodoo
+both entry points40.392130372s/40.257222994s pass (all6 filtered cases176.73s).
+Pending merge76000980a retains the stronger existing production route and shares
+the cold-replay harness, without duplicate callback/death rows. Source profile3209
+is byte-identical in both parents. See npc-placement-validation.json. Hunting
+qualification waits only for actual compiled placement verification; counts7here,
+3elsewhere,13remaining. No final state/review/freeze yet.
+
+# Voodoo convergence validation in progress
+
+Remote76000980a independently implemented the same Voodoo rewards/native boxes.
+Retain its PG regression entry point on the already qualified route/cold-replay
+harness, and preserve the existing Voodoo/Mastermind/Kormarak production rows.
+Native3209 profile is byte-identical in both parents. No duplicate callbacks or
+death objectives are admitted. Validate both Voodoo entry points and native NPC
+placement RED, then merge/push. The Grizzly probe is uncommitted next-batch work.
+
 # Current Kormarak consolidation
 
 Incoming3b315d18d Kormarak callbacks and conditional guardian retained alongside
@@ -5,7 +61,8 @@ Voodoo/Mastermind. Redundant ordinary spawn/tooling removed. Both retained real
 PG regressions pass26.280744943s/25.648903113s with cold quest-session refusal,
 actual native spawn and exact rewards. Pins regenerated to2cabea56;9 spawn units
 and40-file generated-content check pass. All-feature check50.21s, strict Clippy125s, fmt and compiled pin-check pass.
-This green consolidation is committed and pushed before the next batch. See kormarak-consolidation-validation.json.
+This green consolidation is committed locally; remote advanced76000980a before push.
+The pending merge adds the NPC integration below and will be pushed after its checks. See kormarak-consolidation-validation.json.
 
 # Current merged checkpoint
 

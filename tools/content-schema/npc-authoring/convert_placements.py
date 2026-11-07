@@ -6,7 +6,8 @@ NPC keys of npc_placement_scope.json, and only those that the NPC catalogue admi
 with another placement is held (SCHEDULE_VARIANT, SHARED_CELL) instead of written; one NPC listed
 twice at one cell and direction is one record. A wiki-origin placement has no direction in the
 source and is written as north. The source is OTS_HYPOTHESIS_ONLY migration evidence: only
-normalized facts are written. Fails closed on an unadmitted key or an out-of-range position.
+normalized facts are written. Explicit pinned placement overrides preserve their own evidence
+and replace only a scoped candidate’s placement hypothesis. Fails closed on an unadmitted key or an out-of-range position.
 
     python convert_placements.py [--check]
 """
@@ -14,6 +15,8 @@ normalized facts are written. Fails closed on an unadmitted key or an out-of-ran
 from __future__ import annotations
 
 import argparse
+import copy
+import re
 import hashlib
 import json
 import sys
@@ -59,7 +62,49 @@ def cell_of(position: dict) -> tuple[int, int, int]:
     return x, y, z
 
 
+def apply_placement_overrides(candidates: dict, scope: dict) -> dict:
+    """Explicit pinned schedules supersede migration placement hypotheses, not definitions."""
+    result = copy.deepcopy(candidates)
+    for key, override in scope.get("placement_overrides", {}).items():
+        if key not in scope["npcs"] or key not in result:
+            raise ValueError("placement override requires a scoped candidate")
+        source, placements = override["source"], override["placements"]
+        if (source.get("origin") not in SOURCES
+                or not re.fullmatch(r"[0-9a-f]{40}", source.get("revision", ""))
+                or not re.fullmatch(r"[0-9a-f]{64}", source.get("sha256", ""))
+                or not isinstance(source.get("path"), str)
+                or source["path"].startswith("/") or ".." in source["path"].split("/")
+                or not source["path"].endswith((".lua", ".xml"))
+                or not override.get("basis") or not 1 <= len(placements) <= 16):
+            raise ValueError("placement override needs bounded positions and immutable source evidence")
+        cells = set()
+        for placement in placements:
+            position = placement["position"]
+            if (placement.get("direction") not in ("NORTH", "SOUTH", "EAST", "WEST")
+                    or any(type(position.get(k)) is not int for k in ("x", "y", "z"))
+                    or not 0 <= position["x"] <= 65535 or not 0 <= position["y"] <= 65535
+                    or not 0 <= position["z"] <= 15):
+                raise ValueError("invalid native placement override")
+            cell = cell_of(position)
+            if cell in cells:
+                raise ValueError("ambiguous native placement override")
+            cells.add(cell)
+        repository, _, source_key = SOURCES[source["origin"]]
+        result[key]["placements"] = copy.deepcopy(placements)
+        result[key]["placement_override_provenance"] = [{
+            "origin": source["origin"], "repository": repository,
+            "revision": source["revision"], "source_key": source_key,
+            "source_row": source["path"], "source_sha256": source["sha256"],
+            "url": f"https://github.com/{repository}/blob/{source['revision']}/{source['path']}",
+            "arbitration": [{"fact": "placements", "chosen": source["origin"],
+                             "rule": "EXPLICIT_PINNED_NATIVE_PLACEMENTS", "basis": override["basis"]}],
+        }]
+    return result
+
+
 def provenance(candidate: dict, placement: dict) -> list[dict]:
+    if "placement_override_provenance" in candidate:
+        return copy.deepcopy(candidate["placement_override_provenance"])
     # Only the placement decisions are evidence for the cell; offer or trade arbitration is not.
     arbitration = sorted(
         (row for row in candidate.get("arbitration", []) if row.get("fact") == "placements"), key=dump
@@ -104,6 +149,7 @@ def convert() -> dict[str, str]:
     report = json.loads(CANDIDATES.read_text())
     candidates = {c["identity"]["key"]: c for c in report["candidates"]}
     scope = json.loads(SCOPE.read_text())
+    candidates = apply_placement_overrides(candidates, scope)
     admitted = admitted_keys()
     npcs = sorted(scope["npcs"])
     if len(set(npcs)) != len(npcs):

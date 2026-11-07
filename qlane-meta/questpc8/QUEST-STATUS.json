@@ -302,7 +302,7 @@
     "title": "Killing in the Name of... Quest",
     "canonical": "oteryn:quest.killing_in_the_name_of_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/64/definition",
-    "status": "UNFINISHED",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -310,9 +310,7 @@
       "native_dispatch_binding": "oteryn:quest-reward/chosen/hunting-campaign",
       "runtime_enabled": true
     },
-    "blocker": {
-      "missing_piece": "Native hunting programme remains PG-qualified. Compiled production world has no Grizzly Adams actor (compiled-npc-probe); add the existing captured Port Hope placement32693,32767,z6 to the placement scope and verify native boot/talk. This is the immediate next integration action, not a shared-feature wait."
-    },
+    "blocker": null,
     "source_path_evidence": {
       "pg_qualified": true,
       "scope": "Historical source-only proof; superseded by the complete chosen-program qualification below.",
@@ -340,9 +338,9 @@
         "exact three achievements and no additional reward on a subsequent report"
       ]
     },
-    "disposition": "authoring-native-placement",
+    "disposition": "qualified-current-lane",
     "qualified_elsewhere": [],
-    "mechanism": "none",
+    "mechanism": "native ordered task/rank/boss/report programme, exact once-only10000XP/5000gold completion, compiled Grizzly placement and real NPC join/task/replay",
     "round": "L7",
     "qualification": {
       "scope": "complete chosen eleven-stage programme plus retained native source task/rank/portal/report obligations",
@@ -380,13 +378,21 @@
         "immutable successful report receipts for Snapper, Deathbine and The Many are required by the same fenced transaction",
         "premature claim leaves ordered progress at phase 7",
         "quest session reload retains exactly one final payout"
-      ]
+      ],
+      "native_placement_proof": "npc-placement-validation.json"
     },
     "qualified_components": [
       {
         "scope": "incoming source task/boss reports and atomic final payout, before ordered-phase reconciliation",
         "duration_seconds": 179.886708384,
         "proof": "qlane-meta/questpc8/cloud-hunting-campaign-proof.json"
+      },
+      {
+        "scope": "Production placement/native NPC join/task/replay",
+        "proof": "npc-placement-validation.json",
+        "test": "questpc8_grizzly_production_placement_native_join_and_task",
+        "duration_seconds": 47.402370339,
+        "red_duration_seconds": 2.01
       }
     ],
     "native_placement_probe": {
