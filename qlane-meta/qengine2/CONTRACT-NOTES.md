@@ -280,3 +280,10 @@ not a broad global count that incorrectly conflates their distinct sources.
 Rotten parent Dependencies admission starts item_fence=None
 (monk_save_postgres_tests.rs:213), unlike SoulWar source delivery. Initialize
 the carried-USE phase from the fresh fenced owner read; no authority check bypass.
+
+L13 final appearance carrier: failed Decay test database Character root
+content_revision=content-1 while stock active cosmetics document=s3b-content-1.
+The normal appearance owner correctly rejected that mismatch. Outfit-only
+variant now uses the existing production_generation_with_source content-1
+helper, preserving original parent-only native fixture and all production
+validation. Actual final selection subsequently passed on PostgreSQL.

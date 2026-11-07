@@ -754,3 +754,20 @@ changed crates passed6m34. Outfit variant now uses production generation bound
 tocontent-1, preserving the original parent-only canary variant. Immediate code
 WIP push, then isolatedDecayPG; last exact red remains appearance content guard
 s3b-content-1 versuscontent-1 after all accessories/achievement already passed.
+
+L1-13C Decaying Defender QUALIFIED, closingL13: actualPG194.681905972s success=true
+with native parent base, min250/CurrentPremium, real43899bit1/43900bit2 USE,
+exact custody/retention/refusals/literal replay, exact canonical plus original
+native immutable receipt set, FullyDecayed and normal mask3 selection.
+All-target3crate check6m34 andstrict clippy1m30 passed.10Rust4.38/29authoring,
+reproduction andworld pin-refresh/check24ab unchanged. No production appearance
+guard changed: only the outfit carrier is bound tocontent-1 using the existing
+production-generation helper; original parent variant remains unchanged.
+Counts42QUALIFIED/24UNFINISHED/0BLOCKED. Publish now; do not end the turn.
+Next addedS06: qengine_rewards.py builds active document with0mounts although
+canonical252 andexisting51taming rules are present. Author real-dispatch RED
+against stock production artifact, then generically populate source-backed
+mount definitions/grant bindings; retain taming probabilities/guards. W15b
+generic chest resolver stillsingle-item andallrewardvariants also explicitly
+owned. Refresh other-lane qualification before remaining24 entries. Keep15min
+compiled-WIP/green pushes, namedredpoints, no qengpr/main/PR/force/rebase.
