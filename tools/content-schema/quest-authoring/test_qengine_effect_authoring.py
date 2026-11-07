@@ -31,6 +31,22 @@ class SharedEffectAuthoring(unittest.TestCase):
         for row in qengine_access.document()['callbacks']:
             quest_batch4.validate_effects(row, row['key'])
 
+    def test_event_admission_cannot_lose_cost_or_durable_ownership(self):
+        source = next(row for row in qengine_access.document()['callbacks']
+                      if row['key'].endswith('devovorga-essence-0'))
+        for change in ('cost', 'foreign_action', 'member_bound', 'missing_storage'):
+            row = copy.deepcopy(source)
+            if change == 'cost':
+                row['item_on_target']['count'] = 1
+            elif change == 'foreign_action':
+                row['effects']['world_event']['action'] = {'Jar': 1}
+            elif change == 'member_bound':
+                row['effects']['world_event']['action'] = {'Enter': 5}
+            else:
+                row['storage'] = []
+            with self.assertRaises(ValueError, msg=change):
+                quest_batch4.validate_effects(row, row['key'])
+
     def test_encounter_bounds_and_atomic_effect_composition(self):
         source = next(row for row in qengine_access.document()['callbacks']
                       if row['key'].endswith('annihilator-entry'))

@@ -71,6 +71,14 @@ def document():
         if encounter:
             for player in encounter['players']:
                 player['from'] = player.pop('from_')
+    # WEVENTS' reviewed native selectors are authoring inputs. Keep their twelve
+    # additions reproducible alongside the nine pinned donor callbacks.
+    authored = json.loads((ROOT / 'tools/content-schema/quest-authoring/samples/wevents-access-authoring.json').read_bytes())
+    if authored.get('schema') != 1 or len(authored.get('callbacks', [])) != 12:
+        raise ValueError('WEVENTS_ACCESS_AUTHORING')
+    rows.extend(authored['callbacks'])
+    if len({row['key'] for row in rows}) != len(rows):
+        raise ValueError('WEVENTS_ACCESS_DUPLICATE')
     return dict(schema=1, callbacks=sorted(rows, key=lambda row: row['key']))
 
 

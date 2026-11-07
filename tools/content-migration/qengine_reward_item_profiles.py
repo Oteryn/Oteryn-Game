@@ -81,7 +81,7 @@ def capture(root=ROOT):
             'field':'physical.weight','historical_canonical':5000,'native':500,
             'source':'crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/items/items.xml:31463-31466',
             'source_sha256':'c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb',
-            'decision':'CONTRACT-NOTES.md#bank-robbery-implementation-policy'}],
+            'decision':'docs/reference/WPKG-CONTRACT-NOTES.md#bank-robbery-implementation-policy'}],
         'records':records}
 
 

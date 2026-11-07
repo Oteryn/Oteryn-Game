@@ -140,9 +140,11 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                     || r.contents.len() > 20
                     || r.contents.iter().any(|s| !item(&s.item, s.count))
             })
-            || c.outfit
-                .as_ref()
-                .is_some_and(|r| !slug(&r.outfit, "oteryn:outfit.", b"_", 160) || r.addons > 3)
+            || c.outfit.as_ref().is_some_and(|r| {
+                !(slug(&r.outfit, "oteryn:outfit.", b"_", 160)
+                    || slug(&r.outfit, "oteryn:content.outfit.", b"_", 160))
+                    || r.addons > 3
+            })
             || c.keywords.is_empty()
             || c.keywords.len() > 8
             || c.keywords.iter().collect::<BTreeSet<_>>().len() != c.keywords.len()

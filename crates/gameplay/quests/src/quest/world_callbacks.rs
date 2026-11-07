@@ -250,7 +250,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || ((callback.effects.outfit_reward.is_some()
                         || callback.effects.world_event.is_some())
                         && source.starts_with("crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:"))
-                    || (source.starts_with("oteryn-policy:CONTRACT-NOTES.md#")
+                    || (source.starts_with("oteryn-policy:docs/reference/WPKG-CONTRACT-NOTES.md#")
                         && authored::valid(callback))
                     || source.starts_with("crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:")
             })

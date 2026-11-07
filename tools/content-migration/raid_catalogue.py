@@ -398,7 +398,7 @@ def qualify_flower_cycle(record: dict) -> None:
     record["shared_wave_attempt_budget"] = cycle["shared_attempt_budget"]
     record["source_conflicts"] = ["wiki_five_waves_in_one_hour; owner_selected_donor_indefinite_four_area_cycle"]
     record["schedule"] = {"kind": "calendar", "interval_ms": 4 * cycle["interval_ms"],
-                          "repeat_persistent": True, "start_immediately": True,
+                          "repeat_persistent": True, "repeat": True, "start_immediately": True,
                           "window": {"start_month": 6, "start_day": 1, "end_month": 6, "end_day": 30}}
     waves, announcements = [], []
     for index, row in enumerate(cycle["areas"]):

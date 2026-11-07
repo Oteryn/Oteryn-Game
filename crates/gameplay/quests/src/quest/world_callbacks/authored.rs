@@ -11,7 +11,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         .is_none_or(|binding| !binding.valid())
         || !callback.sources.iter().any(|source| {
             source
-                .strip_prefix("oteryn-policy:CONTRACT-NOTES.md#")
+                .strip_prefix("oteryn-policy:docs/reference/WPKG-CONTRACT-NOTES.md#")
                 .is_some_and(|anchor| !anchor.is_empty())
         })
     {
@@ -53,17 +53,18 @@ pub(super) fn valid(callback: &Callback) -> bool {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn wevents_authored_native_event_source_requires_exact_selector() {
-        let callbacks = super::super::load().expect("all native callbacks must load");
+    fn wevents_authored_native_event_source_requires_exact_selector() -> Result<(), String> {
+        let callbacks = super::super::load()?;
         let mut callback = callbacks
             .into_iter()
             .find(|c| c.key.ends_with("insect-restoration-water"))
-            .expect("water binding");
+            .ok_or("water binding")?;
         assert!(super::valid(&callback));
         callback.selector.action = Some(52674);
         assert!(!super::valid(&callback));
         callback.selector.action = Some(52670);
         callback.effects.world_event = None;
         assert!(!super::valid(&callback));
+        Ok(())
     }
 }

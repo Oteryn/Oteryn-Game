@@ -151,12 +151,16 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
             || r.addons > 3
             || r.outfit.len() > 160
-            || !r.outfit.strip_prefix("oteryn:outfit.").is_some_and(|tail| {
-                !tail.is_empty()
-                    && tail
-                        .bytes()
-                        .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
-            })
+            || !r
+                .outfit
+                .strip_prefix("oteryn:outfit.")
+                .or_else(|| r.outfit.strip_prefix("oteryn:content.outfit."))
+                .is_some_and(|tail| {
+                    !tail.is_empty()
+                        && tail
+                            .bytes()
+                            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
+                })
     }) || effects.transform == Some(0)
         || (effects.facing.is_some() && callback.teleport.is_none())
         || effects

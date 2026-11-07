@@ -228,8 +228,64 @@ def validate_native(callback, context):
 def validate_effects(callback, context):
     """The optional Channel effects share the Rust world_callbacks closed shape."""
     effects = callback.get('effects', {})
-    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter', 'outfit_reward'}
+    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter', 'outfit_reward', 'world_event', 'item_reward', 'achievement'}
     fields(effects, set(), allowed, context + ': effects')
+    binding = effects.get('world_event')
+    event_encounter = False
+    if binding is not None:
+        fields(binding, {'event', 'action'}, {'event', 'action', 'minimum_level', 'maximum_level'}, context + ': event')
+        event = binding['event']
+        require(event in {'chyllfroest', 'flower_month', 'mummys_curse', 'spring_into_life',
+                         'rise_of_devovorga', 'devovorga_s_essence', 'kingsday', 'bank_robbery',
+                         'insectoid_invasion'}, context + ': unknown event')
+        minimum, maximum = binding.get('minimum_level', 0), binding.get('maximum_level')
+        require(integer(minimum, 0, 2**32-1) and (maximum is None or integer(maximum, minimum, 2**32-1)),
+                context + ': invalid event level')
+        action = binding['action']
+        member = None
+        if isinstance(action, dict):
+            require(len(action) == 1, context + ': event action cardinality')
+            action, member = next(iter(action.items()))
+            ranges = {('spring_into_life', 'BeginObject'): (1, 2),
+                      ('devovorga_s_essence', 'Enter'): (0, 4),
+                      ('bank_robbery', 'ClaimObject'): (0, 0),
+                      ('insectoid_invasion', 'Fill'): (0, 0),
+                      ('insectoid_invasion', 'Extinguish'): (1, 3)}
+            bounds = ranges.get((event, action))
+            require(bounds is not None and integer(member, *bounds), context + ': invalid event action')
+        else:
+            require(isinstance(action, str) and (action == 'Observe'
+                    or action == 'Reward' and event in {'spring_into_life', 'rise_of_devovorga', 'kingsday'}
+                    or (event, action) in {('kingsday', 'Attend'), ('bank_robbery', 'Recover')}),
+                    context + ': invalid event action')
+        cost = None
+        if (event, action) == ('devovorga_s_essence', 'Enter'):
+            cost = ('oteryn:item.tibia.i11666', (2, 5, 8, 12, 16)[member])
+        elif (event, action) == ('spring_into_life', 'Observe'):
+            cost = ('oteryn:item.tibia.i3043', 1)
+        elif (event, action) == ('bank_robbery', 'Recover'):
+            cost = ('oteryn:item.tibia.i13429', 1)
+        if cost is not None:
+            item = callback.get('item_on_target') or {}
+            require((item.get('item'), item.get('count')) == cost, context + ': event cost differs')
+        event_encounter = (action == 'Enter' and callback['trigger'] == 'use'
+                           and callback.get('selector', {}).get('position') is not None)
+    reward, achievement = effects.get('item_reward'), effects.get('achievement')
+    require(not any(value is not None for value in (binding, reward, achievement)) or callback['storage'],
+            context + ': durable event effects require storage')
+    require(achievement is None or isinstance(achievement, str) and len(achievement) <= 256 and valid_key(achievement),
+            context + ': invalid achievement')
+    if reward is not None:
+        fields(reward, {'item', 'count'}, {'item', 'count', 'contents'}, context + ': item reward')
+        require(valid_key(reward['item']) and integer(reward['count'], 1, 100)
+                and isinstance(reward.get('contents', []), list) and len(reward.get('contents', [])) <= 20,
+                context + ': invalid item reward')
+        for content in reward.get('contents', []):
+            fields(content, {'item', 'count'}, {'item', 'count'}, context + ': reward contents')
+            require(valid_key(content['item']) and integer(content['count'], 1, 65535), context + ': invalid reward contents')
+        require(binding is not None or any(not row.get('preserve', False)
+                and not row['minimum'] <= row['set'] <= row['maximum'] for row in callback['storage']),
+                context + ': repeatable item reward')
     outfit = effects.get('outfit_reward')
     if outfit is not None:
         fields(outfit, {'outfit','addons'}, {'outfit','addons'}, context + ': outfit reward')
@@ -255,7 +311,8 @@ def validate_effects(callback, context):
         require(integer(magic['effect'], 1, 65535), context + ': invalid magic effect')
     operations = sum(effects.get(field) is not None for field in ('portals', 'item_cycle', 'encounter'))
     require(operations <= 1 and (operations == 0 or callback['trigger'] == 'use'
-            and callback.get('lever') is not None and not callback['storage']
+            and (callback.get('lever') is not None or event_encounter)
+            and (event_encounter or not callback['storage'])
             and not callback['passages'] and callback.get('teleport') is None),
             context + ': incompatible map effects')
     pair = effects.get('portals')

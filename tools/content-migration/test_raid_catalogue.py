@@ -166,6 +166,7 @@ class RaidCatalogueTest(unittest.TestCase):
         self.assertTrue(flower["active"])
         self.assertEqual(flower["inactive_reasons"], [])
         self.assertTrue(flower["schedule"]["repeat_persistent"])
+        self.assertTrue(flower["schedule"]["repeat"])
         self.assertEqual(flower["schedule"]["interval_ms"], 3600000)
         self.assertEqual([wave["delay_ms"] for wave in flower["variants"][0]["waves"]], [0, 900000, 1800000, 2700000])
         self.assertTrue(all(wave["entries"][0]["spawn_mode"] == "shared_area" for wave in flower["variants"][0]["waves"]))

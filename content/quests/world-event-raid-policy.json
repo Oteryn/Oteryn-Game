@@ -23,7 +23,7 @@
           "floor": 7
         }
       },
-      "policy": "CONTRACT-NOTES.md#kingsday-implementation-policy"
+      "policy": "docs/reference/WPKG-CONTRACT-NOTES.md#kingsday-implementation-policy"
     },
     {
       "key": "raid:world-events.bank-robbery-thais",
@@ -47,7 +47,7 @@
           "floor": 7
         }
       },
-      "policy": "CONTRACT-NOTES.md#bank-robbery-implementation-policy",
+      "policy": "docs/reference/WPKG-CONTRACT-NOTES.md#bank-robbery-implementation-policy",
       "boss": true
     },
     {
@@ -85,7 +85,7 @@
           "floor": 7
         }
       ],
-      "policy": "CONTRACT-NOTES.md#insectoid-invasion-implementation-policy"
+      "policy": "docs/reference/WPKG-CONTRACT-NOTES.md#insectoid-invasion-implementation-policy"
     },
     {
       "key": "raid:world-events.rise-anmothra",
@@ -118,7 +118,7 @@
         }
       ],
       "boss": true,
-      "policy": "CONTRACT-NOTES.md#devovorga-world-event-policy"
+      "policy": "docs/reference/WPKG-CONTRACT-NOTES.md#devovorga-world-event-policy"
     },
     {
       "key": "raid:world-events.rise-chikhaton",
@@ -151,7 +151,7 @@
         }
       ],
       "boss": true,
-      "policy": "CONTRACT-NOTES.md#devovorga-world-event-policy"
+      "policy": "docs/reference/WPKG-CONTRACT-NOTES.md#devovorga-world-event-policy"
     },
     {
       "key": "raid:world-events.rise-irahsae",
@@ -184,7 +184,7 @@
         }
       ],
       "boss": true,
-      "policy": "CONTRACT-NOTES.md#devovorga-world-event-policy"
+      "policy": "docs/reference/WPKG-CONTRACT-NOTES.md#devovorga-world-event-policy"
     },
     {
       "key": "raid:world-events.rise-phrodomo",
@@ -217,7 +217,7 @@
         }
       ],
       "boss": true,
-      "policy": "CONTRACT-NOTES.md#devovorga-world-event-policy"
+      "policy": "docs/reference/WPKG-CONTRACT-NOTES.md#devovorga-world-event-policy"
     },
     {
       "key": "raid:world-events.rise-teneshpar",
@@ -250,7 +250,7 @@
         }
       ],
       "boss": true,
-      "policy": "CONTRACT-NOTES.md#devovorga-world-event-policy"
+      "policy": "docs/reference/WPKG-CONTRACT-NOTES.md#devovorga-world-event-policy"
     },
     {
       "key": "raid:world-events.rise-devovorga",
@@ -283,7 +283,7 @@
         }
       ],
       "boss": true,
-      "policy": "CONTRACT-NOTES.md#devovorga-world-event-policy"
+      "policy": "docs/reference/WPKG-CONTRACT-NOTES.md#devovorga-world-event-policy"
     },
     {
       "key": "raid:world-events.rise-bloom_of_doom",
@@ -316,7 +316,7 @@
         }
       ],
       "boss": true,
-      "policy": "CONTRACT-NOTES.md#devovorga-world-event-policy"
+      "policy": "docs/reference/WPKG-CONTRACT-NOTES.md#devovorga-world-event-policy"
     },
     {
       "key": "raid:world-events.rise-spawn_of_devovorga",
@@ -349,7 +349,7 @@
         }
       ],
       "boss": true,
-      "policy": "CONTRACT-NOTES.md#devovorga-world-event-policy"
+      "policy": "docs/reference/WPKG-CONTRACT-NOTES.md#devovorga-world-event-policy"
     },
     {
       "key": "raid:world-events.rise-vulnerable_cocoon",
@@ -382,7 +382,7 @@
         }
       ],
       "boss": true,
-      "policy": "CONTRACT-NOTES.md#devovorga-world-event-policy"
+      "policy": "docs/reference/WPKG-CONTRACT-NOTES.md#devovorga-world-event-policy"
     }
   ]
 }

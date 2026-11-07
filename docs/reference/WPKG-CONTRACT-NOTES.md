@@ -1297,3 +1297,10 @@ Source 033791043 is being merged after the WVAR and WCONTRIB reverts. The retain
 All four focused owner PostgreSQL tests executed and passed on PostgreSQL 18.6 (47.42 seconds test runtime). Actual logged subcase durations: Chyllfroest 14.163s, Flower 6.906s, Mummy 5.081s, Spring 5.669s, Kingsday 5.514s, Bank 4.818s, Insect binding 5.260s; insect restoration 14.279s, timed ownership/rewards/replay/calendar/reset 14.336s, Devovorga native stages 16.816s. The merged libraries previously passed all-feature Cargo check in 119.127s. The 95-module authoring run passed 94 modules, with only stale Grizzly-room hashes failing; regeneration and its focused test passed in 3.887s. Sixteen raid producer tests pass in 22.741s, four WEVENTS producer tests in 6.649s, twenty cosmetics compiler tests in 6.464s, and twelve reward producer tests passed within the authoring run.
 
 This is still a compiling WIP: final native/tree generation, pins, all-target Clippy, native dispatch PG cases, content integration and final composed regressions are pending. No qualification is claimed from compilation alone.
+
+
+### WEVENTS producer and all-target checkpoint
+
+All changed crates passed all-target/all-feature Clippy with `-D warnings` in 191.696 seconds. Final native refresh passed in 87.972 seconds, and formatting check in 26.033 seconds. All 25 cosmetics compiler/catalogue tests passed in 2.751 seconds while preserving exact main subsets (14 canonical outfits, 49 original mappings, 8 mounts and 133 palette colours). Twelve additional event callbacks now regenerate from explicit source-preserving authoring inputs through qengine_access.py; closed event/action/member/cost/storage/reward validation matches runtime admission. Canonical main outfit keys are accepted by both Rust reward validators; suffix/bound checks remain enforced. Flower retains both repeat flags and shared-area admission.
+
+Still WIP: pin refresh/check, seventeen native WEVENTS PostgreSQL cases, all-target Cargo check and final integration validation are pending.

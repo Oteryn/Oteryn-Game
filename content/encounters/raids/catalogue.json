@@ -1402,6 +1402,7 @@
       "schedule": {
         "interval_ms": 3600000,
         "kind": "calendar",
+        "repeat": true,
         "repeat_persistent": true,
         "start_immediately": true,
         "window": {
@@ -41815,14 +41816,14 @@
         }
       },
       "source_conflicts": [
-        "CONTRACT-NOTES.md#bank-robbery-implementation-policy"
+        "docs/reference/WPKG-CONTRACT-NOTES.md#bank-robbery-implementation-policy"
       ],
       "sources": [
         {
           "evidence": "OTERYN_AUTHORED_POLICY",
           "line": 1,
           "policy": "content/quests/world-event-raid-policy.json",
-          "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+          "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
         }
       ],
       "variant_group": null,
@@ -41835,7 +41836,7 @@
               "evidence": "OTERYN_AUTHORED_POLICY",
               "line": 1,
               "policy": "content/quests/world-event-raid-policy.json",
-              "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+              "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
             }
           ],
           "unresolved": [],
@@ -41876,7 +41877,7 @@
                     "evidence": "OTERYN_AUTHORED_POLICY",
                     "line": 1,
                     "policy": "content/quests/world-event-raid-policy.json",
-                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+                    "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
                   },
                   "source_name": "Jesse the Wicked",
                   "spawn_mode": "area"
@@ -41914,14 +41915,14 @@
         }
       },
       "source_conflicts": [
-        "CONTRACT-NOTES.md#insectoid-invasion-implementation-policy"
+        "docs/reference/WPKG-CONTRACT-NOTES.md#insectoid-invasion-implementation-policy"
       ],
       "sources": [
         {
           "evidence": "OTERYN_AUTHORED_POLICY",
           "line": 1,
           "policy": "content/quests/world-event-raid-policy.json",
-          "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+          "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
         }
       ],
       "variant_group": null,
@@ -41934,7 +41935,7 @@
               "evidence": "OTERYN_AUTHORED_POLICY",
               "line": 1,
               "policy": "content/quests/world-event-raid-policy.json",
-              "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+              "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
             }
           ],
           "unresolved": [],
@@ -41975,7 +41976,7 @@
                     "evidence": "OTERYN_AUTHORED_POLICY",
                     "line": 1,
                     "policy": "content/quests/world-event-raid-policy.json",
-                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+                    "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
                   },
                   "source_name": "Insectoid Scout",
                   "spawn_mode": "single"
@@ -42013,7 +42014,7 @@
                     "evidence": "OTERYN_AUTHORED_POLICY",
                     "line": 1,
                     "policy": "content/quests/world-event-raid-policy.json",
-                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+                    "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
                   },
                   "source_name": "Insectoid Scout",
                   "spawn_mode": "single"
@@ -42157,14 +42158,14 @@
         }
       },
       "source_conflicts": [
-        "CONTRACT-NOTES.md#kingsday-implementation-policy"
+        "docs/reference/WPKG-CONTRACT-NOTES.md#kingsday-implementation-policy"
       ],
       "sources": [
         {
           "evidence": "OTERYN_AUTHORED_POLICY",
           "line": 1,
           "policy": "content/quests/world-event-raid-policy.json",
-          "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+          "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
         }
       ],
       "variant_group": null,
@@ -42177,7 +42178,7 @@
               "evidence": "OTERYN_AUTHORED_POLICY",
               "line": 1,
               "policy": "content/quests/world-event-raid-policy.json",
-              "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+              "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
             }
           ],
           "unresolved": [],
@@ -42218,7 +42219,7 @@
                     "evidence": "OTERYN_AUTHORED_POLICY",
                     "line": 1,
                     "policy": "content/quests/world-event-raid-policy.json",
-                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+                    "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
                   },
                   "source_name": "Orc Warlord",
                   "spawn_mode": "area"
@@ -42258,14 +42259,14 @@
         }
       },
       "source_conflicts": [
-        "CONTRACT-NOTES.md#devovorga-world-event-policy"
+        "docs/reference/WPKG-CONTRACT-NOTES.md#devovorga-world-event-policy"
       ],
       "sources": [
         {
           "evidence": "OTERYN_AUTHORED_POLICY",
           "line": 1,
           "policy": "content/quests/world-event-raid-policy.json",
-          "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+          "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
         }
       ],
       "variant_group": null,
@@ -42278,7 +42279,7 @@
               "evidence": "OTERYN_AUTHORED_POLICY",
               "line": 1,
               "policy": "content/quests/world-event-raid-policy.json",
-              "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+              "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
             }
           ],
           "unresolved": [],
@@ -42319,7 +42320,7 @@
                     "evidence": "OTERYN_AUTHORED_POLICY",
                     "line": 1,
                     "policy": "content/quests/world-event-raid-policy.json",
-                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+                    "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
                   },
                   "source_name": "Anmothra",
                   "spawn_mode": "single"
@@ -42359,14 +42360,14 @@
         }
       },
       "source_conflicts": [
-        "CONTRACT-NOTES.md#devovorga-world-event-policy"
+        "docs/reference/WPKG-CONTRACT-NOTES.md#devovorga-world-event-policy"
       ],
       "sources": [
         {
           "evidence": "OTERYN_AUTHORED_POLICY",
           "line": 1,
           "policy": "content/quests/world-event-raid-policy.json",
-          "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+          "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
         }
       ],
       "variant_group": null,
@@ -42379,7 +42380,7 @@
               "evidence": "OTERYN_AUTHORED_POLICY",
               "line": 1,
               "policy": "content/quests/world-event-raid-policy.json",
-              "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+              "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
             }
           ],
           "unresolved": [],
@@ -42420,7 +42421,7 @@
                     "evidence": "OTERYN_AUTHORED_POLICY",
                     "line": 1,
                     "policy": "content/quests/world-event-raid-policy.json",
-                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+                    "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
                   },
                   "source_name": "Bloom Of Doom",
                   "spawn_mode": "single"
@@ -42460,14 +42461,14 @@
         }
       },
       "source_conflicts": [
-        "CONTRACT-NOTES.md#devovorga-world-event-policy"
+        "docs/reference/WPKG-CONTRACT-NOTES.md#devovorga-world-event-policy"
       ],
       "sources": [
         {
           "evidence": "OTERYN_AUTHORED_POLICY",
           "line": 1,
           "policy": "content/quests/world-event-raid-policy.json",
-          "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+          "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
         }
       ],
       "variant_group": null,
@@ -42480,7 +42481,7 @@
               "evidence": "OTERYN_AUTHORED_POLICY",
               "line": 1,
               "policy": "content/quests/world-event-raid-policy.json",
-              "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+              "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
             }
           ],
           "unresolved": [],
@@ -42521,7 +42522,7 @@
                     "evidence": "OTERYN_AUTHORED_POLICY",
                     "line": 1,
                     "policy": "content/quests/world-event-raid-policy.json",
-                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+                    "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
                   },
                   "source_name": "Chikhaton",
                   "spawn_mode": "single"
@@ -42561,14 +42562,14 @@
         }
       },
       "source_conflicts": [
-        "CONTRACT-NOTES.md#devovorga-world-event-policy"
+        "docs/reference/WPKG-CONTRACT-NOTES.md#devovorga-world-event-policy"
       ],
       "sources": [
         {
           "evidence": "OTERYN_AUTHORED_POLICY",
           "line": 1,
           "policy": "content/quests/world-event-raid-policy.json",
-          "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+          "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
         }
       ],
       "variant_group": null,
@@ -42581,7 +42582,7 @@
               "evidence": "OTERYN_AUTHORED_POLICY",
               "line": 1,
               "policy": "content/quests/world-event-raid-policy.json",
-              "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+              "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
             }
           ],
           "unresolved": [],
@@ -42622,7 +42623,7 @@
                     "evidence": "OTERYN_AUTHORED_POLICY",
                     "line": 1,
                     "policy": "content/quests/world-event-raid-policy.json",
-                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+                    "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
                   },
                   "source_name": "Devovorga",
                   "spawn_mode": "single"
@@ -42662,14 +42663,14 @@
         }
       },
       "source_conflicts": [
-        "CONTRACT-NOTES.md#devovorga-world-event-policy"
+        "docs/reference/WPKG-CONTRACT-NOTES.md#devovorga-world-event-policy"
       ],
       "sources": [
         {
           "evidence": "OTERYN_AUTHORED_POLICY",
           "line": 1,
           "policy": "content/quests/world-event-raid-policy.json",
-          "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+          "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
         }
       ],
       "variant_group": null,
@@ -42682,7 +42683,7 @@
               "evidence": "OTERYN_AUTHORED_POLICY",
               "line": 1,
               "policy": "content/quests/world-event-raid-policy.json",
-              "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+              "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
             }
           ],
           "unresolved": [],
@@ -42723,7 +42724,7 @@
                     "evidence": "OTERYN_AUTHORED_POLICY",
                     "line": 1,
                     "policy": "content/quests/world-event-raid-policy.json",
-                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+                    "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
                   },
                   "source_name": "Irahsae",
                   "spawn_mode": "single"
@@ -42763,14 +42764,14 @@
         }
       },
       "source_conflicts": [
-        "CONTRACT-NOTES.md#devovorga-world-event-policy"
+        "docs/reference/WPKG-CONTRACT-NOTES.md#devovorga-world-event-policy"
       ],
       "sources": [
         {
           "evidence": "OTERYN_AUTHORED_POLICY",
           "line": 1,
           "policy": "content/quests/world-event-raid-policy.json",
-          "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+          "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
         }
       ],
       "variant_group": null,
@@ -42783,7 +42784,7 @@
               "evidence": "OTERYN_AUTHORED_POLICY",
               "line": 1,
               "policy": "content/quests/world-event-raid-policy.json",
-              "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+              "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
             }
           ],
           "unresolved": [],
@@ -42824,7 +42825,7 @@
                     "evidence": "OTERYN_AUTHORED_POLICY",
                     "line": 1,
                     "policy": "content/quests/world-event-raid-policy.json",
-                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+                    "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
                   },
                   "source_name": "Phrodomo",
                   "spawn_mode": "single"
@@ -42864,14 +42865,14 @@
         }
       },
       "source_conflicts": [
-        "CONTRACT-NOTES.md#devovorga-world-event-policy"
+        "docs/reference/WPKG-CONTRACT-NOTES.md#devovorga-world-event-policy"
       ],
       "sources": [
         {
           "evidence": "OTERYN_AUTHORED_POLICY",
           "line": 1,
           "policy": "content/quests/world-event-raid-policy.json",
-          "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+          "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
         }
       ],
       "variant_group": null,
@@ -42884,7 +42885,7 @@
               "evidence": "OTERYN_AUTHORED_POLICY",
               "line": 1,
               "policy": "content/quests/world-event-raid-policy.json",
-              "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+              "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
             }
           ],
           "unresolved": [],
@@ -42925,7 +42926,7 @@
                     "evidence": "OTERYN_AUTHORED_POLICY",
                     "line": 1,
                     "policy": "content/quests/world-event-raid-policy.json",
-                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+                    "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
                   },
                   "source_name": "Spawn Of Devovorga",
                   "spawn_mode": "single"
@@ -42965,14 +42966,14 @@
         }
       },
       "source_conflicts": [
-        "CONTRACT-NOTES.md#devovorga-world-event-policy"
+        "docs/reference/WPKG-CONTRACT-NOTES.md#devovorga-world-event-policy"
       ],
       "sources": [
         {
           "evidence": "OTERYN_AUTHORED_POLICY",
           "line": 1,
           "policy": "content/quests/world-event-raid-policy.json",
-          "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+          "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
         }
       ],
       "variant_group": null,
@@ -42985,7 +42986,7 @@
               "evidence": "OTERYN_AUTHORED_POLICY",
               "line": 1,
               "policy": "content/quests/world-event-raid-policy.json",
-              "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+              "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
             }
           ],
           "unresolved": [],
@@ -43026,7 +43027,7 @@
                     "evidence": "OTERYN_AUTHORED_POLICY",
                     "line": 1,
                     "policy": "content/quests/world-event-raid-policy.json",
-                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+                    "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
                   },
                   "source_name": "Teneshpar",
                   "spawn_mode": "single"
@@ -43066,14 +43067,14 @@
         }
       },
       "source_conflicts": [
-        "CONTRACT-NOTES.md#devovorga-world-event-policy"
+        "docs/reference/WPKG-CONTRACT-NOTES.md#devovorga-world-event-policy"
       ],
       "sources": [
         {
           "evidence": "OTERYN_AUTHORED_POLICY",
           "line": 1,
           "policy": "content/quests/world-event-raid-policy.json",
-          "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+          "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
         }
       ],
       "variant_group": null,
@@ -43086,7 +43087,7 @@
               "evidence": "OTERYN_AUTHORED_POLICY",
               "line": 1,
               "policy": "content/quests/world-event-raid-policy.json",
-              "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+              "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
             }
           ],
           "unresolved": [],
@@ -43127,7 +43128,7 @@
                     "evidence": "OTERYN_AUTHORED_POLICY",
                     "line": 1,
                     "policy": "content/quests/world-event-raid-policy.json",
-                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+                    "sha256": "6743c9ec837ec7daee4f24f1b8386c27bf97601a442671d2fd06e0c67eedcbc6"
                   },
                   "source_name": "Vulnerable Cocoon",
                   "spawn_mode": "single"

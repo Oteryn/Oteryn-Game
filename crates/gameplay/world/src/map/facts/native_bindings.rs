@@ -382,14 +382,14 @@ mod tests {
             };
             let reservation = facts
                 .reserve_encounter_room(world.base(), at, at)
-                .expect("room reservation");
+                .ok_or("room reservation")?;
             assert!(facts.quest_callback_blocked(world.base(), at, false));
             assert!(facts.reserve_encounter_room(world.base(), at, at).is_none());
             reservation.release();
             assert!(!facts.quest_callback_blocked(world.base(), at, false));
             let reservation = facts
                 .reserve_encounter_room(world.base(), at, at)
-                .expect("retry reservation");
+                .ok_or("retry reservation")?;
             drop(reservation);
             assert!(!facts.quest_callback_blocked(world.base(), at, false));
         }

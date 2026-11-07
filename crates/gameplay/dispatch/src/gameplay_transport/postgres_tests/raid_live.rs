@@ -214,7 +214,6 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
     let firing = id(91);
     let key = ProductionKey::new(key).map_err(debug)?;
     let phased_boss = key.as_str() == "raid:venore.dracola";
-    let flower = key.as_str() == "oteryn:raid.raid.dryad_invasion";
     let mummy = key.as_str() == "raid:world-events.horestis";
     let flower = key.as_str() == "oteryn:raid.raid.dryad_invasion";
     let catalogue = RaidCatalogue::embedded().map_err(debug)?;
@@ -249,7 +248,10 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
         area.to.y = area.to.y.max(source_area.to.y);
     }
     assert_eq!(area.from.floor, area.to.floor);
-    if flower { assert_eq!(selected.definition.announcements.len(), 4); }
+    if flower {
+        assert_eq!(selected.definition.announcements.len(), 4);
+        assert_eq!(selected.shared_wave_attempt_budget, Some(250));
+    }
     else if key.as_str() == "raid:porthope.stampede" {
         assert_eq!(selected.definition.announcements.len(), 1);
         assert_eq!(selected.definition.announcements[0].delay_ms, 1_000);
@@ -257,9 +259,6 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
             selected.definition.announcements[0].text,
             "Stampede! The Ape God has stirred up Tiquanda's elephants again!"
         );
-    } else if flower {
-        assert_eq!(selected.definition.announcements.len(), 4);
-        assert_eq!(selected.shared_wave_attempt_budget, Some(250));
     } else {
         assert!(selected.definition.announcements.is_empty());
     }
