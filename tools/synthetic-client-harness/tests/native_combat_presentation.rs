@@ -52,6 +52,12 @@ fn damage_heal_and_hit_effect_reach_the_play_scene() -> Result<(), Box<dyn std::
             effect_id: 1,
             source: PresentationSource::Own,
         },
+        // The donor mapping renders DRAWBLOOD (1) red, FIREWORK_YELLOW (29) yellow.
+        PresentationEventKind::MagicEffect {
+            position,
+            effect_id: 29,
+            source: PresentationSource::Own,
+        },
     ];
     outbox.push(vec![SessionEvent::Presentation(AppliedDelta {
         server_sequence: 42,
@@ -71,12 +77,20 @@ fn damage_heal_and_hit_effect_reach_the_play_scene() -> Result<(), Box<dyn std::
     assert!(view.scene().sprites().len() > base + 4);
     let atlas = view.scene().atlas();
     let mut colors = std::collections::BTreeSet::new();
+    let mut blood_edges = 0;
+    let mut yellow_sparks = 0;
     for quad in &view.scene().sprites().instances()[base..] {
         let x = (quad.uv[0] * atlas.width() as f32) as usize;
         let y = (quad.uv[1] * atlas.height() as f32) as usize;
         let offset = (y * atlas.width() as usize + x) * 4;
-        colors.insert(&atlas.rgba()[offset..offset + 3]);
+        let color = &atlas.rgba()[offset..offset + 3];
+        colors.insert(color);
+        blood_edges +=
+            usize::from(color == [255, 0, 0] && quad.size.iter().any(|size| *size > 3.0));
+        yellow_sparks += usize::from(color == [255, 255, 0] && quad.size == [3.0, 3.0]);
     }
+    assert_eq!(blood_edges, 4, "DRAWBLOOD keeps its red border");
+    assert_eq!(yellow_sparks, 8, "yellow firework keeps all eight sparks");
     for expected in [
         &[255, 0, 0][..],
         &[0, 0, 255],

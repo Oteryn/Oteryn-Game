@@ -36,6 +36,20 @@ world_reward_claims_the_embedded_shards_decode -- --nocapture` reproduced
 311 versus 308 (0.07 s); after the first assertion it also exposed 10 versus
 11. Green: the same command passed (0.05 s; 3.660 s including Cargo).
 
+## Native combat presentation fixture
+
+`ffef24ad6` (#3011) made effect 1 render with its donor red colour, while the
+older synthetic fixture still required a yellow effect. The fixture keeps
+DRAWBLOOD (1), adds FIREWORK_YELLOW (29), and now checks exactly four red
+border quads and eight yellow sparks as well as damage/mana/heal colours.
+No renderer mapping or colour assertion was removed.
+
+Red: `cargo test --locked -p oteryn-synthetic-client-harness --test
+native_combat_presentation damage_heal_and_hit_effect_reach_the_play_scene
+-- --nocapture` reproduced the missing yellow (0.00 s). The same command is
+green (0.00 s; 36.501 s including Cargo). Clippy for all harness targets with
+`-D warnings` passed in 19.934 s.
+
 The retained producer notes follow.
 
 # Integrated producer contract notes
