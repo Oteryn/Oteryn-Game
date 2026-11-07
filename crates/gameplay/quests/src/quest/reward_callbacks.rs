@@ -216,7 +216,15 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 
 /// A native world selector supplies the source context; NPC identity is unused.
 pub fn world_reward(callback: &super::world_callbacks::Callback) -> Option<RewardCallback> {
-    Some(RewardCallback {
+    if callback.effects.item_reward.is_none() && callback.effects.achievement.is_none() {
+        return None;
+    }
+    Some(world_binding(callback))
+}
+
+/// A native selector's immutable binding, also used for aggregate carried fees.
+pub fn world_binding(callback: &super::world_callbacks::Callback) -> RewardCallback {
+    RewardCallback {
         world_event: callback.effects.world_event.clone(),
         repeatable: false,
         key: callback.key.clone(),
@@ -228,12 +236,12 @@ pub fn world_reward(callback: &super::world_callbacks::Callback) -> Option<Rewar
         storage: callback.storage.clone(),
         take: Vec::new(),
         present: Vec::new(),
-        give: Some(callback.effects.item_reward.clone()?),
+        give: callback.effects.item_reward.clone(),
         outfit: None,
-        achievement: None,
+        achievement: callback.effects.achievement.clone(),
         reply: Vec::new(),
         sources: callback.sources.clone(),
-    })
+    }
 }
 
 #[cfg(test)]

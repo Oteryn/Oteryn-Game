@@ -34,7 +34,9 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
 
+mod encounter_reservations;
 mod native_bindings;
+pub use encounter_reservations::EncounterRoomReservation;
 mod quest_callbacks;
 use quest_callbacks::CallbackStates;
 pub use quest_callbacks::{EventObjectProjection, QuestCallbackProjection};
@@ -130,7 +132,7 @@ pub struct BundleFacts {
     doors: DoorBook,
     /// Scope-ephemeral fact overrides, like doors; never an ItemInstance owner.
     rotations: Mutex<Arc<RotationStates>>,
-    callbacks: Mutex<Arc<CallbackStates>>,
+    callbacks: Arc<Mutex<Arc<CallbackStates>>>,
     monster_steps: Mutex<VecDeque<MonsterStep>>,
 }
 
@@ -195,7 +197,7 @@ impl BundleFacts {
             house_doors: Vec::new(),
             doors: DoorBook::default(),
             rotations: Mutex::default(),
-            callbacks: Mutex::default(),
+            callbacks: Arc::new(Mutex::default()),
             monster_steps: Mutex::default(),
         })
     }

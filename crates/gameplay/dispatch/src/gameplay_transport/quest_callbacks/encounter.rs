@@ -19,6 +19,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         key: u64,
         expected_revision: u64,
         after: EntryFacts,
+        commit: bool,
     ) -> UseDisposition {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
@@ -57,7 +58,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .is_none_or(|state| state.character_facts().level < encounter.minimum_level)
                 || runtime.bound_attacker_lease(who, member_session).is_err()
                 || !self.states.player_trades.physical(member_session, None)
-                || self.has_pending_quest_callback(member_session)
+                || (self.has_pending_quest_callback(member_session)
+                    && !(commit && member_session == session && !callback.storage.is_empty()))
             {
                 return UseDisposition::Rejected;
             }
@@ -108,6 +110,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             monsters.push((monster.creature.as_str(), policy.maximum_health, at));
+        }
+        if !commit {
+            return if runtime
+                .preflight_quest_encounter_entry(proofs, &monsters)
+                .is_ok()
+            {
+                UseDisposition::Committed
+            } else {
+                UseDisposition::Rejected
+            };
         }
         let Ok(snapshots) = runtime.commit_quest_encounter_entry(proofs, &monsters, || {
             map.facts

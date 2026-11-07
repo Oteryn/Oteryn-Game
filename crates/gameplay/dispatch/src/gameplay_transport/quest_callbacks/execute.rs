@@ -189,6 +189,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Exhausted;
         }
+        let mut room_reservation = None;
+        if let Some(encounter) = callback.effects.encounter.as_ref()
+            && !callback.storage.is_empty()
+            && !self.has_pending_quest_callback(session)
+        {
+            let admission = self.execute_quest_encounter(
+                runtime,
+                states,
+                actor,
+                session,
+                map,
+                callback,
+                key,
+                expected_revision,
+                after,
+                false,
+            );
+            if admission != UseDisposition::Committed {
+                return admission;
+            }
+            let Some(reservation) = map.facts.reserve_encounter_room(
+                map.overlay.base(),
+                tile(encounter.room_min),
+                tile(encounter.room_max),
+            ) else {
+                return UseDisposition::Occupied;
+            };
+            room_reservation = Some(reservation);
+        }
         let mut success_message = if callback.storage.is_empty() {
             callback.success_message.clone()
         } else {
@@ -223,6 +252,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     origin: None,
                     context: None,
                     ingress_settled: false,
+                    room_reservation: room_reservation.take(),
                 });
                 record.context.get_or_insert(context).clone()
             } else {
@@ -290,7 +320,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         if callback.effects.encounter.is_some() {
-            return self.execute_quest_encounter(
+            if let Ok(pending) = self.states.quest_callbacks.records.lock()
+                && let Some(reservation) = pending
+                    .get(&session)
+                    .and_then(|record| record.room_reservation.as_ref())
+            {
+                reservation.release();
+            }
+            let outcome = self.execute_quest_encounter(
                 runtime,
                 states,
                 actor,
@@ -300,7 +337,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 key,
                 expected_revision,
                 after,
+                true,
             );
+            if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
+                pending.remove(&session);
+            }
+            if outcome == UseDisposition::Committed
+                && let Some(message) = success_message
+            {
+                self.states.chat.push_quest_feedback(session, &message);
+            }
+            return outcome;
         }
         if !map.facts.apply_quest_callback(
             key,

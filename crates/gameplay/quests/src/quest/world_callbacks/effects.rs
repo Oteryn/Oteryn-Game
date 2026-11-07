@@ -18,6 +18,8 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_reward: Option<super::super::reward_callbacks::ItemReward>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub achievement: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outfit_reward: Option<super::super::reward_callbacks::OutfitReward>,
     pub transform: Option<u16>,
     pub facing: Option<Facing>,
@@ -95,11 +97,20 @@ pub(super) fn valid(callback: &Callback) -> bool {
     // Storage-free callbacks run only a Channel projection. Event admission
     // and item grants must always enter the fenced Quest transaction.
     if callback.storage.is_empty()
-        && (effects.world_event.is_some() || effects.item_reward.is_some())
+        && (effects.world_event.is_some()
+            || effects.item_reward.is_some()
+            || effects.achievement.is_some())
     {
         return false;
     }
 
+    if effects
+        .achievement
+        .as_ref()
+        .is_some_and(|key| !super::super::valid_quest_key(key) || key.len() > 256)
+    {
+        return false;
+    }
     if effects.world_event.as_ref().is_some_and(|binding| {
         !binding.valid()
             || binding.cost().is_some_and(|(id, count)| {

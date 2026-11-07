@@ -24,7 +24,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .find(|c| c.key == request.transition_key)
             .ok_or(CharacterProgressionError::InvalidInput)?;
         let native = self.active_generation.and_then(|g| g.native_gameplay());
-        if callback.effects.item_reward.is_some() {
+        if callback.effects.item_reward.is_some() || callback.effects.achievement.is_some() {
             let native = native.ok_or(CharacterProgressionError::InvalidInput)?;
             let weights = super::super::item_ref_admission::NativeItemWeights(native)
                 .with_wheel(self.premium_coordinator);

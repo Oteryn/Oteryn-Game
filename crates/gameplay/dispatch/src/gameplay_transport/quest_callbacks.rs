@@ -45,6 +45,7 @@ struct Pending {
     origin: Option<MovementPositionSnapshot>,
     context: Option<QuestWorldContext>,
     ingress_settled: bool,
+    room_reservation: Option<crate::map::facts::EncounterRoomReservation>,
 }
 
 #[derive(Default)]
@@ -591,6 +592,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         origin: Some(origin),
                         context: None,
                         ingress_settled: false,
+                        room_reservation: None,
                     });
                     pending.origin = Some(origin);
                 }

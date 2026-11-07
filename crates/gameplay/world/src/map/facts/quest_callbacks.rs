@@ -48,6 +48,7 @@ pub(super) struct CallbackStates {
     pub(super) movement_effects: std::collections::VecDeque<(u64, TilePos, u16)>,
     movement_speech: std::collections::VecDeque<(u64, MovementSpeech)>,
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
+    pub(super) encounter_rooms: BTreeMap<u64, BTreeSet<TilePos>>,
     event_items: BTreeMap<(TilePos, u16), super::super::overlay::EntryId>,
     mummy_projection: Option<(u8, bool, bool)>,
     event_projections: BTreeMap<String, Vec<EventObjectProjection>>,
@@ -157,7 +158,7 @@ impl CallbackStates {
             })
         })
     }
-    fn has_capacity(&self, additional: usize) -> bool {
+    pub(super) fn has_capacity(&self, additional: usize) -> bool {
         let used = self.changed.len()
             + self.hidden.len()
             + self.movement_decays.len()
@@ -165,7 +166,12 @@ impl CallbackStates {
             + self.movement_speech.len()
             + self.portals.len()
             + self.solid_items.len()
-            + self.movement_items.values().map(Vec::len).sum::<usize>();
+            + self.movement_items.values().map(Vec::len).sum::<usize>()
+            + self
+                .encounter_rooms
+                .values()
+                .map(BTreeSet::len)
+                .sum::<usize>();
         used.saturating_add(additional) < super::super::overlay::OVERLAY_BUDGET_BYTES / 512
     }
 }
@@ -902,7 +908,12 @@ impl BundleFacts {
         let Ok(states) = self.callbacks.lock() else {
             return true;
         };
-        if states.solid_items.contains(&pos) {
+        if states
+            .encounter_rooms
+            .values()
+            .any(|room| room.contains(&pos))
+            || states.solid_items.contains(&pos)
+        {
             return true;
         }
         let Some(tile) = base.tile(pos.x, pos.y, pos.floor) else {

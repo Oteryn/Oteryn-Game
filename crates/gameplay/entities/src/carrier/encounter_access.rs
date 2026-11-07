@@ -192,6 +192,19 @@ impl ChannelRuntimeV1 {
         result
     }
 
+    /// Validate the exact native entry, including every actor slot, without
+    /// exposing a staged actor or movement to the owner loop.
+    pub fn preflight_quest_encounter_entry<P: SourceStepCommitProof>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+    ) -> Result<(), CarrierError> {
+        let before = self.carrier.clone();
+        let result = self.commit_quest_encounter_entry(players, monsters, || true);
+        self.carrier = before;
+        result.map(|_| ())
+    }
+
     pub fn encounter_owner_scope(&self) -> (RuntimeScopeRefV1, ScopeOwnershipGeneration) {
         (
             self.binding.runtime_scope,

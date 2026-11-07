@@ -374,6 +374,25 @@ mod tests {
                 12506
             );
         }
+        {
+            let at = TilePos {
+                x: 32941,
+                y: 32754,
+                floor: -12,
+            };
+            let reservation = facts
+                .reserve_encounter_room(world.base(), at, at)
+                .expect("room reservation");
+            assert!(facts.quest_callback_blocked(world.base(), at, false));
+            assert!(facts.reserve_encounter_room(world.base(), at, at).is_none());
+            reservation.release();
+            assert!(!facts.quest_callback_blocked(world.base(), at, false));
+            let reservation = facts
+                .reserve_encounter_room(world.base(), at, at)
+                .expect("retry reservation");
+            drop(reservation);
+            assert!(!facts.quest_callback_blocked(world.base(), at, false));
+        }
         for x in 32941..=32944 {
             let pos = TilePos {
                 x,

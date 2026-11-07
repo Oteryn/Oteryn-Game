@@ -155,6 +155,28 @@ pub(super) async fn consume(
             return Ok(false);
         }
     }
+    if callback.offerings.is_empty()
+        && let Some((id, count)) = callback
+            .effects
+            .world_event
+            .as_ref()
+            .and_then(|binding| binding.cost())
+        && callback.item_on_target.as_ref().is_some_and(|item| {
+            item.item == format!("oteryn:item.tibia.i{id}")
+                && item.count == count
+                && item.replacement.is_none()
+                && item.target_replacement.is_none()
+        })
+    {
+        let mut fee = oteryn_gameplay_quests::quest::reward_callbacks::world_binding(callback);
+        fee.take.push(
+            oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
+                item: format!("oteryn:item.tibia.i{id}"),
+                count,
+            },
+        );
+        return consume_reward_inputs(tx, fence, request, &fee).await;
+    }
     if callback.offerings.is_empty() && callback.item_on_target.is_none() {
         return Ok(true);
     }
