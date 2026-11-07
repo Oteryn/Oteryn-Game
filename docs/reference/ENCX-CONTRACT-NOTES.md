@@ -749,3 +749,21 @@ failed before the qualifier existed and passes after implementation (0.04s),
 covering boss/return walkability, pending teleport refusal and document
 substitution. This is a source-admission slice; production template integration
 and the real-dispatch W10 chain remain incomplete.
+
+### Source region artifact carrier
+
+The native source carrier now accepts an explicit bundle of the unchanged pinned
+Thalom document and exact generated Primal document. Server qualification merges
+only captured cells; gaps stay absent and the unresolved teleport stays unknown.
+The client projection includes both regions, and existing carrier cross-pins bind
+that projection and both source documents. Region tests passed (3 tests, 1.42s),
+including real artifact encode/decode and client substitution rejection; content
+clippy passed with warnings denied. The bundle test was red first with
+`InvalidProject("native source world qualification")` (0.21s). The production
+Primal fixture still needs to select the new source bundle and resolve encounter
+hooks; this is not a completed encounter chain.
+
+Focused baselines on the preceding source-facts checkpoint: Soul War
+`soul_war_postgres_native_taints_xp_reset_and_replay` passed in 79.92s; Summer
+`summer_population_npc_placements_greeting_lore_and_stale_actor_on_postgres`
+passed in 42.36s. Neither proves the full W11/W16 encounter-chain requirement.

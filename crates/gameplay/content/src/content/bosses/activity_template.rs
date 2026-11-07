@@ -308,12 +308,14 @@ impl ContentActivationController {
             return Err(R::IncompleteLayout);
         }
         let source = room.source_world().ok_or(R::SourceMapUnavailable)?;
-        let frame: SourceFrameDocument = serde_json::from_slice(
+        let frame_document = crate::content::project::native_spell_world::channel_source_document(
             active
                 .native_source_world()
                 .ok_or(R::SourceMapUnavailable)?,
         )
         .map_err(|_| R::SourceMapUnavailable)?;
+        let frame: SourceFrameDocument =
+            serde_json::from_slice(&frame_document).map_err(|_| R::SourceMapUnavailable)?;
         if frame.native_frame.floor_transform != "native_floor=-source_z" {
             return Err(R::SourceMapUnavailable);
         }

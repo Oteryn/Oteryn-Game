@@ -315,6 +315,26 @@ pub fn qualify(
     bytes: &[u8],
     scope: EngineeringStaticCellScope,
 ) -> Result<QualifiedNativeSpellWorld, ProjectError> {
+    if let Some(bundle) = source_region_bundle(bytes)? {
+        let mut world = qualify(bundle.channel.as_bytes(), scope.clone())?;
+        let region = qualify_primal_region(bundle.primal.as_bytes(), scope)?;
+        for (cell, tile) in region.cells {
+            if world.cells.contains_key(&cell) {
+                return Err(invalid());
+            }
+            if let Some(known) = &tile {
+                world.immutable_tiles.insert(cell, known.clone());
+            }
+            world.bounds[0] = world.bounds[0].min(cell.x);
+            world.bounds[1] = world.bounds[1].min(cell.y);
+            world.bounds[2] = world.bounds[2].max(cell.x);
+            world.bounds[3] = world.bounds[3].max(cell.y);
+            world.bounds[4] = world.bounds[4].min(cell.z);
+            world.bounds[5] = world.bounds[5].max(cell.z);
+            world.cells.insert(cell, tile);
+        }
+        return Ok(world);
+    }
     if bytes.len() > MAX_BYTES
         || scope.generation_digest == [0; 32]
         || scope.coordinate_frame.as_str() != SOURCE_WORLD_FRAME
@@ -627,6 +647,35 @@ pub struct SourceWorldClientDocument {
     pub cells: Vec<SourceWorldClientCell>,
 }
 pub fn client_projection(bytes: &[u8]) -> Result<Vec<u8>, ProjectError> {
+    if let Some(bundle) = source_region_bundle(bytes)? {
+        let mut client: SourceWorldClientDocument =
+            serde_json::from_slice(&client_projection(bundle.channel.as_bytes())?)
+                .map_err(|_| invalid())?;
+        let region: PrimalRegionDocument =
+            serde_json::from_str(&bundle.primal).map_err(|_| invalid())?;
+        for tile in region.tiles {
+            let [x, y, z] = tile.source_position;
+            let pending = !tile.semantics.unmaterialized_dynamic_items.is_empty();
+            client.cells.push(SourceWorldClientCell {
+                position: [x - 5854, y - 5298, -z],
+                ground: tile
+                    .semantics
+                    .ground
+                    .map(|id| format!("oteryn:terrain.source.crystal.id{id}")),
+                immutable_items: if pending {
+                    Vec::new()
+                } else {
+                    tile.semantics
+                        .top_ids
+                        .iter()
+                        .map(|id| format!("oteryn:item.source.crystal.id{id}"))
+                        .collect()
+                },
+                owner_pending: pending,
+            });
+        }
+        return serde_json::to_vec(&client).map_err(|_| invalid());
+    }
     if bytes.len() > MAX_BYTES || hex(&crate::content::digest::sha256(bytes)) != DOCUMENT_SHA {
         return Err(invalid());
     }
@@ -675,6 +724,43 @@ pub fn client_projection(bytes: &[u8]) -> Result<Vec<u8>, ProjectError> {
         cells,
     })
     .map_err(|_| invalid())
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SourceRegionBundle {
+    schema: String,
+    channel: String,
+    primal: String,
+}
+
+/// Resolve the unchanged channel document inside a provenance-checked carrier.
+pub(in crate::content) fn channel_source_document(bytes: &[u8]) -> Result<Vec<u8>, ProjectError> {
+    if let Some(bundle) = source_region_bundle(bytes)? {
+        return Ok(bundle.channel.into_bytes());
+    }
+    if hex(&crate::content::digest::sha256(bytes)) != DOCUMENT_SHA {
+        return Err(invalid());
+    }
+    Ok(bytes.to_vec())
+}
+
+fn source_region_bundle(bytes: &[u8]) -> Result<Option<SourceRegionBundle>, ProjectError> {
+    if bytes.len() > MAX_BYTES {
+        return Err(invalid());
+    }
+    let Ok(bundle) = serde_json::from_slice::<SourceRegionBundle>(bytes) else {
+        return Ok(None);
+    };
+    // Each document retains its own exact source proof. The carrier hashes both
+    // sections and the independent client projection before activation.
+    if bundle.schema != "OTERYN_NATIVE_SOURCE_REGION_BUNDLE/v1"
+        || hex(&crate::content::digest::sha256(bundle.channel.as_bytes())) != DOCUMENT_SHA
+        || bundle.primal.as_bytes() != PRIMAL_SOURCE
+    {
+        return Err(invalid());
+    }
+    Ok(Some(bundle))
 }
 
 const PRIMAL_SOURCE: &[u8] = include_bytes!(
@@ -794,6 +880,25 @@ mod tests {
     const SOURCE: &[u8] = include_bytes!(
         "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
     );
+    #[test]
+    fn source_region_bundle_admits_primal_and_projects_both_regions() {
+        let bundle = serde_json::to_vec(&serde_json::json!({
+            "schema": "OTERYN_NATIVE_SOURCE_REGION_BUNDLE/v1",
+            "channel": std::str::from_utf8(SOURCE).unwrap(),
+            "primal": std::str::from_utf8(PRIMAL_SOURCE).unwrap(),
+        }))
+        .unwrap();
+        let map = qualify(&bundle, scope()).expect("source region bundle");
+        let boss = LogicalCell {
+            x: 33558 - 5854,
+            y: 32759 - 5298,
+            z: -15,
+        };
+        assert_eq!(map.lookup(map.scope(), boss), Ok(CollisionClass::Walkable));
+        let projection: serde_json::Value =
+            serde_json::from_slice(&client_projection(&bundle).unwrap()).unwrap();
+        assert_eq!(projection["cells"].as_array().unwrap().len(), 2833 + 510);
+    }
     #[test]
     fn primal_region_admits_source_placements_and_refuses_pending_teleport() {
         let region = qualify_primal_region(PRIMAL_SOURCE, scope()).expect("Primal source region");
