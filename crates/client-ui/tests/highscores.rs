@@ -3,6 +3,65 @@ use oteryn_client_runtime::server_mechanic::{CommandStatus, ServerMechanicRespon
 use oteryn_client_ui::highscores::{self, Action, HighscoresPanel};
 
 #[test]
+fn tibiadrome_highscore_filters_decode_and_render_native_rankings()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut panel = HighscoresPanel::default();
+    panel.selected = true;
+    for (category, label) in [
+        (13, "Tibiadrome lifetime"),
+        (14, "Tibiadrome current rotation"),
+    ] {
+        let command = highscores::request(
+            &mut panel,
+            Action::Filter {
+                category,
+                vocation: 0,
+            },
+        )
+        .ok_or("Drome category filter unavailable")?;
+        let query =
+            wire::decode_highscores_query(&command.payload).map_err(|e| format!("{e:?}"))?;
+        assert_eq!(
+            (command.capability, command.command_type, query.category),
+            (9, 14, category)
+        );
+        let row = HighscoreRow {
+            rank: 2,
+            name: "Drome Knight".into(),
+            vocation: "knight".into(),
+            level: 90,
+            value: 145,
+        };
+        let result = HighscoresResult {
+            category,
+            snapshot_id: 73,
+            computed_at: 9000,
+            page: 1,
+            has_more: false,
+            rows: vec![row.clone()],
+            own_row: Some(row),
+        };
+        highscores::apply_result(
+            &mut panel,
+            &ServerMechanicResponse {
+                command_id: 1,
+                status: CommandStatus::Accepted,
+                server_sequence: 2,
+                payload: wire::encode_highscores_result(&result).map_err(|e| format!("{e:?}"))?,
+            },
+        );
+        let text = highscores::panel_text(&panel);
+        assert!(
+            text.contains(label)
+                && text.contains("Drome Knight")
+                && text.contains("145")
+                && text.contains("Your rank: 2")
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn live_page_projection_and_snapshot_navigation() -> Result<(), Box<dyn std::error::Error>> {
     let mut panel = HighscoresPanel::default();
     panel.selected = true;

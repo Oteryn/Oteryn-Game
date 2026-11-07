@@ -808,6 +808,64 @@ ordering. Both lane-specific note files survive; no root note remains.
 The unpublished static Sugar catalogue draft was discarded in favor of this
 shared production owner;1102 remains unallocated. No second composition.
 
+## W02 Sugar Daddy source closure
+
+The first closed ordinary rewarded boss uses the existing canonical Canary
+`47dfd51f45280a59a1d3e50ba7edd573d7234446` Creature, not a fixture
+classification: `data-otservbr-global/monster/bosses/sugar_daddy.lua:21-25,76-132`.
+Its complete pinned file has four native attacks, two native defenses, no summons
+and no scripted event hooks. Crystal `201189f871d23597b82caf88fd611454a2ddefb8`
+`data-global/scripts/quests/candia_bosses/sugar_daddy_lever.lua:1-23` supplies
+the unchanged room layout, two-hour cooldown and five source stand positions.
+The only implicit hook is the implemented `BossLeverOnDeath`, registered in
+`data/libs/functions/boss_lever.lua:241`; its complete source is
+`data/scripts/creaturescripts/monster/boss_lever_death.lua:1-39`.
+
+The exact existing canonical Item `oteryn:item.tibia.i48416` has no XML override.
+Both admitted donor DATs contain its container/corpse flags; Crystal
+`src/items/items.cpp:163-174` indexes ItemType by exactly appearance.id.
+Canary `src/items/items.hpp:282,307,369` supplies weight0, capacity8 and
+non-pausing defaults. New native admission is bounded to that exact binding
+and Ground-only, non-pickupable, non-stackable capacity8 corpse policy. It
+does not invent an XML row, new canonical identity or a pickup permission.
+The existing loot table's 22 entries (21 distinct Item references) keep all
+identities, quantities and chances. The native source importer supplies their
+custody facts; existing known values and equipment pattern identities retain
+their accepted precedence while UNKNOWN movability/classification facts close.
+
+Canary `data/items/items.xml` source Item ID:line witnesses are: `675:1405`, `3029:6788`, `3031:6796`, `3035:6813`, `3039:6829`, `32769:62147`, `45639:77301`, `45640:77330`, `45641:77361`, `45642:77375`, `45643:77388`, `45644:77422`, `48114:80465`, `48249:80485`, `48250:80490`, `48251:80495`, `48252:80500`, `48253:80505`, `48254:80510`, `48255:80515`, `48256:80635`.
+The source capture pins complete XML, DAT, loader, monster, lever and callback
+blobs; only normalized server facts are committed. Generated profiles, loot
+facts, candidate fingerprints and manifests use their repository generators.
+
+No new command, capability, mechanic ordinal or migration is allocated by this
+source-data step. The exact source binding48416 reuses its existing canonical
+identity. The source qualification census changes precisely from
+52 missing /329 inadmissible /1 independently admitted corpse to
+52 missing /328 inadmissible /2 (Sugar Daddy and The Primal Menace); the five
+shared-body bosses retain their previous separate expectations.
+
+W02 real Sugar Daddy source room physical closure:
+`tools/content-schema/world-object-authoring/sugar_room.py` is the owning bounded
+supplemental generator (integrated into build_catalogue.py); its capture records all
+79 exact source appearance flags including the two `usable` witnesses without
+admitting Item interactions. Crystal00ce02a5 data/items/appearances.dat SHA
+17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1 and
+items.xml SHA13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece
+prove all79 have no XML overrides; Crystal src/items/items.cpp:163-174 binds exact
+appearance.id to ItemType. Complete admitted official15.30 appearances2dfa943b…
+independently supplies identical flags for all79 and exact admitted membership.
+Physical classes:10ground(2unwalkable/speed0),38border,26blocking wall,5common.
+Only stable palette keys/provisional bits change; B3bytes, palette indices, item
+stacking and source geometry remain unchanged. New canonical Terrain keys retain
+source ids, shard08614-08692 generated after existing8614records. No Item binding,
+command, capability or mechanic ordinal allocated. New sourceprofile:
+OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_BOSS_ROOM/v1, exact79-id schema arm.
+Tests `SugarRoomTests.test_exact_79_source_flags_and_native_geometry` and
+`test_real_b3_room_has_no_provisional_omissions_and_preserves_indices` PASS2.148s:
+real sourcezone+6anchors covers1119placements, all79canonical and no omission;
+foreign unknown donor palette rows remain refused. `sugar_room.py --check` passes.
+
 ## W02 compiled custody and publication checkpoint
 
 Migration1103 replaces the Channel-only corpse child lock with exact typed
@@ -823,6 +881,42 @@ is currently red at an added Terrain optional-field fixture initializer. Actual
 PostgreSQL instance custody and scoped publication regressions remain pending.
 The source geometry/projectile closure and movement behavior checks continue
 in the next checkpoint. No full-row completion is claimed here.
+
+W02 projectile projection correction: Crystal src/items/items.cpp:234 assigns
+`iType.blockProjectile = object.flags().unsight()` independently of movement
+`unpass`. The Sugar generator therefore emits KNOWN `blocks_projectile` for all79
+Terrain records. Ten solid walls(45015,45031,45176,45177,45178,45179,45180,45181,
+45182,45250) are projectile-transparent; blocked grounds45196/48121 block shots.
+Bundle Terrain now carries optional `blocks_projectile`; absent/UNKNOWN keeps the
+legacy interpretation, serialized None is omitted so previous bytes remain stable.
+The compiler refuses malformed KNOWN nonboolean values. BundleFacts and SpellTiles
+prefer the known flag before legacy fallback; visible RoofFacts consumes the same
+resolved flag instead of independently treating every wall as opaque. Physical
+movement solidity is unchanged. Mechanical existing Terrain literals use None.
+Focused regressions added: `source_projectile_known_false_true_and_unknown_are_distinct`
+and `terrain_projectile_overrides_preserve_solidity_and_visible_lookthrough`.
+Rust execution pending root Cargo slot; Python Sugar exact79 corpus passes2.231s.
+
+W02 owning format allocation: World Bundle format8 (next free after7, lane offset0).
+Per OTERYN_WORLD_BUNDLE_FORMAT_V1.md:56-57,319-321 the new optional known Terrain
+projectile field requires a new version even when old UNKNOWN manifests omit it.
+Writer header, manifest format, minimum reader and digest domain now coherently
+use8; reader accepts only8, consistent with prior format transitions. Existing
+v6 viewport semantic-golden helper verifies a layerless/no-override fixture before
+reconstructing its old identity; no recorded golden bytes/digests were edited.
+Root owning content regeneration and compiler pin-refresh will generate actual
+v8 bundle bytes/pins. No generated bundle/pin fields were hand-edited.
+
+Ordinary Instance PG assertion correction after actual90.171s RED: fresh MINT
+sets game_item_instances.minted_transaction_id (0010); last_transaction_id is
+nullable until later mutation (0011:21-23). Retained real native-rat DB contains
+livei3607/i3031, revision1, exact physical parent/placement/Instance and matching
+minted transaction, with last_transaction_id NULL. Test now asserts those exact
+semantics and additionally matches receipt destination parent+ordinal, exact
+visible physical body id and typed World/Instance. Every joined row is explicitly
+coalesced false inside bool_and, preventing a missing custody join from being
+ignored beside a valid child. Read-only corrected predicate returns2,true; actual
+focused production rerun remains required for GREEN.
 
 ## W03 Instance personal reward qualification
 
@@ -861,6 +955,15 @@ occurrence and time, preserving field/floor destination proofs through SQL.
 Command replay remains with the existing admitted command owner, before movement
 or RNG is re-entered. This consumer adds no actor fields, persistence, protocol or command IDs.
 
-Validation: behavioral RED showed East movement during Fear and instead of
-keyed Drunk steering. GREEN:18 actual movement/field regressions passed0.17s
-(132.606s build+test). No numeric identifiers allocated.
+Validation:18 movement/field regressions passed0.17s (132.606s build+test).
+
+## W17 native Drome Highscores filters checkpoint
+
+Allocated Highscores category13 (Character lifetime Drome levels) and14
+(current World/rotation Drome levels), reusing command14/capability0009.
+Migration1105 is reserved for the server projection; its focused PostgreSQL
+qualification remains pending. Source: manual combat.md:262-264.
+Native filters, existing response decoding and row presentation pass all4
+client-ui Highscores integration tests (1.742s); the new case first failed
+with "Drome category filter unavailable" (3.322s). No new command/capability.
+This is a compiled UI checkpoint; server projection and full row remain WIP.
