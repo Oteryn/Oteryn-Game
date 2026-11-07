@@ -3071,7 +3071,36 @@
       {
         "canonical": "oteryn:quest.authored.waterskin_of_mead_quest",
         "status": "IN_PROGRESS",
-        "blocker": "The mission9-gated Furry Bag/fluid-container reward and barrel's exact native selector are not bound; the authored recipe alone cannot mint source mead."
+        "blocker": "Generic complete-plan fluid16 reward MINT now qualified, including no refill after consumption/replay. Continue production USE lowering, mission9 checks and exact native barrel binding; no whole quest qualification yet.",
+        "partial_qualification": {
+          "status": "QUALIFIED",
+          "scope": "Generic complete-plan reward child fluid MINT only. Source barrel/mission9/wire lowering and whole Waterskin entry are not qualified by this fixture.",
+          "red": {
+            "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+            "duration_seconds": 53.89,
+            "marker": "POSTGRES_DATABASE_READY l6_reward_fluids",
+            "result": "0 passed / 1 failed",
+            "actual": "None",
+            "expected": "Some(16)",
+            "log": "/tmp/questpc4-reward-fluid-red.log"
+          },
+          "green": {
+            "postgres_version": "18.6",
+            "duration_seconds": 55.436742052,
+            "marker": "POSTGRES_CASE_COMPLETED l6_reward_fluids success=true",
+            "result": "2 focused PG tests passed / 0 failed; batch55.47s",
+            "log": "/tmp/questpc4-reward-fluid-final-pg.log",
+            "assertions": [
+              "source mead16 persisted with one exact child identity",
+              "stale fence writes nothing",
+              "changed subtype with same CommandRef conflicts without writes",
+              "unrelated root fluid proof rejected by SQL23514",
+              "exact replay leaves instance/receipt/reservation/fluid/audit counts unchanged",
+              "real carried-tree fluid writer empties vessel; historical MINT replay does not refill",
+              "legacy source bear bag USE/once/replay remains green"
+            ]
+          }
+        }
       },
       {
         "canonical": "oteryn:quest.awash_world_change",
@@ -3164,7 +3193,7 @@
     },
     "scope_note": "All LANE-L6 input source blockers remain obligations. Differences from selected recipe approximations are not authority to drop a blocker. Historical qengine ownership language is not treated as a reason to defer work now owned by L6.",
     "publication_branch": "claude/happy-davinci-ijz3wy-questpc4",
-    "latest_batch": "cloud-physical-pickups-04",
+    "latest_batch": "cloud-reward-fluids-05",
     "mechanisms": {
       "reusable_tools_and_atomic_counters": {
         "status": "QUALIFIED",
@@ -3297,6 +3326,35 @@
             15
           ],
           "ordinal": 1
+        }
+      },
+      "complete_reward_child_fluids": {
+        "status": "QUALIFIED",
+        "scope": "Generic complete-plan reward child fluid MINT only. Source barrel/mission9/wire lowering and whole Waterskin entry are not qualified by this fixture.",
+        "red": {
+          "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+          "duration_seconds": 53.89,
+          "marker": "POSTGRES_DATABASE_READY l6_reward_fluids",
+          "result": "0 passed / 1 failed",
+          "actual": "None",
+          "expected": "Some(16)",
+          "log": "/tmp/questpc4-reward-fluid-red.log"
+        },
+        "green": {
+          "postgres_version": "18.6",
+          "duration_seconds": 55.436742052,
+          "marker": "POSTGRES_CASE_COMPLETED l6_reward_fluids success=true",
+          "result": "2 focused PG tests passed / 0 failed; batch55.47s",
+          "log": "/tmp/questpc4-reward-fluid-final-pg.log",
+          "assertions": [
+            "source mead16 persisted with one exact child identity",
+            "stale fence writes nothing",
+            "changed subtype with same CommandRef conflicts without writes",
+            "unrelated root fluid proof rejected by SQL23514",
+            "exact replay leaves instance/receipt/reservation/fluid/audit counts unchanged",
+            "real carried-tree fluid writer empties vessel; historical MINT replay does not refill",
+            "legacy source bear bag USE/once/replay remains green"
+          ]
         }
       }
     },
@@ -3506,6 +3564,71 @@
       "Combined cargo check all targets/features1m31s",
       "Combined clippy all targets/features -D warnings3m39s",
       "Final cargo fmt --all --check and git diff --check"
-    ]
+    ],
+    "pushed_engine_slice": "4fd80eac6bc9aa2bb55bca8adb2f7c10876f386f"
+  },
+  "reward_fluid_batch": {
+    "id": "cloud-reward-fluids-05",
+    "status": "QUALIFIED",
+    "scope": "Generic complete-plan reward child fluid MINT only. Source barrel/mission9/wire lowering and whole Waterskin entry are not qualified by this fixture.",
+    "contract": "qlane-meta/questpc4/REWARD-FLUID-CONTRACT.md",
+    "red_test": "l6_reward_container_preserves_mead_and_exact_replay",
+    "red_log": "/tmp/questpc4-reward-fluid-red.log",
+    "stage": "Local green mechanism candidate; remote advanced to516de7b0d with independent floor assembly. Commit local green slice, merge/reuse remote, validate combined tree, then push fast-forward. Continue19 whole entries.",
+    "remaining_whole_entries": 19,
+    "red": {
+      "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "duration_seconds": 53.89,
+      "marker": "POSTGRES_DATABASE_READY l6_reward_fluids",
+      "result": "0 passed / 1 failed",
+      "actual": "None",
+      "expected": "Some(16)",
+      "log": "/tmp/questpc4-reward-fluid-red.log"
+    },
+    "migration_diagnostic": {
+      "failure": "Migration1061 syntax error: unparenthesized CASE in PL/pgSQL IF expression",
+      "log": "/tmp/questpc4-reward-fluid-green.log",
+      "duration_seconds": 4.472455119,
+      "fix": "Parenthesized CASE. PostgreSQL parse under BEGIN/ROLLBACK passes; touch-only invalidation of existing GAME_MIGRATOR source forces Cargo to re-embed corrected SQL.",
+      "parse_log": "/tmp/questpc4-fluid-plan-parse-fixed.log"
+    },
+    "green_log": "/tmp/questpc4-reward-fluid-green-fixed-sql.log",
+    "initial_green": {
+      "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "duration_seconds": 54.942597266,
+      "marker": "POSTGRES_CASE_COMPLETED l6_reward_fluids success=true",
+      "result": "1 passed / 0 failed",
+      "log": "/tmp/questpc4-reward-fluid-green-fixed-sql.log",
+      "unit_result": "10 passed / 0 failed, including legacy intent fixture"
+    },
+    "final_pg_log": "/tmp/questpc4-reward-fluid-final-pg.log",
+    "final_green": {
+      "postgres_version": "18.6",
+      "duration_seconds": 55.436742052,
+      "marker": "POSTGRES_CASE_COMPLETED l6_reward_fluids success=true",
+      "result": "2 focused PG tests passed / 0 failed; batch55.47s",
+      "log": "/tmp/questpc4-reward-fluid-final-pg.log",
+      "assertions": [
+        "source mead16 persisted with one exact child identity",
+        "stale fence writes nothing",
+        "changed subtype with same CommandRef conflicts without writes",
+        "unrelated root fluid proof rejected by SQL23514",
+        "exact replay leaves instance/receipt/reservation/fluid/audit counts unchanged",
+        "real carried-tree fluid writer empties vessel; historical MINT replay does not refill",
+        "legacy source bear bag USE/once/replay remains green"
+      ]
+    },
+    "validation": [
+      "10 reward-MINT units passed including existing intent fixture",
+      "cargo check all targets/features durability+dispatch2m57s",
+      "clippy all targets/features -D warnings durability+dispatch2m15s",
+      "cargo fmt --all --check",
+      "explicit rustfmt new auto-mounted PG leaf",
+      "git diff --check"
+    ],
+    "reuse_check": {
+      "qengine2_head": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
+      "finding": "Freshly fetched shared engine adds native payments and source outfit stories; no filled-child fluid MINT implementation. Reuse its source flows when needed for subsequent NPC entries."
+    }
   }
 }
