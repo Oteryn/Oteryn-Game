@@ -714,3 +714,11 @@ CalendarMonth gating 64.71s. All three passed. Changed-crate all-target/all-feat
 clippy with `-D warnings` passed in 1m39s. Pin refresh and pin-check passed, retaining
 world pin `6157033be3cbe48fb8eb1261ce13579cb1e02ec40f457025d1b89ac3d2d62671`.
 These effect cases still do not qualify a complete title from the QNPCFX list.
+
+## Coordinator migration registry reconciliation
+
+Shared QBASE migrations are 1202_questpc_npc_revision and 1205_fathers_burden_items, unchanged from their canonical pc2 content. The response-table addition formerly prepended to the NPC revision migration is isolated in 1310_quest_npc_program_receipts. QNPCFX owns 1311_marlin_trophy_exchange, 1312_quest_npc_item_sources and 1313_npc_conversation_delay. This branch contains no QENGINE2 migration copies or variants in 0999–1006. The eleven-track Father acceptance remains one atomic write.
+
+Migration 1310 is an absence-only bootstrap: when QBASE 1200 has installed the canonical response table it leaves that table, function and trigger untouched. Shared 1202 and 1205 were compared byte-for-byte with canonical pc2 migrations.
+
+Registry reconciliation validation: staged-tree duplicate-migration script passed; pin-refresh and pin-check passed with unchanged world pin; focused real-dispatch PostgreSQL cases passed (acceptance/replay 76.98s, delayed dismissal 83.60s, calendar gating 93.92s). No full PostgreSQL suite was run.
