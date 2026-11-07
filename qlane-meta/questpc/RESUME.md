@@ -1,3 +1,13 @@
+## Check follow-up — 2026-11-07
+StepOut slice pushed asf924cb424. Strict clippy nowPASS(alltargets/allfeatures,
+-Dwarnings,2m47s); Rust schema unit1/1PASS; cargo fmt and mounted rustfmtPASS.
+Pin refreshPASS, same2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968.
+No pending check from that slice. Archived logs normalized only at trailing blank
+lines; hashes updated. New object-mutation PG scenario/tests are authored but
+not yet run; no object-mutation production code yet. Next run the new focused
+RED with StepOut regression, then implement atomic create/remove using existing
+qengine2 staged callback state. Ten-minute investigation cap; push each slice.
+
 # Active Cloud continuation
 
 Branch `claude/happy-davinci-ijz3wy-questpc-pc2`; earlier snapshot6c09e0365 and

@@ -25,8 +25,10 @@
     "cargo_check_all_targets_all_features": "passed in 4m11s before lexical mutex scope repair",
     "python_tests": "15 passed",
     "source_generation": "21 packets; zero stale outputs",
-    "strict_clippy": "rerun active after replacing explicit guard drop with lexical scope; no lint allowance added",
-    "rust_schema_unit": "queued after strict clippy"
+    "strict_clippy": "PASS all targets/all features, -D warnings, 2m47s",
+    "rust_schema_unit": "PASS 1/1, 0.01s (pure unit; not PG)",
+    "format": "PASS package cargo fmt and explicit mounted rustfmt",
+    "pin_refresh": "PASS; world digest unchanged: 2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968"
   },
   "logs": {
     "red": {
@@ -35,7 +37,7 @@
     },
     "green": {
       "log": "qlane-meta/questpc/cloud-departure-green.log",
-      "sha256": "470f88a60a76c2b16f363fa8183b868d4e71b1fdea8cf9f29559d894c4368c41"
+      "sha256": "b20c25548769a0f88ea9de30dd0b9da014deeb77dca3d90bcffe79bb0b5177de"
     },
     "recovery-red": {
       "log": "qlane-meta/questpc/cloud-departure-recovery-red.log",
@@ -43,7 +45,7 @@
     },
     "recovery-green": {
       "log": "qlane-meta/questpc/cloud-departure-recovery-green.log",
-      "sha256": "c1f23928d3539663711a8c0c99842281d148c7344a501353c083575c1042cd9a"
+      "sha256": "0712f2c3a2d6022a00def8866d7ff1d3d45d9bd2325c69c8e4969474b21dea38"
     },
     "entry-confirmed-red": {
       "log": "qlane-meta/questpc/cloud-departure-entry-confirmed-red.log",
@@ -51,7 +53,7 @@
     },
     "final-pg": {
       "log": "qlane-meta/questpc/cloud-departure-final-pg.log",
-      "sha256": "2f4c97d47a9bc32eb570172c6d5f6b4dee2c17f7c35c3956ba841dd77926198e"
+      "sha256": "1ad3ca250827ac5953c242766b9f026e92212028af170df258d400dd0a7ebc98"
     },
     "check": {
       "log": "qlane-meta/questpc/cloud-departure-check.log",
@@ -64,6 +66,19 @@
     "generation-final": {
       "log": "qlane-meta/questpc/cloud-departure-generation-final.log",
       "sha256": "1c9bfd6344727313032b6a8ba6dc3f2ecf00b39eddf6946a02e77dc72dd0b56e"
+    },
+    "clippy-final": {
+      "log": "qlane-meta/questpc/cloud-departure-clippy-final.log",
+      "sha256": "4383a43bfc2ef7df097f8c494ba1593694610046020b2f12f2ef853f5857510c"
+    },
+    "unit": {
+      "log": "qlane-meta/questpc/cloud-departure-unit.log",
+      "sha256": "8d440f7f32d7f9911a92c44160a7eb0227132aa6dcdf8174f62ed0b04c0c1f2f"
+    },
+    "pin-refresh": {
+      "log": "qlane-meta/questpc/cloud-departure-pin-refresh.log",
+      "sha256": "5ffb51d378ba86ff5d001d87db6ee2db97bd26e91a8c1ff7173c18da3868a383"
     }
-  }
+  },
+  "log_normalization": "Trailing blank lines removed from archived command output; hashes cover archived bytes. Test/marker/result lines preserved."
 }

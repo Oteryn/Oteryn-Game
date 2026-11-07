@@ -77,4 +77,3 @@ POSTGRES_CASE_COMPLETED committed_departure_restores_static_passages_without_que
 ok
 
 test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 2540 filtered out; finished in 154.68s
-
