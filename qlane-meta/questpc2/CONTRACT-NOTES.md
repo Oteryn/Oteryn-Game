@@ -284,3 +284,17 @@ qualification. Continue owned missing mechanisms; no external engine deferral.
   44b7a3aa02085be56a94af2d837219d8828de3ddf8dad96aa11b5e1e8d6216c8,
   names the ordinary Dragon loot; preserve existing accepted canonical loot
   probabilities/identities (including trophy) rather than rewriting its source.
+
+Native objective atomic proof, 2026-11-07: PostgreSQL180006 RED74.71s
+reached native queue but captured0 objectives. The isolated Annihilator-based
+fixture had never admitted QuestSession; refresh(insert=false) deliberately
+updates existing sessions only (dispatch/.../quest_admission.rs:24-26,76-77).
+Correct fixture admission uses insert=true and asserts coherent phase2 BEFORE
+death. GREEN74.95s, marker154ms native subcase: real source Dragon death,
+one captured objective, phase2->3, XP/Quest receipt xmin equality, replaystable.
+This isolates engine atomicity; pre-route phase is an explicit fixture
+precondition, damage uses the native owner seam, and no full Elvenbane route
+or client combat/reward qualification is inferred. Authority4.05s and
+complete earned Annihilator105.20s PostgreSQL regressions remain GREEN.
+Shared persistence retains the existing ordinary Quest SQL and caller gates;
+native write joins XP transaction rather than making a later separate write.

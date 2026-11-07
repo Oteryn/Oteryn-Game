@@ -332,7 +332,7 @@
       "title": "Elvenbane Quest",
       "mechanism": "encounter_party_admission_settlement",
       "status": "UNFINISHED",
-      "blocker": "Native personal kill-objective catalogue, lethal-turn capture and protected Quest writer/drain are implemented. Continuous source traversal, positive native objective acceptance and seven-item terminal reward/replay remain the next composed route.",
+      "blocker": "Native objective capture and XP/Quest atomic transaction are PostgreSQL-proved, including exact replay. Continuous source traversal, real client combat through all six defenders, and seven-item terminal reward/replay are the next composed route.",
       "source_lane_checks": [
         {
           "lane": "questpc",
@@ -1877,7 +1877,7 @@
   },
   "native_objective_atomic_authoring_checkpoint": {
     "state": "AUTHORING",
-    "published_scope": "Verified source/proof/resume checkpoint only; runtime/data changes remain local until green.",
+    "published_scope": "Native XP/Quest atomic objective mechanism and Dragon custody closure; no whole Elvenbane qualification.",
     "postgres_red_log": "/tmp/questpc2-native-objective-atomic-link-retry-pg.log",
     "postgres_version": 180006,
     "duration_seconds": 79.95,
@@ -1889,13 +1889,31 @@
       4027
     ],
     "source_tests": "3 tests PASS1.599s; /tmp/questpc2-dragon-corpse-python.log",
-    "next": "Finish common Quest persistence extraction and native XP-transaction objective consumer; same-xmin/replay PG proof; positive source traversal and physical rewards afterward.",
+    "next": "Implement continuous Elvenbane source exploration callbacks, all six earned real-client kills, guarded physical seven-item terminal reward/replay; qualify whole quest, then remaining owned entries.",
     "latest_red": {
       "postgres_version": 180006,
       "duration_seconds": 73.92,
       "log": "/tmp/questpc2-native-objective-atomic-recovered-green-pg.log",
       "finding": "Canonical corpse admission alone did not refresh native loot section; section has now been regenerated. Ten additional Dragon loot custody Items qualified through source tooling."
     },
-    "custody_tests": "3 corpse tests PASS1.599s;3 loot custody tests PASS22.665s; no whole quest qualification."
+    "custody_tests": "3 corpse tests PASS1.599s;3 loot custody tests PASS22.665s; no whole quest qualification.",
+    "postgres_green": {
+      "version": 180006,
+      "seconds": 74.95,
+      "marker_elapsed_ms": 154,
+      "log": "/tmp/questpc2-native-objective-admitted-pg.log",
+      "proof": "Real source Dragon/native death, coherent admitted phase2, one captured objective, phase3, identical XP/Quest xmin, exact replay."
+    },
+    "authority_regression": {
+      "version": 180006,
+      "seconds": 4.05,
+      "marker_elapsed_ms": 4045
+    },
+    "annihilator_regression": {
+      "version": 180006,
+      "seconds": 105.2,
+      "marker_elapsed_ms": 104401
+    },
+    "batch": "BATCH-native-objective-atomic-2026-11-07.json"
   }
 }

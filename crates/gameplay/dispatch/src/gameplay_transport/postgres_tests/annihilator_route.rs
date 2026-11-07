@@ -27,14 +27,31 @@ enum Route {
     Entry,
     Combat,
     Complete,
+    ObjectiveAtomicity,
+}
+
+pub(super) fn native_objective_atomicity() -> TestResult {
+    run(Route::ObjectiveAtomicity)
 }
 
 fn run(route: Route) -> TestResult {
     let combat = route != Route::Entry;
-    let start_x = if route == Route::Complete {
-        33213
+    let start = if route == Route::ObjectiveAtomicity {
+        Position {
+            x: 32591,
+            y: 31645,
+            floor: -5,
+        }
     } else {
-        33215
+        Position {
+            x: if route == Route::Complete {
+                33213
+            } else {
+                33215
+            },
+            y: 31671,
+            floor: -13,
+        }
     };
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -56,7 +73,7 @@ fn run(route: Route) -> TestResult {
         let generation = controller.active().ok_or("active generation")?;
         let world = source_world(
             generation.native_gameplay().ok_or("native gameplay")?,
-            start_x,
+            start,
         )?;
         let now: i64 =
             sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
@@ -93,9 +110,9 @@ fn run(route: Route) -> TestResult {
                 world.frame_binding_digest(deps.admitted.world_id),
                 world.map_revision_digest(),
                 crate::content::NativeEntryStart {
-                    x: 33215,
-                    y: 31671,
-                    floor: 13,
+                    x: start.x.into(),
+                    y: start.y.into(),
+                    floor: i16::from(-start.floor),
                 },
             )
             .ok_or("source bundle combat room")?;
@@ -115,7 +132,11 @@ fn run(route: Route) -> TestResult {
             generation.identity().client_artifact_digest(),
             room.frame_binding().digest(),
             world.map_revision_digest(),
-            (i32::from(start_x), 31671, 13),
+            (
+                i32::from(start.x),
+                i32::from(start.y),
+                i16::from(-start.floor),
+            ),
         );
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             deps.admitted.world_id,
@@ -142,11 +163,7 @@ fn run(route: Route) -> TestResult {
             runtime
                 .bind_attacker_lease(actor, session, current.current_character_lease())
                 .map_err(debug)?;
-            let at = Position {
-                x: start_x,
-                y: 31671,
-                floor: -13,
-            };
+            let at = start;
             runtime
                 .initialize_pinned_test_position(actor, local(at))
                 .map_err(debug)?;
@@ -261,8 +278,13 @@ fn run(route: Route) -> TestResult {
                 .await
                 .map_err(debug)?;
             if combat {
-                super::annihilator_combat::prepare_supplies(&owner, member, &build, index == 0)
-                    .await?;
+                super::annihilator_combat::prepare_supplies(
+                    &owner,
+                    member,
+                    &build,
+                    index == 0 && route != Route::ObjectiveAtomicity,
+                )
+                .await?;
             }
             let stamina = owner
                 .root
@@ -322,6 +344,11 @@ fn run(route: Route) -> TestResult {
             return Err("native bundle collision index".into());
         };
         let map = index.map();
+        if route == Route::ObjectiveAtomicity {
+            super::native_objective_atomic::scenario(&mut owner, &mut admitted[0], map, &h.pool)
+                .await?;
+            return Ok(());
+        }
         // Fresh admissions share the same source approach tile, as normal login
         // admissions share a configured start. Each walks through the real door
         // to a distinct staging tile; no runtime relocation supplies entry.
@@ -515,12 +542,12 @@ async fn level(
 
 fn source_world(
     native: &crate::content::native_gameplay::NativeGameplayState,
-    start_x: u16,
+    start: Position,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::bundle;
     use oteryn_world_bundle_compiler::{compile, project, source};
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    let project = source::project_regions(&root, &[(129, 123)])?;
+    let project = source::project_regions(&root, &[(start.x / 256, start.y / 256)])?;
     let (registry, palette) = source::registry(&root, &project)?;
     let identity: bundle::Identity = serde_json::from_slice(&std::fs::read(
         root.join("content/world/pins/oteryn.identity.json"),
@@ -544,10 +571,16 @@ fn source_world(
         },
         &registry,
     )?;
+    let (xs, ys) = if start.floor == -13 {
+        (33212..=33236, 31650..=31673)
+    } else {
+        (32580..=32600, 31635..=31655)
+    };
     assert!(
-        !compiled.diagnostics.iter().any(|d| d.floor == -13
-            && (33212..=33236).contains(&d.x)
-            && (31650..=31673).contains(&d.y)),
+        !compiled
+            .diagnostics
+            .iter()
+            .any(|d| d.floor == start.floor && xs.contains(&d.x) && ys.contains(&d.y)),
         "unresolved source quest geometry"
     );
     let pins = crate::map::BundlePins {
@@ -555,7 +588,7 @@ fn source_world(
         ..pins
     };
     let base = crate::map::load(&compiled.bytes, &pins).map_err(debug)?;
-    crate::map::boot::boot(&compiled.bytes,&crate::map::boot::BootPins{map_revision:crate::map::overlay::map_revision(&base),bundle:pins,start:crate::map::overlay::TilePos{x:start_x,y:31671,floor:-13}},crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,|key| {
+    crate::map::boot::boot(&compiled.bytes,&crate::map::boot::BootPins{map_revision:crate::map::overlay::map_revision(&base),bundle:pins,start:crate::map::overlay::TilePos{x:start.x,y:start.y,floor:start.floor}},crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,|key| {
         use crate::content::{ReferenceItemField,ReferenceItemType};
         // Match the production node's boot_bundle_items (serve.rs): an indexed
         // static Item without a native profile retains the owner's sealed defaults.

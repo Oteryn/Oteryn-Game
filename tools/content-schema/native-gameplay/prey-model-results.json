@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "aedaef3ed81ea8044c1c3105c3562f6c1739a9c23913783483accd00b644ddc5",
+  "input_sha256": "a1685585fe6d8353d286f0769ffc71e45cfb84ba35668ca7b81cf43b489c2bb7",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -2066,7 +2066,6 @@
     "oteryn:creature.doom_deer",
     "oteryn:creature.doomsday_cultist",
     "oteryn:creature.dragolisk",
-    "oteryn:creature.dragon",
     "oteryn:creature.dragon_hatchling",
     "oteryn:creature.dragon_lord",
     "oteryn:creature.dragon_lord_hatchling",
@@ -2842,7 +2841,6 @@
     "oteryn:creature.doom_deer",
     "oteryn:creature.doomsday_cultist",
     "oteryn:creature.dragolisk",
-    "oteryn:creature.dragon",
     "oteryn:creature.dragon_hatchling",
     "oteryn:creature.dragon_lord",
     "oteryn:creature.dragon_lord_hatchling",

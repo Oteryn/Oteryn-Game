@@ -7,6 +7,13 @@ import encounter_loot_item_admissions as loot
 
 
 class EncounterLootAdmissionTests(unittest.TestCase):
+    def test_client_only_objects_cannot_invent_stack_or_container_limits(self):
+        self.assertTrue(loot.client_only_custody_supported({'flags': {'flags.take': True}}))
+        for flags in ({'flags.take': True, 'flags.container': True},
+                      {'flags.take': True, 'flags.cumulative': True},
+                      {'flags.take': False}):
+            self.assertFalse(loot.client_only_custody_supported({'flags': flags}))
+
     def test_source_closure_preserves_all_non_custody_fields_and_is_idempotent(self):
         owned = {f'oteryn:item.tibia.i{i}' for i in loot.IDS}
         definitions = [r['definition']
