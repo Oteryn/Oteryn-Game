@@ -1,3 +1,21 @@
+# GREEN19:59: publishing six Soul War source entry configurations
+
+Lastpushc0f2c94f73e226668b10eff8d421d9fd6096bca8 at19:51. Small sourcehelper
+questpc2_soul_entries.py48linesNEWfile, no runtime engine changes. Six named
+source configs/30ordered player slots, exact donor SHA/path/line witnesses.
+Greed sourcezero cooldown is overridden by later20h; preserveboth assignments.
+Final72h. Derivedpacket samples/questpc2-soul-entries.json remains nativefalse;
+not silently accepted as current201189f runtime candidates (sourcepin9f5).
+Focused source replay/artifact consistency test RED/GREEN; artifactgeneratedonce
+atbatchend. PGnotapplicable tothisinertPython/data-onlychange; c0hasown3PGgreen.
+Workspace --all-targets PASS43.65s, fmtPASS. Latest hard speed rule compile+fmt,
+noextraverification/fullsuite; commit+fetchownbranch+mergemovement+pushnow.
+Next source content closure forRotten/Soulusingexistingmechanisms; sharedtemplate
+hooks/summons/rewardclosure requestedfromqengine2, do notbuildbiggenericengine.
+Only5actualstartedquests,3qualified2inprogress;24ownednotstartedawaitdedup notice.
+All12newlane remoteheads currentlymain1ae, no committedpackets available there.
+wpkgcollectsbranch,noPR; merge mainoncoordinator merge notice. Keepgenlast/once.
+
 # GREEN19:51: publishing small source-corpse repair now
 
 Workspace --all-targets GREEN exit0,9m48s including lockwait. Focused5/5GREEN

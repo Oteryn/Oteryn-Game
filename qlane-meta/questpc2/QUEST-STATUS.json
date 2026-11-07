@@ -1757,11 +1757,10 @@
     }
   },
   "current_batch": {
-    "id": "empty-source-corpse-capacity-2026-11-07",
+    "id": "soul-entry-source-facts-2026-11-07",
     "state": "GREEN_READY_TO_PUBLISH",
-    "record": "BATCH-empty-source-corpse-capacity-2026-11-07.json",
-    "previous_pushed_head": "23852002b803e2d01021518c146b503d91f4c625",
-    "scope": "Restore source Spite48-slot empty physical corpse; preserve strict private/ordinary capacity and all existing PG assertions. Record Elvenbane qualification from published native route proof."
+    "record": "BATCH-soul-entry-source-facts-2026-11-07.json",
+    "previous_pushed_head": "c0f2c94f73e226668b10eff8d421d9fd6096bca8"
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
@@ -1785,7 +1784,8 @@
     "BATCH-annihilator-complete-source-route-2026-11-07.json",
     "BATCH-native-kill-objective-guards-2026-11-07.json",
     "BATCH-main-3020-integration-2026-11-07.json",
-    "BATCH-empty-source-corpse-capacity-2026-11-07.json"
+    "BATCH-empty-source-corpse-capacity-2026-11-07.json",
+    "BATCH-soul-entry-source-facts-2026-11-07.json"
   ],
   "next_batch": {
     "quests": [
@@ -1797,7 +1797,8 @@
     "external_dependencies_to_wait_for": [
       "QENGINE2 source boss template hooks/summons/reward closure request"
     ],
-    "task": "Prepare reusable source room/content closure using existing mechanisms; no big generic engine implementation. Reconcile coordinator ownership transfers before starting another packet quest."
+    "task": "Prepare reusable source room/content closure using existing mechanisms; no big generic engine implementation. Reconcile coordinator ownership transfers before starting another packet quest.",
+    "source_entry_packet": "tools/content-schema/quest-authoring/samples/questpc2-soul-entries.json"
   },
   "remote_publications_reused": {
     "sha": "e0aca57413e36818be5406052ac656d240236b15",
@@ -2210,14 +2211,13 @@
     "push_policy": "one push after full dependent failure collection/grouped fixes and green full rerun; auto push reminder retracted"
   },
   "current_validation": {
-    "state": "ALL_REQUIRED_CHECKS_GREEN_READY_TO_PUBLISH",
-    "base_pushed_head": "23852002b803e2d01021518c146b503d91f4c625",
-    "proof": "BATCH-empty-source-corpse-capacity-2026-11-07.json",
-    "focused": "GREEN5/5,78.795s,PG180006; sourceSpite64.957s,Rotten65.589s,Primal64.357s and both strict30/31 boundary tests.",
-    "clippy": "GREEN content/all-targets; no extra runs after speed override.",
-    "fmt": "GREEN",
-    "workspace_all_targets": "GREEN exit0,9m48s including cargo lock wait; /tmp/questpc2-source-corpse-capacity-workspace-check.log.",
-    "policy": "Owner19:45 SPEED override: only final workspace all-target check+fmt after focusedgreen, push within10min; CI heavy suites."
+    "state": "GREEN_READY_TO_PUBLISH",
+    "workspace_all_targets": "PASS43.65s",
+    "fmt": "PASS",
+    "source_replay": "PASS: 6 named source configs,30 ordered slots, Greed last-write cooldown and exact generated artifact.",
+    "runtime_changes": false,
+    "policy": "Owner hard speed rule: compile+fmt; CI full suites.",
+    "last_pushed_head": "c0f2c94f73e226668b10eff8d421d9fd6096bca8"
   },
   "engine_requests": [
     {
