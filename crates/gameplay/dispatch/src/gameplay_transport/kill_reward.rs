@@ -1332,7 +1332,12 @@ pub fn record_creature_kill(
         ),
         None => (lethal, None, true),
     };
-    let reward = sink.rewards.row(&creature);
+    let full_reward = sink.rewards.row(&creature);
+    let personal_reward_row = personal_rewards
+        .then(|| full_reward.as_ref().ok().cloned())
+        .flatten();
+    let reward =
+        full_reward.or_else(|reason| sink.rewards.reward_boss_corpse(&creature).ok_or(reason));
     let Ok(mut facts) =
         capture_projected_death_facts(&mut owner, target, principal, last_damage_at_ms, now_ms)
     else {
@@ -1515,7 +1520,6 @@ pub fn record_creature_kill(
             return;
         }
     };
-    let personal_reward_row = personal_rewards.then(|| Arc::clone(&row));
     if let Some(choice) = daily_boost {
         let boosted_creature = creature == choice.creature;
         let boosted_boss = creature == choice.boss;

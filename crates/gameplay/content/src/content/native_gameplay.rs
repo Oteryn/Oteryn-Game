@@ -2948,6 +2948,31 @@ mod tests {
         assert_eq!(boss.category.as_str(), "nemesis");
     }
     #[test]
+    fn reward_boss_empty_corpse_does_not_admit_missing_private_loot() {
+        let world = test_source(1).unwrap().world_id;
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let native = controller.active().unwrap().native_gameplay().unwrap();
+        let rewards = native.reward_table();
+        for (creature, item) in [
+            (
+                "oteryn:creature.goshnar_s_spite",
+                "oteryn:item.tibia.i33867",
+            ),
+            ("oteryn:creature.bakragore", "oteryn:item.tibia.i44012"),
+        ] {
+            assert!(matches!(
+                rewards.row(creature),
+                Err(crate::content::creature_reward::NoSettlementReason::LootItemInadmissible)
+            ));
+            let corpse = rewards.reward_boss_corpse(creature).unwrap();
+            assert_eq!(corpse.corpse_item.production_key, item);
+            assert!(corpse.loot_table.entries.is_empty());
+        }
+        assert!(rewards.reward_boss_corpse("oteryn:creature.rat").is_none());
+        assert!(rewards.reward_boss_corpse("fixture:unknown").is_none());
+        assert!(rewards.row("oteryn:creature.the_primal_menace").is_ok());
+    }
+    #[test]
     fn item_key_set_section_is_pinned_digest_bound_and_absent_or_empty_offers_no_index() {
         let world = test_source(1).unwrap().world_id;
         let baseline = qualify_native_entry_room(world).unwrap();

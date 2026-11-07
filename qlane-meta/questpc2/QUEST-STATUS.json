@@ -1646,9 +1646,17 @@
     }
   },
   "current_batch": {
-    "id": "corpse-materializer-2026-11-07",
-    "record": "BATCH-corpse-materializer-2026-11-07.json",
+    "id": "source-corpse-admission-2026-11-07",
+    "record": "BATCH-source-corpse-admission-2026-11-07.json",
     "whole_quest_qualifications": 0,
-    "next": "Finish local empty reward-boss corpse/strict-private-loot separation and PG proof, then push active canonical data immediately."
+    "next": "Continue participant-bound source encounter admission/settlement toward whole Annihilator/Desert Dungeon/Barbarian Arena qualification; check existing lane branches first. Owned source-room/callback/loot work remains implementation work, never an external engine deferral."
+  },
+  "verification": {
+    "source_corpse_admission_2026_11_07": {
+      "record": "BATCH-source-corpse-admission-2026-11-07.json",
+      "postgres_cases_passed": 5,
+      "python_cases_passed": 17,
+      "whole_quest_qualifications": 0
+    }
   }
 }
