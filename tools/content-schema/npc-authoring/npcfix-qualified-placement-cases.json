@@ -1283,6 +1283,73 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-20",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.hawkyr",
+          "name": "Hawkyr",
+          "expected": {
+            "x": 32251,
+            "y": 31079,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.janz",
+          "name": "Janz",
+          "expected": {
+            "x": 32279,
+            "y": 31132,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.kjesse",
+          "name": "Kjesse",
+          "expected": {
+            "x": 32212,
+            "y": 31128,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.lurik",
+          "name": "Lurik",
+          "expected": {
+            "x": 32320,
+            "y": 31136,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.nor",
+          "name": "Nor",
+          "expected": {
+            "x": 32001,
+            "y": 31443,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.robert",
+          "name": "Robert",
+          "expected": {
+            "x": 32233,
+            "y": 31072,
+            "floor": -6
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }
