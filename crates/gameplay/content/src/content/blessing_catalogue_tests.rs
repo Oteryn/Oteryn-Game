@@ -101,3 +101,20 @@ fn henricus_offer_is_exactly_five_regular_blessings_with_ten_percent_surcharge()
         assert_eq!(quoted, price);
     }
 }
+
+#[test]
+fn free_blessing_requires_both_canonical_service_and_curated_binding() {
+    let catalogue = BlessingCatalogue::load().expect("admitted catalogue");
+    for name in [
+        "the_spiritual_shielding",
+        "the_embrace_of_tibia",
+        "the_fire_of_the_suns",
+        "the_spark_of_the_phoenix",
+        "the_wisdom_of_solitude",
+    ] {
+        assert!(catalogue.canonical_service(&format!("oteryn:service.blessing.{name}")));
+    }
+    assert!(!catalogue.canonical_service("oteryn:service.blessing.twist_of_fate"));
+    assert!(!catalogue.canonical_service("oteryn:service.blessing.henricus"));
+    assert!(!catalogue.canonical_service("oteryn:service.blessing.unknown"));
+}

@@ -137,12 +137,14 @@ def main():
             existing = json.loads(target.read_text())
             field = "callbacks" if "callbacks" in document else "offers" if "offers" in document else "npcs"
             foreign = [record for record in existing[field]
-                       if (not record["key"].startswith("oteryn:quest-reward/questpc3/")
+                       if (not record["key"].startswith("oteryn:quest-reward/questpc3/beginning/")
                            if field == "callbacks" else record["npc"] not in OWNED_NPCS)]
             document[field].extend(foreign)
             for key, value in existing.items():
                 if key not in document:
                     document[key] = value
+        if field == "callbacks":
+            document[field].sort(key=lambda record: record["key"])
         text = json.dumps(document, indent=2) + "\n"
         target.parent.mkdir(parents=True, exist_ok=True)
         if not target.exists() or target.read_text() != text:

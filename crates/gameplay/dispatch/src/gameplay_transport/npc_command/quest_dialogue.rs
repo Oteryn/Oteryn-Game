@@ -351,19 +351,37 @@ pub(super) async fn apply(
         };
         let weights = super::super::item_ref_admission::NativeItemWeights(native)
             .with_wheel(admission.premium_coordinator);
-        slot.commit_quest_reward(
-            admission.root,
-            admission.character,
-            admission.holder,
-            fence,
-            request,
-            std::sync::Arc::clone(catalogue),
-            crate::durability::reward_claim_mint::QuestRewardAdmission {
-                native,
-                weights: &weights,
-            },
-        )
-        .await
+        if let Some(gate) = admission.premium_coordinator {
+            slot.commit_quest_reward(
+                admission.root,
+                admission.character,
+                admission.holder,
+                fence,
+                request,
+                std::sync::Arc::clone(catalogue),
+                crate::durability::reward_claim_mint::QuestRewardAdmission {
+                    native,
+                    weights: &weights,
+                },
+                gate,
+            )
+            .await
+        } else {
+            slot.commit_quest_reward(
+                admission.root,
+                admission.character,
+                admission.holder,
+                fence,
+                request,
+                std::sync::Arc::clone(catalogue),
+                crate::durability::reward_claim_mint::QuestRewardAdmission {
+                    native,
+                    weights: &weights,
+                },
+                &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
+            )
+            .await
+        }
     } else {
         slot.commit_quest_transition(
             admission.root,

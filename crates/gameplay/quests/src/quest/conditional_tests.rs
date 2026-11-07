@@ -97,3 +97,21 @@ fn conditional_set_rejects_bad_references_and_hashes_all_parameters() -> Result<
     }
     Ok(())
 }
+
+#[test]
+fn conditional_and_bound_reward_effect_tags_are_distinct() {
+    let mut conditional = Vec::new();
+    QuestEffectKind::SetWhenAtLeast {
+        other_effect: 1,
+        minimum: 3,
+        value: 7,
+    }
+    .encode(&mut conditional);
+    let mut reward = Vec::new();
+    QuestEffectKind::SetWithBinding {
+        value: 7,
+        binding: [0; 32],
+    }
+    .encode(&mut reward);
+    assert_ne!(conditional.first(), reward.first());
+}

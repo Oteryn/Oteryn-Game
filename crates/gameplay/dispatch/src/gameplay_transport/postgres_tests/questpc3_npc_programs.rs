@@ -84,6 +84,7 @@ fn beginning_greet() -> TestResult {
             .map_err(debug)?
             .iter()
             .filter(|c| c.npc == "oteryn:npc.santiago")
+            .filter(|callback| callback.quest == "oteryn:quest.the_beginning_quest")
             .map(|c| original.transition(&c.key).cloned().ok_or("transition"))
             .collect::<Result<Vec<_>, _>>()?;
         for (stage, log) in [(7, 5), (11, 9)] {

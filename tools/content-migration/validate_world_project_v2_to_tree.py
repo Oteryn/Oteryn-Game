@@ -544,9 +544,20 @@ def validate_npc_services(declarations: Any, sources: Any) -> tuple[int, int, in
         legacy = [row for row in legacy_services
                   if field in row or row["identity"]["key"].startswith(f"oteryn:service.{stem}.")]
         require(len(legacy) == count, f"LEGACY_{family.upper()}_COUNT")
+        expected = legacy
+        if family == "Service.Blessing":
+            additional = {"the_spiritual_shielding", "the_embrace_of_tibia", "the_fire_of_the_suns", "the_spark_of_the_phoenix"}
+            catalogue = load(ROOT / "rulesets/character/blessings/catalogue.json")
+            services = {row["service"] for row in catalogue["blessings"]}
+            admitted = {"oteryn:service.blessing." + name for name in additional}
+            require(admitted <= services, "QUEST_BLESSING_CURATED_BINDINGS")
+            require(not admitted & {row["identity"]["key"] for row in legacy}, "QUEST_BLESSING_DISJOINT_LEGACY")
+            expected = sorted(legacy + [{"kind": "Service", "identity": {"key": key, "revision": "definition-r1"}, "fields": []}
+                                        for key in sorted(admitted)], key=lambda row: row["identity"]["key"])
+            require(len(expected) == 8, "QUEST_BLESSING_ADMISSION_COUNT")
         index = load(ROOT / node / "index.json")
         require(index["schema"] == "OTERYN_FAMILY_INDEX/v1" and index["family"] == family, f"{family.upper()}_INDEX")
-        require(index["record_count"] == len(legacy), f"{family.upper()}_INDEX_COUNT")
+        require(index["record_count"] == len(expected), f"{family.upper()}_INDEX_COUNT")
         migrated: list[Any] = []
         expected_start = 0
         for shard_path in index["shards"]:
@@ -558,10 +569,10 @@ def validate_npc_services(declarations: Any, sources: Any) -> tuple[int, int, in
                 require(set(row) == {"declaration"}, f"{family.upper()}_ROW_SHAPE")
                 migrated.append(row["declaration"])
             expected_start = payload["shard"]["end"] + 1
-        require(expected_start == count, f"{family.upper()}_SHARD_COVERAGE")
-        require(migrated == legacy, f"{family.upper()}_DECLARATION_ROUNDTRIP")
+        require(expected_start == len(expected), f"{family.upper()}_SHARD_COVERAGE")
+        require(migrated == expected, f"{family.upper()}_DECLARATION_ROUNDTRIP")
         migrated_service_count += len(migrated)
-    require(migrated_service_count == len(legacy_services), "SERVICE_ROUNDTRIP_TOTAL")
+    require(migrated_service_count == len(legacy_services) + 4, "SERVICE_ROUNDTRIP_TOTAL")
     return len(migrated_npcs), len(migrated_npc_bindings), migrated_service_count
 
 
@@ -704,7 +715,7 @@ def main() -> int:
     require(lock["family_counts"] == {"Item": 34111, "Mount": 252, **creature_family_counts(reference), "NPC": NPC_COUNT,
                                        # RAIDS-GLOBAL 2026-11-01; raid_catalogue.py --check pins the full source reconciliation.
                                        "Encounter.Raid": load(ROOT / "content/encounters/raids/index.json")["record_count"],
-                                       "Encounter": ENCOUNTER_COUNT, "Dialogue": DIALOGUE_COUNT, "Document": DOCUMENT_COUNT, **SERVICE_FAMILY_COUNTS,
+                                       "Encounter": ENCOUNTER_COUNT, "Dialogue": DIALOGUE_COUNT, "Document": DOCUMENT_COUNT, **{**SERVICE_FAMILY_COUNTS, "Service.Blessing": 8},
                                        "Charm": CHARM_COUNT, "Proficiency": PROFICIENCY_COUNT,
                                        "RewardClaim": REWARD_CLAIM_COUNT, "StarterKit": STARTER_KIT_COUNT,
                                        "item_conversion": load(ROOT / "content/craft/index.json")["record_count"],

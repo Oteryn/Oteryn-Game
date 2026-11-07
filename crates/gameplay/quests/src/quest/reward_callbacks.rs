@@ -4,6 +4,7 @@ use super::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition,
 };
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 
 pub const PROVENANCE: &str = "crystal-9f5a72c-quest-rewards-v1";
@@ -52,8 +53,44 @@ pub struct RewardCallback {
     pub give: Option<ItemReward>,
     pub outfit: Option<OutfitReward>,
     pub achievement: Option<String>,
+    /// A canonical blessing Service, granted through the existing blessing owner.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub blessing: Option<String>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub premium: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub completes: bool,
     pub reply: Vec<String>,
     pub sources: Vec<String>,
+}
+
+fn is_false(value: &bool) -> bool {
+    !*value
+}
+
+fn reward_binding(callback: &RewardCallback) -> Result<[u8; 32], String> {
+    // Speech and source citations are not durable reward terms. Every value and
+    // admission participant is: changing one must invalidate an old quest pin.
+    let bytes = serde_json::to_vec(&(
+        &callback.key,
+        &callback.quest,
+        &callback.npc,
+        &callback.keywords,
+        callback.topic,
+        callback.next_topic,
+        &callback.storage,
+        &callback.take,
+        &callback.present,
+        &callback.give,
+        &callback.outfit,
+        &callback.achievement,
+        &callback.blessing,
+        callback.experience,
+        callback.premium,
+        callback.completes,
+    ))
+    .map_err(|error| error.to_string())?;
+    Ok(Sha256::digest(bytes).into())
 }
 
 #[derive(Deserialize)]
@@ -137,6 +174,9 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || c.achievement
                 .as_ref()
                 .is_some_and(|key| !slug(key, "oteryn:achievement/", b"_/-", 128))
+            || c.blessing
+                .as_ref()
+                .is_some_and(|key| !slug(key, "oteryn:service.blessing.", b"_", 128))
             || c.sources.len() > 8
             || c.sources.iter().any(|s| s.is_empty() || s.len() > 1024)
             || c.sources.is_empty()
@@ -151,6 +191,12 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
     for callback in load()? {
+        let binding = reward_binding(&callback)?;
+        let bound_effect = callback
+            .storage
+            .iter()
+            .position(|s| !s.preserve)
+            .ok_or("reward needs a changed state")?;
         for s in &callback.storage {
             if let Some(track) = tracks.iter_mut().find(|t| t.key == s.track) {
                 if track.quest != callback.quest {
@@ -174,17 +220,23 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
             effects: callback
                 .storage
                 .iter()
-                .map(|s| QuestEffect {
+                .enumerate()
+                .map(|(index, s)| QuestEffect {
                     track: s.track.clone(),
                     from: QuestComparison::Between(s.minimum, s.maximum),
                     effect: if s.preserve {
                         QuestEffectKind::Add(0)
+                    } else if index == bound_effect {
+                        QuestEffectKind::SetWithBinding {
+                            value: s.set,
+                            binding,
+                        }
                     } else {
                         QuestEffectKind::Set(s.set)
                     },
                 })
                 .collect(),
-            completes: false,
+            completes: callback.completes,
             experience: callback.experience,
         });
     }
@@ -195,6 +247,57 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn reward_value_and_premium_terms_change_the_quest_definition_hash() -> Result<(), String> {
+        let callback = load()?.into_iter().next().ok_or("callback")?;
+        let make = |callback: RewardCallback| -> Result<QuestStateCatalogue, String> {
+            let binding = reward_binding(&callback)?;
+            let tracks = callback
+                .storage
+                .iter()
+                .map(|s| QuestTrack {
+                    key: s.track.clone(),
+                    quest: callback.quest.clone(),
+                    initial: -1,
+                    min: s.minimum.min(-1).min(s.set),
+                    max: s.maximum.max(s.set),
+                })
+                .collect();
+            let effects = callback
+                .storage
+                .iter()
+                .map(|s| QuestEffect {
+                    track: s.track.clone(),
+                    from: QuestComparison::Between(s.minimum, s.maximum),
+                    effect: QuestEffectKind::SetWithBinding {
+                        value: s.set,
+                        binding,
+                    },
+                })
+                .collect();
+            QuestStateCatalogue::new(
+                "reward-binding",
+                tracks,
+                vec![QuestTransition {
+                    key: callback.key,
+                    quest: callback.quest,
+                    effects,
+                    completes: false,
+                    experience: None,
+                }],
+            )
+            .map_err(|e| format!("{e:?}"))
+        };
+        let original = make(callback.clone())?.definition_hash(&callback.quest);
+        let mut changed = callback.clone();
+        changed.blessing = Some("oteryn:service.blessing.the_spiritual_shielding".into());
+        assert_ne!(make(changed)?.definition_hash(&callback.quest), original);
+        let mut changed = callback.clone();
+        changed.premium = !changed.premium;
+        assert_ne!(make(changed)?.definition_hash(&callback.quest), original);
+        Ok(())
+    }
+
     #[test]
     fn qengine_reward_callbacks_are_bounded_and_never_repeatable_value_grants() -> Result<(), String>
     {

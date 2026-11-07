@@ -319,6 +319,7 @@ fn scenario() -> TestResult {
                         native,
                         weights: &weights,
                     },
+                    &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
                 )
                 .await
                 .map_err(debug)?;
@@ -374,6 +375,7 @@ fn scenario() -> TestResult {
                     native,
                     weights: &weights,
                 },
+                &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
             )
             .await;
         assert!(matches!(refused, Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput)), "substituted XP: {refused:?}");

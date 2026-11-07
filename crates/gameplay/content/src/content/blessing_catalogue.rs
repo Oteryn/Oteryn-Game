@@ -55,6 +55,46 @@ impl BlessingCatalogue {
         ))
     }
 
+    /// A ruleset name alone is not a canonical Service declaration.
+    pub fn canonical_service(&self, service: &str) -> bool {
+        if !self
+            .blessings
+            .iter()
+            .any(|blessing| blessing.service == service)
+        {
+            return false;
+        }
+        let Ok(declarations) = serde_json::from_str::<serde_json::Value>(include_str!(
+            "../../../../../content/services/blessings/blessing-00000-00007.json"
+        )) else {
+            return false;
+        };
+        declarations
+            .get("family")
+            .and_then(serde_json::Value::as_str)
+            == Some("Service.Blessing")
+            && declarations
+                .get("records")
+                .and_then(serde_json::Value::as_array)
+                .is_some_and(|records| {
+                    records.len() <= 16
+                        && records.iter().any(|record| {
+                            record
+                                .pointer("/declaration/kind")
+                                .and_then(serde_json::Value::as_str)
+                                == Some("Service")
+                                && record
+                                    .pointer("/declaration/identity/key")
+                                    .and_then(serde_json::Value::as_str)
+                                    == Some(service)
+                                && record
+                                    .pointer("/declaration/identity/revision")
+                                    .and_then(serde_json::Value::as_str)
+                                    == Some("definition-r1")
+                        })
+                })
+    }
+
     fn parse(input: &str) -> Result<Self, &'static str> {
         let catalogue: Self = serde_json::from_str(input).map_err(|_| "invalid blessing data")?;
         if catalogue.schema != "OTERYN_BLESSING_CATALOGUE/v1"
