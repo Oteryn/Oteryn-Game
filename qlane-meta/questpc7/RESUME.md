@@ -1,3 +1,23 @@
+# Grimvale strict checks and pins GREEN — 2026-11-07
+
+Complete PG93.008s, post-witness PG92.470203109s, retained Ferumbras
+PG51.67813782s,10 loader/22 callback/27 author/3 item-author tests, repo
+generation/placement checks, explicit Cargo check, strict all-target/all-feature
+Clippy, pin refresh and pin-check all PASS. Push this checkpoint now.
+Focused content/world/fmt remain in41258 and the resume-run log.
+After all16 records PASS run /tmp/questpc7-finalize-grimvale.py, commit/push
+qualification, and continue Heart of Destruction. Never end with ACTIVE left.
+
+Heart facts bounded investigation is complete in /tmp/questpc7-heart-source-*.
+Yana bytes are retained and source candidate is32200,32304,-6. Anomaly lever
+source literal32245,31244,-14 is a reusable candidate for the selected
+Destruction Destabilizer role; inspect actual native appearance. Six original
+arena centres are retained including World Devourer32271,31347,-14
+(actions_final_lever.lua:213 SHA4713e40c4cab51d590075c6426572b990937b8fc0f3f78eb55ced22b37609105).
+Native imbuing already works under accepted Global profile (quest unlock is
+a declared difference); inspect existing adapter before changing a contract.
+No Heart product mutations until current batch qualified/pushed.
+
 # Canonical authored track witness checkpoint — 2026-11-07
 
 Existing source-witness assertion exposed absent source_track metadata for
