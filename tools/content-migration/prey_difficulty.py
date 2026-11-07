@@ -420,11 +420,14 @@ def apply_native(root, generated, canonical):
     generated["content/spells.manifest.json"] = canonical(manifest)
 
 
-def fresh_profiles(root):
-    """Rebuild through the existing producer; never bootstrap from its old output."""
+def fresh_provider(root):
+    """Rebuild the matched Creature/loot candidate through the existing producer."""
     import register_spell_families
-    generated = register_spell_families.outputs(root, include_prey=False)
-    return json.loads(generated[PROFILES])
+    return register_spell_families.outputs(root, include_prey=False)
+
+
+def fresh_profiles(root):
+    return json.loads(fresh_provider(root)[PROFILES])
 
 
 def run_simulation(root, profiles, model):
@@ -440,7 +443,9 @@ def run_simulation(root, profiles, model):
 
 def regenerate(root):
     """World-tree registration calls this after rebuilding its source shards."""
-    profiles = fresh_profiles(root)
+    generated = fresh_provider(root)
+    profiles = json.loads(generated[PROFILES])
+    write_files(root, {LOOT: generated[LOOT]})
     model = model_input(root, profiles)
     result = root / RESULTS
     if not result.is_file() or read(root, RESULTS).get("input_sha256") != model["input_sha256"]:
@@ -471,7 +476,10 @@ def main():
     root = args.root.resolve()
     if args.check and (args.simulate or args.model_input):
         parser.error("--check cannot write model inputs or simulation results")
-    profiles = fresh_profiles(root)
+    generated = fresh_provider(root)
+    profiles = json.loads(generated[PROFILES])
+    if args.simulate:
+        write_files(root, {LOOT: generated[LOOT]})
     if args.model_input:
         args.model_input.write_bytes(encoded(model_input(root, profiles)))
         return

@@ -20,10 +20,44 @@ class CakeNativeSuccessorTests(unittest.TestCase):
                  if row['profile']['target']['key'] == 'oteryn:creature.cake_golem']
         self.assertEqual(cake['profile']['data']['profile']['details']['corpse_item']['key'],
                          'oteryn:item.tibia.i12141')
+        loot = json.loads(result['tools/content-schema/native-gameplay/loot-tables.json'])
+        binding, = [r for r in loot['creature_loot'] if r['creature'] == cake['profile']['target']]
+        self.assertEqual(binding['loot']['key'], 'oteryn:loot.creature.cake_golem')
+        table, = [r for r in loot['tables'] if r['identity'] == binding['loot']]
+        self.assertEqual(table['algorithm'], 'IndependentBernoulliPpm')
+        self.assertEqual(table['entries'][0]['item']['key'], 'oteryn:item.tibia.i12143')
+        self.assertEqual(table['entries'][0]['probability_ppm'], 500000)
+        prior_loot = json.loads((importer.ROOT / 'tools/content-schema/native-gameplay/loot-tables.json').read_bytes())
+        for field, key in [('creature_loot', 'creature'), ('tables', 'identity')]:
+            retained = {json.dumps(r[key],sort_keys=True):r for r in loot[field]}
+            for row in prior_loot[field]:
+                self.assertEqual(retained[json.dumps(row[key],sort_keys=True)], row)
+        item_facts = {r['item']['key']:r for r in loot['items']}
+        corpse = item_facts['oteryn:item.tibia.i12141']
+        self.assertTrue(corpse['materializable'])
+        self.assertTrue(1 <= corpse['container_capacity'] <= 30)
+        self.assertTrue(item_facts['oteryn:item.tibia.i12143']['materializable'])
+        self.assertTrue(item_facts['oteryn:item.tibia.i12143']['stackable'])
+        self.assertEqual(len(loot['creature_loot']), len(creatures['records']))
+        self.assertEqual({json.dumps(r['creature'],sort_keys=True) for r in loot['creature_loot']},
+                         {json.dumps(r['profile']['target'],sort_keys=True) for r in creatures['records']})
         bodies = cake['attack_definitions']['profiles']
         undefined, = [row for row in bodies
                        if row['target']['key'] == 'oteryn:effect.creature.cake_golem.attack-2']
         self.assertEqual(undefined['data']['profile']['damage_type'], 'undefined')
+
+    def test_substituted_empty_cake_loot_is_rejected(self):
+        original_read = successor.read_canonical
+        def substituted(path):
+            document, pin = original_read(path)
+            if path.parent == importer.ROOT / 'content/loot':
+                for row in document['records']:
+                    if row['definition']['identity']['key'] == 'oteryn:loot.creature.cake_golem':
+                        row['definition']['entries'] = []
+            return document, pin
+        with patch.object(successor, 'read_canonical', side_effect=substituted):
+            with self.assertRaisesRegex(ValueError, 'CANONICAL_LOOT_MISMATCH'):
+                successor.loot_successor(importer.ROOT, {'records': []})
 
     def test_immutable1870_profiles_are_exact_and_forged_cake_alias_refuses(self):
         baseline = importer.baseline_outputs(importer.ROOT)

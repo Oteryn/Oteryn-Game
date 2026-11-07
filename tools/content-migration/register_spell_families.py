@@ -76,10 +76,16 @@ COIN_ADMISSION = {
 
 def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
     manifest = json.loads(generated[NATIVE_MANIFEST])
+    # W05d: pin the same fresh Creature/Item candidate's canonical loot closure,
+    # rather than a previous generation's on-disk Creature binding census.
+    from cake_native_successor import loot_successor
+    loot_path = REPOSITORY_PINS['loot_tables']
+    generated[loot_path] = loot_successor(root, json.loads(generated[spell_import.PROVIDER_DESTINATIONS['creature_profiles']]),
+                                        json.loads(generated[spell_import.PROVIDER_DESTINATIONS['item_profiles']]))
     for key, path in REPOSITORY_PINS.items():
         manifest[key] = {
             "path": Path(os.path.relpath(path, "content")).as_posix(),
-            "sha256": hashlib.sha256((root / path).read_bytes()).hexdigest(),
+            "sha256": hashlib.sha256(generated[path] if path in generated else (root / path).read_bytes()).hexdigest(),
         }
     cosmetics = "content/cosmetics/outfits/native-cosmetics.json"
     if (root / cosmetics).is_file():
@@ -428,7 +434,6 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     # Creature roots. Bind executable closures only after those policies settle.
     from bind_monster_source_definitions import bind_definitions
     generated = bind_definitions(root, generated)
-    pin_repository_inputs(root, generated)
     # PKG1R2 owner decision (2026-10-30), Energy_Field_(Field) rev 1011133:
     # Global measurement wins over the immutable donor's 98 seconds for 2122 only.
     item_path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
@@ -464,6 +469,8 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     for name, path in (("catalog", catalog_path), ("source_selection", selection_path)):
         native_manifest[name]["sha256"] = hashlib.sha256(generated[path]).hexdigest()
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(native_manifest)
+
+    pin_repository_inputs(root, generated)
 
     # The model bootstraps from this same fresh provider without recursively
     # requiring the very Prey results it is about to produce.

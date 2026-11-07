@@ -15,6 +15,7 @@ from build_canonical_monster_profiles import read_canonical, union_profiles, ide
 
 PRESENTATIONS = 'content/presentations/definitions/spell-native-profiles.json'
 PACKET = 'tools/content-schema/native-gameplay/cake-creature-admission.json'
+LOOT = 'tools/content-schema/native-gameplay/loot-tables.json'
 CAKE = ('Creature', 'oteryn:creature.cake_golem', 'definition-r1')
 
 
@@ -68,6 +69,26 @@ def qualify(rows, declarations, reference, packet, item_bindings):
     return cake
 
 
+def loot_successor(root, creatures, native_item_profiles=None):
+    # Crystal cake_golem.lua:73 binds its real source loot, never an empty
+    # stand-in. The existing loot producer copies exact canonical table entries.
+    packet, _ = read_canonical(root / PACKET)
+    expected = next(r for r in packet['staged']['records']
+                    if r['identity']['family'] == 'Loot')
+    tables = []
+    for path in sorted((root / 'content/loot').glob('loot-*.json')):
+        document, _ = read_canonical(path)
+        tables.extend(r['definition'] for r in document['records'])
+    if [t for t in tables if t['identity'] == expected['identity']] != [expected]:
+        raise ValueError('CAKE_NATIVE_CANONICAL_LOOT_MISMATCH')
+    from build_full_spell_artifact import loot_tables, LIMITS
+    raw = loot_tables(creatures, root / 'content/creatures/definitions',
+                      root / 'content/loot', root / 'content/items/definitions', native_item_profiles)
+    if len(raw) > LIMITS['loot_tables']:
+        raise ValueError('CAKE_NATIVE_LOOT_BYTE_BOUND')
+    return raw
+
+
 def admit(root, generated):
     """Use the normal canonical union, restricted to this lane's one Creature."""
     packet, _ = read_canonical(root / PACKET)
@@ -95,6 +116,7 @@ def admit(root, generated):
     result = dict(generated)
     result[CREATURES] = canonical_bytes(creatures)
     result[PRESENTATIONS] = canonical_bytes(presentations)
+    result[LOOT] = loot_successor(root, creatures)
     manifest = json.loads(result['content/spells.manifest.json'])
     for field, path in [('creature_profiles', CREATURES), ('presentation_profiles', PRESENTATIONS)]:
         manifest[field]['sha256'] = hashlib.sha256(result[path]).hexdigest()
