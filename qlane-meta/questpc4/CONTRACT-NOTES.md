@@ -169,3 +169,7 @@ Emergency override21:19UTC: e1ca integration above was preserved locally then AB
 ## Main integration decision (2026-11-07 21:38 UTC)
 
 Reuse main e1ca3e003 Royal Costume fix and f641d8d6c NPC/VIP fixes. Delete lane1259; no competing Royal optimization remains. Preserve exact source prices,2000ms transaction deadline and all existing assertions. NPC hand-in consumes carried custody under its own fenced private permit; ground deletion still requires the existing channel SpellLanePermit. Shared row SQL is unchanged and extracted to37-line input_rows.rs only to reconcile the two independently landed owner APIs.
+
+## Reuse QNPCFX before extending owned NPC stories
+
+Main f641d8d6c already supplies source NPC programs for Order of the Stag, Beregar, Yalahar and Cursed Crystal; reuse them rather than duplicate authoring. Its Stag acceptance/hand-in PG case is queued after the merged binary builds. Whole quests remain IN_PROGRESS. Paradox teleport remains an engine request: npc_rules/evaluate.rs:357 admits storage/topic/experience/end effects but excludes Teleport; npc_rules/item_exchange.rs:34-56 likewise closes native effects. Source data can represent Teleport, which is not runtime qualification. Stag's finale requires outfit_addon/achievement effects from content/dialogues/quest-rules/quest-batch3-c-the_order_of_the_stag.json:1; the same item-exchange guard excludes them. Do not substitute storage-only acceptance for whole-story proof.

@@ -1,3 +1,9 @@
+## Publication gates satisfied; tests continue (2026-11-07 21:46 UTC)
+
+Current main f641d8d6c is included in local merge1e7c80064. Fresh fetch21:43 confirms0behind main/own remote7e6da7b25. Workspace all-target checkPASS3m49s, finalfmtPASS, pinrefreshPASS (worldb2400c60 unchanged), duplicate migrations0, Item/Mount equivalencePASS, complete quest-authoring freshnessPASS. Native43files, binding6628pointers, variant105 and owner registry regenerationPASS. Own migrations1250-1258 only;1259 deleted. Protected tooling matchesmain exactly.
+
+Publish within30minute cadence under PREPUSH-2 step3-pending allowance. Still running: fresh3crateunits (merged dispatch test binary compiling), finalNPCacceptance+carriedPG queued behind it, clippy queuedbehindCargo, full1099Pythonunits running. Logs /tmp/questpc4-f641-{crate-units,integration-pg,clippy,python-unit}.log. Pre-finalintegration5PGcasesPASS406.87s with PG18.6 and exactdurations below; do not count noPG guard passes asproof. Continue ALLpendingchecks afterpush, collectfailures together, fixandpush nextbatch. Next ownquestwork reuses QNPCFX sourceNPCprograms, no rewrite; Stag finale needsNPCoutfit/addon+achievement engine support, requestsent. Paradox NPCteleport requeststillopen. Counts4QUALIFIED/17IN_PROGRESS/2external unchanged.
+
 ## Current integration: main f641d8d6c (2026-11-07 21:38 UTC)
 
 Emergency checkpoint7e6da7b25 was pushed21:23UTC. Main e1ca3e003 then merged locally as358859cb5; current f641d8d6c merge conflicts are resolved. Reuse main Royal payment fix and VIP fix. Lane1259 migration is deleted. Preserve all L6 routes and incoming NPC routes,60QENGINE profiles plus1QNPCFX profile; derived conflicts regenerated with owning tooling. Main's new NPC carried hand-in calls the unchanged mutation through new37-line input_rows.rs; world caller retains SpellLanePermit/channel checks, NPC caller explicitly refuses ground. No permit fabricated or weakened.

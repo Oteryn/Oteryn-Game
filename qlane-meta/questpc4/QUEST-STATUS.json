@@ -10604,7 +10604,7 @@
   },
   "prepush2_f641_integration": {
     "main": "f641d8d6c",
-    "state": "VALIDATING",
+    "state": "COMPILE_FMT_REGEN_GREEN_TESTS_RUNNING",
     "royal_fix": "Reuse main e1ca3e003 force_generic_plan and jit=off; remove lane1259 migration. Exact inputs and 2000ms deadline unchanged.",
     "conflicts": "Preserve every L6 scenario plus incoming NPC scenarios; retain60 QENGINE profiles and add1 QNPCFX profile; regenerate derived item/Grizzly/spell manifests using repository tooling.",
     "permit_integration": "World input owner retains SpellLanePermit/channel checks; NPC owner retains its private fenced permit and refuses ground input. Common unchanged row mutation moved to37-line input_rows.rs.",
@@ -10621,11 +10621,16 @@
     "audit": "PASS /tmp/questpc4-prepush2-mint-audit.log 0.56s",
     "equipment_before_f641": "PASS119.88s; incoming QNPCFX adds exactly1 profile and its existing source assertions retained.",
     "pending": [
-      "Final workspace check and fmt",
-      "Serialized pin refresh",
-      "Fresh three-crate unit run after main invalidated prior candidate",
-      "Post-merge NPC hand-in and carried-key PG cases",
-      "Item/Mount equivalence and quest-authoring freshness"
-    ]
+      "Three-crate unit run building merged dispatch binary /tmp/questpc4-f641-crate-units.log",
+      "Final NPC hand-in plus carried-key PG /tmp/questpc4-f641-integration-pg.log queued behind binary",
+      "Changed-crate clippy /tmp/questpc4-f641-clippy.log queued behind Cargo lock",
+      "Full quest-authoring Python units /tmp/questpc4-f641-python-unit.log running;181donorrefinement controls alreadyPASS"
+    ],
+    "workspace_check": "PASS3m49s /tmp/questpc4-f641-final-workspace-check.log",
+    "fmt": "PASS /tmp/questpc4-f641-final-fmt-check.log",
+    "pin_refresh": "PASS /tmp/questpc4-f641-pin-refresh.log; world digest b2400c60f3a08b751ce3edee7a1ea7979c0fcc94a9cb2fefcab9d6a558d125e6 unchanged",
+    "generated_checks": "PASS Item/Mount equivalence, full quest-authoring freshness, binding6628exactpointers, variant105, native43files and seven owner authoring producers",
+    "duplicate_migrations": "PASS0duplicates; own1250-1258; no1259 or1200-1205",
+    "cadence_decision": "PREPUSH-2 permits publication of main+regeneration+workspace-check+fmt while step3 remains running at the30minute cadence. Continue pending tests and group all failures before the next repair push."
   }
 }
