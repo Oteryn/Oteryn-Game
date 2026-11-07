@@ -1840,6 +1840,7 @@ fn settle_kill(
     now: SemanticTimeMicros,
     clear: bool,
 ) {
+    let prevented = runtime.magnolia_prevented_death(target);
     crate::gameplay_transport::kill_reward::record_creature_kill(
         runtime,
         crate::gameplay_transport::kill_reward::KillSink {
@@ -1854,7 +1855,7 @@ fn settle_kill(
         now.get() / 1_000,
         Some(now),
     );
-    if clear {
+    if clear && !prevented {
         entry.clear_target();
     }
 }

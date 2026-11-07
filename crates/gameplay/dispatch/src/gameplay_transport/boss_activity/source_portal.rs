@@ -7,6 +7,62 @@ const TEMPLATE: &str = "oteryn:room.rakesh_moonfang_source_portal";
 const REVISION: &str =
     "source-portal-b2875f6d7f5ed654a5e97b3378d3d24f7f8d99f8507d3066bab582a4d4bf0105";
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// The source movement owner captured this exact committed STEP. A wire
+    /// pacing claim must finish before the existing native transfer can freeze it.
+    pub(in crate::gameplay_transport) async fn committed_source_portal_step(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        snapshot: MovementPositionSnapshot,
+    ) -> Result<(), ()> {
+        let at = snapshot.position();
+        if !matches!(
+            (at.x, at.y, at.floor),
+            (33039, 32964, 8) | (33043, 32986, -8)
+        ) {
+            return Ok(());
+        }
+        let admitted = self.activity_runtimes.connection(session).ok_or(())?;
+        if admitted.runtime_actor != Some(actor) || admitted.item_fence.is_none() {
+            return Err(());
+        }
+        if self
+            .states
+            .attack
+            .lock()
+            .await
+            .activity_step_in_flight(actor)
+        {
+            self.activity_runtimes
+                .defer_source_portal_step(admitted, snapshot)?;
+            return Ok(());
+        }
+        let result = if at.floor == 8 {
+            self.rakesh_source_step(actor, session, snapshot).await
+        } else {
+            self.rakesh_source_return_step(actor, session, snapshot)
+                .await
+        };
+        if result.is_ok() {
+            self.activity_runtimes
+                .finish_source_portal_step(admitted, snapshot)?;
+        }
+        result
+    }
+
+    /// Existing pending-switch polling runs after the real pacing-clock record.
+    /// Reuse the captured occurrence; never synthesize a new command or STEP.
+    pub(in crate::gameplay_transport) async fn settle_source_portal_step(
+        &self,
+        admitted: super::super::connection::AdmittedSession,
+    ) -> Result<(), ()> {
+        let Some(snapshot) = self.activity_runtimes.source_portal_step(admitted)? else {
+            return Ok(());
+        };
+        let actor = admitted.runtime_actor.ok_or(())?;
+        Box::pin(self.committed_source_portal_step(actor, admitted.game_session_id, snapshot)).await
+    }
+
     /// Called only after committing a real ordinary STEP and releasing its lane.
     pub(in crate::gameplay_transport) async fn rakesh_source_step(
         &self,

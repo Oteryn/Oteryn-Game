@@ -131,12 +131,14 @@ impl ChannelRuntimeV1 {
                 target_identity,
                 health,
                 spell_combat,
+                committed,
                 ..
             } if target_identity.as_ref() == registration.target.as_bytes() && *health > 0 => (
                 *health,
                 if spell_combat.forge.is_some()
                     || spell_combat.echo.is_some()
                     || spell_combat.soulpit.is_some()
+                    || committed.magnolia.is_some()
                 {
                     spell_combat.maximum_health
                 } else {
@@ -274,6 +276,7 @@ impl ChannelRuntimeV1 {
                 target_identity,
                 health,
                 spell_combat,
+                committed,
                 ..
             } = &mut next
             else {
@@ -288,6 +291,7 @@ impl ChannelRuntimeV1 {
             let maximum = if spell_combat.forge.is_some()
                 || spell_combat.echo.is_some()
                 || spell_combat.soulpit.is_some()
+                || committed.magnolia.is_some()
             {
                 spell_combat.maximum_health
             } else {
@@ -340,6 +344,7 @@ impl ChannelRuntimeV1 {
                 target_identity,
                 health,
                 spell_combat,
+                committed,
                 ..
             } if target_identity.as_ref() == key.as_bytes()
                 && *health > 0
@@ -347,6 +352,7 @@ impl ChannelRuntimeV1 {
                     <= if spell_combat.forge.is_some()
                         || spell_combat.echo.is_some()
                         || spell_combat.soulpit.is_some()
+                        || committed.magnolia.is_some()
                     {
                         spell_combat.maximum_health
                     } else {

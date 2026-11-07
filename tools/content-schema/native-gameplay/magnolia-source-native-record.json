@@ -1,0 +1,1072 @@
+{
+  "attack_definitions": {
+    "profiles": [
+      {
+        "data": {
+          "kind": "Ability",
+          "profile": {
+            "details": {
+              "effects": [
+                {
+                  "effect": {
+                    "family": "Effect",
+                    "key": "oteryn:effect.creature.the_moonsnow_magnolia.attack-1",
+                    "revision": "definition-r1"
+                  },
+                  "kind": "Executable"
+                }
+              ],
+              "impact_cue": "crystal.sound:effect/101",
+              "kind": "Melee",
+              "needs_direction": false,
+              "needs_target": true,
+              "range_tiles": 1
+            }
+          }
+        },
+        "target": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-1",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Ability",
+          "profile": {
+            "details": {
+              "area": {
+                "radius_tiles": 3,
+                "shape": "Circle"
+              },
+              "effects": [
+                {
+                  "effect": {
+                    "family": "Effect",
+                    "key": "oteryn:effect.creature.the_moonsnow_magnolia.attack-2",
+                    "revision": "definition-r1"
+                  },
+                  "kind": "Executable"
+                }
+              ],
+              "impact_cue": "crystal.sound:effect/2021",
+              "kind": "Spell",
+              "needs_direction": false,
+              "needs_target": true,
+              "range_tiles": 0
+            }
+          }
+        },
+        "target": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-2",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Ability",
+          "profile": {
+            "details": {
+              "area": {
+                "length_tiles": 8,
+                "shape": "Beam",
+                "spread_tiles": 0
+              },
+              "effects": [
+                {
+                  "effect": {
+                    "family": "Effect",
+                    "key": "oteryn:effect.creature.the_moonsnow_magnolia.attack-3",
+                    "revision": "definition-r1"
+                  },
+                  "kind": "Executable"
+                }
+              ],
+              "impact_cue": "crystal.sound:effect/2045",
+              "kind": "Spell",
+              "needs_direction": true,
+              "needs_target": false,
+              "range_tiles": 0
+            }
+          }
+        },
+        "target": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-3",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Ability",
+          "profile": {
+            "details": {
+              "cast_cue": "crystal.sound:effect/9",
+              "effects": [
+                {
+                  "effect": {
+                    "family": "Effect",
+                    "key": "oteryn:effect.creature.the_moonsnow_magnolia.attack-4",
+                    "revision": "definition-r1"
+                  },
+                  "kind": "Executable"
+                }
+              ],
+              "impact_cue": "crystal.sound:effect/2005",
+              "kind": "Spell",
+              "needs_direction": false,
+              "needs_target": true,
+              "range_tiles": 7
+            }
+          }
+        },
+        "target": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-4",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Ability",
+          "profile": {
+            "details": {
+              "area": {
+                "radius_tiles": 5,
+                "shape": "Circle"
+              },
+              "effects": [
+                {
+                  "effect": {
+                    "family": "Effect",
+                    "key": "oteryn:effect.creature.the_moonsnow_magnolia.attack-5",
+                    "revision": "definition-r1"
+                  },
+                  "kind": "Executable"
+                }
+              ],
+              "impact_cue": "crystal.sound:effect/2031",
+              "kind": "Spell",
+              "needs_direction": false,
+              "needs_target": false,
+              "range_tiles": 0
+            }
+          }
+        },
+        "target": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-5",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "attacks": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-1",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 1000000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-2",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 200000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-3",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 180000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-4",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 200000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-5",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 120000,
+                "interval_ms": 5000
+              }
+            ],
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "push_creatures": false,
+              "push_items": true,
+              "pushable": false,
+              "walks_on_energy": true,
+              "walks_on_fire": true,
+              "walks_on_poison": true
+            },
+            "summons": {
+              "entries": [
+                {
+                  "chance_ppm": 100000,
+                  "count": 2,
+                  "creature": {
+                    "family": "Creature",
+                    "key": "oteryn:creature.frost_flower_asura",
+                    "revision": "definition-r1"
+                  },
+                  "interval_ms": 4000
+                },
+                {
+                  "chance_ppm": 100000,
+                  "count": 2,
+                  "creature": {
+                    "family": "Creature",
+                    "key": "oteryn:creature.midnight_asura",
+                    "revision": "definition-r1"
+                  },
+                  "interval_ms": 4000
+                }
+              ],
+              "max_summons": 4
+            },
+            "targeting": {
+              "can_target": true,
+              "change_target": {
+                "chance_ppm": 100000,
+                "interval_ms": 4000
+              },
+              "flee_health": 0,
+              "hostile": true,
+              "sense_invisible": true,
+              "static_attack_chance_ppm": 900000,
+              "strategy_weights": {
+                "damage": 10,
+                "health": 10,
+                "nearest": 70,
+                "random": 10
+              },
+              "target_distance_tiles": 1
+            },
+            "voices": {
+              "chance_ppm": 100000,
+              "entries": [
+                {
+                  "mode": "Say",
+                  "text": "Come feast, my darlings!"
+                }
+              ],
+              "interval_ms": 5000
+            }
+          }
+        },
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.creature.the_moonsnow_magnolia",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Creature",
+          "profile": {
+            "abilities": [
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-1",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-2",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-3",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-4",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-5",
+                "revision": "definition-r1"
+              }
+            ],
+            "armor": 105,
+            "details": {
+              "bosstiary": {
+                "category": "archfoe",
+                "expertise_kills": 20,
+                "expertise_points": 30,
+                "mastery_kills": 60,
+                "mastery_points": 60,
+                "prowess_kills": 5,
+                "prowess_points": 10
+              },
+              "condition_immunities": [
+                "invisible",
+                "paralyze"
+              ],
+              "corpse_item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i54670",
+                "revision": "definition-r1"
+              },
+              "critical_chance_ppm": 0,
+              "death_residue": {
+                "fluid_type": "blood",
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i2886",
+                  "revision": "definition-r1"
+                }
+              },
+              "defense": 110,
+              "display_name": "The Moonsnow Magnolia",
+              "encyclopedia_document": {
+                "family": "Document",
+                "key": "oteryn:document/monster-encyclopedia/the_moonsnow_magnolia",
+                "revision": "definition-r1"
+              },
+              "flags": {
+                "attackable": true,
+                "health_hidden": false,
+                "illusionable": false
+              },
+              "inspection": "The Moonsnow Magnolia",
+              "reference_level": null,
+              "spawn_eligibility": {
+                "blocked_by_nearby_players": false,
+                "ignore_period_underground": false,
+                "period": "All"
+              },
+              "summoning": {
+                "convinceable": false,
+                "is_familiar": false,
+                "summonable": false
+              },
+              "system_eligibility": {
+                "exclusive_prey": false,
+                "forge": true,
+                "prey": true,
+                "reward_boss": true
+              }
+            },
+            "experience": 240000,
+            "health": 52000,
+            "mitigation": {
+              "denominator": 2,
+              "numerator": 7
+            },
+            "resistances": [
+              {
+                "damage_type": "earth",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": -10
+                }
+              },
+              {
+                "damage_type": "energy",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": -5
+                }
+              },
+              {
+                "damage_type": "fire",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": -5
+                }
+              },
+              {
+                "damage_type": "ice",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 0
+                }
+              }
+            ],
+            "speed": 190
+          }
+        },
+        "target": {
+          "family": "Creature",
+          "key": "oteryn:creature.the_moonsnow_magnolia",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Effect",
+          "profile": {
+            "damage_type": "physical",
+            "mitigated_by": [
+              "Armor",
+              "Shield"
+            ]
+          }
+        },
+        "target": {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.the_moonsnow_magnolia.attack-1",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Effect",
+          "profile": {
+            "damage_type": "physical",
+            "mitigated_by": [
+              "Armor"
+            ],
+            "presentation": {
+              "impact_asset_binding": "canary.appearance:effect/hitarea"
+            }
+          }
+        },
+        "target": {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.the_moonsnow_magnolia.attack-2",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Effect",
+          "profile": {
+            "damage_type": "death",
+            "presentation": {
+              "impact_asset_binding": "canary.appearance:effect/mortarea"
+            }
+          }
+        },
+        "target": {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.the_moonsnow_magnolia.attack-3",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Effect",
+          "profile": {
+            "damage_type": "ice",
+            "presentation": {
+              "impact_asset_binding": "canary.appearance:effect/iceattack",
+              "projectile_asset_binding": "canary.appearance:missile/ice"
+            }
+          }
+        },
+        "target": {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.the_moonsnow_magnolia.attack-4",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Effect",
+          "profile": {
+            "damage_type": "ice",
+            "presentation": {
+              "impact_asset_binding": "canary.appearance:effect/icearea"
+            }
+          }
+        },
+        "target": {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.the_moonsnow_magnolia.attack-5",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Formula",
+          "profile": {
+            "formula": "Range",
+            "maximum": 1400,
+            "minimum": 0
+          }
+        },
+        "target": {
+          "family": "Formula",
+          "key": "oteryn:formula.creature.the_moonsnow_magnolia.attack-1-1",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Formula",
+          "profile": {
+            "formula": "Range",
+            "maximum": 1200,
+            "minimum": 700
+          }
+        },
+        "target": {
+          "family": "Formula",
+          "key": "oteryn:formula.creature.the_moonsnow_magnolia.attack-2-1",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Formula",
+          "profile": {
+            "formula": "Range",
+            "maximum": 1300,
+            "minimum": 800
+          }
+        },
+        "target": {
+          "family": "Formula",
+          "key": "oteryn:formula.creature.the_moonsnow_magnolia.attack-3-1",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Formula",
+          "profile": {
+            "formula": "Range",
+            "maximum": 1250,
+            "minimum": 750
+          }
+        },
+        "target": {
+          "family": "Formula",
+          "key": "oteryn:formula.creature.the_moonsnow_magnolia.attack-4-1",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "data": {
+          "kind": "Formula",
+          "profile": {
+            "formula": "Range",
+            "maximum": 2200,
+            "minimum": 1300
+          }
+        },
+        "target": {
+          "family": "Formula",
+          "key": "oteryn:formula.creature.the_moonsnow_magnolia.attack-5-1",
+          "revision": "definition-r1"
+        }
+      }
+    ],
+    "records": [
+      {
+        "effects": [
+          {
+            "family": "Effect",
+            "key": "oteryn:effect.creature.the_moonsnow_magnolia.attack-1",
+            "revision": "definition-r1"
+          }
+        ],
+        "identity": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-1",
+          "revision": "definition-r1"
+        },
+        "kind": "Ability"
+      },
+      {
+        "effects": [
+          {
+            "family": "Effect",
+            "key": "oteryn:effect.creature.the_moonsnow_magnolia.attack-2",
+            "revision": "definition-r1"
+          }
+        ],
+        "identity": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-2",
+          "revision": "definition-r1"
+        },
+        "kind": "Ability"
+      },
+      {
+        "effects": [
+          {
+            "family": "Effect",
+            "key": "oteryn:effect.creature.the_moonsnow_magnolia.attack-3",
+            "revision": "definition-r1"
+          }
+        ],
+        "identity": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-3",
+          "revision": "definition-r1"
+        },
+        "kind": "Ability"
+      },
+      {
+        "effects": [
+          {
+            "family": "Effect",
+            "key": "oteryn:effect.creature.the_moonsnow_magnolia.attack-4",
+            "revision": "definition-r1"
+          }
+        ],
+        "identity": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-4",
+          "revision": "definition-r1"
+        },
+        "kind": "Ability"
+      },
+      {
+        "effects": [
+          {
+            "family": "Effect",
+            "key": "oteryn:effect.creature.the_moonsnow_magnolia.attack-5",
+            "revision": "definition-r1"
+          }
+        ],
+        "identity": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-5",
+          "revision": "definition-r1"
+        },
+        "kind": "Ability"
+      },
+      {
+        "client_projection": "ServerOnly",
+        "identity": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.creature.the_moonsnow_magnolia",
+          "revision": "definition-r1"
+        },
+        "kind": "Generic"
+      },
+      {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.creature.the_moonsnow_magnolia",
+          "revision": "definition-r1"
+        },
+        "client_projection": "ClientSafe",
+        "identity": {
+          "family": "Creature",
+          "key": "oteryn:creature.the_moonsnow_magnolia",
+          "revision": "definition-r1"
+        },
+        "kind": "Creature",
+        "loot": {
+          "family": "Loot",
+          "key": "oteryn:loot.creature.the_moonsnow_magnolia",
+          "revision": "definition-r1"
+        },
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.creature.the_moonsnow_magnolia",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "client_projection": "ServerOnly",
+        "effect_family": "Damage",
+        "formula": {
+          "family": "Formula",
+          "key": "oteryn:formula.creature.the_moonsnow_magnolia.attack-1-1",
+          "revision": "definition-r1"
+        },
+        "identity": {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.the_moonsnow_magnolia.attack-1",
+          "revision": "definition-r1"
+        },
+        "kind": "Effect"
+      },
+      {
+        "client_projection": "ServerOnly",
+        "effect_family": "Damage",
+        "formula": {
+          "family": "Formula",
+          "key": "oteryn:formula.creature.the_moonsnow_magnolia.attack-2-1",
+          "revision": "definition-r1"
+        },
+        "identity": {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.the_moonsnow_magnolia.attack-2",
+          "revision": "definition-r1"
+        },
+        "kind": "Effect"
+      },
+      {
+        "client_projection": "ServerOnly",
+        "effect_family": "Damage",
+        "formula": {
+          "family": "Formula",
+          "key": "oteryn:formula.creature.the_moonsnow_magnolia.attack-3-1",
+          "revision": "definition-r1"
+        },
+        "identity": {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.the_moonsnow_magnolia.attack-3",
+          "revision": "definition-r1"
+        },
+        "kind": "Effect"
+      },
+      {
+        "client_projection": "ServerOnly",
+        "effect_family": "Damage",
+        "formula": {
+          "family": "Formula",
+          "key": "oteryn:formula.creature.the_moonsnow_magnolia.attack-4-1",
+          "revision": "definition-r1"
+        },
+        "identity": {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.the_moonsnow_magnolia.attack-4",
+          "revision": "definition-r1"
+        },
+        "kind": "Effect"
+      },
+      {
+        "client_projection": "ServerOnly",
+        "effect_family": "Damage",
+        "formula": {
+          "family": "Formula",
+          "key": "oteryn:formula.creature.the_moonsnow_magnolia.attack-5-1",
+          "revision": "definition-r1"
+        },
+        "identity": {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.the_moonsnow_magnolia.attack-5",
+          "revision": "definition-r1"
+        },
+        "kind": "Effect"
+      },
+      {
+        "identity": {
+          "family": "Formula",
+          "key": "oteryn:formula.creature.the_moonsnow_magnolia.attack-1-1",
+          "revision": "definition-r1"
+        },
+        "kind": "Formula"
+      },
+      {
+        "identity": {
+          "family": "Formula",
+          "key": "oteryn:formula.creature.the_moonsnow_magnolia.attack-2-1",
+          "revision": "definition-r1"
+        },
+        "kind": "Formula"
+      },
+      {
+        "identity": {
+          "family": "Formula",
+          "key": "oteryn:formula.creature.the_moonsnow_magnolia.attack-3-1",
+          "revision": "definition-r1"
+        },
+        "kind": "Formula"
+      },
+      {
+        "identity": {
+          "family": "Formula",
+          "key": "oteryn:formula.creature.the_moonsnow_magnolia.attack-4-1",
+          "revision": "definition-r1"
+        },
+        "kind": "Formula"
+      },
+      {
+        "identity": {
+          "family": "Formula",
+          "key": "oteryn:formula.creature.the_moonsnow_magnolia.attack-5-1",
+          "revision": "definition-r1"
+        },
+        "kind": "Formula"
+      }
+    ]
+  },
+  "behavior": {
+    "data": {
+      "kind": "Behavior",
+      "profile": {
+        "attacks": [
+          {
+            "ability": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-1",
+              "revision": "definition-r1"
+            },
+            "chance_ppm": 1000000,
+            "interval_ms": 2000
+          },
+          {
+            "ability": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-2",
+              "revision": "definition-r1"
+            },
+            "chance_ppm": 200000,
+            "interval_ms": 2000
+          },
+          {
+            "ability": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-3",
+              "revision": "definition-r1"
+            },
+            "chance_ppm": 180000,
+            "interval_ms": 2000
+          },
+          {
+            "ability": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-4",
+              "revision": "definition-r1"
+            },
+            "chance_ppm": 200000,
+            "interval_ms": 2000
+          },
+          {
+            "ability": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-5",
+              "revision": "definition-r1"
+            },
+            "chance_ppm": 120000,
+            "interval_ms": 5000
+          }
+        ],
+        "movement": {
+          "can_walk": true,
+          "pass_through": false,
+          "push_creatures": false,
+          "push_items": true,
+          "pushable": false,
+          "walks_on_energy": true,
+          "walks_on_fire": true,
+          "walks_on_poison": true
+        },
+        "summons": {
+          "entries": [
+            {
+              "chance_ppm": 100000,
+              "count": 2,
+              "creature": {
+                "family": "Creature",
+                "key": "oteryn:creature.frost_flower_asura",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 4000
+            },
+            {
+              "chance_ppm": 100000,
+              "count": 2,
+              "creature": {
+                "family": "Creature",
+                "key": "oteryn:creature.midnight_asura",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 4000
+            }
+          ],
+          "max_summons": 4
+        },
+        "targeting": {
+          "can_target": true,
+          "change_target": {
+            "chance_ppm": 100000,
+            "interval_ms": 4000
+          },
+          "flee_health": 0,
+          "hostile": true,
+          "sense_invisible": true,
+          "static_attack_chance_ppm": 900000,
+          "strategy_weights": {
+            "damage": 10,
+            "health": 10,
+            "nearest": 70,
+            "random": 10
+          },
+          "target_distance_tiles": 1
+        },
+        "voices": {
+          "chance_ppm": 100000,
+          "entries": [
+            {
+              "mode": "Say",
+              "text": "Come feast, my darlings!"
+            }
+          ],
+          "interval_ms": 5000
+        }
+      }
+    },
+    "target": {
+      "family": "Behavior",
+      "key": "oteryn:behavior.creature.the_moonsnow_magnolia",
+      "revision": "definition-r1"
+    }
+  },
+  "presentation": {
+    "family": "Presentation",
+    "key": "oteryn:presentation.creature.the_moonsnow_magnolia",
+    "revision": "definition-r1"
+  },
+  "profile": {
+    "data": {
+      "kind": "Creature",
+      "profile": {
+        "abilities": [
+          {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-1",
+            "revision": "definition-r1"
+          },
+          {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-2",
+            "revision": "definition-r1"
+          },
+          {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-3",
+            "revision": "definition-r1"
+          },
+          {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-4",
+            "revision": "definition-r1"
+          },
+          {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.the_moonsnow_magnolia.attack-5",
+            "revision": "definition-r1"
+          }
+        ],
+        "armor": 105,
+        "details": {
+          "bosstiary": {
+            "category": "archfoe",
+            "expertise_kills": 20,
+            "expertise_points": 30,
+            "mastery_kills": 60,
+            "mastery_points": 60,
+            "prowess_kills": 5,
+            "prowess_points": 10
+          },
+          "condition_immunities": [
+            "invisible",
+            "paralyze"
+          ],
+          "corpse_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i54670",
+            "revision": "definition-r1"
+          },
+          "critical_chance_ppm": 0,
+          "death_residue": {
+            "fluid_type": "blood",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2886",
+              "revision": "definition-r1"
+            }
+          },
+          "defense": 110,
+          "display_name": "The Moonsnow Magnolia",
+          "encyclopedia_document": {
+            "family": "Document",
+            "key": "oteryn:document/monster-encyclopedia/the_moonsnow_magnolia",
+            "revision": "definition-r1"
+          },
+          "flags": {
+            "attackable": true,
+            "health_hidden": false,
+            "illusionable": false
+          },
+          "inspection": "The Moonsnow Magnolia",
+          "reference_level": null,
+          "spawn_eligibility": {
+            "blocked_by_nearby_players": false,
+            "ignore_period_underground": false,
+            "period": "All"
+          },
+          "summoning": {
+            "convinceable": false,
+            "is_familiar": false,
+            "summonable": false
+          },
+          "system_eligibility": {
+            "exclusive_prey": false,
+            "forge": true,
+            "prey": true,
+            "reward_boss": true
+          }
+        },
+        "experience": 240000,
+        "health": 52000,
+        "mitigation": {
+          "denominator": 2,
+          "numerator": 7
+        },
+        "resistances": [
+          {
+            "damage_type": "earth",
+            "percent": {
+              "denominator": 1,
+              "numerator": -10
+            }
+          },
+          {
+            "damage_type": "energy",
+            "percent": {
+              "denominator": 1,
+              "numerator": -5
+            }
+          },
+          {
+            "damage_type": "fire",
+            "percent": {
+              "denominator": 1,
+              "numerator": -5
+            }
+          },
+          {
+            "damage_type": "ice",
+            "percent": {
+              "denominator": 1,
+              "numerator": 0
+            }
+          }
+        ],
+        "speed": 190
+      }
+    },
+    "target": {
+      "family": "Creature",
+      "key": "oteryn:creature.the_moonsnow_magnolia",
+      "revision": "definition-r1"
+    }
+  },
+  "source_qualification": "Decision 22: pinned Crystal 201189f871d23597b82caf88fd611454a2ddefb8 provisional base HP/XP; not verified against Global. Scalable encounter difficulty is owned by BOSSENC-1; these base values do not implement difficulty scaling. W16_ADMISSION_AND_PHASE_SOURCE_MISSING: admission anchors, party gates, cooldowns and normal-to-final transitions are unavailable."
+}

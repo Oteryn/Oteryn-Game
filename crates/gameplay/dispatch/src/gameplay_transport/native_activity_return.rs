@@ -270,7 +270,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 0
             } else {
                 match reason {
-                    ActivityReturnReason::SourcePortalExit => 10,
+                    ActivityReturnReason::SourcePortalExit => 12,
                     ActivityReturnReason::Timeout => 2,
                     ActivityReturnReason::Defeated => 3,
                     ActivityReturnReason::Death { .. } => 5,

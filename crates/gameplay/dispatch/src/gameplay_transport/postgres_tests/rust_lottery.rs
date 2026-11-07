@@ -443,6 +443,7 @@ pub(super) async fn exchange(
         current_target,
         false,
         None,
+        None,
     )
     .await
 }
@@ -487,6 +488,7 @@ pub(super) async fn exchange_rotate(
         current_source,
         None,
         false,
+        None,
         Some(observed),
     )
     .await
@@ -515,15 +517,12 @@ pub(super) async fn exchange_with_visuals(
         None,
         false,
         Some(&visuals),
+        None,
     )
     .await?;
     Ok((end, result, actual, visuals.into_inner()))
 }
 
-#[allow(
-    clippy::too_many_arguments,
-    reason = "test helper preserves existing exchange inputs and adds an optional wire recorder"
-)]
 #[allow(
     clippy::too_many_arguments,
     reason = "fixture independently selects command and source/target publication"
@@ -788,12 +787,12 @@ async fn exchange_selected_source(
                 }
             }
             if envelope.message_type() == crate::foundation::MessageType::CommandResult {
-                let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
-                if result.command_id == command_id {
+                let reply = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
+                if reply.command_id == command_id {
                     let disposition = if rotate.is_some() {
                         let (disposition, gate) =
                             oteryn_protocol_oteryn::world_rotate::decode_rotate_result(
-                                result.payload,
+                                reply.payload,
                             )
                             .map_err(|error| format!("native wire command={command_id} decode_stage=10 error={error:?}"))?;
                         assert_eq!(
@@ -802,7 +801,7 @@ async fn exchange_selected_source(
                         );
                         disposition
                     } else {
-                        oteryn_protocol_oteryn::world_object::decode_use_result(result.payload)
+                        oteryn_protocol_oteryn::world_object::decode_use_result(reply.payload)
                             .map_err(|error| format!("native wire command={command_id} decode_stage=11 error={error:?}"))?
                     };
                     if visuals.is_none() {

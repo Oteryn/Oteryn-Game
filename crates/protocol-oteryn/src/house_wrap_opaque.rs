@@ -46,6 +46,17 @@ impl OpaqueWrapRequest {
         })
     }
 }
+pub fn encode_opaque_wrap_affordance(allowed: bool) -> [u8; 1] {
+    [u8::from(allowed)]
+}
+pub fn decode_opaque_wrap_affordance(bytes: &[u8]) -> Option<bool> {
+    match bytes {
+        [0] => Some(false),
+        [1] => Some(true),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -99,16 +110,5 @@ mod tests {
             extra.push(0);
             assert!(OpaqueWrapRequest::decode(&extra).is_none());
         }
-    }
-}
-
-pub fn encode_opaque_wrap_affordance(allowed: bool) -> [u8; 1] {
-    [u8::from(allowed)]
-}
-pub fn decode_opaque_wrap_affordance(bytes: &[u8]) -> Option<bool> {
-    match bytes {
-        [0] => Some(false),
-        [1] => Some(true),
-        _ => None,
     }
 }

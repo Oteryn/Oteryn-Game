@@ -288,18 +288,30 @@ mod tests {
         assert_eq!(found[0].mount_key, mount);
     }
 
-    // Crystal 201189f8, data-global/scripts/actions/mounts/mounts.lua:16,31,48,71.
+    // Both pinned donors key the row by the INPUT item, then match the distinct
+    // target NAME from items.xml. Crystal201 rows40/41/70 and target dispatch
+    // 235–241; current Wiki guides use Tin Key→Inoperative Tin Lizzard,
+    // Golden Can of Oil→Uniwheel Object, Wind-Up Key→Wind-Up Loco.
     #[test]
     fn tin_lizzard_item_target_rule() {
-        assert_item_target(12305, 12305, "oteryn:content.mount.tin_lizzard");
+        assert_item_target(12305, 12319, "oteryn:content.mount.tin_lizzard");
+        let rule = &rule_for(12305)[0];
+        assert!(!rule.self_use, "a separate target is required");
+        assert!(!rule.consume_target, "only Loco consumes its target");
     }
     #[test]
     fn uniwheel_item_target_rule() {
-        assert_item_target(12801, 12801, "oteryn:content.mount.uniwheel");
+        assert_item_target(12801, 12800, "oteryn:content.mount.uniwheel");
+        let rule = &rule_for(12801)[0];
+        assert!(!rule.self_use, "a separate target is required");
+        assert!(!rule.consume_target, "only Loco consumes its target");
     }
     #[test]
     fn wind_up_loco_item_target_rule() {
-        assert_item_target(37397, 37397, "oteryn:content.mount.wind_up_loco");
+        assert_item_target(37397, 37398, "oteryn:content.mount.gloothomotive");
+        let rule = &rule_for(37397)[0];
+        assert!(!rule.self_use, "a separate target is required");
+        assert!(rule.consume_target, "only Loco consumes its target");
     }
     #[test]
     fn glooth_glider_item_target_rule() {

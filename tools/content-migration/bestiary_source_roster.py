@@ -6,6 +6,7 @@ This changes source-population pins, never Bestiary rules or source records.
 import argparse
 import json
 import re
+from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -49,6 +50,45 @@ def refreshed(root=ROOT):
     return source
 
 
+def parity_refreshed(root=ROOT):
+    """Refresh only population counts from the same admitted source cut.
+
+    The Rust Global threshold/charm table and every per-row parity assertion are
+    untouched, so an incorrect source rule still fails independently.
+    """
+    index = json.loads((root / 'content/creatures/definitions/index.json').read_bytes())
+    counts = Counter()
+    total = 0
+    for path in index['shards']:
+        for row in json.loads((root / path).read_bytes())['records']:
+            value = row['authoring']['profile'].get('bestiary')
+            if value is None:
+                continue
+            label = value['difficulty'] + (' very rare' if value['occurrence'] == 'very_rare' else '')
+            counts[label] += 1
+            total += 1
+    path = root / 'crates/gameplay/progression/src/bestiary_charm_crystal_parity_tests.rs'
+    source = path.read_text()
+    block = re.search(r'(let expected: BTreeMap<&str, usize> = \[)(.*?)(\n    \]\n    \.into_iter\(\))', source, re.S)
+    if block is None:
+        raise ValueError('BESTIARY_PARITY_HISTOGRAM_BOUNDARY')
+    body = block[2]
+    labels = re.findall(r'\("([a-z ]+)", [\d_]+\)', body)
+    if set(labels) != set(counts) or len(labels) != len(counts):
+        raise ValueError('BESTIARY_PARITY_CLASS_SET_CHANGED_REVIEW_GLOBAL_TABLE')
+    for label, count in counts.items():
+        body, replaced = re.subn(r'(\("' + re.escape(label) + r'", )[\d_]+(\))',
+                                lambda m: m[1] + str(count) + m[2], body)
+        if replaced != 1:
+            raise ValueError('BESTIARY_PARITY_COUNT_BOUNDARY')
+    source = source[:block.start(2)] + body + source[block.end(2):]
+    source, replaced = re.subn(r'(assert_eq!\(rows\.len\(\), )[\d_]+(\);)',
+                              lambda m: m[1] + str(total) + m[2], source, count=1)
+    if replaced != 1:
+        raise ValueError('BESTIARY_PARITY_TOTAL_BOUNDARY')
+    return path, source
+
+
 def regenerate(root=ROOT, check=False):
     import subprocess
     source = subprocess.run(['rustfmt', '--edition', '2024'], input=refreshed(root), text=True, capture_output=True, check=True).stdout
@@ -57,6 +97,11 @@ def regenerate(root=ROOT, check=False):
         if check:
             raise ValueError('BESTIARY_ROSTER_STALE')
         path.write_text(source)
+    parity_path, parity_source = parity_refreshed(root)
+    if parity_path.read_text() != parity_source:
+        if check:
+            raise ValueError('BESTIARY_PARITY_POPULATION_STALE')
+        parity_path.write_text(parity_source)
 
 
 if __name__ == '__main__':

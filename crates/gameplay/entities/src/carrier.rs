@@ -54,6 +54,7 @@ mod summer_magnolia_health_tests;
 
 mod activity_boss_spawn;
 mod boss_spawns;
+mod summer_magnolia;
 pub use boss_spawns::BossSpawn;
 
 #[cfg(test)]

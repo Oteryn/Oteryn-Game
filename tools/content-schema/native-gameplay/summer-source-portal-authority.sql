@@ -42,7 +42,7 @@ BEGIN
  AND a.holder_node_id=p_node AND a.holder_registration_revision=p_registration FOR SHARE;
  IF NOT FOUND THEN RAISE EXCEPTION 'Summer source scope is stale' USING ERRCODE='23514';END IF;
  PERFORM 1 FROM game_runtime_scope_assignments a
- JOIN game_durability_admission_runtime_guards rg ON rg.scope_key=a.scope_key
+ JOIN game_durability_admission_runtime_guards rg ON rg.scope_key='\x02'::bytea||uuid_send(p_world)||uuid_send(p_instance)
  WHERE a.scope_key='\x03'::bytea||uuid_send(p_world)||uuid_send(p_instance) AND a.scope_kind=3
  AND a.world_id=p_world AND a.activity_instance_id=p_instance AND a.state=1 AND a.ownership_generation=p_destination_generation
  AND a.holder_node_id=p_node AND a.holder_registration_revision=p_registration AND rg.ready AND rg.ownership_generation=p_destination_generation FOR SHARE OF a,rg;

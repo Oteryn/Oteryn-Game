@@ -1477,6 +1477,7 @@ pub mod tests {
             }],
         });
         decoded.spawns = oteryn_world_bundle::spawn::Table {
+            weighted: Vec::new(),
             creatures: vec![oteryn_world_bundle::spawn::Creature {
                 key: "oteryn:creature.silencer".into(),
                 period: oteryn_world_bundle::spawn::Period::All,

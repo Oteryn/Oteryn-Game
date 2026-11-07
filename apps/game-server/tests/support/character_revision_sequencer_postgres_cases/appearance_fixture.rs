@@ -46,7 +46,7 @@ impl Harness {
 
     #[allow(dead_code, reason = "used by the auto-mounted PVP-RT-1 dispatch tests")]
     pub(crate) async fn seed_pvp_target(&self) -> TestResult {
-        seed_character(
+        seed_character_with_starter(
             &self.pool,
             &self.root,
             &self.node,
@@ -60,7 +60,7 @@ impl Harness {
 
     #[allow(dead_code, reason = "used by native APP-3 observer qualification")]
     pub(crate) async fn seed_appearance_observer(&self) -> TestResult {
-        seed_character(
+        seed_character_with_starter(
             &self.pool,
             &self.root,
             &self.node,

@@ -94,13 +94,13 @@ fn every_canonical_row_follows_the_global_bestiary_table() {
         ("hard", 215),
         ("challenging", 67),
         ("trivial very rare", 3),
-        ("easy very rare", 7),
+        ("easy very rare", 8),
         ("medium very rare", 23),
     ]
     .into_iter()
     .collect();
     assert_eq!(counts, expected);
-    assert_eq!(rows.len(), 823);
+    assert_eq!(rows.len(), 824);
 }
 
 /// Creatures whose Crystal monster file disagrees with the Global table. Each Global value was

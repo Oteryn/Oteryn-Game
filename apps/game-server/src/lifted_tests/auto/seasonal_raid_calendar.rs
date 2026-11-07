@@ -50,13 +50,15 @@ async fn exercise(h: &Harness) -> TestResult {
         ProductionKey::new("oteryn:raid.kazordoon_raids.the_halloween_hare").map_err(debug)?;
     let catalogue = RaidCatalogue::embedded()?;
     let raid = catalogue.get(&key).ok_or("source Halloween raid")?;
-    let (window, interval_ms) = match raid.schedule {
+    let (window, interval_ms, repeat) = match raid.schedule {
         CatalogueSchedule::Calendar {
             window: Some(window),
             interval_ms: Some(interval),
-        } => (window.window(), interval),
+            repeat,
+        } => (window.window(), interval, repeat),
         _ => return Err("source Halloween calendar".into()),
     };
+    assert!(!repeat, "seasonal annual windows do not use the Flower startup cycle");
     let selected = raid.select([7; 32], id(81))?;
     // Oct 31 2026 06:00 Berlin = 05:00 UTC. The preceding wall date is already
     // October31, but belongs to the October30 reset and cannot fire Halloween.
@@ -79,6 +81,7 @@ async fn exercise(h: &Harness) -> TestResult {
             calendar_window: Some(CalendarRaidScheduleCandidate {
                 window,
                 interval_ms,
+                repeat,
             }),
         }],
     };

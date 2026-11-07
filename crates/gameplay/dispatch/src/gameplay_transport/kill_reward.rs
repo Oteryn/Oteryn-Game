@@ -1228,6 +1228,9 @@ pub fn record_creature_kill(
     now_ms: u64,
     observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
 ) {
+    if runtime.magnolia_prevented_death(target) {
+        return;
+    }
     if runtime.is_tibiadrome(target) {
         let _ = crate::combat::project_fixed_one_creature_death(
             &mut runtime.borrow_combat_death(),

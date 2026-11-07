@@ -90,6 +90,9 @@ impl CompiledCreaturePolicy {
 pub struct CompiledCreaturePolicies {
     source_digest: [u8; 32],
     policies: Vec<Arc<CompiledCreaturePolicy>>,
+    // Optional exact raw-source health qualification, never inferred from a
+    // caller-constructed policy vector or used as room/ritual admission.
+    magnolia_second_life: Option<super::native_gameplay::QualifiedMagnoliaSecondLife>,
 }
 impl CompiledCreaturePolicies {
     pub const fn source_digest(&self) -> [u8; 32] {
@@ -99,6 +102,28 @@ impl CompiledCreaturePolicies {
         &self.policies
     }
 
+    pub fn magnolia_second_life(
+        &self,
+    ) -> Option<&super::native_gameplay::QualifiedMagnoliaSecondLife> {
+        self.magnolia_second_life.as_ref()
+    }
+    pub(in crate::content) fn retain_magnolia_second_life(
+        &mut self,
+        proof: Option<super::native_gameplay::QualifiedMagnoliaSecondLife>,
+    ) -> Result<(), CarrierError> {
+        if proof.as_ref().is_some_and(|proof| {
+            proof.artifact_digest() != self.source_digest
+                || !self
+                    .policies
+                    .iter()
+                    .any(|policy| policy.as_ref() == proof.policy())
+        }) {
+            return Err(CarrierError::ContentPinWorldMismatch);
+        }
+        self.magnolia_second_life = proof;
+        Ok(())
+    }
+
     /// Content's already-qualified outer artifact contains these exact decoded records.
     /// Rebinding data does not issue runtime scope or current mutation authority.
     pub fn bind_qualified_outer_artifact(&mut self, digest: [u8; 32]) -> Result<(), CarrierError> {
@@ -106,6 +131,9 @@ impl CompiledCreaturePolicies {
             return Err(CarrierError::ContentPinWorldMismatch);
         }
         self.source_digest = digest;
+        if let Some(proof) = &mut self.magnolia_second_life {
+            proof.bind_outer_artifact(digest);
+        }
         Ok(())
     }
     /// The activation loader supplies only decoded, artifact-qualified CreatureAuthoring data.
@@ -164,6 +192,7 @@ impl CompiledCreaturePolicies {
         Ok(Self {
             source_digest,
             policies,
+            magnolia_second_life: None,
         })
     }
 }

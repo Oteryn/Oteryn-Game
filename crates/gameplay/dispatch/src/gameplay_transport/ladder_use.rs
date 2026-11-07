@@ -85,7 +85,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .special_movement_policy(&permit, actor, command.game_session_id)
             .await;
         let mut runtime = self.runtime.lock().await;
-        let mut states = self.states.spell_states.lock().await;
+        let Ok(mut states) = self.states.spell_states.try_lock() else {
+            return Some(UseOutcome::rejected());
+        };
         let session = command.game_session_id;
         if states.is_dead(actor)
             || !states.spell_idle(&runtime, actor, session)

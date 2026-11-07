@@ -24,6 +24,7 @@ use oteryn_protocol_oteryn::{
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 const HOUSE: &str = "oteryn:content.house.admiral_s_avenue_1";
+const CATALOGUE_OVEN: &str = "oteryn:item.tibia.i6355";
 const POSITION: [i32; 3] = [32310, 32804, 7];
 
 #[test]
@@ -182,7 +183,7 @@ fn srx1_house_cask_charge_checkpoint_exhaustion_and_replay_postgres() -> TestRes
                     .await?;
                 let result = scenario(
                     &h,
-                    FURNITURE,
+                    CATALOGUE_OVEN,
                     "oteryn:item.tibia.i23398",
                     false,
                     false,
@@ -230,7 +231,7 @@ async fn scenario(
     let wrapped_look = matches!(wrap_case, NativeWrapCase::Look);
     let historical_wrap = matches!(wrap_case, NativeWrapCase::Historical);
     let cask = matches!(wrap_case, NativeWrapCase::Cask);
-    let catalogue_query_case = furniture == FURNITURE
+    let catalogue_query_case = furniture == CATALOGUE_OVEN
         && matches!(wrap_case, NativeWrapCase::None)
         && !first_use
         && !native_use;

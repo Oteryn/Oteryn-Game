@@ -177,7 +177,7 @@ impl ActivityReturnReason {
     fn stored(self) -> i16 {
         match self {
             Self::Exit => 1,
-            Self::SourcePortalExit => 10,
+            Self::SourcePortalExit => 12,
             Self::Timeout => 2,
             Self::Defeated => 3,
             Self::OwnerLost => 4,
@@ -464,4 +464,35 @@ async fn retained_participant(
 fn hash_field(hash: &mut Sha256, value: &[u8]) {
     hash.update((value.len() as u64).to_be_bytes());
     hash.update(value);
+}
+
+#[cfg(test)]
+#[test]
+fn source_portal_return_reason_is_distinct_from_staff_and_existing_lifecycle_reasons()
+-> std::result::Result<(), Box<dyn std::error::Error>> {
+    let transport = crate::foundation::AuthenticatedTransportRefV1::decode(&[1; 16])
+        .map_err(|error| format!("{error:?}"))?;
+    let epoch =
+        crate::foundation::ControlLossEpochRefV1::new(1).map_err(|error| format!("{error:?}"))?;
+    let reasons = [
+        ActivityReturnReason::Exit,
+        ActivityReturnReason::Timeout,
+        ActivityReturnReason::Defeated,
+        ActivityReturnReason::OwnerLost,
+        ActivityReturnReason::Death {
+            occurrence: [1; 16],
+        },
+        ActivityReturnReason::Logout,
+        ActivityReturnReason::IdleLogout,
+        ActivityReturnReason::Abandoned { transport },
+        ActivityReturnReason::CapabilityMismatch { epoch },
+        ActivityReturnReason::StaffKick { transport },
+        ActivityReturnReason::StaffKickLost { epoch },
+        ActivityReturnReason::SourcePortalExit,
+    ];
+    assert_eq!(
+        reasons.map(ActivityReturnReason::stored),
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    );
+    Ok(())
 }

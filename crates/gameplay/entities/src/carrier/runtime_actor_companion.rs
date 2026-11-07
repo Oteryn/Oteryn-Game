@@ -649,16 +649,58 @@ impl ChannelRuntimeV1 {
     ) -> Result<(), CarrierError> {
         self.assert_actor_spell_unreserved(actor)?;
         let policy = self.companion_policy(definition_key)?;
+        let health_source = if policy.definition_key == "oteryn:creature.the_moonsnow_magnolia"
+            && matches!(
+                self.binding.runtime_scope(),
+                RuntimeScopeRefV1::Instance { .. }
+            ) {
+            Some(
+                self.companion_policies
+                    .as_ref()
+                    .and_then(|table| table.magnolia_second_life())
+                    .cloned()
+                    .ok_or(CarrierError::InvalidSpawnDefinition)?,
+            )
+        } else {
+            None
+        };
         let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        let original_source = health_source
+            .as_ref()
+            .map(|_| self.carrier.slots[index].clone());
         let Slot::CreatureOccupied {
             health,
             spell_combat,
             companion,
+            committed,
             ..
         } = &mut self.carrier.slots[index]
         else {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::NotCreature);
         };
+        // Preserve only this exact admitted source's encounter-local override.
+        if let Some(phase) = committed.magnolia {
+            let expected_maximum = match phase {
+                super::summer_magnolia::MagnoliaLife::First => 52_000,
+                super::summer_magnolia::MagnoliaLife::QueuedSecond
+                | super::summer_magnolia::MagnoliaLife::Second => 60_000,
+            };
+            let mut expected = (*policy).clone();
+            expected.maximum_health = expected_maximum;
+            return if policy.definition_key == "oteryn:creature.the_moonsnow_magnolia"
+                && policy.maximum_health == 52_000
+                && spell_combat.maximum_health == expected_maximum
+                && *health > 0
+                && *health <= expected_maximum
+                && companion
+                    .as_ref()
+                    .is_some_and(|state| state.policy.as_ref() == &expected)
+            {
+                Ok(())
+            } else {
+                Err(CarrierError::InvalidCreatureHealth)
+            };
+        }
         // Native profile registration can follow physical encounter admission. Rebinding
         // the same policy preserves a variant's source-scaled HP and existing conditions.
         if (spell_combat.echo.is_some() || spell_combat.soulpit.is_some())
@@ -711,6 +753,14 @@ impl ChannelRuntimeV1 {
             };
         }
         *companion = Some(Box::new(state));
+        if let Some(source) = health_source
+            && let Err(error) = self.bind_magnolia_second_life(actor, &source)
+        {
+            if let Some(original) = original_source {
+                self.carrier.slots[index] = original;
+            }
+            return Err(error);
+        }
         Ok(())
     }
     pub fn companion_snapshot(

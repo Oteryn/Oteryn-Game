@@ -63,6 +63,7 @@ REGISTRY = (
 )
 # Written by the authoring tools but not listed in the content manifest.
 EXTRA_DERIVED = (
+    "tools/content-schema/world-authoring/samples/current-package-census.json",
     "content/interactions/index.json",
     "tools/content-schema/native-gameplay/prey-model-results.json",
 )
@@ -443,8 +444,143 @@ def literal(length: int, previous: str) -> str:
     return f"{length:_}" if "_" in previous or length >= 10_000 else str(length)
 
 
+CURRENT_WORLD_CENSUS = ROOT / "tools/content-schema/world-authoring/samples/current-package-census.json"
+
+
+def current_world_tree_sha256() -> str:
+    digest = hashlib.sha256()
+    for locator in document_locators():
+        data = (WORLD / locator).read_bytes()
+        digest.update(len(locator).to_bytes(8, "big") + locator.encode()
+                      + len(data).to_bytes(8, "big") + data)
+    return digest.hexdigest()
+
+
+def canonicalize_current_world() -> None:
+    """Last legacy writer: existing strict Rust codec, exact semantic and byte replay checks."""
+    locators = document_locators()
+    before = {name: (WORLD / name).read_bytes() for name in locators}
+    with tempfile.TemporaryDirectory(prefix="oteryn-canonical-current-") as directory:
+        output = Path(directory) / "world"
+        report = Path(directory) / "census.json"
+        run(["cargo", "run", "--locked", "-q", "-p", "oteryn-game-server", "--example",
+             "canonicalize_content_world_project", "--", "--input-root", str(WORLD),
+             "--output-root", str(output), "--report", str(report)])
+        census = json.loads(report.read_bytes())
+        if (census.get("schema") != "OTERYN_CURRENT_WORLD_CENSUS/v1"
+                or census.get("semantic_preserved") is not True
+                or census.get("byte_idempotent") is not True
+                or sorted(row["path"] for row in census["documents"]) != sorted(locators)):
+            raise SystemExit("current-package canonical proof/locator closure changed")
+        # Do not publish over another author's intervening content update.
+        if any((WORLD / name).read_bytes() != data for name, data in before.items()):
+            raise SystemExit("source World changed during canonicalization; rerun from current inputs")
+        for row in census["documents"]:
+            data = (output / row["path"]).read_bytes()
+            if len(data) != row["bytes"] or hashlib.sha256(data).hexdigest() != row["sha256"]:
+                raise SystemExit("current-package canonical output pin mismatch")
+        for name in locators:
+            shutil.copyfile(output / name, WORLD / name)
+        if current_world_tree_sha256() != census["tree_sha256"]:
+            raise SystemExit("published canonical World differs from strict owner output")
+        CURRENT_WORLD_CENSUS.parent.mkdir(parents=True, exist_ok=True)
+        CURRENT_WORLD_CENSUS.write_bytes(report.read_bytes())
+
+
+def current_world_census() -> dict:
+    if not CURRENT_WORLD_CENSUS.is_file():
+        raise SystemExit("run canonicalize_current_world() after source overlays before refreshing pins")
+    census = json.loads(CURRENT_WORLD_CENSUS.read_bytes())
+    if (census.get("schema") != "OTERYN_CURRENT_WORLD_CENSUS/v1"
+            or census.get("semantic_preserved") is not True
+            or census.get("byte_idempotent") is not True
+            or census.get("tree_sha256") != current_world_tree_sha256()):
+        raise SystemExit("canonical census is stale; rerun the owning current-package writer")
+    return census
+
+
+def repin_current_source_censuses(census: dict) -> None:
+    """Exact current owner counts; leave strict policy and preservation assertions in place."""
+    source_budget = max(census["source_count"], census["import_candidate_count"], 1)
+    text = PIN_TEST.read_text()
+    substitutions = [
+        (r"(max_import_records: )[\d_]+(,)", source_budget),
+        (r"(max_reimport_states: )[\d_]+(,)", max(census["reimport_count"], 1)),
+        (r"(assert_eq!\(v2\.sources\.len\(\), )[\d_]+(\);)", census["source_count"]),
+    ]
+    for pattern, value in substitutions:
+        text, count = re.subn(pattern, lambda m: m[1] + str(value) + m[2], text)
+        if count != 1:
+            raise SystemExit("canonical package census token changed: " + pattern)
+    # These three additive source observations have no native import state.
+    # Keep the original25 legacy proof separate from their exact provenance.
+    observations = (
+        "srv7-seasonal-cake-golem-r1",
+        "srv7-seasonal-messenger-shop-r1",
+        "srv7-summer-doctor-marrow-r1",
+    )
+    batches = json.loads((ROOT / "content/world/provenance/imports.json").read_bytes())["batches"]
+    rows = []
+    for identity in observations:
+        found = [row for row in batches if row["batch_id"] == identity]
+        if len(found) != 1 or found[0]["candidates"] or found[0]["reimport_states"]:
+            raise SystemExit("source observation must be unique with no native import state: " + identity)
+        row = found[0]
+        rows.append('        ("' + identity + '", "' + row["source_repository"] + '", "' + row["source_revision"] + '", "' + row["source_artifact_sha256"] + '"),')
+    text, count = re.subn(r'(assert_eq!\(project\.imports\(\)\.len\(\), )[\d_]+(\);)',
+                         lambda m: m[1] + str(len(batches)) + m[2], text)
+    if count != 1:
+        raise SystemExit("current import batch census token changed")
+    text, count = re.subn(r'// BEGIN SOURCE OBSERVATION CENSUS.*?// END SOURCE OBSERVATION CENSUS',
+                         '// BEGIN SOURCE OBSERVATION CENSUS\n    let source_observations = [\n' + '\n'.join(rows) + '\n    ];\n    // END SOURCE OBSERVATION CENSUS', text, flags=re.S)
+    if count != 1:
+        raise SystemExit("source observation provenance boundary changed")
+    PIN_TEST.write_text(text)
+    path = ROOT / "apps/game-server/tests/content_npc_service_model.rs"
+    text = path.read_text()
+    model = census["npc_service_model"]
+    for expression, value in [
+        (r"model\.npcs\(\)\.len\(\)", model["npcs"]),
+        (r"model\.held_npcs\(\)\.len\(\)", model["held_npcs"]),
+        (r"model\.services\(\)\.len\(\)", model["services"]),
+        (r"model\.admitted_offer_count\(\)", model["offers"]),
+        (r"model\.admitted_route_count\(\)", model["routes"]),
+        (r"model\.generated_reply_npc_count\(\)", model["generated_replies"]),
+    ]:
+        text, count = re.subn(r"(assert_eq!\(" + expression + r",\s*)[\d_]+(\);)",
+                             lambda m: m[1] + str(value) + m[2], text)
+        if count != 1:
+            raise SystemExit("NPC service census token changed: " + expression)
+    for reason, value in model["held_offers"].items():
+        text, count = re.subn(r'(\("' + re.escape(reason) + r'",\s*)[\d_]+(\),)',
+                             lambda m: m[1] + str(value) + m[2], text)
+        if count != 1:
+            raise SystemExit("NPC held-offer census token changed: " + reason)
+    path.write_text(text)
+    raw_source = (ROOT / "apps/game-server/examples/support/item_fx_audio_raw_import.rs").read_text()
+    match = re.search(r'pub const BATCH_ID: &str = "([^"]+)";', raw_source)
+    if match is None:
+        raise SystemExit("raw FX source batch identity changed")
+    raw_id = match[1]
+    if sum(row["batch_id"] == raw_id for row in census["imports"]) != 1:
+        raise SystemExit("current canonical package lacks exactly one raw FX batch")
+    prior = [row for row in census["imports"] if row["batch_id"] != raw_id]
+    path = ROOT / "apps/game-server/tests/integration_rest/content_item_fx_audio_raw.rs"
+    text = path.read_text()
+    for pattern, value in [
+        (r"(assert_eq!\(batches\.len\(\), )[\d_]+(\);)", len(prior)),
+        (r"(assert_eq!\(&batches\[\.\.)[\d_]+(\], prior\.as_slice\(\)\);)", len(prior)),
+        (r"(\.sum::<usize>\(\),\s*)[\d_]+(\s*\);)", sum(row["reimport_states"] for row in prior)),
+    ]:
+        text, count = re.subn(pattern, lambda m: m[1] + str(value) + m[2], text)
+        if count != 1:
+            raise SystemExit("raw FX prior-preservation census token changed: " + pattern)
+    path.write_text(text)
+
+
 def repin_rust_inventory() -> None:
     """Rewrite byte lengths and SHA-256 pins so the test pins exactly the regenerated package."""
+    census = current_world_census()
     text = PIN_TEST.read_text(encoding="utf-8")
     declarations = json.loads((WORLD / "definitions/declarations.json").read_bytes())["records"]
     bindings = json.loads((WORLD / "provenance/sources.json").read_bytes())["source_identity_bindings"]
@@ -515,12 +651,13 @@ def repin_rust_inventory() -> None:
     )
     if count != 1:
         raise SystemExit(f"{npc_test.name}: source_tree_digest pin not found")
-    for method, total in [("npc_count", npc_count), ("dialogue_count", dialogue_count)]:
+    for method, total in [("npc_count", npc_count), ("dialogue_count", dialogue_count), ("service_count", census["service_count"])]:
         npc_text, count = re.subn(r"(assert_eq!\(catalogue\." + method + r"\(\),\s*)[\d_]+(\);)",
                                  lambda match: match.group(1) + str(total) + match.group(2), npc_text)
         if count != 1:
             raise SystemExit(f"{npc_test.name}: {method} census pin not found")
     npc_test.write_text(npc_text, encoding="utf-8", newline="\n")
+    repin_current_source_censuses(census)
 
 
 def unresolved_worktree_paths() -> list[str]:
@@ -565,7 +702,15 @@ def main() -> int:
     parser.add_argument("--check", action="store_true", help="run the registered content checks without writing")
     parser.add_argument("--capability-golden", help="regenerate only the named runtime capability golden")
     parser.add_argument("--native-only", action="store_true", help="regenerate native providers and their registry pins without rebuilding the unchanged World package")
+    parser.add_argument("--canonical-current-only", action="store_true", help="strictly normalize the current closed-overlay World and refresh its measured census/pins; no predecessor materialization or Git staging")
     args = parser.parse_args()
+    if args.canonical_current_only:
+        if args.resolve or args.no_stage or args.skip_checks or args.check or args.capability_golden or args.native_only:
+            parser.error("--canonical-current-only cannot be combined with other modes")
+        canonicalize_current_world()
+        repin_rust_inventory()
+        print("Current World canonicalized and measured source/NPC/import census pins refreshed; Git index untouched.")
+        return 0
     if args.capability_golden:
         if args.check or args.resolve or args.skip_checks or args.no_stage:
             parser.error("--capability-golden cannot be combined with content options")
@@ -602,6 +747,9 @@ def main() -> int:
     run(["python3", "tools/content-migration/cake_edible_footprint.py"])
     run(["python3", "tools/content-migration/seasonal_actor_looks.py"])
     run(["python3", "tools/content-migration/seasonal_ground_physics.py"])
+    # Source overlays write observations; the existing strict Rust writer owns
+    # the final current-format serialization and controls before any tree/pins.
+    canonicalize_current_world()
     repin_rust_inventory()
     run(["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--refresh-owner-offers"])
     run(["python3", "tools/content-migration/world_project_v2_to_tree.py"])

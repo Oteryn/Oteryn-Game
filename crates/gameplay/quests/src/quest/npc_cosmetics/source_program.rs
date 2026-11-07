@@ -782,14 +782,66 @@ mod programme_tests {
         let _: Program = serde_json::from_str(EMBEDDED)
             .map_err(|error| format!("strict programme serde: {error}"))?;
         let program = embedded().map_err(|error| format!("{error:?}"))?;
-        assert_eq!(program.npcs.len(), 52);
+        // The56 permanent-grant source census is independent of the linked
+        // programme. Rental/dead/reference-only owners remain excluded; Gnomilly
+        // is one explicitly separate11-transition acquisition support input.
+        let captured: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../../tools/content-schema/cosmetics-authoring/npc-source-transitions.json"
+        ))
+        .map_err(|e| e.to_string())?;
+        let nodes = captured["npcs"].as_array().ok_or("captured NPC census")?;
+        assert_eq!(nodes.len(), 56);
+        let excluded = [
+            "oteryn:npc.appaloosa",
+            "oteryn:npc.palomino",
+            "oteryn:npc.walter_jaeger",
+            "oteryn:npc.flickering_soul",
+        ];
+        let mut expected = std::collections::BTreeMap::new();
+        for node in nodes {
+            let key = node["npc"].as_str().ok_or("captured NPC identity")?;
+            if !excluded.contains(&key) {
+                let count = node["transitions"]
+                    .as_array()
+                    .ok_or("captured transitions")?
+                    .len();
+                assert!(
+                    expected.insert(key, count).is_none(),
+                    "unique raw source identity"
+                );
+            }
+        }
         assert_eq!(
-            program
-                .npcs
-                .iter()
-                .map(|npc| npc.transitions.len())
-                .sum::<usize>(),
-            452
+            expected.len(),
+            52,
+            "ordinary permanent acquisition identities"
+        );
+        let support: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../../tools/content-schema/cosmetics-authoring/gnomilly-source-support.json"
+        )).map_err(|e|e.to_string())?;
+        let support = support["npcs"].as_array().ok_or("support census")?;
+        assert_eq!(support.len(), 1);
+        assert_eq!(support[0]["npc"], "oteryn:npc.gnomilly");
+        let count = support[0]["transitions"]
+            .as_array()
+            .ok_or("support transitions")?
+            .len();
+        assert_eq!(count, 11);
+        assert!(expected.insert("oteryn:npc.gnomilly", count).is_none());
+        assert_eq!(
+            expected.values().sum::<usize>(),
+            475,
+            "closed donor transition census"
+        );
+        let actual: std::collections::BTreeMap<_, _> = program
+            .npcs
+            .iter()
+            .map(|npc| (npc.npc.as_str(), npc.transitions.len()))
+            .collect();
+        assert_eq!(program.npcs.len(), expected.len());
+        assert_eq!(
+            actual, expected,
+            "every independently authored NPC and transition survives linking"
         );
         for npc in &program.npcs {
             assert!(

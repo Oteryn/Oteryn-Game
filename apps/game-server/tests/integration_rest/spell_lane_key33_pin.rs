@@ -30,6 +30,13 @@ const SQL_KEY33_FUNCTIONS: [(&str, &str); 3] = [
     ),
 ];
 
+/// Reviewed non-trigger SQL owners. Keep these separate from the three trigger
+/// registrations; their Rust callers must still hold a lane-derived proof.
+#[rustfmt::skip]
+const SQL_KEY33_DIRECT_WRITERS: &[(&str, &str)] = &[
+    ("apps/game-server/migrations/0992_house_furniture_population.sql", "game_furniture_ground_decay_expire"),
+];
+
 /// Production Rust functions that take the key-33 lock or write a key-33 table.
 // Keep each registration on one line so parallel additions remain insert-only.
 #[rustfmt::skip]
@@ -41,6 +48,7 @@ const RUST_KEY33_SITES: &[(&str, &str)] = &[
     ("crates/gameplay/durability/src/durability/consume_transform_ground.rs", "write"),
     ("crates/gameplay/durability/src/durability/field_removal.rs", "remove_field_in_transaction"),
     ("crates/gameplay/durability/src/durability/field_removal.rs", "retire_restarted_fields"),
+    ("crates/gameplay/durability/src/durability/house_furniture_destroy.rs", "expire_ground_furniture_timers"),
     ("crates/gameplay/durability/src/durability/item_craft/harvest.rs", "write"),
     ("crates/gameplay/durability/src/durability/item_craft/skinning.rs", "prepare"),
     ("crates/gameplay/durability/src/durability/item_craft/soulpit.rs", "place_output"),
@@ -236,8 +244,17 @@ fn sql_key33_lock_functions_and_triggers_are_pinned() {
         .iter()
         .map(|(name, _)| (*name).to_owned())
         .collect();
+    let direct: BTreeSet<_> = SQL_KEY33_DIRECT_WRITERS
+        .iter()
+        .map(|(_, name)| (*name).to_owned())
+        .collect();
+    assert!(
+        pinned.is_disjoint(&direct),
+        "SQL trigger and direct writer inventories overlap"
+    );
     assert_eq!(
-        found, pinned,
+        found,
+        pinned.union(&direct).cloned().collect(),
         "SQL key-33 lock functions changed; review against the spell lane"
     );
     for (function, table) in SQL_KEY33_FUNCTIONS {
@@ -249,6 +266,95 @@ fn sql_key33_lock_functions_and_triggers_are_pinned() {
             "{function} guards {table}"
         );
         assert!(statement.contains(&format!("EXECUTE FUNCTION {function}()")));
+    }
+}
+
+fn sql_function<'a>(sql: &'a str, name: &str) -> &'a str {
+    let start = sql
+        .find(&format!("CREATE FUNCTION {name}("))
+        .expect("reviewed SQL function declaration");
+    let function = &sql[start..];
+    let end = function
+        .find("END $$;")
+        .expect("reviewed SQL function body end");
+    &function[..end + "END $$;".len()]
+}
+
+#[test]
+fn direct_sql_key33_clock_owner_retains_authority_and_reciprocal_proofs() {
+    for (path, name) in SQL_KEY33_DIRECT_WRITERS {
+        assert_eq!(
+            *name, "game_furniture_ground_decay_expire",
+            "new SQL owner requires a separate authority review"
+        );
+        let sql = collapse(
+            &fs::read_to_string(repository().join(path)).expect("reviewed SQL owner source"),
+        );
+        let body = sql_function(&sql, name);
+        assert!(body.contains("RETURNS INTEGER LANGUAGE plpgsql SECURITY DEFINER AS $$"));
+        let fence = body.find("PERFORM game_furniture_ground_clock_fence(p_node,p_node_revision,p_world,p_channel,p_scope);").expect("current node/scope fence");
+        let lock = key33_lock_sites(body)
+            .into_iter()
+            .next()
+            .expect("direct SQL key33 lock");
+        assert!(
+            fence < lock,
+            "scope authority must precede the shared Ground lock"
+        );
+        for proof in [
+            "ground.scope_kind=1 AND ground.channel_id=p_channel AND ground.runtime_scope_ownership_generation=p_scope",
+            "timer.deadline_at<=floor(extract(epoch FROM clock_timestamp())*1000)::bigint",
+            "FOR UPDATE OF i,timer",
+            "FOR UPDATE OF i,g",
+            "INSERT INTO game_furniture_carried_decay_receipts",
+            "INSERT INTO game_item_timed_state_writes",
+            "UPDATE game_item_instances",
+            "UPDATE game_item_timed_states",
+            "DELETE FROM game_item_ground_locations WHERE item_instance_id=c.item_instance_id",
+        ] {
+            assert!(
+                body.contains(proof),
+                "missing direct Ground expiry proof: {proof}"
+            );
+        }
+        let scope = sql_function(&sql, "game_furniture_ground_clock_fence");
+        for proof in [
+            "game_runtime_scope_assignment_history_valid() IS DISTINCT FROM TRUE",
+            "game_node_lock_current_registration(p_node,p_node_revision) IS DISTINCT FROM TRUE",
+            "runtime.scope_kind=1 AND runtime.world_id=p_world AND runtime.channel_id=p_channel",
+            "runtime.state=1 AND runtime.ownership_generation=p_scope",
+            "runtime.holder_node_id=p_node AND runtime.holder_registration_revision=p_node_revision",
+            "g.ready AND g.ownership_generation=p_scope",
+        ] {
+            assert!(
+                scope.contains(proof),
+                "missing current clock scope proof: {proof}"
+            );
+        }
+        let complete = sql_function(&sql, "game_furniture_carried_decay_complete");
+        for proof in [
+            "r.created_xact_id<>pg_current_xact_id()",
+            "w.created_xact_id<>pg_current_xact_id()",
+            "w.cause<>4",
+            "PERFORM game_furniture_ground_clock_fence(",
+            "w.expected_revision<>(r.before_timer->>'state_revision')::numeric",
+            "to_jsonb(i)=r.after_item",
+            "to_jsonb(t)=r.after_timer",
+            "to_jsonb(g)=r.location->'custody' AND g.scope_kind=1",
+            "g.world_id=(r.context->>'world')::uuid AND g.channel_id=(r.context->>'channel')::uuid",
+            "g.runtime_scope_ownership_generation=(r.context->>'scope')::numeric",
+        ] {
+            assert!(
+                complete.contains(proof),
+                "missing deferred reciprocal proof: {proof}"
+            );
+        }
+        assert!(sql.contains("CREATE CONSTRAINT TRIGGER game_furniture_carried_decay_proven AFTER INSERT ON game_furniture_carried_decay_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_furniture_carried_decay_proven()"));
+        assert!(
+            sql_function(&sql, "game_furniture_carried_decay_proven").contains(
+                "game_furniture_carried_decay_complete(NEW.transaction_id) IS DISTINCT FROM TRUE"
+            )
+        );
     }
 }
 
@@ -276,6 +382,9 @@ fn rust_key33_writers_are_pinned_and_hold_a_lane_proof() {
             for verb in ["INSERT INTO", "DELETE FROM", "UPDATE"] {
                 sites.extend(find_all(&text, &format!("{verb} {table}")));
             }
+        }
+        for (_, function) in SQL_KEY33_DIRECT_WRITERS {
+            sites.extend(find_all(&text, &format!("SELECT {function}(")));
         }
         for at in sites {
             let (name, signature) = enclosing_fn(&text, at);

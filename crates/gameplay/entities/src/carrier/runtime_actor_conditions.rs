@@ -37,6 +37,7 @@ pub struct PlayerRuntimeState {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct CreatureCommitState {
+    pub(super) magnolia: Option<super::summer_magnolia::MagnoliaLife>,
     damage: DamageReceipts,
     pub(super) conditions: ActorConditionState,
     pub(super) field_entry_revision: Option<u64>,

@@ -102,7 +102,7 @@ pub(super) async fn return_and_retire(
             .await?;
     assert_eq!(
         reasons,
-        vec![(10, None), (10, None)],
+        vec![(12, None), (12, None)],
         "both physical source exits have server occurrences and no fabricated client commands"
     );
     for _ in 0..64 {

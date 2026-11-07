@@ -258,13 +258,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // It must run after releasing this committed movement turn.
                 drop(permit);
                 if self
-                    .rakesh_source_step(actor, session, snapshot)
+                    .committed_source_portal_step(actor, session, snapshot)
                     .await
                     .is_err()
-                    || self
-                        .rakesh_source_return_step(actor, session, snapshot)
-                        .await
-                        .is_err()
                 {
                     super::operator_event("summer_source_portal_pending");
                 }

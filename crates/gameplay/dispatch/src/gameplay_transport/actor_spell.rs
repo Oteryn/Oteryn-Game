@@ -1531,6 +1531,10 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
+#[cfg(test)]
+#[path = "actor_spell_magnolia_periodic_tests.rs"]
+mod magnolia_periodic_tests;
+
 #[cfg(any(test, feature = "test-support"))]
 #[allow(clippy::expect_used)]
 #[path = "actor_spell_tests.rs"]

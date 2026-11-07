@@ -423,7 +423,8 @@ fn novelty_server_effects_decode_into_distinct_native_bursts_and_expire()
         let decoded = decode_item_effect_batch(&bytes).map_err(|e| format!("{e:?}"))?;
         assert_eq!(decoded, vec![event]);
         let (link, _commands, outbox) = crate::play::play_channel();
-        let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 7, &[])?;
+        // Item-effect wire positions use legacy z=7; the native scene plane is -z.
+        let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), -7, &[])?;
         let base = view.scene().sprites().len();
         outbox.push(vec![oteryn_session::SessionEvent::ItemEffects(
             AppliedDelta {
@@ -434,6 +435,12 @@ fn novelty_server_effects_decode_into_distinct_native_bursts_and_expire()
             },
         )]);
         view.tick(&link).map_err(|e| format!("{e:?}"))?;
+        assert_eq!(view.visuals.len(), 1);
+        assert_eq!(view.visuals[0].kind, PresentationEventKind::MagicEffect {
+            position: oteryn_session::ActorPosition { x:0, y:0, floor:-7 },
+            effect_id,
+            source:PresentationSource::Others,
+        }, "the native item adapter converts the unchanged positive wire floor exactly once");
         // Fix the animation instant so comparisons prove the server effect ID is used.
         let now = std::time::Instant::now();
         for cue in &mut view.visuals {

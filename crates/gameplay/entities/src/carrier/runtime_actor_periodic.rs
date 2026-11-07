@@ -29,6 +29,7 @@ pub struct PreparedCreaturePeriodicTurn {
     ticks: Vec<ConditionTick<ExactActorRef>>,
     next_ordinal: u64,
     lethal_record: Option<OwnerCommitRecord>,
+    source_phase_slot: Option<Slot>,
 }
 #[derive(Debug)]
 pub struct CreaturePeriodicReceipt {
@@ -174,10 +175,13 @@ impl ChannelRuntimeV1 {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
         let before = self.companion_snapshot(actor)?;
-        if self
-            .companion_policy(&before.state.policy.definition_key)?
-            .as_ref()
-            != before.state.policy.as_ref()
+        let current_policy = self.companion_policy(&before.state.policy.definition_key)?;
+        if current_policy.as_ref() != before.state.policy.as_ref()
+            && !self.magnolia_policy_matches(
+                actor,
+                current_policy.as_ref(),
+                before.state.policy.as_ref(),
+            )?
         {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
@@ -193,6 +197,9 @@ impl ChannelRuntimeV1 {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
         let stamp = self.issue_owner_work()?;
+        let phase_index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        let mut source_phase =
+            super::summer_magnolia::PeriodicPhase::from_slot(&self.carrier.slots[phase_index])?;
         let mut after = before.state.clone();
         let ticks = after.conditions.take_due(now_us, facts);
         let mut impacts = Vec::new();
@@ -224,10 +231,14 @@ impl ChannelRuntimeV1 {
                         let source_percent = match self.companion_snapshot_including_dead(source) {
                             Ok(snapshot) if snapshot.health <= 0 => None,
                             Ok(snapshot) => {
-                                if self
-                                    .companion_policy(&snapshot.state.policy.definition_key)?
-                                    .as_ref()
-                                    != snapshot.state.policy.as_ref()
+                                let current_policy =
+                                    self.companion_policy(&snapshot.state.policy.definition_key)?;
+                                if current_policy.as_ref() != snapshot.state.policy.as_ref()
+                                    && !self.magnolia_policy_matches(
+                                        source,
+                                        current_policy.as_ref(),
+                                        snapshot.state.policy.as_ref(),
+                                    )?
                                 {
                                     return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
                                 }
@@ -347,9 +358,11 @@ impl ChannelRuntimeV1 {
                     // Source combatBlockHit heals before residual damage; each
                     // real tick caps independently, and lethal never resurrects.
                     let health_before_healing = health_after;
-                    health_after = health_after
-                        .saturating_add(healing)
-                        .min(before.maximum_health);
+                    health_after = health_after.saturating_add(healing).min(
+                        source_phase
+                            .as_ref()
+                            .map_or(before.maximum_health, |phase| phase.maximum()),
+                    );
                     let healed = health_after.saturating_sub(health_before_healing);
                     let applied = damage.min(health_after).max(0);
                     if let TickKind::Damage { element, .. } = tick.kind {
@@ -360,12 +373,16 @@ impl ChannelRuntimeV1 {
                             healing: u64::try_from(healed).unwrap_or(0),
                         });
                     }
+                    let root_before = health_after;
                     health_after = health_after
                         .checked_sub(damage)
                         .ok_or(
                             oteryn_gameplay_domain::domain::carrier_values::CarrierError::DamageOverflow,
                         )?
                         .max(0);
+                    if let Some(phase) = &mut source_phase {
+                        phase.after_hit(&mut after, root_before, &mut health_after)?;
+                    }
                     total = before.health.checked_sub(health_after).ok_or(
                         oteryn_gameplay_domain::domain::carrier_values::CarrierError::DamageOverflow,
                     )?;
@@ -397,12 +414,16 @@ impl ChannelRuntimeV1 {
                         damage: u64::try_from(damage.min(health_after).max(0)).unwrap_or(0),
                         healing: 0,
                     });
+                    let root_before = health_after;
                     health_after = health_after
                         .checked_sub(damage)
                         .ok_or(
                             oteryn_gameplay_domain::domain::carrier_values::CarrierError::DamageOverflow,
                         )?
                         .max(0);
+                    if let Some(phase) = &mut source_phase {
+                        phase.after_hit(&mut after, root_before, &mut health_after)?;
+                    }
                     total = before.health.checked_sub(health_after).ok_or(
                         oteryn_gameplay_domain::domain::carrier_values::CarrierError::DamageOverflow,
                     )?;
@@ -441,28 +462,14 @@ impl ChannelRuntimeV1 {
         } else {
             ordinal
         };
-        let lethal_record = if before.health > 0 && health_after == 0 {
+        let lethal_record = if source_phase.is_none() && before.health > 0 && health_after == 0 {
             // The retained lethal source is the real store-issued owner input.
             // Nonlethal replay is fenced by complete store+HP comparison; no
             // unsequenced command receipt is consumed for every DOT pulse.
             if committed.entries.len() >= COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX {
                 return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::DamageReceiptCapacityExceeded);
             }
-            let occurrence = format!(
-                "owner-tick/{}/{}/{}/{}",
-                actor.actor_local_id(),
-                actor.actor_local_generation(),
-                stamp.generation().get(),
-                stamp.ordinal().get()
-            );
-            let mut binding = occurrence.into_bytes();
-            binding.push(0);
-            binding.extend_from_slice(&actor.placement_identity());
-            binding.extend_from_slice(&now_us.to_be_bytes());
-            for tick in &ticks {
-                binding.extend_from_slice(&tick.sequence.to_be_bytes());
-                binding.extend_from_slice(&tick.due.to_be_bytes());
-            }
+            let binding = periodic_binding(actor, &stamp, now_us, &ticks)?;
             Some(OwnerCommitRecord {
                 binding: copy_bounded_binding(&binding)?,
                 damage: total,
@@ -478,7 +485,14 @@ impl ChannelRuntimeV1 {
         } else {
             None
         };
+        let source_phase_slot = if let Some(phase) = source_phase {
+            let binding = periodic_binding(actor, &stamp, now_us, &ticks)?;
+            Some(phase.finish(after.clone(), health_after, had_damage, &binding)?)
+        } else {
+            None
+        };
         Ok(PreparedCreaturePeriodicTurn {
+            source_phase_slot,
             impacts,
             before,
             original_slot,
@@ -510,6 +524,16 @@ impl ChannelRuntimeV1 {
             .validate_ref(&self.continuity, prepared.before.actor.0)?;
         if self.carrier.slots.get(index) != Some(&prepared.original_slot) {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
+        }
+        if let Some(staged) = prepared.source_phase_slot {
+            self.carrier.slots[index] = staged;
+            return Ok(CreaturePeriodicReceipt {
+                impacts: prepared.impacts,
+                actor: prepared.before.actor,
+                health_before: prepared.before.health,
+                health_after: prepared.health_after,
+                ticks: prepared.ticks,
+            });
         }
         let Slot::CreatureOccupied {
             health,
@@ -551,6 +575,30 @@ impl ChannelRuntimeV1 {
             ticks: prepared.ticks,
         })
     }
+}
+
+fn periodic_binding(
+    actor: ExactActorRef,
+    stamp: &RuntimeWorkStamp,
+    now_us: u64,
+    ticks: &[ConditionTick<ExactActorRef>],
+) -> Result<Box<[u8]>, CarrierError> {
+    let occurrence = format!(
+        "owner-tick/{}/{}/{}/{}",
+        actor.actor_local_id(),
+        actor.actor_local_generation(),
+        stamp.generation().get(),
+        stamp.ordinal().get()
+    );
+    let mut binding = occurrence.into_bytes();
+    binding.push(0);
+    binding.extend_from_slice(&actor.placement_identity());
+    binding.extend_from_slice(&now_us.to_be_bytes());
+    for tick in ticks {
+        binding.extend_from_slice(&tick.sequence.to_be_bytes());
+        binding.extend_from_slice(&tick.due.to_be_bytes());
+    }
+    copy_bounded_binding(&binding)
 }
 
 fn periodic_element_key(

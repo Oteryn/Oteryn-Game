@@ -7908,7 +7908,7 @@ BEGIN
  AND a.holder_node_id=p_node AND a.holder_registration_revision=p_registration FOR SHARE;
  IF NOT FOUND THEN RAISE EXCEPTION 'Summer source scope is stale' USING ERRCODE='23514';END IF;
  PERFORM 1 FROM game_runtime_scope_assignments a
- JOIN game_durability_admission_runtime_guards rg ON rg.scope_key=a.scope_key
+ JOIN game_durability_admission_runtime_guards rg ON rg.scope_key='\x02'::bytea||uuid_send(p_world)||uuid_send(p_instance)
  WHERE a.scope_key='\x03'::bytea||uuid_send(p_world)||uuid_send(p_instance) AND a.scope_kind=3
  AND a.world_id=p_world AND a.activity_instance_id=p_instance AND a.state=1 AND a.ownership_generation=p_destination_generation
  AND a.holder_node_id=p_node AND a.holder_registration_revision=p_registration AND rg.ready AND rg.ownership_generation=p_destination_generation FOR SHARE OF a,rg;
@@ -8278,23 +8278,33 @@ GRANT EXECUTE ON FUNCTION game_summer_portal_publish(uuid,uuid,numeric,uuid,nume
 
 -- BEGIN SRV7 RAKESH SOURCE summer-source-portal-exit.sql
 -- Server Source TP return is distinct from a fabricated client Exit command.
+-- Merged main0989 reserves10/11 for signed staff terminal returns.
+-- SourcePortalExit is12. Replace only the two named range/occurrence checks;
+-- all existing death/idle/transport/loss checks and proof functions stay intact.
 DO $source_return_shape$
-DECLARE c RECORD;changed INTEGER:=0;expression TEXT;
+DECLARE reason_attribute SMALLINT;command_attribute SMALLINT;
 BEGIN
- FOR c IN SELECT conname,pg_get_expr(conbin,conrelid) AS expression FROM pg_constraint
- WHERE conrelid='game_activity_runtime_returns'::regclass AND contype='c' LOOP
-  expression:=c.expression;
-  IF expression='((reason >= 1) AND (reason <= 9))' THEN
-   EXECUTE format('ALTER TABLE game_activity_runtime_returns DROP CONSTRAINT %I',c.conname);
-   ALTER TABLE game_activity_runtime_returns ADD CONSTRAINT game_activity_source_return_reason CHECK(reason BETWEEN 1 AND 10);
-   changed:=changed+1;
-  ELSIF expression='((command_id IS NOT NULL) OR (reason = ANY (ARRAY[2, 3, 4, 5, 6, 7, 8, 9])))' THEN
-   EXECUTE format('ALTER TABLE game_activity_runtime_returns DROP CONSTRAINT %I',c.conname);
-   ALTER TABLE game_activity_runtime_returns ADD CONSTRAINT game_activity_source_return_occurrence CHECK(command_id IS NOT NULL OR reason IN(2,3,4,5,6,7,8,9,10));
-   changed:=changed+1;
-  END IF;
- END LOOP;
- IF changed<>2 THEN RAISE EXCEPTION 'existing source return shape boundary changed %',changed;END IF;
+ SELECT attnum INTO STRICT reason_attribute FROM pg_attribute
+ WHERE attrelid='game_activity_runtime_returns'::regclass AND attname='reason' AND NOT attisdropped;
+ SELECT attnum INTO STRICT command_attribute FROM pg_attribute
+ WHERE attrelid='game_activity_runtime_returns'::regclass AND attname='command_id' AND NOT attisdropped;
+ IF NOT EXISTS(SELECT 1 FROM pg_constraint
+  WHERE conrelid='game_activity_runtime_returns'::regclass AND conname='nx1_return_reason'
+  AND contype='c' AND convalidated AND conkey=ARRAY[reason_attribute]::SMALLINT[])
+ OR NOT EXISTS(SELECT 1 FROM pg_constraint
+  WHERE conrelid='game_activity_runtime_returns'::regclass AND conname='nx1_return_server_command'
+  AND contype='c' AND convalidated AND cardinality(conkey)=2
+  AND conkey @> ARRAY[command_attribute,reason_attribute]::SMALLINT[])
+ OR (SELECT count(*) FROM pg_constraint
+  WHERE conrelid='game_activity_runtime_returns'::regclass AND contype='c' AND convalidated
+  AND conname=ANY(ARRAY['nx1_return_death','nx1_return_death_command','nx1_return_idle',
+   'nx1_return_transport','nx1_return_loss','nx1_return_active','nx1_return_offline']))<>7 THEN
+ RAISE EXCEPTION 'SourcePortalExit requires exact merged staff return constraint identities';END IF;
+ ALTER TABLE game_activity_runtime_returns
+  DROP CONSTRAINT nx1_return_reason,
+  DROP CONSTRAINT nx1_return_server_command,
+  ADD CONSTRAINT nx1_return_reason CHECK(reason BETWEEN 1 AND 12),
+  ADD CONSTRAINT nx1_return_server_command CHECK(command_id IS NOT NULL OR reason IN(2,3,4,5,6,7,8,9,10,11,12));
 END $source_return_shape$;
 CREATE TABLE game_summer_portal_exit_context(
  backend_pid INTEGER NOT NULL,transaction_xid XID8 NOT NULL,return_id UUID NOT NULL,
@@ -8318,7 +8328,7 @@ BEGIN
  JOIN game_runtime_scope_assignments ownership ON ownership.scope_key='\x03'::bytea||uuid_send(g.world_id)||uuid_send(g.instance_id)
  JOIN game_durability_admission_character_guards cg ON cg.character_id=p_character
  JOIN game_durability_admission_account_guards ag ON ag.account_id=s.account_id
- JOIN game_durability_admission_runtime_guards rg ON rg.scope_key=ownership.scope_key
+ JOIN game_durability_admission_runtime_guards rg ON rg.scope_key='\x02'::bytea||uuid_send(g.world_id)||uuid_send(g.instance_id)
  WHERE room.admission=p_handoff AND room.boss_key='oteryn:boss.rakesh_moonfang' AND g.activity_key=room.boss_key AND g.state=2
  AND room.source_portal_key='oteryn:source-portal.rakesh_moonfang' AND g.ownership_generation=p_scope_generation
  AND s.game_session_id=p_session AND s.character_id=p_character AND s.session_state IN(1,2)
@@ -8339,7 +8349,7 @@ BEGIN
 END $$;
 CREATE FUNCTION game_summer_portal_exit_admit() RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
- IF NEW.reason<>10 THEN RETURN NEW;END IF;
+ IF NEW.reason<>12 THEN RETURN NEW;END IF;
  IF NEW.command_id IS NOT NULL OR NEW.destination_transport_ref IS NULL OR NOT EXISTS(
   SELECT 1 FROM game_summer_portal_exit_context c JOIN game_node_registrations n ON n.node_id=c.node_id AND n.registration_revision=c.registration
   WHERE c.backend_pid=pg_backend_pid() AND c.transaction_xid=pg_current_xact_id()

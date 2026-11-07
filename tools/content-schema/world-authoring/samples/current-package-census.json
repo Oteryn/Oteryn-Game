@@ -1,0 +1,280 @@
+{
+  "byte_idempotent": true,
+  "dialogue_count": 837,
+  "documents": [
+    {
+      "bytes": 56,
+      "path": "assets/catalog.json",
+      "sha256": "fa61df1076ef66e8c69b6182db1b13fe2ccb92653ab16a148d1fbaf773adb344"
+    },
+    {
+      "bytes": 427,
+      "path": "content.lock.json",
+      "sha256": "21d5855ab634734104fbb6431e54570002d075606d0ee8806e53865f6d35a54c"
+    },
+    {
+      "bytes": 27613127,
+      "path": "definitions/declarations.json",
+      "sha256": "1756c3b46d6430a9b52edbf90634daef9de7fd3ad5c0935a0ed6e3e1da67e759"
+    },
+    {
+      "bytes": 27392973,
+      "path": "definitions/reference.json",
+      "sha256": "8562e9e8518ef6501506c91185bc4671ff93836909e9875273bd9808a2df3a54"
+    },
+    {
+      "bytes": 120557,
+      "path": "editor/author.json",
+      "sha256": "14c6e3163baf17096545daa897a866df0b5ee23721c26312867ffa73447bbfdb"
+    },
+    {
+      "bytes": 1960,
+      "path": "manifest.json",
+      "sha256": "53b6bfce63cf33de59efead33ae2e3a8eb7c059916cc5c686bba3927a00ff653"
+    },
+    {
+      "bytes": 73,
+      "path": "presentations/bindings.json",
+      "sha256": "b7d27b2d7fde6370b7ae56c2c60412f2b213a4a5e92e7db82dd4b59a64359cd7"
+    },
+    {
+      "bytes": 411,
+      "path": "project.json",
+      "sha256": "164c684f16fea90b7cf27b65590e825aaf9760835f0add245229056fa9a122e1"
+    },
+    {
+      "bytes": 6775089,
+      "path": "provenance/imports.json",
+      "sha256": "dea6be9a16004b2b8fdde12f83b6cca4483a099357442c8c9de0cb94c60b5b12"
+    },
+    {
+      "bytes": 1668523,
+      "path": "provenance/sources.json",
+      "sha256": "0306fce76f96c332dc989ac400d405c94f4684491ccb5a6b958a7e672e219676"
+    },
+    {
+      "bytes": 72,
+      "path": "worlds/world.json",
+      "sha256": "0dcc223c4a904834a58b3ad2b1c7882636cc66c9123aafdb25bb69a1d4670dfa"
+    }
+  ],
+  "import_candidate_count": 0,
+  "imports": [
+    {
+      "batch_id": "cw2-b1-donor-identity-epoch-2-r1",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "cw2-b1-full-item-family-registry-r1",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "g4-creature-canary-wave-a-r1",
+      "candidates": 0,
+      "reimport_states": 104
+    },
+    {
+      "batch_id": "g4-creature-crystal-1530-r1",
+      "candidates": 0,
+      "reimport_states": 4
+    },
+    {
+      "batch_id": "g4-item-exact-165-tibiawiki-r1",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "g4-item-forge289-br-r1",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "g4-item-fx-audio295-raw-evidence-r1",
+      "candidates": 0,
+      "reimport_states": 296
+    },
+    {
+      "batch_id": "g4-item-wave1-tibiawiki-r1",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "g4-mount-252-tibiawiki-r1",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "g4-npc-crystal-summer-supplement-r1",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "g4-npc-playerbots-wiki-images-r16",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "g4-npc-playerbots-xml-five-r16",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "g4-npc-prices-tibiawiki-br-r1",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "g4-npc-prices-tibiopedia-r1",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "g4-npc-r17-definition-dakbugs",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "g4-npc-r17-definition-mixed_tfs",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "g4-npc-r18-definition-dakbugs",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "g4-npc-r18-definition-fencore",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "g4-npc-r18-definition-happen",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "g4-npc-r19-definition-dakbugs",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "g4-npc-r19-definition-nexa_map_editor",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "g4-npc-r19-definition-otg_br_global_11x",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "g4-npc-r19-definition-tibia_playerbots_project",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "g4-npc-r19-definition-valeria_ot",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "g4-npc-summer-definition-overlay-fandom-r13",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "g4-npc-wave-a-tibiawiki-r9",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "g4-wiki-authored-creature-d44-r1",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "item-client-market-mint-2dfa943b",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "item-drown-protection-5460-13995",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "item-market-crystal-parity-201189f",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "monster-full-mechanics-portal25051-canary-20261004",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "monster-full-mechanics-portal25051-crystal-20261004",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "monster-full-mechanics-tentacle-items-canary-20261004",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "monster-full-mechanics-tentacle-items-crystal-20261004",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "official-creature-balance-8918-8935-9024-9039",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "srv7-seasonal-cake-golem-r1",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "srv7-seasonal-messenger-shop-r1",
+      "candidates": 0,
+      "reimport_states": 0
+    },
+    {
+      "batch_id": "srv7-summer-doctor-marrow-r1",
+      "candidates": 0,
+      "reimport_states": 0
+    }
+  ],
+  "npc_count": 1283,
+  "npc_service_model": {
+    "generated_replies": 446,
+    "held_npcs": 0,
+    "held_offers": {
+      "ArbitragePaying": 0,
+      "ChargedOrFluidPending": 865,
+      "CountOutOfRange": 0,
+      "NonGoldCurrency": 31,
+      "ParityPending": 0,
+      "SellPriceAboveCoinCapacity": 299,
+      "TimedCountMismatch": 0,
+      "UnknownItem": 0
+    },
+    "npcs": 1283,
+    "offers": 11095,
+    "routes": 195,
+    "services": 390
+  },
+  "qualification": "canonical source package only; no gameplay readiness",
+  "reimport_count": 404,
+  "schema": "OTERYN_CURRENT_WORLD_CENSUS/v1",
+  "semantic_preserved": true,
+  "service_count": 389,
+  "source_count": 32,
+  "tree_sha256": "04c0ed576c96e7f86c8bf79ed8e71edba22256e2c1932b93503fc1a92da9b160"
+}

@@ -127,6 +127,22 @@ pub struct ActivityConnectionSwitch {
     pub payload: Vec<u8>,
 }
 
+#[derive(Clone, Copy)]
+struct ActivityConnectionRecord {
+    admitted: AdmittedSession,
+    // One committed source STEP retained in this existing connection record.
+    // Its actor/session/controller/fence cannot be reconstructed from coordinates.
+    source_portal_step: Option<(AdmittedSession, crate::foundation::MovementPositionSnapshot)>,
+}
+impl From<AdmittedSession> for ActivityConnectionRecord {
+    fn from(admitted: AdmittedSession) -> Self {
+        Self {
+            admitted,
+            source_portal_step: None,
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct ActivityRuntimeRegistry<'a> {
     templates: Mutex<
@@ -136,7 +152,7 @@ pub struct ActivityRuntimeRegistry<'a> {
         >,
     >,
     runtimes: Mutex<HashMap<ScopeKey, RegisteredRuntime<'a>>>,
-    connections: Mutex<HashMap<GameSessionId, AdmittedSession>>,
+    connections: Mutex<HashMap<GameSessionId, ActivityConnectionRecord>>,
     pending: Mutex<HashMap<GameSessionId, ActivityConnectionSwitch>>,
     pub(super) attempts: Mutex<
         HashMap<
@@ -336,10 +352,12 @@ impl<'a> ActivityRuntimeRegistry<'a> {
         }
         let mut sessions = self.connections.lock().map_err(|_| ())?;
         if let Some(old) = sessions.get(&admitted.game_session_id)
-            && (old.continuity.connection_generation > admitted.continuity.connection_generation
-                || (old.continuity.connection_generation
+            && (old.admitted.continuity.connection_generation
+                > admitted.continuity.connection_generation
+                || (old.admitted.continuity.connection_generation
                     == admitted.continuity.connection_generation
                     && old
+                        .admitted
                         .controller
                         .is_some_and(|old| old.transport != controller.transport)))
         {
@@ -347,7 +365,21 @@ impl<'a> ActivityRuntimeRegistry<'a> {
         }
         let mut accounts = self.offline_accounts.lock().map_err(|_| ())?;
         sessions.try_reserve(1).map_err(|_| ())?;
-        sessions.insert(admitted.game_session_id, admitted);
+        let source_portal_step = sessions
+            .get(&admitted.game_session_id)
+            .and_then(|old| old.source_portal_step)
+            .filter(|(source, _)| {
+                same_connection(*source, admitted)
+                    && source.continuity.selected_capabilities
+                        == admitted.continuity.selected_capabilities
+            });
+        sessions.insert(
+            admitted.game_session_id,
+            ActivityConnectionRecord {
+                admitted,
+                source_portal_step,
+            },
+        );
         accounts.remove(&admitted.game_session_id);
         Ok(())
     }
@@ -401,7 +433,7 @@ impl<'a> ActivityRuntimeRegistry<'a> {
             // must not recreate removed aliases, offline state or playable control.
             return Ok(());
         };
-        if !same_connection(*registered, source) {
+        if !same_connection(registered.admitted, source) {
             return Err(());
         }
         if let Some(lineage) = successors.get(&source.game_session_id) {
@@ -438,7 +470,7 @@ impl<'a> ActivityRuntimeRegistry<'a> {
             },
         );
         sessions.remove(&source.game_session_id);
-        sessions.insert(next.game_session_id, next);
+        sessions.insert(next.game_session_id, next.into());
         accounts.remove(&source.game_session_id);
         accounts.insert(next.game_session_id, (new_fence, account));
         pending.remove(&source.game_session_id);
@@ -469,7 +501,7 @@ impl<'a> ActivityRuntimeRegistry<'a> {
         if let Ok(mut sessions) = self.connections.lock()
             && sessions
                 .get(&session)
-                .is_some_and(|held| held.runtime_actor == Some(actor))
+                .is_some_and(|held| held.admitted.runtime_actor == Some(actor))
         {
             sessions.remove(&session);
             if let Ok(mut accounts) = self.offline_accounts.lock() {
@@ -507,7 +539,7 @@ impl<'a> ActivityRuntimeRegistry<'a> {
             if same_connection(current_connection(&successors, switch.source), target) {
                 if sessions
                     .get(&switch.source.game_session_id)
-                    .is_some_and(|held| same_connection(*held, switch.source))
+                    .is_some_and(|held| same_connection(held.admitted, switch.source))
                 {
                     sessions.remove(&switch.source.game_session_id);
                 }
@@ -528,8 +560,69 @@ impl<'a> ActivityRuntimeRegistry<'a> {
         Ok(())
     }
 
+    pub(super) fn defer_source_portal_step(
+        &self,
+        source: AdmittedSession,
+        snapshot: crate::foundation::MovementPositionSnapshot,
+    ) -> Result<(), ()> {
+        let mut sessions = self.connections.lock().map_err(|_| ())?;
+        let record = sessions.get_mut(&source.game_session_id).ok_or(())?;
+        if !same_connection(record.admitted, source) {
+            return Err(());
+        }
+        if let Some((old, held)) = record.source_portal_step
+            && (!same_connection(old, source) || held != snapshot)
+        {
+            return Err(());
+        }
+        record.source_portal_step = Some((source, snapshot));
+        Ok(())
+    }
+    pub(super) fn source_portal_step(
+        &self,
+        source: AdmittedSession,
+    ) -> Result<Option<crate::foundation::MovementPositionSnapshot>, ()> {
+        let mut sessions = self.connections.lock().map_err(|_| ())?;
+        let Some(record) = sessions.get_mut(&source.game_session_id) else {
+            return Ok(None);
+        };
+        let Some((held, snapshot)) = record.source_portal_step else {
+            return Ok(None);
+        };
+        if !same_connection(record.admitted, source) {
+            // An obsolete socket cannot consume or clear its successor's STEP.
+            return Ok(None);
+        }
+        if !same_connection(held, source)
+            || held.continuity.selected_capabilities != source.continuity.selected_capabilities
+        {
+            record.source_portal_step = None;
+            return Ok(None);
+        }
+        Ok(Some(snapshot))
+    }
+    pub(super) fn finish_source_portal_step(
+        &self,
+        source: AdmittedSession,
+        snapshot: crate::foundation::MovementPositionSnapshot,
+    ) -> Result<(), ()> {
+        let mut sessions = self.connections.lock().map_err(|_| ())?;
+        if let Some(record) = sessions.get_mut(&source.game_session_id)
+            && record
+                .source_portal_step
+                .is_some_and(|(held, old)| same_connection(held, source) && old == snapshot)
+        {
+            record.source_portal_step = None;
+        }
+        Ok(())
+    }
+
     pub(super) fn connection(&self, session: GameSessionId) -> Option<AdmittedSession> {
-        self.connections.lock().ok()?.get(&session).copied()
+        self.connections
+            .lock()
+            .ok()?
+            .get(&session)
+            .map(|record| record.admitted)
     }
 
     pub(super) fn stage_switch(&self, switch: ActivityConnectionSwitch) -> Result<(), ()> {
@@ -580,7 +673,7 @@ impl<'a> ActivityRuntimeRegistry<'a> {
             // source. It is already installed, never a fresh publication grant.
             return Ok(());
         };
-        if !same_connection(*registered, source) {
+        if !same_connection(registered.admitted, source) {
             return Err(());
         }
         if let Some(lineage) = successors.get(&source.game_session_id) {
@@ -592,7 +685,7 @@ impl<'a> ActivityRuntimeRegistry<'a> {
         }
         if sessions
             .get(&next.game_session_id)
-            .is_some_and(|held| !same_connection(*held, next))
+            .is_some_and(|held| !same_connection(held.admitted, next))
         {
             return Err(());
         }
@@ -603,7 +696,7 @@ impl<'a> ActivityRuntimeRegistry<'a> {
         // Keep the original physical socket root, but compress delivered hops
         // instead of retaining two AdmittedSession values for every past visit.
         let continued = advance_lineage(&mut successors, source, next);
-        sessions.insert(next.game_session_id, next);
+        sessions.insert(next.game_session_id, next.into());
         successors.insert(
             source.game_session_id,
             ActivityConnectionLineage {
@@ -655,7 +748,7 @@ impl<'a> ActivityRuntimeRegistry<'a> {
         pending.remove(&source.game_session_id);
         if sessions
             .get(&source.game_session_id)
-            .is_some_and(|held| same_connection(*held, source))
+            .is_some_and(|held| same_connection(held.admitted, source))
         {
             sessions.remove(&source.game_session_id);
         }

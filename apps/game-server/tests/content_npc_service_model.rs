@@ -27,12 +27,12 @@ fn pinned_catalogue_service_model_counts() {
     assert_eq!(model, again, "built twice");
     assert_eq!(model.source_tree_digest(), catalogue.source_tree_digest());
     let counts: BTreeMap<&str, usize> = model.held_offer_counts();
-    assert_eq!(model.npcs().len(), 1282);
+    assert_eq!(model.npcs().len(), 1283);
     assert_eq!(model.held_npcs().len(), 0);
     // NPC-ECON-1 Bank, PREM-5's services, BANK-3's Henricus blessing offer, and #2810's
     // Grizzly Adams rank shop.
     assert_eq!(model.services().len(), 390);
-    assert_eq!(model.admitted_offer_count(), 11_095);
+    assert_eq!(model.admitted_offer_count(), 11095);
     assert_eq!(model.admitted_route_count(), 195);
     assert_eq!(model.generated_reply_npc_count(), 446);
     let expected: BTreeMap<&str, usize> = BTreeMap::from([

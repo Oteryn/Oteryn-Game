@@ -23,6 +23,9 @@ use std::{
     path::Path,
     sync::Arc,
 };
+pub use summer_magnolia::QualifiedMagnoliaSecondLife;
+#[cfg(any(test, feature = "test-support"))]
+pub use summer_magnolia::qualify_magnolia_second_life_test_source;
 
 // D1093 mounts the existing source-bound compiler once, without a shared mod.rs edit.
 pub mod cosmetics_loader;
@@ -39,6 +42,7 @@ mod item_profile_updates;
 mod native_cosmetics;
 mod starting_loadout_input;
 mod summer_amulet_qualification;
+mod summer_magnolia;
 
 pub const MAGIC: &[u8; 8] = b"OTNGP01\0";
 pub const MAGIC_V2: &[u8; 8] = b"OTNGP02\0";
@@ -1552,8 +1556,12 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
     } else {
         None
     };
-    let policies = CompiledCreaturePolicies::from_active_artifact(source_digest, records)
+    let mut policies = CompiledCreaturePolicies::from_active_artifact(source_digest, records)
         .map_err(|_| invalid("native gameplay creature policy table"))?;
+    let health_source = summer_magnolia::source_qualification(&creatures, &policies);
+    policies
+        .retain_magnolia_second_life(health_source)
+        .map_err(|_| invalid("native source Magnolia health qualification"))?;
     Ok(DecodedNativeGameplay {
         baseline: sections[0],
         state: NativeGameplayState {
@@ -4241,11 +4249,16 @@ pub fn callback_source_native_test_policies(
         .map_err(|_| invalid("callback source Creature fixture"))?;
     let presentations: PresentationProfilesDocument = serde_json::from_slice(presentation_bytes)
         .map_err(|_| invalid("callback source Presentation fixture"))?;
-    CompiledCreaturePolicies::from_active_artifact(
+    let mut policies = CompiledCreaturePolicies::from_active_artifact(
         digest,
         creature_policies(&creatures, &presentations)?,
     )
-    .map_err(|_| invalid("callback native source fixture policy pin"))
+    .map_err(|_| invalid("callback native source fixture policy pin"))?;
+    let health_source = summer_magnolia::source_qualification(&creatures, &policies);
+    policies
+        .retain_magnolia_second_life(health_source)
+        .map_err(|_| invalid("callback source Magnolia health qualification"))?;
+    Ok(policies)
 }
 
 #[cfg(any(test, feature = "test-support"))]

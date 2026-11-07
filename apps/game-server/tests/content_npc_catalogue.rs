@@ -30,7 +30,7 @@ fn repository_import_preserves_all_data_and_approximation_flags() {
     );
     assert_eq!(
         catalogue.source_tree_digest(),
-        "3f5581ce4025ed14712171f6c69f46288c0462a5d8d42c6021a039834dcde1a0"
+        "04c0ed576c96e7f86c8bf79ed8e71edba22256e2c1932b93503fc1a92da9b160"
     );
     assert_eq!(catalogue.npc_count(), 1283);
     assert_eq!(catalogue.dialogue_count(), 837);

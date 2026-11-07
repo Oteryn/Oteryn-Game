@@ -125,6 +125,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
     ) -> Result<Option<crate::gameplay_transport::activity_runtime::ActivityConnectionSwitch>, ()>
     {
+        self.settle_source_portal_step(admitted).await?;
         self.activity_runtimes.pending_switch(admitted)
     }
     fn finish_activity_switch(

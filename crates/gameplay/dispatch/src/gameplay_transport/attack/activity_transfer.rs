@@ -63,6 +63,16 @@ impl ActivityAttackCommit<'_> {
 }
 
 impl ChannelAttackStates {
+    pub(in crate::gameplay_transport) fn activity_step_in_flight(
+        &self,
+        actor: ExactActorRef,
+    ) -> bool {
+        self.step_clocks.iter().any(|(held, clock)| {
+            *held == actor
+                && matches!(clock, StepClock::InFlight(holder) if holder.strong_count() > 0)
+        })
+    }
+
     pub(in crate::gameplay_transport) fn prepare_activity_attacks(
         &mut self,
         runtime: &ChannelRuntimeV1,

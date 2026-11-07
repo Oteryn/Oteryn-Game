@@ -55,7 +55,7 @@ pub(super) fn merge(
             items.records.push(record);
         }
     }
-    if items.records.len() > super::MAX_RECORDS {
+    if items.records.len() > super::MAX_ITEM_RECORDS {
         return Err(invalid("Item updates combined bounds"));
     }
     let bytes = serde_json::to_vec(&items).map_err(|_| invalid("Item updates encoding"))?;
@@ -93,6 +93,10 @@ mod tests {
             serde_json::from_slice(&updates.bytes).map_err(|_| invalid("updates"))?;
         let original: ItemProfilesDocument =
             serde_json::from_slice(&base.bytes).map_err(|_| invalid("base"))?;
+        // The production Item closure legitimately exceeds the generic
+        // non-Item4096-record budget and uses its existing8192-record owner.
+        assert!(original.records.len() > super::super::MAX_RECORDS);
+        assert!(original.records.len() <= super::super::MAX_ITEM_RECORDS);
         let merged =
             merge(Some(base.clone()), Some(updates.clone()))?.ok_or_else(|| invalid("merged"))?;
         let actual: ItemProfilesDocument =
@@ -121,7 +125,43 @@ mod tests {
             .ok_or_else(|| invalid("records"))?
             .push(first);
         let encoded = serde_json::to_vec(&duplicate).map_err(|_| invalid("duplicate"))?;
-        assert!(merge(Some(base), Some(pin(&encoded))).is_err());
+        assert!(merge(Some(base.clone()), Some(pin(&encoded))).is_err());
+        // The Item-specific count fix must not widen the independent byte bound
+        // or the128-update closure, and malformed input stays fail-closed.
+        let too_large = pin(&vec![b' '; super::super::MAX_ITEM_PROFILES + 1]);
+        assert!(merge(Some(too_large), Some(updates.clone())).is_err());
+        let mut too_many: serde_json::Value =
+            serde_json::from_slice(&updates.bytes).map_err(|_| invalid("updates"))?;
+        let records = too_many["records"]
+            .as_array_mut()
+            .ok_or_else(|| invalid("records"))?;
+        // Compact but valid typed records reach the independent128-row guard
+        // without first exceeding the separately retained200KB byte bound.
+        let mut compact = records[0].clone();
+        for value in compact["semantics"]
+            .as_object_mut()
+            .ok_or_else(|| invalid("semantics"))?
+            .values_mut()
+        {
+            *value = serde_json::json!({"state":"UNKNOWN"});
+        }
+        let mut compact: ItemProfileRecord =
+            serde_json::from_value(compact).map_err(|_| invalid("compact typed update"))?;
+        compact.authoring.taxonomy = None;
+        let compact = serde_json::to_value(compact).map_err(|_| invalid("compact encoding"))?;
+        *records = vec![compact; 129];
+        let encoded = serde_json::to_vec(&too_many).map_err(|_| invalid("too many updates"))?;
+        assert!(
+            encoded.len() <= 200_000,
+            "this fixture must reach the record-count guard"
+        );
+        let refused = merge(Some(base), Some(pin(&encoded)));
+        assert!(matches!(
+            refused,
+            Err(ContentError::InvalidArtifact(
+                "Item updates discriminator, bounds or base pin"
+            ))
+        ));
         Ok(())
     }
 }

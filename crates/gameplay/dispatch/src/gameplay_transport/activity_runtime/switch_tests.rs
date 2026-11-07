@@ -37,6 +37,17 @@ pub(super) fn native_switch_with_pin() -> Result<
     ),
     String,
 > {
+    native_switch_with_source_snapshots().map(|(switch, pin, _)| (switch, pin))
+}
+
+fn native_switch_with_source_snapshots() -> Result<
+    (
+        ActivityConnectionSwitch,
+        crate::content::channel_content_pin::ChannelContentPin,
+        [crate::foundation::MovementPositionSnapshot; 2],
+    ),
+    String,
+> {
     let world = WorldId::decode(&id(1)).map_err(debug)?;
     let channel = ChannelId::decode(&id(2)).map_err(debug)?;
     let node = NodeId::decode(&id(4)).map_err(debug)?;
@@ -75,6 +86,25 @@ pub(super) fn native_switch_with_pin() -> Result<
     let source_actor = source_runtime
         .commit_fresh_session(source_reservation)
         .map_err(debug)?;
+    source_runtime
+        .initialize_first_entry_position(source_actor)
+        .map_err(debug)?;
+    let first = source_runtime
+        .borrow_movement_position()
+        .read(source_actor)
+        .map_err(debug)?;
+    let at = first.position();
+    let second = source_runtime
+        .stage_pinned_player_test_position(
+            source_actor,
+            source_session,
+            crate::foundation::MovementLocalPosition {
+                x: at.x.checked_add(1).ok_or("position overflow")?,
+                ..at
+            },
+        )
+        .map_err(debug)?;
+    assert!(second.revision() > first.revision());
     let destination_reservation = destination_runtime
         .reserve_fresh_session(destination_session)
         .map_err(debug)?;
@@ -143,6 +173,7 @@ pub(super) fn native_switch_with_pin() -> Result<
             payload,
         },
         pin,
+        [first, second],
     ))
 }
 
@@ -206,6 +237,139 @@ fn committed_destination_is_visible_before_barrier_without_resurrecting_old_cont
     assert!(
         registry.connection(recovered.game_session_id).is_none(),
         "a committed historical receipt cannot resurrect terminal control"
+    );
+    Ok(())
+}
+
+// These are registry-retention checks. Actual portal authority and pacing are
+// covered by the genuine framed/source-step PostgreSQL cases.
+#[test]
+fn source_portal_token_survives_command_advance_and_consumes_exact_snapshot_once()
+-> Result<(), String> {
+    let (switch, _, [first, second]) = native_switch_with_source_snapshots()?;
+    let registry = ActivityRuntimeRegistry::default();
+    let source = switch.source;
+    registry.remember(source).map_err(debug)?;
+    registry
+        .defer_source_portal_step(source, first)
+        .map_err(debug)?;
+    let mut advanced = source;
+    advanced.continuity.next_command_id += 1;
+    advanced.continuity.server_sequence += 1;
+    registry.remember(advanced).map_err(debug)?;
+    assert_eq!(
+        registry.source_portal_step(advanced).map_err(debug)?,
+        Some(first)
+    );
+    assert!(
+        registry.defer_source_portal_step(advanced, second).is_err(),
+        "a later snapshot cannot overwrite an unresolved source occurrence"
+    );
+    registry
+        .finish_source_portal_step(advanced, second)
+        .map_err(debug)?;
+    assert_eq!(
+        registry.source_portal_step(advanced).map_err(debug)?,
+        Some(first),
+        "stale completion cannot consume the captured snapshot"
+    );
+    registry
+        .finish_source_portal_step(advanced, first)
+        .map_err(debug)?;
+    assert_eq!(registry.source_portal_step(advanced).map_err(debug)?, None);
+    registry
+        .finish_source_portal_step(advanced, first)
+        .map_err(debug)?;
+    assert_eq!(registry.source_portal_step(advanced).map_err(debug)?, None);
+    registry
+        .defer_source_portal_step(advanced, second)
+        .map_err(debug)?;
+    registry.forget_terminal_connection(
+        advanced.game_session_id,
+        advanced.runtime_actor.ok_or("actor")?,
+    );
+    assert_eq!(registry.source_portal_step(advanced).map_err(debug)?, None);
+    Ok(())
+}
+
+#[test]
+fn source_portal_token_reconnect_discards_old_step_and_old_socket_cannot_clear_new_step()
+-> Result<(), String> {
+    let (switch, _, [first, second]) = native_switch_with_source_snapshots()?;
+    let registry = ActivityRuntimeRegistry::default();
+    let source = switch.source;
+    registry.remember(source).map_err(debug)?;
+    registry
+        .defer_source_portal_step(source, first)
+        .map_err(debug)?;
+    let mut recovered = source;
+    recovered.continuity.connection_generation = 2;
+    recovered
+        .item_fence
+        .as_mut()
+        .ok_or("fence")?
+        .connection_generation = ConnectionGeneration::new(2).map_err(debug)?;
+    recovered.controller.as_mut().ok_or("controller")?.transport =
+        AuthenticatedTransportRefV1::decode(&id(12)).map_err(debug)?;
+    registry.remember(recovered).map_err(debug)?;
+    assert_eq!(registry.source_portal_step(recovered).map_err(debug)?, None);
+    registry
+        .defer_source_portal_step(recovered, second)
+        .map_err(debug)?;
+    assert_eq!(registry.source_portal_step(source).map_err(debug)?, None);
+    registry
+        .finish_source_portal_step(source, second)
+        .map_err(debug)?;
+    assert!(registry.defer_source_portal_step(source, first).is_err());
+    assert_eq!(
+        registry.source_portal_step(recovered).map_err(debug)?,
+        Some(second),
+        "obsolete source callbacks cannot erase a current recovered occurrence"
+    );
+    Ok(())
+}
+
+#[test]
+fn source_portal_token_fence_or_selection_change_clears_capture_but_forged_transport_is_refused()
+-> Result<(), String> {
+    let (switch, _, [first, _]) = native_switch_with_source_snapshots()?;
+    let source = switch.source;
+    for selection_change in [false, true] {
+        let registry = ActivityRuntimeRegistry::default();
+        registry.remember(source).map_err(debug)?;
+        registry
+            .defer_source_portal_step(source, first)
+            .map_err(debug)?;
+        let mut changed = source;
+        if selection_change {
+            changed.continuity.selected_capabilities =
+                SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[6, 117])
+                    .ok_or("actual offered changed selection")?;
+        } else {
+            changed
+                .item_fence
+                .as_mut()
+                .ok_or("fence")?
+                .character_lease_generation += 1;
+        }
+        registry.remember(changed).map_err(debug)?;
+        assert_eq!(registry.source_portal_step(changed).map_err(debug)?, None);
+    }
+    let registry = ActivityRuntimeRegistry::default();
+    registry.remember(source).map_err(debug)?;
+    registry
+        .defer_source_portal_step(source, first)
+        .map_err(debug)?;
+    let mut foreign = source;
+    foreign.controller.as_mut().ok_or("controller")?.transport =
+        AuthenticatedTransportRefV1::decode(&id(13)).map_err(debug)?;
+    assert!(
+        registry.remember(foreign).is_err(),
+        "same-generation transport substitution is refused"
+    );
+    assert_eq!(
+        registry.source_portal_step(source).map_err(debug)?,
+        Some(first)
     );
     Ok(())
 }

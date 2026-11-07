@@ -40,6 +40,14 @@ def populate(root: Path, source: Path, outfit_source: Path):
         looks.update({row['source_id']: row['source_record_sha256'] for row in records['records']})
     path = root / authoring.AUTHORING
     document = json.loads(path.read_bytes())
+    original_rows = {family: {row['key']: row for row in document['document'][family]}
+                     for family in ('outfits', 'mounts')}
+    original_promotions = {}
+    for promotion in document['promotions']:
+        parts = promotion['path'].split('/')
+        if len(parts) == 4 and parts[1] in original_rows:
+            family_rows = document['document'][parts[1]]
+            original_promotions[(parts[1], family_rows[int(parts[2])]['key'], parts[3])] = promotion
     mounts = {row['key']: row for row in document['document']['mounts']}
     mappings = {row['grant_key']: row for row in document['document'].get('grant_mappings', [])}
     rules = json.loads((root / 'content/cosmetics/taming.json').read_bytes())
@@ -119,6 +127,24 @@ def populate(root: Path, source: Path, outfit_source: Path):
         if previous is not None and previous != mapping:
             raise ValueError('SRV7 NPC grant identity conflicts with admitted authoring')
         mappings[mapping['grant_key']] = mapping
+    # Add source qualification without replacing the admitted NX-5 identity or provenance.
+    merged_outfits = {row['key']: row for row in outfits}
+    for key, previous in original_rows['outfits'].items():
+        generated = merged_outfits.get(key)
+        if generated is None:
+            merged_outfits[key] = previous
+            continue
+        for field in ('female', 'male', 'addon_count', 'starter_female', 'starter_male',
+                      'starter_addons_female', 'starter_addons_male', 'premium'):
+            if generated[field] != previous[field]:
+                raise ValueError('SRV7 conflicts with admitted NX-5 outfit field: ' + key + '/' + field)
+        merged = dict(previous)
+        merged['unlock_sources'] = list(previous['unlock_sources'])
+        for citation in generated['unlock_sources']:
+            if citation not in merged['unlock_sources']:
+                merged['unlock_sources'].append(citation)
+        merged_outfits[key] = merged
+    outfits = list(merged_outfits.values())
     source_program_grants.admit(root,document,outfits,mappings,mounts)
     document['document']['outfits'] = sorted(outfits, key=lambda row: row['key'])
     document['document']['mounts'] = [mounts[key] for key in sorted(mounts)]
@@ -128,6 +154,10 @@ def populate(root: Path, source: Path, outfit_source: Path):
         for i, row in enumerate(document['document'][family]):
             for field, value in row.items():
                 pointer = f'/{family}/{i}/{field}'
+                previous = original_promotions.get((family, row['key'], field))
+                if previous is not None:
+                    promotions[pointer] = {**previous, 'path': pointer, 'value': value}
+                    continue
                 promotions[pointer] = {'path': pointer, 'value': value, 'state': 'PROMOTED',
                                        'decision': 'SRV7', 'source_kind': 'ACCEPTED_REFERENCE_EVIDENCE',
                                        'source': row['source']}

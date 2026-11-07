@@ -41,6 +41,9 @@ pub(super) type HighWater = (u64, GameSessionId, u64, u16);
 /// ```
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct DamageReceipts {
+    /// The accepted Magnolia first lethal is a retained hit, not a death.
+    /// At most one prevented ordinal exists for that exact actor generation.
+    pub(super) magnolia_prevented_ordinal: Option<u64>,
     pub(super) entries: Vec<OwnerCommitRecord>,
     pub(super) next_ordinal: u64,
     /// The owner clock (ms) of the turn that committed the lethal receipt, when that turn
@@ -75,6 +78,7 @@ impl DamageReceipts {
         fn lethal(&self) -> Option<&OwnerCommitRecord> {
             self.entries.iter().find(|record| {
                 record.result.applied
+                    && self.magnolia_prevented_ordinal != Some(record.ordinal)
                     && record.result.health_before > 0
                     && record.result.health_after == 0
             })
@@ -632,7 +636,9 @@ impl ChannelActorCarrier {
                 },
             ));
         }
-        if *health == 0 {
+        if *health == 0
+            && committed.magnolia != Some(super::summer_magnolia::MagnoliaLife::QueuedSecond)
+        {
             return Err(CarrierError::CreatureNotActionable);
         }
         if let Some(attacker) = attacker {
@@ -710,6 +716,7 @@ impl ChannelActorCarrier {
             committed,
             damage_contributors,
             companion,
+            spell_combat,
             ..
         } = &mut staged
         else {
@@ -741,9 +748,17 @@ impl ChannelActorCarrier {
         if let Some(evicted) = evict {
             committed.entries.remove(evicted);
         }
+        let first_magnolia_lethal = super::summer_magnolia::stage_lethal(
+            committed,
+            spell_combat,
+            companion.as_deref_mut(),
+            ordinal,
+            *health,
+            next,
+        )?;
         committed.entries.push(receipt);
         committed.next_ordinal = next_ordinal;
-        if next == 0 && *health > 0 {
+        if next == 0 && *health > 0 && !first_magnolia_lethal {
             committed.lethal_at_ms = now_ms;
         }
         *health = next;
@@ -755,7 +770,9 @@ impl ChannelActorCarrier {
                 .conditions
                 .remove_type(oteryn_gameplay_domain::domain::condition::ConditionType::Invisible);
         }
-        if next == 0 {
+        if next == 0
+            && committed.magnolia != Some(super::summer_magnolia::MagnoliaLife::QueuedSecond)
+        {
             committed.conditions.die();
         }
         // D132/D3-3: attribute this applied hit to its attacker only now, at the sole mutation
@@ -785,6 +802,7 @@ impl ChannelActorCarrier {
                 now_ms,
             );
         }
+        super::summer_magnolia::drain_slot(&mut staged)?;
         Ok((index, Some(staged), result))
     }
     /// D132/D3-3: read-only, non-mutating lookup of `actor`'s current

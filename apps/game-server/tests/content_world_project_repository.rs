@@ -18,17 +18,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         427,
-        "94998f520e7f52c2728025a78503c09c1904eaaf079a33bd9fdb37ceff86ff65",
+        "21d5855ab634734104fbb6431e54570002d075606d0ee8806e53865f6d35a54c",
     ),
     (
         "definitions/declarations.json",
-        27_613_166,
-        "4d1c37d248fe4d42c16541bf7339d541c81e3644a2103ac2f5e44f51c53ab00a",
+        27_613_127,
+        "1756c3b46d6430a9b52edbf90634daef9de7fd3ad5c0935a0ed6e3e1da67e759",
     ),
     (
         "definitions/reference.json",
         27_392_973,
-        "b914312df8833256f7b625f05ed36b6353c635a6be8a385cd21e20c71b6838d3",
+        "8562e9e8518ef6501506c91185bc4671ff93836909e9875273bd9808a2df3a54",
     ),
     (
         "editor/author.json",
@@ -38,7 +38,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1960,
-        "625cc45d43b26fbaac3ad3908a4adc7c310a1f1e250cee6a3c743315f8db4ba5",
+        "53b6bfce63cf33de59efead33ae2e3a8eb7c059916cc5c686bba3927a00ff653",
     ),
     (
         "presentations/bindings.json",
@@ -48,17 +48,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         411,
-        "7f71cc77d51e2bbd557b3d5c0c8909afb241c96644e6f259f0b33ddd37bc03a6",
+        "164c684f16fea90b7cf27b65590e825aaf9760835f0add245229056fa9a122e1",
     ),
     (
         "provenance/imports.json",
         6_775_089,
-        "5c4c0b83d59e410901c2eadcdbf007cbcf15586f01a09f6a81bf8ef2a56afc1b",
+        "dea6be9a16004b2b8fdde12f83b6cca4483a099357442c8c9de0cb94c60b5b12",
     ),
     (
         "provenance/sources.json",
         1_668_523,
-        "a31970bb84efa8d58b7ce1abaed507834744361058cd102cc6cf56418450a3cc",
+        "0306fce76f96c332dc989ac400d405c94f4684491ccb5a6b958a7e672e219676",
     ),
     (
         "worlds/world.json",
@@ -140,7 +140,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "3f5581ce4025ed14712171f6c69f46288c0462a5d8d42c6021a039834dcde1a0";
+const TREE_SHA256: &str = "04c0ed576c96e7f86c8bf79ed8e71edba22256e2c1932b93503fc1a92da9b160";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.
@@ -184,7 +184,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
-        max_import_records: 29,
+        max_import_records: 32,
         max_reimport_states: 404,
     }
 }
@@ -396,12 +396,55 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "e06-market-crystal-parity-20261031-r1"
     );
     // E06 adds the client market mint batch ahead of the Crystal parity batch.
-    assert_eq!(project.imports().len(), 35);
+    assert_eq!(project.imports().len(), 38);
+    // BEGIN SOURCE OBSERVATION CENSUS
+    let source_observations = [
+        (
+            "srv7-seasonal-cake-golem-r1",
+            "zimbadev/crystalserver",
+            "201189f871d23597b82caf88fd611454a2ddefb8",
+            "48471262a6d87ca938218890cc10f3839bd072dbf9f71301e63df155933595cf",
+        ),
+        (
+            "srv7-seasonal-messenger-shop-r1",
+            "Lavovskii/grimorio",
+            "acc9994e2ad8868696bc10ef08070108e2baba92",
+            "36eaf3275dd982ead0c27380b158e4a77bbbec69b00694d38b887bf2e53ec64c",
+        ),
+        (
+            "srv7-summer-doctor-marrow-r1",
+            "zimbadev/crystalserver",
+            "201189f871d23597b82caf88fd611454a2ddefb8",
+            "af1ff19264525f2b0726211c05f54ec4e244eee797d4fa919ed8dfd82a874135",
+        ),
+    ];
+    // END SOURCE OBSERVATION CENSUS
+    for (identity, repository, revision, artifact) in source_observations {
+        let matches: Vec<_> = project
+            .imports()
+            .iter()
+            .filter(|b| b.batch_id == identity)
+            .collect();
+        assert_eq!(matches.len(), 1, "unique additive source observation");
+        let batch = matches[0];
+        assert_eq!(batch.source_repository, repository);
+        assert_eq!(batch.source_revision, revision);
+        assert_eq!(batch.source_artifact_sha256, artifact);
+        assert!(
+            batch.candidates.is_empty(),
+            "observation cannot import candidates"
+        );
+        assert!(
+            batch.reimport_states.is_empty(),
+            "observation cannot alter reimport state"
+        );
+    }
     let legacy_imports: Vec<_> = project
         .imports()
         .iter()
         .filter(|b| {
-            !b.batch_id.starts_with("monster-full-mechanics-")
+            !source_observations.iter().any(|row| row.0 == b.batch_id)
+                && !b.batch_id.starts_with("monster-full-mechanics-")
                 && b.batch_id != "g4-item-forge289-br-r1"
                 && b.batch_id != "g4-item-fx-audio295-raw-evidence-r1"
                 && b.batch_id != "official-creature-balance-8918-8935-9024-9039"
@@ -1121,7 +1164,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert!(v2.placements.is_empty());
     assert!(v2.appearance_bindings.is_empty());
     assert!(v2.assets.is_empty());
-    assert_eq!(v2.sources.len(), 29);
+    assert_eq!(v2.sources.len(), 32);
     let source_for = |batch: &str| {
         v2.sources
             .iter()

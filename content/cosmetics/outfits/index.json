@@ -1,7 +1,7 @@
 {
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
   "kind": "static_content",
-  "notes": "Canonical catalogue: Citizen fallback plus 13 item-unlock outfits, 8 mounts and 49 explicit grant mappings (47 item and 2 quest base). Production V6 provisioning: content/spells.manifest.json; admission decision NX-5.",
+  "notes": "Canonical catalogue: 136 source-qualified outfits, 56 mounts and 210 explicit grant mappings. All 51 taming pairs, native item acquisition and reachable NPC grants use production V6 provisioning. Admission decisions NX-5 and SRV7; per-field sources retained in authoring.json.",
   "owner": "Outfit",
   "path": "content/cosmetics/outfits/",
   "population_state": "POPULATED",

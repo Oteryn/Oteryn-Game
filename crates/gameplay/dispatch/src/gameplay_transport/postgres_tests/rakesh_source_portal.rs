@@ -1,6 +1,6 @@
 //! W16 real source STEP regression; geometry qualification does not itself admit an encounter.
 use super::fixture::{debug, id, run};
-use super::{Dependencies, TestResult, prepare_current_session};
+use super::{Dependencies, TestResult};
 use crate::foundation::{ChannelContentPin, MovementLocalPosition};
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 #[path = "rakesh_source_portal/framed.rs"]
@@ -44,7 +44,8 @@ fn scenario_with_entry(expect_instance: bool, framed_entry: bool) -> TestResult 
         let h =
             super::fixture::Harness::create_with_admission_seed(admin, "srv7_rakesh", false, false)
                 .await?;
-        prepare_current_session(&h).await?;
+        let evidence = super::house_transfer::RecoverySource::start(&h).await?;
+        super::house_transfer::prepare_owned_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -154,6 +155,7 @@ fn scenario_with_entry(expect_instance: bool, framed_entry: bool) -> TestResult 
             native.spell_book().clone(),
         )?;
         let mut owner = deps.owner(&h, &authority);
+        owner.evidence = &evidence.evidence;
         owner.active_generation = Some(active);
         owner.movement_cells = room.movement_cells();
         if let Some(template) = source_template.as_ref() {
@@ -545,6 +547,38 @@ fn scenario_with_entry(expect_instance: bool, framed_entry: bool) -> TestResult 
             let rows:(i64,i64)=sqlx::query_as("SELECT(SELECT count(*)FROM game_activity_handoff_groups),(SELECT count(*)FROM game_boss_room_activities)")
                 .fetch_one(&h.pool).await?;
             assert_eq!(rows, (1, 1), "one actual existingowner handoff/room");
+            // Replay the actual retained movement occurrence, not a fabricated
+            // client CommandRef, after the native transfer committed.
+            let occurrence: String = sqlx::query_scalar(
+                "SELECT command_id::text FROM game_activity_runtime_entries WHERE initiating_game_session_id=encode($1,'hex')::uuid",
+            ).bind(admitted.game_session_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+            let replay = owner
+                .retry_native_activity(admitted, occurrence.parse()?, "oteryn:boss.rakesh_moonfang")
+                .await
+                .map_err(|_| "replay actual source STEP")?
+                .ok_or("retained actual source STEP")?;
+            let crate::gameplay_transport::native_activity::NativeActivityOutcome::Committed(
+                replay,
+            ) = replay
+            else {
+                return Err("actual committed source STEP replay refused".into());
+            };
+            assert_eq!(replay.connections.len(), 1);
+            assert_eq!(
+                replay.connections[0].1.game_session_id,
+                destination.game_session_id
+            );
+            owner
+                .publish_activity_commit(&replay)
+                .map_err(|_| "repeat exact committed source publication")?;
+            let after: (i64,i64,i64) = sqlx::query_as(
+                "SELECT (SELECT count(*) FROM game_activity_handoff_groups), (SELECT count(*) FROM game_boss_room_activities), (SELECT count(*) FROM game_item_mint_receipts WHERE death_instance_id=encode($1,'hex')::uuid)",
+            ).bind(id(88).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(
+                after,
+                (1, 1, 0),
+                "source STEP replay cannot duplicate rooms or mint phantom corpse/loot"
+            );
             if let Some(frames) = frames {
                 framed::export(&owner, destination, frames).await?;
                 drop(owner);

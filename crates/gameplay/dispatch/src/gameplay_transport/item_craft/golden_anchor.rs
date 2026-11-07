@@ -150,7 +150,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(Some(UseOutcome::rejected()));
         }
         let mut runtime = self.runtime.lock().await;
-        let mut states = self.states.spell_states.lock().await;
+        let Ok(mut states) = self.states.spell_states.try_lock() else {
+            return Ok(Some(UseOutcome::rejected()));
+        };
         let session = command.game_session_id;
         if runtime.binding().runtime_scope() != fence.runtime_scope
             || runtime.binding().scope_generation() != fence.scope_ownership_generation

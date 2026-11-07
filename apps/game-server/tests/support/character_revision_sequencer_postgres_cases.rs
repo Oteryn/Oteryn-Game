@@ -492,26 +492,6 @@ async fn publish_readiness(
 
 /// One Character (id 41) with a live session, lease, scope assignment and readiness, and, when
 /// `initialized`, progression at revision one (level 50, 1000 experience).
-async fn seed_character(
-    pool: &sqlx::PgPool,
-    root: &DurabilityRoot,
-    node: &NodeIncarnationProof,
-    initialized: bool,
-    seed_session: bool,
-    creation: CreationFixture,
-) -> TestResult {
-    seed_character_with_starter(
-        pool,
-        root,
-        node,
-        initialized,
-        seed_session,
-        creation,
-        "starter-1",
-    )
-    .await
-}
-
 async fn seed_character_with_starter(
     pool: &sqlx::PgPool,
     root: &DurabilityRoot,

@@ -53,13 +53,15 @@ async fn exercise(h: &Harness) -> TestResult {
         raid.active,
         "current-Tibia Pumpkin sources must have a real active scheduler caller"
     );
-    let (window, interval) = match raid.schedule {
+    let (window, interval, repeat) = match raid.schedule {
         CatalogueSchedule::Calendar {
             window: Some(w),
             interval_ms: Some(i),
-        } => (w.window(), i),
+            repeat,
+        } => (w.window(), i, repeat),
         _ => return Err("source Pumpkin calendar".into()),
     };
+    assert!(!repeat, "seasonal annual windows do not use the Flower startup cycle");
     assert_eq!(interval, 14_400_000);
     let mut points = std::collections::BTreeSet::new();
     for seed in 80u8..120 {
@@ -98,6 +100,7 @@ async fn exercise(h: &Harness) -> TestResult {
             calendar_window: Some(CalendarRaidScheduleCandidate {
                 window,
                 interval_ms: interval,
+                repeat,
             }),
         }],
     };
