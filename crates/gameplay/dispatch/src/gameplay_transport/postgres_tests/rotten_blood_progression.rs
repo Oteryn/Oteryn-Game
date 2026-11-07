@@ -92,7 +92,9 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
                 .map_err(debug)?;
             runtime.initialize_first_entry_position(deps.actor).map_err(debug)?;
         }
+        let premium = if qualify_outfit { Some(super::qengine_endgame_stories::current_premium(&h).await?) } else { None };
         let mut owner = deps.owner(&h, &authority);
+        owner.premium_coordinator = premium.as_ref();
         owner.active_generation = Some(active);
         owner.movement_cells=&cells;
         owner.quest_catalogue=Some(std::sync::Arc::new(

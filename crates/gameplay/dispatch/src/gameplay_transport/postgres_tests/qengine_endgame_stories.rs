@@ -58,7 +58,12 @@ pub(super) async fn accessories(
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
             .ok_or("capabilities")?;
+    assert!(
+        owner.premium_coordinator.is_some(),
+        "Current Premium authority fixture"
+    );
     owner.admit_premium(id(40), admitted.game_session_id);
+    owner.admit_quest_session(admitted).await;
     super::qengine_voucher_stories::mask(owner, admitted, &key, 0).await?;
     super::qengine_outfit_stories::earn_level(owner, admitted, authority, 250).await?;
     let native = owner
@@ -172,7 +177,7 @@ pub(super) async fn rift(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
-    authority: &ReconciledCharacterAuthority<'_, '_>,
+    _authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
     use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTransition};
     use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
@@ -184,6 +189,10 @@ pub(super) async fn rift(
             .iter()
             .find(|c| c.key == key)
             .ok_or_else(|| format!("missing Rift callback {key}"))?;
+        assert!(
+            callback.minimum_level.is_none(),
+            "chosen Rift minimum is zero"
+        );
         if stage == "base" {
             assert_eq!(
                 serde_json::to_value(callback)?["requires_completed_quests"],
@@ -229,8 +238,11 @@ pub(super) async fn rift(
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
             .ok_or("capabilities")?;
+    assert!(
+        owner.premium_coordinator.is_some(),
+        "Current Premium authority fixture"
+    );
     owner.admit_premium(id(40), admitted.game_session_id);
-    super::qengine_outfit_stories::earn_level(owner, admitted, authority, 250).await?;
     let [npc] = super::classic_quests::install(owner, admitted, ["oteryn:npc.cledwyn"]).await?;
     let result =
         super::qengine_rewards::wire_reward(owner, admitted, npc, stages[0], false).await?;
@@ -369,4 +381,27 @@ async fn achievement(h: &Harness, key: &str) -> TestResult {
     .await?;
     assert_eq!(count, 1, "source completion achievement {key}");
     Ok(())
+}
+
+pub(super) async fn current_premium(
+    h: &Harness,
+) -> TestResult<crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator> {
+    use crate::gameplay_transport::spell_premium_coordinator::{
+        SpellPremiumCoordinator, purchase_fixture,
+    };
+    let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
+    h.root
+        .latch_premium_activation(
+            &activation.activation_id,
+            activation.switch_over_us,
+            activation.switch_over_us + 60_000_000,
+        )
+        .await
+        .map_err(debug)?;
+    Ok(SpellPremiumCoordinator::new(
+        consumer,
+        Some(clock),
+        Some(activation),
+        Some(h.root.clone()),
+    ))
 }

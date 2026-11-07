@@ -2631,7 +2631,6 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cledwyn.lua:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431",
         "owner:chosen-Cledwyn-completed-Ferumbras-base-attestation:read-only-parent"
       ],
-      "minimum_level": 250,
       "requires_premium": true,
       "forbids_outfits": [
         "oteryn:outfit.rift_warrior"
@@ -2668,7 +2667,6 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cledwyn.lua:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
       ],
-      "minimum_level": 250,
       "requires_premium": true,
       "requires_outfits": [
         "oteryn:outfit.rift_warrior"
@@ -2708,7 +2706,6 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cledwyn.lua:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
       ],
-      "minimum_level": 250,
       "requires_premium": true,
       "requires_outfits": [
         "oteryn:outfit.rift_warrior"

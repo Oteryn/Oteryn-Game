@@ -2780,13 +2780,15 @@
       "implementation": "Seven source callbacks; reusable bounded read-only completed quest predicate using questpc7 writer pattern at 1f4789272; existing four event-item custody profiles reused. Focused check/authoring tests in progress."
     },
     "wip_checkpoint": {
-      "compiled_candidate": "Staged pre-correction candidate compiled test profile7m31s;3-crate all-feature check5m04 and strict clippy6m52 passed.",
+      "compiled_candidate": "Current corrections compiled test profile4m30s. Focused3-case PostgreSQL:1 passed/2 failed231.52s.",
+      "postgres_green_step": {
+        "Rift Warrior Outfits Quest": "165.587663057s; creation-level base gated by real parent completion, actual100+100NPC trades, replay, achievement, normal mask3 selection."
+      },
       "exact_red_points": [
-        "Revenant: native USE34075 expected Committed, got Rejected;206.104528028s.",
-        "Decaying Defender: native USE43899 command2 ended EOF;216.765236182s.",
-        "Rift: earned appearance catalogue absent after base attempt;221.349780578s."
+        "Revenant: both accessories committed; final global fact assertion4!=3 at203.830337789s. Accepted generic owner records canonical base+addons alongside the retained native base. Replace broad count with exact canonical set and unchanged native receipt assertions.",
+        "Decaying Defender: native USE43899 command2 ended EOF at231.517821279s. Trace precise carried-USE error while preserving all guards."
       ],
-      "pending_workspace_fixes": "Current Premium authority fixture and parent quest-session admission; Rift min0 correction. These corrections remain outside this compiled WIP snapshot and are compiling in green2."
+      "qualification": "Rift PG green; final3-crate check/clippy in progress before QUALIFIED. Other2 remain UNFINISHED; no final-state deferral."
     }
   },
   "restart_audit": {

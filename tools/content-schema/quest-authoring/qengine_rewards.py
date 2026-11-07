@@ -880,13 +880,13 @@ def build():
             path='data/scripts/actions/items/usable_outfit_items.lua'
             callbacks[-1]['sources'].append(f'crystal:{PIN}:{path}:26-31:sha256:{sha(inputs[path])}')
     add('l13-rift-base','rift_warrior_outfits_quest','cledwyn',['rift warrior outfit'],[],outfit=('rift_warrior',0))
-    callbacks[-1].update(minimum_level=250,requires_premium=True,forbids_outfits=['oteryn:outfit.rift_warrior'],
+    callbacks[-1].update(requires_premium=True,forbids_outfits=['oteryn:outfit.rift_warrior'],
         requires_completed_quests=['oteryn:quest.ferumbras_ascension_quest'])
     callbacks[-1]['sources'].append('owner:chosen-Cledwyn-completed-Ferumbras-base-attestation:read-only-parent')
     for bit,stage in [(1,'first'),(2,'second')]:
         add('l13-rift-'+stage,'rift_warrior_outfits_quest','cledwyn',[stage],[],take=[(22516,100)],outfit=('rift_warrior',bit),
             topic=3,achievement='oteryn:achievement/rift_warrior' if bit==2 else None)
-        callbacks[-1].update(minimum_level=250,requires_premium=True,requires_outfits=['oteryn:outfit.rift_warrior'],
+        callbacks[-1].update(requires_premium=True,requires_outfits=['oteryn:outfit.rift_warrior'],
             forbids_addons=[{'outfit':'oteryn:outfit.rift_warrior','addons':bit}])
         if bit==2:callbacks[-1]['requires_addons']=[{'outfit':'oteryn:outfit.rift_warrior','addons':1}]
     source_offer('cledwyn',['addon'],0,3,[])

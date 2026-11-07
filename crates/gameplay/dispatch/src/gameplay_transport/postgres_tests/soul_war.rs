@@ -408,7 +408,9 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
             x:33619,y:31400,floor:10,
         }).map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
+        let premium = if qualify_outfit { Some(super::qengine_endgame_stories::current_premium(&h).await?) } else { None };
         let mut owner = deps.owner(&h, &authority);
+        owner.premium_coordinator = premium.as_ref();
         owner.active_generation = Some(generation);
         owner.movement_cells = &cells;
         owner.quest_catalogue = Some(std::sync::Arc::new(

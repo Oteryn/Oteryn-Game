@@ -698,3 +698,15 @@ Revenant34075 Rejected instead ofCommitted206.1045s; Decay43899command2 EOF
 Min0/Premium/quest-session corrections remain unstaged and green2 is compiling;
 follow with that compiling/fixed candidate within15minutes. Final completion
 requires66/66 plus the added S06 andW15b scope qualified and pushed.
+
+Second compiling WIP checkpoint under15-minute rule: green2 compiled4m30 and
+ran3actualPGcases: Rift GREEN165.587663057s; Revenant203.830337789s now reaches
+both accessory commits but total facts4!=3; Decay231.517821279s stillEOF43899cmd2.
+Source of fourth Revenant row verified read-only in failed test DB: retained
+native base plus canonical/quest-grant/0,1,2. Accepted generic contract at
+character_appearance/quest_grants.rs:11-29 andSQL1003:17-23 explicitly includes
+base with addons. Strengthen test to exact3canonicalfacts plus unchanged original
+native receipt; do not weaken engine/SQL proof guards. Decay needs exact error
+trace next. Current final-check/clippy pipeline session60027, logs final-check
+andfinal-clippy. Reproduction session63933. Rift QUALIFIED only after required
+checks; countsstill39/27/0. Current code now includes min0/Premium corrections.

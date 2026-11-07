@@ -15,6 +15,7 @@ class QuestRewards(unittest.TestCase):
                 self.assertEqual(row['take'],[{'item':f'oteryn:item.tibia.i{items[index]}','count':1}])
                 self.assertEqual(row['outfit']['addons'],bits[index])
                 self.assertEqual(row['requires_outfits'],['oteryn:outfit.'+family])
+        for stage in ['base','first','second']:self.assertNotIn('minimum_level',rows['l13-rift-'+stage])
         base=rows['l13-rift-base']
         self.assertEqual(base['requires_completed_quests'],['oteryn:quest.ferumbras_ascension_quest'])
         for parents in [[base['quest']],['oteryn:quest.INVALID'],['oteryn:quest.parent']*2,[f'oteryn:quest.parent_{i}' for i in range(9)]]:
