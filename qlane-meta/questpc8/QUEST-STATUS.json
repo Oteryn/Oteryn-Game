@@ -1381,13 +1381,10 @@
   {
     "canonical": "oteryn:quest.tinder_box_quest_chyllfroest",
     "title": "Tinder Box Quest",
-    "status": "UNFINISHED",
-    "disposition": "authoring",
+    "status": "QUALIFIED",
+    "disposition": "qualified-current-lane",
     "qualified_elsewhere": [],
     "mechanism": "Premium summit exploration, native exact bone-pile ordinal, once-only world MINT",
-    "blocker": {
-      "missing_piece": "PG green40.243s; clean rebuild, generator check and exact-head review in progress"
-    },
     "round": "L7",
     "proof": "cloud-tinder-box-proof.json"
   },

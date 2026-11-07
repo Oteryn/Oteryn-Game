@@ -7,8 +7,8 @@ to ten minutes; document conservative choices in CONTRACT-NOTES.md. Shared
 engine features belong to this lane. Earlier publication bans are superseded.
 
 Scope: LANE-L7.json,23 entries. Triangle Tower, Waterfall and Vampire Shield are
-QUALIFIED elsewhere. Killing in the Name of and Braindeath are QUALIFIED here;
-18 remain. Historical non-L7 rows are not additional scope. Preserve exclusions
+QUALIFIED elsewhere. Killing in the Name of, Braindeath and Tinder Box are QUALIFIED here;
+17 remain. Historical non-L7 rows are not additional scope. Preserve exclusions
 Dawnport, W14/P23/X01-X06, atomic Father's Burden11-track write and exact charges.
 
 Pushed28a7715f7 after d90c1bfa2: Braindeath chosen exploration/native death/coffin
@@ -32,7 +32,8 @@ Actual summit bone pile32085,31025,z1 appearance4285 ordinal1, no UID; western
 approach32084,31025,z1. Premium exploration and once-only item20357. Real PG
 RED2.71s at missing callback. Focused PG GREEN40.243466689s passed with regenerated native provider.
 All15 generator regressions passed; changed-crate check/Clippy and pin refresh
-passed. Qualification awaits independent review and clean Cargo rebuild. No new source binaries/map edits.
+passed. Tinder Box QUALIFIED after independent review, clean and merged Cargo PG runs,
+merged check/strict Clippy and generator drift check. See cloud-tinder-box-proof.json. No new source binaries/map edits.
 
 Source /workspace/oteryn-env/env.sh for Cargo/PG; never print/read credentials.
 PostgreSQL18.6 local harness. Full regeneration already passed, world pin stayed
@@ -61,3 +62,12 @@ campaign-validation.json and cloud-braindeath-proof.json. Keep ordered
 programme/capture guards. Serial large Rust/Python builds avoid peak OOM.
 qengine2 newer059364f38 includes native payment support; explicit refspec fetch
 required before any new engine feature. Prior plain fetch left tracking stale.
+
+Tinder Box qualification: merged PG37.322011193s, clean PG36.814023825s,
+15 generator regressions104.667s, merged static checks and independent review
+passed. L7 now17 remaining. Last mechanism push c8cad5fdf01:13:06Z November7.
+Next Smithhammer: real PG RED2.69s; untracked test scaffold and unmounted
+backpack_outputs.rs capacity helper belong to next batch. Prepared API/contents/SQL
+patch scripts under /tmp/questpc8-flat-mint-*.py; apply and inspect before use.
+Do not claim the draft MINT mode qualified. Fresh explicit-ref qengine2 head
+ebdad836a and all six other lane heads checked: no multi-output batch exists.
