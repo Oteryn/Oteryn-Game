@@ -333,6 +333,30 @@ mod tests {
     use super::*;
 
     #[test]
+    fn wevents_callbacks_require_the_durable_quest_lane() -> Result<(), String> {
+        let mut value: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/shared-access-callbacks.json"
+        ))
+        .map_err(|e| e.to_string())?;
+        let callback = value["callbacks"]
+            .as_array()
+            .ok_or("callbacks")?
+            .iter()
+            .find(|c| c["key"] == "oteryn:quest-callback/waterfall-splash")
+            .ok_or("source callback")?
+            .clone();
+        value["callbacks"] = serde_json::json!([callback]);
+        value["callbacks"][0]["effects"]["world_event"] = serde_json::json!({
+            "event":"spring_into_life", "action":{"BeginObject":1}
+        });
+        assert!(
+            parse(&value.to_string()).is_err(),
+            "a storage-free callback bypasses the durable writer"
+        );
+        Ok(())
+    }
+
+    #[test]
     fn qengine_shared_access_rejects_ambiguous_or_unbounded_effects() -> Result<(), String> {
         let source: serde_json::Value = serde_json::from_str(include_str!(
             "../../../../../content/quests/shared-access-callbacks.json"

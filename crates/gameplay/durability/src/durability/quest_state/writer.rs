@@ -68,6 +68,40 @@ impl DurabilityRoot {
         .await
     }
 
+    /// World-selector rewards borrow the same MINT admission as NPC exchanges.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "one fenced selector transaction retains the native MINT admission"
+    )]
+    pub async fn commit_character_world_callback_reward(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
+        context: super::super::quest_world_callback::QuestWorldContext,
+        admission: QuestRewardAdmission<'_>,
+    ) -> Result<QuestTransitionOutcome> {
+        self.commit_quest_inner::<_, 0>(
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            Some((permit, context, Some(admission.native))),
+            None,
+            None,
+            None,
+            &grizzly::NoGrizzlyPremium,
+            None,
+            None,
+            Some(admission),
+        )
+        .await
+    }
+
     /// Bloodshade's fixed access purchase uses the existing fee owner and then
     /// this same Quest writer in one physical transaction.
     pub async fn commit_rotten_blood_access_purchase(
@@ -153,18 +187,10 @@ impl DurabilityRoot {
         payment: Option<super::rotten_blood_access::RottenBloodAccessPayment>,
         reward_admission: Option<QuestRewardAdmission<'_>>,
     ) -> Result<QuestTransitionOutcome> {
-        let reward_callback = oteryn_gameplay_quests::quest::reward_callbacks::load()
+        let mut reward_callback = oteryn_gameplay_quests::quest::reward_callbacks::load()
             .map_err(|_| CharacterProgressionError::InvalidInput)?
             .into_iter()
             .find(|c| c.key == request.transition_key);
-        if reward_callback.is_some() != reward_admission.is_some()
-            || (reward_callback.is_some() && !matches!(request.cause, QuestCause::Command(_)))
-        {
-            return Err(CharacterProgressionError::InvalidInput);
-        }
-        let reward_achievement =
-            super::super::reward_claim_mint::quest::prepare_achievement(reward_callback.as_ref())
-                .map_err(|_| CharacterProgressionError::InvalidInput)?;
         // The specialised owner evaluates these computed rules under the locked snapshot.
         // A generic NPC transition cannot bypass the action/cause validation.
         let grizzly_key = request
@@ -207,6 +233,22 @@ impl DurabilityRoot {
         } else {
             None
         };
+        if reward_callback.is_none() {
+            reward_callback = callback
+                .as_ref()
+                .and_then(oteryn_gameplay_quests::quest::reward_callbacks::world_reward);
+        }
+        if reward_callback.is_some() != reward_admission.is_some()
+            || (reward_callback.is_some()
+                && !matches!(request.cause, QuestCause::Command(_))
+                && (context.is_none()
+                    || !matches!(request.cause, QuestCause::Use(_) | QuestCause::Step(_))))
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        let reward_achievement =
+            super::super::reward_claim_mint::quest::prepare_achievement(reward_callback.as_ref())
+                .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let lionheart = super::hero_of_bounac::prepare(&request)
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let wayfarer = super::wrath_sleeping_dragon::prepare(&request)
@@ -651,6 +693,13 @@ impl DurabilityRoot {
                     if let (Some(callback), Some((permit, context, _))) = (&callback, &context)
                         && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, context).await?
                     { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
+                    let event_binding = reward_callback.as_ref().and_then(|c| c.world_event.as_deref())
+                        .or_else(|| callback.as_ref().and_then(|c| c.effects.world_event.as_deref()));
+                    if let Some(binding) = event_binding
+                        && !super::super::world_event::changes::timed::apply_binding(
+                            &mut tx, super::super::world_event::changes::timed::TimedActor { recovery: &recovery, node: &node, fence },
+                            binding, context.as_ref().map(|(_,ctx,_)|ctx.reset_epoch), state.try_get("level")?, &request).await?
+                    { tx.rollback().await?; return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     if let (Some(callback),Some(admission),Some(tuple))=(&reward_callback,*reward_admission,reward_tuple)
                         && !super::super::reward_claim_mint::quest::apply(&mut tx,tuple,&node,fence,&request,callback,admission,reward_achievement.as_ref()).await?
                     { tx.rollback().await?;return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }

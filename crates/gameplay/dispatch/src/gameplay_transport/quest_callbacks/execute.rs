@@ -228,11 +228,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 return UseDisposition::Rejected;
             };
-            let outcome = slot
-                .commit_world_callback(
-                    self.root,
-                    self.character,
-                    self.holder,
+            let outcome = self
+                .commit_bound_world_callback(
+                    slot,
                     fence,
                     QuestTransitionRequest {
                         transition_key: callback.key.clone(),
@@ -241,8 +239,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     std::sync::Arc::clone(catalogue),
                     permit,
                     context,
-                    self.active_generation
-                        .and_then(|generation| generation.native_gameplay()),
                 )
                 .await;
             let fresh = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));

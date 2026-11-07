@@ -174,3 +174,39 @@ The diff review checked enum/schema correspondence, receipt immutability,
 current-epoch/session guards, failed hourly draw consumption, payment policy
 bounds and old snapshot defaults. No newly enabled value source is published in
 this schema slice. No full nextest or full PostgreSQL suite was run.
+
+## Transactional event/reward composition slice
+
+Native selectors with item rewards now enter a dedicated RevisionSlot method
+that supplies the existing native generation and wheel-aware MINT capacity
+lookup. Fresh USE and interrupted USE reconciliation share this path. The Quest
+writer resolves the content-bound event action, checks the Character's locked
+level and the current World epoch, and reserves admission in the same
+transaction as custody inputs, MINT, storage and the Quest receipt. NPC exchanges
+use the same admission composition. Historical Quest receipts return before
+fresh effects. The new writer is registered with the existing structural gate.
+
+A storage-free event callback would skip the durable writer in dispatch. The
+production loader now rejects this shape. Its focused test failed before the
+fix (`/tmp/wevents-binding-red.log`) and passed afterwards
+(`/tmp/wevents-binding-green.log`, **1 test**). The unmodified structural gate,
+compiled directly from its std-only source, passed **3 tests in 2.81 s** and
+scanned production callers (`/tmp/wevents-binding-writer-tests.log`).
+
+Real PostgreSQL `wevents_postgres_timed_owner` passed **1 test in 12.58 s**.
+Its `WEVENTS PG EXECUTED` marker explicitly includes reward admission, rollback,
+zero participation and duplicate denial; duration **12.543221213 s**. The
+six-kind runtime-role persistence marker reports **9.487184 ms**. These new
+assertions drive production `interact`, reserve once, replay the same key,
+roll the reservation back, refuse zero participation and refuse a second key
+following a successful claim. Item delivery remains delegated to MINT; this
+owner test does not manufacture a reward Item or claim a newly qualified title.
+
+`cargo check --locked` passed for durability and dispatch; strict clippy
+`--lib -- -D warnings` passed for quests, durability, dispatch and game-server.
+Workspace `fmt --check`, explicit mounted-source rustfmt (without traversing
+unrelated child modules), and `git diff --check` passed. `pin-refresh` and
+`pin-check` passed with unchanged World digest
+`d5e52c7a0ef24bf6aa7b78926fd0806e43eb731ac69b10783f20c9f10dcd88e5`.
+The diff review traced fresh and historical callers, admission failure rollback,
+static source resolution, Character sequencing, and bounded input validation.

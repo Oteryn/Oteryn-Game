@@ -493,3 +493,61 @@ impl DurabilityRoot {
         })).await
     }
 }
+
+/// Called only by the fenced Quest writer, in the same transaction as custody
+/// debits, storage changes and MINT. Transport supplies none of this policy.
+pub(crate) async fn apply_binding(
+    tx: &mut Transaction<'_, Postgres>,
+    actor: TimedActor<'_>,
+    binding: &oteryn_gameplay_world_change::binding::Binding,
+    epoch: Option<u64>,
+    level: i64,
+    request: &crate::durability::quest_state::QuestTransitionRequest,
+) -> Result<bool, DurabilityError> {
+    use crate::durability::quest_state::QuestCause;
+    if !binding.valid() || !u32::try_from(level).is_ok_and(|level| binding.level_admitted(level)) {
+        return Ok(false);
+    }
+    let (command, namespace) = match request.cause {
+        QuestCause::Command(c) => (c, "command"),
+        QuestCause::Use(c) => (c, "use"),
+        QuestCause::Step(c) => (c, "step"),
+        _ => return Ok(false),
+    };
+    let world = actor.fence.runtime_scope.world_id();
+    let epoch = if let Some(epoch) = epoch {
+        epoch
+    } else {
+        let Some(value): Option<String> = sqlx::query_scalar("SELECT reset_epoch::text FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid")
+            .bind(world.as_bytes().as_slice()).fetch_optional(&mut **tx).await? else { return Ok(false); };
+        value
+            .parse()
+            .map_err(|_| DurabilityError::InvalidStoredState)?
+    };
+    let now_ms: i64 =
+        sqlx::query_scalar("SELECT (extract(epoch FROM statement_timestamp())*1000)::bigint")
+            .fetch_one(&mut **tx)
+            .await?;
+    let mut hash = Sha256::new();
+    hash.update(b"oteryn:wevents:quest:v1\0");
+    hash.update(namespace.as_bytes());
+    hash.update(command.game_session_id().as_bytes());
+    hash.update(command.command_id().get().to_be_bytes());
+    hash.update(request.transition_key.as_bytes());
+    let mut operation = [0; 16];
+    operation.copy_from_slice(&hash.finalize()[..16]);
+    Ok(interact(
+        tx,
+        actor,
+        TimedRequest {
+            world,
+            epoch,
+            kind: binding.event,
+            now_ms,
+            operation,
+            input: binding.action,
+        },
+    )
+    .await?
+        == Some(true))
+}

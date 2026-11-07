@@ -92,6 +92,14 @@ pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
     let pos = |p: Position| (-15..=0).contains(&p.floor);
     let lever = callback.trigger == Trigger::Use && callback.lever.is_some();
+    // Storage-free callbacks run only a Channel projection. Event admission
+    // and item grants must always enter the fenced Quest transaction.
+    if callback.storage.is_empty()
+        && (effects.world_event.is_some() || effects.item_reward.is_some())
+    {
+        return false;
+    }
+
     if effects.world_event.as_ref().is_some_and(|binding| {
         !binding.valid()
             || binding.cost().is_some_and(|(id, count)| {

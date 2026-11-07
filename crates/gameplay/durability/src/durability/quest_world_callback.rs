@@ -35,8 +35,11 @@ pub(super) async fn consume_reward_inputs(
     request: &super::quest_state::QuestTransitionRequest,
     callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
 ) -> Result<bool, DurabilityError> {
-    let super::quest_state::QuestCause::Command(command) = request.cause else {
-        return Ok(false);
+    let command = match request.cause {
+        super::quest_state::QuestCause::Command(command)
+        | super::quest_state::QuestCause::Use(command)
+        | super::quest_state::QuestCause::Step(command) => command,
+        _ => return Ok(false),
     };
     let keys: Vec<_> = callback
         .take

@@ -29,7 +29,7 @@ async fn exercise(admin: String) -> fixture::TestResult {
     h.cleanup().await?;
     result?;
     eprintln!(
-        "WEVENTS PG EXECUTED: timed owner, rollback, replay, calendar, jars, reset; duration={:?}",
+        "WEVENTS PG EXECUTED: timed owner, reward admission/rollback/zero participation/duplicate, replay, calendar, jars, reset; duration={:?}",
         started.elapsed()
     );
     Ok(())
@@ -259,6 +259,94 @@ async fn run(h: &fixture::Harness) -> fixture::TestResult {
         tx.commit().await?;
     }
     let mut tx = h.pool.begin().await?;
+    // A pending grant reservation shares its caller's transaction. No item
+    // grant is synthesized here: this tests admission, rollback and retry keys.
+    let claim = TimedRequest {
+        operation: [111; 16],
+        input: Input::Reward,
+        epoch: 0,
+        ..base
+    };
+    assert_eq!(
+        timed::interact(
+            &mut tx,
+            TimedActor {
+                recovery: &recovery,
+                node: &h.node,
+                fence: fixture::fence(1)?
+            },
+            claim
+        )
+        .await?,
+        Some(true)
+    );
+    assert_eq!(
+        timed::interact(
+            &mut tx,
+            TimedActor {
+                recovery: &recovery,
+                node: &h.node,
+                fence: fixture::fence(1)?
+            },
+            claim
+        )
+        .await?,
+        Some(true)
+    );
+    tx.rollback().await?;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("UPDATE game_world_timed_participants SET credited=0 WHERE world_id=encode($1,'hex')::uuid AND event_key='mummys_curse' AND cycle_id=0")
+        .bind(world.as_bytes().as_slice()).execute(&mut *tx).await?;
+    assert_eq!(
+        timed::interact(
+            &mut tx,
+            TimedActor {
+                recovery: &recovery,
+                node: &h.node,
+                fence: fixture::fence(1)?
+            },
+            claim
+        )
+        .await?,
+        None
+    );
+    tx.rollback().await?;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+        .execute(&mut *tx)
+        .await?;
+    assert_eq!(
+        timed::interact(
+            &mut tx,
+            TimedActor {
+                recovery: &recovery,
+                node: &h.node,
+                fence: fixture::fence(1)?
+            },
+            claim
+        )
+        .await?,
+        Some(true)
+    );
+    assert_eq!(
+        timed::interact(
+            &mut tx,
+            TimedActor {
+                recovery: &recovery,
+                node: &h.node,
+                fence: fixture::fence(1)?
+            },
+            TimedRequest {
+                operation: [112; 16],
+                ..claim
+            }
+        )
+        .await?,
+        None
+    );
     let jars = timed::poll(&mut tx, world, 0, EventKind::MummysCurse, now)
         .await?
         .ok_or("jars")?;

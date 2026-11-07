@@ -43,12 +43,19 @@ pub(crate) fn outfit_compatible(
     native: &NativeGameplayState,
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::OutfitReward,
 ) -> bool {
-    let Some(cosmetics) = native.cosmetics() else { return false; };
+    let Some(cosmetics) = native.cosmetics() else {
+        return false;
+    };
     (0..=2).all(|addon| {
-        if addon != 0 && reward.addons & (1 << (addon - 1)) == 0 { return true; }
+        if addon != 0 && reward.addons & (1 << (addon - 1)) == 0 {
+            return true;
+        }
         let key = format!("{}/quest-grant/{addon}", reward.outfit);
-        let target = if addon == 0 { EarnedCosmetic::Outfit(&reward.outfit) }
-            else { EarnedCosmetic::Addon(&reward.outfit, addon) };
+        let target = if addon == 0 {
+            EarnedCosmetic::Outfit(&reward.outfit)
+        } else {
+            EarnedCosmetic::Addon(&reward.outfit, addon)
+        };
         cosmetics.earned_unlock(&key, PROVENANCE, target) == UnlockFact::Compatible
     })
 }
@@ -74,13 +81,20 @@ pub(crate) async fn apply(
     admission: QuestRewardAdmission<'_>,
     achievement: Option<&AchievementGrantRequest>,
 ) -> std::result::Result<bool, DurabilityError> {
-    let super::super::quest_state::QuestCause::Command(command) = request.cause else {
-        return Ok(false);
+    let command = match request.cause {
+        super::super::quest_state::QuestCause::Command(command)
+        | super::super::quest_state::QuestCause::Use(command)
+        | super::super::quest_state::QuestCause::Step(command) => command,
+        _ => return Ok(false),
     };
     if admission.weights.generation_digest() != admission.native.source_digest() {
         return Ok(false);
     }
-    if callback.outfit.as_ref().is_some_and(|reward| !outfit_compatible(admission.native, reward)) {
+    if callback
+        .outfit
+        .as_ref()
+        .is_some_and(|reward| !outfit_compatible(admission.native, reward))
+    {
         return Ok(false);
     }
     if !super::super::quest_world_callback::consume_reward_inputs(tx, fence, request, callback)

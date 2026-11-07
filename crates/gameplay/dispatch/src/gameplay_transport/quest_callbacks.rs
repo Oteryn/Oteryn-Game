@@ -6,6 +6,7 @@ use super::{
 };
 mod effects;
 mod encounter;
+mod event_reward;
 mod execute;
 mod mummy;
 mod rewards;
@@ -176,10 +177,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return false;
             };
             let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
-            let disposition = match slot.commit_world_callback(self.root, self.character, self.holder, fence,
+            let disposition = match self.commit_bound_world_callback(&mut slot, fence,
                 QuestTransitionRequest { transition_key: pending.callback, cause: pending.cause },
                 std::sync::Arc::clone(catalogue), &permit, context,
-                self.active_generation.and_then(|generation| generation.native_gameplay()),
             ).await {
                 Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => UseDisposition::Committed,
                 Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => return false,
