@@ -1,3 +1,17 @@
+## Current Citizen story harness WIP
+Source bindings pushed104fa1f7a7e167663793a7b1626aa32fee702a20; source/compatibility
+units green. New male backpack-first and female hat-first real PG stories cover
+source introductions, full/partial costs, strict wait, normal mask3 and literal
+transport replay. Two actual PG runs failed in fixture setup: dynamic rule keys
+were mistaken for static transitions, then ordinary wire capabilities were not
+negotiated. Both corrected by reusing QENGINE source-pin and offered-capability
+patterns. Next rerun only questpc_citizen_ cases; no PG qualification credit yet.
+Lubo/Hanna native placement scope still needs final authoring and one batch
+regeneration. Primary candidates: Lubo32489,32119,z7; Hanna32408,32220,z7.
+Hanna's1003,1019,z7 is the example-map alternative and must not be selected.
+No quest promoted. Owner hard rule: push whatever compiles+formats every30min;
+do not hold this WIP for more verification. Source engine requests remain queued.
+
 ## Current compiling WIP: mainland Citizen
 Last green main consolidation pushed65c393c2477994cef2d973cb9ab03c75451d870e.
 Citizen source cost/clock/addon test RED missing callback, then GREEN; exact NPC

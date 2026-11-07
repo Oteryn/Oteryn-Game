@@ -10768,7 +10768,7 @@
     }
   ],
   "citizen_mainland_batch": {
-    "status": "WIP; source contract and activation compatibility unit tests green; own PG story not yet implemented or qualified",
+    "status": "WIP native story tests implemented; fixture source pin and normal capability negotiation corrected; focused PG rerun pending",
     "sources": [
       "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/lubo.lua",
       "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/hanna.lua"
@@ -10777,6 +10777,24 @@
     "pg_credit": false,
     "generated_batch_finalization": "pending; no global matrix, pin or placement regeneration during authoring",
     "owner_push_override": "2026-11-07: push compiling WIP after workspace all-targets check and fmt; full tests not required; every30minutes",
-    "compile_gate": "PASS cargo check --locked --workspace --all-targets in2m21s; cargo fmt --all -- --check PASS"
+    "compile_gate": "PASS workspace all-targets check and fmt after source-pin and normal capability negotiation fixture corrections; focused PG rerun pending",
+    "pg_red": [
+      {
+        "cases": 2,
+        "duration_seconds": [
+          45.218,
+          45.29
+        ],
+        "failure": "fixture looked up dynamic NPC rule keys instead of the source pin"
+      },
+      {
+        "cases": 2,
+        "duration_seconds": [
+          83.394,
+          84.611
+        ],
+        "failure": "framed fixture omitted ordinary offered NPC/appearance capabilities; corrected using QENGINE story setup"
+      }
+    ]
   }
 }
