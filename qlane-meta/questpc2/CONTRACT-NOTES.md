@@ -611,3 +611,25 @@ no fabricated Spite/Bakragore personal chest, and Primal's earned private census
 No tests are edited. This is a small repair of the existing physical owner, not
 a new generic encounter feature; all six fetched lane branches lack this source
 physical fallback and offer no replacement implementation to reuse.
+
+## Soul War source Item admission subset
+
+The seven source reward-boss loot tables contain44 distinct Item keys. Existing
+source importers can complete43 canonical admissions; potion49271 is separately
+frozen by the condition-potion SOURCE witness and remains canonicalfalse/native
+true. It needs the requested shared native-loot bridge. The scope produces31new
+canonical admissions, including green gem3038 (previous native custody alone did
+not make its canonical record admitted). Existing13 canonical records, including
+the protected potion, retain their full records. All44 qualified native physical
+records remain byte-identical to publishedc8b42aba3. Existing engine policy at
+native_goal_loot_items.py preserves admitted native physics: source values229,
+101 and1500 for33921/33952/34109 must not be replaced by documentary230/110/150.
+The new regression tests the actual fact owners and freezes both record sets; no
+existing test or source guard is relaxed. Source inputs remain the exact pinned
+Canary XML/client/Crystal identity bindings of the reused importer.
+
+Shared source-shard receipts rebind only after matching their prior digest to
+committedHEAD and proving selected shop/potion records unchanged. This avoids
+a stale historical rebind base while preserving both original equality checks.
+The source generation model was replayed:15cases/776creatures. Unchanged World
+geometry was reused; registered native/authoring stages completed.

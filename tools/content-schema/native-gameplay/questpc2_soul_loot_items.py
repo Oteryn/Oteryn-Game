@@ -5,7 +5,8 @@ BOSSES = frozenset('oteryn:creature.goshnar_s_' + name for name in (
     'malice', 'spite', 'greed', 'hatred', 'cruelty',
     'megalomania_blue', 'megalomania_green'))
 PROTECTED = frozenset({49271})
-BASE = 'c8b42aba3cd95ecb5d2997f95ec047bc76fcdcf0'
+# Rebind only against the committed pre-generation tree and unchanged selected rows.
+BASE = 'HEAD'
 
 
 def selected(root):

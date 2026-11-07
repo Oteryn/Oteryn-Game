@@ -1757,10 +1757,10 @@
     }
   },
   "current_batch": {
-    "id": "soul-loot-authoring-checkpoint-2026-11-07",
-    "state": "COMPILING_WIP_GENERATION_INCOMPLETE",
-    "record": "BATCH-soul-loot-authoring-checkpoint-2026-11-07.json",
-    "previous_pushed_head": "c8b42aba3cd95ecb5d2997f95ec047bc76fcdcf0"
+    "id": "soul-loot-admissions-2026-11-07",
+    "state": "GREEN_READY_TO_PUBLISH",
+    "record": "BATCH-soul-loot-admissions-2026-11-07.json",
+    "previous_pushed_head": "c65d715e9acd7f39a319d5929ff99b14a7df9cfa"
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
@@ -1786,7 +1786,8 @@
     "BATCH-main-3020-integration-2026-11-07.json",
     "BATCH-empty-source-corpse-capacity-2026-11-07.json",
     "BATCH-soul-entry-source-facts-2026-11-07.json",
-    "BATCH-soul-loot-authoring-checkpoint-2026-11-07.json"
+    "BATCH-soul-loot-authoring-checkpoint-2026-11-07.json",
+    "BATCH-soul-loot-admissions-2026-11-07.json"
   ],
   "next_batch": {
     "quests": [
@@ -1798,7 +1799,7 @@
     "external_dependencies_to_wait_for": [
       "QENGINE2 source boss template hooks/summons/reward closure request"
     ],
-    "task": "Prepare reusable source room/content closure using existing mechanisms; no big generic engine implementation. Reconcile coordinator ownership transfers before starting another packet quest.",
+    "task": "Merge origin/main1138720b1 after publishing this completed source-admission slice, compile+fmt and push. Continue source boss room/content work while qengine2 handles requested generic engine gaps.",
     "source_entry_packet": "tools/content-schema/quest-authoring/samples/questpc2-soul-entries.json"
   },
   "remote_publications_reused": {
@@ -2212,12 +2213,13 @@
     "push_policy": "one push after full dependent failure collection/grouped fixes and green full rerun; auto push reminder retracted"
   },
   "current_validation": {
-    "state": "COMPILING_WIP",
-    "workspace_all_targets": "PASS21.16s",
+    "state": "ALL_REQUIRED_CHECKS_GREEN_READY_TO_PUBLISH",
+    "source_test": "PASS0.481s; frozen canonical13/native physical44 and all43 selected admissions.",
+    "generation": "PASS registered generation plus real Prey15cases/776creatures.",
     "fmt": "PASS",
-    "focused_red": "Four source assertions: three physical-weight discrepancies plus frozen14-record fingerprint; no tests skipped/ignored.",
-    "generation": "Partial source/native generation; disk recovered; resume from Prey.",
-    "policy": "Owner hard rule: push whatever compiles; CI full suites."
+    "workspace_all_targets": "PASS exit0,2m36s",
+    "policy": "Latest owner hard compile+fmt push rule; no full local suites.",
+    "pins": "PASS refreshed with repository compiler"
   },
   "engine_requests": [
     {

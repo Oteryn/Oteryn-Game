@@ -1,3 +1,28 @@
+# GREEN21:05: Soul War Item admission slice complete; publish immediately
+
+Lastpushc65d715e9 WIP at20:45. Source subset nowcomplete:44sourceItems,
+43admissionScope,31newcanonical admissions; frozen13canonicalrecords andall44
+qualifiednativephysicalrecords exact. Protected49271 canonicalfalse/nativeTrue;
+no knownfactsretuned. Source regression GREEN0.481s with all invariants.
+Registerednative/authoringgeneration completed; realPreymodel15cases/776creatures.
+Finalcheckworkspace --all-targets PASS2m36s,fmtPASS,pinrefreshPASS viarepocompiler.
+Proof BATCH-soul-loot-admissions-2026-11-07.json. No extra/full localsuites perowner
+hard speedrule. Commitowneridentity+trailers,fetchownbranch,merge movement,pushnow.
+
+Nextimmediatelymerge freshlyfetchedorigin/main1138720b1 (#3026QWORLD). Lastmerged
+main1ae39c7fb. Finishconflictswithin15min orabortmergeperownerhardrule; neverforce,
+rebase/mainpush/PR. Re-runworkspacealltargets+fmt,pushmerge. Sourceguardskeep exact
+previousdigest+selectedrecord equality; adapterusescommittedHEAD torefresh shared
+source-shardreceipts (notstalehistoricalbase). Newtestusesfixedc8snapshots with
+factowner distinctions, noexistingtestsweakened. Nativeweights229/101/1500 kept.
+
+Actualownedstartedfive=3qualified(Annihilator/Desert/Elvenbane),2ongoing(Rotten/
+Soul),24ownednotstartedawaitcoordinatordedup,6excluded. Asyncownershipquestion
+pending. Bigenginesbelongqengine2; requests alreadyforwarded ascommentary/source
+records (sourceboss templatehooks,privatebossloot,alternateXML,nativeSOURCEloot
+bridge). Do not implementbiggenericfeatures; onlysmallNEWfilehelpers (~50lines).
+wpkgcollectsbranch,noPR. Continueafterpush/merge; neverclaimwholeSoul/Rotten done.
+
 # COMPILING WIP20:45: push immediately; source Item generation not complete
 
 Latest owner HARD rule: push compiling state; nofullsuite; checkworkspacealltargets
