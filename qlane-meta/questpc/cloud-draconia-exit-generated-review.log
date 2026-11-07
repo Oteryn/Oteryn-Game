@@ -1,0 +1,10 @@
+{
+  "result": "PASS",
+  "callbacks_added": [
+    "oteryn:quest-callback/draconia-exit-35011"
+  ],
+  "old_callbacks": "unchanged",
+  "native_profiles": "unchanged",
+  "quest_leaves": "28 provenance.sha256 only",
+  "approved_graphs_core_values_immutable_compiler_inputs": "unchanged"
+}

@@ -3539,7 +3539,7 @@
         ]
       },
       "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
-      "active_batch": "Escape35012 and Native Item3206 source slice PASS four fresh PG cases180.43s after all artifact regeneration; exact offering burn/reset, missing offering refusal, replay and absent/later flags. Next implement four-lever exit35011, shared resettable keys and party switches here; all four original rewards retained."
+      "active_batch": "Exit35011 correct pattern, four individual wrong states and live USE recovery passed six fresh PG scenes268.57s. Generic immutable object_conditions implementation is still in working tree pending check/clippy/pin completion; push code immediately afterward."
     },
     {
       "title": "Dragon Corpse Quest",
@@ -8981,5 +8981,20 @@
       "69ad45e6e9c3af9a30522bc8cc7acf48ebf08a3c"
     ],
     "evidence": "qlane-meta/questpc/cloud-source-integration-validation.json"
+  },
+  "concurrent_cloud_batch": {
+    "name": "Draconia exit six-scene PG proof; implementation checks running",
+    "validation": "qlane-meta/questpc/cloud-draconia-exit-validation.json",
+    "qualified_titles_added": 0,
+    "counts": {
+      "QUALIFIED": 59,
+      "UNFINISHED": 118,
+      "BLOCKED": 1
+    }
+  },
+  "latest_cloud_documentation_merge": {
+    "ref": "cc36e6070",
+    "source_code_changes": false,
+    "proof": "qlane-meta/questpc/cloud-draconia-exit-validation.json"
   }
 }

@@ -1,3 +1,30 @@
+## Documentation follow-up integrated — 2026-11-07
+
+Validated source merge3f889f617 retains both source-world and concurrent Draconia
+mechanics; its full checks are GREEN. Remotecc36e6070 adds six-scene Draconia exit
+proof and lane notes only. Its mentioned object_conditions implementation remains
+in the other writer's working tree and is not asserted present here. Preserve that
+implementation when it is pushed; continue Hidden Threats rather than duplicating it.
+Local counts remain60QUALIFIED/117UNFINISHED/1excluded, with seven qengine2 A..M
+entries explicitly skipped. No source changed in this documentation merge.
+
+---
+
+## Exit six-scene PG proof — implementation push pending strict pipeline
+Six real PostgreSQL scenes PASS268.57s: correct2772/2773/2772/2773 pattern; each
+individual wrong lever; wrong third lever corrected by actual USE, followed by
+successful re-entry. Replay and no Quest state/receipt writes checked. RED3.45s
+unknown object_conditions after DB creation. Schema1unit, Python8+19 tests,
+callback/23packet/40Native checks and4Quest-tree generated checks pass.
+
+IMPORTANT: this evidence-only commit preserves progress before the30-minute push
+interval. The new generic predicate/schema/runtime/source/test files remain in the
+working tree; they are not yet published. Cargo pipeline session38320 is running
+check/clippy/pin after PG success. Logs/tmp/questpc-draconia-exit-*.log; proof JSON
+cloud-draconia-exit-validation.json. Complete strict checks, archive final logs,
+update this state, commit all feature files and push immediately. Do not redo PG.
+Counts remain59QUALIFIED/118UNFINISHED/1excludedDawnportBLOCKED.
+
 ## Concurrent source integration — GREEN, 2026-11-07
 
 Source-world commit4b08ff5c4 is merged with remote69ad45e6e. Both implementations
