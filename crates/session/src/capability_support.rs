@@ -89,8 +89,6 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
     property_services::raid_schedule::CAPABILITY_RAID_SCHEDULE_V1,
     property_services::house_podium::CAPABILITY_HOUSE_PODIUM_V1,
-    property_services::house_wrap::CAPABILITY_HOUSE_FURNITURE_WRAP_V1,
-    property_services::house_rotation::CAPABILITY_HOUSE_FURNITURE_ROTATION_V1,
     oteryn_protocol_oteryn::daily_boost::CAPABILITY_DAILY_BOOST_V1,
     oteryn_protocol_oteryn::item_forge::CAPABILITY_ITEM_FORGE_V1,
     oteryn_protocol_oteryn::depot_search::CAPABILITY_DEPOT_SEARCH_V1,
@@ -105,6 +103,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::cyclopedia_character::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
     // CL26s4: personal boss reward commands.
     oteryn_protocol_oteryn::team_finder::CAPABILITY_TEAM_FINDER_LEADER_V1,
+    property_services::house_wrap::CAPABILITY_HOUSE_FURNITURE_WRAP_V1,
     boss_rewards::CAPABILITY_BOSS_REWARDS_V1,
     // CL26s2: native player typing command and CHAT delta support.
     oteryn_protocol_oteryn::browse_field::CAPABILITY_BROWSE_FIELD_V1,
@@ -133,6 +132,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     death_protection::CAPABILITY_DEATH_PROTECTION_V1,
     party::CAPABILITY_PARTY_MEMBER_EFFECTS_V1,
     mechanics_status::CAPABILITY_MECHANICS_STATUS_V1,
+    property_services::house_rotation::CAPABILITY_HOUSE_FURNITURE_ROTATION_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
