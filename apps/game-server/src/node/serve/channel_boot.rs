@@ -116,7 +116,10 @@ pub(super) async fn prepare_channel(
         .map_err(|_| BootError::ContentActivation("Crystal boss source capture"))?;
     let (activity_templates, activity_diagnostics) = if let Some(room) = combat_room.as_ref() {
         active_content.qualify_initial_activity_template(
-            &qualified_room, room, &config.readiness.content_revision, &candidates,
+            &qualified_room,
+            room,
+            &config.readiness.content_revision,
+            &candidates,
         )
     } else {
         (Vec::new(), Vec::new())

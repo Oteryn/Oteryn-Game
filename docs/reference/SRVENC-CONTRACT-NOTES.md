@@ -1012,3 +1012,12 @@ cutoff/three-wave catch-up baselines are running with normal guard-preserving
 fixtures. No numeric command/capability/migration allocations in this engine step.
 The production library compiled in the Game-server PG target; pending edge-case
 qualification and genuine Drome-exclusive profile/scaling data keep W17 WIP.
+
+## SRVENC final-check progress
+
+Whole-workspace cargo fmt --check PASS14.332s; architecture-check PASS3.775s;
+registry-fragments --check PASS. Strict Clippy identified only new test-shape
+issues in source helpers (identity conversions and large tuple annotation);
+those are corrected without suppressions. Final Clippy rerun follows the
+remaining genuine-custody auction fixture qualification. Source production
+Sugar/publication PostgreSQL GREEN remains151.794s/177.012s unchanged.

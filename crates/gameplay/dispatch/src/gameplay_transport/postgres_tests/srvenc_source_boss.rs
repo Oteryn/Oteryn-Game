@@ -25,6 +25,8 @@ use oteryn_protocol_oteryn::boss_encounter::{self as wire, BossActivityReply};
 use oteryn_world_bundle_compiler::{bundle, compile, source};
 
 const BOSS: &str = "oteryn:boss.sugar_daddy";
+type PublishedRoom = (Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, String, String, i64);
+
 const CREATURE: &str = "oteryn:creature.sugar_daddy";
 const LEVER: MovementLocalPosition = MovementLocalPosition {
     x: 33339,
@@ -145,7 +147,7 @@ pub(super) fn source_bundle(
             door,
         })
     })
-    .map_err(|error| debug(error).into())
+    .map_err(debug)
 }
 
 #[test]
@@ -338,7 +340,7 @@ fn scenario() -> TestResult {
         catalogue
             .publish_qualified_boss_rooms(&h.node, std::slice::from_ref(&template))
             .await?;
-        let published:(Vec<u8>,Vec<u8>,Vec<u8>,Vec<u8>,String,String,i64) = sqlx::query_as(
+        let published: PublishedRoom = sqlx::query_as(
             "SELECT origin_frame_digest,origin_map_digest,server_artifact_digest,activation_frame_digest,content_revision,template_revision,count(*) OVER () FROM game_boss_room_publications WHERE world_id=encode($1,'hex')::uuid AND boss_key=$2",
         ).bind(world_id.as_bytes().as_slice()).bind(BOSS).fetch_one(&h.pool).await?;
         assert_eq!(

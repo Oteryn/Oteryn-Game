@@ -49,7 +49,7 @@ fn templates(
         .map(|revision| {
             controller
                 .qualify_activity_template(parent, &room, revision, &candidate)
-                .map_err(|error| debug(error).into())
+                .map_err(debug)
         })
         .collect()
 }
