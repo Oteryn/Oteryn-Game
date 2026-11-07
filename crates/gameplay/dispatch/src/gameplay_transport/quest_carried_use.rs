@@ -55,6 +55,9 @@ async fn clear(
     command: UseCommand,
     disposition: UseDisposition,
 ) {
+    if disposition == UseDisposition::Committed {
+        admission.states.loop_ground.invalidate();
+    }
     let previous = admission
         .states
         .quest_callbacks
@@ -536,21 +539,7 @@ async fn commit(
         }
         gate.in_flight_since_ms = Some(admission.owner_ms());
     }
-    let result = slot
-        .commit_world_callback(
-            admission.root,
-            admission.character,
-            admission.holder,
-            pending.fence,
-            QuestTransitionRequest {
-                transition_key: pending.callback.clone(),
-                cause: QuestCause::Use(pending.command),
-            },
-            std::sync::Arc::clone(catalogue),
-            &permit,
-            pending.context.clone(),
-        )
-        .await;
+    let result = commit_pending(admission, &mut slot, &permit, catalogue, &pending).await;
     drop(states);
     drop(runtime);
     drop(slot);
@@ -632,21 +621,7 @@ pub(in crate::gameplay_transport) async fn reconcile(
     let Some(permit) = admission.spell_lane_permit().await else {
         return false;
     };
-    let outcome = slot
-        .commit_world_callback(
-            admission.root,
-            admission.character,
-            admission.holder,
-            pending.fence,
-            QuestTransitionRequest {
-                transition_key: pending.callback.clone(),
-                cause: QuestCause::Use(pending.command),
-            },
-            std::sync::Arc::clone(catalogue),
-            &permit,
-            pending.context.clone(),
-        )
-        .await;
+    let outcome = commit_pending(admission, &mut slot, &permit, catalogue, &pending).await;
     drop(slot);
     let disposition = match outcome {
         Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => {
@@ -677,4 +652,64 @@ pub(in crate::gameplay_transport) async fn reconcile(
     )
     .await;
     true
+}
+
+/// Pending native USE and cold reconciliation select the same atomic value writer.
+async fn commit_pending(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    slot: &mut crate::durability::character_revision_sequencer::RevisionSlot,
+    permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+    catalogue: &std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>,
+    pending: &Pending,
+) -> Result<
+    QuestTransitionOutcome,
+    crate::durability::character_progression::CharacterProgressionError,
+> {
+    let request = QuestTransitionRequest {
+        transition_key: pending.callback.clone(),
+        cause: QuestCause::Use(pending.command),
+    };
+    if super::super::quest_callbacks::callbacks()
+        .iter()
+        .find(|callback| callback.key == pending.callback)
+        .is_some_and(|callback| callback.effects.item_reward.is_some())
+    {
+        let native = admission
+            .active_generation
+            .and_then(ActiveGeneration::native_gameplay)
+            .ok_or(
+                crate::durability::character_progression::CharacterProgressionError::InvalidInput,
+            )?;
+        let weights = crate::gameplay_transport::item_ref_admission::NativeItemWeights(native)
+            .with_wheel(admission.premium_coordinator);
+        slot.commit_world_reward(
+            admission.root,
+            admission.character,
+            admission.holder,
+            pending.fence,
+            request,
+            std::sync::Arc::clone(catalogue),
+            permit,
+            pending.context.clone(),
+            crate::durability::reward_claim_mint::QuestRewardAdmission {
+                native,
+                weights: &weights,
+                fee_payment: None,
+                carried_use: None,
+            },
+        )
+        .await
+    } else {
+        slot.commit_world_callback(
+            admission.root,
+            admission.character,
+            admission.holder,
+            pending.fence,
+            request,
+            std::sync::Arc::clone(catalogue),
+            permit,
+            pending.context.clone(),
+        )
+        .await
+    }
 }

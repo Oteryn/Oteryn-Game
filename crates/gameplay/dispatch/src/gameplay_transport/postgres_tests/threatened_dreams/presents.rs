@@ -101,6 +101,10 @@ fn scenario() -> TestResult {
         let h =
             Harness::create_with_admission_seed(admin.clone(), "threatened_presents", false, false)
                 .await?;
+        let version: String = sqlx::query_scalar("SHOW server_version")
+            .fetch_one(&h.pool)
+            .await?;
+        eprintln!("THREATENED_PRESENTS POSTGRES_CASE_STARTED server_version={version}");
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -265,6 +269,13 @@ fn scenario() -> TestResult {
             let target = target_for(at)?;
             let command = 34100 + u64::try_from(i)? * 10;
             let before = quantity(&h, PRESENT).await?;
+            if i == 0 {
+                owner
+                    .states
+                    .quest_callbacks
+                    .interrupt_after_commit
+                    .store(true, std::sync::atomic::Ordering::Release);
+            }
             let result = use_tool(
                 &mut owner,
                 &admitted,
@@ -273,6 +284,25 @@ fn scenario() -> TestResult {
                 command,
             )
             .await?;
+            let result = if i == 0 {
+                assert_eq!(
+                    result,
+                    UseDisposition::StaleState,
+                    "only the acknowledgement is lost"
+                );
+                assert_eq!(quantity(&h, PRESENT).await?, before - 1);
+                assert_eq!(quantity(&h, TOOTH).await?, 1);
+                use_tool(
+                    &mut owner,
+                    &admitted,
+                    ToolSource::Handle(source),
+                    target.clone(),
+                    command,
+                )
+                .await?
+            } else {
+                result
+            };
             if result == UseDisposition::Committed
                 && quantity(&h, PRESENT).await? == before - 1
                 && quantity(&h, TOOTH).await? == i64::try_from(i + 1)?

@@ -213,7 +213,17 @@ fn valid_carried(callback: &Callback) -> bool {
         && callback.native_rule.is_none()
         && callback.experience.is_none()
         && callback.monk_reward.is_none()
-        && callback.effects.is_empty()
+        && callback.effects.temporary_transform.is_none()
+        && (callback.effects.item_reward.is_none()
+            || (callback.trigger == Trigger::UseCarriedOnTarget
+                && callback
+                    .item_on_target
+                    .as_ref()
+                    .is_some_and(|item| item.replacement.is_none())
+                && callback
+                    .storage
+                    .iter()
+                    .any(|storage| !storage.preserve && storage.increment.is_none())))
         && !callback.return_on_failure
         && !callback.storage.is_empty()
         && callback.item_on_target.as_ref().is_some_and(|item| {
@@ -277,7 +287,11 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     delta == 0
                         || !(-1_000_000..=1_000_000).contains(&delta)
                         || storage.preserve
-                        || callback.carried_use.is_some()
+                        || (callback.carried_use.is_some()
+                            && !callback
+                                .storage
+                                .iter()
+                                .any(|bound| !bound.preserve && bound.increment.is_none()))
                         || callback.native_rule.is_some()
                         || storage.minimum.checked_add(delta).is_none()
                         || storage.maximum.checked_add(delta).is_none()
@@ -301,15 +315,15 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 .is_some_and(|level| level == 0 || callback.storage.is_empty())
             || callback.effects.item_reward.as_ref().is_some_and(|reward| {
                 !super::reward_callbacks::valid_item_reward(reward)
-                    || callback.trigger != Trigger::Use
+                    || !matches!(callback.trigger, Trigger::Use | Trigger::UseCarriedOnTarget)
                     || callback.storage.is_empty()
                     || callback.reversible
                     || callback.lever.is_some()
                     || !callback.passages.is_empty()
                     || callback.teleport.is_some()
                     || !callback.offerings.is_empty()
-                    || callback.item_on_target.is_some()
-                    || callback.carried_use.is_some()
+                    || (callback.trigger == Trigger::Use && callback.item_on_target.is_some())
+                    || (callback.trigger == Trigger::Use && callback.carried_use.is_some())
                     || callback.native_rule.is_some()
                     || callback.monk_reward.is_some()
                     || callback.experience.is_some()
@@ -425,6 +439,10 @@ fn extend_callbacks(
                 if let Some(level) = callback.minimum_level {
                     digest.update(b"\0quest-carried-minimum-level-v1\0");
                     digest.update(level.to_be_bytes());
+                }
+                if let Some(reward) = &callback.effects.item_reward {
+                    digest.update(b"\0quest-carried-target-item-reward-v1\0");
+                    digest.update(serde_json::to_vec(reward).map_err(|error| error.to_string())?);
                 }
                 Ok::<[u8; 32], String>(digest.finalize().into())
             })
@@ -637,6 +655,47 @@ mod tests {
             parse(&document(&empty_selector)).is_err(),
             "appearance-only USE needs a positive source item"
         );
+        Ok(())
+    }
+
+    #[test]
+    fn carried_target_rewards_bind_outputs_and_require_a_bound_once_write() -> Result<(), String> {
+        let callback = load()?
+            .into_iter()
+            .find(|c| c.trigger == Trigger::UseCarriedOnTarget && c.effects.item_reward.is_some())
+            .ok_or("carried target reward")?;
+        let document = |c: &Callback| serde_json::json!({"schema":1,"callbacks":[c]}).to_string();
+        assert!(parse(&document(&callback)).is_ok());
+        let catalogue =
+            || QuestStateCatalogue::new("test", vec![], vec![]).map_err(|e| format!("{e:?}"));
+        let original = extend_callbacks(catalogue()?, std::slice::from_ref(&callback))?;
+        let mut changed = callback.clone();
+        changed.effects.item_reward.as_mut().ok_or("reward")?.count = 2;
+        let changed_catalogue = extend_callbacks(catalogue()?, std::slice::from_ref(&changed))?;
+        assert_ne!(
+            original.transition(&callback.key),
+            changed_catalogue.transition(&callback.key),
+            "a reward change must change the carried callback binding"
+        );
+        for mode in 0..5 {
+            let mut bad = callback.clone();
+            match mode {
+                0 => bad
+                    .storage
+                    .retain(|storage| storage.preserve || storage.increment.is_some()),
+                1 => {
+                    bad.item_on_target.as_mut().ok_or("input")?.replacement =
+                        Some("oteryn:item.tibia.i25303".into())
+                }
+                2 => bad.carried_use = None,
+                3 => bad.effects.item_reward.as_mut().ok_or("reward")?.count = 0,
+                _ => bad.item_on_target.as_mut().ok_or("input")?.count = 2,
+            }
+            assert!(
+                parse(&document(&bad)).is_err(),
+                "unsafe carried reward mode{mode}"
+            );
+        }
         Ok(())
     }
 

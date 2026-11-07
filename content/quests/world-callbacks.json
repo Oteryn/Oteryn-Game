@@ -15530,6 +15530,252 @@
       ]
     },
     {
+      "key": "oteryn:quest-transition/questpc3/threatened-present/carlin",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "use_carried_on_target",
+      "selector": {
+        "position": {
+          "x": 32328,
+          "y": 31794,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission04/tooth_fairy",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission04/bed_carlin",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission04/presents_placed",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 0,
+          "preserve": false,
+          "increment": 1
+        }
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i25302",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i25303",
+          "count": 1
+        }
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You carefully place a present on the bed and grab a milk tooth from under the pillow.",
+      "carried_use": {
+        "actor_region": {
+          "minimum": {
+            "x": 0,
+            "y": 0,
+            "floor": -15
+          },
+          "maximum": {
+            "x": 65535,
+            "y": 65535,
+            "floor": 0
+          }
+        },
+        "time_window": {
+          "from_minute": 0,
+          "to_minute": 1440
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/threatened_dreams_quest/action_present.lua canonical quest-state declaration",
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/scripts/quests/threatened_dreams_quest/action_present.lua:3-30 git-blob=c4f45316f050502d1ffe4b8a97b817fdcccf62fd sha256=f2360e2a53c2697cf4b90a83f2d3e5971b456af1e57945335625c71276050186"
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/threatened-present/thais",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "use_carried_on_target",
+      "selector": {
+        "position": {
+          "x": 32391,
+          "y": 32220,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission04/tooth_fairy",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission04/bed_thais",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission04/presents_placed",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 0,
+          "preserve": false,
+          "increment": 1
+        }
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i25302",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i25303",
+          "count": 1
+        }
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You carefully place a present on the bed and grab a milk tooth from under the pillow.",
+      "carried_use": {
+        "actor_region": {
+          "minimum": {
+            "x": 0,
+            "y": 0,
+            "floor": -15
+          },
+          "maximum": {
+            "x": 65535,
+            "y": 65535,
+            "floor": 0
+          }
+        },
+        "time_window": {
+          "from_minute": 0,
+          "to_minute": 1440
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/threatened_dreams_quest/action_present.lua canonical quest-state declaration",
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/scripts/quests/threatened_dreams_quest/action_present.lua:3-30 git-blob=c4f45316f050502d1ffe4b8a97b817fdcccf62fd sha256=f2360e2a53c2697cf4b90a83f2d3e5971b456af1e57945335625c71276050186"
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/threatened-present/venore",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "use_carried_on_target",
+      "selector": {
+        "position": {
+          "x": 33001,
+          "y": 32060,
+          "floor": -5
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission04/tooth_fairy",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission04/bed_venore",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission04/presents_placed",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 0,
+          "preserve": false,
+          "increment": 1
+        }
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i25302",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i25303",
+          "count": 1
+        }
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You carefully place a present on the bed and grab a milk tooth from under the pillow.",
+      "carried_use": {
+        "actor_region": {
+          "minimum": {
+            "x": 0,
+            "y": 0,
+            "floor": -15
+          },
+          "maximum": {
+            "x": 65535,
+            "y": 65535,
+            "floor": 0
+          }
+        },
+        "time_window": {
+          "from_minute": 0,
+          "to_minute": 1440
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/threatened_dreams_quest/action_present.lua canonical quest-state declaration",
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/scripts/quests/threatened_dreams_quest/action_present.lua:3-30 git-blob=c4f45316f050502d1ffe4b8a97b817fdcccf62fd sha256=f2360e2a53c2697cf4b90a83f2d3e5971b456af1e57945335625c71276050186"
+      ]
+    },
+    {
       "key": "oteryn:quest-transition/questpc3/threatened-rake/stone1",
       "quest": "oteryn:quest.threatened_dreams_quest",
       "trigger": "use_carried_on_target",

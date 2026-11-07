@@ -4652,7 +4652,7 @@
     },
     "current_batch": {
       "batch": "threatened_presents_16",
-      "phase": "RED: real PostgreSQL native three-bed test reached zero callbacks; implement selected BURN + world MINT composition next",
+      "phase": "Compiling WIP: selected-target BURN/MINT composition authored; PG remains RED0/3 at cached initial counter admission; generic initial-value correction in working tree",
       "entries": [
         "present delivery Thais32391/32220/z6",
         "present delivery Venore33001/32060/z5",
@@ -4673,6 +4673,23 @@
         "sha256": "4629f50111d71c803023bbddf4f5fec3a20350e48bb9ef50ce49d1f7650e0a8d",
         "result": "completed0 receipts0 presents3 teeth0 counter0; native owner and PG reached",
         "compile": "cargo test compiled normal profile4m53; fmt PASS"
+      },
+      "latest_pg": {
+        "duration_ms": 132612,
+        "postgres": "18.6",
+        "result": "RED completed0 receipts0 presents3 teeth0 counter0",
+        "log": "/tmp/questpc3-presents-green.log",
+        "sha256": "90ecf6dd3726c56f90f9f40a9d9248baafc410108ee0345879026ad1145f4f57"
+      },
+      "latest_checks": {
+        "check": "3 crates PASS40.52s",
+        "clippy": "3 crates all-features lib -Dwarnings PASS; elapsed8m59 includes build-lock wait",
+        "domain": "10 world callback tests PASS2.56s",
+        "native": "41-file drift check PASS",
+        "fmt": "PASS; strengthened test manually rustfmt checked",
+        "duplicates": "staged migration tree PASS",
+        "pins": "repo pin-refresh running",
+        "pg": "last RED132612ms; strengthened exact-ack recovery test compiling; initial-value correction awaiting rebuild"
       }
     },
     "diagnosis": {
@@ -10093,9 +10110,10 @@
       "1224_quest_reward_backpack_outputs.sql",
       "1225_quest_world_reward_participants.sql",
       "1226_quest_carried_exchange_inputs.sql",
-      "1227_quest_earned_repeat_occurrences.sql"
+      "1227_quest_earned_repeat_occurrences.sql",
+      "1228_quest_carried_world_rewards.sql"
     ],
-    "status": "QUALIFIED: lane1220\u20131227, canonical shared files unchanged; focused PostgreSQL18.6 six-entry journey PASS72.115s",
+    "status": "1220\u20131227 QUALIFIED; new1228 composed carried-world reward proof compiled, full PG qualification pending",
     "red_point": "Registry and treasure slice complete; whole four-quest scope remains active.",
     "post_rename_postgresql": {
       "marker": "REWARD-CLAIM-MINT-PG server_version_num=180006; POSTGRES_CASE_COMPLETED questl2-peer-outputs",

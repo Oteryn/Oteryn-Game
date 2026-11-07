@@ -238,8 +238,12 @@ pub(crate) async fn give_world(
     let (super::super::quest_state::QuestCause::Use(command), Some(reward)) = (request.cause, callback.effects.item_reward.as_ref()) else { return Ok(false); };
     if admission.weights.generation_digest() != admission.native.source_digest() { return Ok(false); }
     let Some(transaction) = mint(tx,tuple,node,fence,command,&callback.key,callback.repeatable_reward,reward,admission).await? else { return Ok(false); };
+    let take = if callback.trigger == oteryn_gameplay_quests::quest::world_callbacks::Trigger::UseCarriedOnTarget {
+        let Some(input) = callback.item_on_target.as_ref().filter(|input| input.replacement.is_none()) else { return Ok(false); };
+        serde_json::json!([{"item":input.item,"count":input.count}])
+    } else { serde_json::json!([]) };
     let plan = serde_json::json!({"key":callback.key,"quest":callback.quest,
-        "storage":callback.storage,"take":[],"present":[],"give":reward,
+        "storage":callback.storage,"take":take,"present":[],"give":reward,
         "outfit":null,"world_callback":callback,"repeatable":callback.repeatable_reward});
     sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,encode($6,'hex')::uuid,ARRAY[]::text[])")
         .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice())
