@@ -3052,6 +3052,28 @@
         "clippy_duration": "4m21s",
         "pin_check": "/tmp/l2-alliance-final-pin-check.log"
       }
+    },
+    "conditional_shop_progress": {
+      "status": "WIP",
+      "mechanism": "Generic conditional NPC catalogue offers with authoritative trade-time track predicates",
+      "domain_log": "/tmp/l2-quest-shop-domain.log",
+      "remaining": "Tomes source offers and full native PostgreSQL journey still RED at missing bindings",
+      "compile": {
+        "status": "PASS",
+        "duration": "2m36s",
+        "log": "/tmp/l2-quest-shop-compile2.log"
+      }
+    },
+    "experience_repeat_progress": {
+      "status": "WIP",
+      "migration": 1218,
+      "domain_log": "/tmp/l2-xp-repeat-domain.log",
+      "remaining": "Native post-twelfth-tome XP exchange and replay proof",
+      "schema_probe": {
+        "postgres_version": "18.6",
+        "duration_seconds": 2.947346,
+        "log": "/tmp/l2-xp-repeat-schema-pg.log"
+      }
     }
   }
 }

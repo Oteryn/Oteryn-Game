@@ -18,6 +18,8 @@ struct Offer {
     npc: String,
     keywords: Vec<String>,
     topic: u16,
+    #[serde(default)]
+    any_topic: bool,
     next_topic: u16,
     storage: Vec<Storage>,
     #[serde(default)]
@@ -145,7 +147,7 @@ pub(super) fn prepare(
             }
             let offer = offers.offers.iter().find(|c| {
                 c.npc == context.2
-                    && c.topic == topic.number
+                    && (c.any_topic || c.topic == topic.number)
                     && c.keywords.contains(&text)
                     && eligible(&c.storage)
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))

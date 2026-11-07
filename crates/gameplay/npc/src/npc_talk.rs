@@ -216,8 +216,10 @@ impl NpcTalkBook {
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
                 "{}\0{}\0{}\0{}\0{}",
-                crate::content::npc_catalogue::grizzly_shop::book_digest(
-                    model.source_tree_digest()
+                crate::content::npc_catalogue::quest_shops::book_digest(
+                    &crate::content::npc_catalogue::grizzly_shop::book_digest(
+                        model.source_tree_digest()
+                    )
                 ),
                 dark_trails::TEXT,
                 isle_of_evil::revision_material(),

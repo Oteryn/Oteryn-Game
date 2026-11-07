@@ -51,6 +51,7 @@ mod monk;
 mod planegazer_finale;
 mod premium_purchase;
 mod quest_dialogue;
+mod quest_shop;
 mod reward_callbacks;
 mod reward_facts;
 mod service_context;
@@ -71,6 +72,11 @@ struct SessionNpc {
     /// Display cache only; the NPC trade writer independently checks quest points.
     grizzly_shop_points: Option<i64>,
     grizzly_shop_items: std::collections::BTreeSet<String>,
+    quest_shop_offers: std::collections::BTreeSet<(
+        String,
+        String,
+        crate::content::ProjectV2ServiceOfferDirection,
+    )>,
     // D1103: confirmation and retained receipt intent use this existing session owner.
     vocation: Option<super::vocation_choice::NpcVocationConversation>,
     bank: Option<PendingBank>,
@@ -679,6 +685,13 @@ pub(super) async fn npc_bank_talk(
         .states
         .npc_conversations
         .refresh_grizzly_shop_context(session, points, grizzly_shop::admitted_items(native));
+    admission
+        .states
+        .npc_conversations
+        .refresh_quest_shop_context(
+            session,
+            quest_shop::eligible_items(admission, session, native),
+        );
     let ordinary = admission.states.npc_conversations.talk_in(
         &admission.states.chat,
         &runtime,

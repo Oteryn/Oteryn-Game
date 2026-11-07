@@ -46,3 +46,7 @@ def kill_bindings(inputs, pin):
         'creature':'oteryn:creature.renegade_orc',
         'transition':'oteryn:quest-transition/quest/u8_54/an_uneasy_alliance/quest_door/creature_event_1',
         'sources':[f'crystal:{pin}:{path}:1-15:sha256:{hashlib.sha256(inputs[path]).hexdigest()}']}]}
+
+
+def shops(inputs,pin):
+    return {'schema':1,'shops':[]}

@@ -373,3 +373,14 @@ changes admit6001 and reconcile already-native loot10196,11479,3410,7378;
 creature bindings, loot tables, probabilities and rewards remain byte-for-byte
 unchanged as JSON values. The ordinary complete loot builder retains its existing
 Corruptor guards; the scoped producer does not rewrite those unrelated tables.
+
+Cael's source-bound shops use the ordinary NPC service catalogue and trade
+writer. A generic shop declaration supplies exact offer identity and inclusive
+quest-track bounds; listing uses the session snapshot, while purchase rereads
+progress under the existing Character root lock. Unknown protected offers fail
+closed. Empty declarations preserve existing shop behavior.
+Paid repeat rewards may grant positive XP without an item. Migration1218 keeps
+canonical cost proofs and requires the existing same-transaction quest XP
+obligation, rather than treating a claimed XP amount as earned value. Full
+Tomes of Knowledge journey proof remains pending; these mechanisms alone do
+not qualify that entry.

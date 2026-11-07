@@ -436,7 +436,7 @@ fn parse_document(text: &str) -> Result<Document, String> {
                     .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
             || (c.repeatable
                 && ((c.take.is_empty() && c.fee.is_none())
-                    || c.give.is_none()
+                    || (c.give.is_none() && c.experience.is_none())
                     || c.outfit.is_some()
                     || c.achievement.is_some()))
             || c.inventory.len() > 8
@@ -805,6 +805,42 @@ mod tests {
             parse(&document(&value)).is_err(),
             "a repeat must consume value"
         );
+        Ok(())
+    }
+
+    #[test]
+    fn repeatable_experience_requires_a_paid_positive_reward() -> Result<(), String> {
+        let mut c = load()?.into_iter().next().ok_or("callback")?;
+        c.repeatable = true;
+        c.give = None;
+        c.outfit = None;
+        c.achievement = None;
+        c.experience = Some(5000);
+        c.take = vec![ItemAmount {
+            item: "oteryn:item.tibia.i10217".into(),
+            count: 1,
+            fluid_subtype: None,
+        }];
+        for state in &mut c.storage {
+            state.preserve = true;
+        }
+        let document =
+            |c: &RewardCallback| serde_json::json!({"schema":1,"callbacks":[c]}).to_string();
+        assert!(parse(&document(&c)).is_ok());
+        c.take.clear();
+        assert!(
+            parse(&document(&c)).is_err(),
+            "XP repeats cannot manufacture value"
+        );
+        c.take = vec![ItemAmount {
+            item: "oteryn:item.tibia.i10217".into(),
+            count: 1,
+            fluid_subtype: None,
+        }];
+        c.experience = Some(0);
+        assert!(parse(&document(&c)).is_err());
+        c.experience = None;
+        assert!(parse(&document(&c)).is_err());
         Ok(())
     }
 

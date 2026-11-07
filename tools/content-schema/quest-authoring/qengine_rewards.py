@@ -383,6 +383,7 @@ def build():
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),
             'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
+    generated['content/quests/shared-quest-shops.json']=encoded(questl2_knowledge.shops(inputs,PIN))
     generated['content/quests/shared-kill-callbacks.json']=encoded(questl2_knowledge.kill_bindings(inputs,PIN))
     greetings=[]
     for npc in sorted({c['npc'] for c in callbacks}):
@@ -501,7 +502,7 @@ def validate_callbacks(document):
             or (not callback.get('repeatable',False) and not callback.get('state_ops') and not paid_exchange
                 and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
             or (callback.get('repeatable',False)
-                and ((not callback['take'] and not callback.get('fee')) or not callback['give']
+                and ((not callback['take'] and not callback.get('fee')) or (not callback['give'] and not callback.get('experience'))
                      or callback['outfit'] or callback['achievement']))
             or (callback.get('fee') is not None and any(i['item'] in {'oteryn:item.tibia.i3031','oteryn:item.tibia.i3035','oteryn:item.tibia.i3043'} for i in callback['take']))
             or (callback.get('give') is not None and callback['give'].get('decay') is not None
