@@ -475,14 +475,6 @@ def repin_rust_inventory() -> None:
     )
     if count != 1:
         raise SystemExit(f"{PIN_TEST.name}: TREE_SHA256 not found")
-    project_revision = json.loads((WORLD / "project.json").read_text(encoding="utf-8"))["project_revision"]
-    text, count = re.subn(
-        r'(project\.project_revision\(\),\s*)"[^"\n]+"',
-        lambda match: match.group(1) + json.dumps(project_revision),
-        text,
-    )
-    if count != 1:
-        raise SystemExit(f"{PIN_TEST.name}: project_revision pin not found")
     PIN_TEST.write_text(text, encoding="utf-8", newline="\n")
     # The NPC catalogue proves that it loaded this same complete package.
     npc_test = ROOT / "apps/game-server/tests/content_npc_catalogue.rs"

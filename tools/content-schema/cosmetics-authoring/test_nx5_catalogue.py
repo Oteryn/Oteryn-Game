@@ -14,19 +14,13 @@ class ProductionCatalogue(unittest.TestCase):
         expected = {key for rule in ordinary for choice in rule['choices']
                     for field in ('grants', 'required', 'complete_grants') for key in choice.get(field, [])}
         mappings = author['document']['grant_mappings']
-        main_mappings = [m for m in mappings if '/quest-grant/' not in m['grant_key']]
-        quest_mappings = [m for m in mappings if '/quest-grant/' in m['grant_key']]
-        for mapping in quest_mappings:
-            self.assertEqual(mapping['compatible_provenance'], ['crystal-9f5a72c-quest-rewards-v1'])
-        self.assertEqual({m['grant_key'] for m in main_mappings}, expected | {
+        self.assertEqual({m['grant_key'] for m in mappings}, expected | {
             'oteryn:appearance-grant/quest/soul-war/revenant-base',
             'oteryn:appearance-grant/quest/rotten-blood/decaying-defender-base',
         })
         self.assertEqual(len(ordinary), 46)
-        self.assertEqual(len(main_mappings), 49)
-        main_outfits = [row for row in author['document']['outfits']
-                        if row['key'].startswith('oteryn:content.outfit.')]
-        self.assertEqual(len(main_outfits), 14)
+        self.assertEqual(len(mappings), 49)
+        self.assertEqual(len(author['document']['outfits']), 14)
         self.assertEqual(len(author['document']['mounts']), 8)
         # Mount targets retain the identities already declared by content.
         for family in ('mounts',):
@@ -37,7 +31,7 @@ class ProductionCatalogue(unittest.TestCase):
                     declared.add(row['declaration']['identity']['key'])
             self.assertTrue({row['key'] for row in author['document'][family]} <= declared)
         self.assertEqual(len(set(map(tuple, author['document']['palette']['colours']))), 133)
-        for row in main_outfits:
+        for row in author['document']['outfits']:
             self.assertEqual(row['starter_male'], row['key'].endswith('.citizen_outfits'))
             self.assertEqual(row['starter_female'], row['starter_male'])
             self.assertEqual(row['starter_addons_male'] | row['starter_addons_female'], 0)

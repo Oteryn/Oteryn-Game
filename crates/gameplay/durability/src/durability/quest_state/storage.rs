@@ -10,30 +10,6 @@ impl DurabilityRoot {
         request: QuestTransitionRequest,
     ) -> Result<Option<CommittedQuestTransition>> {
         let binding = request_binding(character, &request);
-        self.reconcile_quest_bound(authority, character, request, binding)
-            .await
-    }
-
-    /// Observe an ambiguous spatial action using its retained original context.
-    pub async fn reconcile_character_world_action(
-        &self,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        character: CharacterId,
-        request: QuestTransitionRequest,
-        context: &super::super::world_event::changes::actions::WorldActionContext,
-    ) -> Result<Option<CommittedQuestTransition>> {
-        let binding = bind_world_action(request_binding(character, &request), context)?;
-        self.reconcile_quest_bound(authority, character, request, binding)
-            .await
-    }
-
-    async fn reconcile_quest_bound(
-        &self,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        character: CharacterId,
-        request: QuestTransitionRequest,
-        binding: [u8; 33],
-    ) -> Result<Option<CommittedQuestTransition>> {
         self.reconcile_quest_binding(authority, character, request, binding)
             .await
     }
@@ -428,20 +404,4 @@ impl oteryn_gameplay_quests::quest::log::QuestLogFacts for QuestStateCopy {
                 completed: state.completed,
             })
     }
-}
-
-/// Version-preserving spatial request binding shared by commit and reconciliation.
-pub(super) fn bind_world_action(
-    mut binding: [u8; 33],
-    context: &super::super::world_event::changes::actions::WorldActionContext,
-) -> Result<[u8; 33]> {
-    use sha2::{Digest, Sha256};
-    let digest = Sha256::new()
-        .chain_update(binding)
-        .chain_update(
-            serde_json::to_vec(context).map_err(|_| CharacterProgressionError::InvalidInput)?,
-        )
-        .finalize();
-    binding[1..].copy_from_slice(&digest);
-    Ok(binding)
 }

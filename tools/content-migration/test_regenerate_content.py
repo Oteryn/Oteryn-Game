@@ -333,30 +333,8 @@ def test_worker_conflict_scan_accepts_binary_and_rejects_unresolved_paths() -> N
             assert rc.unresolved_worktree_paths() == ["conflict.json", "missing.json"]
 
 
-def test_inventory_repins_project_revision_from_generated_package() -> None:
-    with tempfile.TemporaryDirectory() as temp:
-        root = Path(temp)
-        world = root / "content/world"
-        pin = root / "inventory.rs"
-        npc = root / "apps/game-server/tests/content_npc_catalogue.rs"
-        write(root, "content/world/project.json", {"project_revision": "generated-revision"})
-        write(root, "content/world/definitions/reference.json", {})
-        pin.write_text(PIN_TEST + 'const TREE_SHA256: &str = "' + "0" * 64 + '";\n'
-                       + 'assert_eq!(project.project_revision(), "old-revision");\n')
-        write(root, str(npc.relative_to(root)), 'assert_eq!(catalogue.source_tree_digest(), "' + "0" * 64 + '");\n')
-        with patch.object(rc, "ROOT", root), patch.object(rc, "WORLD", world), patch.object(
-            rc, "PIN_TEST", pin
-        ), patch.object(rc, "document_locators", return_value=["definitions/reference.json"]):
-            rc.repin_rust_inventory()
-            assert 'project.project_revision(), "generated-revision"' in pin.read_text()
-            first = pin.read_bytes()
-            rc.repin_rust_inventory()
-            assert pin.read_bytes() == first
-
-
 def main() -> None:
     tests = [
-        test_inventory_repins_project_revision_from_generated_package,
         test_no_stage_checks_binary_conflicts_without_decoding,
         test_worker_conflict_scan_accepts_binary_and_rejects_unresolved_paths,
         test_import_conflict_fails_closed_and_keeps_both_sides,

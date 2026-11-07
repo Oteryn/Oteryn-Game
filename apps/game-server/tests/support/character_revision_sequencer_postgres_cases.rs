@@ -216,43 +216,29 @@ impl Harness {
         initialized: bool,
         seed_session: bool,
     ) -> TestResult<Self> {
-        Self::create_seeded(
-            admin,
-            tag,
-            initialized,
-            seed_session,
-            CreationFixture::Historical,
-        )
-        .await
+        Self::create_seeded(admin, tag, initialized, seed_session, false).await
     }
     #[allow(
         dead_code,
         reason = "C19b native dispatch scenarios create a root under the new interpretation"
     )]
     pub(super) async fn create_newhaven(admin: String, tag: &str) -> TestResult<Self> {
-        Self::create_seeded_with_starter(
-            admin,
-            tag,
-            false,
-            false,
-            CreationFixture::Historical,
-            "newhaven-starter-r1",
-        )
-        .await
+        Self::create_seeded_with_starter(admin, tag, false, false, false, "newhaven-starter-r1")
+            .await
     }
     async fn create_seeded(
         admin: String,
         tag: &str,
         initialized: bool,
         seed_session: bool,
-        creation: CreationFixture,
+        appearance: bool,
     ) -> TestResult<Self> {
         Self::create_seeded_with_starter(
             admin,
             tag,
             initialized,
             seed_session,
-            creation,
+            appearance,
             "starter-1",
         )
         .await
@@ -262,7 +248,7 @@ impl Harness {
         tag: &str,
         initialized: bool,
         seed_session: bool,
-        creation: CreationFixture,
+        appearance: bool,
         starter: &str,
     ) -> TestResult<Self> {
         let database = Database::create(admin, tag).await?;
@@ -286,7 +272,11 @@ impl Harness {
             &node,
             initialized,
             seed_session,
-            creation,
+            if appearance {
+                CreationFixture::Own
+            } else {
+                CreationFixture::Historical
+            },
             starter,
         )
         .await?;
@@ -317,9 +307,7 @@ impl Harness {
     }
 }
 
-fn bootstrap_binding(creation: CreationFixture, starter: &str) -> Vec<u8> {
-    let appearance = creation != CreationFixture::Historical;
-    let observer = creation == CreationFixture::Observer;
+fn bootstrap_binding(appearance: bool, observer: bool, starter: &str) -> Vec<u8> {
     let original_id = id;
     let id = |tag| {
         original_id(if observer && ![42, 43].contains(&tag) {
@@ -352,8 +340,8 @@ fn bootstrap_binding(creation: CreationFixture, starter: &str) -> Vec<u8> {
             .to_be_bytes(),
     );
     binding.extend_from_slice(name.as_bytes());
-    if let Some(sex) = creation.sex() {
-        binding.push(sex as u8);
+    if appearance {
+        binding.push(2);
     }
     binding
 }
@@ -434,6 +422,7 @@ async fn seed_character(
     creation: CreationFixture,
     starter: &str,
 ) -> TestResult {
+    let appearance = creation != CreationFixture::Historical;
     let observer = creation == CreationFixture::Observer;
     let original_id = id;
     let id = |tag| {
@@ -475,7 +464,7 @@ async fn seed_character(
     .bind(id(41).as_slice())
     .bind(id(40).as_slice())
     .bind(id(42).as_slice())
-    .bind(creation.sex())
+    .bind(if appearance { Some(2_i16) } else { None })
     .bind(name)
     .bind(starter)
     .execute(pool)
@@ -490,7 +479,7 @@ async fn seed_character(
            encode($7,'hex')::uuid,encode($8,'hex')::uuid,$9,1,120)",
     )
     .bind(id(30).as_slice())
-    .bind(bootstrap_binding(creation, starter))
+    .bind(bootstrap_binding(appearance, observer, starter))
     .bind(id(40).as_slice())
     .bind(id(41).as_slice())
     .bind(id(42).as_slice())
@@ -505,7 +494,7 @@ async fn seed_character(
          (1,$3,encode($1,'hex')::uuid,$2) ON CONFLICT(issuer_scope) DO UPDATE SET source_revision=EXCLUDED.source_revision,issuer_decision_id=EXCLUDED.issuer_decision_id,intent_binding=EXCLUDED.intent_binding",
     )
     .bind(id(31).as_slice())
-    .bind(bootstrap_binding(creation, starter))
+    .bind(bootstrap_binding(appearance, observer, starter))
     .bind(if observer { 2_i64 } else { 1_i64 })
     .execute(pool)
     .await?;

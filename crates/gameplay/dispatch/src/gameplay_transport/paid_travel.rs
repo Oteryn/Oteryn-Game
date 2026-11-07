@@ -153,13 +153,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return ordinary;
             };
-            if !self
-                .states
-                .npc_conversations
-                .start_paid_travel(session, context.clone())
-            {
-                return ordinary;
-            }
             let Ok(Some(current)) = self.current_quest_fence(session).await else {
                 return ordinary;
             };

@@ -1,10 +1,14 @@
 -- WORLDCHG-Q: a closed native Benevola command uses the existing Quest/custody receipt.
 -- No new item, quest, contribution or scheduling owner. Existing USE proof arms stay exact.
+-- Compose inside canonical QENGINE's arm without replacing its receipt predicate
+-- or the outer current-transaction check. The older main arm is supported too.
 DO $migration$
-DECLARE body TEXT; old_arm TEXT := 'r.cause_kind=''use'' AND r.created_xact_id=pg_current_xact_id()';
+DECLARE body TEXT; old_arm TEXT := 'r.cause_kind=''use''';
 BEGIN
  body:=pg_get_functiondef('game_quest_callback_complete()'::regprocedure);
- IF position(old_arm IN body)=0 THEN RAISE EXCEPTION 'missing carried quest USE proof arm'; END IF;
+ IF (length(body)-length(replace(body,old_arm,'')))/length(old_arm)<>1 THEN
+   RAISE EXCEPTION 'missing or ambiguous carried quest USE proof arm';
+ END IF;
  body:=replace(body,old_arm,$arm$
  (r.cause_kind='use' OR (
    r.cause_kind='command'
@@ -16,7 +20,7 @@ BEGIN
    AND EXISTS(SELECT 1 FROM game_world_change_credit_receipts c
       WHERE c.world_id=(NEW.before_item->>'world_id')::uuid AND c.source_kind=3
       AND c.occurrence=decode(convert_from(NEW.proof,'UTF8')::jsonb->'native_npc'->>'counter_occurrence','hex'))
- )) AND r.created_xact_id=pg_current_xact_id()
+ ))
 $arm$);
  EXECUTE body;
 END $migration$;

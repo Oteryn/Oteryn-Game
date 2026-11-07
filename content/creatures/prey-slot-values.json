@@ -917,7 +917,7 @@
     },
     "oteryn:creature.devourer": {
       "kills_per_hour_micros": 204255319,
-      "loot_per_kill_micros": 532969738,
+      "loot_per_kill_micros": 515715113,
       "tier": 3
     },
     "oteryn:creature.diabolic_imp": {
@@ -1447,7 +1447,7 @@
     },
     "oteryn:creature.glooth_blob": {
       "kills_per_hour_micros": 187622149,
-      "loot_per_kill_micros": 117908800,
+      "loot_per_kill_micros": 99264175,
       "tier": 2
     },
     "oteryn:creature.glooth_brigand": {
@@ -2997,7 +2997,7 @@
     },
     "oteryn:creature.rot_elemental": {
       "kills_per_hour_micros": 131807780,
-      "loot_per_kill_micros": 124531175,
+      "loot_per_kill_micros": 106736675,
       "tier": 2
     },
     "oteryn:creature.rotten_golem": {
@@ -3881,7 +3881,7 @@
       "tier": 2
     }
   },
-  "model_input_sha256": "1bc68c2aeae8c4ffc07b1de0e2204408883f94d0451e322edb09abf3777462ae",
+  "model_input_sha256": "7a252a3404afc2a3f54966fe2c29365bf816a6fb899b99e90e7a5b5a5c22a462",
   "npc_price_policy": "maximum_catalogue_offer",
   "npc_sell_prices": {
     "oteryn:item.tibia.i10196": 150,
@@ -4197,7 +4197,6 @@
     "oteryn:item.tibia.i21178": 1500,
     "oteryn:item.tibia.i21179": 1500,
     "oteryn:item.tibia.i21180": 1500,
-    "oteryn:item.tibia.i21182": 125,
     "oteryn:item.tibia.i21183": 2000,
     "oteryn:item.tibia.i21400": 15,
     "oteryn:item.tibia.i21892": 10000,

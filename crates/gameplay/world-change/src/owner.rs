@@ -10,7 +10,6 @@ pub const CATALOGUE_JSON: &str =
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ContributionKind {
     Coal,
-    Corpses,
     Medicine,
     Votes,
 }
@@ -19,7 +18,6 @@ impl ContributionKind {
     pub fn key(self) -> &'static str {
         match self {
             Self::Coal => "coal",
-            Self::Corpses => "corpses",
             Self::Medicine => "medicine",
             Self::Votes => "votes",
         }
@@ -98,7 +96,7 @@ pub fn is_active(day: &DailyWorldChanges, key: &str) -> bool {
         "oriental_trader" => day.oriental_trader.is_some(),
         "grimvale" => day.grimvale_full_moon,
         "stampede" => day.stampede,
-        // Main already admits these epoch-bound static layers independently.
+        // Preserve main's independently admitted, epoch-bound static layers.
         "fury_gates" => day.fury_gates.is_some(),
         // Flower Month's waves are still held; the NPC alone is not completion.
         _ => false,

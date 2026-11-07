@@ -54,68 +54,29 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
         } else if entry["status"] == "QUALIFIED" {
             qualified += 1;
             assert!(entry["binding"].is_object(), "{key}");
-            if matches!(
-                key,
-                "steamship"
-                    | "twisted_waters"
-                    | "rathleton"
-                    | "horse_station"
-                    | "noodles_is_gone"
-                    | "swamp_fever"
-            ) {
-                match key {
-                    "stampede" => {
-                        assert_eq!(entry["binding"]["raid_key"], "raid:porthope.stampede");
-                        assert!(is_active(&all, key));
-                    }
-                    "steamship" | "twisted_waters" | "rathleton" => {
-                        assert_eq!(entry["binding"]["kind"], "contribution");
-                        assert!(
-                            !is_active(&all, key),
-                            "a daily draw cannot authorize a tally transition"
-                        );
-                    }
-                    "horse_station" | "noodles_is_gone" => {
-                        assert_eq!(entry["binding"]["kind"], "live_world_action");
-                        assert!(!is_active(&all, key));
-                    }
-                    "swamp_fever" => {
-                        assert_eq!(entry["binding"]["raid_key"], "raid:venore.feverishcitizens");
-                        assert!(!is_active(&all, key));
-                    }
-                    _ => return Err(format!("unqualified binding: {key}").into()),
-                }
-            } else {
-                let mut active = all;
-                if let Some(kind) =
-                    oteryn_gameplay_world_change::counter::CounterKind::from_key(key)
-                {
-                    use oteryn_gameplay_world_change::counter::CounterKind as K;
-                    active.counter_stages[kind.index()] = match kind {
-                        K::FireFeathered => 3,
-                        K::Overhunting => 2,
-                        _ => 1,
-                    };
-                }
-                if key == "stampede" {
-                    assert_eq!(entry["binding"]["raid_key"], "raid:porthope.stampede");
-                }
-                assert!(is_active(&active, key), "{key}");
+            let mut active = all;
+            if let Some(kind) = oteryn_gameplay_world_change::counter::CounterKind::from_key(key) {
+                use oteryn_gameplay_world_change::counter::CounterKind as K;
+                active.counter_stages[kind.index()] = match kind {
+                    K::FireFeathered => 3,
+                    K::Overhunting => 2,
+                    _ => 1,
+                };
             }
+            if key == "stampede" {
+                assert_eq!(entry["binding"]["raid_key"], "raid:porthope.stampede");
+            }
+            assert!(is_active(&active, key), "{key}");
         } else {
             assert_eq!(entry["status"], "HELD");
             if key == "fury_gates" {
-                assert_eq!(
-                    is_active(&all, key),
-                    all.fury_gates.is_some(),
-                    "main's admitted static layers remain independent of variant qualification"
-                );
+                assert_eq!(is_active(&all, key), all.fury_gates.is_some());
             } else {
                 assert!(!is_active(&all, key), "{key}");
             }
         }
     }
-    assert_eq!((ready, qualified), (0, 18));
+    assert_eq!((ready, qualified), (0, 12));
     assert_eq!(entries.len(), 43);
     for key in [
         "river_runs_deep",
@@ -298,7 +259,7 @@ fn worldchg_portal_candidates_preserve_sourced_pairs_without_claiming_native_adm
                 }
             );
         }
-        // Candidate facts alone cannot activate a closed day; main static Fury selection is tested separately.
+        // Candidate facts do not activate a closed day; main static Fury is tested separately.
         assert!(!oteryn_gameplay_world_change::owner::is_active(
             &oteryn_gameplay_world_change::daily::DailyWorldChanges::roll(7, 6, 13, |_| u64::MAX),
             record["key"].as_str().ok_or("key")?,
@@ -331,7 +292,7 @@ fn worldchg_final_six_native_bindings_qualify_only_their_current_world_state()
         owner::{CATALOGUE_JSON, counter_admitted, is_active},
     };
     let catalogue: serde_json::Value = serde_json::from_str(CATALOGUE_JSON)?;
-    let selected = DailyWorldChanges::roll(700, 6, 13, |_| 0);
+    let selected = DailyWorldChanges::roll(700, 6, 13, |_| u64::MAX);
     let inactive = DailyWorldChanges::roll(701, 1, 1, |_| u64::MAX);
     for key in [
         "deeplings",

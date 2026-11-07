@@ -36,7 +36,7 @@ pub async fn raid_effect_pending_in_transaction(
     {
         return Err(DurabilityError::Unavailable);
     }
-    let firing = sqlx::query("SELECT uuid_send(world_id) AS world_id,reset_epoch::text,bundle_digest,state,raid_key FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid FOR UPDATE")
+    let firing = sqlx::query("SELECT uuid_send(world_id) AS world_id,reset_epoch::text,bundle_digest,state FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid FOR UPDATE")
         .bind(id.firing_id.as_slice()).fetch_optional(&mut **tx).await?
         .ok_or(DurabilityError::Unavailable)?;
     if firing.try_get::<Vec<u8>, _>("world_id")?.as_slice() != world.as_bytes().as_slice()
@@ -63,17 +63,9 @@ pub async fn raid_effect_pending_in_transaction(
     if effect_owner != owner || stored.identity != id || stored.action != step.action {
         return Err(DurabilityError::Unavailable);
     }
-    let firing_state = firing.try_get::<i16, _>("state")?;
-    // world_current independently proved source-kind4 and the current horse
-    // phase. Only a new RUNNING Channel cursor may realize a DONE projection;
-    // an existing terminal run never reacquires authority.
-    let current_projection = firing_state == 2
-        && crate::durability::world_event::changes::actions::horse_projection(
-            &firing.try_get::<String, _>("raid_key")?,
-        );
     match row.try_get::<i16, _>("state")? {
         2 => Ok(false),
-        1 if (firing_state == 1 || current_projection) && run.try_get::<i16, _>("state")? == 1 => {
+        1 if firing.try_get::<i16, _>("state")? == 1 && run.try_get::<i16, _>("state")? == 1 => {
             Ok(true)
         }
         _ => Err(DurabilityError::Unavailable),

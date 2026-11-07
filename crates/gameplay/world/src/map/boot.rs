@@ -1555,7 +1555,6 @@ pub mod tests {
             .with_daily_map(super::super::daily::DailyMap {
                 seed: [7; 32],
                 fungus: true,
-                lake_state: None,
                 grimvale_full_moon: false,
                 trader: None,
             })

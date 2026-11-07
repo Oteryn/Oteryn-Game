@@ -689,9 +689,6 @@ def main() -> int:
         ROOT, 'ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb',
         packet_path=condition_potion_profiles.PATH,
         keys={f'oteryn:item.tibia.i{i}' for i in condition_potion_profiles.IDS})
-    import world_contribution_item_profiles
-    world_contribution_item_profiles.refresh_canonical_input_pins(
-        ROOT, 'c8a8d97cf0eb82228177b192f138afd8ca1757f3')
     # Model against the source shards just written, then register the same fresh
     # native provider with its generated Prey rules and value table.
     import prey_difficulty

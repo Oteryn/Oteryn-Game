@@ -11,12 +11,6 @@ use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
 use sha2::{Digest, Sha256};
-
-pub(crate) mod custody;
-pub mod actions;
-pub mod elections;
-mod shared;
-pub use shared::load as shared;
 pub mod callbacks;
 pub mod counters;
 
@@ -69,8 +63,6 @@ fn authored_candidates() -> Result<DailyCandidates, DurabilityError> {
         .filter(|entry| entry["status"] == "READY" || entry["status"] == "QUALIFIED")
     {
         let index = match entry["key"].as_str() {
-            // Shared contribution states are chosen from retiring tallies, never daily RNG.
-            Some("steamship" | "swamp_fever" | "twisted_waters" | "rathleton" | "horse_station" | "noodles_is_gone") => continue,
             Some("stampede") if stampede.is_none() && entry["trigger"]["kind"] == "at_reset" => {
                 stampede = entry["trigger"]["chance_permille"]
                     .as_u64()
@@ -230,7 +222,6 @@ pub(super) async fn record(
         if day.reset_epoch != epoch {
             return Err(DurabilityError::InvalidStoredState);
         }
-        shared::record(tx, world, epoch).await?;
         counters::project(tx, world, &mut day).await?;
         return Ok(day);
     }
@@ -255,7 +246,6 @@ pub(super) async fn record(
     if stored != decision {
         return Err(DurabilityError::InvalidStoredState);
     }
-    shared::record(tx, world, epoch).await?;
     Ok(selected)
 }
 

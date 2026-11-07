@@ -209,7 +209,7 @@ pub fn callbacks() -> Vec<super::world_callbacks::Callback> {
             storage:{let mut storage=vec![Storage{track:binding.track.into(),minimum:0,maximum:if hive {binding.required-1}else{0},set:if hive {1}else{0},preserve:false}];if hive {storage.push(Storage{track:ACTIVE_TRACKS[index].into(),minimum:1,maximum:1,set:1,preserve:true})}storage},
             minimum_level:None,experience:None,monk_reward:None,offerings:vec![],
             item_on_target:tool.map(|tool|ItemOnTarget{item:format!("oteryn:item.tibia.i{tool}"),count:1,replacement:Some(format!("oteryn:item.tibia.i{tool}")),target_replacement:None}),
-            return_on_failure:false,failure_message:None,success_message:None,native_rule:None,effects:Default::default(),
+            return_on_failure:false,failure_message:None,success_message:None,native_rule:None,
             sources:vec!["crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/orockle.lua:explicit-native-geometry-and-execution-adaptation; wiki56916@1184992; NOT_DONOR_POSITION".into()],
         }
     }).collect();

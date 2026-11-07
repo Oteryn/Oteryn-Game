@@ -6,7 +6,6 @@ use super::bundle_npcs::NpcBoot;
 use super::event;
 use crate::foundation::{ChannelRuntimeV1, MovementFacing, NpcPlacement, WorldId};
 use crate::map::overlay::TilePos;
-use oteryn_gameplay_world_change::contribution::{LakeState as SharedLakeState, SharedChanges};
 use oteryn_gameplay_world_change::daily::DailyWorldChanges;
 use sha2::{Digest, Sha256};
 
@@ -30,11 +29,7 @@ pub(super) fn bind_layers(
 }
 
 /// The physical draws bind World and committed epoch, never Channel or process lifetime.
-fn map_changes(
-    world: WorldId,
-    changes: &DailyWorldChanges,
-    shared: Option<&SharedChanges>,
-) -> crate::map::daily::DailyMap {
+fn map_changes(world: WorldId, changes: &DailyWorldChanges) -> crate::map::daily::DailyMap {
     let mut hash = Sha256::new();
     hash.update(b"oteryn.world_change.physical.seed.v1\0");
     hash.update(world.as_bytes());
@@ -44,11 +39,6 @@ fn map_changes(
         fungus: changes.their_masters_voice,
         grimvale_full_moon: changes.grimvale_full_moon,
         trader: changes.oriental_trader.map(|town| town.layer()),
-        lake_state: shared.map(|shared| match shared.lake_state {
-            SharedLakeState::Clean => crate::map::daily::LakeState::Clean,
-            SharedLakeState::Dirty => crate::map::daily::LakeState::Dirty,
-            SharedLakeState::Stinking => crate::map::daily::LakeState::Stinking,
-        }),
     }
 }
 
@@ -56,18 +46,11 @@ pub(super) fn prepare_map(
     checked: crate::map::boot::CheckedBundle,
     world: WorldId,
     changes: &DailyWorldChanges,
-    shared: Option<&SharedChanges>,
 ) -> crate::map::boot::CheckedBundle {
-    if changes.reset_epoch == 0 && shared.is_none() {
+    if changes.reset_epoch == 0 {
         return checked;
     }
-    let mut projection = map_changes(world, changes, shared);
-    if changes.reset_epoch == 0 {
-        projection.fungus = false;
-        projection.grimvale_full_moon = false;
-        projection.trader = None;
-    }
-    checked.with_daily_map(projection)
+    checked.with_daily_map(map_changes(world, changes))
 }
 
 /// Places the day's NPCs the loaded catalogue admits; one that cannot stand is logged.
@@ -235,12 +218,7 @@ mod tests {
         };
         let checked = crate::map::boot::check(bytes.clone(), boot_pins.clone())?;
         let unqualified = roll(world(), 0, JUNE_13);
-        let bound = prepare_map(
-            bind_layers(checked, &unqualified)?,
-            world(),
-            &unqualified,
-            None,
-        );
+        let bound = prepare_map(bind_layers(checked, &unqualified)?, world(), &unqualified);
         let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])?;
         let booted = bound.boot(world(), channel, crate::map::boot::tests::items)?;
         assert!(booted.base().active_layers().is_empty());
@@ -339,10 +317,8 @@ mod tests {
             "../../../../../content/encounters/world-changes/layers.json"
         ))
         .expect("layers");
-        let mut appearances: BTreeSet<u16> = (12059..=12065).chain([432, 486, 4610]).collect();
-        let grounds: BTreeSet<u16> = (12059..=12065)
-            .chain([408, 432, 464, 486, 494, 4610])
-            .collect();
+        let mut appearances: BTreeSet<u16> = (12059..=12065).chain([432, 486]).collect();
+        let grounds: BTreeSet<u16> = (12059..=12065).chain([408, 432, 464, 486, 494]).collect();
         for layer in layers["layers"].as_array().expect("layer array") {
             if !layer["key"]
                 .as_str()
@@ -369,7 +345,7 @@ mod tests {
                 key: format!("oteryn:item.tibia.i{id}"),
                 terrain: grounds.contains(&id).then_some(Terrain {
                     kind: TerrainKind::Ground,
-                    walkable: Some(![486, 4610].contains(&id)),
+                    walkable: Some(id != 486),
                     ground_speed: Some(150),
                 }),
             })
@@ -381,7 +357,6 @@ mod tests {
             (33305, 33305, 31847, 31847, -9, 12065),
             (33370, 33370, 31847, 31847, -9, 12065),
             (33306, 33306, 31847, 31847, -8, 12065),
-            (32613, 32613, 32655, 32655, -7, 4610),
         ] {
             let index = palette
                 .iter()
@@ -479,14 +454,7 @@ mod tests {
     }
 
     fn boot_physical(changes: &DailyWorldChanges) -> crate::map::boot::BundleWorld {
-        boot_physical_shared(changes, None)
-    }
-
-    fn boot_physical_shared(
-        changes: &DailyWorldChanges,
-        shared: Option<&SharedChanges>,
-    ) -> crate::map::boot::BundleWorld {
-        prepare_map(physical_bundle(), world(), changes, shared)
+        prepare_map(physical_bundle(), world(), changes)
             .boot(
                 world(),
                 ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
@@ -503,40 +471,6 @@ mod tests {
                 },
             )
             .expect("physical boot")
-    }
-
-    #[test]
-    fn wcontrib_saved_lake_state_projects_physical_water_and_survives_reboot() {
-        use crate::map::view::MapFacts;
-        let day = DailyWorldChanges::roll(41, 1, 1, |_| 0);
-        let pos = TilePos {
-            x: 32613,
-            y: 32655,
-            floor: -7,
-        };
-        for (lake_state, appearance) in [
-            (SharedLakeState::Clean, 4610),
-            (SharedLakeState::Dirty, 12561),
-            (SharedLakeState::Stinking, 12563),
-        ] {
-            let shared = SharedChanges {
-                lake_state,
-                ..SharedChanges::default()
-            };
-            for _ in 0..2 {
-                let world = boot_physical_shared(&day, Some(&shared));
-                let tile = world
-                    .base()
-                    .tile(pos.x, pos.y, pos.floor)
-                    .expect("fixture lake tile");
-                let facts = world
-                    .facts()
-                    .base_entry(pos, 0, tile.ids()[0])
-                    .expect("lake facts");
-                assert_eq!(facts.appearance_id, appearance);
-                assert!(!world.enterable(pos));
-            }
-        }
     }
 
     #[test]

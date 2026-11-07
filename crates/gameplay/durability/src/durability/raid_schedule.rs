@@ -3,7 +3,6 @@
 //! reset/content facts do not authorize a World reset, actor or announcement.
 mod activity;
 mod calendar;
-mod horse;
 mod lua;
 mod scheduler;
 mod storage;

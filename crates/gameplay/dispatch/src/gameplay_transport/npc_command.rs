@@ -51,15 +51,12 @@ mod hive_shared;
 mod isle_of_evil;
 mod liquid_black;
 mod monk;
-mod noodles;
 mod planegazer_finale;
 mod premium_purchase;
 mod quest_dialogue;
-mod reward_callbacks;
 mod service_context;
 mod session_transfer;
 mod threatened_dreams;
-mod world_contributions;
 mod wrath_sleeping_dragon;
 #[path = "yeo.rs"]
 mod yeo;
@@ -761,21 +758,6 @@ pub(super) async fn npc_bank_talk(
         drop(runtime);
         drop(_trade_permit);
         return grizzly::talk(admission, actor, command, intent, context).await;
-    }
-    if let Some(step) = noodles::prepare(admission, actor, command, &intent, &runtime) {
-        drop(runtime);
-        drop(_trade_permit);
-        return quest_dialogue::apply(admission, actor, command, intent, step).await;
-    }
-    if let Some(step) = reward_callbacks::prepare(admission, actor, command, &intent, &runtime) {
-        drop(runtime);
-        drop(_trade_permit);
-        return quest_dialogue::apply(admission, actor, command, intent, step).await;
-    }
-    if let Some(step) = world_contributions::prepare(admission, actor, command, &intent, &runtime) {
-        drop(runtime);
-        drop(_trade_permit);
-        return quest_dialogue::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = fire_feathered::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);

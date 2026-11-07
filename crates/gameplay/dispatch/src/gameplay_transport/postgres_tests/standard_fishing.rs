@@ -274,7 +274,7 @@ fn p11_mechanical_ice_fishing_grants_exquisite_taste() -> TestResult { run_gathe
 #[test]
 fn p11_failed_dusting_marks_corpse_without_advancing_ashes_to_dust() -> TestResult { run_gathering(5942,5995,Some(4098),None,true) }
 
-pub(super) fn run_gathering(tool: u16, target: u16, after: Option<u16>, yield_item: Option<u16>, committed: bool) -> TestResult {
+fn run_gathering(tool: u16, target: u16, after: Option<u16>, yield_item: Option<u16>, committed: bool) -> TestResult {
     run_gathering_at(tool, target, after, yield_item, committed, true)
 }
 
@@ -492,18 +492,6 @@ fn gathering_scenario(tool: u16, target_id: u16, after: Option<u16>, yield_item:
             };
             Some(owner.root.freeze_map_item_mint(owner.character,owner.holder,fence,request).await.map_err(debug)?)
         } else { None };
-        if (12561..=12563).contains(&target_id) {
-            let world = fence.runtime_scope.world_id();
-            sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'map-1',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,'2031-06-13T12:00:00Z','2031-06')")
-                .bind(world.as_bytes().as_slice()).bind([1_u8;32].as_slice()).execute(&harness.pool).await?;
-            sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,0)")
-                .bind(world.as_bytes().as_slice()).execute(&harness.pool).await?;
-            let day = crate::durability::world_event::changes::roll(world, 0, 0)?;
-            sqlx::query("INSERT INTO game_world_change_days(world_id,reset_epoch,decision) VALUES(encode($1,'hex')::uuid,0,$2)")
-                .bind(world.as_bytes().as_slice()).bind(serde_json::to_value(day)?).execute(&harness.pool).await?;
-            sqlx::query("INSERT INTO game_world_change_states(world_id,reset_epoch,state) VALUES(encode($1,'hex')::uuid,0,$2)")
-                .bind(world.as_bytes().as_slice()).bind(serde_json::json!({"lake_state":"dirty"})).execute(&harness.pool).await?;
-        }
         eprintln!("FIXM09_PG_START tool={tool} target={target_id} after={after:?} yield={yield_item:?}");
         let started = std::time::Instant::now();
         let session = admitted.game_session_id;
@@ -521,11 +509,7 @@ fn gathering_scenario(tool: u16, target_id: u16, after: Option<u16>, yield_item:
             let catch_roll = draw.map(|draw| u32::try_from(crate::spell::uniform_draw(draw,1,100_000)).unwrap_or(0)).unwrap_or(0);
             let roll = crate::gameplay_transport::item_craft::gathering_roll(native.source_digest(),session,1,&actual).unwrap_or(0);
             let attempt = oteryn_gameplay_items::fishing::gathering_attempt(tool,target_id,10,catch_roll,roll);
-            if (12558..=12560).contains(&target_id) {
-                // Force a winning standard catch: without the spent-water fence,
-                //12560 would wrongly debit the worm and mint an ordinary fish.
-                oteryn_gameplay_items::fishing::catches(10,catch_roll)
-            } else if !committed { attempt.is_none() } else { attempt.is_some_and(|p| p.after == after && p.yield_item == yield_item) }
+            if !committed { attempt.is_none() } else { attempt.is_some_and(|p| p.after == after && p.yield_item == yield_item) }
         }).ok_or("deterministic handle history exists")?;
         admitted.continuity.item_view.handle_counter = counter;
         let command_id = 1;
@@ -561,18 +545,6 @@ fn gathering_scenario(tool: u16, target_id: u16, after: Option<u16>, yield_item:
             owner.refresh_terrain_tools().await;
         }
         assert_eq!(achievement, super::achievement_granters::assert_gathering(&harness, earned).await?);
-        if (12561..=12563).contains(&target_id) {
-            let catches: i64 = sqlx::query_scalar("SELECT count(*) FROM game_twisted_water_catches")
-                .fetch_one(&harness.pool).await?;
-            assert_eq!(catches, i64::from(yield_item == Some(12557)));
-            if yield_item == Some(12557) {
-                super::wcontrib_fishing::assert_personal_cooldown(
-                    &owner, &harness.pool, fence, native, &target.placement,
-                    crate::map::overlay::map_revision(map.overlay.base()),
-                ).await?;
-            }
-            eprintln!("WCONTRIB_FISHING_PG_EXECUTED target={target_id} yield={yield_item:?} receipt_replayed=true personal_catches={catches} elapsed_ms={}", started.elapsed().as_millis());
-        }
         if let Some(candidate) = &mut stale_pickup {
             let permit = owner.spell_lane_permit().await.ok_or("pickup lane")?;
             let outcome = owner.root.commit_map_item_mint(&permit,owner.character,owner.holder,fence,candidate).await;

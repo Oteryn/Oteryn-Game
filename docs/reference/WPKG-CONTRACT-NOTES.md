@@ -948,3 +948,24 @@ Native Item union:3612 existing records remain byte-semantically unchanged;
 preservation of the14156/21182 shared owners. Pin-check World digest is
 `b096b258e9351ca8ea571e3e2a73a34d4883ddda590b6ea67c212f52c9cb4aeb`.
 Real PostgreSQL execution and the final content tests remain pending here.
+
+
+### WCONTRIB reverted: focused gameplay qualification exceeded60 minutes
+
+Revert merge459652e8e and follow-upsff27026a1,d84d38315,ee31f0b58.
+All contribution/Quest additions and own1336–1339 migrations are removed;
+source reports/contracts and historical validation remain as evidence only.
+The16 selected owner tests failed during schema setup in330.445s command /
+52.06s test time: canonical0999 wrapped the old carried-USE arm, causing1333's
+literal anchor to reject it. No gameplay case qualified and no native
+WCONTRIB PG case executed. The corrected1333 composition preserves both
+independent proof arms and their outer current-transaction predicate. A real
+PostgreSQL18.6 replay of all325 composed migrations passes4.159s actual /
+4.255s command with both proof arms present; embedded compilation also passes.
+There is insufficient time to rebuild and qualify all gameplay cases within
+the lane window, so the requested revert fallback applies.
+
+Retain only independent main compatibility repairs: persisted static Fury
+eligibility and its guarded fixtures/unit test, and the1333 migration-composition
+repair for upcoming canonical QENGINE dependencies. Other runtime/content/pins
+restore the prior green World package. Continue with WEVENTS.

@@ -145,46 +145,6 @@ impl NpcPlacementTable {
 }
 
 impl ChannelRuntimeV1 {
-    /// Current positioned holder of a Character, for non-authoritative NPC follow projection.
-    /// A fenced, disconnected, stale or absent player is not a follow destination.
-    pub fn bound_character_position(
-        &self,
-        character: &[u8; 16],
-    ) -> Option<super::MovementLocalPosition> {
-        self.owner_fence().ok()?;
-        let context = self.pinned_position_context();
-        for entry in &self.carrier.attackers {
-            let Some(lease) = entry.authority.lease else {
-                continue;
-            };
-            if entry.authority.fence.is_some() || lease.character_id().as_bytes() != character {
-                continue;
-            }
-            let Some(Slot::Occupied {
-                generation,
-                game_session_id: Some(_),
-                committed: true,
-                position: Some(position),
-                lifecycle,
-                ..
-            }) = self.carrier.slots.get(entry.index)
-            else {
-                continue;
-            };
-            if *generation == entry.generation
-                && lifecycle.control_loss.is_none()
-                && position.context == context
-            {
-                return Some(super::MovementLocalPosition {
-                    x: position.position.x,
-                    y: position.position.y,
-                    floor: position.position.floor,
-                });
-            }
-        }
-        None
-    }
-
     /// Adds one service NPC after boot. Used by durable, house-scoped hirelings only.
     pub fn place_dynamic_npc(
         &mut self,

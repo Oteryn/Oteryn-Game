@@ -838,9 +838,6 @@
     },
     {
       "path": "tools/content-schema/native-gameplay/loot-tables.json"
-    },
-    {
-      "path": "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
     }
   ],
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -926,7 +923,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "1d93dce16392a222187e10dd8149e2246f4b5ea67a2b0a8bd916be0c88eebba9"
+          "sha256": "06b0bee295bf0d09d5b3c87827d66cc276771bc79a3c0a05cf8cfebf4c1282a5"
         },
         {
           "creates_canonical_identities": false,
@@ -997,7 +994,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3636,
+          "record_count": 3612,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1005,7 +1002,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "3196da0cedb8c1cdebdfbb3649098639ac92243ded813e0d24e6fb0172216eb2"
+          "sha256": "4650aa172cd5e9ecf5d4b96f7acee3aebaadf3d3b6a4b7036a7ccedbe55db5b1"
         },
         {
           "creates_canonical_identities": false,

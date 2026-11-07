@@ -378,8 +378,6 @@ mod npc_qualified_repairs;
 mod npc_qualified_summer;
 #[path = "npc_materializer/qualified_summer_object.rs"]
 mod npc_qualified_summer_object;
-#[path = "npc_materializer/rathleton_access.rs"]
-mod npc_rathleton_access;
 #[path = "npc_materializer/service_scope_repairs.rs"]
 mod npc_service_scope_repairs;
 #[path = "npc_materializer/transcript_repairs.rs"]
@@ -3099,7 +3097,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         apply_item_drown_protection(&mut draft)?;
         apply_item_market_crystal_parity(&mut draft)?;
         apply_current_power_ring(&mut draft)?;
-        npc_rathleton_access::apply(&mut draft)?;
         let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
         // This fresh output contains only the base package just materialized above.
         // The canonical writer requires an absent root for the successor package.

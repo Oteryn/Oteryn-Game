@@ -28,7 +28,7 @@ pub(crate) fn callback() -> Callback {
         return_on_failure:true,
         failure_message:Some("You need level 999 to enter here.".into()),
         success_message:Some("Congratulations!".into()),
-        native_rule:None, effects:Default::default(),
+        native_rule:None,
         sources:vec!["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/schrodingers_island_teleport_lvl_999.lua:3-27".into()],
     }
 }

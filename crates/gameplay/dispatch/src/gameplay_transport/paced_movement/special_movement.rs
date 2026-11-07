@@ -140,7 +140,6 @@ pub(super) fn transform(map: &BundleMap, key: u64, appearance: u16) -> bool {
         &[],
         &[],
         false,
-        None,
     )
 }
 

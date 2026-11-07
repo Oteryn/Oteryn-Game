@@ -72,8 +72,6 @@ impl DurabilityRoot {
             None,
             None,
             None,
-            None,
-            None,
         )
         .await
     }

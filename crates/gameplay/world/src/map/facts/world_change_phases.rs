@@ -43,15 +43,7 @@ impl BundleFacts {
         }
         // Existing callback owner atomically pairs visibility with this exact
         // source revision. It never changes the10842 exit's independent key.
-        self.apply_quest_callback(
-            key,
-            self.object_revision(key),
-            facts,
-            &[key],
-            &[],
-            !closed,
-            None,
-        )
+        self.apply_quest_callback(key, self.object_revision(key), facts, &[key], &[], !closed)
     }
 }
 

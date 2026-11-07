@@ -30,8 +30,6 @@ pub(super) async fn current(
     Ok(observed.as_deref() == Some(&generation.get().to_string()))
 }
 
-type WorldCurrentRow = (bool, Vec<u8>, String, String, Option<i16>);
-
 pub(super) async fn world_current(
     tx: &mut Transaction<'_, Postgres>,
     firing: [u8; 16],
@@ -41,44 +39,9 @@ pub(super) async fn world_current(
     crate::durability::db::lock_admission_relations(tx).await?;
     // The reset owner locks its active epoch and rejects RETIRING. The immutable
     // firing supplies the expected epoch/pin, not the independently read truth.
-    let current: Option<WorldCurrentRow> = sqlx::query_as("SELECT game_world_reset_map_epoch_current(f.world_id,f.reset_epoch) AND EXISTS(SELECT 1 FROM game_world_reset_active a JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE a.world_id=f.world_id AND a.reset_epoch=f.reset_epoch AND e.target_digest=f.bundle_digest),uuid_send(f.world_id),f.reset_epoch::text,f.raid_key,(SELECT s.source_kind FROM game_world_raid_schedule_sources s WHERE s.world_id=f.world_id AND s.raid_key=f.raid_key) FROM game_world_raid_firings f WHERE f.firing_id=encode($1,'hex')::uuid")
+    let current: Option<bool> = sqlx::query_scalar("SELECT game_world_reset_map_epoch_current(f.world_id,f.reset_epoch) AND EXISTS(SELECT 1 FROM game_world_reset_active a JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE a.world_id=f.world_id AND a.reset_epoch=f.reset_epoch AND e.target_digest=f.bundle_digest) FROM game_world_raid_firings f WHERE f.firing_id=encode($1,'hex')::uuid")
         .bind(firing.as_slice()).fetch_optional(&mut **tx).await?;
-    let Some((true, world, epoch, key, source)) = current else {
-        return Ok(false);
-    };
-    let actions = crate::durability::world_event::changes::actions::horse_projection(&key);
-    if actions {
-        if source != Some(4) {
-            return Ok(false);
-        }
-        let world = crate::foundation::WorldId::decode(&world)
-            .map_err(|_| DurabilityError::InvalidStoredState)?;
-        let epoch = epoch
-            .parse()
-            .map_err(|_| DurabilityError::InvalidStoredState)?;
-        let now_ms: i64 =
-            sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint")
-                .fetch_one(&mut **tx)
-                .await?;
-        let state =
-            crate::durability::world_event::changes::actions::horse_state(tx, world, epoch, now_ms)
-                .await?;
-        if !state.as_ref().is_some_and(|state| {
-            crate::durability::world_event::changes::actions::projection_matches(
-                &key, state, now_ms,
-            )
-        }) {
-            return Ok(false);
-        }
-        // A cohort which already began LOST cleanup never becomes current again
-        // merely because the shared stable count later returns to the same value.
-        let retired:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_raid_effects WHERE firing_id=encode($1,'hex')::uuid AND action_kind=4)")
-            .bind(firing.as_slice()).fetch_one(&mut **tx).await?;
-        if retired {
-            return Ok(false);
-        }
-    }
-    Ok(true)
+    Ok(current.unwrap_or(false))
 }
 
 pub(super) async fn insert(
