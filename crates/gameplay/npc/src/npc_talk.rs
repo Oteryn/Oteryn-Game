@@ -726,12 +726,14 @@ pub fn talk<K: Copy + PartialEq>(
                 continuations: Vec::new(),
             });
         }
-        if let Some(keyword) = npc
-            .entry
-            .dialogue_keywords
-            .iter()
-            .find(|keyword| contains_words(&said, &keyword.triggers))
-        {
+        if let Some(keyword) = npc.entry.dialogue_keywords.iter().find(|keyword| {
+            // Project keywords canonicalize their trigger set by sorting. Every literal
+            // trigger must occur, independently of that serialization order.
+            keyword
+                .triggers
+                .iter()
+                .all(|trigger| contains_words(&said, &words(trigger)))
+        }) {
             return Some(NpcReply {
                 continuations: keyword.reply[1..].to_vec(),
                 id: npc.id,

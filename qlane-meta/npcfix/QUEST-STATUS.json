@@ -350,10 +350,10 @@
     "final_pg_log": "/tmp/npcfix-evidence/refusal-final-paid-clock-pg.log"
   },
   "counts": {
-    "QUALIFIED": 250,
+    "QUALIFIED": 256,
     "EXCLUDED": 24,
     "PENDING": 7,
-    "AUTHORED; QUALIFICATION PENDING": 36,
+    "AUTHORED; QUALIFICATION PENDING": 30,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
   },
@@ -932,10 +932,52 @@
       "npc": "Anaztassja Moroia",
       "town": "Edron",
       "audit_status": "DIFF",
-      "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/36",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "work": "Qualified full reviewed source anchors, exact displayed identity and native runtime actors; strict ground, collision and Item custody guards retained.",
+      "evidence": "content/world/npc-placements/placements-00000-00364.json:1#/records/32; content/world/npc-placements/placements-00000-00364.json:1#/records/33; content/world/npc-placements/placements-00000-00364.json:1#/records/34; content/world/npc-placements/placements-00000-00364.json:1#/records/35; content/world/npc-placements/placements-00000-00364.json:1#/records/36",
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "postgres": {
+          "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+          "seconds": 170.551,
+          "log": "/tmp/npcfix-evidence/post3020-focused-fixed-tests-2.log",
+          "sha256": "789c9b6f4991851f8d88dd69b2ed6c8ec118b106c48d37e9b80b7ed81bc0962f",
+          "cumulative_npcs": 248,
+          "cumulative_actors": 258,
+          "source_head": "18ca444be3c277ebd1e3dbbe190e74ecab3a0b3f"
+        },
+        "source_fixture": "npcfix-reviewed-full-anchor-ground-45",
+        "anchors": [
+          {
+            "x": 32948,
+            "y": 31462,
+            "floor": -15
+          },
+          {
+            "x": 32943,
+            "y": 31503,
+            "floor": -14
+          },
+          {
+            "x": 32897,
+            "y": 31422,
+            "floor": -12
+          },
+          {
+            "x": 32879,
+            "y": 31436,
+            "floor": -10
+          },
+          {
+            "x": 32915,
+            "y": 31445,
+            "floor": -6
+          }
+        ],
+        "red_log": "/tmp/npcfix-evidence/full-anchor-six-ground-pg-red.log",
+        "pin": "f3a42a443d484c41d7b3108f853feba6e8b78a1873f281dcfe38f191a37f3808",
+        "scope": "Audit identity and physical presence; no foreign quest or unverified service behavior claimed."
+      }
     },
     {
       "npc": "Artemyth",
@@ -1281,10 +1323,52 @@
       "npc": "Ortelio",
       "town": "Edron",
       "audit_status": "DIFF",
-      "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/262",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "work": "Qualified full reviewed source anchors, exact displayed identity and native runtime actors; strict ground, collision and Item custody guards retained.",
+      "evidence": "content/world/npc-placements/placements-00000-00364.json:1#/records/274; content/world/npc-placements/placements-00000-00364.json:1#/records/275; content/world/npc-placements/placements-00000-00364.json:1#/records/276; content/world/npc-placements/placements-00000-00364.json:1#/records/277; content/world/npc-placements/placements-00000-00364.json:1#/records/278",
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "postgres": {
+          "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+          "seconds": 170.551,
+          "log": "/tmp/npcfix-evidence/post3020-focused-fixed-tests-2.log",
+          "sha256": "789c9b6f4991851f8d88dd69b2ed6c8ec118b106c48d37e9b80b7ed81bc0962f",
+          "cumulative_npcs": 248,
+          "cumulative_actors": 258,
+          "source_head": "18ca444be3c277ebd1e3dbbe190e74ecab3a0b3f"
+        },
+        "source_fixture": "npcfix-reviewed-full-anchor-ground-45",
+        "anchors": [
+          {
+            "x": 34033,
+            "y": 32365,
+            "floor": -14
+          },
+          {
+            "x": 34094,
+            "y": 32391,
+            "floor": -14
+          },
+          {
+            "x": 34062,
+            "y": 32427,
+            "floor": -14
+          },
+          {
+            "x": 34067,
+            "y": 32460,
+            "floor": -14
+          },
+          {
+            "x": 34066,
+            "y": 32498,
+            "floor": -14
+          }
+        ],
+        "red_log": "/tmp/npcfix-evidence/full-anchor-six-ground-pg-red.log",
+        "pin": "f3a42a443d484c41d7b3108f853feba6e8b78a1873f281dcfe38f191a37f3808",
+        "scope": "Audit identity and physical presence; no foreign quest or unverified service behavior claimed."
+      }
     },
     {
       "npc": "Owin",
@@ -2905,10 +2989,32 @@
       "npc": "Fabiana",
       "town": "Rathleton",
       "audit_status": "DIFF",
-      "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/115",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "work": "Qualified full reviewed source anchors, exact displayed identity and native runtime actors; strict ground, collision and Item custody guards retained.",
+      "evidence": "content/world/npc-placements/placements-00000-00364.json:1#/records/123",
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "postgres": {
+          "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+          "seconds": 170.551,
+          "log": "/tmp/npcfix-evidence/post3020-focused-fixed-tests-2.log",
+          "sha256": "789c9b6f4991851f8d88dd69b2ed6c8ec118b106c48d37e9b80b7ed81bc0962f",
+          "cumulative_npcs": 248,
+          "cumulative_actors": 258,
+          "source_head": "18ca444be3c277ebd1e3dbbe190e74ecab3a0b3f"
+        },
+        "source_fixture": "npcfix-reviewed-full-anchor-ground-45",
+        "anchors": [
+          {
+            "x": 33539,
+            "y": 31698,
+            "floor": -9
+          }
+        ],
+        "red_log": "/tmp/npcfix-evidence/full-anchor-six-ground-pg-red.log",
+        "pin": "f3a42a443d484c41d7b3108f853feba6e8b78a1873f281dcfe38f191a37f3808",
+        "scope": "Audit identity and physical presence; no foreign quest or unverified service behavior claimed."
+      }
     },
     {
       "npc": "Fayla",
@@ -3281,10 +3387,32 @@
       "npc": "Glimpse of Allusion",
       "town": "Roshamuul",
       "audit_status": "MISSING",
-      "work": "Retail placement authored. Add exact displayed identity.",
-      "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/134; content/npcs/definitions/npcs-00000-00499.json:1#/records/489",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "work": "Qualified full reviewed source anchors, exact displayed identity and native runtime actors; strict ground, collision and Item custody guards retained.",
+      "evidence": "content/world/npc-placements/placements-00000-00364.json:1#/records/142",
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "postgres": {
+          "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+          "seconds": 170.551,
+          "log": "/tmp/npcfix-evidence/post3020-focused-fixed-tests-2.log",
+          "sha256": "789c9b6f4991851f8d88dd69b2ed6c8ec118b106c48d37e9b80b7ed81bc0962f",
+          "cumulative_npcs": 248,
+          "cumulative_actors": 258,
+          "source_head": "18ca444be3c277ebd1e3dbbe190e74ecab3a0b3f"
+        },
+        "source_fixture": "npcfix-reviewed-full-anchor-ground-45",
+        "anchors": [
+          {
+            "x": 33927,
+            "y": 32117,
+            "floor": -15
+          }
+        ],
+        "red_log": "/tmp/npcfix-evidence/full-anchor-six-ground-pg-red.log",
+        "pin": "f3a42a443d484c41d7b3108f853feba6e8b78a1873f281dcfe38f191a37f3808",
+        "scope": "Audit identity and physical presence; no foreign quest or unverified service behavior claimed."
+      }
     },
     {
       "npc": "Lieutenant Harlan",
@@ -3305,19 +3433,63 @@
       "npc": "WOX",
       "town": "Roshamuul",
       "audit_status": "MISSING",
-      "work": "Retail placement authored. Add exact displayed identity.",
-      "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/323; content/npcs/definitions/npcs-01000-01289.json:1#/records/241",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "work": "Qualified full reviewed source anchors, exact displayed identity and native runtime actors; strict ground, collision and Item custody guards retained.",
+      "evidence": "content/world/npc-placements/placements-00000-00364.json:1#/records/343",
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "postgres": {
+          "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+          "seconds": 170.551,
+          "log": "/tmp/npcfix-evidence/post3020-focused-fixed-tests-2.log",
+          "sha256": "789c9b6f4991851f8d88dd69b2ed6c8ec118b106c48d37e9b80b7ed81bc0962f",
+          "cumulative_npcs": 248,
+          "cumulative_actors": 258,
+          "source_head": "18ca444be3c277ebd1e3dbbe190e74ecab3a0b3f"
+        },
+        "source_fixture": "npcfix-reviewed-full-anchor-ground-45",
+        "anchors": [
+          {
+            "x": 33944,
+            "y": 32117,
+            "floor": -15
+          }
+        ],
+        "red_log": "/tmp/npcfix-evidence/full-anchor-six-ground-pg-red.log",
+        "pin": "f3a42a443d484c41d7b3108f853feba6e8b78a1873f281dcfe38f191a37f3808",
+        "scope": "Audit identity and physical presence; no foreign quest or unverified service behavior claimed."
+      }
     },
     {
       "npc": "Yielothax",
       "town": "Roshamuul",
       "audit_status": "MISSING",
-      "work": "Retail placement authored. Add exact displayed identity.",
-      "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/328; content/npcs/definitions/npcs-01000-01289.json:1#/records/260",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "work": "Qualified full reviewed source anchors, exact displayed identity and native runtime actors; strict ground, collision and Item custody guards retained.",
+      "evidence": "content/world/npc-placements/placements-00000-00364.json:1#/records/348",
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "postgres": {
+          "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+          "seconds": 170.551,
+          "log": "/tmp/npcfix-evidence/post3020-focused-fixed-tests-2.log",
+          "sha256": "789c9b6f4991851f8d88dd69b2ed6c8ec118b106c48d37e9b80b7ed81bc0962f",
+          "cumulative_npcs": 248,
+          "cumulative_actors": 258,
+          "source_head": "18ca444be3c277ebd1e3dbbe190e74ecab3a0b3f"
+        },
+        "source_fixture": "npcfix-reviewed-full-anchor-ground-45",
+        "anchors": [
+          {
+            "x": 33928,
+            "y": 32137,
+            "floor": -15
+          }
+        ],
+        "red_log": "/tmp/npcfix-evidence/full-anchor-six-ground-pg-red.log",
+        "pin": "f3a42a443d484c41d7b3108f853feba6e8b78a1873f281dcfe38f191a37f3808",
+        "scope": "Audit identity and physical presence; no foreign quest or unverified service behavior claimed."
+      }
     },
     {
       "npc": "A Restless Soul",
@@ -7504,6 +7676,30 @@
       "checks": "PASS: PG RED162.13s/GREEN111.62s; full generator including repository5 tests125.91s; final game-server alltargets/allfeatures check and strict Clippy; canonical-order authoring4 tests; catalogue55.83s; fmt; duplicate migration check; independent regenerated world pin.",
       "cumulative_npcs": 238,
       "cumulative_native_actors": 240
+    },
+    {
+      "name": "npcfix-reviewed-full-anchor-ground-45",
+      "state": "QUALIFIED",
+      "entries": [
+        "Anaztassja Moroia",
+        "Fabiana",
+        "Glimpse of Allusion",
+        "Ortelio",
+        "WOX",
+        "Yielothax"
+      ],
+      "postgres_green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 170.551,
+        "log": "/tmp/npcfix-evidence/post3020-focused-fixed-tests-2.log",
+        "sha256": "789c9b6f4991851f8d88dd69b2ed6c8ec118b106c48d37e9b80b7ed81bc0962f",
+        "cumulative_npcs": 248,
+        "cumulative_actors": 258,
+        "source_head": "18ca444be3c277ebd1e3dbbe190e74ecab3a0b3f"
+      },
+      "postgres_red_log": "/tmp/npcfix-evidence/full-anchor-six-ground-pg-red.log",
+      "new_anchors": 14,
+      "guards": "Normal compiler, full source positions and exact identity assertions retained; bound32691 Item custody preserved,50820 strictly sourced Terrain,81 absent floor cells with immutable capture witnesses."
     }
   ],
   "shared_engine_lookup": {
@@ -9088,6 +9284,36 @@
     "next_checkpoint_gate": {
       "check": "PASS; cargo check --workspace --all-targets;14m23s including Cargo lock wait; /tmp/npcfix-evidence/post3020-next-checkpoint-check.log",
       "fmt": "PASS; cargo fmt --all -- --check; /tmp/npcfix-evidence/post3020-next-checkpoint-fmt.log"
+    }
+  },
+  "toffee_fixture_capacity_repair": {
+    "state": "COMPILES; focused five-shop PostgreSQL retest queued",
+    "red": {
+      "seconds": 434.46,
+      "marker": "POSTGRES_STARTED NPCFIX postage toffee",
+      "error": "toffee: oteryn:item.tibia.i48273: refused Rejected",
+      "log": "/tmp/npcfix-evidence/post3020-focused-fixed-tests-2.log"
+    },
+    "cause": "Seven remaining duplicate items + initial gold +14 fresh payout stacks need22 direct slots; default backpack has20. All item units and assertions preserved. Existing admitted3253 has24 slots.",
+    "source": "imports/canary/items-xml/items.xml:8193; SHA2561cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+    "green_pending_log": "/tmp/npcfix-evidence/toffee-capacity-focused-green.log",
+    "qualifications_added": 0
+  },
+  "post3020_focused_failure_collection": {
+    "tests": 10,
+    "passed": 8,
+    "failed": 2,
+    "seconds": 1640.722,
+    "log": "/tmp/npcfix-evidence/post3020-focused-fixed-tests-2.log",
+    "failures": [
+      "Toffee sequential payout exceeds fixture20 slots; already admitted24-slot backpack fixture now selected",
+      "Guardian canonical trigger sets incorrectly treated as ordered phrase after main merge; restored b12367d4e independent trigger matching"
+    ],
+    "next": "Compile current two repairs, push compiling checkpoint with six qualifications, then run focused five shops and Guardian eight-topic PostgreSQL cases. Original thirteen-merchant test remains unchanged for CI.",
+    "checkpoint_gate": {
+      "check": "PASS6m12s; cargo check --workspace --all-targets; /tmp/npcfix-evidence/npcfix-two-failure-workspace-check.log",
+      "fmt": "PASS; cargo fmt --all -- --check; /tmp/npcfix-evidence/npcfix-two-failure-final-fmt.log",
+      "focused_retest": "Queued behind check; /tmp/npcfix-evidence/npcfix-two-failure-focused-green.log"
     }
   }
 }

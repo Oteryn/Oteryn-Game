@@ -39,6 +39,11 @@ fn npcfix_postgres_dispatch_services_and_replay() -> TestResult {
 }
 
 #[test]
+fn npcfix_postgres_guardian_sorted_literal_topics_and_multipart_order() -> TestResult {
+    postgres_services(&["a_ghostly_guardian"])
+}
+
+#[test]
 fn npcfix_postgres_retained_exact_shop_prices_and_replay() -> TestResult {
     postgres_services(&["dixi", "lubo", "pompan", "shiantis", "toffee"])
 }
@@ -189,7 +194,19 @@ fn scenario(keys: &[&str]) -> TestResult {
                         }
                     }
                 }
-                seed_main_backpack(&h, &inventory).await?;
+                if key == "toffee" {
+                    // Retain two units of every offer while seven fresh coin payouts accumulate.
+                    // The source-backed backpack of holding has 24 entries; the 20-entry
+                    // default correctly refuses the sixth payout with this fixture inventory.
+                    super::item_look::seed_main_backpack_with_definition(
+                        &h,
+                        &inventory,
+                        "oteryn:item.tibia.i3253",
+                    )
+                    .await?;
+                } else {
+                    seed_main_backpack(&h, &inventory).await?;
+                }
                 let current =
                     crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
                         .current_session_at(session)
