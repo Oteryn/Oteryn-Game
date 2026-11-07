@@ -27,11 +27,7 @@
     "regeneration": "repository register_spell_families40files passed"
   },
   "checks_pending": [
-    "final changed crate check including server",
-    "strict all-target/all-feature Clippy",
-    "legacy nested and atomic eleven-track PostgreSQL regressions",
-    "generator drift/pin refresh",
-    "independent review"
+    "Final stable-candidate independent review under the bound policy, after remaining lane authoring."
   ],
   "logs": {
     "questpc8-smith-cache-red.log": "350f7ed51ba933c8edc934b597fed0150d9d319a90708e10488a8a408ec7ae0d",
@@ -41,5 +37,6 @@
     "questpc8-smith-custody-unit2.log": "c810ad8b9545f823803abcd13bbb734a7f3dd40b312883158da47dc1e7f66f1f",
     "questpc8-flat-mint-schema2.log": "510ce6d5a5e26c06aabf0de087eae450d7b961ad53056a018e865bd707d5332c",
     "questpc8-smith-regenerate.log": "e17883c3b904492b5238996447f88597b8e4d46e6c883b4445ed5f1e756d83aa"
-  }
+  },
+  "merged_validation": "native-alias-smith-merge-validation.json"
 }
