@@ -16,7 +16,7 @@ import world_region_codec as codec
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = ROOT / 'tools/content-schema/world-authoring/samples/quest-stock-key-bindings.json'
 DOOR_OUTPUT = ROOT / 'tools/content-schema/world-authoring/samples/quest-route-key-door-bindings.json'
-DOOR_SELECTED = ('ID3001', 'ID3002', 'ID3003', 'ID3012')
+DOOR_SELECTED = tuple(f'ID{number}' for number in range(3001, 3009)) + ('ID3012',)
 CORPUS = ROOT / 'tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz'
 REVISION = '9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d'
 SELECTED = tuple(f'ID{number}' for number in range(3003, 3008))
@@ -88,11 +88,12 @@ def document(capture="stock"):
                                  value=number, source_line=field['line'],
                                  storage_line=storage_line, map_path=region['path'],
                                  map_sha256=region['sha256']))
-    if len(bindings) != 5 or len({(tuple(b['position']), b['item']) for b in bindings}) != 5:
+    expected_count = 5 if capture == 'stock' else 10
+    if len(bindings) != expected_count or len({(tuple(b['position']), b['item']) for b in bindings}) != expected_count:
         raise ValueError('quest key capture incomplete or ambiguous')
     if capture == 'stock' and len({b['value'] for b in bindings}) != len(SELECTED):
         raise ValueError('stock key source number drift')
-    if capture == 'doors' and sorted(b['value'] for b in bindings) != [3001, 3002, 3003, 3012, 3012]:
+    if capture == 'doors' and sorted(b['value'] for b in bindings) != list(range(3001, 3009)) + [3012, 3012]:
         raise ValueError('key door source number drift')
     return dict(schema=1, classification='OTS_HYPOTHESIS_ONLY', sources=sources,
                 bindings=sorted(bindings, key=lambda row: row['position']))
@@ -111,7 +112,7 @@ def main():
     else:
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(expected)
-    print(f'5 source {args.capture} key bindings verified')
+    print(f"{5 if args.capture == 'stock' else 10} source {args.capture} key bindings verified")
 
 
 if __name__ == '__main__':

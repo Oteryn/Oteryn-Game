@@ -1,0 +1,69 @@
+{
+  "result": "GREEN",
+  "craft_parent": "fb96a650ef7e848aadcaf77c3fac3cbdb45225e4",
+  "incoming_parent": "886ac871c97aa3de191fb98db221efc44c43d1fe",
+  "scope": "Preserve incoming five native upper-key-door selectors with qualified Corym forging; only latest-batch JSON conflicted.",
+  "logs": {
+    "fmt": {
+      "path": "qlane-meta/questpc/cloud-craft-upper-merge-fmt.log",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "normalization": "terminal blank lines only",
+      "result": []
+    },
+    "check": {
+      "path": "qlane-meta/questpc/cloud-craft-upper-merge-check.log",
+      "sha256": "b1040b1df5550199b8ea1f5adad7efbd744a6542fcc47359f99599ecce6b8b02",
+      "raw_sha256": "b1040b1df5550199b8ea1f5adad7efbd744a6542fcc47359f99599ecce6b8b02",
+      "normalization": "terminal blank lines only",
+      "result": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 42s"
+      ]
+    },
+    "clippy": {
+      "path": "qlane-meta/questpc/cloud-craft-upper-merge-clippy.log",
+      "sha256": "cb9e79d254efa7e34508c6d0d95dda42c104ddec3d9fce024a1f06ed95de2798",
+      "raw_sha256": "cb9e79d254efa7e34508c6d0d95dda42c104ddec3d9fce024a1f06ed95de2798",
+      "normalization": "terminal blank lines only",
+      "result": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 53s"
+      ]
+    },
+    "units": {
+      "path": "qlane-meta/questpc/cloud-craft-upper-merge-units.log",
+      "sha256": "d08f3eb5808dd39cf696cf2e14b16e867ee6e8afe3faf8dd870e1e3458ef07ae",
+      "raw_sha256": "b0f2863c327ee5a642f28a22e5c7cfcb731de1ba49946576b3cde48bd83e83d0",
+      "normalization": "terminal blank lines only",
+      "result": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 27s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 219 filtered out; finished in 0.04s"
+      ]
+    },
+    "generation": {
+      "path": "qlane-meta/questpc/cloud-craft-upper-merge-generation.log",
+      "sha256": "15cf51c3d0b9839b38483a10779101bb2067e665d3fa55988245fab3fb0df678",
+      "raw_sha256": "15cf51c3d0b9839b38483a10779101bb2067e665d3fa55988245fab3fb0df678",
+      "normalization": "terminal blank lines only",
+      "result": [
+        "5 source stock key bindings verified",
+        "10 source doors key bindings verified",
+        "PASS item_conversion records=145 check=True"
+      ]
+    },
+    "pin": {
+      "path": "qlane-meta/questpc/cloud-craft-upper-merge-pin.log",
+      "sha256": "6454a2a489e790e064ab57d0462fa3843c31ca9074927cb15ec46cb402286af1",
+      "raw_sha256": "6454a2a489e790e064ab57d0462fa3843c31ca9074927cb15ec46cb402286af1",
+      "normalization": "terminal blank lines only",
+      "result": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.11s"
+      ]
+    }
+  },
+  "postgres_evidence": [
+    "qlane-meta/questpc/cloud-hidden-craft-validation.json",
+    "qlane-meta/questpc/cloud-draconia-upper-door-validation.json"
+  ],
+  "postgres_boundary": "Both unchanged source cohorts retain their actual RED/GREEN PostgreSQL proofs. Fresh combined checks are cargo fmt/check/strict clippy, source-binding units, deterministic authoring and pin verification. No additional PG run or whole-title qualification claimed.",
+  "historical_log_normalization": "An older greeting-unit capture contained NUL padding. Replaced padding with an explicit ASCII marker; retained all result lines and the original raw checksum in cloud-hidden-npcs-validation.json."
+}

@@ -1,3 +1,32 @@
+## Craft and native upper doors merged GREEN — 2026-11-07
+
+Preserved craft fb96a650e and remote886ac871c. Combined world/dispatch all-target
+check and strict Clippy, fmt, source-binding units, deterministic stock/ten-door/
+craft generation and pin-check pass. Both unchanged source cohorts retain actual
+PG RED/GREEN proofs; no new merge PG run or title qualification claimed.
+Evidence: cloud-craft-upper-merge-validation.json. Publish fast-forward now.
+
+This writer continues Hidden Threats: next batch3 WorksDoor forged-key unlocks.
+Draft fixture: /tmp/questpc-hidden-doors-draft.rs; source plan/custody retained in
+/tmp/questpc-hidden-next-plan.md and /tmp/questpc-hidden-source. Captured source
+catalogue lacks all3 WorksDoor tracks. Preserve exact prior NPC13 Tibia Tales
+save compatibility when adding them; retain actual carried key identity.
+Follow with two NPC storage-gate USE compositions and Cave Spider room/ending.
+Fresh qengine2 check before generic feature implementation; skip17 overlapping
+QUALIFIED titles per the exact list/sha in QUEST-STATUS. Continue without ending.
+
+---
+
+## Upper-door and concurrent NPC merge checked — 2026-11-07
+Preserved remote4c2056aa8 Corym NPC work and local upper-door batch7c3d513fe.
+Only latest-batch JSON conflicted; both records retained. Combined world/dispatch
+check and strict Clippy, fmt, source captures and pin refresh PASS. PG evidence is
+retained from each unchanged slice; no fresh merge PG run claimed. World digest
+9865615ff643553f07bccfc4f76c0f05919939c751cd35f0a87f92d82591e8f7.
+Next local batch: four exact native Draconia callback anchors, plan at
+/tmp/questpc-next-native-selectors-plan.md. Incoming writer owns Hidden Threats;
+continue Draconia here without overlapping its craft work.
+
 ## Hidden Threats crafting GREEN — 2026-11-07
 
 Three source components qualify: full-backpack filing with exact file retention,
@@ -50,6 +79,24 @@ operands while preserving original fluid cases. Run actual PG RED before feature
 implementation; add source-bound generic retained tool conversion and recipe facts.
 
 ---
+
+## All ten native source key doors GREEN — 2026-11-07
+Upper source doors3004-3008 now use exact pinned startup selectors. Original five
+capture rows and stock capture preserved. Actual PostgreSQL18.6 RED5/5 failures
+220.54s; GREEN5/5 passes232.77s, with server markers and six real framed USE
+commands per case. World pure units9/9, fmt, capture checks, world/dispatch
+all-target/all-feature check2m45s and strict Clippy3m02s PASS. Pins refreshed with
+unchanged world digest. Full evidence: cloud-draconia-upper-door-validation.json.
+Counts unchanged60QUALIFIED/117UNFINISHED/1excludedDawnportBLOCKED.
+
+NEXT: finish Draconia source access/party/NPC/container-stock route. Primary pinned
+container_misc.lua declares skeleton5972 at32794,31572,z7 containing key2969;
+MapContainersMisc loads before key actions, with fill-only-if-empty semantics.
+Native skeleton root exists but startup child is absent. This is shared container
+stock, requiring a generic owner; do not substitute a personal claim. Check other
+lane implementations before building it. Source loader recursively finds the key
+inside the container and stamps exact action3001. Continue remaining entries.
+Use sourceenv then CARGO_INCREMENTAL=0; push each green slice and at least30min.
 
 ## First five native source key doors GREEN — 2026-11-07
 Source doors3001/3002/3003 and both Hellgate3012 positions now acquire exact startup

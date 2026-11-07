@@ -290,6 +290,13 @@ All ten controlled-fixture actors are installed once in a separate walkable row;
 subsequent dialogue moves the character to each actor. Runtime NPC placement
 immutability is preserved, including the earlier failed fixture evidence.
 
+Upper key-door slice: exact native source selectors3004-3008 are retained from
+pinned door_key.lua; no proximity aliases. Five real PG access cases green.
+First key3001 is declared inside skeleton5972 in container_misc.lua at32794,31572,z7.
+Source loads container contents before recursively applying key actions; stock is
+filled only when the source container is empty. Primary source:
+https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/container_misc.lua
+
 Hidden Threats forging keeps the original CRAFT-1 source snapshot frozen and
 adds only two exact Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b witnesses:
 https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/hidden_threats/action-key_forge.lua

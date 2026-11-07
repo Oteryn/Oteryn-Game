@@ -1,0 +1,74 @@
+{
+  "result": "PASS",
+  "qualified_titles_added": 0,
+  "slice": "Five exact native upper key doors3004-3008; all ten source access selectors now covered",
+  "pg": {
+    "version": "18.6",
+    "red": {
+      "failed": 5,
+      "passed": 0,
+      "total_seconds": 220.54,
+      "reason": "Missing exact startup action: None versus expected3004-3008"
+    },
+    "green": {
+      "passed": 5,
+      "failed": 0,
+      "total_seconds": 232.77,
+      "case_body_seconds": {
+        "3004": 42.534451796,
+        "3005": 42.646383443,
+        "3006": 42.184119224,
+        "3007": 42.126039856,
+        "3008": 41.468287853
+      },
+      "coverage": "Six framed USE commands and three transitions per case: wrong key, open, replay, reconnect, relock, plain locked refusal"
+    }
+  },
+  "validation": {
+    "fmt": "PASS",
+    "units": "9 passed0.05s; pure world units, not PG",
+    "generation": "Ten exact door rows verified; original five and stock capture preserved",
+    "check": "world/dispatch all targets/all features PASS2m45s",
+    "clippy": "world/dispatch all targets/all features -D warnings PASS3m02s",
+    "pins": "PASS existing repository compiler; world digest unchanged2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968"
+  },
+  "boundary": "Mechanic slice only; controlled carried-key fixture does not prove issuance. Whole Draconia remains active.",
+  "logs": {
+    "check": {
+      "log": "qlane-meta/questpc/cloud-draconia-upper-door-check.log",
+      "sha256": "22a87c2aecbc869dd4bb3cc24289248778bbd3366e7403a5fad4dbcba7425552"
+    },
+    "clippy": {
+      "log": "qlane-meta/questpc/cloud-draconia-upper-door-clippy.log",
+      "sha256": "ef68a25ad8983372164e7d2dcbe5e885a6ae8ae7b7889ac8fbb2ff0089d20c2c"
+    },
+    "fmt": {
+      "log": "qlane-meta/questpc/cloud-draconia-upper-door-fmt.log",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    "generated": {
+      "log": "qlane-meta/questpc/cloud-draconia-upper-door-generated.log",
+      "sha256": "dc120ac1bcd72df4d37585f4f7f5c4aa0d5700ee5b13f2df17942538e0f2d711"
+    },
+    "green": {
+      "log": "qlane-meta/questpc/cloud-draconia-upper-door-green.log",
+      "sha256": "fc8790acdd966213039256a8810b2959c849226e99fcb620d21a1db74617997a"
+    },
+    "pins": {
+      "log": "qlane-meta/questpc/cloud-draconia-upper-door-pins.log",
+      "sha256": "67fb35843ac31fbaaabef2dbaa46b1855a28d8c84e37d5319f387a9bb76b496c"
+    },
+    "red": {
+      "log": "qlane-meta/questpc/cloud-draconia-upper-door-red.log",
+      "sha256": "1b93b64a2ffc0baa719c8532082fb2dccde388c96341ab241d894b762f63be9f"
+    },
+    "stock-check": {
+      "log": "qlane-meta/questpc/cloud-draconia-upper-door-stock-check.log",
+      "sha256": "bae8b598e12cb3b0c8cd893a6efa846807305a9821b2fe1235aa902def5d66ab"
+    },
+    "units": {
+      "log": "qlane-meta/questpc/cloud-draconia-upper-door-units.log",
+      "sha256": "cacdccc3301422a60c5df12632f1f2bfacf1d98267d10694b65405b082d71cee"
+    }
+  }
+}

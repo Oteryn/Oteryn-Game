@@ -3546,7 +3546,7 @@
         ]
       },
       "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
-      "active_batch": "Native stock3003-3007 and doors3001/3002/3003 plus both Hellgate3012 doors PG/strict green. Continue doors3004-3008, source selectors/level gate, party and first stock/NPC exchange, then complete reward composition."
+      "active_batch": "All ten native source key-door entries and stock3003-3007 PG/strict green. Next exact native callback anchors, source level gate, party, first shared container key and NPC exchange; then full reward/route composition."
     },
     {
       "title": "Dragon Corpse Quest",
@@ -8585,7 +8585,7 @@
     "earlier_snapshot_merged": "6c09e0365110db6683f938dd08d5d584744cbf37",
     "merge_resolution": "Retained the current newer tree in all 86 overlapping paths. Earlier snapshot retained in ancestry.",
     "owner_rule": "All shared engine features remain in scope; historical outside-lane engine blockers are nonterminal and must be implemented or reused.",
-    "active": "Publish craft GREEN batch, then five exact Corym doors with retained forged key and strict append-only quest definition compatibility; follow with source Cave Spider room and complete storyline. No generic feature ownership deferral.",
+    "active": "Publish merged craft and upper-door work fast-forward; continue three retained forged-key WorksDoor unlocks, followed by NPC flag gates and Cave Spider room/ending.",
     "concurrent_remote_head": "4e12ac30e",
     "validation": {
       "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal -- --nocapture",
@@ -9196,9 +9196,9 @@
       "native_validation": "qlane-meta/questpc/cloud-native-key-validation.json"
     },
     "draconia_source_doors": {
-      "state": "first_five_native_access_entries_pg_green",
-      "validation": "qlane-meta/questpc/cloud-draconia-door-validation.json",
-      "next": "Remaining source doors3004-3008, same native5097 profile and generic owner; then complete source access/party/NPC/stock route."
+      "state": "all_ten_native_access_entries_pg_green",
+      "validation": "qlane-meta/questpc/cloud-draconia-upper-door-validation.json",
+      "next": "Complete native source access/party/NPC/container-stock route; no whole-title promotion."
     }
   },
   "cross_lane_qualified_elsewhere": {
@@ -9226,77 +9226,9 @@
     "rule": "Skip per current owner; this does not claim those implementations are merged here."
   },
   "latest_cloud_integration": {
-    "parents": [
-      "90a959a3e",
-      "89cfab3ee"
-    ],
-    "status": "GREEN",
-    "resolution": "Only latest batch metadata conflicted. Preserve every runtime file and both source evidence records; current44-placement world pin9865615f... retained.",
-    "postgres_version": 180006,
-    "scope": "Merged native stock/source predicates and full NPC acceptance/rescue/hand-in composition plus native3003 crash/replay",
-    "logs": {
-      "fmt": {
-        "path": "qlane-meta/questpc/cloud-hidden-merge-fmt.log",
-        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "markers": [],
-        "results": []
-      },
-      "check": {
-        "path": "qlane-meta/questpc/cloud-hidden-merge-check.log",
-        "sha256": "c82686c2461962af8a9f5ef4e393513248904c49713d332a035320f9ab9a1281",
-        "markers": [],
-        "results": [
-          "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 45s"
-        ]
-      },
-      "clippy": {
-        "path": "qlane-meta/questpc/cloud-hidden-merge-clippy.log",
-        "sha256": "fcf70c76e109f4c42d090fa20c6e1b06b8cbcd4cabefea81c8b2d4521144127b",
-        "markers": [],
-        "results": [
-          "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 52s"
-        ]
-      },
-      "generation": {
-        "path": "qlane-meta/questpc/cloud-hidden-merge-generation.log",
-        "sha256": "a087d5fd96e7a8d9a7c9fb746f867139b26830446a77d9d2450c77cd787f1e2b",
-        "markers": [],
-        "results": []
-      },
-      "npc": {
-        "path": "qlane-meta/questpc/cloud-hidden-merge-npc.log",
-        "sha256": "a236635ee7ca9bf452d6e6b2654352bcb05ae855f47bdc0267de26ded305725b",
-        "markers": [
-          "POSTGRES_CASE_STARTED quest_source_objects mint=false version=180006",
-          "POSTGRES_CASE_STARTED hidden_threats_source_npc_acceptance version=180006",
-          "POSTGRES_CASE_COMPLETED hidden_threats_source_npcs phase=2 duration=92.12186287s"
-        ],
-        "results": [
-          "    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 32s",
-          "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2569 filtered out; finished in 92.12s"
-        ]
-      },
-      "key": {
-        "path": "qlane-meta/questpc/cloud-hidden-merge-key.log",
-        "sha256": "d8c773f3781a3fc9c62c47681e0f11763d6d56d31e753fa6a21269536909c65d",
-        "markers": [
-          "QUESTPC-MAP-KEY-WIRE-PG version=18.6 (Debian 18.6-1.pgdg13+2) appearance=2969 key=3003 crash=true full=false native=Some(TilePos { x: 32790, y: 31593, floor: -7 })",
-          "QUESTPC-MAP-KEY-WIRE-PG GREEN key=3003 crash=true full=false native=Some(TilePos { x: 32790, y: 31593, floor: -7 }) duration=41.149019549s"
-        ],
-        "results": [
-          "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.24s",
-          "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2569 filtered out; finished in 45.51s"
-        ]
-      },
-      "pin": {
-        "path": "qlane-meta/questpc/cloud-hidden-merge-pin.log",
-        "sha256": "4fd5ed964e8948491b1fc32a8231acf28ab20f0d492a0f8a835473c45c26e813",
-        "markers": [],
-        "results": [
-          "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.10s"
-        ]
-      }
-    }
+    "state": "combined_tree_checks_pass",
+    "remote": "4c2056aa8",
+    "validation": "qlane-meta/questpc/cloud-upper-door-merge-validation.json"
   },
   "concurrent_cloud_batch": {
     "name": "Draconia exit six-scene PG proof; implementation checks running",
@@ -9387,5 +9319,23 @@
       "qlane-meta/questpc/cloud-draconia-door-validation.json"
     ],
     "postgres_boundary": "No PG cases repeated for this disjoint merge; the new native door producer/profile cohort has its own committed actual PG proof and full NPC composition passed on the combined ancestor."
+  },
+  "concurrent_hidden_npc_batch": {
+    "scope": [
+      "Ratter and Servant source acceptance",
+      "eight distinct once-only rescues with three native gifts",
+      "twenty rare earth exchanged atomically for two3040, line5 and access9"
+    ],
+    "status": "GREEN",
+    "evidence": "qlane-meta/questpc/cloud-hidden-npcs-validation.json",
+    "qualification_boundary": "Three source components qualified; complete Hidden Threats continues with forge/door/room."
+  },
+  "craft_upper_door_integration": {
+    "status": "GREEN",
+    "craft_head": "fb96a650e",
+    "remote_head": "886ac871c",
+    "incoming_evidence": "qlane-meta/questpc/cloud-draconia-upper-door-validation.json",
+    "scope": "Preserve five additive native upper-door selectors and qualified crafting. Only latest-batch JSON conflicted; retained both evidence cohorts.",
+    "evidence": "qlane-meta/questpc/cloud-craft-upper-merge-validation.json"
   }
 }

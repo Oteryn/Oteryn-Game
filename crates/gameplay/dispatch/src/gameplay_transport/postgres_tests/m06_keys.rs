@@ -43,6 +43,27 @@ fn draconia_source_key_door_3012_south() -> TestResult {
     source_key_door(32676, 31671, -10, 3012)
 }
 
+#[test]
+fn draconia_source_upper_key_door_3004() -> TestResult {
+    source_key_door(32809, 31593, -6, 3004)
+}
+#[test]
+fn draconia_source_upper_key_door_3005() -> TestResult {
+    source_key_door(32794, 31582, -6, 3005)
+}
+#[test]
+fn draconia_source_upper_key_door_3006() -> TestResult {
+    source_key_door(32814, 31595, -6, 3006)
+}
+#[test]
+fn draconia_source_upper_key_door_3007() -> TestResult {
+    source_key_door(32797, 31592, -4, 3007)
+}
+#[test]
+fn draconia_source_upper_key_door_3008() -> TestResult {
+    source_key_door(32804, 31585, -1, 3008)
+}
+
 pub(super) fn source_key_door(x: u16, y: u16, floor: i8, action: u16) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());

@@ -1,0 +1,28 @@
+{
+  "result": "PASS",
+  "merge_remote": "4c2056aa8",
+  "checks": "world/dispatch all targets/all features cargo check2m56s and strict Clippy; fmt, exact stock/ten-door captures, pins PASS",
+  "pg_boundary": "Retained unchanged upper-door five-case PG proof232.77s and incoming NPC/stock integration proof; no new PG run claimed for this metadata-only conflict resolution.",
+  "logs": {
+    "clippy": {
+      "log": "qlane-meta/questpc/cloud-upper-door-merge-clippy.log",
+      "sha256": "26fb9e1367d8ea72577ce531552d8378cf965f256483df9e0e8da55bc8c7d22b"
+    },
+    "pins": {
+      "log": "qlane-meta/questpc/cloud-upper-door-merge-pins.log",
+      "sha256": "7a5a14409a4eea738e1636403f96179e76b2de58330e1b82681364a44a125bfe"
+    },
+    "generation": {
+      "log": "qlane-meta/questpc/cloud-upper-door-merge-generation.log",
+      "sha256": "929105106c31a00e67409a189a5063f349e8dee91e745b8103c0645f328101f2"
+    },
+    "check": {
+      "log": "qlane-meta/questpc/cloud-upper-door-merge-check.log",
+      "sha256": "f6d62ed366afd8bd4693a193004ef19a07519ad10f1df919b551567ab8d06e0d"
+    },
+    "fmt": {
+      "log": "qlane-meta/questpc/cloud-upper-door-merge-fmt.log",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    }
+  }
+}
