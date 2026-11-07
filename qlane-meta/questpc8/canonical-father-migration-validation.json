@@ -1,0 +1,41 @@
+{
+  "migration": "1307_questpc8_canonical_father_values.sql",
+  "strategy": "Keep published bootstrap guards active under private names; canonical1315 installs its own public names",
+  "published_migrations_edited": false,
+  "atomic_eleven_track_write_changed": false,
+  "red": {
+    "cases": 6,
+    "root": "migration1315 function game_father_values_proven already exists",
+    "log_sha256": "b043027b3fee12e205fbd448d0d5e471cc809fa7371fd2cb370b05ce0a317363"
+  },
+  "green_schema": {
+    "postgres": "18.6",
+    "duration_seconds": 3,
+    "marker": "POSTGRES_QUESTPC8_1307_CANONICAL_MIGRATION_PASS",
+    "log_sha256": "49d9d4432f2934ffe77ae6d4d1b5f0e7fe16bff8d7cb37aaafa73a089a573cfd"
+  },
+  "upgrade": {
+    "result": "PASS; canonical function unchanged and six proof triggers retained",
+    "marker": "POSTGRES_QUESTPC8_1307_CANONICAL_UPGRADE_UNCHANGED_PASS",
+    "log_sha256": "eb71b0a14ca05175e2a12c5cd0d67a0594857cc8ff0701436d511d76fa8c1e4f"
+  },
+  "runtime_pg_rerun": "six cases building",
+  "own_migrations": [
+    "1300_questpc8_custody_and_npc_proofs.sql",
+    "1301_questpc8_reward_backpack_outputs.sql",
+    "1302_questpc8_world_reward_receipts.sql",
+    "1303_questpc8_state_operation_validation.sql",
+    "1304_questpc8_occurrence_reward_mint.sql",
+    "1305_questpc8_forge_profile_admission.sql",
+    "1306_questpc8_father_reward_amount.sql",
+    "1307_questpc8_canonical_father_values.sql"
+  ],
+  "prepush2": {
+    "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+    "workspace_all_targets": "PASS 204s",
+    "fmt_all_check": "PASS",
+    "generated": "binding evidence, completion, audit tags and custody census regenerated; world pins unchanged",
+    "duplicate_migrations": "PASS",
+    "pending": "six own runtime PostgreSQL cases and unit rerun of dispatch/durability/quests/npc/content/items; cadence exception; no new runtime qualification"
+  }
+}

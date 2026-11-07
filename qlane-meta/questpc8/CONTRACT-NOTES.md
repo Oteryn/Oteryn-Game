@@ -772,3 +772,11 @@ and refusal on either changed canonical data or changed XML.
   charges for Ornamented Shield only after pinned item/quest Wiki consensus.
   The test now proves that default and rejects an unproved partial1 projection;
   no production recipe, grant or outside-lane quest coverage is changed.
+
+Canonical Father reconciliation (2026-11-07): retain the published lane proof
+as an additional private constraint and let main1315 install the canonical
+public proof. Forward migration1307 verifies the old function's exact provenance
+markers and recreates its constraint triggers with identical definitions inside
+one transaction before renaming the function. It is a no-op once the canonical
+required_xp function exists. Fresh PG18.6 schema and upgrade preservation checks
+passed; runtime regression cases remain pending until their rebuild completes.

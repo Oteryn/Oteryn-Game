@@ -1,3 +1,17 @@
+# Latest checkpoint: canonical Father migration reconciliation
+
+The post-merge own-PG run found one shared setup failure in all6cases:1315
+re-created the lane bootstrap's game_father_values_proven function. New1307
+preserves published migrations and continuously keeps the old proof active
+under private names while canonical1315 installs its guards. No11-track write
+or grant predicate is weakened. Full schema PASS on PG18.6 in3s; canonical
+upgrade no-op and6trigger preservation PASS. Proof: canonical-father-migration-validation.json.
+Six runtime cases are rebuilding with this forward migration. Equipment cohort
+count now excludes the QNPCFX item from the frozen baseline (the generated
+post-baseline set already includes it). Explicit native pipe messages precede
+empty generic replies. Shared corpse provider generation remains isolated
+until its required repository Prey simulation is refreshed.
+
 Main47db34f09 arity fix merged in32e89595f. Its bug is already fixed by the
 checked32-line typed input adapter, which also retains Channel scope for NPC
 inputs. No product code differs from the all-target-checked integration tree.
@@ -953,3 +967,9 @@ pending helpers and generic carried-input code remain local authoring work.
 14of23active entries remain QUALIFIED,9remain. Continue the focused RED, add
 the four documented callbacks, run the full route GREEN and targeted checks,
 then publish the completed slice immediately. Do not end the session.
+
+PREPUSH-2 checkpoint: main47db34f09 remains current; binding/completion/audit
+and custody generators completed, world pin refresh unchanged, duplicate check
+PASS, workspace all-target check PASS204s, fmt PASS. Pending by cadence exception:
+six own runtime PG cases and the six changed-crate unit rerun (dispatch,
+durability, quests, npc, content, items). Do not report those reruns green.

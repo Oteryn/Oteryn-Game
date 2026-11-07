@@ -292,9 +292,24 @@ impl NpcTalkBook {
                 .iter()
                 .filter_map(|reference| model.services().get(reference))
                 .any(|service| service.bank);
-            let (greeting_reply, farewell_reply, topic_reply, dialogue_keywords) = if reference.key
-                == "oteryn:npc.grizzly_adams"
-            {
+            let (greeting_reply, farewell_reply, topic_reply, dialogue_keywords) = if native_quest
+                && matches!(
+                    reference.key.as_str(),
+                    "oteryn:npc.strange_pipe"
+                        | "oteryn:npc.strange_pipe_1"
+                        | "oteryn:npc.strange_pipe_2"
+                        | "oteryn:npc.strange_pipe_3"
+                ) {
+                // Crystal201189f: each pipe's unconditional storage callback
+                // inherits these NpcHandler messages; it declares no override.
+                // The native dispatcher still commits the access write first.
+                (
+                    "Greetings, |PLAYERNAME|.".into(),
+                    "Good bye, |PLAYERNAME|.".into(),
+                    None,
+                    Vec::new(),
+                )
+            } else if reference.key == "oteryn:npc.grizzly_adams" {
                 // W15c: the existing NPC owner opens the conversation; confirmed task
                 // choices and their stateful replies belong to native Grizzly dispatch.
                 (
@@ -443,24 +458,6 @@ impl NpcTalkBook {
                     .cloned()
                     .unwrap_or_else(|| "Farewell.".into());
                 (greeting, farewell, None, Vec::new())
-            } else if native_quest
-                && matches!(
-                    reference.key.as_str(),
-                    "oteryn:npc.strange_pipe"
-                        | "oteryn:npc.strange_pipe_1"
-                        | "oteryn:npc.strange_pipe_2"
-                        | "oteryn:npc.strange_pipe_3"
-                )
-            {
-                // Crystal201189f: each pipe's unconditional storage callback
-                // inherits these NpcHandler messages; it declares no override.
-                // The native dispatcher still commits the access write first.
-                (
-                    "Greetings, |PLAYERNAME|.".into(),
-                    "Good bye, |PLAYERNAME|.".into(),
-                    None,
-                    Vec::new(),
-                )
             } else if native_quest && npc.dialogue.is_some() {
                 // The closed native caller supplies conditional replies and writes
                 // after this existing conversation owner admits the speaker.

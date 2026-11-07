@@ -340,7 +340,8 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     assert_eq!(venison.attributes.speed_bonus, Some(0));
     let baseline = ORIGINAL_PROFILES
         + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
-        + additions.len();
+        + additions.len()
+        - npc_additions.len(); // QNPCFX is already represented in the generated post-baseline set.
     let custody: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/questpc8-equipment-custody-census.json"

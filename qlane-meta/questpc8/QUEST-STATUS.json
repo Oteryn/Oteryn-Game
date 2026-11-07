@@ -1011,7 +1011,7 @@
     "first_unqualified_stage": {
       "key": "s10",
       "kind": "collect",
-      "objective": "Zdobądź Winning Lottery Ticket do żeńskiego Mage potion belt.",
+      "objective": "Zdob\u0105d\u017a Winning Lottery Ticket do \u017ce\u0144skiego Mage potion belt.",
       "targets": [
         "Winning Lottery Ticket"
       ]
@@ -1694,6 +1694,11 @@
         "postgres_seconds": 217.555976812,
         "marker": "POSTGRES_WRATH_EXACT_CRATE_OPENING_AND_REPLAY_PASS",
         "scope": "Opening exact-material hand-in and replay only"
+      },
+      "post_main_revalidation": {
+        "schema_proof": "canonical-father-migration-validation.json",
+        "runtime_cases": "six own PostgreSQL cases rebuilding; not yet green",
+        "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05"
       }
     }
   },
