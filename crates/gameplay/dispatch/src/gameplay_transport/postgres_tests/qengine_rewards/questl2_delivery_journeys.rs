@@ -72,6 +72,8 @@ pub(crate) fn world(
         terrain: None,
     });
     if name.ends_with("alliance") {
+        // Combat tile qualification requires a real source ground identity.
+        data.manifest.palette[0].key = "oteryn:terrain.tibia.i100".into();
         for (id, appearance) in [(3, 2472), (4, 10186), (5, 10187)] {
             data.manifest.palette.push(bundle::PaletteEntry {
                 id,
