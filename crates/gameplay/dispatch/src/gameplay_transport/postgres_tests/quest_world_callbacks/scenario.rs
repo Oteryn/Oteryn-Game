@@ -23,7 +23,8 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let monk = name.starts_with("monk-guidance");
-    let classic_npc = matches!(
+    let shared_rewards = name.starts_with("qengine-rewards-");
+    let classic_npc = shared_rewards || matches!(
         name,
         "catalogue-npc"
             | "catalogue-npc-father"
@@ -68,8 +69,11 @@ fn scenario_case(
     }
     let world = world(&callback, trigger)?;
     run(async |admin| {
-        let h = Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false)
-            .await?;
+        let h = if shared_rewards {
+            Harness::create_quest_reward(admin, "quest_rewards", !name.ends_with("pirate")).await?
+        } else {
+            Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false).await?
+        };
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -201,6 +205,8 @@ fn scenario_case(
         if name == "npc-item-exchanges" {
             super::super::npc_item_exchanges::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
+        } else if shared_rewards {
+            super::super::qengine_rewards::exercise(&mut owner, &mut admitted, &h, &authority, name).await?;
         } else if name.starts_with("formogar-hoist-") {
             super::super::questpc7_hoist::exercise(
                 &mut owner,

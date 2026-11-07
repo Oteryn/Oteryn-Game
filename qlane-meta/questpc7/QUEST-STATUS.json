@@ -98,7 +98,7 @@
     "owner": "questpc7",
     "remaining_work": {
       "kind": "lane_implementation_work",
-      "missing_piece": "Poltergeist Outfits: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "missing_piece": "Poltergeist Outfits: the reusable fenced NPC outfit/addon and account appearance mapping owner is implemented. Compose the full pinned route and exact owned NPC/physical/encounter bindings; implement remaining guard or currency mechanisms here and qualify the whole route with real PostgreSQL proof.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/41/definition",
         "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
@@ -108,6 +108,12 @@
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
       "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
+    },
+    "shared_reward_mechanism": {
+      "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
+      "scope": "Generic owner only; not this quest's route qualification"
     }
   },
   {
@@ -215,7 +221,7 @@
     "owner": "questpc7",
     "remaining_work": {
       "kind": "lane_implementation_work",
-      "missing_piece": "Rift Warrior Outfits: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "missing_piece": "Rift Warrior Outfits: the reusable fenced NPC outfit/addon and account appearance mapping owner is implemented. Compose the full pinned route and exact owned NPC/physical/encounter bindings; implement remaining guard or currency mechanisms here and qualify the whole route with real PostgreSQL proof.",
       "evidence": [
         "content/quests/definitions/quests-00000-00099.json:1#/records/35/definition",
         "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
@@ -225,6 +231,12 @@
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
       "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
+    },
+    "shared_reward_mechanism": {
+      "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
+      "scope": "Generic owner only; not this quest's route qualification"
     }
   },
   {
@@ -283,7 +295,7 @@
     "owner": "questpc7",
     "remaining_work": {
       "kind": "lane_implementation_work",
-      "missing_piece": "Fiend Slayer Outfits, Fiend Slayer first addon, Fiend Slayer second addon: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "missing_piece": "Fiend Slayer Outfits, Fiend Slayer first addon, Fiend Slayer second addon: the reusable fenced NPC outfit/addon and account appearance mapping owner is implemented. Compose the full pinned route and exact owned NPC/physical/encounter bindings; implement remaining guard or currency mechanisms here and qualify the whole route with real PostgreSQL proof.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/43/definition",
         "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
@@ -293,6 +305,12 @@
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
       "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
+    },
+    "shared_reward_mechanism": {
+      "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
+      "scope": "Generic owner only; not this quest's route qualification"
     }
   },
   {
@@ -355,7 +373,7 @@
     "owner": "questpc7",
     "remaining_work": {
       "kind": "lane_implementation_work",
-      "missing_piece": "Fire-Fighter Outfits, Fire-Fighter first addon, Fire-Fighter second addon: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "missing_piece": "Fire-Fighter Outfits, Fire-Fighter first addon, Fire-Fighter second addon: the reusable fenced NPC outfit/addon and account appearance mapping owner is implemented. Compose the full pinned route and exact owned NPC/physical/encounter bindings; implement remaining guard or currency mechanisms here and qualify the whole route with real PostgreSQL proof.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/44/definition",
         "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
@@ -365,6 +383,12 @@
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
       "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
+    },
+    "shared_reward_mechanism": {
+      "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
+      "scope": "Generic owner only; not this quest's route qualification"
     }
   },
   {
@@ -546,7 +570,7 @@
     "owner": "questpc7",
     "remaining_work": {
       "kind": "lane_implementation_work",
-      "missing_piece": "Formal Dress Outfits, Formal Dress first addon, Formal Dress second addon: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "missing_piece": "Formal Dress Outfits, Formal Dress first addon, Formal Dress second addon: the reusable fenced NPC outfit/addon and account appearance mapping owner is implemented. Compose the full pinned route and exact owned NPC/physical/encounter bindings; implement remaining guard or currency mechanisms here and qualify the whole route with real PostgreSQL proof.",
       "evidence": [
         "content/quests/definitions/quests-00200-00299.json:1#/records/75/definition",
         "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
@@ -556,6 +580,12 @@
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
       "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
+    },
+    "shared_reward_mechanism": {
+      "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
+      "scope": "Generic owner only; not this quest's route qualification"
     }
   },
   {
@@ -672,7 +702,7 @@
     "owner": "questpc7",
     "remaining_work": {
       "kind": "lane_implementation_work",
-      "missing_piece": "Norseman Outfits: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "missing_piece": "Norseman Outfits: the reusable fenced NPC outfit/addon and account appearance mapping owner is implemented. Compose the full pinned route and exact owned NPC/physical/encounter bindings; implement remaining guard or currency mechanisms here and qualify the whole route with real PostgreSQL proof.",
       "evidence": [
         "content/quests/definitions/quests-00200-00299.json:1#/records/27/definition",
         "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
@@ -682,6 +712,12 @@
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
       "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
+    },
+    "shared_reward_mechanism": {
+      "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
+      "scope": "Generic owner only; not this quest's route qualification"
     }
   },
   {
@@ -837,7 +873,7 @@
     "owner": "questpc7",
     "remaining_work": {
       "kind": "lane_implementation_work",
-      "missing_piece": "Glooth Engineer Outfits, Glooth Engineer first addon, Glooth Engineer second addon: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "missing_piece": "Glooth Engineer Outfits, Glooth Engineer first addon, Glooth Engineer second addon: the reusable fenced NPC outfit/addon and account appearance mapping owner is implemented. Compose the full pinned route and exact owned NPC/physical/encounter bindings; implement remaining guard or currency mechanisms here and qualify the whole route with real PostgreSQL proof.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/50/definition",
         "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
@@ -847,6 +883,12 @@
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
       "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
+    },
+    "shared_reward_mechanism": {
+      "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
+      "scope": "Generic owner only; not this quest's route qualification"
     }
   },
   {
@@ -908,7 +950,7 @@
     "owner": "questpc7",
     "remaining_work": {
       "kind": "lane_implementation_work",
-      "missing_piece": "Golden Outfits, Golden boots and gloves addon, Golden helmet addon: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "missing_piece": "Golden Outfits, Golden boots and gloves addon, Golden helmet addon: the reusable fenced NPC outfit/addon and account appearance mapping owner is implemented. Compose the full pinned route and exact owned NPC/physical/encounter bindings; implement remaining guard or currency mechanisms here and qualify the whole route with real PostgreSQL proof.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/52/definition",
         "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
@@ -918,6 +960,12 @@
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
       "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
+    },
+    "shared_reward_mechanism": {
+      "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
+      "scope": "Generic owner only; not this quest's route qualification"
     }
   },
   {
@@ -954,7 +1002,7 @@
     "owner": "questpc7",
     "remaining_work": {
       "kind": "lane_implementation_work",
-      "missing_piece": "Hand of the Inquisition Outfits: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "missing_piece": "Hand of the Inquisition Outfits: the reusable fenced NPC outfit/addon and account appearance mapping owner is implemented. Compose the full pinned route and exact owned NPC/physical/encounter bindings; implement remaining guard or currency mechanisms here and qualify the whole route with real PostgreSQL proof.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/53/definition",
         "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
@@ -964,6 +1012,12 @@
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
       "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
+    },
+    "shared_reward_mechanism": {
+      "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
+      "scope": "Generic owner only; not this quest's route qualification"
     }
   },
   {
@@ -1060,7 +1114,7 @@
     "owner": "questpc7",
     "remaining_work": {
       "kind": "lane_implementation_work",
-      "missing_piece": "Hand of the Inquisition Outfits, Hand of the Inquisition first addon, Hand of the Inquisition second addon: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "missing_piece": "Hand of the Inquisition Outfits, Hand of the Inquisition first addon, Hand of the Inquisition second addon: the reusable fenced NPC outfit/addon and account appearance mapping owner is implemented. Compose the full pinned route and exact owned NPC/physical/encounter bindings; implement remaining guard or currency mechanisms here and qualify the whole route with real PostgreSQL proof.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/56/definition",
         "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
@@ -1070,6 +1124,12 @@
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
       "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
+    },
+    "shared_reward_mechanism": {
+      "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
+      "scope": "Generic owner only; not this quest's route qualification"
     }
   },
   {
@@ -1435,7 +1495,7 @@
     "owner": "questpc7",
     "remaining_work": {
       "kind": "lane_implementation_work",
-      "missing_piece": "Hunter Outfits, Hunter first addon, Hunter second addon: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "missing_piece": "Hunter Outfits, Hunter first addon, Hunter second addon: the reusable fenced NPC outfit/addon and account appearance mapping owner is implemented. Compose the full pinned route and exact owned NPC/physical/encounter bindings; implement remaining guard or currency mechanisms here and qualify the whole route with real PostgreSQL proof.",
       "evidence": [
         "content/quests/definitions/quests-00000-00099.json:1#/records/44/definition",
         "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
@@ -1445,6 +1505,12 @@
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
       "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
+    },
+    "shared_reward_mechanism": {
+      "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
+      "scope": "Generic owner only; not this quest's route qualification"
     }
   },
   {
@@ -1543,7 +1609,7 @@
     "owner": "questpc7",
     "remaining_work": {
       "kind": "lane_implementation_work",
-      "missing_piece": "Illuminated Warrior Outfits, Illuminated Warrior first addon, Illuminated Warrior second addon: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "missing_piece": "Illuminated Warrior Outfits, Illuminated Warrior first addon, Illuminated Warrior second addon: the reusable fenced NPC outfit/addon and account appearance mapping owner is implemented. Compose the full pinned route and exact owned NPC/physical/encounter bindings; implement remaining guard or currency mechanisms here and qualify the whole route with real PostgreSQL proof.",
       "evidence": [
         "content/quests/definitions/quests-00300-00351.json:1#/records/5/definition",
         "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
@@ -1553,6 +1619,12 @@
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
       "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
+    },
+    "shared_reward_mechanism": {
+      "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
+      "scope": "Generic owner only; not this quest's route qualification"
     }
   }
 ]

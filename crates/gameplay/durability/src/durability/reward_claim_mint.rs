@@ -123,6 +123,8 @@ pub(in crate::durability) mod fathers_burden;
 mod fluid;
 mod grizzly;
 mod monk;
+pub(crate) mod quest;
+pub use quest::QuestRewardAdmission;
 pub(in crate::durability) mod npc_exchange;
 mod soul_war;
 mod viola_book;
@@ -1329,7 +1331,7 @@ async fn apply_claim(
     })
 }
 
-async fn lock_cause(
+pub(super) async fn lock_cause(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     command: CommandRef,
 ) -> std::result::Result<(), DurabilityError> {

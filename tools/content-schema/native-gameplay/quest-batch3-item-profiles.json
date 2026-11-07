@@ -345,7 +345,7 @@
   "accepted_inputs": [
     {
       "path": "content/items/definitions/spell-native-profiles.json",
-      "sha256": "b98f75fcd95e0344ea3af076cffa461d07f2a635a86eeeded21153f1980b2068"
+      "sha256": "f4ca4b433b53cc1ac120fe77e93772d8498fb9f355a99c0b145d52e82054e187"
     },
     {
       "path": "docs/agents/evidence/OTV2-20261001-quest-reward-item-admission.json",

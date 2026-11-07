@@ -1,3 +1,32 @@
+# Current green reward/outfit mechanism — 2026-11-07
+
+The coupled NPC reward/outfit owner is GREEN and ready for immediate commit/push.
+REWARD-ENGINE-PG-PROOF.json records all checks. PostgreSQL18.6: executed RED
+73.193s; final outfit/selection GREEN74.708s; container exchange74.638s;
+capacity rollback75.423s; retained Father77.841s and ordered recipes43.470s.
+Source producer12 tests, quest2 units,17 retained NPC successes plus corrected
+exact-source NPC test39.37s, five-crate check, strict all-target/all-feature
+Clippy,123 content tests, five world tests, fmt and pin-check all pass.
+Generated native profiles/manifests and cosmetics are reproduced by repo tools.
+No binary, raw reference copy, workflow/repository-tool edit or diagnostic remains.
+World digest stays60176071a41e0b32749c2f5bf7bc18d2c3ce7d91d39f485f6bcc2ff8a706658f.
+
+Reused qengine2 head9d3c3869f selectively. This slice includes NPC consume/
+retained evidence, native MINT contents, outfit/addon/achievement, fresh read-only
+prerequisites, replay and normal client selection. Existing world callback
+signatures, read-only hoist and ordered UTC/charge/fluid owners are preserved.
+World wardrobe data is generated but its separate Channel effects owner is
+not silently admitted by this NPC slice. No full quest is qualified from its
+seeded mechanism fixtures. Scope remains24 ACTIVE plus Festive QUALIFIED externally.
+
+Continue generic currency and source guard support, then complete selected entry
+routes. Golden's pinned chosen prices are100000/50000/50000; preserve selected
+recipe balancing instead of substituting donor economy prices. Contract decisions
+and the ten-minute fact/timebox rule are in CONTRACT-NOTES.md. Push each green
+mechanic/quest slice immediately, at least every30 minutes. No PR or turn ending.
+
+## Historical integration checkpoints
+
 # Live reward engine checkpoint — 2026-11-07
 
 Five focused PG cases are GREEN on18.6; exact durations and RED are in

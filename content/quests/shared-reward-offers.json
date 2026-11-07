@@ -1,0 +1,525 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "slime",
+        "mould",
+        "fungus",
+        "sample"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring samples for me to analyse?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "slime",
+        "mould",
+        "fungus",
+        "sample"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring samples for me to analyse?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Let me analyse the samples."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Let me analyse the samples."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cael",
+      "keywords": [
+        "crest"
+      ],
+      "topic": 0,
+      "next_topic": 60,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 27,
+          "maximum": 27,
+          "set": 27,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/warmaster_addon_1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Can I have that serpent crest?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cael",
+      "keywords": [
+        "tribal crest"
+      ],
+      "topic": 0,
+      "next_topic": 61,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 27,
+          "maximum": 27,
+          "set": 27,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/warmaster_addon_2",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Can I have that tribal crest?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.costello",
+      "keywords": [
+        "holy water"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "reply": [
+        "Who sent you?"
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cranky_lizard_crone",
+      "keywords": [
+        "cape",
+        "first addon"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/wayfarer_outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Do you have the old cape with you?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cranky_lizard_crone",
+      "keywords": [
+        "hat",
+        "second addon"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/wayfarer_outfit_1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Do you have the sedge hat with you?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 7,
+          "maximum": 7
+        }
+      ],
+      "reply": [
+        "I need five sturdy books for the first addon or twenty epaulettes for the second."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 7,
+          "maximum": 7
+        }
+      ],
+      "reply": [
+        "I need five sturdy books for the first addon or twenty epaulettes for the second."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 7,
+          "maximum": 7
+        }
+      ],
+      "reply": [
+        "I need five sturdy books for the first addon or twenty epaulettes for the second."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.morgan",
+      "keywords": [
+        "forge"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "reply": [
+        "What would you like me to forge?"
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/addon_sword",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.muriel",
+      "keywords": [
+        "addons"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/feathers",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "reply": [
+        "Choose the first or second addon."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "flou"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "explain"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "no"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 5,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 6,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 7,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "helmet"
+      ],
+      "topic": 7,
+      "next_topic": 8,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.palimuth",
+      "keywords": [
+        "job",
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 54,
+          "maximum": 54,
+          "set": 55
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring me the vampiric crest?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.palimuth",
+      "keywords": [
+        "job",
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 54,
+          "maximum": 54,
+          "set": 55
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring me the vampiric crest?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.sam",
+      "keywords": [
+        "old backpack",
+        "backpack"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "reply": [
+        "Did you find my old backpack?"
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_5/sams_old_backpack/sams_old_backpack_npc",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ]
+    }
+  ]
+}
