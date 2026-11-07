@@ -19,6 +19,7 @@ class NimmersattSupply(unittest.TestCase):
         rows=[];author.extend_world(rows);row,=[r for r in rows if r['key'].endswith('-snowbank')]
         self.assertEqual(row['key'],'oteryn:quest-callback/authored-nimmersatt-snowbank')
         self.assertEqual(row['quest'],author.QUEST)
+        self.assertTrue(row['premium_required'])
         self.assertEqual(row['selector']['position'],dict(x=32232,y=31578,floor=-7))
         self.assertEqual(row['selector']['appearance'],799)
         self.assertEqual(row['effects']['item_reward'],dict(item='oteryn:item.tibia.i2992',count=20,contents=[]))

@@ -35,6 +35,7 @@ def extend_world(rows):
     row['effects']['item_reward']=dict(item='oteryn:item.tibia.i2992',count=20,contents=[])
     row['sources'] += [f'oteryn:selected-recipe:{path}:/records/19/definition:sha256:{hashlib.sha256(raw).hexdigest()}',
                        f'oteryn:source-map:{region}:sha256:{hashlib.sha256(region_raw).hexdigest()}']
+    row['premium_required']=True
     rows.append(row)
 
     row=callback('authored-nimmersatt-wall','authored.nimmersatt_s_lair','use',
@@ -46,6 +47,7 @@ def extend_world(rows):
     row['effects']['transform']=799
     row['sources'] += [f'oteryn:selected-recipe:{path}:/records/19/definition:sha256:{hashlib.sha256(raw).hexdigest()}',
                        f'oteryn:source-map:{region}:sha256:{hashlib.sha256(region_raw).hexdigest()}']
+    row['premium_required']=True
     rows.append(row)
 
 def extend_rewards(callbacks, greetings=None):

@@ -183,10 +183,7 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let nimmersatt_premium = if matches!(
-            name,
-            "qengine-rewards-nimmersatt-whole" | "qengine-rewards-nimmersatt-passage"
-        ) {
+        let nimmersatt_premium = if name.starts_with("qengine-rewards-nimmersatt-") {
             let (consumer, clock, activation, _) =
                 crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(
                     id(40),

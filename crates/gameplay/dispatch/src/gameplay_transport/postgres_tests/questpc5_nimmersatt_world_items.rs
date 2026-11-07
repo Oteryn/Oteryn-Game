@@ -402,6 +402,29 @@ async fn wall(
             assert_eq!(hits(h).await?, 0);
             assert_eq!(count(h).await?, 20);
             assert_eq!(wall_appearance(owner).await?, 1441);
+            let premium = owner.premium_coordinator.take();
+            let command = admitted.continuity.next_command_id;
+            let (next, result, _) = super::item_craft::exchange(
+                owner,
+                *admitted,
+                command,
+                &encode_item_use_intent(&intent).map_err(debug)?,
+                Some(source),
+            )
+            .await?;
+            *admitted = next;
+            assert_ne!(
+                result,
+                UseDisposition::Committed,
+                "current Premium is required for every value-bearing hit"
+            );
+            assert_eq!(hits(h).await?, 0);
+            assert_eq!(count(h).await?, 20);
+            owner.premium_coordinator = premium;
+            owner.clock_origin = owner
+                .clock_origin
+                .checked_sub(std::time::Duration::from_secs(2))
+                .ok_or("clock")?;
         }
         let command = admitted.continuity.next_command_id;
         let (next, result, payload) = super::item_craft::exchange(
@@ -531,6 +554,17 @@ pub(super) async fn exercise_whole(
         },
     )
     .await?;
+    let premium = owner.premium_coordinator.take();
+    assert_ne!(
+        say(owner, admitted, npc, "breath").await?,
+        NpcIntentDisposition::Ok
+    );
+    assert_eq!(
+        breath(h).await?,
+        0,
+        "expired or unavailable Premium cannot grant the terminal reward"
+    );
+    owner.premium_coordinator = premium;
     assert_eq!(
         say(owner, admitted, npc, "breath").await?,
         NpcIntentDisposition::Ok
@@ -540,6 +574,11 @@ pub(super) async fn exercise_whole(
     assert_eq!(breath(h).await?, 1);
     let stage:i64=sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/nimmersatt/stage'").fetch_one(&h.pool).await?;
     assert_eq!(stage, 2);
+    let completions:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.authored.nimmersatt_s_lair' AND completed_character_revision IS NOT NULL").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(
+        completions, 1,
+        "terminal receipt completes the selected personal quest"
+    );
     Ok(())
 }
 async fn breath(h: &Harness) -> TestResult<i64> {

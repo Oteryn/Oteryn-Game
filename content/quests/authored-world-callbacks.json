@@ -353,7 +353,8 @@
         "oteryn-authored:selected-personal-programme:northern-supply-bundle",
         "oteryn:selected-recipe:content/quests/definitions/quests-00300-00351.json:/records/19/definition:sha256:4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a",
         "oteryn:source-map:content/world/placements/region-z07-x125-y123.b3:sha256:c3b33f29be0264ac9e82205321606fd44cc69c627d584a2b65a27b4ddd83b2a4"
-      ]
+      ],
+      "premium_required": true
     },
     {
       "key": "oteryn:quest-callback/authored-nimmersatt-wall",
@@ -408,7 +409,8 @@
         "track": "oteryn:quest-progress/nimmersatt/wall_hits",
         "limit": 20,
         "project_on_complete": true
-      }
+      },
+      "premium_required": true
     }
   ]
 }

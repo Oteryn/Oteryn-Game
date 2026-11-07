@@ -146,7 +146,7 @@
     "title": "Nimmersatt's Lair",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "Active implementation: actual Rascalio Premium passage/source placement is PG-proven93.165087303s; continue generic source-qualified Oteryn native44179 collectible admission, current Premium world gates and complete no-seed twenty-hit once-reward route.",
+    "blocker": "Active final checks: whole actual no-seed Nimmersatt route is PostgreSQL GREEN96.207274321s, including current Premium gates, twenty exact consumed snowballs, native44179 once and durable completion. Native binding security unit and authoring pass. Finish check/clippy/pins after clearing inactive incremental caches; then mark QUALIFIED and push. No missing mechanism remains.",
     "from_lanes": [
       "questpc2"
     ],
@@ -180,6 +180,13 @@
       "whole_recipe_qualified": false,
       "postgres_green_seconds": 93.165087303,
       "world_pin_check": "PASS5c7ca9e8fe64666f0b9654e160c30bca95e3be3408351484b26192d59d703c3b"
+    },
+    "whole_route_progress": {
+      "proof": "cloud-nimmersatt-whole-proof.json",
+      "postgres_red_seconds": 97.889092733,
+      "postgres_green_seconds": 96.207274321,
+      "state": "PG_GREEN_REQUIRED_CHECKS_ACTIVE",
+      "cargo_check": "PASS104s"
     }
   },
   {

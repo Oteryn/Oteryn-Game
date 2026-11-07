@@ -1,0 +1,49 @@
+{
+  "slice": "Whole selected personal Nimmersatt route and reusable Oteryn plain collectible admission",
+  "whole_recipe_qualified": false,
+  "status": "PG_GREEN_REQUIRED_CHECKS_ACTIVE",
+  "filter": "questpc5_nimmersatt_rascalio_premium_twenty_hits_and_once_breath",
+  "postgres_server": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red": {
+    "seconds": 97.889092733,
+    "failure": "Final actual NPC reward Unavailable(InvalidStoredState), early EOF after real acceptance and twenty consumed inputs",
+    "log": "/tmp/questpc5-nimmersatt-whole-native-red.log"
+  },
+  "green": {
+    "seconds": 96.207274321,
+    "wall_component_seconds": 4.30995938,
+    "log": "/tmp/questpc5-nimmersatt-whole-green.log"
+  },
+  "coverage": [
+    "No quest flags, counters, reward Items or completion seeded",
+    "Actual source-cell Rascalio hi+passage with current Premium registration refusal and positive acceptance",
+    "Northern source799 USE mints exactly20 native2992 once",
+    "Plain wall click refuses; missing current Premium refuses a genuine carried Snowball use without consumption",
+    "Twenty actual inventory-to-map commands consume one exact2992 each; wall projects broken799 only after hit20",
+    "Final missing-current-Premium report refuses after complete progress",
+    "Actual Rascalio report grants one native44179; fresh repeated report cannot grant another",
+    "Terminal stage2 and exactly one completed_character_revision recorded"
+  ],
+  "native_policy": {
+    "namespace": "oteryn/quest_collectible_id",
+    "assumed_carrying_weight_hundredths_oz": 1000,
+    "assumption": "Explicit Oteryn conservative10oz plain collectible rule where exact published weight is unavailable. No donor weight or server binding claimed.",
+    "existing_native_profiles_unchanged": 3718,
+    "added": [
+      "oteryn:item.tibia.i44179"
+    ],
+    "proof": "tools/content-schema/native-gameplay/quest-collectible-bindings.json",
+    "producer": "tools/content-migration/quest_collectible_profiles.py"
+  },
+  "checks": {
+    "collectible_python_units": 2,
+    "nimmersatt_python_units": 4,
+    "native_binding_security_rust_units": 1,
+    "generator": "PASS registered spell import files43; collectible proof --check PASS",
+    "fmt": "PASS",
+    "cargo_check": "PASS104s after cache recovery",
+    "strict_clippy": "active; checkpoint compiles and actual whole PG GREEN",
+    "pin_check": "pending"
+  },
+  "environment_recovery": "Verification initially encountered No space left on device. Removed only inactive Rust incremental caches after proving no live compiler; freed15GB; reran checks without skipping or weakening. Actual PG GREEN is positive-duration and independent."
+}
