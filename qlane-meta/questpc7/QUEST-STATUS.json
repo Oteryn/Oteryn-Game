@@ -1287,19 +1287,16 @@
       "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
     },
     "current_batch": {
-      "mechanism": "reuse peer native death objectives and guardian slots over frozen lethal capture and fenced Quest writer",
-      "source_branch": "claude/happy-davinci-ijz3wy-questpc8",
-      "source_sha": "7eeee8fb152806de66af062831f94c2183c915ee",
-      "postgres_red_seconds": 43.393288842,
+      "mechanism": "world item MINT and atomic direct backpack outputs",
+      "proof": "qlane-meta/questpc7/HIDDEN-PG-PROOF.json",
+      "postgres": "18.6",
+      "red_seconds": 43.512682362,
+      "green_seconds": 43.335733047,
+      "expanded_green_seconds": 46.515011045,
+      "state": "Pre-fix full and capacity PG GREEN. Retained original source claim routing RED97.67s; explicit active-phase overlay fix implemented, post-fix validation running. ACTIVE.",
       "assumptions": [
-        "Selected personal quota credits the frozen native most-damage principal; it does not invent party sharing.",
-        "Any Charlatan, Skirmisher or Vanguard in x33077..33081,y32014..32017,floor-13 counts toward one shared quota5.",
-        "One additional bounded native Charlatan guardian uses an existing empty ground tile and60s respawn."
-      ],
-      "boundary": "This slice proves the shared mechanism; complete selected valuables/completion route remains ACTIVE until fully tested.",
-      "postgres_green_seconds": 42.583370058,
-      "proof": "qlane-meta/questpc7/NATIVE-DEATH-PG-PROOF.json",
-      "checks": "Native mechanism and all required checks GREEN; source committed in this batch."
+        "Standard GoldNugget3040 selected from ambiguous duplicate name; documented source choice in CONTRACT-NOTES."
+      ]
     },
     "shared_native_death_mechanism": {
       "status": "QUALIFIED",

@@ -781,3 +781,42 @@ Continue source world item_reward/backpack outputs from peer questpc8 for
 Hidden Threats and other caches, preserving our NPC exchange/charges,fees,
 bounded repeat counters and Father11-track atomicity. No more hoist investigation.
 Hydra Egg must keep ordinary nest pickup/reset semantics,not a fake UID chest.
+
+## Hidden Threats world reward RED proved; source GREEN running
+
+Last pushed source2913baf91 qualifies complete Hoist.13 ACTIVE remain.
+Actual PG18.6 Hidden full native route RED43.512682362s reaches chest USE but
+asserts0 versus2 carried nuggets. Shared world item_reward and atomic direct
+backpack outputs now selectively reuse peer805a06141, preserving local fees,
+counters, charges and Father11-track write. Source GREEN running in
+/tmp/questpc7-hidden-green.log; no claim of qualification before all checks.
+Explicit GoldNugget3040 conservative assumption is in CONTRACT-NOTES.
+New peer heads reviewed qengine2=32f18b86b and questpc8=12f47bbb7; remaining
+owned overlap is still UNFINISHED there, so continue implementing here.
+
+## Hidden Threats full route and atomic capacity GREEN
+
+Actual PG18.6 full route GREEN43.335733047s; expanded refusal/retry GREEN
+46.515011045s, including17 distinct occupied main-backpack slots, no partial
+outputs/progress, supported native fish consumption, exact four-output retry,
+completion and exact command replay.21 authoring and20 world units pass.
+/tmp/questpc7-hidden-validation.py now runs only focused retained PG/unit,
+check/strict clippy, content/world, repository pin and fmt gates.
+HIDDEN-PG-PROOF.json preserves both fixture repairs without weakening tests.
+Keep ACTIVE until all gates pass; then close Hidden to QUALIFIED, commit/push
+source immediately and continue remaining12 entries. No full PG/workspace suite.
+
+## Push cadence: retained routing regression checkpoint
+
+Full route43.336s and atomic capacity46.515s PG GREEN are recorded honestly.
+Retained story source rewards then found RED97.67s: selected physical overlay
+intercepts original key_fragment01 chest. Product fix adds generic activation
+exactly matching a non-preserved durable storage guard, routing only during
+personal programme1. Original claim stays available outside that phase.
+Post-fix full route session73243/log /tmp/questpc7-hidden-phase-green.log and
+world units session72470 are running. Do not qualify before post-fix retained
+PG and all required checks pass. Metadata-only checkpoint preserves proof and
+push cadence; product source remains staged/uncommitted until validation.
+After GREEN stage all source again before pin-refresh (activation/fmt modified
+files after initial stage), run /tmp/questpc7-hidden-validation.py, finalize
+Hidden, commit/push, then implement /tmp/questpc7-hydra-next-plan.txt.

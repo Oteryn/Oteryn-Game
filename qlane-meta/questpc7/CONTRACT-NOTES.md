@@ -191,3 +191,27 @@ all region SHA256s; authoring verifies real placed appearances and absent UIDs.
 The legacy skeleton/chest namespace is not inferred ownership; PG asserts the
 loaded typed tracks belong to the hoist. The Ice Islands completion stays a
 read-only prerequisite; only that foreign parent is a fenced test fixture.
+
+## Hidden Threats valuables and shared world MINT (2026-11-07)
+
+The canonical selected four-stage route is explore, five Corym deaths, chest use,
+completion. Bind the existing chest2469 at(33080,32014,-13); the existing native
+room objective supplies actual lethal credit, with no subject state fixtures.
+The reward is two Gold Nuggets and one each Small Ruby, Small Emerald and Small
+Amethyst, all directly in the main backpack, atomically with quest completion.
+Conservative identity assumption: standard Gold Nugget3040 is selected. Retained
+`imports/canary/items-xml/items.xml:6833` defines3040 (file sha2561cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2) and :51931 defines27488 with
+the same name/weight; targeted retained Hidden Threats forge action does not
+resolve the duplicate. The bounded external wiki lookup
+https://www.tibiawiki.com.br/Hidden_Threats_Quest?action=raw returned403. This is
+an explicit authored choice, not a claim that the donor uniquely identifies3040.
+Reuse questpc8 backpack output owner from805a061415355a68a924b3b32d02023fe608fc97,
+with local migration numbers1101/1102. Preserve the fee/counter proof additions,
+exact charges and Father11-track write. New layout is immutable in the MINT
+binding/reservation; legacy false omits the new binding tag and retains replay.
+
+The original key-fragment01 source claim shares the physical chest. Retained PG
+caught unconditional overlay routing intercepting it. The valuables overlay now
+activates only at selected programme1; the original claim remains reachable
+outside that phase. Activation exactly repeats an authoritative write guard;
+runtime quest copies select routing only, never authorize the reward.
