@@ -1,3 +1,15 @@
+# Restart convergence checkpoint
+
+Current branch adopts a03597c06 without rewriting earlier history. Its complete
+Torch and Magic Sword implementations supersede the overlapping unpublished
+Torch experiment, which is preserved locally in Git stash rather than duplicated.
+The published PostgreSQL markers and durations below remain their original run
+evidence; this checkpoint does not claim a new test run. Active counts remain
+14 QUALIFIED of23;9 remain. Next: Mystery of the Valley mandatory Lai introduction,
+three shrine fragments, crystal exploration and atomic three-fragment assembly.
+Latest qengine2 and seven quest lanes were checked before new generic work;
+no authored Mystery/Lai programme was found. Continue with focused RED/GREEN.
+
 # Green Magic Sword / Torch / Life Ring convergence batch
 
 14of23activeL7entries are QUALIFIED:11here,3elsewhere;9remain. Magic Sword
