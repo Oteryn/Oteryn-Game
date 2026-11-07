@@ -26,7 +26,7 @@ fn world_event_postgres_real_dispatch_reset_restart_and_fences() -> TestResult {
         .stack_size(256 << 20)
         .spawn(|| {
             for epochs in [1, 2] {
-                scenario(epochs).map_err(|e| e.to_string())?;
+                scenario(epochs, None).map_err(|e| e.to_string())?;
             }
             Ok::<_, String>(())
         })?
@@ -39,11 +39,55 @@ fn world_event_postgres_real_dispatch_reset_restart_and_fences() -> TestResult {
     Ok(())
 }
 
-fn scenario(epochs: u64) -> TestResult {
+#[test]
+fn w05d_halloween_calendar_reaches_real_reset_query_and_replay() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(2, Some("Halloween")).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "seasonal reset query thread panicked")??;
+    Ok(())
+}
+
+#[test]
+fn w05d_christmas_real_npc_present_replay_and_permanent_claim() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(2, Some("Christmas")).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "Christmas native NPC thread panicked")??;
+    eprintln!(
+        "W05D_CHRISTMAS_PG_EXECUTED elapsed_ms={}",
+        started.elapsed().as_millis()
+    );
+    Ok(())
+}
+
+fn scenario(epochs: u64, seasonal: Option<&str>) -> TestResult {
     run(async move |admin| {
         reset();
         let h =
             Harness::create_with_admission_seed(admin, "world_event_dispatch", true, false).await?;
+        if seasonal.is_some() {
+            // Fixture clock set before the real reset writer creates its epoch;
+            // admission, publication and mutation guards remain enabled.
+            if seasonal == Some("Christmas") {
+                sqlx::query("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2030-12-12 06:00 Europe/Berlin'; RETURN NEW; END $$")
+                    .execute(&h.pool).await?;
+            } else {
+                sqlx::query("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2030-10-31 06:00 Europe/Berlin'; RETURN NEW; END $$")
+                    .execute(&h.pool).await?;
+            }
+            sqlx::query("CREATE TRIGGER seasonal_fixture_clock BEFORE INSERT OR UPDATE ON game_world_reset_epochs FOR EACH ROW EXECUTE FUNCTION seasonal_fixture_clock()")
+                .execute(&h.pool).await?;
+        }
         let world = WorldId::decode(&id(42)).map_err(debug)?;
         let channel = ChannelId::decode(&id(43)).map_err(debug)?;
         assert_eq!(h.root.active_world_event_epoch(world).await?, None);
@@ -146,6 +190,9 @@ fn scenario(epochs: u64) -> TestResult {
             .await
             .initialize_first_entry_position(actor)
             .map_err(debug)?;
+        if seasonal == Some("Christmas") {
+            santa_present_scenario(&h, &owner, actor, admitted.game_session_id, item_fence).await?;
+        }
         let offered = owner.offered_capabilities();
         assert!(
             offered
@@ -163,8 +210,17 @@ fn scenario(epochs: u64) -> TestResult {
         assert_eq!(results[1].0, CommandStatus::Accepted);
         let state = wire::decode_world_event_state(&results[1].1).map_err(debug)?;
         assert_eq!(state.reset_epoch, epochs);
-        assert_eq!(state.active, epochs == 1);
-        assert_eq!(state.announcement.is_empty(), epochs == 2);
+        assert_eq!(state.active, epochs == 1 || seasonal.is_some());
+        assert_eq!(
+            state.announcement.is_empty(),
+            epochs == 2 && seasonal.is_none()
+        );
+        if let Some(name) = seasonal {
+            assert!(
+                state.announcement.contains(name),
+                "the real query must expose its seasonal producer"
+            );
+        }
         let stored: Vec<u8> = sqlx::query_scalar(
             "SELECT result FROM game_world_event_query_receipts WHERE command_id=2",
         )
@@ -433,4 +489,99 @@ impl crate::native_admission_source::account_characters::EpochFence for T94Boots
     ) -> Result<(), crate::native_admission_source::account_characters::FenceUnusable> {
         Ok(())
     }
+}
+
+async fn santa_present_scenario(
+    h: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: crate::foundation::GameSessionId,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+) -> TestResult {
+    use crate::foundation::{MovementFacing, NpcPlacement};
+    use crate::gameplay_transport::connection::UseCommand;
+    use crate::gameplay_transport::npc_talk::{NpcTalkBook, NpcTalkEntry};
+    use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
+    use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+    let book = NpcTalkBook::default().with(
+        "oteryn:npc.santa_claus",
+        NpcTalkEntry::new("Santa Claus", Some("Merry Christmas!")),
+    );
+    owner
+        .states
+        .chat
+        .install_npc_talk(std::sync::Arc::new(book));
+    owner
+        .states
+        .chat
+        .admit(session, "Fixture Hero", owner.owner_now());
+    owner.states.chat.set_npc_service(session);
+    let npc_actor = {
+        let mut runtime = owner.runtime.lock().await;
+        let position = runtime
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position();
+        let npc = runtime
+            .place_dynamic_npc(
+                "oteryn:npc.santa_claus",
+                NpcPlacement {
+                    x: u16::try_from(position.x + 1)?,
+                    y: u16::try_from(position.y)?,
+                    floor: -i8::try_from(position.floor)?,
+                    direction: MovementFacing::South,
+                },
+            )
+            .map_err(debug)?;
+        let npc = runtime
+            .visible_entities()
+            .npcs
+            .into_iter()
+            .find(|visible| visible.actor == npc)
+            .ok_or("Santa native actor")?;
+        EntityRef {
+            identity: npc.actor.placement_identity(),
+            generation: npc.generation,
+        }
+    };
+    super::item_look::seed_main_backpack(h, &[]).await?;
+    let command = |command_id| UseCommand {
+        game_session_id: session,
+        command_id,
+        item_fence: Some(fence),
+    };
+    let intent = |text: &str| NpcTalkIntent {
+        npc_actor,
+        text: text.into(),
+    };
+    assert_eq!(
+        owner
+            .npc_talk(actor, command(100), intent("hi"))
+            .await
+            .disposition,
+        NpcIntentDisposition::Ok
+    );
+    let gift = owner.npc_talk(actor, command(101), intent("present")).await;
+    assert!(gift.inventory_changed, "native gift must reach MINT");
+    assert_eq!(
+        gift.conversation.as_ref().ok_or("gift conversation")?.lines,
+        ["Merry Christmas!"]
+    );
+    let counts: (i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_reward_claims WHERE claim_production_key='oteryn:reward-claim.santa-claus-present'),(SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i6510'),(SELECT count(*) FROM game_reward_claim_mint_receipts)").fetch_one(&h.pool).await?;
+    assert_eq!(counts, (1, 1, 1));
+    let replay = owner.npc_talk(actor, command(101), intent("present")).await;
+    assert!(replay.inventory_changed);
+    let repeated = owner.npc_talk(actor, command(102), intent("present")).await;
+    assert!(!repeated.inventory_changed);
+    assert_eq!(
+        repeated
+            .conversation
+            .as_ref()
+            .ok_or("once conversation")?
+            .lines,
+        ["You can't get other present."]
+    );
+    let after: (i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_reward_claims WHERE claim_production_key='oteryn:reward-claim.santa-claus-present'),(SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i6510'),(SELECT count(*) FROM game_reward_claim_mint_receipts)").fetch_one(&h.pool).await?;
+    assert_eq!(after, counts);
+    Ok(())
 }

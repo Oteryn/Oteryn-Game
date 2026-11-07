@@ -345,7 +345,7 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
 
 async fn timed_npc_loop(
     runtime: &Mutex<ChannelRuntimeV1>,
-    timed_npcs: bundle_npcs::TimedNpcSpawns,
+    mut timed_npcs: bundle_npcs::TimedNpcSpawns,
     stop: &CancellationToken,
 ) {
     if timed_npcs.is_empty() {

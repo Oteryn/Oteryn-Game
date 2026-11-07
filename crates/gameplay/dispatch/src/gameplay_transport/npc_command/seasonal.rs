@@ -1,0 +1,295 @@
+//! Christmas present requests use the permanent source flag and normal MINT owner.
+use super::super::{ComposedFreshAdmission, connection::UseCommand};
+use super::*;
+use crate::durability::item_mint::TypedDefinitionRef;
+use crate::durability::item_transfer::ItemStackClass;
+use crate::durability::reward_claim_mint::{
+    RewardClaimMintContent, RewardClaimMintError, RewardClaimMintOutcome, RewardClaimMintRequest,
+    RewardClaimRefusal, SANTA_PRESENT_CLAIM, SantaPresentRequest, santa_present_items,
+};
+use crate::foundation::{CommandId, CommandRef};
+use oteryn_simulation_determinism::{
+    DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+};
+use sha2::{Digest, Sha256};
+
+// Crystal data/npclib/npc.lua:13-19 checks a left word boundary only;
+// "presents" and "present?" qualify, but any alphanumeric prefix blocks it.
+fn present_topic(text: &str) -> bool {
+    let lower = text.to_ascii_lowercase();
+    lower.contains("present")
+        && !lower
+            .match_indices("present")
+            .any(|(index, _)| index != 0 && lower.as_bytes()[index - 1].is_ascii_alphanumeric())
+}
+
+pub(super) fn prepare(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: &NpcTalkIntent,
+    runtime: &ChannelRuntimeV1,
+) -> Option<(u64, u64, String)> {
+    let context = admission.states.npc_conversations.current_npc(
+        &admission.states.chat,
+        runtime,
+        actor,
+        command.game_session_id,
+        intent,
+    )?;
+    // Crystal data-global/npc/santa_claus.lua:103-105 accepts the present topic.
+    (context.2 == "oteryn:npc.santa_claus" && present_topic(&intent.text)).then_some(context)
+}
+
+fn draw(
+    root: &GameplayDecisionRoot,
+    occurrence: DecisionOccurrenceId,
+    key: &str,
+    upper: u64,
+) -> Option<u8> {
+    for index in 0..1024 {
+        let value = deterministic_decision_u64(root, occurrence, key, index).ok()?;
+        if value < u64::MAX - u64::MAX % upper {
+            return Some((value % upper + 1) as u8);
+        }
+    }
+    None
+}
+
+pub(super) async fn apply(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: NpcTalkIntent,
+    context: (u64, u64, String),
+) -> NpcTalkOutcome {
+    let rejected = || NpcTalkOutcome::only(NpcIntentDisposition::Rejected);
+    let unknown = || NpcTalkOutcome {
+        unknown: true,
+        ..rejected()
+    };
+    let (Some(fence), Ok(id), Some(native)) = (
+        command.item_fence,
+        CommandId::new(command.command_id),
+        admission
+            .active_generation
+            .and_then(crate::content::ActiveGeneration::native_gameplay),
+    ) else {
+        return rejected();
+    };
+    let Some(_permit) = admission.spell_lane_permit().await else {
+        return rejected();
+    };
+    if !admission
+        .states
+        .player_trades
+        .physical_service(command.game_session_id)
+    {
+        return rejected();
+    }
+    let _revision = admission
+        .revision_sequencer
+        .acquire(fence.character_id)
+        .await;
+    let Ok(Some(current)) = admission.current_quest_fence(command.game_session_id).await else {
+        return unknown();
+    };
+    if current.item_fence() != fence {
+        return rejected();
+    }
+    let (chance, group, definitions) = {
+        let runtime = admission.runtime.lock().await;
+        let states = admission.states.spell_states.lock().await;
+        if states.is_dead(actor)
+            || !states.spell_idle(&runtime, actor, command.game_session_id)
+            || admission.states.npc_conversations.current_npc(
+                &admission.states.chat,
+                &runtime,
+                actor,
+                command.game_session_id,
+                &intent,
+            ) != Some(context.clone())
+            || !runtime
+                .bound_attacker_lease(actor, command.game_session_id)
+                .is_ok_and(|lease| {
+                    lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                        && lease.generation() == fence.character_lease_generation
+                })
+        {
+            return rejected();
+        }
+        let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+        let mut digest = Sha256::new();
+        digest.update(b"oteryn:santa-present:v1");
+        digest.update(command.game_session_id.as_bytes());
+        digest.update(command.command_id.to_be_bytes());
+        digest.update(fence.character_id.as_bytes());
+        let occurrence = DecisionOccurrenceId::from_bytes(
+            digest.finalize()[..16]
+                .try_into()
+                .expect("fixed digest prefix"),
+        );
+        let (Some(chance), Some(group)) = (
+            draw(&root, occurrence, "santa.present.chance", 100),
+            draw(&root, occurrence, "santa.present.group", 10),
+        ) else {
+            return rejected();
+        };
+        let Some(index) =
+            super::super::item_ref_admission::pinned_index(&runtime, admission.active_generation)
+        else {
+            return rejected();
+        };
+        let mut definitions = Vec::new();
+        if let Some(ids) = santa_present_items(chance, group) {
+            for id in std::iter::once(&6510).chain(ids) {
+                let key = format!("oteryn:item.tibia.i{id}");
+                let Some(revision) = index.revision(&key) else {
+                    return rejected();
+                };
+                definitions.push(TypedDefinitionRef {
+                    family: "Item".into(),
+                    production_key: key,
+                    revision_ref: revision.into(),
+                });
+            }
+        }
+        (chance, group, definitions)
+    };
+    let reference = CommandRef::new(command.game_session_id, id);
+    let gift = if definitions.is_empty() {
+        None
+    } else {
+        let Ok(Some(current)) = admission
+            .root
+            .read_character_backpack(admission.character, fence.character_id)
+            .await
+        else {
+            return rejected();
+        };
+        let facts = |definition: &TypedDefinitionRef| {
+            super::super::item_ref_admission::generation_item_facts(native, definition)
+        };
+        let (Ok(item), Ok(backpack)) =
+            (facts(&definitions[0]), facts(&current.backpack.definition))
+        else {
+            return rejected();
+        };
+        let mut contents = Vec::new();
+        let mut count = 1;
+        for definition in &definitions[1..] {
+            let Ok(item) = facts(definition) else {
+                return rejected();
+            };
+            if matches!(
+                definition.production_key.as_str(),
+                "oteryn:item.tibia.i2992" | "oteryn:item.tibia.i3599"
+            ) {
+                count = 10;
+            }
+            let quantity = if matches!(item.stack, ItemStackClass::Stackable { .. }) {
+                count
+            } else {
+                1
+            };
+            contents.push(RewardClaimMintContent {
+                item,
+                quantity,
+                key_number: None,
+                text: None,
+            });
+        }
+        let revision = format!(
+            "sha256:{}",
+            native
+                .source_digest()
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>()
+        );
+        Some(RewardClaimMintRequest {
+            command: reference,
+            claim: TypedDefinitionRef {
+                family: "RewardClaim".into(),
+                production_key: SANTA_PRESENT_CLAIM.into(),
+                revision_ref: "oteryn:santa-present.v1".into(),
+            },
+            source_placement: "oteryn:npc.santa_claus".into(),
+            item,
+            quantity: 1,
+            contents,
+            root_text: None,
+            backpack,
+            content_revision: revision,
+            ruleset_revision: "oteryn:santa-present.v1".into(),
+            sim_revision: "oteryn:santa-present.v1".into(),
+            achievement: None,
+            quest_transition: None,
+            key_number: None,
+        })
+    };
+    {
+        let runtime = admission.runtime.lock().await;
+        let states = admission.states.spell_states.lock().await;
+        if states.is_dead(actor)
+            || !states.spell_idle(&runtime, actor, command.game_session_id)
+            || admission.states.npc_conversations.current_npc(
+                &admission.states.chat,
+                &runtime,
+                actor,
+                command.game_session_id,
+                &intent,
+            ) != Some(context)
+            || !admission
+                .states
+                .player_trades
+                .physical_service(command.game_session_id)
+        {
+            return rejected();
+        }
+    }
+    let weights = super::super::item_ref_admission::NativeItemWeights(native)
+        .with_wheel(admission.premium_coordinator);
+    match admission
+        .root
+        .claim_santa_present(
+            admission.character,
+            admission.holder,
+            fence,
+            SantaPresentRequest {
+                command: reference,
+                reset_epoch: admission.reset_epoch,
+                chance,
+                group,
+                gift,
+            },
+            &weights,
+        )
+        .await
+    {
+        Ok(RewardClaimMintOutcome::Committed(_) | RewardClaimMintOutcome::AlreadyCommitted(_)) => {
+            let mut outcome = NpcConversations::bank_reply(&intent, "Merry Christmas!".into());
+            outcome.inventory_changed = true;
+            outcome
+        }
+        Err(RewardClaimMintError::Refused(RewardClaimRefusal::AlreadyClaimed)) => {
+            NpcConversations::bank_reply(&intent, "You can't get other present.".into())
+        }
+        Err(RewardClaimMintError::Unavailable(_)) => unknown(),
+        _ => rejected(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn santa_topic_preserves_donor_left_boundary_and_plural_acceptance() {
+        for accepted in ["present", "PRESENT", "a present?", "presents", "my_present"] {
+            assert!(present_topic(accepted), "{accepted}");
+        }
+        for refused in ["represent", "present represent", "unrelated", "1present"] {
+            assert!(!present_topic(refused), "{refused}");
+        }
+    }
+}

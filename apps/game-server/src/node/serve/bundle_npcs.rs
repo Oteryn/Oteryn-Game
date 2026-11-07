@@ -23,6 +23,8 @@ use std::collections::BTreeSet;
 use std::path::Path;
 use std::sync::Arc;
 
+mod seasonal;
+
 /// W05c: NPCs that stand only by day or only by night. Donor
 /// `data-global/scripts/world_changes/spawns_npc_by_time.lua:3-130` (zimbadev/crystalserver
 /// @201189f8): a day NPC spawns at `LIGHT_STATE_SUNRISE` and leaves at `LIGHT_STATE_SUNSET`, a
@@ -143,6 +145,7 @@ enum TimedPeriod {
 #[derive(Debug, Clone, Copy)]
 pub(super) struct TimedNpcSpawns {
     admitted: [bool; TIMED_NPCS.len()],
+    seasonal: seasonal::SeasonalNpcSpawns,
 }
 
 impl TimedNpcSpawns {
@@ -153,18 +156,31 @@ impl TimedNpcSpawns {
                 admitted[index] = keys.contains(*key);
             }
         }
-        Self { admitted }
+        Self {
+            admitted,
+            seasonal: seasonal::SeasonalNpcSpawns::default(),
+        }
+    }
+
+    pub(super) fn with_seasonal(
+        mut self,
+        boot: Option<&NpcBoot>,
+        events: &[String],
+        enterable: impl Fn(crate::map::overlay::TilePos) -> bool,
+    ) -> Self {
+        self.seasonal = seasonal::SeasonalNpcSpawns::admit(boot, events, enterable);
+        self
     }
 
     pub(super) fn is_empty(self) -> bool {
-        !self.admitted.iter().any(|admitted| *admitted)
+        !self.admitted.iter().any(|admitted| *admitted) && self.seasonal.is_empty()
     }
 
     /// One world-clock step at `now_utc_ms` (boot and every world tick): the clock the
     /// transport's light uses (`snapshot.rs`), not a second one. `None` when the clock is
     /// unreadable; otherwise whether every admitted NPC is where its period puts it.
     pub(super) fn tick(
-        self,
+        &mut self,
         runtime: &mut ChannelRuntimeV1,
         now_utc_ms: u64,
     ) -> Option<Result<(), NpcPlacementError>> {
@@ -172,7 +188,10 @@ impl TimedNpcSpawns {
             crate::world_clock::DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS,
         )
         .tibian_minute(now_utc_ms)?;
-        Some(self.reconcile(runtime, minute))
+        Some(
+            self.reconcile(runtime, minute)
+                .and(self.seasonal.tick(runtime)),
+        )
     }
 
     /// Removes the NPCs out of period, then places those in period that are missing. Each NPC
@@ -694,6 +713,82 @@ mod tests {
         }
     }
 
+    #[test]
+    fn w05d_santa_placements_require_active_calendar_catalogue_and_real_tiles() {
+        let santa = "oteryn:npc.santa_claus";
+        let boot = timed_boot(&[santa]);
+        let mut runtime = channel_runtime_with(32);
+        assert!(seasonal::SeasonalNpcSpawns::admit(Some(&boot), &[], |_| true).is_empty());
+        assert!(
+            seasonal::SeasonalNpcSpawns::admit(None, &["christmas".into()], |_| true).is_empty()
+        );
+        assert!(
+            seasonal::SeasonalNpcSpawns::admit(Some(&boot), &["christmas".into()], |_| false)
+                .is_empty()
+        );
+        let mut seasonal =
+            seasonal::SeasonalNpcSpawns::admit(Some(&boot), &["christmas".into()], |_| true);
+        seasonal.tick(&mut runtime).expect("source placements");
+        seasonal.tick(&mut runtime).expect("idempotent retry");
+        assert_eq!(runtime.visible_entities().npcs.len(), 15);
+        // The normal NPC movement owner may move Santa off the source cell;
+        // reconciliation must retain the exact live actor rather than clone it.
+        let santa = runtime.visible_entities().npcs[0].actor;
+        let before = runtime
+            .borrow_movement_position()
+            .read(santa)
+            .expect("placed actor");
+        let mut moved = before.position();
+        moved.x += 1;
+        runtime
+            .borrow_movement_position()
+            .commit_cardinal(before, moved)
+            .expect("Santa wanders");
+        seasonal
+            .tick(&mut runtime)
+            .expect("retains wandering actor");
+        assert_eq!(runtime.visible_entities().npcs.len(), 15);
+        assert_eq!(
+            runtime
+                .borrow_movement_position()
+                .read(santa)
+                .expect("same actor")
+                .position(),
+            moved
+        );
+    }
+
+    #[test]
+    fn w05d_cake_bakers_use_all_five_source_positions_and_retry_without_duplicates() {
+        let keys = [
+            "oteryn:npc.benny_the_baker",
+            "oteryn:npc.biff_the_baker",
+            "oteryn:npc.brian_the_baker",
+            "oteryn:npc.balduin_the_baker",
+            "oteryn:npc.billy_the_baker",
+        ];
+        let boot = timed_boot(&keys);
+        let mut runtime = channel_runtime_with(16);
+        let mut seasonal =
+            seasonal::SeasonalNpcSpawns::admit(Some(&boot), &["piece_of_cake".into()], |_| true);
+        seasonal.tick(&mut runtime).expect("five source bakers");
+        seasonal
+            .tick(&mut runtime)
+            .expect("idempotent reconciliation");
+        let visible = runtime.visible_entities();
+        assert_eq!(visible.npcs.len(), 5);
+        for key in keys {
+            assert_eq!(
+                visible
+                    .npcs
+                    .iter()
+                    .filter(|npc| runtime.npc_key(npc.actor) == Some(key))
+                    .count(),
+                1
+            );
+        }
+    }
+
     /// The UTC instant of world minute `minute` on the production world clock.
     fn at_minute(minute: u64) -> u64 {
         let now = minute * crate::world_clock::TIBIAN_MINUTE_MS;
@@ -717,7 +812,7 @@ mod tests {
     #[test]
     fn world_time_tick_swaps_day_and_night_npcs_at_sunrise_and_sunset() {
         let keys: Vec<&str> = TIMED_NPCS.iter().map(|(key, _, _)| *key).collect();
-        let timed = TimedNpcSpawns::from_boot(Some(&timed_boot(&keys)));
+        let mut timed = TimedNpcSpawns::from_boot(Some(&timed_boot(&keys)));
         let mut runtime = channel_runtime_with(32);
         let (day, night) = (
             period_keys(TimedPeriod::Day),
@@ -747,7 +842,7 @@ mod tests {
             .map(|npc| (npc.position.x, npc.position.y, npc.position.floor));
         assert_eq!(valindara, Some((33_504, 32_222, 7)));
         // The NPCs the catalogue does not admit are never placed.
-        let timed = TimedNpcSpawns::from_boot(Some(&timed_boot(&["oteryn:npc.talila"])));
+        let mut timed = TimedNpcSpawns::from_boot(Some(&timed_boot(&["oteryn:npc.talila"])));
         let mut runtime = channel_runtime_with(32);
         timed
             .tick(&mut runtime, at_minute(359))
@@ -759,7 +854,7 @@ mod tests {
 
     #[test]
     fn a_timed_npc_that_cannot_stand_yet_does_not_hold_back_the_others() {
-        let timed = TimedNpcSpawns::from_boot(Some(&timed_boot(&[
+        let mut timed = TimedNpcSpawns::from_boot(Some(&timed_boot(&[
             "oteryn:npc.valindara",
             "oteryn:npc.evrard_the_miller",
         ])));

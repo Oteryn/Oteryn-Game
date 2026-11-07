@@ -50,6 +50,7 @@ mod monk;
 mod planegazer_finale;
 mod premium_purchase;
 mod quest_dialogue;
+mod seasonal;
 mod service_context;
 mod session_transfer;
 mod threatened_dreams;
@@ -750,6 +751,11 @@ pub(super) async fn npc_bank_talk(
             _trade_permit.as_ref(),
         )
         .await;
+    }
+    if let Some(context) = seasonal::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return seasonal::apply(admission, actor, command, intent, context).await;
     }
     if let Some(step) = monk::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
