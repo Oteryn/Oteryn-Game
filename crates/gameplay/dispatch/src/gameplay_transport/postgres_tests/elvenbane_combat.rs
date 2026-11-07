@@ -112,6 +112,8 @@ async fn fight(
     let mut killed = false;
     let mut dealt_damage = false;
     for pass in 0..512 {
+        // The connection scheduler normally drives chase separately from swings.
+        let _ = owner.chase_step_now(player, member.game_session_id).await;
         owner
             .refresh_attack_weapon(player, member.game_session_id)
             .await;
@@ -157,8 +159,11 @@ async fn fight(
         }
         if pass % 32 == 0 {
             eprintln!(
-                "ELVENBANE_WIRE_ATTACK pass={pass} health={remaining}/{}",
-                initial.maximum_health
+                "ELVENBANE_WIRE_ATTACK pass={pass} health={remaining} initial_max={} combat={:?}",
+                initial.maximum_health,
+                owner.states.attack.lock().await.combat_state(
+                    player, member.game_session_id, owner.owner_now()
+                )
             );
         }
         owner.clock_origin = owner

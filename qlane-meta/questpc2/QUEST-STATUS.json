@@ -2064,15 +2064,16 @@
     "pins": "isolated refresh/check PASS"
   },
   "source_wire_combat_authoring": {
-    "state": "WIP_SOURCE_ACTIVATION_PROVEN_WIRE_COMBAT_RED",
+    "state": "WIP_CHASE_DRIVEN_WIRE_PROGRESS_RED",
     "base": "5346b5b3f",
-    "compile_seconds": 84,
+    "compile_seconds": 79,
     "pg_log": "/tmp/questpc2-elvenbane-native-wire-corrected-red-pg.log",
     "point": "New fixture requires six real projected source actors; normal runtime source activation is intentionally not installed yet. Observe actual PG RED then install production activation and drive real wire Dragon attack/XP/cohort progress.",
     "next": "Instrument current positions/target state and identify actual health/AI owner; fix caller/mechanism then PG green. No fixture direct damage/flags.",
     "red_postgres_seconds": 75.32,
-    "latest_postgres_seconds": 133.84,
+    "latest_postgres_seconds": 89.39,
     "check_seconds": 42.05,
-    "latest_point": "All six native sources activate and actual exploration succeeds. Wire attacks deal damage but Dragon stalls300HP; trace first exchange3600/initialmax1000. Diagnose actual actor/health/chase state, preserve assertions."
+    "latest_point": "Drive normal chase_step_now separately from auto attacks; combat no longer stalls. Current exact RED: earned Dragon tracks absent and ownphase2 instead of3 after drain; inspect real lethal receipt/settlement. Assertions retained.",
+    "latest_pg_log": "/tmp/questpc2-elvenbane-chase-pg.log"
   }
 }

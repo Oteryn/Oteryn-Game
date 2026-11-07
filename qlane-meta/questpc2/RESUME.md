@@ -1,3 +1,13 @@
+# Current: normal chase driver compiles; actual PG89.39s progress RED
+
+Wire fixture now calls chase_step_now before swings, matching production scheduler.
+The 300HP stall is gone; exact RED moved to final SQL: native Dragon track absent,
+ownphase2 expected3. Check actual dead snapshot versus swallowed snapshot error,
+then sealed kill queue/XP settlement. No assertions relaxed. Log
+/tmp/questpc2-elvenbane-chase-pg.log; compile79s, PG180006.
+Health jump3600 is consistent with real Forge population owner (forge_creature.rs),
+not evidence of fake monster state. Log current max/forge if needed.
+
 # Active r2: source6 activated, wire combat actual RED133.84s
 
 Source-native fixture baseline PG180006 RED75.32s (0runtime actors, expected6).
