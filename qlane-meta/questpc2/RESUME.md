@@ -1,3 +1,26 @@
+# Active combat authoring checkpoint
+
+Published runtime remains verified entry381736fef; combat changes are local
+until PG passes. PG18.6 RED84.04s: native damage/AI reached but full-health
+demon survived64-think unarmed budget. Native profile health8200,armor40,
+physical resistance30%, level2000 official base325. New case uses genuine
+D88/A13 Knight2000, actual Fresh operation for equipment initialization, normal
+starting loadout, physically MINTed/carried200health potions and actual item
+USE, with512actual1s AI thinks as a test budget (no source time gate).
+Second PG RED77.57s: full health at fixed tenth-pass snapshot. Next measure
+player damage BEFORE AI healing; retain real damage/AI/incoming-damage/kill
+assertions, not a single post-heal snapshot. Inspect actual turns if still red.
+
+RAM: cgroup16GiB, one OOM kill. Inactive check/clippy/durability caches are
+losslessly compressed and SHA-verified; original parent paths remain. Restore
+ALL archives described in /tmp/questpc2-combat-ram-cache-retention.json into
+their original_directory BEFORE next check/clippy, using tar filter=data.
+Keep native READY cache active. Latest verified entry executable is retained
+at /tmp/questpc2-before-combat-verified-entry-executable.gz. Before another
+changed native compile remove inactive failed-case executable and temporary
+root .rcgu.o copies, retaining current READY cache; no broad clean/profiles.
+Continue toward complete quest after every push; scope0/35, no external wait.
+
 # Latest verified slice — genuine native source Annihilator entry
 
 BATCH-annihilator-native-source-entry-2026-11-07.json: actual PG18.6 marker,

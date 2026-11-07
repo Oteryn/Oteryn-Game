@@ -135,3 +135,16 @@ qualification. Continue owned missing mechanisms; no external engine deferral.
   values are read through existing Character owners. The source bundle combat
   view supplies its actual frame binding. Entry evidence alone remains partial;
   native combat, earned chest, escape and sealed re-entry are still required.
+
+- Real source combat preconditions: content/creatures/definitions/spell-native-profiles.json:1, SHA25606b0bee295bf0d09d5b3c87827d66cc276771bc79a3c0a05cf8cfebf4c1282a5,
+  admitted Angry Demon health8200, armor40, physical resistance30%; pinned
+  donor data-otservbr-global/monster/quests/annihilator/angry_demon.lua,
+  Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b,
+  SHA25616c4ceb8eecd1064f0b97492a6ea538a30a502b2869000312e3677e8689a9b28.
+  The existing official level-bonus curve in spell_data/formula.rs:17 gives
+  325 at level2000; source native progression evidence ends at2000. An
+  arbitrary64-think unarmed budget is insufficient, not a quest timer.
+  Keep full health/AI/real-kill assertions, tick both owners at the actual
+  CREATURE_THINK_INTERVAL_MILLIS, and use normal first-entry equipment plus
+  physically minted/carried native health potions and actual item USE.
+  No quest progress/reward, fake actor stats, invulnerability or forced kill.

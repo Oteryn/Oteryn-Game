@@ -1735,5 +1735,25 @@
     "whole_quest_qualifications": 0,
     "next": "Finish genuine source-region entry PG, check/clippy/fmt and push its fixture immediately; continue native combat, earned chest, actual exit and sealed re-entry.",
     "superseded_by_verified_entry_slice": "BATCH-annihilator-native-source-entry-2026-11-07.json"
+  },
+  "combat_authoring_checkpoint": {
+    "state": "AUTHORING",
+    "published_scope": "Verified source facts and resume state only; combat fixture remains local until PG green.",
+    "base_green_sha": "381736fef",
+    "postgres_red": [
+      {
+        "server_version": 180006,
+        "duration_seconds": 84.04,
+        "failure": "Full-health demon survived the arbitrary64-think unarmed budget; real attacks and native AI admission reached."
+      },
+      {
+        "server_version": 180006,
+        "duration_seconds": 77.57,
+        "failure": "After normal loadout/potion setup, fixed-pass health snapshot was full. Next measure damage before native AI healing instead of one later snapshot."
+      }
+    ],
+    "resource_recovery": "16GiB cgroup recorded one OOM kill. Inactive check/clippy/durability caches retained compressed with SHA verification; restore before next check/clippy using /tmp/questpc2-combat-ram-cache-retention.json. Native cache stays active.",
+    "whole_quest_qualifications": 0,
+    "next": "Complete native combat, earned chest, actual exit and sealed re-entry; no forced kills, fake stats, invulnerability, source health reduction or kill flag."
   }
 }
