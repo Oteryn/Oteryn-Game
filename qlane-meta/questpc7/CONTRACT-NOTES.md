@@ -110,7 +110,7 @@ Formal Dress fact budget is closed: Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125
 
 ### Concrete selected Formal Dress exhibition binding
 
-For the next native route slice, host the explicitly on-demand personal exhibition beside existing King Tibianus, rather than fabricate a donor display or add binary map data. Use the admitted existing object appearance2110 at(32315,32170,-6); its adjacent exhibition entry is(32314,32171,-6), ground464. These exact tiles are in content/world/placements/region-z06-x126-y125.b3 (sha256ade86a8e432522df4d30b1d8f56e8c6536a35c4e0664d426f4e895a2f80ddbfe). The object's known projection/collision is content/world/objects/objects-00500-00999.json:1#/records/131 (sha2562ebd31bd6ba0bb6cd3f1561258b61893954891e9b907ef918444ddbb4206c1fb). King already has a native placement at(32311,32172,-6) in content/world/npc-placements/placements-00000-00048.json:1. This is an explicitly authored exhibition role for an existing object/NPC, not a claim that the donor's palace object originally awarded Formal Dress.
+For the next native route slice, host the explicitly on-demand personal exhibition beside existing King Tibianus, rather than fabricate a donor display or add binary map data. Use the admitted existing object appearance2110 at(32315,32170,-6); its adjacent exhibition entry is(32314,32170,-6), ground464. These exact tiles are in content/world/placements/region-z06-x126-y125.b3 (sha256ade86a8e432522df4d30b1d8f56e8c6536a35c4e0664d426f4e895a2f80ddbfe). The object's known projection/collision is content/world/objects/objects-00500-00999.json:1#/records/131 (sha2562ebd31bd6ba0bb6cd3f1561258b61893954891e9b907ef918444ddbb4206c1fb). King already has a native placement at(32311,32172,-6) in content/world/npc-placements/placements-00000-00048.json:1. This is an explicitly authored exhibition role for an existing object/NPC, not a claim that the donor's palace object originally awarded Formal Dress.
 
 The selected quantities remain one button and one plume. Planned personal acquisition callbacks use the existing fenced NPC MINT owner, with the plume acquisition requiring the actually earned button addon; final completion requires the full semantic outfit entitlement and grants the selected existing Sharp Dressed achievement. Its canonical fact is content/achievements/achievements-00000-00499.json:1#/records/429, keyoteryn:achievement/sharp_dressed, two points, staticdata532. Reuse the existing consumptive actions and source addon mapping. Enforce the selected level20/Current Premium requirement using the native owners. This records the implementation choice only; the Formal Dress ledger stays ACTIVE until its complete PG route is green.
 
@@ -123,3 +123,15 @@ The retained Crystal9f data/XML/outfits.xml:134,266 (sha25602a4f73b60237946109da
 Use the existing materializable31737/31738/37604/37605/50060/50061 policies unchanged. A redundant requalification attempt raised a physical canonical conflict; inspection showed all six already have native physical admission, so no alternate weight or stack rule is introduced. Explicit look-pair mappings use the existing item-cosmetic-actions.json grant declarations and immutable provenancecrystal-item-cosmetics-201189f-v1, independently of the9f quest base provenance. No grant-key spelling inference is used.
 
 The Fiend recipe explicitly names The Forgemaster; attach the selected supplementary conversation to existing oteryn:npc.the_forgemaster (retained9f data-global/npc/the_forgemaster.lua, sha2564d3c8a44257795fcb949cdd1bb30a0f1ba0cad8b88fad050fba97852946db76e). The Hand recipe leaves its inquisitor contact authored; choose existing Henricus (data-global/npc/henricus.lua, sha2561b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d). These are selected Oteryn conversations, not claims that those Lua scripts originally award these outfits. Parent completions are read-only admission facts; subject milestones are never fixture-seeded.
+
+### Formal Dress world authority
+
+The chosen exhibition uses admitted palace ground464 at(32314,32170,-6) and
+display2110 at(32315,32170,-6). Both callbacks require current level20 and
+Current Premium in the fenced writer, independently of the prior King admission.
+The selected exhibition is an Oteryn adaptation of the canonical explore/use
+recipe, not a claim that a donor placed this display here. Existing native USE
+consumes Brass Button37604 for addon bit2, then Decorative Plume37605 for bit1;
+completion requires semantic ownership of the complete pair. The world fixture
+models the known entry464 as walkable ground with speed150, rather than using
+the common harness's default wall semantics for passage objects.

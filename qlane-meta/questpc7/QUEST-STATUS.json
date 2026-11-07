@@ -583,6 +583,13 @@
       "state": "Shared world outfit participant QUALIFIED and fully GREEN; full selected route remains ACTIVE",
       "proof": "qlane-meta/questpc7/WORLD-OUTFIT-PG-PROOF.json",
       "remaining": "Compose selected exhibition entry/display, accessory acquisition/use and final achievement/completion here."
+    },
+    "current_batch": {
+      "mechanism": "fresh fenced world requirements with existing Current Premium authority",
+      "proof": "qlane-meta/questpc7/FORMAL-PG-PROOF.json",
+      "postgres_red_seconds": 74.63448665,
+      "checks": "Whole selected PostgreSQL route GREEN; remaining required checks running before source commit.",
+      "postgres_green_seconds": 76.808861878
     }
   },
   {
@@ -1257,7 +1264,7 @@
     "owner": "questpc7",
     "remaining_work": {
       "kind": "lane_implementation_work",
-      "missing_piece": "Implement Hidden Threats’ exact fragment/tool assembly through one fenced inventory/quest receipt, then compose the selected mine/key route. Do not split input consumption from output/progress commit.",
+      "missing_piece": "Implement Hidden Threats\u2019 exact fragment/tool assembly through one fenced inventory/quest receipt, then compose the selected mine/key route. Do not split input consumption from output/progress commit.",
       "evidence": [
         "content/quests/definitions/quests-00000-00099.json:1#/records/43/definition",
         "crates/gameplay/quests/src/quest/world_callbacks.rs:81",

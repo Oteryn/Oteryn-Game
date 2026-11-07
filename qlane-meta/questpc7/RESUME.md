@@ -563,3 +563,38 @@ Continue the physical-world batch
 Threats atomic assembly) and the shared exchange, outfit and encounter batches.
 Do not defer these mechanisms to qengine/qengine2. Do not duplicate WORLDCHG
 or ITEMHOLD ownership. CHANGED-FILES.txt lists only this continuation's files.
+
+## Formal Dress follow-on in progress (2026-11-07)
+
+HEAD278f27e54 already pushed Fiend Slayer/Inquisition. Formal Dress remains
+ACTIVE while its new source and shared world requirements run focused checks.
+Genuine PG18.6 RED: `/tmp/questpc7-formal-red-fresh.log`,74.63448665s,
+display incorrectly committed after current Premium authority was removed.
+Runtime fix reuses the existing Current Premium gate at the fenced world writer
+and both ordinary/resumed dispatch paths; generic callers cannot bypass it.
+World requirements share NPC bounds and fresh prerequisite reads. Source is
+`questpc7_outfit_programmes.append_formal`; display and entry use admitted palace
+appearances2110/464 at(32315,32170,-6)/(32314,32170,-6). Native item actions
+consume button37604 then plume37605; full semantic ownership gates completion.
+No subject quest state fixture seeds. Fixture ground464 is explicitly walkable
+with speed150; fresh track reads preserve missing=-1 rather than shared helper0.
+Authoring17 tests and world17 units pass. Validation runner:
+`/tmp/questpc7-formal-validation.py`, progress/result JSON in matching files.
+Finish all checks, update FORMAL-PG-PROOF.json and ledger, commit with mandated
+author/trailers, fetch/merge FETCH_HEAD if needed and push. Continue remaining
+ACTIVE ledger entries without ownership questions.
+
+The first fixed-writer attempt passed Premium refusal but retried too quickly
+(unchanged200ms world gate); fixture now waits210ms between display attempts.
+Next PG18.6 run75.162314318s proved display and programme2 but caught stale
+NPC stage selection (button count0 vs1). Extend the existing immediate Monk
+quest-copy application to every committed world callback, so the next native
+NPC/world command observes its predecessor; durable recovery refresh remains.
+The focused validation runner is currently rebuilding this change.
+
+Formal whole-route PG18.6 GREEN76.808861878s retained at
+`/tmp/questpc7-formal-green-complete.log`; world-to-NPC immediate projection fix
+resolved the second RED. Both tokens consumed, premature stages refused, final
+completion/achievement and ordinary full-outfit selection pass. Metadata-only
+proof checkpoint preserves push cadence while source checks continue. Source
+remains uncommitted and ledger ACTIVE until hoist/compiler/pins checks finish.

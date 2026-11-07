@@ -1,0 +1,49 @@
+{
+  "status": "Whole selected route PostgreSQL GREEN; compiler/regression/pin checks running before source qualification",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red": {
+    "log": "/tmp/questpc7-formal-red-fresh.log",
+    "seconds": 74.63448665,
+    "assertion": "Display committed without current Premium coordinator; expected Rejected."
+  },
+  "fixture_boundary": "Fresh subject programme; no quest progress seeds. Native published level20, existing Current Premium fixture, admitted palace appearances. Native NPC owner conversation and real StepIn, display USE, item consumption and appearance wire.",
+  "fixture_repairs": [
+    "Model admitted ground464 as walkable with speed150 rather than the common passage wall default.",
+    "Read absent programme tracks as -1 directly; the old helper defaults missing tracks to0.",
+    "Wait210ms between display attempts: the unchanged production200ms world-action cooldown intentionally survives refused actions. First fixed-writer run proved Premium rejection, then encountered Exhausted on an immediate retry."
+  ],
+  "remaining_checks": [
+    "hoist regression",
+    "compiler/check/strict clippy",
+    "repository content/world/pins/fmt"
+  ],
+  "reuse_review": {
+    "branch": "origin/claude/happy-davinci-ijz3wy-qengine2",
+    "sha": "de9bb8bace9236656fabf1517161bb26d5a7a158",
+    "decision": "Existing Premium NPC support was reviewed; reuse the established Current Premium coordinator and gate trait, extending the existing world callback writer generically rather than adding another Premium owner."
+  },
+  "additional_red": {
+    "postgres": "18.6",
+    "seconds": 75.162314318,
+    "assertion": "After display commit and durable programme2, next King button request returned Ok without minting; item count0 rather than1.",
+    "fix": "Apply existing committed quest-copy projection generically after world callbacks, preserving durable recovery refresh."
+  },
+  "green": {
+    "log": "/tmp/questpc7-formal-green-complete.log",
+    "seconds": 76.808861878,
+    "postgres": "18.6",
+    "scope": [
+      "fresh programme without quest-state seeds",
+      "native level20 and Current Premium",
+      "initial display refusal before admission",
+      "real world StepIn exploration",
+      "fresh Premium authority refusal without effects",
+      "native display base grant",
+      "immediate world-to-NPC stage visibility",
+      "premature second token and completion refused",
+      "actual button and plume item consumption",
+      "durable completion and Sharp Dressed achievement",
+      "normal full-outfit appearance selection"
+    ]
+  }
+}
