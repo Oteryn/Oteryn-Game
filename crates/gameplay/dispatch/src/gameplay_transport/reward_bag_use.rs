@@ -454,11 +454,20 @@ mod tests {
         let active = controller.active().expect("active");
         let native = active.native_gameplay().expect("native");
         let bags = reward_bags().expect("overlay");
-        assert_eq!(bags.iter().filter(|b| b.playable).count(), 27);
-        for bag in bags
-            .iter()
-            .filter(|b| b.playable && !b.constant.starts_with("EVENT_"))
-        {
+        // The 27 legacy bags remain intact; QENGINE2 adds the Gnomish supply
+        // package from Crystal random_items.lua:49-80 (9f5a72c64).
+        assert_eq!(bags.iter().filter(|b| b.playable).count(), 28);
+        assert_eq!(
+            bags.iter()
+                .filter(|b| b.playable && b.constant != "QENGINE_GNOMISH_SUPPLY")
+                .count(),
+            27
+        );
+        for bag in bags.iter().filter(|b| {
+            b.playable
+                && !b.constant.starts_with("EVENT_")
+                && b.constant != "QENGINE_GNOMISH_SUPPLY"
+        }) {
             let mut reached = std::collections::BTreeSet::new();
             let mut cumulative = 0;
             for reward in &bag.rewards {
@@ -474,6 +483,59 @@ mod tests {
             }
             assert_eq!(reached.len(), bag.rewards.len());
         }
+        // The new supply package grants source quantities, rather than the
+        // legacy one-item outcomes. Exercise every admitted outcome exactly.
+        let supply = bags
+            .iter()
+            .find(|bag| bag.constant == "QENGINE_GNOMISH_SUPPLY")
+            .expect("Gnomish supply package");
+        assert!(supply.playable);
+        assert_eq!(supply.bag, "oteryn:item.tibia.i15698");
+        let expected: std::collections::BTreeMap<_, _> = [
+            (3723, 20),
+            (16103, 1),
+            (16143, 15),
+            (15793, 15),
+            (16167, 1),
+            (236, 2),
+            (237, 2),
+            (266, 4),
+            (268, 4),
+            (238, 1),
+            (239, 1),
+            (7443, 1),
+            (7439, 1),
+            (3035, 5),
+            (5911, 1),
+            (7440, 1),
+            (16165, 1),
+            (16257, 1),
+            (16254, 1),
+            (3043, 1),
+            (3039, 1),
+            (16242, 1),
+            (3037, 1),
+            (3041, 1),
+            (3038, 1),
+        ]
+        .into_iter()
+        .map(|(id, count)| (format!("oteryn:item.tibia.i{id}"), count))
+        .collect();
+        assert_eq!(supply.rewards.len(), 25);
+        assert_eq!(supply.rewards.iter().map(|r| r.weight).sum::<u64>(), 10001);
+        let mut reached = std::collections::BTreeSet::new();
+        for draw in 0..100_000 {
+            let plan = reward_bag_conversion(native, &item(&supply.bag), draw)
+                .expect("source-bound Gnomish supply outcome");
+            assert_eq!(plan.outputs.len(), 1);
+            let (output, count) = &plan.outputs[0];
+            assert_eq!(Some(count), expected.get(&output.production_key));
+            reached.insert(output.production_key.clone());
+            if reached.len() == expected.len() {
+                break;
+            }
+        }
+        assert_eq!(reached, expected.into_keys().collect());
         for bag in bags.iter().filter(|b| !b.playable) {
             assert!(reward_bag_conversion(native, &item(&bag.bag), 0).is_none());
         }

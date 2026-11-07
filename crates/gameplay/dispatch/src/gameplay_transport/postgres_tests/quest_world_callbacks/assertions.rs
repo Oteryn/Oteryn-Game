@@ -141,7 +141,7 @@ fn quest_world_callbacks_source_binding_and_visible_collision_batch_are_atomic()
     }
     assert!(
         w.facts()
-            .apply_quest_callback(key, 0, after, &passages, &[], false)
+            .apply_quest_callback(key, 0, after, &passages, &[], false, None)
     );
     let pinned = w.facts().pinned();
     for (&key, p) in passages.iter().zip(&c.passages) {
@@ -154,12 +154,12 @@ fn quest_world_callbacks_source_binding_and_visible_collision_batch_are_atomic()
     }
     assert!(
         !w.facts()
-            .apply_quest_callback(key, 0, after, &passages, &[], true)
+            .apply_quest_callback(key, 0, after, &passages, &[], true, None)
     );
     assert_eq!(w.facts().object_revision(key), 1);
     assert!(
         w.facts()
-            .apply_quest_callback(key, 1, after, &passages, &[], true)
+            .apply_quest_callback(key, 1, after, &passages, &[], true, None)
     );
     // A previously pinned view remains coherent while the current one closes.
     assert!(passages.iter().all(|k| pinned.base_hidden(*k)));
