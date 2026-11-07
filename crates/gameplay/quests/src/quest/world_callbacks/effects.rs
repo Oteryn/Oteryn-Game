@@ -17,6 +17,8 @@ pub struct CallbackEffects {
     pub outfit_reward: Option<super::super::reward_callbacks::OutfitReward>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_reward: Option<super::super::reward_callbacks::ItemReward>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scene: Option<super::SceneEdits>,
     pub transform: Option<u16>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
@@ -88,6 +90,13 @@ pub struct Encounter {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects
+        .scene
+        .as_ref()
+        .is_some_and(|scene| !super::scene::valid_scene(callback, scene))
+    {
+        return false;
+    }
     if effects.item_reward.as_ref().is_some_and(|reward| {
         callback.trigger != Trigger::Use
             || callback.is_read_only()
@@ -133,7 +142,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
     }
     let operations = usize::from(effects.portals.is_some())
         + usize::from(effects.item_cycle.is_some())
-        + usize::from(effects.encounter.is_some());
+        + usize::from(effects.encounter.is_some())
+        + usize::from(effects.scene.is_some());
     if operations > 1
         || (operations > 0
             && (!lever

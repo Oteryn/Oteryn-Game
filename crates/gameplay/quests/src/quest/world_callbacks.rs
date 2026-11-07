@@ -28,6 +28,9 @@ pub enum Trigger {
     StepOut,
 }
 
+mod scene;
+pub use scene::{SceneEdit, SceneEdits};
+
 mod effects;
 pub use effects::{
     CallbackEffects, Encounter, EncounterMonster, EncounterPlayer, Facing, ItemCycle, MagicEffect,
@@ -163,6 +166,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/shared-access-callbacks.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/native-scene-callbacks.json"
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/shared-outfit-callbacks.json"
@@ -405,6 +411,9 @@ fn extend_callbacks(
 
 #[cfg(test)]
 mod batch4_tests;
+
+#[cfg(test)]
+mod scene_tests;
 
 #[cfg(test)]
 mod tests {

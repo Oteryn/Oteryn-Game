@@ -41,6 +41,9 @@ fn scenario_case(
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false)
             .await?;
+        if name == "mintwallin-cyclops-scene" {
+            eprintln!("POSTGRES_CASE_STARTED mintwallin-cyclops-scene after PostgreSQL fixture initialization");
+        }
         if name == "authored-braindeath" {
             eprintln!("POSTGRES_CASE_STARTED authored-braindeath after PostgreSQL fixture initialization");
         }
@@ -75,6 +78,8 @@ fn scenario_case(
         }
         let world = if name == "authored-braindeath" {
             super::super::quest_callbacks::source_world((32546, 31522, -11), 0, 1983, 0)?
+        } else if name == "mintwallin-cyclops-scene" {
+            super::super::questpc8_native_scenes::world()?
         } else {
             world(&callback, trigger)?
         };
@@ -218,6 +223,8 @@ fn scenario_case(
             super::super::questpc8_authored_programmes::exercise_braindeath(
                 &mut owner, &mut admitted, &h,
             ).await?;
+        } else if name == "mintwallin-cyclops-scene" {
+            super::super::questpc8_native_scenes::exercise(&mut owner, &mut admitted, &world).await?;
         } else if name == "giant-smithhammer-asymmetric" {
             super::super::quest_l7_asymmetric::exercise(
                 &mut owner,

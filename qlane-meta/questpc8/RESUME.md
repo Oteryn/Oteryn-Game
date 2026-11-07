@@ -1,3 +1,19 @@
+# Current source-scene batch
+
+Mintwallin scene PG RED1.72s after PostgreSQL initialization, GREEN25.397996587s.
+New bounded scene projection supports32 edits without changing the old eight-
+passage limit. All nine removals, two creations, lever removal, stale refusal,
+replay and source-floor reconstruction passed.17 world callback units pass;
+Giant four-state source regression passes25.07s. Check, strict Clippy, fmt, generator and pin refresh/check pass.
+World digest is unchanged. No Cargo or pin job remains active. Logs /tmp/questpc8-scene-* and validation record
+native-scenes-validation.json. This is a source component, not whole Mintwallin
+qualification yet. Ruby cache native map has appearance2472 at32591,32097,14,
+ordinal1, no UID6138. Original claim is oteryn:reward-claim.kv.mintwallincyclops,
+reward i3028 x1, existing once-per-character identity. Next implement an explicit
+native placement alias supplement, preserving the source record and claim key;
+never allow arbitrary missing-UID fallback or any alias over a conflicting UID.
+Only embedded approved aliases should apply; fixture binder stays strict.
+
 # questpc8 — AUTHORING checkpoint
 
 Work directly on claude/happy-davinci-ijz3wy-questpc8, read current git log first.
