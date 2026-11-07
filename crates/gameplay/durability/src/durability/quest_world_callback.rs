@@ -159,6 +159,11 @@ pub(super) async fn consume(
     if !context_is_current(tx, permit, fence, context).await? {
         return Ok(false);
     }
+    if let Some(change) = &callback.world_change
+        && !super::world_event::change_active(tx, world_id, change).await?
+    {
+        return Ok(false);
+    }
     if let Some(minimum) = callback.minimum_level {
         let level: Option<i64> = sqlx::query_scalar(
             "SELECT level FROM game_character_progression_state \

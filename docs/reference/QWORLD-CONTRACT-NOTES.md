@@ -1128,3 +1128,153 @@ inventory row for each input. The 500/501-node, depth-eight/nine, cycle and
 foreign Character/World/absent-item cases were compared against migration 0268's
 actual function on real PostgreSQL (six fixtures, full/selected equality).
 No deadline, recipe quantity, custody exclusion or receipt assertion was relaxed.
+
+## QWORLD source facts (2026-11-07)
+The existing production daily roll and physical projections cover Fury Gates,
+Grimvale full-moon spawn substitution, and Their Master's Voice fungus. Calendar
+selection must remain bound to the committed reset occurrence across restarts.
+The inspected lane branches do not supply a reusable durable world-state owner.
+Source kill thresholds, schedules, and exact quest action gates for the other
+listed world changes have not yet been established; no threshold or dialogue
+text is inferred from a title alone. These require source evidence before title
+qualification, while the reusable engine implementation proceeds here.
+
+### QWORLD consumer verification, 2026-11-07
+- Real reset occurrence 4 -> native rat kill settlement -> world counter -> fenced
+  quest completion and active/inactive travel quote -> admitted world-event wire
+  response and restart: focused PostgreSQL case passed in 55.96 seconds.
+- Persisted active/inactive snapshots -> source-compiled Fury Gates layers and
+  retained exits, Their Master's Voice fungus boundaries, and Grimvale native
+  spawn/death/respawn -> repeat snapshot: focused PostgreSQL case passed in
+  128.74 seconds.
+- The generic rat-cull quest and travel route prove reusable consumers, not
+  title-specific NPC/quest completion. Counter replay coverage now uses two distinct native deaths: replaying the
+  first leaves the count at one and state inactive, then the second crosses the
+  two-kill threshold. The focused case passed in 58.99 seconds before migration
+  renumbering.
+
+### Coordinator migration allocation
+QWORLD owns 1320–1329. The unchanged world-change calendar/state migration was
+renamed with git mv to `apps/game-server/migrations/1320_world_change_calendar.sql`.
+This branch carries no QENGINE2 0999–1006 or QBASE 1200–1209 migrations.
+Renumbered 1320 validation: real-dispatch PostgreSQL passed in 72.30 seconds;
+physical snapshot PostgreSQL passed in 137.88 seconds. Pin refresh/check regenerated
+and verified the unchanged world artifact. Migration duplicate check runs on the
+committed candidate before publication.
+
+### QWORLD scheduling checkpoint (WIP)
+Migration `1321_world_change_occurrence_decisions.sql` is in the allocated range.
+The reset catalogue supports native daily, chance, calendar, rotation, and
+kill-counter rules; native choices are stored as an owned occurrence payload.
+The implementation compiles (focused check: 1m31s). Remaining validation points:
+generic-rule PostgreSQL cases, regenerated pins for the new runtime catalogue,
+and a fail-closed distinction between legacy upgrade and a missing already-bound
+occurrence payload. This checkpoint is not final qualification.
+
+### Recovery and RNG guard checkpoint (WIP)
+Forward migration `1322_world_change_decision_required.sql` distinguishes one-time
+legacy calendar upgrades from missing already-bound decisions, which must fail
+closed. Generic chance rules hash accepted keys into a bounded RNG purpose (review
+found that a raw 100-byte key exceeded the RNG purpose limit). Focused production
+check passed in 1m00s. PG compilation was interrupted by disk exhaustion before
+assertions; only inactive generated incremental caches were removed. New generic
+schedule, inverse-counter, maximum-key, wrong-World payload, and missing-decision
+PG assertions are queued; runtime-catalogue pins still need regeneration.
+
+Generic-rule and recovery PG proof now passed in 57.98 seconds: chance/calendar/
+rotation decisions, maximum-length accepted keys, two-direction counter states,
+wrong-World payload rejection, missing-bound-decision refusal, native death replay,
+quest/travel gates, and real world-event dispatch. Pin refresh regenerated the
+same world bytes; the physical-case rerun and final lint/pin-check remain pending.
+
+### Final allocated-migration qualification
+The final physical PostgreSQL rerun passed in 122.43 seconds, exercising persisted
+active/inactive Fury Gates overlays and retained exits, Grimvale native
+spawn/death/respawn substitution, and Their Master's Voice fungus boundaries and
+restart. Together with the 57.98-second real-dispatch case, these qualify the
+three titles' shared world-state paths. The separate generic quest and travel
+fixtures establish reusable state gating; they do not claim complete title NPC
+stories. The allocated migrations are exactly:
+- `1320_world_change_calendar.sql`
+- `1321_world_change_occurrence_decisions.sql`
+- `1322_world_change_decision_required.sql`
+Independent review of the bounded-RNG and missing-occurrence fixes reported no
+concrete P0/P1 findings.
+Final verification passed: workspace fmt and explicit generated-mounted test fmt;
+focused production check (1m00s); Clippy with `-D warnings` for world-change,
+durability, dispatch, game-server and bundle compiler (2m12s), plus content and
+quests; official pin-refresh/pin-check; and duplicate migrations on the committed
+candidate. No full PostgreSQL suite was run.
+
+### Persisted native decision boundary regression
+Added focused serialization/recovery tests covering 256 epoch/calendar decisions
+and rejecting zero epochs, unknown Fury/ Nightmares layers, mismatched Fury
+entrances, invalid trader values and unknown payload fields. Both cases passed
+in 0.01 seconds (build 1.13 seconds); world-change test-target Clippy with
+`-D warnings` and focused formatting passed. Production behavior is unchanged.
+Correction to the preceding checkpoint: inspection after its push showed that
+test-target Clippy had failed on five expect calls and items below the daily test
+module; the shell had continued to later successful commands. Replaced the calls
+with error propagation and moved the existing helper definitions above the test
+module. The fail-fast rerun passed Clippy `-D warnings` in 0.54 seconds, both
+recovery tests in 0.02 seconds, formatting and whitespace checks.
+
+### Catalogue persistence contract regression
+Focused catalogue tests prove canonical ordering preserves persisted bytes and
+SHA-256 identity through decoding, and reject duplicate keys plus removal or
+replacement of each required native rule. Both cases passed in 0.00 seconds
+(build 0.92 seconds); test-target Clippy `-D warnings` passed in 0.31 seconds.
+Formatting and whitespace checks passed. This adds regression coverage without
+changing production behavior or migrations.
+
+### Main integration: QENGINE2/QBASE 0999–1008
+Merged main `1ae39c7fb9bef09c3cd50d16410374f4134b1676` without text conflicts.
+Main's migrations 0999–1008 are retained byte-for-byte; there are no 1200–1205
+copies. QWORLD still owns only 1320–1322. Eleven new native-kill/reward and test
+transition constructors explicitly default the optional world-change gate to
+None, preserving main's behavior and fixing the merge's E0063 compile failures.
+Independent integration review found no concrete P0/P1 issue.
+
+Official merge-driver regeneration and pin-refresh/pin-check passed against
+world digest d528b2dfce1bedf9db643ff78c45060ef6c08f69459c9edbf632cdc4ca73eb95.
+Workspace all-target check passed in 5m52s; test-target Clippy with -D warnings for
+all 34 originally affected/reverse-dependent crates passed in 6m09s. Workspace
+formatting and the duplicate-migration check passed.
+
+Per the owner's replacement speed-first rule, the broad nextest run was stopped:
+1257 tests had passed, including QWORLD physical PG in 188.667 seconds; its four
+interrupted tests are not claimed as passes or product failures. Full-suite
+results are now delegated to CI by the owner. Earlier cache cleanup interrupted
+two compile targets; these were rerun, and later cleanup pauses Cargo scheduling
+and protects every active compiler crate before removing completed caches.
+
+The original mechanic red proof is retained in /tmp/qworld-pg-red.log: admitted
+world-event dispatch omitted Their Master's Voice (false instead of true), and
+the focused case failed in 70.00 seconds before the production wire fix.
+
+The final speed-first focused run selected only the world-change crate's 19
+mechanic tests and the two QWORLD PG cases: all 21 passed in 125.766 seconds.
+Real-dispatch reset/counter/quest/travel/recovery proof emitted
+`QWORLD_PG_EXECUTED elapsed_ms=60828`; the three-title physical overlay/spawn/
+restart proof emitted `QWORLD_PHYSICAL_PG_EXECUTED elapsed_ms=125726`.
+Both ran against the retained real PostgreSQL 18.6 cluster. No reverse-dependency
+tests executed in this final filtered run; full-suite follow-up belongs to CI
+under the owner's replacement rule. No tests were weakened or deleted.
+
+### PR 3026 CI metadata repair
+Reproduced classifier parity failure for runtime.json and the architecture edge
+failure before changing policy. Added the missing Python world-bundle input to
+match the existing Rust list. Compared all workspace internal edges and declared
+the two omissions: dispatch -> world-change and world-change -> determinism.
+The complete classifier regression script and architecture workspace validator
+now pass. No production mechanics or tests were changed.
+
+Validation: workspace all-target check passed in 3m54s; changed-crate Clippy with
+-D warnings passed in 5m05s; formatting, duplicate migrations and official pin
+refresh/check passed. The own-mechanic library run passed all 21 cases in 128.328s,
+including real PG markers QWORLD_PG_EXECUTED elapsed_ms=64087 and
+QWORLD_PHYSICAL_PG_EXECUTED elapsed_ms=128288. A prior build hit disk exhaustion;
+completed generated caches were removed and the focused run succeeded.
+The owner's newer PUSH READY WORK NOW instruction supersedes the earlier hold
+for a PG shard message or 19:25 UTC. Any additional CI failures remain a separate
+follow-up batch; this repair does not claim full-suite qualification.
