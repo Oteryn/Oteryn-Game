@@ -2680,6 +2680,43 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "npcfix-reviewed-ground-cells-42",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "Exact current frozen retail cells; tools/content-schema/npc-authoring/samples/npcfix-retail-placements.json SHA2563aba747ac833bce3801b0f2a266eb56376590bcd746e7304848e74cb99eebdcd. Actual default PG RED against pre-ground production snapshot f87861eab9ba7d889a0bbe5f495237b45190214d; do not move NPCs or weaken admission. Toffee is physical component only until candy buyback service proof.",
+      "cases": [
+        {
+          "npc": "oteryn:npc.javala",
+          "name": "Javala",
+          "expected": {
+            "x": 33889,
+            "y": 32654,
+            "floor": -8
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.john_the_carpenter",
+          "name": "John The Carpenter",
+          "expected": {
+            "x": 32438,
+            "y": 32473,
+            "floor": -8
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.toffee",
+          "name": "Toffee",
+          "expected": {
+            "x": 33379,
+            "y": 32179,
+            "floor": -7
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }

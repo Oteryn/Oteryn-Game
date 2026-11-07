@@ -506,8 +506,19 @@ def validate_record(record):
     if "item_pointer" not in record["provenance"]:
         import book_world_ground
         import grizzly_ground
+        import npcfix_ground
         import summer_ground
 
+        if record["provenance"]["source_item_id"] in npcfix_ground.IDS:
+            expected = next(
+                row for row in npcfix_ground.records()
+                if row["provenance"]["source_item_id"]
+                == record["provenance"]["source_item_id"]
+            )
+            return (
+                [] if record == expected
+                else ["reviewed NPC Terrain differs from its qualified official source"]
+            )
         ground = {
             grizzly_ground.IDENTIFIER: grizzly_ground,
             book_world_ground.IDENTIFIER: book_world_ground,

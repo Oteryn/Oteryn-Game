@@ -8323,7 +8323,7 @@
   ],
   "active_ground_work": {
     "name": "npcfix-reviewed-ground-cells-42",
-    "state": "ACTUAL_DEFAULT_POSTGRES_RED_CONFIRMED",
+    "state": "COMPILES; POSTGRES_GREEN; INDEPENDENT_PIN_AND_FMT_RUNNING",
     "entries": [
       "Javala",
       "John The Carpenter",
@@ -8337,6 +8337,24 @@
       "sha256": "0d0572b33f877997fbf019229d9848a856b4d1b1510adccfd1972b9194391abe"
     },
     "scope": "Javala and John complete physical-only entries; Toffee physical component retained pending separate candy service proof. No NPC coordinate/name or prior case changes.",
-    "next": "Reuse strict Summer appearance-only producer for53254/35700/44783; retain exact cells. Anaztassja has five anchors and will be handled as a complete separate multi-anchor slice; do not drop the two deeper anchors."
+    "next": "Reuse strict Summer appearance-only producer for53254/35700/44783; retain exact cells. Anaztassja has five anchors and will be handled as a complete separate multi-anchor slice; do not drop the two deeper anchors.",
+    "green": {
+      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+      "seconds": 149.47,
+      "log": "/tmp/npcfix-evidence/ground-three-pg-green.log"
+    },
+    "preservation": {
+      "native_existing_preserved": 3627,
+      "native_added": [
+        "oteryn:item.tibia.i27976"
+      ],
+      "terrain_existing_preserved": 8615,
+      "terrain_added": [
+        "oteryn:terrain.tibia.i35700",
+        "oteryn:terrain.tibia.i44783",
+        "oteryn:terrain.tibia.i53254"
+      ]
+    },
+    "checks": "12 ground tests PASS38.518s;9 profile guard tests PASS52.639s; native42 generation/reproduction PASS; Python compile PASS; no changed Rust crate; full prior changed-crate check/strict Clippy retained; current fmt and independent regenerated pin check running."
   }
 }

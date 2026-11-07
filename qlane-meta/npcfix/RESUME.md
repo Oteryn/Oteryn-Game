@@ -323,3 +323,5 @@ retail-population-qualification-39 QUALIFIED: Maria, Nathaniel, Nelliem, Oldrak,
 retail-population-qualification-40 QUALIFIED: Maris, Maritima, Ortheus, Palimuth. Actual PG RED69.66s -> GREEN253.62s. Every prior cumulative case retained; current production snapshot byte-identical to fully checked source. All strict/source/repository/pin gates PASS. Continue immediately.
 
 retail-population-qualification-41 QUALIFIED: Peter, Xorlosh, Yalahari. Actual PG RED74.73s -> GREEN151.37s. Every prior cumulative case retained; current production snapshot byte-identical to fully checked source. All strict/source/repository/pin gates PASS. Continue immediately.
+
+Compiling ground WIP: default actual PG RED94.00s -> GREEN149.47s for Javala/John/Toffee physical cells, all prior cumulative cases retained. All3627 native and8615 Terrain records preserved; one passive27976 and three official-ground records added by repo tools.12 ground tests and9 profile guard tests PASS; native42 generation/reproduction PASS. Regenerated pin written; independent pin check and fmt actively running. Keep statuses unpromoted until final gates pass; continue immediately.
