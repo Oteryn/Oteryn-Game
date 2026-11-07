@@ -1,0 +1,30 @@
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/threatened_dreams.rs:66:pub(super) struct CommitStep {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/threatened_dreams.rs:110:        Some(Pending::Commit { .. })
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/threatened_dreams.rs:148:        Some(Step::Commit(Box::new(CommitStep {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/threatened_dreams.rs:198:    let CommitStep {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/threatened_dreams.rs:263:            Some(Pending::Commit { .. })
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/threatened_dreams.rs:274:        state.threatened_dreams = Some(Pending::Commit {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/threatened_dreams.rs:328:    let Pending::Commit {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:38:pub(super) struct CommitStep {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:89:    if matches!(state.catalogue, Some(Pending::Commit { .. })) {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:169:    Some(Step::Commit(Box::new(CommitStep {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:224:    let CommitStep {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:282:        if matches!(state.catalogue, Some(Pending::Commit { .. })) {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:292:        state.catalogue = Some(Pending::Commit {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:363:    let Pending::Commit {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:48:    if matches!(state.viola, Some(Pending::Commit { .. })) {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:229:        sessions.entry(command.game_session_id).or_default().viola = Some(Pending::Commit {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:274:            Pending::Commit {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/classic_quests.rs:32:pub(super) struct CommitStep {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/classic_quests.rs:81:    if matches!(state.classic.as_ref(), Some(Pending::Commit { .. })) {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/classic_quests.rs:121:        Some(Step::Commit(Box::new(CommitStep {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/classic_quests.rs:171:    let CommitStep {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/classic_quests.rs:235:        if matches!(state.classic.as_ref(), Some(Pending::Commit { .. })) {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/classic_quests.rs:245:        state.classic = Some(Pending::Commit {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/classic_quests.rs:295:    let Pending::Commit {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/endgame.rs:194:        Some(Pending::Commit { .. }) => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/endgame.rs:230:            Some(Pending::Commit {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/endgame.rs:538:        if matches!(state.endgame, Some(Pending::Commit { .. })) {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/endgame.rs:557:        state.endgame = Some(Pending::Commit {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/endgame.rs:687:    let Pending::Commit {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:765:    if let Some(step) = catalogue::prepare(admission, actor, command, &intent, &runtime, &ordinary)

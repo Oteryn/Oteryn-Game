@@ -1,0 +1,5 @@
+{
+  "command": "python3 -m unittest discover -s tools/content-schema/native-gameplay -p test_full_spell_artifact.py -k corruptor -v",
+  "exit": 1,
+  "duration_seconds": 3.962
+}

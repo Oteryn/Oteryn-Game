@@ -101,9 +101,9 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || c.storage.is_empty()
             || c.storage.len() > super::QUESTSTATE0_RL_02
             || tracks.len() != c.storage.len()
-            || c.storage
-                .iter()
-                .any(|s| !slug(&s.track, "oteryn:", b"._/:-", 128) || s.minimum > s.maximum)
+            || c.storage.iter().any(|s| {
+                !slug(&s.track, "oteryn:", b"._/:-", 128) || s.minimum > s.maximum || s.read_only
+            })
             || (!c.repeatable
                 && c.storage
                     .iter()
@@ -238,6 +238,7 @@ mod tests {
                 maximum: 0,
                 set: 1,
                 preserve: false,
+                read_only: false,
             })
             .collect();
         let document = |callback: &RewardCallback| {
@@ -250,6 +251,7 @@ mod tests {
             maximum: 0,
             set: 1,
             preserve: false,
+            read_only: false,
         });
         assert!(parse(&document(&callback)).is_err());
         Ok(())
@@ -261,7 +263,7 @@ mod tests {
         let source = include_str!("../../../../../content/quests/shared-reward-callbacks.json");
         let callbacks = load()?;
         assert!(callbacks.len() >= 6);
-        for edit in 0..6 {
+        for edit in 0..7 {
             let mut value: serde_json::Value =
                 serde_json::from_str(source).map_err(|e| e.to_string())?;
             match edit {
@@ -279,6 +281,7 @@ mod tests {
                         value["callbacks"][0]["storage"][0]["minimum"].clone()
                 }
                 4 => value["callbacks"][0]["unknown"] = true.into(),
+                6 => value["callbacks"][0]["storage"][0]["read_only"] = true.into(),
                 _ => {
                     value["callbacks"][0]["take"] = serde_json::json!([{"item":"oteryn:item.tibia.i139","count":1},{"item":"oteryn:item.tibia.i139","count":1}])
                 }

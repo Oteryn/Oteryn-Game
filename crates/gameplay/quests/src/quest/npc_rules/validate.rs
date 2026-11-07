@@ -85,7 +85,11 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                 || (rule.trigger == NpcRuleTrigger::Say
                     && rule.keywords.is_empty()
                     && !rule.any_message)
-                || rule.reply.iter().any(|line| line.is_empty())
+                || rule.reply.len() > 32
+                || rule
+                    .reply
+                    .iter()
+                    .any(|line| line.is_empty() || line.len() > 2048 || line.contains('\0'))
                 || rule
                     .inventory_failure_reply
                     .iter()

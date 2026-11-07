@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes -- --test-threads=1 --nocapture",
+  "exit": 0,
+  "duration_seconds": 345.692
+}

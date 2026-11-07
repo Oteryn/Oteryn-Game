@@ -1,0 +1,433 @@
+[
+  {
+    "canonical": "oteryn:quest.authored.20_years_a_cook_quest",
+    "title": "20 Years a Cook Quest",
+    "mechanism": "native_actor_use_stepin_bindings",
+    "status": "UNFINISHED",
+    "blocker": "The Draccoon trashcan entry and Ratha soul-container chain have no admitted native actor/USE binding in the selected authored recipe.",
+    "from_lanes": [
+      "questpc4"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "oteryn:quest.authored.20_years_a_cook_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00200-00299.json",
+      "pointer": "/records/84/definition"
+    }
+  },
+  {
+    "canonical": "oteryn:quest.tutorial",
+    "title": "Tutorial",
+    "mechanism": "native_actor_use_stepin_bindings",
+    "status": "UNFINISHED",
+    "blocker": "The wounded Cave Draptor treatment, tutorial hole and crystal exit have unresolved native action/actor bindings; this is the pinned Tutorial title, not excluded Dawnport.",
+    "from_lanes": [
+      "questpc4"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "oteryn:quest.tutorial",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00200-00299.json",
+      "pointer": "/records/58/definition"
+    }
+  },
+  {
+    "canonical": "oteryn:quest.newhaven_legion_helmet_quest",
+    "title": "Newhaven Legion Helmet Quest",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "UNFINISHED",
+    "blocker": "Both source prerequisites must complete: Gustavo Protect the Village and Viola Lost Wisdom. Their Guardian Ring52732/Scarf3572 rewards are canonically nonmaterializable, so granting prerequisite progress alone would bypass required item/XP completion.",
+    "from_lanes": [
+      "questpc2"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "unresolved:questpc2:newhaven_legion_helmet_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00000-00099.json",
+      "pointer": "/records/62/definition"
+    }
+  },
+  {
+    "canonical": "oteryn:quest.newhaven_quest",
+    "title": "Newhaven Quest",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "UNFINISHED",
+    "blocker": "The required Guardian Ring52732 and Scarf3572 are not materializable in the canonical Item catalogue. Their NPC reward/XP completion cannot be qualified using held rewards.",
+    "from_lanes": [
+      "questpc2"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "unresolved:questpc2:newhaven_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00200-00299.json",
+      "pointer": "/records/78/definition"
+    }
+  },
+  {
+    "canonical": "oteryn:quest.authored.nimmersatt_s_lair",
+    "title": "Nimmersatt's Lair",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "UNFINISHED",
+    "blocker": "Remaining complete route: native Bottled Dragon Breath44179 admission and lava-wall encounter/action bindings. Owner follow-up authorizes documented conservative tuning if no numeric source rule exists; no owner fact is pending.",
+    "from_lanes": [
+      "questpc2"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "unresolved:questpc2:nimmersatt_s_lair",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00300-00351.json",
+      "pointer": "/records/19/definition"
+    },
+    "research_evidence": [
+      ".questpc5/l5-reference/research.json"
+    ]
+  },
+  {
+    "canonical": "oteryn:quest.authored.nomads_land_quest",
+    "title": "Nomads Land Quest",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "UNFINISHED",
+    "blocker": "The mandatory Sacred Casket/Book Native Item identity is unresolved. The saved Muhad donor has the start but no casket completion branch; the Wiki confirms a second completion path when the casket is outside the backpack. A guessed generic box or forced consume would change the source.",
+    "from_lanes": [
+      "questpc2"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "unresolved:questpc2:nomads_land_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00300-00351.json",
+      "pointer": "/records/20/definition"
+    }
+  },
+  {
+    "canonical": "oteryn:quest.authored.nomads_mini_world_change",
+    "title": "Nomads Mini World Change",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "UNFINISHED",
+    "blocker": "The exact southern-camp reward needs Silver Amulet3054, which is canonically nonmaterializable. Ham/Fish are still ambiguous in the selected recipe; splitting the Fur Bag into independent rewards would also change the source container.",
+    "from_lanes": [
+      "questpc2"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "unresolved:questpc2:nomads_mini_world_change",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00300-00351.json",
+      "pointer": "/records/21/definition"
+    }
+  },
+  {
+    "canonical": "oteryn:quest.authored.noodles_is_gone_mini_world_change",
+    "title": "Noodles is Gone Mini World Change",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "UNFINISHED",
+    "blocker": "Required Dog Collar14156 is canonically nonmaterializable; the King cannot issue an admitted collar and the capture cannot burn one. The source also requires a two-week repeat gate and NPC-target USE, not a dialogue success line.",
+    "from_lanes": [
+      "questpc2"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "unresolved:questpc2:noodles_is_gone_mini_world_change",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00300-00351.json",
+      "pointer": "/records/22/definition"
+    }
+  },
+  {
+    "canonical": "oteryn:quest.opticording_sphere_quest",
+    "title": "Opticording Sphere Quest",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "UNFINISHED",
+    "blocker": "The authored sphere target is ambiguous, multiple vision targets have no Native identity, and final Monolith Kit33330 is not materializable. Bigfoot prerequisite alone cannot make these targets authoritative.",
+    "from_lanes": [
+      "questpc2"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "unresolved:questpc2:opticording_sphere_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00100-00199.json",
+      "pointer": "/records/78/definition"
+    }
+  },
+  {
+    "canonical": "oteryn:quest.oramond_quest",
+    "title": "Oramond Quest",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "UNFINISHED",
+    "blocker": "The selected root-gathering stage requests Oramond roots with item_resolution=unresolved; the canonical recipe has no exact Native Item join for that input. Unrelated same-name Item33938 is held and cannot be selected by label.",
+    "from_lanes": [
+      "questpc2"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "unresolved:questpc2:oramond_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00100-00199.json",
+      "pointer": "/records/79/definition"
+    }
+  },
+  {
+    "canonical": "oteryn:quest.ornamented_shield_quest",
+    "title": "Ornamented Shield Quest",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "UNFINISHED",
+    "blocker": "Remaining complete route: Full keyed access route and exact container/reward path beyond the partial-charge source claim.",
+    "from_lanes": [
+      "questpc2"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "evidence": [
+      {
+        "filter": "quest_catalogue_chests_exact_partial_charges_use_replay_and_refusal",
+        "result": "PASS",
+        "log": ".questpc5/l5-charge-baseline.log",
+        "duration_seconds": 66.57,
+        "scope": "Exact partial-charge reward USE, replay, refusal and frozen receipt plan; whole quest not certified."
+      }
+    ],
+    "input_canonical": "unresolved:questpc2:ornamented_shield_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00000-00099.json",
+      "pointer": "/records/67/definition"
+    }
+  },
+  {
+    "canonical": "oteryn:quest.overhunting_world_change",
+    "title": "Overhunting World Change",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "UNFINISHED",
+    "blocker": "Captured Wolf12369 native custody, atomic Benevola turn-in and the world counter/server-save composition remain unimplemented. The numeric source gap is resolved:50 captures or500 kills, activation at next server save; no fabricated threshold is needed.",
+    "from_lanes": [
+      "questpc2"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "unresolved:questpc2:overhunting_world_change",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00100-00199.json",
+      "pointer": "/records/83/definition"
+    },
+    "research_evidence": [
+      ".questpc5/l5-reference/research.json"
+    ]
+  },
+  {
+    "canonical": "oteryn:quest.power_ring_quest",
+    "title": "Power Ring Quest",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "UNFINISHED",
+    "blocker": "The canonical bronze-amulet child3056 is not materializable; UID6151 is gold in both numeric donors, and UID6152 still disagrees with the current source recipe. A Power Ring substitution would erase an explicit source conflict.",
+    "from_lanes": [
+      "questpc2"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "unresolved:questpc2:power_ring_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00000-00099.json",
+      "pointer": "/records/73/definition"
+    }
+  },
+  {
+    "canonical": "oteryn:quest.present_quest",
+    "title": "Present Quest",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "UNFINISHED",
+    "blocker": "The required source backpack includes Item2882 and2881 with explicit ITEM_SEMANTICS_MISSING holds. Granting just the present would change the exact source reward; the Seymour exchange alone cannot qualify the quest.",
+    "from_lanes": [
+      "questpc2"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "unresolved:questpc2:present_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00000-00099.json",
+      "pointer": "/records/74/definition"
+    }
+  },
+  {
+    "canonical": "oteryn:quest.targuna_quest",
+    "title": "Targuna Quest",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "UNFINISHED",
+    "blocker": "Remaining complete route: Sterling treasure and Emiliana storyline actor/action bindings.",
+    "from_lanes": [
+      "questpc4"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "evidence": [
+      {
+        "filter": "quest_catalogue_chests_exact_partial_charges_use_replay_and_refusal",
+        "result": "PASS",
+        "log": ".questpc5/l5-charge-baseline.log",
+        "duration_seconds": 66.57,
+        "scope": "Exact partial-charge reward USE, replay, refusal and frozen receipt plan; whole quest not certified."
+      }
+    ],
+    "input_canonical": "oteryn:quest.targuna_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00200-00299.json",
+      "pointer": "/records/79/definition"
+    }
+  },
+  {
+    "canonical": "oteryn:quest.the_explorer_society_quest",
+    "title": "The Explorer Society Quest",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "UNFINISHED",
+    "blocker": "The timed icicle delivery and rune/music Item semantics remain unqualified; the batch-four runtime exclusions explicitly retain those native Item gaps.",
+    "from_lanes": [
+      "questpc4"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "oteryn:quest.the_explorer_society_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00200-00299.json",
+      "pointer": "/records/22/definition"
+    }
+  },
+  {
+    "canonical": "oteryn:quest.the_queen_of_the_banshees_quest",
+    "title": "The Queen of the Banshees Quest",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "UNFINISHED",
+    "blocker": "Remaining complete route: All seals and final encounter composed and exercised through native dispatch.",
+    "from_lanes": [
+      "questpc4"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "evidence": [
+      {
+        "filter": "quest_catalogue_chests_exact_partial_charges_use_replay_and_refusal",
+        "result": "PASS",
+        "log": ".questpc5/l5-charge-baseline.log",
+        "duration_seconds": 66.57,
+        "scope": "Exact partial-charge reward USE, replay, refusal and frozen receipt plan; whole quest not certified."
+      }
+    ],
+    "input_canonical": "oteryn:quest.the_queen_of_the_banshees_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00200-00299.json",
+      "pointer": "/records/37/definition"
+    }
+  },
+  {
+    "canonical": "oteryn:quest.demon_helmet_quest",
+    "title": "Demon Helmet Quest",
+    "mechanism": "paired_portals_stepout_remote_predicates",
+    "status": "UNFINISHED",
+    "blocker": "Remaining complete route: two-player plate occupancy, three-wall removal/restoration with occupied-wall relocation, all relocation/end paths, and complete route PG qualification. StepOut itself is already implemented.",
+    "from_lanes": [
+      "questpc",
+      "questpc6"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "oteryn:quest.demon_helmet_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00000-00099.json",
+      "pointer": "/records/21/definition"
+    }
+  },
+  {
+    "canonical": "oteryn:quest.devil_helmet_quest",
+    "title": "Devil Helmet Quest",
+    "mechanism": "paired_portals_stepout_remote_predicates",
+    "status": "UNFINISHED",
+    "blocker": "Remaining complete route: paired UID25030 creation/removal of item435 at the remote tile, relocation/end-path restoration, and complete route PG qualification. StepOut itself is already implemented.",
+    "from_lanes": [
+      "questpc",
+      "questpc6"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "oteryn:quest.devil_helmet_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00000-00099.json",
+      "pointer": "/records/23/definition"
+    }
+  },
+  {
+    "canonical": "oteryn:quest.formogar_mine_hoist",
+    "title": "Formorgar Mines Hoist Quest",
+    "mechanism": "paired_portals_stepout_remote_predicates",
+    "status": "UNFINISHED",
+    "blocker": "Remaining complete route: register UID3060 and implement the skeleton instruction acquisition, then compose both actual acquisitions with all hoist movements. UID6214 now grants the exact construction-plan book/text and its instruction flag through the existing claim obligation pipeline, including cold replay.",
+    "from_lanes": [
+      "questpc",
+      "questpc7"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "oteryn:quest.formogar_mine_hoist",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00100-00199.json",
+      "pointer": "/records/46/definition"
+    },
+    "evidence": [
+      {
+        "filter": "questpc5_l5_hoist_instruction_gates_are_read_only",
+        "result": "PASS",
+        "duration_seconds": 264.21,
+        "log": ".questpc5/l5-hoist-green.log",
+        "cases": 8,
+        "scope": "UID3059/3061: neither instruction, each missing instruction independently, and both present; exact destination and no quest writes."
+      }
+    ],
+    "mechanism_evidence": [
+      "qlane-meta/questpc5/cloud-remote-teleport-proof.json",
+      "qlane-meta/questpc5/cloud-claim-progress-proof.json"
+    ],
+    "assumptions": [
+      "The construction plans teach the hoist chest instruction. This repairs the missing FormorgarMinesHoistChest writer: all three retained movement scripts read that flag, but UID6214 writes FormorgarGlacierChest. Keep the separate skeleton instruction mandatory. The owner explicitly authorized conservative rules for missing source mechanisms."
+    ]
+  },
+  {
+    "canonical": "oteryn:quest.authored.last_creep_standing",
+    "title": "Last Creep Standing",
+    "mechanism": "paired_portals_stepout_remote_predicates",
+    "status": "UNFINISHED",
+    "blocker": "Remaining complete route: all eight temporary native disguises, matching portal predicates and leave-trial cleanup, plus final completion/reward composition. This lane implements missing mechanisms; delivered qengine2 effects/rewards are being reused.",
+    "from_lanes": [
+      "questpc",
+      "questpc8"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "oteryn:quest.authored.last_creep_standing",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00300-00351.json",
+      "pointer": "/records/12/definition"
+    }
+  },
+  {
+    "canonical": "oteryn:quest.serpentine_tower_quest",
+    "title": "Serpentine Tower Quest",
+    "mechanism": "paired_portals_stepout_remote_predicates",
+    "status": "UNFINISHED",
+    "blocker": "Source requires placing a pot on fire to enable a teleport before its reward. The pot-conditioned world trigger remains missing; do not grant the pearl through an unconditional chest.",
+    "from_lanes": [
+      "questpc3"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "oteryn:quest.serpentine_tower_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00200-00299.json",
+      "pointer": "/records/0/definition"
+    }
+  },
+  {
+    "canonical": "oteryn:quest.thais_lighthouse_quest",
+    "title": "Thais Lighthouse Quest",
+    "mechanism": "paired_portals_stepout_remote_predicates",
+    "status": "UNFINISHED",
+    "blocker": "Paired dynamic portals for UID30005 are still absent; pressure-plate transport currently covers player STEP, not every creature relocation/end path. Ladder and all reward claims also require one complete route qualification.",
+    "from_lanes": [
+      "questpc4"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "oteryn:quest.thais_lighthouse_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00200-00299.json",
+      "pointer": "/records/13/definition"
+    },
+    "evidence": [
+      {
+        "filter": "questpc5_l5_thais_plate_departure_restores_stairs_without_quest_writes",
+        "result": "PASS",
+        "duration_seconds": 36.382545542,
+        "log": ".questpc5/l5-plate-hoist-pg.log",
+        "scope": "UID25010 real STEP entry/departure twice; stairs429/7767 and plate431/430 restored; quest state/receipts unchanged."
+      }
+    ]
+  }
+]

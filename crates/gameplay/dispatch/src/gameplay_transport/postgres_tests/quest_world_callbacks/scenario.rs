@@ -22,6 +22,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let paired_plate = name == "l5-thais-plate";
     let monk = name.starts_with("monk-guidance");
     let qengine_reward = name.starts_with("qengine-rewards-");
     let outfit_world = name.starts_with("l1-") && name.ends_with("-wardrobe");
@@ -29,6 +30,12 @@ fn scenario_case(
         || matches!(
             name,
             "nx6-wayfarer"
+                | "catalogue-npc"
+                | "catalogue-npc-father"
+                | "fathers-burden-handins"
+                | "catalogue-npc-hero"
+                | "catalogue-npc-legacy"
+                | "catalogue-npc-scoped"
                 | "classic-quests-npc"
                 | "classic-rottin-disrepair"
                 | "threatened-dreams-npc"
@@ -36,7 +43,9 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if classic_npc {
+    let mut callback = callback(if paired_plate {
+        "thais-lighthouse-stairs-in"
+    } else if classic_npc {
         "behemoth"
     } else if rotten_purchase {
         "rotten-blood/sacrifice"
@@ -71,7 +80,11 @@ fn scenario_case(
     if stateless_destination.is_some() {
         assert_eq!(callback.selector.position, Some(trigger));
     }
-    let world = world(&callback, trigger)?;
+    let world = if paired_plate {
+        super::world_ordinal(&callback, trigger, 431, 1)?
+    } else {
+        world(&callback, trigger)?
+    };
     run(async |admin| {
         let h = if qengine_reward || outfit_world {
             Harness::create_quest_reward(admin, "quest_rewards", !name.ends_with("pirate")).await
@@ -119,7 +132,10 @@ fn scenario_case(
             1,
             1,
             "runtime-scope-assignment:1",
-            if classic_npc {
+            // These two cases keep five source NPCs and one player alive.
+            if matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped") {
+                6
+            } else if classic_npc {
                 5
             } else if monk {
                 4
@@ -152,6 +168,17 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
+        if paired_plate {
+            let departure = super::callback("thais-lighthouse-stairs-out")?;
+            assert!(
+                owner
+                    .states
+                    .quest_callbacks
+                    .fixture
+                    .set(vec![callback.clone(), departure])
+                    .is_ok()
+            );
+        }
         if lever_fixture || target_swap || name.ends_with("-expiry") {
             assert!(
                 owner
@@ -239,6 +266,16 @@ fn scenario_case(
                 trigger,
             )
             .await?;
+        } else if paired_plate {
+            super::super::questpc5_l5::exercise_plate(
+                &owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                &callback,
+                trigger,
+            )
+            .await?;
         } else if let Some(expected_destination) = stateless_destination {
             super::stateless::exercise(
                 &owner,
@@ -250,6 +287,30 @@ fn scenario_case(
                 expected_destination,
             )
             .await?;
+        } else if matches!(
+            name,
+            "catalogue-npc-father" | "catalogue-npc-legacy" | "fathers-burden-handins"
+        ) {
+            super::super::npc_program::exercise_father(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                name == "catalogue-npc-legacy",
+                name == "fathers-burden-handins",
+            )
+            .await?;
+        } else if matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped") {
+            super::super::npc_program::exercise_scoped(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                name == "catalogue-npc-hero",
+            )
+            .await?;
+        } else if name == "catalogue-npc" {
+            super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if name == "srv6-schrodinger-island" {
             super::super::srv6_island_title::exercise(
                 &mut owner,

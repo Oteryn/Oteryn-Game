@@ -211,6 +211,30 @@ pub(super) fn world(
     callback: &Callback,
     trigger: Position,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    world_ordinal(
+        callback,
+        trigger,
+        callback.selector.appearance.unwrap_or(100),
+        1,
+    )
+}
+
+fn world_ordinal(
+    callback: &Callback,
+    trigger: Position,
+    appearance: u16,
+    ordinal: u8,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    world_remote(callback, trigger, appearance, ordinal, None)
+}
+
+fn world_remote(
+    callback: &Callback,
+    trigger: Position,
+    appearance: u16,
+    ordinal: u8,
+    remote_appearance: Option<u16>,
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
@@ -227,6 +251,18 @@ pub(super) fn world(
         .map(|p| p.position)
         .chain(callback.offerings.iter().map(|p| p.position))
         .chain(callback.teleport)
+        .chain(
+            callback
+                .remote_teleport
+                .as_ref()
+                .map(|remote| remote.position),
+        )
+        .chain(
+            callback
+                .remote_teleport
+                .as_ref()
+                .map(|remote| remote.destination),
+        )
     {
         cells
             .entry((position.floor, position.x, position.y))
@@ -261,7 +297,6 @@ pub(super) fn world(
             }
         }
     }
-    let appearance = callback.selector.appearance.unwrap_or(100);
     data.manifest.palette.push(bundle::PaletteEntry {
         key: format!("oteryn:terrain.tibia.i{appearance}"),
         family: bundle::Family::Terrain,
@@ -287,6 +322,16 @@ pub(super) fn world(
                 ground_speed: None,
             }),
         });
+    }
+    for _ in 1..ordinal {
+        cells
+            .entry((trigger.floor, trigger.x, trigger.y))
+            .or_default()
+            .push(sector::Item {
+                palette: 0,
+                depth: 0,
+                attrs: Default::default(),
+            });
     }
     cells
         .entry((trigger.floor, trigger.x, trigger.y))
@@ -322,6 +367,11 @@ pub(super) fn world(
         }
     }
     for passage in &callback.passages {
+        // A one-shot source action can remove the clicked lever itself. It is
+        // already placed above; a second copy makes the physical selector ambiguous.
+        if passage.position == trigger && passage.appearance == appearance {
+            continue;
+        }
         let appearance_key = format!("oteryn:terrain.tibia.i{}", passage.appearance);
         let index = if let Some(i) = data
             .manifest
@@ -377,6 +427,42 @@ pub(super) fn world(
                 depth: 0,
                 attrs: Default::default(),
             });
+    }
+    if let Some(remote) = &callback.remote_teleport
+        && let Some(appearance) = remote_appearance
+    {
+        let palette = u32::try_from(data.manifest.palette.len())?;
+        data.manifest.palette.push(bundle::PaletteEntry {
+            key: format!("oteryn:terrain.tibia.i{}", remote.appearance),
+            family: bundle::Family::Terrain,
+            id: palette,
+            terrain: Some(bundle::Terrain {
+                kind: bundle::TerrainKind::Common,
+                walkable: None,
+                ground_speed: None,
+            }),
+        });
+        cells
+            .entry((remote.position.floor, remote.position.x, remote.position.y))
+            .or_default()
+            .push(sector::Item {
+                palette,
+                depth: 0,
+                attrs: Default::default(),
+            });
+        if appearance != remote.appearance {
+            let id = u32::try_from(data.manifest.palette.len())?;
+            data.manifest.palette.push(bundle::PaletteEntry {
+                key: format!("oteryn:terrain.tibia.i{appearance}"),
+                family: bundle::Family::Terrain,
+                id,
+                terrain: Some(bundle::Terrain {
+                    kind: bundle::TerrainKind::Common,
+                    walkable: None,
+                    ground_speed: None,
+                }),
+            });
+        }
     }
     let mut effect_appearances = Vec::new();
     effect_appearances.extend(callback.effects.transform);
@@ -562,6 +648,8 @@ mod actions;
 mod assertions;
 #[path = "quest_world_callbacks/lions_rock.rs"]
 mod lions_rock;
+#[path = "quest_world_callbacks/literal_uses.rs"]
+mod literal_uses;
 #[path = "quest_world_callbacks/rotten_blood.rs"]
 mod rotten_blood;
 #[path = "quest_world_callbacks/scenario.rs"]

@@ -1,0 +1,5 @@
+{
+  "command": "python3 .questpc/regenerate_stable.py",
+  "exit": 1,
+  "duration_seconds": 3.728
+}

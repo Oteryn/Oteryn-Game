@@ -154,13 +154,20 @@ class QuestStateLoweringTests(unittest.TestCase):
         self.assertEqual((report['bound'], quest['transitions']), ([], []))
         self.assertIn('outside the track bounds [0, 1]', report['unbound'][0]['reason'])
 
-    def test_the_committed_lowering_binds_exactly_the_two_canary_chests(self):
+    def test_committed_lowering_binds_two_canary_chests_and_the_explicit_native_instruction(self):
         payload = json.loads(tool.expected(ROOT)[tool.OUTPUT])
         self.assertEqual(payload['counts']['chest_bindings']['bound'], [
             'quest/u7_8/the_shattered_isles/dragahs_spellbook', 'quest/u8_4/the_hidden_city_of_beregar/firewalker_boots'])
         self.assertEqual(payload['counts']['chest_bindings']['unbound'], [])
         chest = [t['key'] for q in payload['quests'] for t in q['transitions'] if t['source']['owner'] == 'chest']
-        self.assertEqual(len(chest), 2)
+        self.assertEqual(set(chest), {
+            'oteryn:quest-transition/quest/u7_8/the_shattered_isles/dragahs_spellbook/chest',
+            'oteryn:quest-transition/quest/u8_4/the_hidden_city_of_beregar/firewalker_boots/chest',
+            'oteryn:quest-transition/native-claim/formogar-hoist-construction-plans',
+        })
+        self.assertEqual(len(chest), 3)
+        self.assertEqual(payload['counts']['chest_bindings']['native_bound'], [
+            'oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_chest'])
 
     def test_committed_lowering_is_current_and_has_no_source_store_key(self):
         files = tool.expected(ROOT)

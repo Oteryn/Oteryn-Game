@@ -1,0 +1,35 @@
+crates/gameplay/quests/src/quest/rotten_blood.rs:32:    use super::world_callbacks::{Callback, ItemOnTarget, Selector, Storage, Trigger};
+crates/gameplay/quests/src/quest/world_callbacks.rs:261:            || (callback.trigger == Trigger::StepOut
+crates/gameplay/quests/src/quest/rotten_blood_tests.rs:252:    use super::super::{QuestRefusal, loader, world_callbacks};
+crates/gameplay/quests/src/quest/monk_shrines.rs:145:    use crate::quest::{QuestRefusal, loader, world_callbacks};
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:62:            Trigger::StepOut => true,
+crates/gameplay/quests/tests/quests5_blood_brothers_castle_access.rs:4:use oteryn_gameplay_quests::quest::{QuestRefusal, QuestTrackChange, loader, world_callbacks};
+crates/gameplay/quests/tests/quests5_blood_brothers_castle_access.rs:17:    assert_eq!(callback.trigger, world_callbacks::Trigger::StepIn);
+crates/gameplay/quests/tests/quests5_demon_oak.rs:3:use oteryn_gameplay_quests::quest::{QuestRefusal, loader, world_callbacks};
+crates/gameplay/quests/tests/quests5_between_the_lines.rs:3:use oteryn_gameplay_quests::quest::world_callbacks::{self, Position, Trigger};
+crates/gameplay/quests/tests/quests5_ancient_tombs.rs:55:        assert_eq!(callback.trigger, world_callbacks::Trigger::Use);
+crates/gameplay/quests/tests/quests5_children_battle_access.rs:4:use oteryn_gameplay_quests::quest::{QuestRefusal, QuestTrackChange, loader, world_callbacks};
+crates/gameplay/quests/tests/quests5_children_battle_access.rs:37:        assert_eq!(callback.trigger, world_callbacks::Trigger::StepIn);
+crates/gameplay/quests/tests/quests5_deeplings.rs:56:        assert_eq!(callback.trigger, world_callbacks::Trigger::StepIn);
+crates/gameplay/quests/tests/quests5_alawars_vault.rs:5:use oteryn_gameplay_quests::quest::world_callbacks::{self, Position, Trigger};
+crates/gameplay/durability/src/durability/quest_monk_rewards.rs:12:use oteryn_gameplay_quests::quest::world_callbacks::Callback;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/dark_trails.rs:9:use oteryn_gameplay_quests::quest::{dark_trails as quest, world_callbacks::Position};
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/conditional_quest_greetings.rs:9:use oteryn_gameplay_quests::quest::world_callbacks::Position;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks.rs:9:use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:366:        use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position, Selector, Trigger};
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc5_l5.rs:3:use oteryn_gameplay_quests::quest::world_callbacks::Position;
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs:27:use oteryn_gameplay_quests::quest::world_callbacks::{self, Callback, Position, Trigger};
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs:493:            .movement_quest_callback(permit, actor, session, origin, entered, Trigger::StepOut)
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs:517:        let observed = if trigger == Trigger::StepOut { origin } else { entered };
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quests3_primal_step.rs:2:use oteryn_gameplay_quests::quest::world_callbacks::Position;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/unnatural_selection.rs:80:    // writer merely because its key is absent from world_callbacks::load().
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/literal_uses.rs:73:    let step = callback.trigger == oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/stateless.rs:8:use oteryn_gameplay_quests::quest::world_callbacks::Trigger;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs:63:        callback.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::Use;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/classic_quests.rs:10:use oteryn_gameplay_quests::quest::world_callbacks::Position;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monk_shrines.rs:3:use super::quest_world_callbacks::{local, wire};
+crates/gameplay/durability/src/durability/quest_world_callback.rs:6:use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/underwater_drowning.rs:412:            use oteryn_gameplay_quests::quest::world_callbacks::{
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/fathers_burden.rs:5:use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc5_reward_paths.rs:3:use oteryn_gameplay_quests::quest::world_callbacks::Position;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/threatened_dreams.rs:8:use oteryn_gameplay_quests::quest::{threatened_dreams as quest, world_callbacks::Position};

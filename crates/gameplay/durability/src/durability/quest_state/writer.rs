@@ -153,6 +153,9 @@ impl DurabilityRoot {
         payment: Option<super::rotten_blood_access::RottenBloodAccessPayment>,
         reward_admission: Option<QuestRewardAdmission<'_>>,
     ) -> Result<QuestTransitionOutcome> {
+        if request.transition_key.starts_with("oteryn:quest-npc/") {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         let reward_callback = oteryn_gameplay_quests::quest::reward_callbacks::load()
             .map_err(|_| CharacterProgressionError::InvalidInput)?
             .into_iter()
@@ -461,7 +464,8 @@ impl DurabilityRoot {
                                 .map_err(|_| DurabilityError::InvalidStoredState)?;
                             // §6: a completed quest keeps its pin and no longer blocks.
                             let blocked =
-                                hash != current_hash && !row.try_get::<bool, _>("completed")?;
+                                hash != current_hash && !row.try_get::<bool, _>("completed")?
+                                    && oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(&catalogue, quest, &hash).is_none();
                             (
                                 row.try_get::<String, _>("pinned_content_revision")?,
                                 hash,
@@ -581,6 +585,13 @@ impl DurabilityRoot {
                         sqlx::query_scalar("SELECT floor(extract(epoch FROM now()))::bigint")
                             .fetch_one(&mut *tx)
                             .await?;
+                    if let Some(defaults) = oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(&catalogue, quest, &hash) {
+                        for key in &keys {
+                            if let Some(value) = defaults.get(*key) {
+                                stored.entry((*key).to_owned()).or_insert(*value);
+                            }
+                        }
+                    }
                     let changes = match refusal
                         .map_or_else(|| grizzly_plan.as_ref().map_or_else(
                             || catalogue.evaluate(transition, &stored, now),

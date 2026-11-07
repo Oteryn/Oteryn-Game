@@ -207,6 +207,12 @@ impl NpcTalkBook {
     /// Entries for every NPC with generated replies. An NPC with an admitted Dialogue is left out
     /// until a dialogue packet reads it.
     pub fn from_model(model: &NpcServiceModel) -> Self {
+        Self::from_model_with_native_quests(model, &[])
+    }
+
+    /// Admit only the caller's native quest NPCs' existing literal greetings.
+    /// Stateful keywords and durable writes remain with the native dispatcher.
+    pub fn from_model_with_native_quests(model: &NpcServiceModel, native_npcs: &[&str]) -> Self {
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
                 "{}\0{}\0{}\0{}\0{}",
@@ -225,6 +231,16 @@ impl NpcTalkBook {
                 .insert(reference.key.clone(), npc.name.clone());
             let dark_messages = dark_trails::messages(&reference.key);
             let isle_messages = isle_of_evil::messages(&reference.key);
+            let stag = matches!(
+                reference.key.as_str(),
+                "oteryn:npc.captain_marie_denise_banner"
+                    | "oteryn:npc.eldoran_the_ambitious"
+                    | "oteryn:npc.guard_captain_hartford"
+                    | "oteryn:npc.kesar_the_younger_day"
+                    | "oteryn:npc.lieutenant_harlan"
+                    | "oteryn:npc.second_in_command_demeron"
+            );
+            let native_quest = stag || native_npcs.contains(&reference.key.as_str());
             let reward_messages = reward_messages(&reference.key);
             let premium_services = crate::content::npc_catalogue::premium_services::resolve(
                 &reference.key,
@@ -375,6 +391,43 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
+            } else if native_quest
+                && matches!(
+                    reference.key.as_str(),
+                    "oteryn:npc.strange_pipe"
+                        | "oteryn:npc.strange_pipe_1"
+                        | "oteryn:npc.strange_pipe_2"
+                        | "oteryn:npc.strange_pipe_3"
+                )
+            {
+                // Crystal201189f: each pipe's unconditional storage callback
+                // inherits these NpcHandler messages; it declares no override.
+                // The native dispatcher still commits the access write first.
+                (
+                    "Greetings, |PLAYERNAME|.".into(),
+                    "Good bye, |PLAYERNAME|.".into(),
+                    None,
+                    Vec::new(),
+                )
+            } else if native_quest && npc.dialogue.is_some() {
+                // The closed native caller supplies conditional replies and writes
+                // after this existing conversation owner admits the speaker.
+                let Some(dialogue) = &npc.bank_dialogue else {
+                    continue;
+                };
+                let Some(greeting) = dialogue.greet.first() else {
+                    continue;
+                };
+                (
+                    greeting.clone(),
+                    dialogue
+                        .farewell
+                        .first()
+                        .cloned()
+                        .unwrap_or_else(|| "Farewell.".into()),
+                    None,
+                    Vec::new(),
+                )
             } else {
                 continue;
             };
@@ -397,7 +450,8 @@ impl NpcTalkBook {
                     farewell_reply,
                     source_name_templates: dark_messages.is_some()
                         || isle_messages.is_some()
-                        || reward_callback_npc(&reference.key),
+                        || reward_callback_npc(&reference.key)
+                        || native_quest,
                     source_walkaway: if dark_messages.is_some() {
                         Some(dark_trails::WALKAWAY.into())
                     } else {
@@ -592,6 +646,65 @@ fn start<K: Copy + PartialEq>(
 #[allow(clippy::expect_used, reason = "test fixtures")]
 mod tests {
     use super::*;
+
+    #[test]
+    fn native_quest_book_admits_only_requested_source_greetings() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|e| format!("{e:?}"))?;
+        let keys = [
+            "oteryn:npc.tereban",
+            "oteryn:npc.strange_pipe",
+            "oteryn:npc.strange_pipe_1",
+            "oteryn:npc.strange_pipe_2",
+            "oteryn:npc.strange_pipe_3",
+            "oteryn:npc.viola",
+        ];
+        let old = NpcTalkBook::from_model(&model);
+        assert!(keys.iter().all(|key| old.get(key).is_none()));
+        let book = NpcTalkBook::from_model_with_native_quests(&model, &keys);
+        for key in keys {
+            let entry = book.get(key).ok_or(key)?;
+            let source = model
+                .npcs()
+                .iter()
+                .find(|(reference, _)| reference.key == key)
+                .ok_or("source NPC")?;
+            if key.starts_with("oteryn:npc.strange_pipe") {
+                assert!(source.1.bank_dialogue.as_ref().is_none_or(|dialogue| {
+                    dialogue.greet.is_empty() && dialogue.farewell.is_empty()
+                }));
+                assert_eq!(entry.greeting_reply, "Greetings, |PLAYERNAME|.");
+                assert_eq!(entry.farewell(), "Good bye, |PLAYERNAME|.");
+            } else {
+                let source = source.1.bank_dialogue.as_ref().ok_or("source dialogue")?;
+                assert_eq!(Some(&entry.greeting_reply), source.greet.first());
+                assert_eq!(
+                    entry.farewell(),
+                    source
+                        .farewell
+                        .first()
+                        .map(String::as_str)
+                        .unwrap_or("Farewell.")
+                );
+            }
+            assert!(entry.dialogue_keywords.is_empty());
+            assert!(entry.source_name_templates);
+        }
+        assert_eq!(
+            book.get("oteryn:npc.palimuth").is_some(),
+            old.get("oteryn:npc.palimuth").is_some(),
+            "native quest admission preserves independently admitted reward NPCs"
+        );
+        assert!(book.get("oteryn:npc.spectulus").is_none());
+        Ok(())
+    }
 
     #[test]
     fn qengine_reward_npcs_open_only_source_conversations() -> Result<(), String> {

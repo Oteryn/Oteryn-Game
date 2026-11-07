@@ -44,6 +44,13 @@ struct Pending {
     ingress_settled: bool,
 }
 
+struct ReadOnlyGate {
+    actor: ExactActorRef,
+    session: GameSessionId,
+    expected: MovementPositionSnapshot,
+    callback: String,
+}
+
 #[derive(Default)]
 pub(super) struct PendingCallbacks {
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
@@ -85,11 +92,14 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
         return false;
     };
     let selector = &callback.selector;
+    // A position-registered USE acts on the resolved object the player clicked;
+    // its native placement may be above ground. STEP still selects the floor.
     selector.position.is_none_or(|p| tile(p) == pos)
         && (selector.position.is_none()
             || selector.unique.is_some()
             || selector.action.is_some()
             || selector.appearance.is_some()
+            || callback.trigger == Trigger::Use
             || ordinal == 0)
         && map
             .facts
@@ -230,6 +240,50 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         callbacks()
     }
 
+    #[cfg(test)]
+    pub(super) fn queue_non_mutating_step_for_test(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        origin: MovementPositionSnapshot,
+        entered: MovementPositionSnapshot,
+        callback: &Callback,
+        placement: (u64, u64),
+    ) -> bool {
+        if !(callback.is_read_only() && callback.trigger == Trigger::StepIn
+            || callback.trigger == Trigger::StepOut && callback.storage.is_empty())
+        {
+            return false;
+        }
+        let Some(command) = step_command(actor, session, entered.revision(), self.reset_epoch)
+        else {
+            return false;
+        };
+        let Ok(mut records) = self.states.quest_callbacks.records.lock() else {
+            return false;
+        };
+        if records.contains_key(&session) {
+            return false;
+        }
+        // Exact volatile record left when the read-only STEP future is cancelled.
+        records.insert(
+            session,
+            Pending {
+                actor,
+                session,
+                expected: entered,
+                callback: callback.key.clone(),
+                key: placement.0,
+                revision: placement.1,
+                cause: QuestCause::Step(command),
+                origin: Some(origin),
+                context: None,
+                ingress_settled: false,
+            },
+        );
+        true
+    }
+
     /// Before further player input, reconcile an interrupted commit with its original cause.
     /// The Channel's existing input gate closes a connection if a result is still unknown.
     pub(super) async fn reconcile_quest_callbacks(&self, session: GameSessionId) -> bool {
@@ -260,6 +314,67 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return false;
             };
+            if callback.is_read_only()
+                && matches!(pending.cause, QuestCause::Step(_))
+                && pending.context.is_none()
+            {
+                let Some(origin) = pending.origin else {
+                    return false;
+                };
+                let departed = {
+                    let runtime = self.runtime.lock().await;
+                    if !runtime
+                        .player_control_facts(pending.actor, session)
+                        .is_ok_and(|facts| facts.control_loss.is_none())
+                    {
+                        return false;
+                    }
+                    let Ok(current) = runtime.read_actor_position(pending.actor) else {
+                        return false;
+                    };
+                    current != pending.expected
+                };
+                if departed && !matches!(self.current_quest_fence(session).await, Ok(Some(_))) {
+                    return false;
+                }
+                {
+                    let Ok(mut records) = self.states.quest_callbacks.records.lock() else {
+                        return false;
+                    };
+                    if !records.get(&session).is_some_and(|current| {
+                        current.actor == pending.actor
+                            && current.expected == pending.expected
+                            && current.callback == pending.callback
+                            && current.cause == pending.cause
+                            && current.key == pending.key
+                            && current.revision == pending.revision
+                            && current.context.is_none()
+                    }) {
+                        return false;
+                    }
+                    // A cancelled read reserved no mutation. The volatile record
+                    // is not an access proof: repeat the fenced read on re-entry.
+                    records.remove(&session);
+                }
+                // A push or other committed relocation cancels this unreserved
+                // travel attempt. Never project it from an obsolete position.
+                if departed {
+                    continue;
+                }
+                self.movement_quest_callback(
+                    &permit,
+                    pending.actor,
+                    session,
+                    origin,
+                    pending.expected,
+                    Trigger::StepIn,
+                )
+                .await;
+                if self.has_pending_quest_callback(session) {
+                    return false;
+                }
+                continue;
+            }
             let Ok(Some(fence)) = self.current_quest_fence(pending.session).await else {
                 return false;
             };
@@ -271,6 +386,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let mut states = self.states.spell_states.lock().await;
             if runtime.read_actor_position(pending.actor) != Ok(pending.expected) {
                 return false;
+            }
+            if callback.trigger == Trigger::StepOut
+                && matches!(pending.cause, QuestCause::Step(_))
+                && pending.context.is_none()
+            {
+                let revision = map.facts.object_revision(pending.key);
+                if revision == u64::MAX {
+                    return false;
+                }
+                if revision > pending.revision {
+                    let Ok(mut records) = self.states.quest_callbacks.records.lock() else {
+                        return false;
+                    };
+                    if !records.get(&session).is_some_and(|current| {
+                        current.actor == pending.actor
+                            && current.expected == pending.expected
+                            && current.callback == pending.callback
+                            && current.cause == pending.cause
+                            && current.key == pending.key
+                            && current.revision == pending.revision
+                            && current.context.is_none()
+                    }) {
+                        return false;
+                    }
+                    // A later pressure event already owns this projection.
+                    // An older stateless departure must not overwrite it.
+                    records.remove(&session);
+                    continue;
+                }
             }
             let result = self
                 .execute_quest_callback(
@@ -287,6 +431,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Some(fence),
                     Some(&mut slot),
                     optional_pvp,
+                    None,
                 )
                 .await;
             if result != UseDisposition::Committed {
@@ -359,6 +504,52 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let optional_pvp = self
                 .special_movement_policy(&permit, actor, command.game_session_id)
                 .await;
+            let read_only_gate = if callback.is_read_only() {
+                let (Some(fence), Some(catalogue)) = (fence, self.quest_catalogue.as_ref()) else {
+                    return UseDisposition::Rejected;
+                };
+                let (expected, context) = {
+                    let runtime = self.runtime.lock().await;
+                    let Ok(expected) = runtime.read_actor_position(actor) else {
+                        return UseDisposition::Rejected;
+                    };
+                    let Some(at) = native(expected.position()) else {
+                        return UseDisposition::Rejected;
+                    };
+                    if !super::map_door::reachable(at, resolved.pos) {
+                        return UseDisposition::TooFar;
+                    }
+                    if !self.states.world_gate.lock()
+                        .is_ok_and(|mut gate| gate.admit(actor, self.clock_origin.elapsed()))
+                    {
+                        return UseDisposition::Exhausted;
+                    }
+                    let context = QuestWorldContext {
+                        map_revision: crate::map::overlay::map_revision(map.overlay.base()),
+                        content_revision: format!("sha256:{}", hex(&runtime.content_pin().server_artifact_digest())),
+                        placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
+                        reset_epoch: self.reset_epoch,
+                        actor_placement: actor.placement_identity(),
+                        movement_revision: expected.revision(),
+                    };
+                    (expected, context)
+                };
+                let allowed = self.root.check_character_world_callback(
+                    self.character, self.holder, fence, &callback.key,
+                    std::sync::Arc::clone(catalogue), &permit, context,
+                ).await;
+                if !matches!(allowed, Ok(true)) {
+                    if let Some(message) = &callback.failure_message {
+                        self.states.chat.push_quest_feedback(command.game_session_id, message);
+                    }
+                    return UseDisposition::Rejected;
+                }
+                Some(ReadOnlyGate {
+                    actor, session: command.game_session_id, expected, callback: callback.key.clone(),
+                })
+            } else {
+                None
+            };
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
             let Ok(expected) = runtime.read_actor_position(actor) else {
@@ -370,7 +561,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if !super::map_door::reachable(at, resolved.pos) {
                 return UseDisposition::TooFar;
             }
-            if !self
+            if !callback.is_read_only() && !self
                 .states
                 .world_gate
                 .lock()
@@ -395,6 +586,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 fence,
                 slot.as_mut(),
                 optional_pvp,
+                read_only_gate.as_ref(),
             )
             .await;
             drop(states);
@@ -438,10 +630,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             entered
         };
-        let entered = self
-            .step_dynamic_quest_portal(permit, actor, session, entered)
-            .await;
-        self.step_quest_trigger(permit, actor, session, origin, entered, Trigger::StepIn)
+        if self.has_pending_quest_callback(session) {
+            return entered;
+        }
+        self.movement_quest_callback(permit, actor, session, origin, entered, Trigger::StepIn)
+            .await
+    }
+
+    async fn movement_quest_callback(
+        &self,
+        permit: &SpellLanePermit,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        origin: MovementPositionSnapshot,
+        entered: MovementPositionSnapshot,
+        trigger: Trigger,
+    ) -> MovementPositionSnapshot {
+        let entered = if trigger == Trigger::StepIn {
+            self.step_dynamic_quest_portal(permit, actor, session, entered)
+                .await
+        } else {
+            entered
+        };
+        self.step_quest_trigger(permit, actor, session, origin, entered, trigger)
             .await
     }
 
@@ -507,14 +718,63 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 None => None,
             };
             let optional_pvp = self.special_movement_policy(permit, actor, session).await;
+            let read_only_gate = if callback.is_read_only() {
+                let context = {
+                    let runtime = self.runtime.lock().await;
+                    if runtime.read_actor_position(actor) != Ok(entered) {
+                        return entered;
+                    }
+                    QuestWorldContext {
+                        map_revision: crate::map::overlay::map_revision(map.overlay.base()),
+                        content_revision: format!(
+                            "sha256:{}",
+                            hex(&runtime.content_pin().server_artifact_digest())
+                        ),
+                        placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
+                        reset_epoch: self.reset_epoch,
+                        actor_placement: actor.placement_identity(),
+                        movement_revision: entered.revision(),
+                    }
+                };
+                match (fence, self.quest_catalogue.as_ref()) {
+                    (Some(fence), Some(catalogue))
+                        if matches!(
+                            self.root
+                                .check_character_world_callback(
+                                    self.character,
+                                    self.holder,
+                                    fence,
+                                    &callback.key,
+                                    std::sync::Arc::clone(catalogue),
+                                    permit,
+                                    context,
+                                )
+                                .await,
+                            Ok(true)
+                        ) =>
+                    {
+                        Some(ReadOnlyGate {
+                            actor,
+                            session,
+                            expected: entered,
+                            callback: callback.key.clone(),
+                        })
+                    }
+                    _ => None,
+                }
+            } else {
+                None
+            };
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
             if runtime.read_actor_position(actor) != Ok(entered) {
                 return entered;
             }
             let revision = map.facts.object_revision(*key);
-            let result = self
-                .execute_quest_callback(
+            let result = if callback.is_read_only() && read_only_gate.is_none() {
+                UseDisposition::Rejected
+            } else {
+                self.execute_quest_callback(
                     permit,
                     &mut runtime,
                     &mut states,
@@ -528,8 +788,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     fence,
                     slot.as_mut(),
                     optional_pvp,
+                    read_only_gate.as_ref(),
                 )
-                .await;
+                .await
+            };
             let unresolved =
                 self.states
                     .quest_callbacks

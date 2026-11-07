@@ -28,9 +28,9 @@ class QualificationTests(unittest.TestCase):
     def test_checked_in_ledger_is_valid(self):
         errors, counts = qualification.validate()
         self.assertEqual(errors, [])
-        # Three Demon Helmet selectors now have real USE/PostgreSQL receipt
-        # coverage. The exact remaining denominator still rejects drift.
-        self.assertEqual(sum(counts.values()), 297)
+        # 172 source claims have focused dispatch PG proof; only the
+        # two Dawnport claims are excluded. Keep exact denominator detection.
+        self.assertEqual(sum(counts.values()), 162)
 
     def test_missing_row_is_rejected(self):
         del self.ledger["claims"][next(iter(self.ledger["claims"]))]

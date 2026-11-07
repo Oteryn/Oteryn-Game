@@ -1,0 +1,10 @@
+{
+  "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml",
+  "source_sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
+  "records": {
+    "12369": "<item id=\"12369\" article=\"a\" name=\"captured wolf\">\n\t\t<attribute key=\"primarytype\" value=\"quest items\" />\n\t\t<attribute key=\"description\" value=\"The trap has imobilized and shrunken the wolf\" />\n\t\t<attribute key=\"weight\" value=\"5000\" />\n\t</item>\n\t",
+    "14156": "<item id=\"14156\" article=\"a\" name=\"dog collar\">\n\t\t<attribute key=\"primarytype\" value=\"quest items\" />\n\t\t<attribute key=\"description\" value=\"It belongs to Noodles, the King's dog\" />\n\t\t<attribute key=\"weight\" value=\"110\" />\n\t</item>\n\t",
+    "33330": "<item id=\"33330\" article=\"a\" name=\"monolith of the planes kit\">\n\t\t<attribute key=\"description\" value=\"Use it in your house to construct a monolith of the planes... hopefully you know what you are doing\" />\n\t\t<attribute key=\"weight\" value=\"750\" />\n\t</item>\n\t",
+    "52732": "<item id=\"52732\" article=\"a\" name=\"guardian ring\">\n\t\t<attribute key=\"primarytype\" value=\"rings\" />\n\t\t<attribute key=\"armor\" value=\"1\" />\n\t\t<attribute key=\"weight\" value=\"90\" />\n\t\t<attribute key=\"script\" value=\"moveevent\">\n\t\t\t<attribute key=\"slot\" value=\"ring\" />\n\t\t</attribute>\n\t</item>\n\t"
+  }
+}

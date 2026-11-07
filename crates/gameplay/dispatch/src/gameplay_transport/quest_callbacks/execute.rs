@@ -19,6 +19,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         fence: Option<CurrentCharacterGameplayFence>,
         slot: Option<&mut RevisionSlot>,
         optional_pvp: Option<bool>,
+        read_only_gate: Option<&ReadOnlyGate>,
     ) -> UseDisposition {
         if !runtime
             .player_control_facts(actor, session)
@@ -106,6 +107,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let passage = passage_definition;
             let p = tile(passage.position);
             if close
+                && callback.trigger == Trigger::Use
                 && super::super::map_door::doorway_occupied(
                     runtime,
                     actor,
@@ -166,7 +168,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let closed = crate::map::floor::BundleDoors(map.facts.doors());
         let blocked = super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
-        let teleport = match callback.teleport {
+        // Read the composed tile while holding the Channel runtime lock. Hidden,
+        // transformed and newly placed objects must all affect the same decision.
+        let mut destination = callback.teleport;
+        if let Some(remote) = &callback.remote_teleport {
+            let Ok(Some(remote_tile)) =
+                crate::map::view::compose_tile(&map.overlay, &map.facts, tile(remote.position))
+            else {
+                return UseDisposition::Rejected;
+            };
+            if remote_tile
+                .entries
+                .iter()
+                .any(|entry| entry.facts.appearance_id == remote.appearance)
+            {
+                destination = Some(remote.destination);
+            }
+        }
+        let teleport = match destination {
             Some(to) => match crate::map::floor::prepare_quest_callback_teleport_facing(
                 runtime,
                 self.movement_cells,
@@ -189,12 +208,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Exhausted;
         }
-        let mut success_message = if callback.storage.is_empty() {
+        if callback.is_read_only()
+            && !read_only_gate.is_some_and(|gate| {
+                gate.actor == actor
+                    && gate.session == session
+                    && gate.callback == callback.key
+                    && runtime.read_actor_position(actor) == Ok(gate.expected)
+            })
+        {
+            return UseDisposition::Rejected;
+        }
+        let mut success_message = if callback.storage.is_empty() || callback.is_read_only() {
             callback.success_message.clone()
         } else {
             None
         };
-        if !callback.storage.is_empty() {
+        if !callback.storage.is_empty() && !callback.is_read_only() {
             let (Some(fence), Some(slot), Some(catalogue)) =
                 (fence, slot, self.quest_catalogue.as_ref())
             else {

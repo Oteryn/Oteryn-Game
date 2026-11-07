@@ -31,19 +31,26 @@ class CanonicalVariantTests(unittest.TestCase):
                         self.assertTrue(q['item']['key'].startswith('oteryn:item.tibia.i'))
                         self.assertEqual(q['item'], self.items[q['item']['key']]['identity'])
 
-    def test_plain_231_definition_records_remain_exact_and_readiness_220_11(self):
+    def test_plain_231_definition_records_remain_exact_and_readiness_228_3(self):
         outputs = plain.generate(); index = json.loads(outputs[plain.INDEX_PATH])
         self.assertEqual(index['plain_record_count'], 231)
         self.assertEqual(index['record_count'], 336)
-        self.assertEqual(index['readiness']['ready'], 220)
-        self.assertEqual(index['readiness']['waiting_item_semantics'], 11)
+        self.assertEqual(index['readiness']['ready'], 228)
+        self.assertEqual(index['readiness']['waiting_item_semantics'], 3)
         for path in index['shards'][:3]:
             self.assertEqual(outputs[path], (self.root / path).read_text())
         self.assertEqual(index['native_admission']['variants'], 'WAITING_IMPLEMENTATION')
 
     def test_source_complete_is_not_native_or_item_complete(self):
         self.assertTrue(any(r['definition']['readiness'] == 'waiting_implementation' for r in self.records))
-        held = [r['definition'] for r in self.records if any(g['category'] == 'item' for g in r['definition']['data_holds'])]
+        # Every current Item is resolved. Losing a bound Item must still be
+        # refused rather than promote a source-complete reward to readiness.
+        items = dict(self.items)
+        key = self.packet['records'][0]['item_bindings'][0]['canonical_item']['key']
+        del items[key]
+        with self.assertRaisesRegex(ValueError, 'canonical variant Item identity/revision changed'):
+            variants.derive_definitions(self.packet, items, plain.stack_problem)
+        held = [r['definition'] for r in self.records if r['definition']['data_holds']]
         self.assertTrue(held)
         self.assertTrue(all(d['readiness'] == 'waiting_data' for d in held))
 
@@ -125,10 +132,10 @@ class CanonicalVariantTests(unittest.TestCase):
 
     def test_compiler_boundary_keeps_unimplemented_shapes_closed(self):
         errors = variants.native_lowering_errors(self.records)
-        # W15b admits 67 exact container/leaf recipes without rewriting
+        # QUEST-FINISH admits 78 exact container/leaf recipes without rewriting
         # the immutable source dispositions of the105 original variant records.
-        self.assertEqual(sum('native_contents' in r['definition'] for r in self.records), 67)
-        self.assertEqual(len(errors), 38)
+        self.assertEqual(sum('native_contents' in r['definition'] for r in self.records), 78)
+        self.assertEqual(len(errors), 27)
         self.assertTrue(all(e['code'] == 'REWARD_CLAIM_NATIVE_LOWERING_NOT_IMPLEMENTED' and e['pending'] for e in errors))
 
     def test_committed_family_reproduces_with_separate_holds(self):

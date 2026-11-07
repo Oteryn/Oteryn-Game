@@ -661,11 +661,11 @@ fn world_reward_claims_the_embedded_shards_decode() -> TestResult {
         &base, &admitted,
     )?;
     // The fixture map holds none of the real chests: every ready claim is a candidate that
-    // does not bind, and the 11 waiting plain records are left out. KEY-1 adds the 21 key
-    // variants with a `canary:door-key/` binding. W15b adds 67 native container/text/key recipes and one fully charged
-    // plain leaf through the same binder.
+    // does not bind. QUEST-FINISH admits all plain records through exact source
+    // charge/fluid projections and excludes both Dawnport records
+    // while preserving their source data. Falcon uses its separate cycle owner.
     let candidates = report.unbound_claims_by_reason().values().sum::<usize>();
-    assert_eq!(candidates, 308);
+    assert_eq!(candidates, 328);
     assert!(report.served.is_empty());
     assert_eq!(
         report
@@ -673,7 +673,22 @@ fn world_reward_claims_the_embedded_shards_decode() -> TestResult {
             .iter()
             .filter(|(_, why)| *why == LeftOut::NotReady)
             .count(),
-        11
+        0
+    );
+    for (reason, expected) in [(LeftOut::OwnerExcluded, 2), (LeftOut::Variant, 6)] {
+        assert_eq!(
+            report
+                .left_out
+                .iter()
+                .filter(|(_, why)| *why == reason)
+                .count(),
+            expected
+        );
+    }
+    assert_eq!(
+        report.left_out.len(),
+        8,
+        "every remaining record has its exact owner"
     );
     Ok(())
 }

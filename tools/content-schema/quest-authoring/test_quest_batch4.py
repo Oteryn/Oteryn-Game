@@ -44,6 +44,50 @@ def packet(directory):
 
 
 class QuestBatch4Tests(unittest.TestCase):
+    def test_remote_teleport_requires_a_readonly_step_and_bounded_positions(self):
+        source = Path(__file__).parent / 'batches/quests4/formogar_mine_hoist.json'
+        row = json.loads(source.read_text())['callbacks'][0]
+        row['remote_teleport'] = {
+            'position': {'x': 32156, 'y': 31125, 'floor': -10},
+            'appearance': 2772,
+            'destination': {'x': 32157, 'y': 31125, 'floor': -11},
+        }
+        tool.validate_callback(row, 'formogar_mine_hoist')
+        for field, value in [('appearance', 0), ('appearance', 65536),
+                             ('destination', {'x': 1, 'y': 1, 'floor': -16})]:
+            invalid = copy.deepcopy(row)
+            invalid['remote_teleport'][field] = value
+            with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                tool.validate_callback(invalid, 'formogar_mine_hoist')
+        row['trigger'] = 'use'
+        with self.assertRaises(ValueError):
+            tool.validate_callback(row, 'formogar_mine_hoist')
+
+    def test_hoist_step_reads_both_instructions_without_a_write(self):
+        source = Path(__file__).parent / 'batches/quests4/formogar_mine_hoist.json'
+        row = json.loads(source.read_text())['callbacks'][0]
+        for storage in row['storage']:
+            storage.pop('preserve', None)
+            storage['read_only'] = True
+        tool.validate_callback(row, 'formogar_mine_hoist')
+        mixed = copy.deepcopy(row)
+        mixed['storage'][1]['read_only'] = False
+        with self.assertRaises(ValueError):
+            tool.validate_callback(mixed, 'formogar_mine_hoist')
+
+    def test_paired_plate_departure_is_stateless_and_cannot_teleport(self):
+        row = callback('thais_lighthouse', 'thais-lighthouse-stairs-out')
+        row.update(trigger='step_out', teleport=None, lever=[431, 430], reversible=True)
+        tool.validate_callback(row, 'thais_lighthouse')
+        for field, value in [('teleport', {'x': 100, 'y': 200, 'floor': -7}),
+                             ('storage', [{'track': 'oteryn:track/fixture',
+                                           'minimum': -1, 'maximum': 1, 'set': 1}])]:
+            with self.subTest(field=field):
+                invalid = copy.deepcopy(row)
+                invalid[field] = value
+                with self.assertRaises(ValueError):
+                    tool.validate_callback(invalid, 'thais_lighthouse')
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)

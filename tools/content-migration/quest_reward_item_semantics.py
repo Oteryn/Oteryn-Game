@@ -12,6 +12,7 @@ import hashlib
 import json
 import re
 import sys
+
 from pathlib import Path
 
 PACKET = "docs/agents/evidence/OTV2-20261001-quest-reward-item-admission.json"
@@ -23,6 +24,20 @@ CLIENT = f"content/assets/files/appearances-{CLIENT_SHA}.dat"
 CLIENT_BYTES = 5017996
 UNKNOWN = {"state": "UNKNOWN"}
 CLAIMS = "tools/content-schema/quest-authoring/samples/chests/claims.json"
+# QUEST-FINISH: existing item_timed_state treats an absent row as full definition
+# charges. These exact defaults are independently rechecked from the digest-bound
+# admission packet, not from a chest helper's quantity argument. Canary04b83b5
+# data/items/items.xml:6946,6966,7255,7272,7283,7294,8525 respectively.
+NATIVE_FULL_CHARGE_DEFAULTS = {
+    'oteryn:item.tibia.i3048': 20, 'oteryn:item.tibia.i3081': 5,
+    'oteryn:item.tibia.i3054': 200, 'oteryn:item.tibia.i3056': 200,
+    'oteryn:item.tibia.i3082': 50, 'oteryn:item.tibia.i3083': 150,
+    'oteryn:item.tibia.i3084': 250, 'oteryn:item.tibia.i3085': 200,
+    'oteryn:item.tibia.i3284': 1,
+}
+# These carried fluid identities already have native empty-container profiles;
+# per-instance subtypes are initialized by the reward mint's fluid owner.
+NATIVE_REWARD_FLUID_ITEMS = {f'oteryn:item.tibia.i{number}' for number in (2874, 2881, 2882)}
 
 # ITEM-SEM-2 precedence, bounded to exact client identities and English Wiki cuts.
 # Donor XML stays in the packet as a witness; only its container fact is superseded.
@@ -273,6 +288,19 @@ def enrich(definition, facts, xml):
     # Keep an existing admission (notably i3081); its reward subtype stays explicitly held.
     if not facts["holds"]:
         definition["materializable"] = True
+    elif (facts['holds'] == ['INSTANCE_CHARGE_ATTRIBUTE_LOWERING_MISSING']
+          and not facts['stackable'] and facts['capacity'] is None
+          and facts['charges'] == NATIVE_FULL_CHARGE_DEFAULTS.get(definition['identity']['key'])):
+        # Keep source diagnostics, partial-charge conflicts and every sibling
+        # hold intact. MINT creates one instance; the timed owner supplies its
+        # exact full definition value until the first charge mutation.
+        definition['materializable'] = True
+    elif (facts['holds'] == ['INSTANCE_FLUID_SUBTYPE_LOWERING_MISSING']
+          and not facts['stackable'] and facts['capacity'] is None
+          and facts['charges'] is None
+          and definition['identity']['key'] in NATIVE_REWARD_FLUID_ITEMS):
+        put_group(definition, 'fluid', {'fluid_type': {'state': 'NOT_APPLICABLE'}})
+        definition['materializable'] = True
     return definition
 
 

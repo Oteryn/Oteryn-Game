@@ -648,6 +648,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             quantity: 1,
             contents: Vec::new(),
             root_text: None,
+            root_charges_remaining: None,
+            root_fluid_subtype: None,
             backpack,
             content_revision: pin,
             ruleset_revision: crate::interaction_chest_use::entry_chest::RULESET_REVISION.into(),

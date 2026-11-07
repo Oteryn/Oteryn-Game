@@ -212,11 +212,15 @@ async fn mint(
                     item: resolve(&i.item)?,
                     quantity: u32::from(i.count),
                     key_number: None,
+                    charges_remaining: None,
+                    fluid_subtype: None,
                     text: None,
                 })
             })
             .collect::<std::result::Result<Vec<_>, DurabilityError>>()?,
         root_text: None,
+        root_charges_remaining: None,
+        root_fluid_subtype: None,
         backpack: resolve(&backpack)?,
         content_revision,
         ruleset_revision,

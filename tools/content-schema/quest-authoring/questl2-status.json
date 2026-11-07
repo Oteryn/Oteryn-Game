@@ -72,13 +72,55 @@
         "Seven remaining tokens cannot pay twenty",
         "The original once-only exchange path still commits"
       ]
+    },
+    {
+      "name": "source NPC programme composition and reused material/XP hand-ins",
+      "status": "QUALIFIED",
+      "reused_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "reused_head": "2d9db9c5abdb62abc8f9883984b5ad5bc22244c8",
+      "postgres": [
+        {
+          "postgres_test": "catalogue_npc_father_fresh_acceptance_is_one_eleven_track_transaction",
+          "marker": "POSTGRES_CASE_COMPLETED catalogue-npc-father",
+          "duration_seconds": 80.509342717,
+          "passed": 1,
+          "failed": 0
+        },
+        {
+          "postgres_test": "fathers_burden_eight_handins_cape_experience_and_replay",
+          "marker": "POSTGRES_CASE_COMPLETED fathers_burden_eight_handins_cape_experience_and_replay",
+          "duration_seconds": 83.901222239,
+          "passed": 1,
+          "failed": 0
+        }
+      ],
+      "proves": [
+        "One eleven-track NPC acceptance, including injected final-track rollback",
+        "All eight material hand-ins, cape, experience and exact replay"
+      ],
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:175-180; tools/content-schema/quest-authoring/batch3_a/npc/fathers_burden.json"
     }
   ],
   "entries": [
     {
       "title": "A Father's Burden",
       "status": "PENDING",
-      "evidence": []
+      "evidence": [
+        {
+          "postgres_test": "catalogue_npc_father_fresh_acceptance_is_one_eleven_track_transaction",
+          "marker": "POSTGRES_CASE_COMPLETED catalogue-npc-father",
+          "duration_seconds": 80.509342717,
+          "passed": 1,
+          "failed": 0
+        },
+        {
+          "postgres_test": "fathers_burden_eight_handins_cape_experience_and_replay",
+          "marker": "POSTGRES_CASE_COMPLETED fathers_burden_eight_handins_cape_experience_and_replay",
+          "duration_seconds": 83.901222239,
+          "passed": 1,
+          "failed": 0
+        }
+      ]
     },
     {
       "title": "A Piece of Cake",
@@ -186,7 +228,23 @@
         "Exact command replay cannot consume or mint again",
         "An unpaid repeat refuses without receipts or items",
         "The Abacus supports multiple independently paid occurrences"
-      ]
+      ],
+      "post_merge_regression": {
+        "postgres_test": "questl2_repeatable_token_exchange",
+        "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-token-abacus",
+        "duration_seconds": 85.199370399,
+        "passed": 1,
+        "failed": 0
+      },
+      "deployment": {
+        "npc": "oteryn:npc.jorge",
+        "source_cell": {
+          "x": 32204,
+          "y": 32292,
+          "z": 6
+        },
+        "test": "test_l2_reward_and_programme_npcs_have_global_deployment_cells"
+      }
     },
     {
       "title": "Into The Bone Pit",
@@ -361,7 +419,8 @@
   ],
   "validation": {
     "quest_unit_tests": {
-      "passed": 256,
+      "filter": "npc_rules",
+      "passed": 25,
       "failed": 0
     },
     "reward_authoring_tests": {
@@ -375,9 +434,15 @@
     },
     "clippy": {
       "packages": [
-        "oteryn-gameplay-quests",
+        "oteryn-game-server",
+        "oteryn-gameplay-combat",
+        "oteryn-gameplay-content",
         "oteryn-gameplay-dispatch",
-        "oteryn-gameplay-durability"
+        "oteryn-gameplay-durability",
+        "oteryn-gameplay-encounters",
+        "oteryn-gameplay-npc",
+        "oteryn-gameplay-quests",
+        "oteryn-gameplay-social"
       ],
       "all_targets": true,
       "all_features": true,
@@ -397,7 +462,7 @@
     "world_pins": {
       "regenerated": true,
       "checked": true,
-      "digest": "d5e52c7a0ef24bf6aa7b78926fd0806e43eb731ac69b10783f20c9f10dcd88e5"
+      "digest": "03dc19c5c053c939e0f4ab40c9e353a6488e7e453c82255039df65391d9edf99"
     },
     "formatting": "cargo fmt --all --check and explicit mounted-file rustfmt --check passed",
     "content_tests": {
@@ -452,6 +517,26 @@
         "oteryn:item.tibia.i31268"
       ],
       "removed": []
+    },
+    "npc_placement_tests": {
+      "passed": 11,
+      "failed": 0
+    },
+    "provider_composition_tests": {
+      "passed": 11,
+      "failed": 0
+    },
+    "claim_progress_tests": {
+      "passed": 4,
+      "failed": 0
+    },
+    "state_lowering_tests": {
+      "passed": 12,
+      "failed": 0
+    },
+    "father_item_profile_tests": {
+      "passed": 1,
+      "failed": 0
     }
   },
   "cross_lane_inspection": {
@@ -460,7 +545,8 @@
     "questpc6": "3bfd856061e5aa89668747ec7405af8c2b8cf7f5",
     "next": "Continue source-backed full journeys and reuse the inspected PC5 travel/issuance and PC6 conditional reset mechanisms as needed.",
     "reused": [
-      "QENGINE2 possession predicates and world outfit reward composition"
+      "QENGINE2 possession predicates and world outfit reward composition",
+      "PC5 source NPC programmes, material/XP composition and claim-progress bindings"
     ]
   }
 }

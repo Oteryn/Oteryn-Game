@@ -6,9 +6,14 @@ Historical variant dispositions remain intact. Only a complete, pinned
 import copy
 import hashlib
 import json
+import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'quest-authoring'))
+import quest_claim_progress
+
 import container_native
+import charge_native
 import reward_claim_variant_migration as migration
 
 PROFILE = 'authored_variant_v1'
@@ -30,6 +35,8 @@ def canonical_schema(root):
             'items': {'type': 'object', 'additionalProperties': False,
                 'required': ['appearance_tibia_id', 'source_binding', 'reward'], 'properties': {
                     'appearance_tibia_id': {'type': 'integer', 'minimum': 1},
+                    'quest_transition': {'type': 'string', 'maxLength': 128,
+                                         'pattern': '^oteryn:[A-Za-z0-9._:/-]+$'},
                     'source_binding': {'type': 'object', 'additionalProperties': False,
                         'required': ['project_position', 'legacy_unique_ids'], 'properties': {
                             'project_position': {'$ref': '#/$defs/position'},
@@ -49,6 +56,9 @@ def canonical_schema(root):
             'schema': {'const': 'OTERYN_NATIVE_CONTAINER_REWARD/v1'},
             'revision': {'const': container_native.REVISION},
             'source_sha256': {'const': container_native.SOURCE_SHA256},
+            'source_difference': {'enum': [container_native.MEDUSA_DIFFERENCE,
+                'WIKI_MILK_OVERRIDES_DONOR_WATER', 'WIKI_WINE_OVERRIDES_DONOR_WATER',
+                'CRYSTAL_PRESENT_WATER_SUBTYPES', 'EXACT_SOURCE_CHARGES_NOT_DEFINITION_DEFAULTS']},
             'placements': {'type': 'array', 'minItems': 1, 'items': {
                 'type': 'object', 'additionalProperties': False,
                 'required': ['unique_id', 'line', 'root', 'capacity', 'contents', 'completion'],
@@ -59,6 +69,7 @@ def canonical_schema(root):
                     'capacity': {'type': ['integer', 'null'], 'minimum': 1, 'maximum': 65535},
                     'achievement': {'$ref': '#/$defs/ref'},
                     'root_text': {'type': 'string', 'minLength': 1, 'maxLength': 4000},
+                    'root_charges_remaining': {'const': 1},
                     'completion': {'type': 'object', 'additionalProperties': False,
                         'required': ['kind', 'key'], 'properties': {
                             'kind': {'enum': ['storage', 'quest_kv']}, 'key': {'type': 'string', 'minLength': 1}}},
@@ -67,6 +78,8 @@ def canonical_schema(root):
                         'properties': {'item': {'$ref': '#/$defs/ref'},
                             'count': {'type': 'integer', 'minimum': 1, 'maximum': 100},
                             'key_number': {'type': 'integer', 'minimum': 1, 'maximum': 65535},
+                            'fluid_subtype': {'type': 'integer', 'minimum': 1, 'maximum': 255},
+                            'charges_remaining': {'const': 1},
                             'text': {'type': 'string', 'minLength': 1, 'maxLength': 4000}}}}
                 }}}
         }}
@@ -204,7 +217,8 @@ def derive_definitions(packet, items, stack_problem):
             'source_variant': copy.deepcopy(row)}
         if source.get('quest'):
             definition['quest'] = copy.deepcopy(source['quest'])
-        native_contents = container_native.derive(definition, items, stack_problem)
+        native_contents = (charge_native.derive(definition, items, stack_problem)
+                           or container_native.derive(definition, items, stack_problem))
         if native_contents is not None:
             definition['native_contents'] = native_contents
         key = definition['identity']['key']
@@ -234,6 +248,7 @@ def derive(root, items, stack_problem):
     packet = migration.derive_packet(root, evidence)
     migration.validate(packet, root)
     records = derive_definitions(packet, items, stack_problem)
+    quest_claim_progress.apply_claims(root, records)
     check = validator(root)
     for record in records:
         check.validate(record['definition'])

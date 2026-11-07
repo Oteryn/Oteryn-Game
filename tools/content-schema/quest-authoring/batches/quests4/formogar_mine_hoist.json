@@ -27,14 +27,14 @@
           "minimum": 1,
           "maximum": 1,
           "set": 1,
-          "preserve": true
+          "read_only": true
         },
         {
           "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_chest",
           "minimum": 1,
           "maximum": 1,
           "set": 1,
-          "preserve": true
+          "read_only": true
         }
       ],
       "offerings": [],
@@ -74,14 +74,14 @@
           "minimum": 1,
           "maximum": 1,
           "set": 1,
-          "preserve": true
+          "read_only": true
         },
         {
           "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_chest",
           "minimum": 1,
           "maximum": 1,
           "set": 1,
-          "preserve": true
+          "read_only": true
         }
       ],
       "offerings": [],

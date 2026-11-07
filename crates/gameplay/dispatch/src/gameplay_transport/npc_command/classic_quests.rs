@@ -59,8 +59,6 @@ pub(super) fn prepare(
         intent,
     )?;
     if ![
-        classic_talk::MORRIS,
-        classic_talk::WOBLIN,
         classic_talk::JEROM,
         classic_talk::QUEEN,
         classic_talk::ROTTIN,

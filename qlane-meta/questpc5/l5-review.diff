@@ -1,0 +1,1509 @@
+diff --git a/content/quests/world-callbacks.json b/content/quests/world-callbacks.json
+index 573ca2886..971496862 100644
+--- a/content/quests/world-callbacks.json
++++ b/content/quests/world-callbacks.json
+@@ -3709,14 +3709,14 @@
+           "minimum": 1,
+           "maximum": 1,
+           "set": 1,
+-          "preserve": true
++          "read_only": true
+         },
+         {
+           "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_chest",
+           "minimum": 1,
+           "maximum": 1,
+           "set": 1,
+-          "preserve": true
++          "read_only": true
+         }
+       ],
+       "offerings": [],
+@@ -3756,14 +3756,14 @@
+           "minimum": 1,
+           "maximum": 1,
+           "set": 1,
+-          "preserve": true
++          "read_only": true
+         },
+         {
+           "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_chest",
+           "minimum": 1,
+           "maximum": 1,
+           "set": 1,
+-          "preserve": true
++          "read_only": true
+         }
+       ],
+       "offerings": [],
+@@ -8686,6 +8686,78 @@
+         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:42"
+       ]
+     },
++    {
++      "key": "oteryn:quest-callback/thais-lighthouse-stairs-in",
++      "quest": "oteryn:quest.thais_lighthouse_quest",
++      "trigger": "step_in",
++      "selector": {
++        "position": null,
++        "unique": 25010,
++        "action": null,
++        "appearance": null
++      },
++      "lever": [
++        431,
++        430
++      ],
++      "reversible": true,
++      "passages": [
++        {
++          "position": {
++            "x": 32225,
++            "y": 32282,
++            "floor": -9
++          },
++          "appearance": 429,
++          "replacement": 7767
++        }
++      ],
++      "teleport": null,
++      "storage": [],
++      "offerings": [],
++      "item_on_target": null,
++      "return_on_failure": false,
++      "failure_message": null,
++      "sources": [
++        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/movement-stair.lua:6-18"
++      ]
++    },
++    {
++      "key": "oteryn:quest-callback/thais-lighthouse-stairs-out",
++      "quest": "oteryn:quest.thais_lighthouse_quest",
++      "trigger": "step_out",
++      "selector": {
++        "position": null,
++        "unique": 25010,
++        "action": null,
++        "appearance": null
++      },
++      "lever": [
++        431,
++        430
++      ],
++      "reversible": true,
++      "passages": [
++        {
++          "position": {
++            "x": 32225,
++            "y": 32282,
++            "floor": -9
++          },
++          "appearance": 429,
++          "replacement": 7767
++        }
++      ],
++      "teleport": null,
++      "storage": [],
++      "offerings": [],
++      "item_on_target": null,
++      "return_on_failure": false,
++      "failure_message": null,
++      "sources": [
++        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/movement-stair.lua:24-35"
++      ]
++    },
+     {
+       "key": "oteryn:quest-callback/the-lost-brother-remains",
+       "quest": "oteryn:quest.adventurers_guild",
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/literal_uses.rs b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/literal_uses.rs
+index ae612ea2f..4ab7cebd4 100644
+--- a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/literal_uses.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/literal_uses.rs
+@@ -1,18 +1,63 @@
+ //! Literal source USE callbacks must select the clicked object above ground.
+ use super::*;
++use crate::map::view::MapFacts;
+ 
+ #[test]
+ fn quest_world_callbacks_literal_use_accepts_clicked_nonzero_ordinal() -> TestResult {
+-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
++    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
++        return Ok(());
++    }
+     super::super::kill_reward_e2e::scenario_thread::run("literal-callback-use", || {
+         for (name, appearance, ordinal, source, destination) in [
+-            ("blue-valley-2", 49948, 3, (33605,31468,-7), (32456,32291,-7)),
+-            ("blue-valley-3", 49948, 3, (33601,31468,-7), (32456,32291,-7)),
+-            ("blue-valley-4", 49948, 1, (32456,32290,-7), (33614,31494,-7)),
+-            ("blue-valley-5", 50310, 2, (32203,32303,-6), (33614,31494,-7)),
+-            ("pirates-tail-cheesy-exit", 1760, 1, (33925,31355,-7), (33799,31321,-7)),
+-            ("order-of-the-stag-boat-return", 6391, 2, (33874,32250,-7), (32395,32511,-7)),
+-            ("order-of-the-stag-crypt-exit", 52656, 1, (32402,32472,-5), (32402,32473,-4)),
++            (
++                "blue-valley-2",
++                49948,
++                3,
++                (33605, 31468, -7),
++                (32456, 32291, -7),
++            ),
++            (
++                "blue-valley-3",
++                49948,
++                3,
++                (33601, 31468, -7),
++                (32456, 32291, -7),
++            ),
++            (
++                "blue-valley-4",
++                49948,
++                1,
++                (32456, 32290, -7),
++                (33614, 31494, -7),
++            ),
++            (
++                "blue-valley-5",
++                50310,
++                2,
++                (32203, 32303, -6),
++                (33614, 31494, -7),
++            ),
++            (
++                "pirates-tail-cheesy-exit",
++                1760,
++                1,
++                (33925, 31355, -7),
++                (33799, 31321, -7),
++            ),
++            (
++                "order-of-the-stag-boat-return",
++                6391,
++                2,
++                (33874, 32250, -7),
++                (32395, 32511, -7),
++            ),
++            (
++                "order-of-the-stag-crypt-exit",
++                52656,
++                1,
++                (32402, 32472, -5),
++                (32402, 32473, -4),
++            ),
+         ] {
+             let callback = callback(name)?;
+             assert_eq!(callback.selector.position, Some(position(source)));
+@@ -25,11 +70,27 @@ fn quest_world_callbacks_literal_use_accepts_clicked_nonzero_ordinal() -> TestRe
+ 
+ #[test]
+ fn quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes() -> TestResult {
+-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
++    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
++        return Ok(());
++    }
+     super::super::kill_reward_e2e::scenario_thread::run("read-only-stag-use", || {
+         for (name, appearance, ordinal, minimum, source, destination) in [
+-            ("order-of-the-stag-boat-to-ada", 6391, 4, 3, (32393,32513,-7), (33875,32249,-7)),
+-            ("order-of-the-stag-mark-wall", 52735, 1, 11, (33834,32139,-4), (33833,32138,-4)),
++            (
++                "order-of-the-stag-boat-to-ada",
++                6391,
++                4,
++                3,
++                (32393, 32513, -7),
++                (33875, 32249, -7),
++            ),
++            (
++                "order-of-the-stag-mark-wall",
++                52735,
++                1,
++                11,
++                (33834, 32139, -4),
++                (33833, 32138, -4),
++            ),
+         ] {
+             let callback = callback(name)?;
+             assert_eq!(callback.selector.position, Some(position(source)));
+@@ -47,10 +108,67 @@ fn quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes() -> Test
+     })
+ }
+ 
+-fn position((x,y,floor): (u16,u16,i8)) -> Position { Position { x,y,floor } }
++#[test]
++fn questpc5_l5_hoist_instruction_gates_are_read_only() -> TestResult {
++    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
++        return Ok(());
++    }
++    super::super::kill_reward_e2e::scenario_thread::run("l5-hoist-gates", || {
++        for unique in [3059, 3061] {
++            let mut callback = callback(&format!("formogar-hoist-{unique}"))?;
++            callback.selector.position = Some(Position {
++                x: 32157,
++                y: 31125,
++                floor: -9,
++            });
++            for (stage, missing) in [
++                (None, None),
++                (Some(1), Some(0)),
++                (Some(1), Some(1)),
++                (Some(1), None),
++            ] {
++                exercise_with_missing(callback.clone(), 100, 1, stage, missing, false)?;
++            }
++        }
++        Ok(())
++    })
++}
++
++#[test]
++fn questpc5_l5_hoist_cancelled_read_reconciles_before_next_command() -> TestResult {
++    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
++        return Ok(());
++    }
++    super::super::kill_reward_e2e::scenario_thread::run("l5-hoist-read-recovery", || {
++        let mut callback = callback("formogar-hoist-3059")?;
++        callback.selector.position = Some(Position {
++            x: 32157,
++            y: 31125,
++            floor: -9,
++        });
++        exercise_with_missing(callback.clone(), 100, 1, Some(1), None, true)?;
++        exercise_with_missing(callback, 100, 1, Some(1), Some(0), true)
++    })
++}
++
++fn position((x, y, floor): (u16, u16, i8)) -> Position {
++    Position { x, y, floor }
++}
+ 
+ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>) -> TestResult {
++    exercise_with_missing(callback, appearance, ordinal, stage, None, false)
++}
++
++fn exercise_with_missing(
++    callback: Callback,
++    appearance: u16,
++    ordinal: u8,
++    stage: Option<i64>,
++    missing: Option<usize>,
++    recovery: bool,
++) -> TestResult {
+     let started = std::time::Instant::now();
++    let step = callback.trigger == oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn;
+     let trigger = callback.selector.position.ok_or("position")?;
+     let world = world_ordinal(&callback, trigger, appearance, ordinal)?;
+     run(async |admin| {
+@@ -176,51 +294,258 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
+         deps.initialize(&owner).await;
+         owner.admit_quest_session(&admitted).await;
+ 
+-        owner.states.chat.admit(admitted.game_session_id, "Traveller", owner.owner_now());
++        owner
++            .states
++            .chat
++            .admit(admitted.game_session_id, "Traveller", owner.owner_now());
+         if let Some(stage) = stage {
+-            use oteryn_gameplay_quests::quest::{QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition};
+-            let storage = callback.storage.first().ok_or("guard storage")?;
++            use oteryn_gameplay_quests::quest::{
++                QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
++                QuestTransition,
++            };
++            let guards: Vec<_> = callback
++                .storage
++                .iter()
++                .enumerate()
++                .filter(|(index, _)| missing != Some(*index))
++                .map(|(_, storage)| storage)
++                .collect();
+             let seed = "oteryn:quest-transition/fixture/stag-stage";
+-            let catalogue = std::sync::Arc::new(QuestStateCatalogue::new("content-1", vec![QuestTrack {
+-                key: storage.track.clone(), quest: callback.quest.clone(), initial: -1, min: -1, max: 13,
+-            }], vec![QuestTransition {
+-                key: seed.into(), quest: callback.quest.clone(), effects: vec![QuestEffect {
+-                    track: storage.track.clone(), from: QuestComparison::Between(-1, 13), effect: QuestEffectKind::Set(stage),
+-                }], completes: false, experience: None,
+-            }]).map_err(debug)?);
++            let mut transitions = vec![QuestTransition {
++                key: seed.into(),
++                quest: callback.quest.clone(),
++                effects: guards
++                    .iter()
++                    .map(|storage| QuestEffect {
++                        track: storage.track.clone(),
++                        from: QuestComparison::Between(-1, 13),
++                        effect: QuestEffectKind::Set(stage),
++                    })
++                    .collect(),
++                completes: false,
++                experience: None,
++            }];
++            if step
++                && let Some(transition) = owner
++                    .quest_catalogue
++                    .as_ref()
++                    .and_then(|catalogue| catalogue.transition(&callback.key))
++            {
++                transitions.push(transition.clone());
++            }
++            let catalogue = std::sync::Arc::new(
++                QuestStateCatalogue::new(
++                    "content-1",
++                    callback
++                        .storage
++                        .iter()
++                        .map(|storage| QuestTrack {
++                            key: storage.track.clone(),
++                            quest: callback.quest.clone(),
++                            initial: -1,
++                            min: -1,
++                            max: 13,
++                        })
++                        .collect(),
++                    transitions,
++                )
++                .map_err(debug)?,
++            );
+             let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+-            let seeded = slot.commit_quest_transition(owner.root, owner.character, owner.holder, fence,
+-                crate::durability::quest_state::QuestTransitionRequest {
+-                    transition_key: seed.into(), cause: crate::durability::quest_state::QuestCause::Command(
+-                        crate::foundation::CommandRef::new(admitted.game_session_id, crate::foundation::CommandId::new(900).map_err(debug)?)),
+-                }, catalogue.clone()).await.map_err(debug)?;
+-            assert!(matches!(seeded, crate::durability::quest_state::QuestTransitionOutcome::Committed(_)));
++            let seeded = slot
++                .commit_quest_transition(
++                    owner.root,
++                    owner.character,
++                    owner.holder,
++                    fence,
++                    crate::durability::quest_state::QuestTransitionRequest {
++                        transition_key: seed.into(),
++                        cause: crate::durability::quest_state::QuestCause::Command(
++                            crate::foundation::CommandRef::new(
++                                admitted.game_session_id,
++                                crate::foundation::CommandId::new(900).map_err(debug)?,
++                            ),
++                        ),
++                    },
++                    catalogue.clone(),
++                )
++                .await
++                .map_err(debug)?;
++            assert!(matches!(
++                seeded,
++                crate::durability::quest_state::QuestTransitionOutcome::Committed(_)
++            ));
+             drop(slot);
+             owner.quest_catalogue = Some(catalogue);
+         }
+-        let key = oteryn_world_bundle::bundle::placement_key(trigger.floor, trigger.x, trigger.y, ordinal).ok_or("key")?;
+-        let mut placement = owner.bundle_map().ok_or("map")?.overlay.base().digest().to_vec();
++        let key = oteryn_world_bundle::bundle::placement_key(
++            trigger.floor,
++            trigger.x,
++            trigger.y,
++            ordinal,
++        )
++        .ok_or("key")?;
++        let mut placement = owner
++            .bundle_map()
++            .ok_or("map")?
++            .overlay
++            .base()
++            .digest()
++            .to_vec();
+         placement.extend_from_slice(&key.to_be_bytes());
+-        let target = WorldObjectTarget { placement, expected_revision: 0 };
+-        let before = owner.root.read_character_quest_state(&authority, fence.character_id).await.map_err(debug)?;
+-        let receipts_before: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts").fetch_one(&h.pool).await?;
+-        let allowed = callback.storage.first().is_none_or(|storage| stage.is_some_and(|stage| stage >= storage.minimum));
+-        let reply = wire(&owner, &mut admitted, 1, 2,
+-            oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?).await?;
+-        assert_eq!(oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?, if allowed { UseDisposition::Committed } else { UseDisposition::Rejected });
+-        assert_eq!(owner.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position(),
+-            if allowed { local(callback.teleport.ok_or("destination")?) } else { origin });
++        let target = WorldObjectTarget {
++            placement,
++            expected_revision: 0,
++        };
++        let before = owner
++            .root
++            .read_character_quest_state(&authority, fence.character_id)
++            .await
++            .map_err(debug)?;
++        let receipts_before: i64 =
++            sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
++                .fetch_one(&h.pool)
++                .await?;
++        let allowed = callback.storage.iter().enumerate().all(|(index, storage)| {
++            missing != Some(index)
++                && stage.is_some_and(|stage| (storage.minimum..=storage.maximum).contains(&stage))
++        });
++        if step {
++            use oteryn_protocol_oteryn::world_spatial::{
++                COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition,
++                decode_step_result, encode_step_intent,
++            };
++            owner
++                .runtime
++                .lock()
++                .await
++                .bind_attacker_lease(
++                    deps.actor,
++                    admitted.game_session_id,
++                    crate::foundation::CharacterLease::new(
++                        crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
++                            .map_err(debug)?,
++                        fence.character_lease_generation,
++                    )
++                    .map_err(debug)?,
++                )
++                .map_err(debug)?;
++            if recovery {
++                let (origin, entered) = {
++                    let mut runtime = owner.runtime.lock().await;
++                    let origin = runtime.read_actor_position(deps.actor).map_err(debug)?;
++                    let map = owner.bundle_map().ok_or("map")?;
++                    let closed = crate::map::floor::BundleDoors(map.facts.doors());
++                    let proof = crate::map::floor::prepare_quest_callback_teleport(
++                        &runtime,
++                        owner.movement_cells,
++                        deps.actor,
++                        admitted.game_session_id,
++                        origin,
++                        local(trigger),
++                        false,
++                        &closed,
++                    )
++                    .map_err(debug)?;
++                    (origin, runtime.commit_source_step(proof).map_err(debug)?)
++                };
++                assert!(owner.queue_non_mutating_step_for_test(
++                    deps.actor,
++                    admitted.game_session_id,
++                    origin,
++                    entered,
++                    &callback,
++                    (
++                        key,
++                        owner.bundle_map().ok_or("map")?.facts.object_revision(key)
++                    )
++                ));
++                assert!(owner.has_pending_quest_callback(admitted.game_session_id));
++            }
++            let reply = wire(
++                &owner,
++                &mut admitted,
++                1,
++                COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
++                encode_step_intent(if recovery {
++                    StepDirection::West
++                } else {
++                    StepDirection::East
++                }),
++            )
++            .await?;
++            assert_eq!(
++                decode_step_result(&reply).map_err(debug)?,
++                if recovery && allowed {
++                    StepDisposition::Blocked
++                } else {
++                    StepDisposition::Moved
++                }
++            );
++            assert!(!owner.has_pending_quest_callback(admitted.game_session_id));
++        } else {
++            let reply = wire(
++                &owner,
++                &mut admitted,
++                1,
++                2,
++                oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?,
++            )
++            .await?;
++            assert_eq!(
++                oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
++                if allowed {
++                    UseDisposition::Committed
++                } else {
++                    UseDisposition::Rejected
++                }
++            );
++        }
++        assert_eq!(
++            owner
++                .runtime
++                .lock()
++                .await
++                .read_actor_position(deps.actor)
++                .map_err(debug)?
++                .position(),
++            if allowed {
++                local(callback.teleport.ok_or("destination")?)
++            } else if recovery {
++                MovementLocalPosition {
++                    x: origin.x - 1,
++                    ..origin
++                }
++            } else {
++                origin
++            }
++        );
+         let messages = owner.states.chat.drain(admitted.game_session_id);
+-        let expected_message = if allowed { &callback.success_message } else { &callback.failure_message };
++        let expected_message = if allowed {
++            &callback.success_message
++        } else {
++            &callback.failure_message
++        };
+         if let Some(expected_message) = expected_message {
+             assert_eq!(messages.iter().filter(|line| matches!(line,
+                 oteryn_protocol_oteryn::chat::ChatLine::Private {text, ..} if text == expected_message)).count(), 1);
+         }
+-        let after = owner.root.read_character_quest_state(&authority, fence.character_id).await.map_err(debug)?;
++        let after = owner
++            .root
++            .read_character_quest_state(&authority, fence.character_id)
++            .await
++            .map_err(debug)?;
+         assert_eq!(before, after, "literal USE changed durable quest state");
+-        let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts").fetch_one(&h.pool).await?;
++        let receipts: i64 =
++            sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
++                .fetch_one(&h.pool)
++                .await?;
+         assert_eq!(receipts, receipts_before);
+-        eprintln!("QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED {} stage={stage:?} allowed={allowed} tracks_unchanged receipts_unchanged revision_unchanged duration={:?}", callback.key, started.elapsed());
++        eprintln!(
++            "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED {} stage={stage:?} missing={missing:?} allowed={allowed} tracks_unchanged receipts_unchanged revision_unchanged duration={:?}",
++            callback.key,
++            started.elapsed()
++        );
+         drop(owner);
+         drop(authority);
+         drop(seal);
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs
+index cf3adf79e..40245c3ee 100644
+--- a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs
+@@ -22,6 +22,7 @@ fn scenario_case(
+     lever_fixture: bool,
+     stateless_destination: Option<Position>,
+ ) -> TestResult {
++    let paired_plate = name == "l5-thais-plate";
+     let monk = name.starts_with("monk-guidance");
+     let classic_npc = matches!(
+         name,
+@@ -38,7 +39,9 @@ fn scenario_case(
+     );
+     let rotten_purchase = name == "rotten-blood-access-purchase";
+     let target_swap = name == "fish-napping-key-target-swap";
+-    let mut callback = callback(if classic_npc {
++    let mut callback = callback(if paired_plate {
++        "thais-lighthouse-stairs-in"
++    } else if classic_npc {
+         "behemoth"
+     } else if rotten_purchase {
+         "rotten-blood/sacrifice"
+@@ -65,7 +68,11 @@ fn scenario_case(
+     if stateless_destination.is_some() {
+         assert_eq!(callback.selector.position, Some(trigger));
+     }
+-    let world = world(&callback, trigger)?;
++    let world = if paired_plate {
++        super::world_ordinal(&callback, trigger, 431, 1)?
++    } else {
++        world(&callback, trigger)?
++    };
+     run(async |admin| {
+         let h = Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false)
+             .await?;
+@@ -141,6 +148,17 @@ fn scenario_case(
+                 .catalogue()
+                 .clone(),
+         ));
++        if paired_plate {
++            let departure = super::callback("thais-lighthouse-stairs-out")?;
++            assert!(
++                owner
++                    .states
++                    .quest_callbacks
++                    .fixture
++                    .set(vec![callback.clone(), departure])
++                    .is_ok()
++            );
++        }
+         if lever_fixture || target_swap {
+             assert!(
+                 owner
+@@ -197,7 +215,17 @@ fn scenario_case(
+         owner.admit_progression_session(&mut admitted).await;
+         deps.initialize(&owner).await;
+         owner.admit_quest_session(&admitted).await;
+-        if let Some(expected_destination) = stateless_destination {
++        if paired_plate {
++            super::super::questpc5_l5::exercise_plate(
++                &owner,
++                &mut admitted,
++                &h,
++                deps.actor,
++                &callback,
++                trigger,
++            )
++            .await?;
++        } else if let Some(expected_destination) = stateless_destination {
+             super::stateless::exercise(
+                 &owner,
+                 &mut admitted,
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc5_l5.rs b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc5_l5.rs
+new file mode 100644
+index 000000000..762836a98
+--- /dev/null
++++ b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc5_l5.rs
+@@ -0,0 +1,203 @@
++//! L5 paired plate departure, through the real STEP command.
++use super::TestResult;
++use oteryn_gameplay_quests::quest::world_callbacks::Position;
++
++pub(super) async fn exercise_plate(
++    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
++    admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
++    h: &super::fixture::Harness,
++    actor: crate::foundation::ExactActorRef,
++    callback: &oteryn_gameplay_quests::quest::world_callbacks::Callback,
++    trigger: Position,
++) -> TestResult {
++    use super::fixture::debug;
++    use crate::map::view::MapFacts;
++    use oteryn_protocol_oteryn::world_spatial::{
++        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
++        encode_step_intent,
++    };
++    let fence = owner
++        .current_quest_fence(admitted.game_session_id)
++        .await
++        .map_err(|()| "fence")?
++        .ok_or("fence")?;
++    owner
++        .runtime
++        .lock()
++        .await
++        .bind_attacker_lease(
++            actor,
++            admitted.game_session_id,
++            crate::foundation::CharacterLease::new(
++                crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
++                    .map_err(debug)?,
++                fence.character_lease_generation,
++            )
++            .map_err(debug)?,
++        )
++        .map_err(debug)?;
++    let before = owner
++        .root
++        .read_character_quest_state(owner.character, fence.character_id)
++        .await
++        .map_err(debug)?;
++    let count = || {
++        sqlx::query_scalar::<_, i64>(
++        "SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid"
++    ).bind(fence.character_id.as_bytes().as_slice())
++    };
++    let receipts = count().fetch_one(&h.pool).await?;
++    let map = owner.bundle_map().ok_or("map")?;
++    let passage = &callback.passages[0];
++    let stairs = crate::map::view::placement_key(
++        crate::map::overlay::TilePos {
++            x: passage.position.x,
++            y: passage.position.y,
++            floor: passage.position.floor,
++        },
++        1,
++    )
++    .ok_or("stairs key")?;
++    let plate = crate::map::view::placement_key(
++        crate::map::overlay::TilePos {
++            x: trigger.x,
++            y: trigger.y,
++            floor: trigger.floor,
++        },
++        1,
++    )
++    .ok_or("plate key")?;
++    let appearance = |key| -> TestResult<u16> {
++        let (position, ordinal) = crate::map::view::placement_of(key).ok_or("placement")?;
++        let tile = map
++            .overlay
++            .base()
++            .tile(position.x, position.y, position.floor)
++            .ok_or("tile")?;
++        let id = tile
++            .ids()
++            .iter()
++            .zip(tile.depths())
++            .filter(|(_, depth)| **depth == 0)
++            .nth(usize::from(ordinal))
++            .map(|(id, _)| *id)
++            .ok_or("palette")?;
++        Ok(map
++            .facts
++            .base_entry(position, ordinal, id)
++            .ok_or("facts")?
++            .appearance_id)
++    };
++    let mut pressed = None;
++    for (command, direction, expected_stairs, expected_plate) in [
++        (1, StepDirection::East, 7767, 430),
++        (2, StepDirection::West, 429, 431),
++        (3, StepDirection::East, 7767, 430),
++        (4, StepDirection::West, 429, 431),
++    ] {
++        let response = super::quest_world_callbacks::wire(
++            owner,
++            admitted,
++            command,
++            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
++            encode_step_intent(direction),
++        )
++        .await?;
++        assert_eq!(
++            decode_step_result(&response).map_err(debug)?,
++            StepDisposition::Moved
++        );
++        assert_eq!(
++            appearance(stairs)?,
++            expected_stairs,
++            "stairs after command {command}"
++        );
++        assert_eq!(
++            appearance(plate)?,
++            expected_plate,
++            "plate after command {command}"
++        );
++        assert_eq!(map.facts.object_revision(stairs), command);
++        if command == 3 {
++            pressed = Some((
++                owner
++                    .runtime
++                    .lock()
++                    .await
++                    .read_actor_position(actor)
++                    .map_err(debug)?,
++                map.facts.object_revision(plate),
++            ));
++        }
++    }
++    let departure = oteryn_gameplay_quests::quest::world_callbacks::load()?
++        .into_iter()
++        .find(|callback| callback.key.ends_with("thais-lighthouse-stairs-out"))
++        .ok_or("departure")?;
++    let entered = owner
++        .runtime
++        .lock()
++        .await
++        .read_actor_position(actor)
++        .map_err(debug)?;
++    // A newer map projection supersedes an older cancelled departure. Replaying
++    // the old event must neither pin the session nor overwrite that newer state.
++    let (pressed, revision) = pressed.ok_or("pressed snapshot")?;
++    let stairs_revision = map.facts.object_revision(stairs);
++    assert!(owner.queue_non_mutating_step_for_test(
++        actor,
++        admitted.game_session_id,
++        pressed,
++        entered,
++        &departure,
++        (plate, revision)
++    ));
++    let response = super::quest_world_callbacks::wire(
++        owner,
++        admitted,
++        5,
++        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
++        encode_step_intent(StepDirection::East),
++    )
++    .await?;
++    assert_eq!(
++        decode_step_result(&response).map_err(debug)?,
++        StepDisposition::Moved
++    );
++    assert_eq!(appearance(stairs)?, 7767);
++    assert_eq!(appearance(plate)?, 430);
++    assert_eq!(map.facts.object_revision(stairs), stairs_revision + 1);
++    assert!(!owner.has_pending_quest_callback(admitted.game_session_id));
++    let after = owner
++        .root
++        .read_character_quest_state(owner.character, fence.character_id)
++        .await
++        .map_err(debug)?;
++    assert_eq!(before, after);
++    assert_eq!(count().fetch_one(&h.pool).await?, receipts);
++    Ok(())
++}
++
++#[test]
++fn questpc5_l5_thais_plate_departure_restores_stairs_without_quest_writes() -> TestResult {
++    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
++        return Ok(());
++    }
++    let started = std::time::Instant::now();
++    super::kill_reward_e2e::scenario_thread::run("l5-thais-plate", || {
++        super::quest_world_callbacks::scenario(
++            "l5-thais-plate",
++            Position {
++                x: 32224,
++                y: 32282,
++                floor: -9,
++            },
++            false,
++        )
++    })?;
++    eprintln!(
++        "POSTGRES_CASE_COMPLETED questpc5_l5_thais_plate_departure_restores_stairs_without_quest_writes duration={:?}",
++        started.elapsed()
++    );
++    Ok(())
++}
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs b/crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs
+index 98e2d27a9..849e4bfad 100644
+--- a/crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs
+@@ -236,6 +236,50 @@ impl ComposedFreshAdmission<'_, '_, '_> {
+         callbacks()
+     }
+ 
++    #[cfg(test)]
++    pub(super) fn queue_non_mutating_step_for_test(
++        &self,
++        actor: ExactActorRef,
++        session: GameSessionId,
++        origin: MovementPositionSnapshot,
++        entered: MovementPositionSnapshot,
++        callback: &Callback,
++        placement: (u64, u64),
++    ) -> bool {
++        if !(callback.is_read_only() && callback.trigger == Trigger::StepIn
++            || callback.trigger == Trigger::StepOut && callback.storage.is_empty())
++        {
++            return false;
++        }
++        let Some(command) = step_command(actor, session, entered.revision(), self.reset_epoch)
++        else {
++            return false;
++        };
++        let Ok(mut records) = self.states.quest_callbacks.records.lock() else {
++            return false;
++        };
++        if records.contains_key(&session) {
++            return false;
++        }
++        // Exact volatile record left when the read-only STEP future is cancelled.
++        records.insert(
++            session,
++            Pending {
++                actor,
++                session,
++                expected: entered,
++                callback: callback.key.clone(),
++                key: placement.0,
++                revision: placement.1,
++                cause: QuestCause::Step(command),
++                origin: Some(origin),
++                context: None,
++                ingress_settled: false,
++            },
++        );
++        true
++    }
++
+     /// Before further player input, reconcile an interrupted commit with its original cause.
+     /// The Channel's existing input gate closes a connection if a result is still unknown.
+     pub(super) async fn reconcile_quest_callbacks(&self, session: GameSessionId) -> bool {
+@@ -266,6 +310,51 @@ impl ComposedFreshAdmission<'_, '_, '_> {
+             else {
+                 return false;
+             };
++            if callback.is_read_only()
++                && matches!(pending.cause, QuestCause::Step(_))
++                && pending.context.is_none()
++            {
++                let Some(origin) = pending.origin else {
++                    return false;
++                };
++                if self.runtime.lock().await.read_actor_position(pending.actor)
++                    != Ok(pending.expected)
++                {
++                    return false;
++                }
++                {
++                    let Ok(mut records) = self.states.quest_callbacks.records.lock() else {
++                        return false;
++                    };
++                    if !records.get(&session).is_some_and(|current| {
++                        current.actor == pending.actor
++                            && current.expected == pending.expected
++                            && current.callback == pending.callback
++                            && current.cause == pending.cause
++                            && current.key == pending.key
++                            && current.revision == pending.revision
++                            && current.context.is_none()
++                    }) {
++                        return false;
++                    }
++                    // A cancelled read reserved no mutation. The volatile record
++                    // is not an access proof: repeat the fenced read on re-entry.
++                    records.remove(&session);
++                }
++                self.movement_quest_callback(
++                    &permit,
++                    pending.actor,
++                    session,
++                    origin,
++                    pending.expected,
++                    Trigger::StepIn,
++                )
++                .await;
++                if self.has_pending_quest_callback(session) {
++                    return false;
++                }
++                continue;
++            }
+             let Ok(Some(fence)) = self.current_quest_fence(pending.session).await else {
+                 return false;
+             };
+@@ -278,6 +367,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
+             if runtime.read_actor_position(pending.actor) != Ok(pending.expected) {
+                 return false;
+             }
++            if callback.trigger == Trigger::StepOut
++                && matches!(pending.cause, QuestCause::Step(_))
++                && pending.context.is_none()
++            {
++                let revision = map.facts.object_revision(pending.key);
++                if revision == u64::MAX {
++                    return false;
++                }
++                if revision > pending.revision {
++                    let Ok(mut records) = self.states.quest_callbacks.records.lock() else {
++                        return false;
++                    };
++                    if !records.get(&session).is_some_and(|current| {
++                        current.actor == pending.actor
++                            && current.expected == pending.expected
++                            && current.callback == pending.callback
++                            && current.cause == pending.cause
++                            && current.key == pending.key
++                            && current.revision == pending.revision
++                            && current.context.is_none()
++                    }) {
++                        return false;
++                    }
++                    // A later pressure event already owns this projection.
++                    // An older stateless departure must not overwrite it.
++                    records.remove(&session);
++                    continue;
++                }
++            }
+             let result = self
+                 .execute_quest_callback(
+                     &permit,
+@@ -485,11 +603,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
+         session: GameSessionId,
+         origin: MovementPositionSnapshot,
+         entered: MovementPositionSnapshot,
++    ) -> MovementPositionSnapshot {
++        if origin.position() == entered.position() {
++            return entered;
++        }
++        let entered = self
++            .movement_quest_callback(permit, actor, session, origin, entered, Trigger::StepOut)
++            .await;
++        if self.has_pending_quest_callback(session) {
++            return entered;
++        }
++        self.movement_quest_callback(permit, actor, session, origin, entered, Trigger::StepIn)
++            .await
++    }
++
++    // Both events observe the same committed movement. Departure selects the
++    // original tile and settles before entry can operate on the destination.
++    async fn movement_quest_callback(
++        &self,
++        permit: &SpellLanePermit,
++        actor: ExactActorRef,
++        session: GameSessionId,
++        origin: MovementPositionSnapshot,
++        entered: MovementPositionSnapshot,
++        trigger: Trigger,
+     ) -> MovementPositionSnapshot {
+         let Some(map) = self.bundle_map() else {
+             return entered;
+         };
+-        let Some(at) = native(entered.position()) else {
++        let observed = if trigger == Trigger::StepOut {
++            origin
++        } else {
++            entered
++        };
++        let Some(at) = native(observed.position()) else {
+             return entered;
+         };
+         let Some(base) = map.overlay.base().tile(at.x, at.y, at.floor) else {
+@@ -504,7 +651,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
+                 Some(
+                     self.callback_content()
+                         .iter()
+-                        .filter(move |c| c.trigger == Trigger::StepIn && matches(map, c, key))
++                        .filter(move |c| c.trigger == trigger && matches(map, c, key))
+                         .map(move |c| (c, key)),
+                 )
+             })
+@@ -530,14 +677,63 @@ impl ComposedFreshAdmission<'_, '_, '_> {
+                 None => None,
+             };
+             let optional_pvp = self.special_movement_policy(permit, actor, session).await;
++            let read_only_gate = if callback.is_read_only() {
++                let context = {
++                    let runtime = self.runtime.lock().await;
++                    if runtime.read_actor_position(actor) != Ok(entered) {
++                        return entered;
++                    }
++                    QuestWorldContext {
++                        map_revision: crate::map::overlay::map_revision(map.overlay.base()),
++                        content_revision: format!(
++                            "sha256:{}",
++                            hex(&runtime.content_pin().server_artifact_digest())
++                        ),
++                        placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
++                        reset_epoch: self.reset_epoch,
++                        actor_placement: actor.placement_identity(),
++                        movement_revision: entered.revision(),
++                    }
++                };
++                match (fence, self.quest_catalogue.as_ref()) {
++                    (Some(fence), Some(catalogue))
++                        if matches!(
++                            self.root
++                                .check_character_world_callback(
++                                    self.character,
++                                    self.holder,
++                                    fence,
++                                    &callback.key,
++                                    std::sync::Arc::clone(catalogue),
++                                    permit,
++                                    context,
++                                )
++                                .await,
++                            Ok(true)
++                        ) =>
++                    {
++                        Some(ReadOnlyGate {
++                            actor,
++                            session,
++                            expected: entered,
++                            callback: callback.key.clone(),
++                        })
++                    }
++                    _ => None,
++                }
++            } else {
++                None
++            };
+             let mut runtime = self.runtime.lock().await;
+             let mut states = self.states.spell_states.lock().await;
+             if runtime.read_actor_position(actor) != Ok(entered) {
+                 return entered;
+             }
+             let revision = map.facts.object_revision(*key);
+-            let result = self
+-                .execute_quest_callback(
++            let result = if callback.is_read_only() && read_only_gate.is_none() {
++                UseDisposition::Rejected
++            } else {
++                self.execute_quest_callback(
+                     permit,
+                     &mut runtime,
+                     &mut states,
+@@ -551,9 +747,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
+                     fence,
+                     slot.as_mut(),
+                     optional_pvp,
+-                    None,
++                    read_only_gate.as_ref(),
+                 )
+-                .await;
++                .await
++            };
+             let unresolved =
+                 self.states
+                     .quest_callbacks
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs b/crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs
+index 0659a78c9..963e3f315 100644
+--- a/crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs
+@@ -54,9 +54,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
+         if map.facts.object_revision(key) != expected_revision {
+             return UseDisposition::StaleState;
+         }
+-        let close = callback
+-            .lever
+-            .is_some_and(|pair| after.appearance_id == pair[1]);
++        let close = match callback.trigger {
++            Trigger::Use => callback
++                .lever
++                .is_some_and(|pair| after.appearance_id == pair[1]),
++            Trigger::StepIn => false,
++            Trigger::StepOut => true,
++        };
+         if close && !callback.reversible {
+             return UseDisposition::NothingToUse;
+         }
+@@ -79,6 +83,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
+             let passage = passage_definition;
+             let p = tile(passage.position);
+             if close
++                && callback.trigger == Trigger::Use
+                 && super::super::map_door::doorway_occupied(
+                     runtime,
+                     actor,
+diff --git a/crates/gameplay/quests/src/quest/world_callbacks.rs b/crates/gameplay/quests/src/quest/world_callbacks.rs
+index a3ae99c70..a79063253 100644
+--- a/crates/gameplay/quests/src/quest/world_callbacks.rs
++++ b/crates/gameplay/quests/src/quest/world_callbacks.rs
+@@ -24,6 +24,7 @@ pub struct Position {
+ pub enum Trigger {
+     Use,
+     StepIn,
++    StepOut,
+ }
+ 
+ #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+@@ -177,7 +178,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
+             || unique_storage.len() != callback.storage.len()
+             || (callback.storage.iter().any(|storage| storage.read_only)
+                 && (!callback.is_read_only()
+-                    || callback.trigger != Trigger::Use
++                    || !matches!(callback.trigger, Trigger::Use | Trigger::StepIn)
+                     || callback.teleport.is_none()
+                     || callback.lever.is_some()
+                     || !callback.passages.is_empty()
+@@ -246,7 +247,28 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
+                 .is_some_and(|rule| !valid_native_callback(callback, rule))
+             || callback
+                 .lever
+-                .is_some_and(|p| p[0] == p[1] || callback.trigger != Trigger::Use)
++                .is_some_and(|p| {
++                    p[0] == p[1]
++                        || (callback.trigger != Trigger::Use
++                            && (!callback.reversible
++                                || !callback.storage.is_empty()
++                                || callback.teleport.is_some()
++                                || !callback.offerings.is_empty()
++                                || callback.item_on_target.is_some()))
++                })
++            // Departure restores Channel-local map facts only. It must never
++            // introduce another durable transition for the same movement cause.
++            || (callback.trigger == Trigger::StepOut
++                && (!callback.reversible
++                    || callback.teleport.is_some()
++                    || !callback.storage.is_empty()
++                    || !callback.offerings.is_empty()
++                    || callback.item_on_target.is_some()
++                    || callback.minimum_level.is_some()
++                    || callback.experience.is_some()
++                    || callback.monk_reward.is_some()
++                    || callback.native_rule.is_some()
++                    || callback.return_on_failure))
+             || callback.passages.iter().any(|p| !valid_pos(p.position))
+             || callback.offerings.iter().any(|o| {
+                 !valid_pos(o.position)
+@@ -364,7 +386,7 @@ mod tests {
+             match case {
+                 0 => callback["experience"] = 1.into(),
+                 1 => callback["storage"][0]["preserve"] = true.into(),
+-                2 => callback["trigger"] = "step_in".into(),
++                2 => callback["trigger"] = "step_out".into(),
+                 _ => callback["teleport"] = serde_json::Value::Null,
+             }
+             assert!(
+diff --git a/crates/gameplay/quests/src/quest/world_callbacks/batch4_tests.rs b/crates/gameplay/quests/src/quest/world_callbacks/batch4_tests.rs
+index 4b4e9df4c..9ee1335f4 100644
+--- a/crates/gameplay/quests/src/quest/world_callbacks/batch4_tests.rs
++++ b/crates/gameplay/quests/src/quest/world_callbacks/batch4_tests.rs
+@@ -20,6 +20,44 @@ fn callbacks(value: serde_json::Value) -> Result<Vec<Callback>, String> {
+     parse(&serde_json::json!({"schema":1,"callbacks":[value]}).to_string())
+ }
+ 
++#[test]
++fn paired_plate_departure_rejects_quest_writes_and_teleport() -> Result<(), String> {
++    let mut value = base();
++    value["trigger"] = "step_out".into();
++    value["lever"] = serde_json::json!([431, 430]);
++    value["reversible"] = true.into();
++    assert_eq!(callbacks(value.clone())?.len(), 1);
++    for (field, extra) in [
++        (
++            "teleport",
++            serde_json::json!({"x": 100, "y": 200, "floor": -7}),
++        ),
++        (
++            "storage",
++            serde_json::json!([{"track": "oteryn:track/fixture", "minimum": -1, "maximum": 1, "set": 1}]),
++        ),
++    ] {
++        let mut invalid = value.clone();
++        invalid[field] = extra;
++        assert!(callbacks(invalid).is_err(), "departure accepted {field}");
++    }
++    Ok(())
++}
++
++#[test]
++fn read_only_step_does_not_acquire_a_write_transition() -> Result<(), String> {
++    let mut value = base();
++    value["teleport"] = serde_json::json!({"x": 100, "y": 200, "floor": -7});
++    value["storage"] = serde_json::json!([
++        {"track": dance::QUESTLINE_TRACK, "minimum": 1, "maximum": 1, "set": 1, "read_only": true}
++    ]);
++    let callbacks = callbacks(value)?;
++    let catalogue = catalogue(&callbacks)?;
++    assert!(callbacks[0].is_read_only());
++    assert!(catalogue.transition(&callbacks[0].key).is_none());
++    Ok(())
++}
++
+ fn catalogue(callbacks: &[Callback]) -> Result<QuestStateCatalogue, String> {
+     let lowered = crate::quest::loader::load_embedded_quest_state("content-1")
+         .map_err(|e| format!("{e:?}"))?;
+diff --git a/tools/content-schema/quest-authoring/batches/quests4/formogar_mine_hoist.json b/tools/content-schema/quest-authoring/batches/quests4/formogar_mine_hoist.json
+index 41af450f2..2d5d955a1 100644
+--- a/tools/content-schema/quest-authoring/batches/quests4/formogar_mine_hoist.json
++++ b/tools/content-schema/quest-authoring/batches/quests4/formogar_mine_hoist.json
+@@ -27,14 +27,14 @@
+           "minimum": 1,
+           "maximum": 1,
+           "set": 1,
+-          "preserve": true
++          "read_only": true
+         },
+         {
+           "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_chest",
+           "minimum": 1,
+           "maximum": 1,
+           "set": 1,
+-          "preserve": true
++          "read_only": true
+         }
+       ],
+       "offerings": [],
+@@ -74,14 +74,14 @@
+           "minimum": 1,
+           "maximum": 1,
+           "set": 1,
+-          "preserve": true
++          "read_only": true
+         },
+         {
+           "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_chest",
+           "minimum": 1,
+           "maximum": 1,
+           "set": 1,
+-          "preserve": true
++          "read_only": true
+         }
+       ],
+       "offerings": [],
+diff --git a/tools/content-schema/quest-authoring/batches/quests4/thais_lighthouse.json b/tools/content-schema/quest-authoring/batches/quests4/thais_lighthouse.json
+index dcf411f97..5f0434c48 100644
+--- a/tools/content-schema/quest-authoring/batches/quests4/thais_lighthouse.json
++++ b/tools/content-schema/quest-authoring/batches/quests4/thais_lighthouse.json
+@@ -41,6 +41,78 @@
+         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:7",
+         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:42"
+       ]
++    },
++    {
++      "key": "oteryn:quest-callback/thais-lighthouse-stairs-in",
++      "quest": "oteryn:quest.thais_lighthouse_quest",
++      "trigger": "step_in",
++      "selector": {
++        "position": null,
++        "unique": 25010,
++        "action": null,
++        "appearance": null
++      },
++      "lever": [
++        431,
++        430
++      ],
++      "reversible": true,
++      "passages": [
++        {
++          "position": {
++            "x": 32225,
++            "y": 32282,
++            "floor": -9
++          },
++          "appearance": 429,
++          "replacement": 7767
++        }
++      ],
++      "teleport": null,
++      "storage": [],
++      "offerings": [],
++      "item_on_target": null,
++      "return_on_failure": false,
++      "failure_message": null,
++      "sources": [
++        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/movement-stair.lua:6-18"
++      ]
++    },
++    {
++      "key": "oteryn:quest-callback/thais-lighthouse-stairs-out",
++      "quest": "oteryn:quest.thais_lighthouse_quest",
++      "trigger": "step_out",
++      "selector": {
++        "position": null,
++        "unique": 25010,
++        "action": null,
++        "appearance": null
++      },
++      "lever": [
++        431,
++        430
++      ],
++      "reversible": true,
++      "passages": [
++        {
++          "position": {
++            "x": 32225,
++            "y": 32282,
++            "floor": -9
++          },
++          "appearance": 429,
++          "replacement": 7767
++        }
++      ],
++      "teleport": null,
++      "storage": [],
++      "offerings": [],
++      "item_on_target": null,
++      "return_on_failure": false,
++      "failure_message": null,
++      "sources": [
++        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/movement-stair.lua:24-35"
++      ]
+     }
+   ],
+   "runtime_exclusions": [],
+diff --git a/tools/content-schema/quest-authoring/quest_batch4.py b/tools/content-schema/quest-authoring/quest_batch4.py
+index 82b619b5d..363674ada 100644
+--- a/tools/content-schema/quest-authoring/quest_batch4.py
++++ b/tools/content-schema/quest-authoring/quest_batch4.py
+@@ -227,7 +227,14 @@ def validate_callback(callback, directory):
+     require(valid_key(key) and key.startswith('oteryn:quest-callback/'), context + ': foreign or invalid key')
+     require(QUEST_OWNERS[directory] is not None and callback['quest'] == QUEST_OWNERS[directory],
+             key + ': foreign quest owner or owner not qualified')
+-    require(callback['trigger'] in ('use', 'step_in'), key + ': invalid trigger')
++    require(callback['trigger'] in ('use', 'step_in', 'step_out'), key + ': invalid trigger')
++    if callback['trigger'] == 'step_out':
++        require(callback['reversible'] and not callback.get('teleport')
++                and not callback['storage'] and not callback['offerings']
++                and not callback.get('item_on_target') and not callback.get('minimum_level')
++                and not callback.get('experience') and not callback.get('monk_reward')
++                and not callback.get('native_rule') and not callback['return_on_failure'],
++                key + ': departure must only restore map facts')
+     selector = callback['selector']
+     selector_fields = {'position', 'unique', 'action', 'appearance'}
+     fields(selector, set(), selector_fields, key + ': selector')
+@@ -242,7 +249,10 @@ def validate_callback(callback, directory):
+     lever = callback.get('lever')
+     if lever is not None:
+         require(isinstance(lever, list) and len(lever) == 2 and lever[0] != lever[1]
+-                and all(integer(value, 0, 65535) for value in lever) and callback['trigger'] == 'use',
++                and all(integer(value, 0, 65535) for value in lever)
++                and (callback['trigger'] == 'use' or callback['reversible']
++                     and not callback['storage'] and not callback.get('teleport')
++                     and not callback['offerings'] and not callback.get('item_on_target')),
+                 key + ': invalid lever')
+     if callback.get('teleport') is not None:
+         position(callback['teleport'], key + ': teleport')
+@@ -262,7 +272,7 @@ def validate_callback(callback, directory):
+     if any(entry.get('read_only', False) for entry in callback['storage']):
+         require(all(entry.get('read_only', False) and not entry.get('preserve', False)
+                     for entry in callback['storage'])
+-                and callback['trigger'] == 'use' and callback.get('teleport') is not None
++                and callback['trigger'] in ('use', 'step_in') and callback.get('teleport') is not None
+                 and not callback.get('lever') and not callback['passages']
+                 and not callback['offerings'] and not callback.get('item_on_target')
+                 and callback.get('minimum_level') is None and callback.get('experience') is None
+diff --git a/tools/content-schema/quest-authoring/samples/completion242/source-fix-approval.json b/tools/content-schema/quest-authoring/samples/completion242/source-fix-approval.json
+index d6098f574..b2a029a12 100644
+--- a/tools/content-schema/quest-authoring/samples/completion242/source-fix-approval.json
++++ b/tools/content-schema/quest-authoring/samples/completion242/source-fix-approval.json
+@@ -494,7 +494,7 @@
+     },
+     {
+       "path": "content/quests/world-callbacks.json",
+-      "sha256": "c57297aabe3763a3d35f56e83dbbd16487ff56c121de0ca9691a8267a16dc8ad"
++      "sha256": "ad01a79b59a83e2c788d98e1f082ab4d1361b6926ae20839f7ac9dad3ea55552"
+     },
+     {
+       "path": "tools/content-schema/quest-authoring/samples/comment-write-fix/evidence.json",
+diff --git a/tools/content-schema/quest-authoring/samples/completion242/source-fix-receipt.json b/tools/content-schema/quest-authoring/samples/completion242/source-fix-receipt.json
+index 5ac10285a..4f93441a3 100644
+--- a/tools/content-schema/quest-authoring/samples/completion242/source-fix-receipt.json
++++ b/tools/content-schema/quest-authoring/samples/completion242/source-fix-receipt.json
+@@ -1,7 +1,7 @@
+ {
+   "approval": {
+     "path": "tools/content-schema/quest-authoring/samples/completion242/source-fix-approval.json",
+-    "sha256": "47ccb80376d0e0caa6f6a921a7bede1fcdfa751d4bd38a7907939711f0785289"
++    "sha256": "8591d19cc3585e708c3ac676fdf6b64ce7e52caaa1a7a19533efa90e5a167cab"
+   },
+   "changes": [
+     {
+@@ -315021,7 +315021,7 @@
+     },
+     {
+       "path": "content/quests/world-callbacks.json",
+-      "sha256": "c57297aabe3763a3d35f56e83dbbd16487ff56c121de0ca9691a8267a16dc8ad"
++      "sha256": "ad01a79b59a83e2c788d98e1f082ab4d1361b6926ae20839f7ac9dad3ea55552"
+     },
+     {
+       "path": "tools/content-schema/quest-authoring/samples/comment-write-fix/evidence.json",
+diff --git a/tools/content-schema/quest-authoring/test_quest_batch4.py b/tools/content-schema/quest-authoring/test_quest_batch4.py
+index 1a2d8bf6e..869461ecd 100644
+--- a/tools/content-schema/quest-authoring/test_quest_batch4.py
++++ b/tools/content-schema/quest-authoring/test_quest_batch4.py
+@@ -44,6 +44,31 @@ def packet(directory):
+ 
+ 
+ class QuestBatch4Tests(unittest.TestCase):
++    def test_hoist_step_reads_both_instructions_without_a_write(self):
++        source = Path(__file__).parent / 'batches/quests4/formogar_mine_hoist.json'
++        row = json.loads(source.read_text())['callbacks'][0]
++        for storage in row['storage']:
++            storage.pop('preserve', None)
++            storage['read_only'] = True
++        tool.validate_callback(row, 'formogar_mine_hoist')
++        mixed = copy.deepcopy(row)
++        mixed['storage'][1]['read_only'] = False
++        with self.assertRaises(ValueError):
++            tool.validate_callback(mixed, 'formogar_mine_hoist')
++
++    def test_paired_plate_departure_is_stateless_and_cannot_teleport(self):
++        row = callback('thais_lighthouse', 'thais-lighthouse-stairs-out')
++        row.update(trigger='step_out', teleport=None, lever=[431, 430], reversible=True)
++        tool.validate_callback(row, 'thais_lighthouse')
++        for field, value in [('teleport', {'x': 100, 'y': 200, 'floor': -7}),
++                             ('storage', [{'track': 'oteryn:track/fixture',
++                                           'minimum': -1, 'maximum': 1, 'set': 1}])]:
++            with self.subTest(field=field):
++                invalid = copy.deepcopy(row)
++                invalid[field] = value
++                with self.assertRaises(ValueError):
++                    tool.validate_callback(invalid, 'thais_lighthouse')
++
+     def setUp(self):
+         self.temporary = tempfile.TemporaryDirectory()
+         self.addCleanup(self.temporary.cleanup)

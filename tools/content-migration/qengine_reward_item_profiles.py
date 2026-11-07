@@ -105,10 +105,15 @@ def admit(root,generated,profile_path,manifest_path,order,canonical):
             if prior == record:
                 continue
             # A source-qualified recipe can promote an inert canonical shell;
-            # never replace an already materializable provider or known facts.
-            if (prior['admission'] != {'materializable': False,
-                    'stack_class': record['admission']['stack_class'],
-                    'legal_destinations': ['Ground']}
+            # never replace a richer provider or contradict its known facts.
+            inert_shell = prior['admission'] == {
+                'materializable': False, 'stack_class': record['admission']['stack_class'],
+                'legal_destinations': ['Ground']}
+            portable_shell = (prior['admission'] == record['admission']
+                and prior['attributes'] == {'speed_bonus': 0}
+                and prior['authoring'] == {'item': {'family': 'Item', 'key': key,
+                    'revision': record['production_definition']['revision_ref']}})
+            if (not (inert_shell or portable_shell)
                     or prior['production_definition'] != record['production_definition']
                     or accepted.accepted_first(prior['semantics'], record['semantics'])
                        != record['semantics']):

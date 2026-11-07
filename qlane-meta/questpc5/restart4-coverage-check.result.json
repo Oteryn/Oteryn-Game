@@ -1,0 +1,5 @@
+{
+  "command": "python3 tools/content-schema/quest-authoring/quest_callback_coverage.py --canary .questpc/sources/canary --crystal .questpc/sources/crystal --check",
+  "exit": 0,
+  "duration_seconds": 0.278
+}

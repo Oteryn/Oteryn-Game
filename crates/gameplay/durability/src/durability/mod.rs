@@ -51,6 +51,7 @@ pub mod staff;
 pub mod task_board;
 pub mod terrain_tool;
 pub mod tibiadrome;
+pub mod tutorial_viola;
 pub mod vip;
 pub mod vip_presence;
 // End sorted module declarations.

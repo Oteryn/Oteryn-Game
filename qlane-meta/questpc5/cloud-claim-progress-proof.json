@@ -1,0 +1,157 @@
+{
+  "batch": "native claim progress obligations",
+  "base_commit": "f78cf159d8a2eef2703091197ea661d26537137a",
+  "postgres_version": "18.6",
+  "rule_file": "tools/content-schema/quest-authoring/native-claim-progress.json",
+  "assumption": "The construction plans teach the hoist chest instruction. This repairs the missing FormorgarMinesHoistChest writer: all three retained movement scripts read that flag, but UID6214 writes FormorgarGlacierChest. Keep the separate skeleton instruction mandatory. The owner explicitly authorized conservative rules for missing source mechanisms.",
+  "scope": "Construction-plan acquisition participant only. Complete Hoist route remains active work.",
+  "red": {
+    "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib questpc5_hoist_construction_plan_claim_writes_instruction_and_replays -- --nocapture",
+    "exit_code": 101,
+    "evidence": [
+      "POSTGRES_CASE_OBSERVED instruction_claim=oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_chest cold_replay=false access=None duration=6.522168683s",
+      "  left: None",
+      " right: Some(1)",
+      "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2538 filtered out; finished in 45.61s"
+    ]
+  },
+  "green": {
+    "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib questpc5_hoist_construction_plan_claim_writes_instruction_and_replays -- --nocapture",
+    "exit_code": 0,
+    "evidence": [
+      "POSTGRES_CASE_OBSERVED instruction_claim=oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_chest cold_replay=false access=Some(1) duration=6.601863465s",
+      "POSTGRES_CASE_OBSERVED instruction_claim=oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_chest cold_replay=true access=Some(1) duration=8.134412762s",
+      "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_chest (32027, 31104, -11) native_source=true duration=8.433965618s",
+      "POSTGRES_CASE_COMPLETED questpc5_hoist_construction_plan_claim_writes_instruction_and_replays 48.101837679s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2538 filtered out; finished in 48.10s"
+    ]
+  },
+  "checks": {
+    "instruction-pin-check": {
+      "command": "cargo run --locked --release -q -p oteryn-world-bundle-compiler -- pin-check . /tmp/questpc5-instruction-pin-check",
+      "exit_code": 0,
+      "evidence": [
+        "      \"digest\": \"2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968\","
+      ]
+    },
+    "instruction-check-final": {
+      "command": "cargo check --locked -p oteryn-gameplay-content -p oteryn-gameplay-quests -p oteryn-gameplay-dispatch",
+      "exit_code": 0,
+      "evidence": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 18.18s"
+      ]
+    },
+    "instruction-clippy-final": {
+      "command": "cargo clippy --locked -p oteryn-gameplay-content -p oteryn-gameplay-quests -p oteryn-gameplay-dispatch --all-targets --all-features -- -D warnings",
+      "exit_code": 0,
+      "evidence": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 44.33s"
+      ]
+    },
+    "instruction-loader-final": {
+      "command": "cargo test --locked -p oteryn-gameplay-quests --lib loader::tests",
+      "exit_code": 0,
+      "evidence": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.16s",
+        "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 253 filtered out; finished in 2.73s"
+      ]
+    },
+    "instruction-content-tests": {
+      "command": "cargo test --locked -p oteryn-game-server --test integration_rest content_ --quiet",
+      "exit_code": 0,
+      "evidence": [
+        "test result: ok. 123 passed; 0 failed; 0 ignored; 0 measured; 152 filtered out; finished in 3.14s"
+      ]
+    },
+    "instruction-world-tests": {
+      "command": "cargo test --locked -p oteryn-game-server --test content_world_project_repository --quiet",
+      "exit_code": 0,
+      "evidence": [
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 65.10s"
+      ]
+    },
+    "instruction-state-check": {
+      "command": "python tools/content-schema/quest-authoring/quest_state_lowering.py --check",
+      "exit_code": 0,
+      "evidence": [
+        "QuestState lowering: 97 quests, 1336 tracks, 3264 transitions; check=True"
+      ]
+    },
+    "instruction-rewards-check": {
+      "command": "python tools/content-schema/reward-claim-authoring/reward_claim_authoring.py content --check",
+      "exit_code": 0,
+      "evidence": [
+        "reward claim content check: ok"
+      ]
+    },
+    "claim-progress-unit-final": {
+      "command": "python -m unittest discover -s tools/content-schema/quest-authoring -p test_quest_claim_progress.py",
+      "exit_code": 0,
+      "evidence": [
+        "Ran 4 tests in 0.004s",
+        "OK"
+      ]
+    },
+    "state-unit-final": {
+      "command": "python -m unittest discover -s tools/content-schema/quest-authoring -p test_quest_state_lowering.py",
+      "exit_code": 0,
+      "evidence": [
+        "Ran 12 tests in 2.006s",
+        "OK"
+      ]
+    },
+    "test_reward_claim_variant_authoring.py": {
+      "command": "python -m unittest discover -s tools/content-schema/reward-claim-authoring -p test_reward_claim_variant_authoring.py",
+      "exit_code": 0,
+      "evidence": [
+        "Ran 13 tests in 16.603s",
+        "OK"
+      ]
+    },
+    "instruction-fmt-final": {
+      "command": "cargo fmt --all --check",
+      "exit_code": 0,
+      "evidence": []
+    }
+  },
+  "semantic_delta": {
+    "existing_quest_owners_changed": 0,
+    "quest_owners_added": [
+      "oteryn:quest.formogar_mine_hoist"
+    ],
+    "tracks_added": 1,
+    "transitions_added": 1,
+    "reward_changes": "Only quest_transition added to the existing UID6214 construction-plan claim; item/text/quantity/charge fields unchanged.",
+    "taxonomy_changes": "119 source_evidence/source_inputs/canonical_definitions_sha256 values refreshed by repository tooling; all 12252 taxonomy classifications and other facts unchanged.",
+    "world_pin": "2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968"
+  },
+  "log_sha256": {
+    "instruction-red-marked": "21d868c90f5b9a91fca8fcd549a3f28c227fae92358465332d805478050e5c7f",
+    "instruction-green-final": "9af8d3097b6468922cc9bd132f85910108940d07c06ac99817e413c0fd1b20e0",
+    "instruction-pin-check": "3516511cbd5e4417060d0aef077f9a62b7c7a7912baff3b614ba89af13ef087b",
+    "instruction-check-final": "31a6ba49610736c17a87fa41296785edb61c95ef58261884a8c00a14aed366d4",
+    "instruction-clippy-final": "6b262fb392269e706f3b012ddec9c2e7fdc1e760a2053a5cef9008c93969a96f",
+    "instruction-loader-final": "b8af539ccf8b0b77d541c8bcf88e220b2d014b3ba8ed54d4093865e56fbb8232",
+    "instruction-content-tests": "b176e811f51cfef86380b9953fa8c28d1a0fd9790ae299aff7ece5c200e955bc",
+    "instruction-world-tests": "99088445a1ccd2f4a81da5819cc7f1889f04a1245cb901573bb7c156ffeae34e",
+    "instruction-state-check": "1e83fc2aa4a1f0ec46baf95622b8037d0d12d1e29c548751ba9868a19610317d",
+    "instruction-rewards-check": "766d44c371f8afd6aa34b7ab3a4359590d8a32fc3c37048ddb65c26958d261f0",
+    "claim-progress-unit-final": "af55efa5c3ceb122f8184c380aa405d3f3b4e7e0c1e892773d0eff31d0645c8a",
+    "state-unit-final": "c534742c48db2e772be22c7322edf94465a89a3cbd2992534054920c0b2a7bf5",
+    "test_reward_claim_variant_authoring.py": "a389b87dece1de6541defb7d19a560959938255b8c071de523f787cc8e58b10d",
+    "instruction-fmt-final": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "reuse_discovery": {
+    "qengine2_head": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+    "engine_base": "dc1cd724b",
+    "next": "Reuse the delivered generic NPC rewards/outfits and world portal/item-cycle/encounter effects; preserve local read-only travel and source-progress work. The complete branch also carries unrelated main/workflow changes, so integrate the engine delta without importing protected-path changes.",
+    "other_lanes": "Latest questpc2/4/6/8 status records read; matching L5 identities were ACTIONABLE/UNFINISHED/BLOCKED, never QUALIFIED."
+  },
+  "review": [
+    "Exact admitted native projection, source UID, root Item, claim revision, completion key and source digest required.",
+    "Existing claim obligations cannot be replaced. Duplicate identities/owners and non-monotone flag declarations refuse.",
+    "The claim receipt owns eligibility; teaching an already learned maximum flag still consumes its obligation.",
+    "The existing fenced item-claim, obligation, quest receipt and replay owners remain authoritative.",
+    "No existing reward contents, grants, SQL, migrations, source guards or test assertions were removed. Two existing Canary chest bindings remain asserted exactly, with the new native binding asserted separately."
+  ]
+}
