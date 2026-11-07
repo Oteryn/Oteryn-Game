@@ -110,6 +110,7 @@ async fn privacy_case(admin: String) -> TestResult {
                 .await
                 .is_err()
         );
+        suspend_with_idle_holder(withdrawal.as_mut(), &h.root).await;
         // New captures already deny the old preference; a fresh empty worker can
         // start at this prefix without replaying history or resurrecting old media.
         assert_eq!(
@@ -143,6 +144,7 @@ async fn privacy_case(admin: String) -> TestResult {
                         .is_err(),
                     "one worker's ACK must not commit another worker's buffered permission"
                 );
+                suspend_with_idle_holder(withdrawal.as_mut(), &h.root).await;
                 let allowed: bool =
                     sqlx::query_scalar("SELECT allowed FROM game_character_cast_consent")
                         .fetch_one(&h.pool)
@@ -210,4 +212,25 @@ async fn privacy_case(admin: String) -> TestResult {
         started.elapsed().as_secs_f64()
     );
     result
+}
+
+// A timeout leaves the borrowed future alive and may suspend it during a DB
+// pass. Keep driving it until that pass returns the single holder; otherwise
+// the next operation races a holder stranded inside this same test's future.
+async fn suspend_with_idle_holder<F: std::future::Future>(
+    mut withdrawal: std::pin::Pin<&mut F>,
+    root: &crate::durability::DurabilityRoot,
+) {
+    std::future::poll_fn(|cx| {
+        assert!(
+            withdrawal.as_mut().poll(cx).is_pending(),
+            "withdrawal must remain pending before every worker acknowledges"
+        );
+        if root.is_ready() {
+            std::task::Poll::Ready(())
+        } else {
+            std::task::Poll::Pending
+        }
+    })
+    .await;
 }

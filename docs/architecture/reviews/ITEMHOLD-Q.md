@@ -644,3 +644,111 @@ The original partition-22 exception remains unavailable because its log download
 returns `Tunnel connection failed: 403 Forbidden`; its exact 41-case E2E share
 passed locally without changing those tests. GitHub CI on the pushed commit is
 the publication check; no PR was opened by this task.
+
+### Qualification ledger follow-up on ddc18edf8
+
+`python tools/content-schema/quest-authoring/test_quest_claim_qualification.py`
+reproduced the CI failure: the old 297-entry ledger omitted Ornamented Shield,
+Power Ring 2 and Triangle Tower after their callback inventory admissions.
+The generator also retained the old fixed denominator. Its frozen baseline is
+now extended by the three explicitly named ITEMHOLD admissions, deriving the
+new denominator from that cohort rather than hand-editing generated counts.
+Regenerated with
+`python tools/content-schema/quest-authoring/check_quest_claim_qualification.py`.
+All 297 previous records and donor pins are unchanged as decoded JSON;
+only the three missing records are added, each still blocked on QUEST-QUAL-1.
+The validator retains exact denominator, row-set, placement, reward, evidence
+and duplicate-key checks. The seven focused tests pass, including missing-row
+rejection for each new admission; `--check` passes. Governance validation and
+all 129 governance tests pass. This audit repair changes no production content.
+
+### Donor capture follow-up on ddc18edf8
+
+The donor check reproduced `ValueError: stale donor Source capture: npc.json.gz`.
+The capture includes hashes of the canonical quest index and definition shards;
+the earlier quest regeneration changed the index and three shard hashes without
+refreshing this dependent capture. Refreshed with the owning script's default
+write mode, `python tools/content-schema/quest-authoring/quest_donor_source_authoring.py`.
+Its seven changed outputs contain only propagated provenance/hash changes,
+verified by recursively comparing decoded JSON against HEAD (including gzip
+payloads); NPC source data, associations, semantics and counts are unchanged.
+`python tools/content-schema/quest-authoring/run_checks.py --part donor` now
+passes (exit 0), including the regenerated capture's strict byte comparison.
+The exact unit-tests workflow command,
+`python tools/content-schema/quest-authoring/run_checks.py --part unit-tests`,
+passes all 1,052 tests across 93 modules on the regenerated files.
+
+### PostgreSQL follow-up on ddc18edf8
+
+The API for run 42316108578 identifies exactly two failed PostgreSQL jobs:
+partition 22 (128231890219, registered E2E targets) and partition 1
+(128231890270, library tests). Job annotations contain only exit code 100.
+Individual job downloads failed through the proxy with
+`Tunnel connection failed: 403 Forbidden`; an authorized direct request failed
+with `[Errno 111] Connection refused`. Once the run completed, its full log
+archive was available through `gh run view`'s cache. It confirms the privacy
+failure below and the hotkey coalescing failure in partition 1. Local partition
+reproductions use the workflow's exact duration-balanced assignments, not an
+unrelated nextest hash partition.
+
+Partition 22 reproduced locally on PostgreSQL 18.6: 40 passed, one failed,
+`s17_cast_privacy_postgres_cases::s17_cast_postgres_cross_worker_consent_barrier`,
+with `game durability root is not ready`. The test's 40 ms timeout borrows rather
+than cancels its withdrawal future. It can suspend that future during a semantic
+pass, leaving the root's single connection held when the test starts its next
+operation. The test now resumes that still-pending future until its pass returns
+the holder before issuing another operation. Both original timeout assertions,
+both-worker invalidation/ACK requirements, persisted consent checks and media
+privacy assertions remain. No production code, lease or deadline changes.
+
+Partition 1's log contains exactly one failed case:
+`hotkey_equip_postgres_coalesces_burst_without_cancelled_receipts` at
+`postgres_tests/hotkey_equip.rs:557`, `Moved` versus expected `Rejected`.
+The test awaited command 2's reply and a SQL equipment count before sending
+3–5, allowing that round-trip to consume the native 200 ms cooldown. An unchanged
+binary passes locally, confirming the failure is intermittent. The repaired
+fixture queues 2–5 before polling the server and checks all four ordered replies.
+It verifies command 2's one-slot equip through its immutable movement receipt
+after the burst rather than inserting a SQL round-trip inside the cooldown.
+The exact zero receipts for cancelled 3/4, final custody, command 6 replay and
+durable reload assertions remain. Native timing and production code are unchanged.
+
+The privacy regression passes through
+`cargo nextest run --locked -p oteryn-game-server --test character_authority_postgres -E 'test(=s17_cast_privacy_postgres_cases::s17_cast_postgres_cross_worker_consent_barrier)'`;
+three additional runs of that exact compiled test also pass on PostgreSQL 18.6.
+The broad partition-1 diagnostic was stopped after the CI archive identified its
+single failing case; 13 tests had passed and four active cases were interrupted.
+That interrupted diagnostic is not reported as a passing partition or full suite.
+The world compiler's `pin-check . /tmp/itemhold-ddc-final-pin` passes with digest
+`6157033be3cbe48fb8eb1261ce13579cb1e02ec40f457025d1b89ac3d2d62671`.
+The first repaired hotkey run passed all four burst reply assertions, then exposed
+an incorrect ID in the new receipt assertion: ordinary fixtures use item 71,
+whereas nested fixtures use 100. The assertion now checks Character 41, command
+2, item 71, an equip operation and destination slot 5; the existing durable
+reload assertion independently identifies that same item and slot.
+
+The final hotkey regression passes three consecutive PostgreSQL runs (47.099 s,
+45.981 s, 46.805 s) using the exact failing case and unchanged native timing:
+
+```sh
+cargo nextest run --locked -p oteryn-gameplay-dispatch \
+  -p oteryn-game-server -p oteryn-gameplay-durability --lib --stress-count 3 \
+  -E 'test(=gameplay_transport::monk_save::postgres_tests::hotkey_equip_coalescing::hotkey_equip_postgres_coalesces_burst_without_cancelled_receipts)'
+```
+
+A final jobs API enumeration still lists only partitions 1 and 22 as failed in
+run 42316108578. The archive scan finds exactly the two repaired failing cases.
+The reward variant packet's `reward_claim_variant_migration.py --check` also
+passes after the artifact refresh. `cargo fmt --all -- --check`, the strict
+qualification ledger `--check`, governance validation and 129 governance tests
+pass. No timeout increases, ignored tests or production runtime changes are included.
+
+Final changed-crate Clippy passes (exit 0):
+
+```sh
+cargo clippy --locked -p oteryn-gameplay-dispatch -p oteryn-game-server --all-targets -- -D warnings
+```
+
+Both PostgreSQL regressions, the complete quest unit-tests job and donor job,
+strict audit checks, fmt and pin-check are green before publication. All changes
+are delivered together on the existing ITEMHOLD-Q branch.
