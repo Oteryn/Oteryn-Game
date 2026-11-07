@@ -33,6 +33,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let departure = name == "departure-map-regression";
+    let dropdown = name.starts_with("source-dropdown");
     let object_mutation = name.starts_with("object-mutation-");
     let mintwallin = name == "mintwallin-source";
     let monk = name.starts_with("monk-guidance");
@@ -54,7 +55,7 @@ fn scenario_case(
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
     let mut callback = callback(
-        if classic_npc || departure || object_mutation || mintwallin {
+        if classic_npc || departure || object_mutation || mintwallin || dropdown {
             "behemoth"
         } else if rotten_purchase {
             "rotten-blood/sacrifice"
@@ -170,6 +171,13 @@ fn scenario_case(
                 replacement: None,
             });
     }
+    if dropdown {
+        callback.selector.appearance = Some(435);
+        callback.teleport = Some(Position {
+            floor: trigger.floor - 1,
+            ..trigger
+        });
+    }
     let world = if departure {
         super::world_ordinal(&callback, trigger, 2772, 1)?
     } else {
@@ -178,6 +186,9 @@ fn scenario_case(
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false)
             .await?;
+        if dropdown {
+            println!("POSTGRES_CASE_STARTED source_dropdown database_created=true");
+        }
         let callback = if object_mutation {
             println!("POSTGRES_CASE_STARTED quest_object_mutations database_created=true");
             let mut value = serde_json::to_value(&callback)?;
@@ -359,7 +370,17 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if mintwallin {
+        if dropdown {
+            super::super::source_dropdown::exercise(
+                &owner,
+                &admitted,
+                &h,
+                deps.actor,
+                trigger,
+                name.ends_with("added"),
+            )
+            .await?;
+        } else if mintwallin {
             super::super::mintwallin_source::exercise(&owner, &admitted, &h, trigger).await?;
         } else if object_mutation {
             super::super::quest_object_mutations::exercise(&owner, &admitted, &h, name, trigger)

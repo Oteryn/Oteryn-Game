@@ -288,6 +288,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         item: ItemKey,
     ) -> UseOutcome {
+        if matches!(item, ItemKey::MapBase { .. } | ItemKey::MapAdded(_)) {
+            return self
+                .use_source_dropdown(
+                    actor,
+                    command,
+                    super::source_dropdown::DropdownTarget::Handle(item),
+                )
+                .await
+                .unwrap_or(UseOutcome {
+                    disposition: UseDisposition::NothingToUse,
+                    ..UseOutcome::rejected()
+                });
+        }
         self.use_carried_item(actor, command, UseSource::Handle(item))
             .await
     }

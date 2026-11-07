@@ -392,12 +392,13 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                         .is_some_and(|(view, key)| view.is_backpack_entry(&key)
                             || (carried_entry && !view.is_main_backpack(&key)
                                 && view.equipped_slot(&key).is_none()));
-                let observation = match key.filter(|_| container.is_none() && !consumable) {
+                let map_use = container.is_none() && matches!(key, Some(ItemKey::MapBase {..} | ItemKey::MapAdded(_))) && admitted.continuity.selected_capabilities.contains(CAPABILITY_ITEM_USE_V1);
+                let observation = match key.filter(|_| container.is_none() && !consumable && !map_use) {
                     Some(key) => authority.observe_item_target(actor, key).await,
                     None => None,
                 };
                 match (item_view.as_mut(), key, observation) {
-                    (_, Some(key), _) if consumable => {
+                    (_, Some(key), _) if consumable || map_use => {
                         let outcome = tokio::time::timeout(
                             std::time::Duration::from_secs(10),
                             authority.use_item_completion(
@@ -477,7 +478,10 @@ mod fluid_routing_tests {
         let fluid = route.find(".use_fluid_on_map(");
         let imbuement = route.find(".use_imbuement_item(");
         let key = route.find(".use_key_on_door(");
-        assert!(fluid.is_some() && imbuement.is_some() && key.is_some(), "handlers present");
+        assert!(
+            fluid.is_some() && imbuement.is_some() && key.is_some(),
+            "handlers present"
+        );
         assert!(imbuement < fluid, "imbuement handler before fluid");
         assert!(key < fluid, "key handler before fluid");
     }

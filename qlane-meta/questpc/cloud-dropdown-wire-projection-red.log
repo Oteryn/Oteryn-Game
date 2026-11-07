@@ -1,0 +1,64 @@
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32
+    |
+208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+    |                                ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
+    |
+
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)
+warning: `tokio` (lib) generated 2 warnings (2 duplicates)
+warning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14
+    |
+260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |              ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |
+
+warning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)
+warning: `sqlx-core` (lib) generated 1 warning (1 duplicate)
+   Compiling oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 19s
+     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-b07c00d46acdf173)
+
+running 1 test
+POSTGRES_CASE_STARTED source_dropdown database_created=true
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=3 server_sequence=3
+oteryn-game-server event=command_integrity mode=REPORT_ONLY flood=0 cadence=0 exhaust=0 reach=1 cadence_signal=0 exhaust_signal=0 reach_signal=0
+POSTGRES_CASE_STARTED source_dropdown database_created=true
+test gameplay_transport::monk_save::postgres_tests::source_dropdown::source_sewer_grate_use_descends_from_object_position has been running for over 60 seconds
+oteryn-game-server event=serve_end reason=control_lost source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=1 server_sequence=0
+Error: "AdmittedThenControlLost(AdmittedSession { game_session_id: GameSessionId([50, 2, 3, 4, 5, 6, 112, 8, 128, 10, 11, 12, 13, 14, 15, 50]), world_id: WorldId([42, 2, 3, 4, 5, 6, 112, 8, 128, 10, 11, 12, 13, 14, 15, 42]), channel_id: ChannelId([43, 2, 3, 4, 5, 6, 112, 8, 128, 10, 11, 12, 13, 14, 15, 43]), runtime_actor: Some(ExactActorRef(ActorRef { world_id: WorldId([42, 2, 3, 4, 5, 6, 112, 8, 128, 10, 11, 12, 13, 14, 15, 42]), channel_id: ChannelId([43, 2, 3, 4, 5, 6, 112, 8, 128, 10, 11, 12, 13, 14, 15, 43]), scope_generation: ScopeOwnershipGeneration(1), actor_local_id: ActorLocalId(1), actor_local_generation: ActorLocalGeneration(1) })), first_entry: Positioned, controller: Some(ControllerBinding { transport: AuthenticatedTransportRefV1([9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9]), account_id: [40, 2, 3, 4, 5, 6, 112, 8, 128, 10, 11, 12, 13, 14, 15, 40] }), continuity: SessionContinuity { analyser_revision: 0, server_message_revision: 0, server_motd_sent: false, gameplay_idle: GameplayIdleState { since: Some(Instant { tv_sec: 7032, tv_nsec: 950586095 }), warned: false, training: false }, connection_generation: 1, next_command_id: 1, server_sequence: 0, spatial_revision: 1, player_trade_revision: 0, presentation_revision: 0, overlay_revision: 0, vitals_revision: 1, achievement_notice_revision: None, selected_capabilities: SelectedCapabilities { ids: [4, 6, 11, 15, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], len: 5 }, item_view: ItemViewContinuity { handle_counter: 1, inventory_revision: 1, container_revision: 1, open_corpse: None, views_revision: 0, view_commands: ViewCommandWindow([None, None, None, None, None, None, None, None, None, None]) }, quest_log: QuestLogContinuity { revision: 0, tracked: TrackedQuests { indexes: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], len: 0 }, queries: QueryWindow([None, None]) }, look: LookWindow([None, None, None, None, None, None, None, None, None, None]), combat: CombatContinuity { revision: 0, sent: None, target_intents: IntentWindow([None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]), mode_intents: IntentWindow([None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]), expert_revision: 0, expert_sent: None }, world_map_revision: 1, chat_revision: 0, npc: NpcContinuity { conversation_revision: 0, window_revision: 0 }, world_clock_revision: 0, world_weather_revision: 0, tutorial_revision: 0, server_save_revision: 0, server_save_sent: None }, item_fence: Some(CurrentCharacterItemFence { character_id: CharacterId([41, 2, 3, 4, 5, 6, 112, 8, 128, 10, 11, 12, 13, 14, 15, 41]), game_session_id: GameSessionId([50, 2, 3, 4, 5, 6, 112, 8, 128, 10, 11, 12, 13, 14, 15, 50]), connection_generation: ConnectionGeneration(1), character_lease_generation: 2, runtime_scope: Channel { world_id: WorldId([42, 2, 3, 4, 5, 6, 112, 8, 128, 10, 11, 12, 13, 14, 15, 42]), channel_id: ChannelId([43, 2, 3, 4, 5, 6, 112, 8, 128, 10, 11, 12, 13, 14, 15, 43]) }, scope_ownership_generation: ScopeOwnershipGeneration(1) }) }): unexpected end of file"
+test gameplay_transport::monk_save::postgres_tests::source_dropdown::source_sewer_grate_use_descends_from_object_position ... FAILED
+
+failures:
+
+failures:
+    gameplay_transport::monk_save::postgres_tests::source_dropdown::source_sewer_grate_use_descends_from_object_position
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2544 filtered out; finished in 110.25s
+
+error: test failed, to rerun pass `-p oteryn-gameplay-dispatch --lib`

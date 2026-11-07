@@ -78,3 +78,11 @@ forward movement_items and movement_item; otherwise callback-created objects are
 absent from the actual client view despite existing in direct tile composition.
 Focused PostgreSQL created-grate candidate89.11s found this omission. The final
 regression obtains its handle from the serving connection's domain17 snapshot.
+
+Reusable dropdown integration reuses questpc6@3bfd85606's existing handler and
+LoopGroundFacts forwarding. It retains PZ-lock refresh, owner/content/scope/reach
+checks, sealed landing proof, standard stair cooldown and chat cleanup. This lane
+adds exact command-fence validation and the existing ordered generic movement
+callbacks after relocation. Focused PG90.436342034s proves static and created
+world grates through real USE, lower-floor repeat refusal and no Quest receipts.
+No new protocol capability or passive floor flag is introduced.

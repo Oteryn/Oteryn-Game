@@ -3257,7 +3257,7 @@
         "other_unfinished_composition": "No complete real-dispatch PG qualification for s1 (explore: Ancient Temple, Cyclops chamber) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage."
       },
       "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
-      "active_batch": "Generic435 explicit USE and live map projection correction under focused PostgreSQL validation. Original missing-action RED45.80s; created-object projection RED89.11s. Next compose UID25030 entry/departure and five source rewards here; no title promotion yet."
+      "active_batch": "Generic435 source USE and live callback-object map handles PG qualified90.436342034s; reused questpc6 handler/forwarding with generic ordered departure/entry. Next compose exact UID25030 StepIn/StepOut and all five source rewards here. No title promotion yet."
     },
     {
       "title": "Devovorga's Essence Mini World Change",
@@ -8427,33 +8427,14 @@
   },
   "owner_execution_override": "Shared quest-engine, reward/binding, NPC, Item and callback features are owned here when needed. Check and reuse origin/claude/happy-davinci-ijz3wy-qengine2 first; historical outside-lane blockers are active implementation obligations, not final dispositions.",
   "latest_cloud_batch": {
-    "retained_base": "9bf74b42d3d73aa9e3b875cfcea94695502fdf54",
-    "merge_from": "6c09e0365110db6683f938dd08d5d584744cbf37",
-    "source_claim_entries": [
-      {
-        "claim": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp1",
-        "status": "dispatch_pg_qualified",
-        "retained_test": "elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal"
-      },
-      {
-        "claim": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp2",
-        "status": "dispatch_pg_qualified",
-        "retained_test": "elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal"
-      },
-      {
-        "claim": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.dwarven_shield",
-        "status": "dispatch_pg_qualified",
-        "retained_test": "elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal"
-      },
-      {
-        "claim": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.morning_star",
-        "status": "dispatch_pg_qualified",
-        "retained_test": "elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal"
-      }
-    ],
-    "validation": "qlane-meta/questpc/cloud-elvenbane-validation.json",
-    "review": "qlane-meta/questpc/cloud-elvenbane-review.md",
-    "merge_audit": "qlane-meta/questpc/cloud-merge-audit.json"
+    "name": "Reusable source435 explicit USE and live callback-object projection",
+    "validation": "qlane-meta/questpc/cloud-dropdown-validation.json",
+    "qualified_titles_added": 0,
+    "counts": {
+      "QUALIFIED": 58,
+      "UNFINISHED": 119,
+      "BLOCKED": 1
+    }
   },
   "continuation": {
     "base": "9bf74b42d",
@@ -8611,6 +8592,70 @@
           "log": "qlane-meta/questpc/cloud-objects-unit.log",
           "sha256": "784e864b1f950dc6e34ed0b26f125067509becb49d1ee53f9fbab741aaf07a9e"
         }
+      }
+    },
+    "source_dropdown": {
+      "test": "source_sewer_grate_use_descends_from_object_position",
+      "result": "PASS",
+      "marker": "POSTGRES_CASE_COMPLETED source_sewer_grate_use_descends_from_object_position duration=90.436342034s",
+      "duration_seconds": 90.436342034,
+      "scope": "Reusable explicit435 USE for static placements and callback-created objects through live domain17 handles; lower-floor refusal and zero quest receipts. No whole-title qualification.",
+      "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/items/ladder_up.lua",
+      "item_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml",
+      "red_seconds": 45.8,
+      "projection_red_seconds": 89.11,
+      "wire_projection_red_seconds": 110.25,
+      "logs": {
+        "red": {
+          "log": "qlane-meta/questpc/cloud-dropdown-red.log",
+          "sha256": "a0bb8885d7bb77bd98b31bdca03613c4a549c0b266e8f19a51601bffdbc77e00"
+        },
+        "projection-red": {
+          "log": "qlane-meta/questpc/cloud-dropdown-projection-red.log",
+          "sha256": "80f1b944963e2aa5d29c9c895ee7467f71d1022edc0b238b3604be71f316ecc4"
+        },
+        "wire-projection-red": {
+          "log": "qlane-meta/questpc/cloud-dropdown-wire-projection-red.log",
+          "sha256": "d3fff3a1a9a4666eb85ff00f64f874d7b4b6ede0b4f82c8266e4c5d1fb0b656a"
+        },
+        "green": {
+          "log": "qlane-meta/questpc/cloud-dropdown-green.log",
+          "sha256": "8a8db67e2f6803d6d2b2fed5ece897c12a7ef88abc9f22635d1640a8df5a752f"
+        },
+        "generated": {
+          "log": "qlane-meta/questpc/cloud-dropdown-generated.log",
+          "sha256": "5e8a41eef588d2a482c330ae01c11ffbe03b23bcd1c04d9d70b6e8c9a1efea8d"
+        },
+        "check": {
+          "log": "qlane-meta/questpc/cloud-dropdown-check.log",
+          "sha256": "0508c66c1a78747a0437137b21f2155ed1c0752031722f0db88d2b2b7a9dde76"
+        },
+        "clippy": {
+          "log": "qlane-meta/questpc/cloud-dropdown-clippy.log",
+          "sha256": "95fefe56f4b524faac423c6ec34a8b5b6133c992f016b4bfabb2a6ff53bd9431"
+        },
+        "pin": {
+          "log": "qlane-meta/questpc/cloud-dropdown-pin.log",
+          "sha256": "a4716354b7fe0a960b743e8802e6d0432b5ac09b0c0b1a5c4756a2e6c982a984"
+        }
+      },
+      "reuse": {
+        "branch": "origin/claude/happy-davinci-ijz3wy-questpc6",
+        "head": "3bfd856061e5aa89668747ec7405af8c2b8cf7f5",
+        "paths": [
+          "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects/dropdown.rs",
+          "crates/gameplay/dispatch/src/gameplay_transport/loop_move.rs"
+        ],
+        "adaptation": "Keep source resolver, PZ refresh, scope/reach/landing guards, stair cooldown and chat cleanup. Retain exact command fence and dispatch the shared departure/entry callback owner after relocation. Reuse identical movement fact forwarding.",
+        "qengine2_checked": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e"
+      },
+      "source_sha256": "730bc7664484e953b6efc3c8faeba9936d355c5cdde91d1f3e0686f714f4df13",
+      "validation": {
+        "cargo_check_all_targets_all_features": "PASS 17.76s",
+        "strict_clippy_all_targets_all_features": "PASS 1m52s; -D warnings",
+        "format": "PASS cargo fmt for changed crate and explicit mounted Rust files",
+        "source_generation": "PASS 22 source packets, zero stale generated files",
+        "pin_refresh": "PASS; unchanged 2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968"
       }
     }
   }

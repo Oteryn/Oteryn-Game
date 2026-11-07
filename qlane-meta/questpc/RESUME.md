@@ -1,3 +1,26 @@
+## Source435 mechanic green — 2026-11-07
+Reusable placed/created sewer435 explicit USE passes real PostgreSQL90.436342034s,
+including lower-floor repeat refusal and zero quest receipts. Created grate USE
+uses the actual live connection domain17 handle. Reused questpc6@3bfd85606's
+resolver, PZ refresh, scoped guards, stair cooldown, chat cleanup and identical
+LoopGroundFacts forwarding. Added exact command fence and ordered generic
+StepOut/StepIn after relocation. The forwarding fixes callback-created objects
+missing from client views. Do not mistake435 for a passive floor-change record.
+
+ChecksPASS: changed-crate alltarget/allfeature check17.76s; strict clippy1m52s;
+cargo fmt and mounted Rust formatting;22source packets unchanged; pin refresh
+unchanged2cabea56... . Logs/hashes/reuse/sourceURLs:cloud-dropdown-validation.json.
+RED45.80s missing action; projection RED89.11s; actual-wire projection RED110.25s.
+No whole-title promotion. Counts58QUALIFIED/119UNFINISHED/1excludedDawnportBLOCKED.
+
+NEXT: compose Devil Helmet source UID25030 StepIn(create435)/StepOut(remove435)
+using generic objects callbacks, and all five existing source rewards. Remove
+explicit435 creation guard only with focused RED/GREEN of that composition.
+Source target32482,32170,z14; UID placement itself has no source position alias.
+Reuse questpc6 pressure_plate_sewer test/source research; fresh other-lane status
+still UNFINISHED for Devil Helmet, Demon Helmet and Draconia. qengine2 checked.
+Push each finished tested slice immediately; refresh this status after each batch.
+
 ## Active dropdown slice — 2026-11-07
 Mintwallin remains pushed at4a88a91a0. Generic435 USE is under focused PG validation;
 no new title promotion. RED45.80s: actualPG marker, source grate returnedNothingToUse.

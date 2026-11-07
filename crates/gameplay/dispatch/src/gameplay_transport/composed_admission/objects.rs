@@ -365,6 +365,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseOutcome::rejected();
         }
+        if let Some(outcome) = self
+            .use_source_dropdown(
+                actor,
+                command,
+                super::super::source_dropdown::DropdownTarget::Object(&target),
+            )
+            .await
+        {
+            return outcome;
+        }
         if let Some(map) = self.bundle_map() {
             if let Some(outcome) = self.use_quest_callback(actor, command, map, &target).await {
                 return outcome;

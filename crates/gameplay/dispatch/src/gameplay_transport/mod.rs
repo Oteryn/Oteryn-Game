@@ -164,6 +164,7 @@ mod serving;
 pub mod session_ingress;
 mod soul_kill_live;
 mod soulpit;
+mod source_dropdown;
 pub use soulpit::runtime as soulpit_runtime;
 pub use soulpit::{
     BossActivityHandoff, BossActivityHandoffSlot, SoulpitCoreSelection, SoulpitEntryIntent,
