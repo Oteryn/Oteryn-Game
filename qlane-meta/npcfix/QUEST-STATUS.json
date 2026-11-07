@@ -103,7 +103,7 @@
       "town": "Ankrahmun",
       "audit_status": "DIFF",
       "work": "Source-backed placement admitted by the unmodified real map compiler; exact native actor identity and runtime map position proven against PostgreSQL.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/210",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/213",
       "test": "test_reviewed_spawn_anchors_preserve_roaming_observations_and_source_hashes; npcfix_anchor_postgres_real_map_admission_and_named_runtime_actors",
       "status": "QUALIFIED",
       "qualification": {
@@ -702,9 +702,9 @@
       "npc": "A Fading Memory",
       "town": "Farmine",
       "audit_status": "DIFF",
-      "evidence": ".npcaudit/research/a-fading-memory.md:1",
-      "test": "Source review",
-      "status": "PENDING",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/3",
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
       "source": {
         "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_fading_memory.lua",
         "sha256": "52a0b2db473a0a538493eeb2ba641fe7dd2243898cf0048f2615d09acd4dbafb",
@@ -712,7 +712,40 @@
         "assumption": "Conservative pinned donor behavior under owner follow-up authorization when retail details are unavailable."
       },
       "historical_note": "Ghost's Tear reward is a Blood Brothers quest transaction; excluded quest-lane repair required.",
-      "work": "Complete this NPC interaction with source-backed reusable state/reward/access callbacks; inspect and reuse qengine2 and relevant lane implementations first."
+      "work": "Exact source story, reward, real DB cooldown, literal refusal/topic reset and canonical/native physical identity are qualified.",
+      "runtime_component": {
+        "status": "QUALIFIED",
+        "test": "npcfix_reward_postgres_fading_memory_story_and_database_cooldown",
+        "postgres": "POSTGRES_STARTED a_fading_memory;113.90s",
+        "scope": "Exact source story, item8746,20-hour DB cooldown, post-expiry reward and malformed-plan item+clock rollback"
+      },
+      "literal_cooldown_component": {
+        "name": "Literal cooldown response and topic reset",
+        "state": "QUALIFIED_COMPONENT",
+        "entry": "A Fading Memory",
+        "scope": "Reusable read-only DB cooldown advice and source literal/reset; independent fenced reward authority remains unchanged. Whole NPC placement continues in the active six-cell batch.",
+        "red": "Actual PG missing UI response RED129.94s; early durable refusal assertion passed before the UI assertion failed.",
+        "green": {
+          "marker": "POSTGRES_STARTED NPCFIX reward a_fading_memory",
+          "duration_seconds": 111.14,
+          "result": "1 passed; exact literal cooldown reply, reset topic, independent early DB refusal, elapsed repeat gift, native deadlines and malformed-plan rollback",
+          "log": "/tmp/npcfix-evidence/fading-ui-only-green.log"
+        },
+        "checks": {
+          "fmt": "PASS cargo fmt --all -- --check and explicit mounted rustfmt",
+          "check": "PASS quests/durability/dispatch all targets/features4m15s",
+          "clippy": "PASS same packages/all targets/features -D warnings9m39s",
+          "quest_units": "7 passed2.47s",
+          "source_authoring": "12 shared passed13.302s; existing owned authoring cases also pass",
+          "integration": "123 passed6.92s",
+          "self_review": "Read-only advice cannot grant; every reward uses the existing fenced writer. Root/track locks and semantic deadline retained; callback text bounded and clock-owned; old callbacks default to prior behavior. No tests removed or relaxed."
+        }
+      },
+      "qualification": {
+        "batch": "Fading Memory and five source NPC cells",
+        "postgres": "POSTGRES_STARTED marker;91.16s; six actual canonical/native cell/name assertions",
+        "source_case": "tools/content-schema/npc-authoring/npcfix-qualified-placement-cases.json"
+      }
     },
     {
       "npc": "A Sleeping Dragon",
@@ -727,7 +760,7 @@
       "npc": "A Strange Chalice",
       "town": "Farmine",
       "audit_status": "DIFF",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/9",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/10",
       "test": "npcfix_state_postgres_chalice_requires_each_source_topic",
       "status": "QUALIFIED",
       "source": {
@@ -985,7 +1018,7 @@
       "town": "Issavi",
       "audit_status": "DIFF",
       "work": "Source-backed placement admitted by the unmodified real map compiler; exact native actor identity and runtime map position proven against PostgreSQL.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/106",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/109",
       "test": "test_reviewed_spawn_anchors_preserve_roaming_observations_and_source_hashes; npcfix_anchor_postgres_real_map_admission_and_named_runtime_actors",
       "status": "QUALIFIED",
       "qualification": {
@@ -1321,10 +1354,15 @@
       "npc": "Ocelus",
       "town": "Liberty Bay",
       "audit_status": "DIFF",
-      "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/245",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "work": "Audited placement and exact canonical/native displayed identity qualified on the actual source cell.",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/248",
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "Fading Memory and five source NPC cells",
+        "postgres": "POSTGRES_STARTED marker;91.16s; six actual canonical/native cell/name assertions",
+        "source_case": "tools/content-schema/npc-authoring/npcfix-qualified-placement-cases.json"
+      }
     },
     {
       "npc": "One-Eyed Joe",
@@ -1412,7 +1450,7 @@
       "town": "Marapur",
       "audit_status": "DIFF",
       "work": "Qualified canonical Goldro identity and strict real-map placement one cell from the immutable donor anchor, within its radius1; original audited observation preserved.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/143",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/146",
       "test": "npcfix_endpoint_postgres_ plus strict converter/source provenance and pin-check",
       "status": "QUALIFIED",
       "qualification": {
@@ -1876,10 +1914,15 @@
       "npc": "Dream Butterfly",
       "town": "Roshamuul",
       "audit_status": "DIFF",
-      "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/78",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "work": "Audited placement and exact canonical/native displayed identity qualified on the actual source cell.",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/81",
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "Fading Memory and five source NPC cells",
+        "postgres": "POSTGRES_STARTED marker;91.16s; six actual canonical/native cell/name assertions",
+        "source_case": "tools/content-schema/npc-authoring/npcfix-qualified-placement-cases.json"
+      }
     },
     {
       "npc": "Eldoran the Ambitious",
@@ -1931,7 +1974,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Source-backed placement admitted by the unmodified real map compiler; exact native actor identity and runtime map position proven against PostgreSQL. Spirit-language greeting/focus and guarded story already proven by guarded NPC state stories batch.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/5",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/6",
       "test": "test_reviewed_spawn_anchors_preserve_roaming_observations_and_source_hashes; npcfix_anchor_postgres_real_map_admission_and_named_runtime_actors",
       "status": "QUALIFIED",
       "source": {
@@ -2220,7 +2263,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Source-backed placement admitted by the unmodified real map compiler; exact native actor identity and runtime map position proven against PostgreSQL.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/82",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/85",
       "test": "test_reviewed_spawn_anchors_preserve_roaming_observations_and_source_hashes; npcfix_anchor_postgres_real_map_admission_and_named_runtime_actors",
       "status": "QUALIFIED",
       "qualification": {
@@ -2243,10 +2286,15 @@
       "npc": "Edgar-Ellen",
       "town": "Thais",
       "audit_status": "DIFF",
-      "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/84",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "work": "Audited placement and exact canonical/native displayed identity qualified on the actual source cell.",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/87",
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "Fading Memory and five source NPC cells",
+        "postgres": "POSTGRES_STARTED marker;91.16s; six actual canonical/native cell/name assertions",
+        "source_case": "tools/content-schema/npc-authoring/npcfix-qualified-placement-cases.json"
+      }
     },
     {
       "npc": "Edowir",
@@ -2780,7 +2828,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Source-backed placement admitted by the unmodified real map compiler; exact native actor identity and runtime map position proven against PostgreSQL.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/155",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/158",
       "test": "test_reviewed_spawn_anchors_preserve_roaming_observations_and_source_hashes; npcfix_anchor_postgres_real_map_admission_and_named_runtime_actors",
       "status": "QUALIFIED",
       "qualification": {
@@ -2794,10 +2842,15 @@
       "npc": "Jack The Worker",
       "town": "Venore",
       "audit_status": "DIFF",
-      "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/170",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "work": "Audited placement and exact canonical/native displayed identity qualified on the actual source cell.",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/173",
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "Fading Memory and five source NPC cells",
+        "postgres": "POSTGRES_STARTED marker;91.16s; six actual canonical/native cell/name assertions",
+        "source_case": "tools/content-schema/npc-authoring/npcfix-qualified-placement-cases.json"
+      }
     },
     {
       "npc": "Jean Claude",
@@ -2894,10 +2947,15 @@
       "npc": "Nemal",
       "town": "Venore",
       "audit_status": "DIFF",
-      "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/234",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "work": "Audited placement and exact canonical/native displayed identity qualified on the actual source cell.",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/237",
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "Fading Memory and five source NPC cells",
+        "postgres": "POSTGRES_STARTED marker;91.16s; six actual canonical/native cell/name assertions",
+        "source_case": "tools/content-schema/npc-authoring/npcfix-qualified-placement-cases.json"
+      }
     },
     {
       "npc": "Oldrak",
@@ -3465,6 +3523,42 @@
         "integration": "123 passed6.92s",
         "self_review": "Read-only advice cannot grant; every reward uses the existing fenced writer. Root/track locks and semantic deadline retained; callback text bounded and clock-owned; old callbacks default to prior behavior. No tests removed or relaxed."
       }
+    },
+    {
+      "name": "Fading Memory and five source NPC cells",
+      "state": "QUALIFIED",
+      "entries": [
+        "A Fading Memory",
+        "Dream Butterfly",
+        "Edgar-Ellen",
+        "Jack The Worker",
+        "Nemal",
+        "Ocelus"
+      ],
+      "scope": "Real canonical cell admission plus actual PostgreSQL/native runtime placement, floor conversion and exact names. Fading source story/reward/cooldown reply separately pushed43c59ddb9; Edgar-Ellen exact declared name repaired rather than weakening the assertion.",
+      "red": "Live PG initial2 failed129.94s; intermediate1 passed/1 failed212.62s exposed Edgar Ellen slug fallback. Name expectation retained. Materializer source fixture ordering RED1/2 was corrected with explicit last-Service selection and an additional NPC atomic-rejection case.",
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "duration_seconds": 91.16,
+        "result": "1 passed; all six canonical/native identities and exact positions",
+        "log": "/tmp/npcfix-evidence/fading-placements-final-green.log",
+        "fading_component": "43c59ddb9; actual PG111.14s with DB marker"
+      },
+      "checks": {
+        "authoring": "7 own/12 shared/12 placement cases PASS; original assertions retained",
+        "source_generation": "PASS complete repository materializer/family/pin generation; all required focused checks run separately",
+        "repair_units": "3 passed0.49s: all53 repairs plus Service and NPC before-state atomic refusal",
+        "tree": "PASS validate_world_project_v2_to_tree;97/97 materialized; complete tree tests; qengine source reproduction",
+        "repository": "5 passed104.53s; exact packet53 and full-record equality retained",
+        "catalogue": "1 passed56.26s",
+        "content": "123 passed5.09s",
+        "check": "PASS quests/durability/dispatch alltargets/allfeatures4m15s; materializer example2m18s",
+        "clippy": "PASS shared packages alltargets/allfeatures9m39s; materializer example3m06s; repository test1.17s; -D warnings",
+        "fmt": "PASS workspace and explicit mounted files",
+        "pin": "25c99a2d63e3e08a9387c4a71bf5d1926a60db4eb7777021f2f36433e902ba85; independent pin-check PASS"
+      },
+      "self_review": "Only Edgar-Ellen canonical declaration changed; no identities added/removed. All pre-existing reward item profiles exactly preserved;15 reviewed passive profiles added with canonical weights and other custody conflict guards retained. No compiler/collision bypass, binary, workflow, repository-tool edit, test deletion or weakened assertion.",
+      "next": "Push immediately, then continue existing placement-only rows in3-6-entry historical RED/current GREEN batches; retain all cumulative assertions."
     }
   ],
   "owner_constraints": {
@@ -3519,10 +3613,10 @@
       "Altar",
       "A Sweaty Cyclops"
     ],
-    "state": "MERGED_DETERMINISTIC_GREEN; INDEPENDENT_REVIEW_PENDING",
+    "state": "WORKSHOP_RUST_GREEN; MERGING_VALIDATED_SIX_CELL_DATA",
     "session": 31487,
     "log": "/tmp/npcfix-evidence/workshop-red.log",
-    "reuse": "Refreshed qengine2 e45e8f8a9 and questl2 66bea9a40. Reuse fee delivery33b640335 (migration1000) selectively, preserve local physical permit/repeats/achievement/deadline support. Existing core SetNow and ElapsedAtLeast already use DB now(). Incoming Fading-only source producer is retained.",
+    "reuse": "Reuse incoming six-cell qualifications and exact-before name authoring. Combine passive-cell source attributes with local8 workshop profiles; retain both fact proofs and every existing known custody field.",
     "implementation_order": "Actual PG RED first, then generic fee/time participant support, then the three source compositions. Extend final tests to full payment, cooldown and delayed claim semantics; initial red probes missing conversations.",
     "assumptions": [
       "Charges and input consumption are atomic with successful admission. Normalize donor Sweaty bug that removes5000 before checking all pieces: missing pieces never charge.",
@@ -3568,7 +3662,7 @@
       "fmt": "PASS"
     },
     "merge_plan": "Preserve concurrent locked cooldown and malformed-clock tests, reuse its declared-track support, retain local generic paid hand-ins, delayed clocks, fresh literal wait replies and strict physical admission. Resolve duplicate1144 by forward-numbered workshop extension. Revalidate merged source before push.",
-    "incoming": "43c59ddb9; public ownership checkpointf6ab31acd",
+    "incoming": "8a7b65dc2",
     "implementation": "Reuse published readiness owner and cooldown_reply field; extend remaining-time advice for delayed crafts. Remove duplicate clock reader/post-refusal code. Keep all published direct-owner/literal-reset/malformed-clock assertions plus unchanged-clock probe; preserve1144 and extend1145.",
     "remaining": "Sweaty amulet component fully validated; remaining smithing exchanges stay active next, no whole NPC qualification yet. Fading/Altar exact audited scope implemented; final reviewed qualification metadata follows."
   },
@@ -3915,5 +4009,25 @@
       "local_proof": "PG6/183.57s plus funded missing parts96.27s and existing bank96.20s; quest261/fee43/NPC25; fmt/check/clippy and pins. Combined quest263 and native42 reproduction now pass; combined PG8/check/clippy running.",
       "normal_profile": "This checkout retained normal unoptimized+debuginfo profiles and existing env.sh. Only stopped-build incremental caches were removed."
     }
+  },
+  "incoming_six_cells": {
+    "head": "8a7b65dc2",
+    "qualified": [
+      "A Fading Memory",
+      "Dream Butterfly",
+      "Edgar-Ellen",
+      "Jack The Worker",
+      "Nemal",
+      "Ocelus"
+    ],
+    "proof": "Incoming actual PG6 actor proof91.16s, retained all identity/placement assertions; canonical Edgar name only,15 passive profiles added with canonical custody facts retained. Preserve publication and do not redo finished work."
+  },
+  "workshop_merged_validation": {
+    "state": "GREEN; source publication; independent review follows",
+    "postgres": "workshop-readiness-pg.log: 7 PASS/221.52s; workshop-readiness-incoming-pg.log: 1 PASS/96.56s; start/completion markers retained",
+    "rust": "263 quest tests; all-target/all-feature check 5m53s and strict clippy 5m05s; workshop Rust unchanged by six-cell merge",
+    "content": "native-only 42 outputs regenerated and checked; authoring12 and profile8 tests PASS; existing profiles structurally unchanged,15 incoming passive profiles added",
+    "pin": "568fe0d9753bba3d73f38b4ae884063d2d543b866e337a6f0aab6fd9cc72ec9a; pin-check PASS",
+    "scope": "Preserve six incoming qualifications. Altar final review pending; Sweaty smithing continues immediately."
   }
 }

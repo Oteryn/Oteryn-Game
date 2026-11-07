@@ -18,12 +18,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         391,
-        "6960a262ba4c614058a8f600a9082416174b4338d07fc9c0f2e8de22e4d60d7d",
+        "cf305d188837dc97f9104cfc11faa13d963d615c81351b9f5f196b1005950575",
     ),
     (
         "definitions/declarations.json",
-        27_647_392,
-        "ac50b43181c054844b372fdb98a9921b501ad182a810c237e65b64ebed38c88b",
+        27_647_486,
+        "f40f7a3043f4f64f8e9e7f7b0023aea0d24421d8e170a333c6a1baaab701ed3e",
     ),
     (
         "definitions/reference.json",
@@ -38,7 +38,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1948,
-        "b0c79fa1ef2da9b89ba8d7006e68e5d8383af01b4b9aae5acdb639cb1f4462af",
+        "35a7ffbb4db01dcc023d617e49f0926a54718cc65a03e3c455be16cdf9adc28c",
     ),
     (
         "presentations/bindings.json",
@@ -48,7 +48,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         399,
-        "5167a1b4e9d8815d4f5d7cb7af49a9979870f5996d058a0c1b588cd447a8321b",
+        "f88b460a3c18e919f83a53c92e8411fe782d1b4f92beaa72fcd979e75676f63e",
     ),
     (
         "provenance/imports.json",
@@ -140,7 +140,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "ead133470634be6a1b343782f3f1815dfffff5851c2b5b95a24282d2ad92eaa8";
+const TREE_SHA256: &str = "077e00b379214916bf19b92d84addfee41318db986be6676404124ebd53e105d";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.
@@ -724,7 +724,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     );
     assert_eq!(
         world_project_sha256(npcfix_bytes),
-        "5506fea8ad860c48b83dac5f994270193ca25b2f9fc56366b16d2d538bf6c99b"
+        "5efa3c245199ba4c9b1926b21d7afadb76939c2a634746b1ca0e8702beafd480"
     );
     let npcfix: serde_json::Value = serde_json::from_slice(npcfix_bytes).expect("NPCFIX packet");
     let npcfix_records: BTreeMap<_, _> = npcfix["repairs"]
@@ -740,7 +740,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             )
         })
         .collect();
-    assert_eq!(npcfix_records.len(), 52);
+    assert_eq!(npcfix_records.len(), 53);
     assert!(v2.declarations.iter().all(|declaration| {
         let repaired = match declaration {
             ProjectV2Declaration::Npc { identity, .. }
