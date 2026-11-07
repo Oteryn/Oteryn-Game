@@ -19,6 +19,7 @@
 //! A refusal writes nothing; an unknown outcome is answered by [`DurabilityRoot::read_item_loop_move_receipt`].
 
 mod seed_drop;
+mod house_death_contents;
 pub use seed_drop::{SeedDropProbe, SeedDropTarget};
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
@@ -757,7 +758,7 @@ async fn plan_loop_destination<C: ItemLoopContent>(
                 entries: if pouch {
                     quick_loot::pouch_receiver(tx, parent, definition).await?
                 } else {
-                    load_nested_entries(tx, parent).await?
+                    house_death_contents::load(tx, parent).await?
                 },
             }
         }
@@ -1770,7 +1771,7 @@ impl DurabilityRoot {
                         let entries = if main {
                             load_entries(&mut tx, container).await?
                         } else {
-                            load_nested_entries(&mut tx, container).await?
+                            house_death_contents::load(&mut tx, container).await?
                         };
                         let fluids = super::item_transfer::load_fluids(&mut tx, &entries).await?;
                         Ok(Some(LoopContainer {
@@ -1918,7 +1919,7 @@ impl DurabilityRoot {
                 let read = match row {
                     None => None,
                     Some(row) => {
-                        let entries = match load_nested_entries(&mut tx, container).await {
+                        let entries = match house_death_contents::load(&mut tx, container).await {
                             Ok(entries) => entries,
                             Err(LoopError::Durability(error)) => return Err(error),
                             Err(LoopError::Database(error)) => return Err(error.into()),

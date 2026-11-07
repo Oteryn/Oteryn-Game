@@ -31,9 +31,9 @@ pub const CAPABILITY_PRESENTATION_V1: u32 = 23;
 /// B24: independently negotiated private ambience; capability 23 remains unchanged.
 pub const CAPABILITY_AMBIENT_SOUND_V1: u32 = 288;
 pub const STATE_DOMAIN_AMBIENT_SOUND: u32 = 101;
-/// Item-only visual effects, separately negotiated from casting/audio.
-pub const CAPABILITY_ITEM_EFFECTS_V1: u32 = 385;
-pub const STATE_DOMAIN_ITEM_EFFECTS: u32 = 105;
+/// NX-5 item-only visual effects, independently negotiated from S17 presentation.
+pub const CAPABILITY_ITEM_EFFECTS_V1: u32 = 350;
+pub const STATE_DOMAIN_ITEM_EFFECTS: u32 = 104;
 /// The capability `PRESENTATION_V1` requires: 6 `WORLD_SPATIAL_ENTITIES`, whose D85 identities
 /// the events name (§7).
 pub const CAPABILITY_PRESENTATION_V1_REQUIRES: [u32; 1] = [

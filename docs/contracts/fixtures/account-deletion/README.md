@@ -35,9 +35,17 @@ transfer versus closing portfolio; partial detach then restart/cancel; duplicate
 blocked house/guild/market; LCFA lag; cancellation at/after deadline; cancellation versus worker
 under one Platform lock; lost resolution acknowledgement; restore at each phase. New adapters
 must preserve termination_tests.rs semantics and keep finalization pending on unknown evidence.
-Implement Game first, then Platform boundary/projection adapters default off; qualify exact
+Implement Game first, then qualify Platform boundary/projection adapters; qualify exact
 heads before separate testing/preproduction enablement. No production permission.
 
 Before producer implementation, register measured family limits through resource-limit fragments
 (as PP §8 requires); existing ANL hard ceilings remain mandatory. Candidate bounds here do not
 change runtime configuration or authorize a larger envelope.
+
+## Implemented Game producer
+
+Owner decision 2026-11-06 enables the Game producer by default. See
+[CONTRACT-NOTES.md](CONTRACT-NOTES.md), especially **PLATFORM CONFIG**, and
+`producer.example.toml`. `lifecycle.json` adds exact authenticated current-lifecycle
+read vectors; all original `closure.json` wire bytes and hashes remain unchanged.
+Unapproved owner disposition remains configurable/PENDING, never fabricated success.

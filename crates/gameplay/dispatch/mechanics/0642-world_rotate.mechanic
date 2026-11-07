@@ -1,8 +1,0 @@
-name=world_rotate
-commands=669
-transport=world_rotate
-composed=world_rotate
-authority=world_rotate
-offer=639,world_rotate::offered,world_rotate_available
-[route]
-match routing::world_rotate::route(authority,session.actor,&session.admitted,command,&session.item_view).await {Some(dispatch)=>dispatch,None=>return Err(ServeEnd::Disconnected)}

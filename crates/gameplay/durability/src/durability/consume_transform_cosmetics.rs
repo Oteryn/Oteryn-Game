@@ -78,6 +78,11 @@ async fn prepare_with_custody(
     let Some(rule) = rules::rule(&definition.production_key) else {
         return Ok(Preparation::Unrelated);
     };
+    // SRX-4 owner exclusion: donor-only random dolls never become usable when
+    // the native catalogue is populated, in either carried or ground custody.
+    if rule.donor.starts_with("data-crystal/scripts/special/") {
+        return Ok(Preparation::Refused(UseDisposition::NotPossible));
+    }
     if request.target.is_some() {
         return Ok(Preparation::Refused(UseDisposition::NothingToUse));
     }

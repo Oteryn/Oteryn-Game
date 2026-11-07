@@ -17,6 +17,13 @@ impl KegFill {
     }
 }
 
+/// Dispensers spend charges only through flask filling, never through plain use.
+pub fn is_dispenser(item: u32) -> bool {
+    [283, 284, 285]
+        .into_iter()
+        .any(|flask| keg_fill(item, flask, 1, 1).is_some())
+}
+
 /// Match the flask to the dispenser, then fill at most the available charges.
 /// The caller must commit both inventory changes together; this plan grants no custody.
 pub fn keg_fill(keg: u32, flask: u32, count: u16, charges: u16) -> Option<KegFill> {
@@ -66,6 +73,7 @@ mod tests {
             (25900, 25914, 284, 23374),
         ] {
             for dispenser in [cask, keg] {
+                assert!(is_dispenser(dispenser));
                 let last = keg_fill(dispenser, flask, 10, 3);
                 assert_eq!(
                     last,
@@ -91,6 +99,7 @@ mod tests {
                 assert_eq!(keg_fill(dispenser, flask, 0, 1), None);
             }
         }
+        assert!(!is_dispenser(0));
         assert_eq!(keg_fill(0, 285, 1, 1), None);
     }
 }

@@ -113,6 +113,8 @@ oteryn-gameplay-characters = ["oteryn-gameplay-content","oteryn-gameplay-domain"
 oteryn-gameplay-content-promotion = ["oteryn-gameplay-content"]
 
 [dev_edges]
+# NX-5 native play tests decode the authoritative item-effect wire codec.
+oteryn-client = ["oteryn-protocol-oteryn"]
 # C07 synthetic scenario drives the production native-client mailbox and projection.
 oteryn-synthetic-client-harness = ["oteryn-client","oteryn-client-runtime","oteryn-client-ui","oteryn-session"]
 # C01 headless login scenario exercises the production client form.

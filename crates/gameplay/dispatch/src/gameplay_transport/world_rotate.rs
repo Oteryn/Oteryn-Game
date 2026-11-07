@@ -6,13 +6,13 @@ use super::{ComposedFreshAdmission, ExactActorRef};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget};
 
 pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
-    let mut result: Vec<_> = base.iter().copied().filter(|c| c.id != 384).collect();
+    let mut result: Vec<_> = base.iter().copied().filter(|c| c.id != 388).collect();
     if available {
-        let at = result.partition_point(|c| c.id < 384);
+        let at = result.partition_point(|c| c.id < 388);
         result.insert(
             at,
             OfferedCapability {
-                id: 384,
+                id: 388,
                 requires: &[11],
             },
         );

@@ -311,28 +311,28 @@ pub(super) async fn scenario(
     admitted.first_entry = FirstEntryOutcome::Positioned;
     admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
     let capabilities: &[u32] = match case {
-        Case::GiftDragonDeathHigh => &[4, 6, 7, 11, 12, 14, 15, 18, 49, 86, 288, 385],
-        Case::GiftDragon => &[4, 6, 7, 11, 15, 18, 49, 86, 288, 385],
+        Case::GiftDragonDeathHigh => &[4, 6, 7, 11, 12, 14, 15, 18, 49, 86, 288, 350],
+        Case::GiftDragon => &[4, 6, 7, 11, 15, 18, 49, 86, 288, 350],
         Case::GiftSantaDoll
         | Case::GiftPanda
         | Case::GiftPandaFar
         | Case::GiftDragonDeath
         | Case::GiftDragonDeathCrash
         | Case::GiftBankBreak
-        | Case::GiftBankKeep => &[4, 6, 7, 11, 15, 18, 49, 86, 385],
+        | Case::GiftBankKeep => &[4, 6, 7, 11, 15, 18, 49, 86, 350],
         Case::Placed => &[4, 6, 11, 15, 18, 49, 86],
         Case::Cupcake => &[4, 6, 11, 15, 18, 49, 86],
-        Case::DracoyleWest | Case::DracoyleEast => &[4, 6, 11, 15, 18, 49, 86, 385],
-        Case::Cue => &[4, 6, 11, 15, 18, 49, 86, 385],
-        Case::GoldenFull | Case::GoldenLocked => &[4, 6, 7, 11, 15, 18, 49, 86, 385, 386],
+        Case::DracoyleWest | Case::DracoyleEast => &[4, 6, 11, 15, 18, 49, 86, 350],
+        Case::Cue => &[4, 6, 11, 15, 18, 49, 86, 350],
+        Case::GoldenFull | Case::GoldenLocked => &[4, 6, 7, 11, 15, 18, 49, 86, 350, 386],
         Case::NativeMove => &[4, 6, 11, 15, 18, 49, 86],
-        Case::Voice => &[4, 6, 7, 11, 15, 18, 49, 86, 288, 385],
+        Case::Voice => &[4, 6, 7, 11, 15, 18, 49, 86, 288, 350],
         Case::StaticBase => &[4, 6, 11, 15, 18, 49, 86],
-        Case::ArtistEasel => &[4, 6, 11, 15, 18, 49, 86, 384],
+        Case::ArtistEasel => &[4, 6, 11, 15, 18, 49, 86, 388],
         Case::AbsoluteRotate | Case::AbsoluteLegacyPlace | Case::AbsoluteHistory => {
-            &[4, 6, 11, 15, 18, 49, 86, 384, 385]
+            &[4, 6, 11, 15, 18, 49, 86, 388, 350]
         }
-        Case::Rotate => &[4, 6, 11, 15, 18, 49, 86, 384],
+        Case::Rotate => &[4, 6, 11, 15, 18, 49, 86, 388],
         Case::Nested => &[4, 6, 12, 14, 15, 49, 86],
         Case::Carried | Case::CarriedCandle | Case::Foreign => &[4, 6, 15, 49, 86],
     };

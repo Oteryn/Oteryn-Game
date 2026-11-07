@@ -70,6 +70,20 @@ pub(super) async fn trade_with_provenance(
             .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(format!("oteryn:item.tibia.i{item}")).fetch_one(&h.pool).await?;
         before_materials.push(amount);
     }
+    // Diagnose the genuine bootstrap owners before the framed peer starts;
+    // these assertions neither replace the wire exchange nor broaden offers.
+    use crate::gameplay_transport::connection::FreshAdmissionAuthority as _;
+    let actor = admitted
+        .runtime_actor
+        .ok_or("Chondur prewire current actor")?;
+    owner
+        .appearance_observation(actor, admitted.game_session_id, Vec::new())
+        .await
+        .ok_or("Chondur prewire actual appearance owner unavailable")?;
+    owner
+        .observe_visible_entities(actor)
+        .await
+        .ok_or("Chondur prewire actual entity owner unavailable")?;
     let first = admitted.continuity.next_command_id;
     let frames = super::super::super::grizzly_npc::wire::talk_appearance(
         owner,

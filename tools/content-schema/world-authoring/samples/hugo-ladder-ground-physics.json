@@ -1,0 +1,119 @@
+{
+  "donors": {
+    "canary": {
+      "dat_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+      "policies": [
+        {
+          "block_pathfind": false,
+          "block_projectile": false,
+          "block_solid": false,
+          "container": false,
+          "dynamic_kind": null,
+          "floor_change": false,
+          "floor_change_kind": null,
+          "ground": true,
+          "ground_speed": 110,
+          "has_height": false,
+          "magic_field": false,
+          "movable": false,
+          "pickupable": false,
+          "server_item_id": 103,
+          "xml_attributes": []
+        },
+        {
+          "block_pathfind": false,
+          "block_projectile": false,
+          "block_solid": false,
+          "container": false,
+          "dynamic_kind": null,
+          "floor_change": false,
+          "floor_change_kind": null,
+          "ground": true,
+          "ground_speed": 120,
+          "has_height": false,
+          "magic_field": false,
+          "movable": false,
+          "pickupable": false,
+          "server_item_id": 351,
+          "xml_attributes": []
+        }
+      ],
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "xml_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+    },
+    "crystal": {
+      "dat_sha256": "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1",
+      "policies": [
+        {
+          "block_pathfind": false,
+          "block_projectile": false,
+          "block_solid": false,
+          "container": false,
+          "dynamic_kind": null,
+          "floor_change": false,
+          "floor_change_kind": null,
+          "ground": true,
+          "ground_speed": 110,
+          "has_height": false,
+          "magic_field": false,
+          "movable": false,
+          "pickupable": false,
+          "server_item_id": 103,
+          "xml_attributes": []
+        },
+        {
+          "block_pathfind": false,
+          "block_projectile": false,
+          "block_solid": false,
+          "container": false,
+          "dynamic_kind": null,
+          "floor_change": false,
+          "floor_change_kind": null,
+          "ground": true,
+          "ground_speed": 120,
+          "has_height": false,
+          "magic_field": false,
+          "movable": false,
+          "pickupable": false,
+          "server_item_id": 351,
+          "xml_attributes": []
+        }
+      ],
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "xml_sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509"
+    }
+  },
+  "landings": [
+    {
+      "ground": 351,
+      "position": [
+        32208,
+        32371,
+        9
+      ],
+      "region": "content/world/placements/region-z09-x125-y126.b3",
+      "sha256": "ffdd0dbf50b6364d265d8a768c8b64eadbfab0a1fdd82e1dd8807602186c3ec6"
+    },
+    {
+      "ground": 351,
+      "position": [
+        32198,
+        32368,
+        8
+      ],
+      "region": "content/world/placements/region-z08-x125-y126.b3",
+      "sha256": "2ae5fc270e0f91649c8e17c2edb7a83bfa410effd5fb0cafa9c09f80939ec704"
+    },
+    {
+      "ground": 103,
+      "position": [
+        32179,
+        32368,
+        7
+      ],
+      "region": "content/world/placements/region-z07-x125-y126.b3",
+      "sha256": "203f0465d9d1373a41ec2e77590f63fc1e1adb0416c39b35f5622c53bf92bad8"
+    }
+  ],
+  "schema": "OTERYN_HUGO_LADDER_GROUND_PHYSICS/v1"
+}

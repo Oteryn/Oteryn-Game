@@ -20,6 +20,7 @@ pub(super) struct PendingItemEffect {
     pub fence: CurrentCharacterItemFence,
     pub request: ConsumeTransformRequest,
     pub effects: NoveltyEffects,
+    pub cue_position: crate::foundation::MovementLocalPosition,
     pub before_revision: u64,
     pub after: Option<crate::spell::cast::PlayerSpellState>,
     pub death: Option<super::actor_spell::PlayerDeath>,
@@ -188,8 +189,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .read_actor_position(actor)
                     .map_err(|_| ())?
                     .position();
-                if !super::attack::sees(at, target.position) {
-                    return Ok(Some(outcome(UseDisposition::TargetIllegal)));
+                // Crystal actions.cpp default Action reach.
+                if !oteryn_gameplay_items::reach::within_reach(
+                    (at.x, at.y, i32::from(at.floor)),
+                    (
+                        target.position.x,
+                        target.position.y,
+                        i32::from(target.position.floor),
+                    ),
+                ) {
+                    return Ok(Some(outcome(UseDisposition::TooFar)));
                 }
                 Some(target.actor)
             } else {
@@ -256,7 +265,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .active_generation
             .and_then(|active| active.native_gameplay())
             .ok_or(())?;
-        if let Some(effects) =
+        if let Some((effects, retained_position)) =
             states.settle_novelty_effect(&runtime, actor, request, &receipt, native, self.holder)?
         {
             if receipt.fresh
@@ -291,6 +300,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         effects.private_speech,
                     );
                 }
+            }
+            if receipt.fresh
+                && !matches!(effects.source_item_id, 2995 | 5080 | 5791 | 6511 | 6566)
+                && !oteryn_gameplay_items::furniture::is_portable_effect(&format!(
+                    "oteryn:item.tibia.i{}",
+                    effects.source_item_id
+                ))
+            {
+                states.publish_novelty_visuals(&runtime, actor, retained_position, &effects);
             }
             if let Some((item, generation)) = cupcake {
                 self.states

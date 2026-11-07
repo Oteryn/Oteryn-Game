@@ -11,6 +11,15 @@ pub(super) fn validate_join(
             .iter()
             .find(|r| r.domain_id == STATE_DOMAIN_ITEM_EFFECTS)
             .ok_or(SessionError::MissingDomain(STATE_DOMAIN_ITEM_EFFECTS))?;
+        if row.snapshot_type != 1 || !row.payload.is_empty() {
+            return Err(SessionError::SessionUnusable);
+        }
+    }
+    if selected.contains(&CAPABILITY_ITEM_EFFECTS_V1) {
+        let row = snapshots
+            .iter()
+            .find(|r| r.domain_id == STATE_DOMAIN_ITEM_EFFECTS)
+            .ok_or(SessionError::MissingDomain(STATE_DOMAIN_ITEM_EFFECTS))?;
         if row.snapshot_type != 1 || row.revision != 0 || !row.payload.is_empty() {
             return Err(SessionError::SessionUnusable);
         }

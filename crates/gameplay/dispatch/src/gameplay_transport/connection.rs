@@ -34,6 +34,7 @@ use crate::foundation::{
     encode_protocol_error, encode_server_accepted, encode_server_resume_accepted,
 };
 mod item_use_view_refresh;
+pub(in crate::gameplay_transport) use item_use_view_refresh::refresh_newhaven_inventory;
 
 use appearance_change::SessionAppearance;
 use moved_step::moved_step_frames;

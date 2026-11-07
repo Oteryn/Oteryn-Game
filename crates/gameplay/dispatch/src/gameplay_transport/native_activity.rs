@@ -340,7 +340,18 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         mut request: ActivityEnterRequest,
         boss_room: bool,
     ) -> Result<NativeActivityOutcome, ()> {
-        let refuse = |reason| Ok(NativeActivityOutcome::Refused(reason));
+        let source_portal = request.activity_key == "oteryn:boss.rakesh_moonfang";
+        let prepare_error = |stage| {
+            if source_portal {
+                super::operator_event(stage);
+            }
+        };
+        let refuse = |reason| {
+            if source_portal {
+                source_portal_refusal(reason);
+            }
+            Ok(NativeActivityOutcome::Refused(reason))
+        };
         if request.command_id == 0
             || request.participants.is_empty()
             || request.participants.len() > 15
@@ -384,7 +395,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             .activity_runtimes
             .attempts
             .lock()
-            .map_err(|_| ())?
+            .map_err(|_| prepare_error("summer_source_handoff_prepare_01"))?
             .get(&key)
             .cloned();
         if let Some(pending) = existing {
@@ -440,7 +451,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     &request.activity_key,
                 )
                 .await
-                .map_err(|_| ())?
+                .map_err(|_| prepare_error("summer_source_handoff_prepare_02"))?
             else {
                 return refuse(ActivityRefusal::ContentUnavailable);
             };
@@ -457,18 +468,18 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         let mut sources = Vec::new();
         sources
             .try_reserve_exact(request.participants.len())
-            .map_err(|_| ())?;
+            .map_err(|_| prepare_error("summer_source_handoff_prepare_03"))?;
         let mut members = Vec::new();
         members
             .try_reserve_exact(request.participants.len())
-            .map_err(|_| ())?;
+            .map_err(|_| prepare_error("summer_source_handoff_prepare_04"))?;
         // Reserve the registry entry before taking any owned state out of a runtime.
         self.activity_runtimes
             .attempts
             .lock()
-            .map_err(|_| ())?
+            .map_err(|_| prepare_error("summer_source_handoff_prepare_05"))?
             .try_reserve(1)
-            .map_err(|_| ())?;
+            .map_err(|_| prepare_error("summer_source_handoff_prepare_06"))?;
         let source_view = self.runtime_view(&source);
         let destination_view = self.runtime_view(&destination);
         // A shared lethal may be queued under another contributor's principal.
@@ -498,19 +509,35 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             < ScopeKey::new(destination.scope, destination.generation);
         let (_first_lane, _second_lane) = if source_first {
             (
-                source.lane.acquire().await.map_err(|_| ())?,
-                destination.lane.acquire().await.map_err(|_| ())?,
+                source
+                    .lane
+                    .acquire()
+                    .await
+                    .map_err(|_| prepare_error("summer_source_handoff_prepare_07"))?,
+                destination
+                    .lane
+                    .acquire()
+                    .await
+                    .map_err(|_| prepare_error("summer_source_handoff_prepare_08"))?,
             )
         } else {
             (
-                destination.lane.acquire().await.map_err(|_| ())?,
-                source.lane.acquire().await.map_err(|_| ())?,
+                destination
+                    .lane
+                    .acquire()
+                    .await
+                    .map_err(|_| prepare_error("summer_source_handoff_prepare_09"))?,
+                source
+                    .lane
+                    .acquire()
+                    .await
+                    .map_err(|_| prepare_error("summer_source_handoff_prepare_10"))?,
             )
         };
         let mut slots = Vec::new();
         slots
             .try_reserve_exact(request.participants.len())
-            .map_err(|_| ())?;
+            .map_err(|_| prepare_error("summer_source_handoff_prepare_11"))?;
         for participant in &request.participants {
             slots.push(
                 self.revision_sequencer
@@ -527,8 +554,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             let from = source.runtime.lock().await;
             (from, to)
         };
-        from.owner_fence().map_err(|_| ())?;
-        to.owner_fence().map_err(|_| ())?;
+        from.owner_fence()
+            .map_err(|_| prepare_error("summer_source_handoff_prepare_12"))?;
+        to.owner_fence()
+            .map_err(|_| prepare_error("summer_source_handoff_prepare_13"))?;
         let actual_pin = ActivityContentPin {
             coordinate_frame_digest: to.content_pin().frame_binding_digest(),
             map_revision_digest: to.map_revision_digest(),
@@ -582,25 +611,28 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     .states
                     .dawnport_trials
                     .lock()
-                    .map_err(|_| ())?
+                    .map_err(|_| prepare_error("summer_source_handoff_prepare_14"))?
                     .contains(&admitted.game_session_id)
             {
                 return refuse(ActivityRefusal::AuthorityRejected);
             }
             let lease = from
                 .bound_attacker_lease(actor, admitted.game_session_id)
-                .map_err(|_| ())?;
+                .map_err(|_| prepare_error("summer_source_handoff_prepare_15"))?;
             if lease.character_id().as_bytes() != participant.source.character_id.as_bytes()
                 || lease.generation() != participant.source.character_lease_generation
                 || from
                     .player_control_facts(actor, admitted.game_session_id)
-                    .map_err(|_| ())?
+                    .map_err(|_| prepare_error("summer_source_handoff_prepare_16"))?
                     .control_loss
                     .is_some()
             {
                 return refuse(ActivityRefusal::AuthorityRejected);
             }
-            let current = from.read_actor_position(actor).map_err(|_| ())?.position();
+            let current = from
+                .read_actor_position(actor)
+                .map_err(|_| prepare_error("summer_source_handoff_prepare_17"))?
+                .position();
             let mut saved = source_view.placed_record(&from, current);
             if saved.record.cell != participant.source_position.cell
                 || saved.record.coordinate_frame_digest
@@ -654,7 +686,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 lease.character_id(),
                 lease.generation().checked_add(1).ok_or(())?,
             )
-            .map_err(|_| ())?;
+            .map_err(|_| prepare_error("summer_source_handoff_prepare_18"))?;
             members.push(ActivityTransferMember {
                 source_actor: actor,
                 source_session: admitted.game_session_id,
@@ -678,8 +710,14 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             (attack, destination_attack)
         };
         let pending = {
-            let mut attempts = self.activity_runtimes.attempts.lock().map_err(|_| ())?;
-            attempts.try_reserve(1).map_err(|_| ())?;
+            let mut attempts = self
+                .activity_runtimes
+                .attempts
+                .lock()
+                .map_err(|_| prepare_error("summer_source_handoff_prepare_19"))?;
+            attempts
+                .try_reserve(1)
+                .map_err(|_| prepare_error("summer_source_handoff_prepare_20"))?;
             let mut kill_marks = seal_activity_kills(attack.kills(), &members)?;
             let mut held = match spells.prepare_activity_states(&mut destination_spells, &members) {
                 Ok(value) => value,
@@ -826,7 +864,11 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             for held in evidence {
                 held.release().await.map_err(|_| ())?;
             }
-            let result = result.map_err(|_| ())?;
+            let result = result.map_err(|_| {
+                if attempt.request.activity_key == "oteryn:boss.rakesh_moonfang" {
+                    super::operator_event("summer_source_handoff_durable_error");
+                }
+            })?;
             match result {
                 ActivityEnterOutcome::Entered(receipt)
                 | ActivityEnterOutcome::Replayed(receipt) => {
@@ -836,6 +878,9 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     attempt.receipt = Some(receipt);
                 }
                 ActivityEnterOutcome::Refused(reason) => {
+                    if attempt.request.activity_key == "oteryn:boss.rakesh_moonfang" {
+                        source_portal_refusal(reason);
+                    }
                     let (mut from, mut to) = if source_first {
                         let from = source.runtime.lock().await;
                         let to = destination.runtime.lock().await;
@@ -1094,4 +1139,23 @@ pub(super) fn activity_continuity(source: SessionContinuity) -> SessionContinuit
         server_save_sent: source.server_save_sent,
         ..SessionContinuity::FRESH
     }
+}
+
+// Static stage labels expose no request identifiers or database error values.
+fn source_portal_refusal(reason: ActivityRefusal) {
+    super::operator_event(match reason {
+        ActivityRefusal::InvalidInput => "summer_source_refused_invalid_input",
+        ActivityRefusal::AuthorityRejected => "summer_source_refused_authority",
+        ActivityRefusal::NoCapacity => "summer_source_refused_capacity",
+        ActivityRefusal::ContentChanged => "summer_source_refused_content_changed",
+        ActivityRefusal::ContentUnavailable => "summer_source_refused_content_unavailable",
+        ActivityRefusal::ReplayConflict => "summer_source_refused_replay",
+        ActivityRefusal::NotDue => "summer_source_refused_not_due",
+        ActivityRefusal::AlreadyReturned => "summer_source_refused_returned",
+        ActivityRefusal::OwnerStillCurrent => "summer_source_refused_owner_current",
+        ActivityRefusal::PartyCount => "summer_source_refused_count",
+        ActivityRefusal::Position => "summer_source_refused_position",
+        ActivityRefusal::Level => "summer_source_refused_level",
+        ActivityRefusal::Cooldown => "summer_source_refused_cooldown",
+    });
 }

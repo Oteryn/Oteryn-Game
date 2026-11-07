@@ -188,7 +188,7 @@ fn scenario() -> TestResult {
         admitted.continuity.selected_capabilities =
             crate::gameplay_transport::capabilities::SelectedCapabilities::select(
                 owner.offered_capabilities(),
-                &[3, 4, 6, 11, 15, 25, 385],
+                &[3, 4, 6, 11, 15, 25, 350],
             )
             .ok_or("NPC capability")?;
         let mut other = super::scenarios::peer_at(
@@ -205,7 +205,7 @@ fn scenario() -> TestResult {
         other.continuity.selected_capabilities =
             crate::gameplay_transport::capabilities::SelectedCapabilities::select(
                 owner.offered_capabilities(),
-                &[3, 4, 6, 11, 15, 25, 385],
+                &[3, 4, 6, 11, 15, 25, 350],
             )
             .ok_or("peer actual offered native NPC/trade capabilities")?;
         assert!(other.continuity.selected_capabilities.contains(3));

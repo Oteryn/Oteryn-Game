@@ -588,6 +588,16 @@ pub(super) async fn world<A: FreshAdmissionAuthority>(
         world_map = Some(view);
     }
     if selected_capabilities
+        .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_ITEM_EFFECTS_V1)
+    {
+        domains.push(OwnedDomain {
+            domain_id: oteryn_protocol_oteryn::presentation::STATE_DOMAIN_ITEM_EFFECTS,
+            revision: 0,
+            snapshot_type: 1,
+            payload: Vec::new(),
+        });
+    }
+    if selected_capabilities
         .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1)
     {
         domains.push(OwnedDomain {

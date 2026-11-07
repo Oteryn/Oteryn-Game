@@ -1,5 +1,5 @@
 //! Explicit Rotate is separate from Use (Crystal game.cpp:4521-4573).
-//! Capability 384 requires WORLD_INTERACTION_V1; older clients keep their USE behavior.
+//! Capability 388 requires WORLD_INTERACTION_V1; older clients keep their USE behavior.
 use crate::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1;
 pub use crate::world_object::{
     UseDisposition, UseIntent, UseTarget, WorldObjectError, WorldObjectTarget,
@@ -8,8 +8,8 @@ pub use crate::world_object::{
 };
 use crate::world_object::{decode_use_intent_target, encode_use_intent, encode_use_item_intent};
 
-pub const CAPABILITY_WORLD_ROTATE_V1: u32 = 384;
-pub const COMMAND_TYPE_ROTATE_WORLD_ITEM: u32 = 669;
+pub const CAPABILITY_WORLD_ROTATE_V1: u32 = 388;
+pub const COMMAND_TYPE_ROTATE_WORLD_ITEM: u32 = 670;
 pub const MAX_ROTATE_INTENT_BYTES: usize = crate::world_object::MAX_USE_INTENT_BYTES;
 pub const MAX_ROTATE_RESULT_BYTES: usize = crate::world_object::MAX_USE_RESULT_BYTES;
 

@@ -36,6 +36,12 @@ fn w19e_lottery_lose_wire_receipts() -> TestResult {
     run_scenario("oteryn:item.tibia.i5957", false, false)
 }
 
+#[test]
+fn srx1_demonic_blood_wire_transform_and_replay_postgres() -> TestResult {
+    run_scenario("oteryn:item.tibia.i6558", false, true)?;
+    run_scenario("oteryn:item.tibia.i6558", false, false)
+}
+
 fn run_scenario(key: &'static str, rust: bool, success: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -208,7 +214,22 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
                 source[12..].copy_from_slice(&nonce.to_be_bytes());
                 source
             })
-            .find(|source| plan(*source).is_some_and(|p| p.outputs.is_empty() != success))
+            .find(|source| {
+                plan(*source).is_some_and(|p| {
+                    if key == "oteryn:item.tibia.i6558" {
+                        p.outputs.first().is_some_and(|(definition, _)| {
+                            definition.production_key
+                                == if success {
+                                    "oteryn:item.tibia.i236"
+                                } else {
+                                    "oteryn:item.tibia.i237"
+                                }
+                        })
+                    } else {
+                        p.outputs.is_empty() != success
+                    }
+                })
+            })
             .ok_or("seeded outcome")?;
         let expected = plan(source).ok_or("plan")?;
         let mut tx = harness.pool.begin().await?;
@@ -270,7 +291,7 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
         assert_eq!(recipe, expected.recipe);
         assert_eq!(
             outputs.as_array().ok_or("outputs")?.len(),
-            usize::from(success)
+            usize::from(success || key == "oteryn:item.tibia.i6558")
         );
         assert!(hash_matches);
         let polished = rust && success;
@@ -354,6 +375,20 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
             )
             .await?
         );
+        if key == "oteryn:item.tibia.i6558" {
+            super::achievement_granters::assert_progress(
+                &harness,
+                "oteryn:achievement/demonic_barkeeper",
+                1,
+                false,
+                "oteryn:consume-transform",
+            )
+            .await?;
+            eprintln!(
+                "SRX1_PG demonic blood wire/transform/replay/achievement elapsed={:?}",
+                started.elapsed()
+            );
+        }
         eprintln!("POSTGRES_CASE_COMPLETED P11 Polisher rust={rust} success={success} replay");
         let elapsed = started.elapsed();
         assert!(elapsed > std::time::Duration::ZERO);
@@ -430,6 +465,7 @@ pub(super) async fn exchange_latest_source(
         None,
         true,
         None,
+        None,
     )
     .await
 }
@@ -456,6 +492,38 @@ pub(super) async fn exchange_rotate(
     .await
 }
 
+/// Drain presentation deltas after the result, through the real production publisher.
+pub(super) async fn exchange_with_visuals(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    command_id: u64,
+    payload: &[u8],
+    current_source: Option<std::num::NonZeroU32>,
+) -> TestResult<(
+    AdmittedSession,
+    UseDisposition,
+    Vec<u8>,
+    Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
+)> {
+    let visuals = std::cell::RefCell::new(Vec::new());
+    let (end, result, actual) = exchange_selected_source(
+        owner,
+        admitted,
+        command_id,
+        payload,
+        current_source,
+        None,
+        false,
+        Some(&visuals),
+    )
+    .await?;
+    Ok((end, result, actual, visuals.into_inner()))
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "test helper preserves existing exchange inputs and adds an optional wire recorder"
+)]
 #[allow(
     clippy::too_many_arguments,
     reason = "fixture independently selects command and source/target publication"
@@ -468,6 +536,9 @@ async fn exchange_selected_source(
     current_source: Option<std::num::NonZeroU32>,
     current_target: Option<std::num::NonZeroU32>,
     latest_source: bool,
+    visuals: Option<
+        &std::cell::RefCell<Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>>,
+    >,
     rotate: Option<std::num::NonZeroU32>,
 ) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
     if owner.root.has_ready_demand() {
@@ -682,9 +753,40 @@ async fn exchange_selected_source(
         client.write_u32(u32::try_from(frame.len())?).await?;
         client.write_all(&frame).await?;
         client.shutdown().await?;
+        let mut result = None;
         loop {
-            let raw = super::item_look::read_frame(&mut client).await?;
+            let raw = match super::item_look::read_frame(&mut client).await {
+                Ok(raw) => raw,
+                Err(error)
+                    if visuals.is_some()
+                        && result.is_some()
+                        && error.downcast_ref::<std::io::Error>().is_some_and(|error| {
+                            error.kind() == std::io::ErrorKind::UnexpectedEof
+                        }) =>
+                {
+                    return Ok::<_, Box<dyn std::error::Error>>((
+                        result.ok_or("missing result")?,
+                        actual,
+                    ));
+                }
+                Err(error) => return Err(error),
+            };
             let envelope = crate::foundation::decode_wire_envelope(&raw)?;
+            if envelope.message_type() == crate::foundation::MessageType::StateDelta
+                && let Some(visuals) = visuals
+            {
+                let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())?;
+                if delta.domain_id
+                    == oteryn_protocol_oteryn::presentation::STATE_DOMAIN_ITEM_EFFECTS
+                {
+                    visuals.borrow_mut().extend(
+                        oteryn_protocol_oteryn::presentation::decode_item_effect_batch(
+                            delta.payload,
+                        )
+                        .map_err(debug)?,
+                    );
+                }
+            }
             if envelope.message_type() == crate::foundation::MessageType::CommandResult {
                 let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
                 if result.command_id == command_id {
@@ -703,7 +805,10 @@ async fn exchange_selected_source(
                         oteryn_protocol_oteryn::world_object::decode_use_result(result.payload)
                             .map_err(|error| format!("native wire command={command_id} decode_stage=11 error={error:?}"))?
                     };
-                    return Ok::<_, Box<dyn std::error::Error>>((disposition, actual));
+                    if visuals.is_none() {
+                        return Ok::<_, Box<dyn std::error::Error>>((disposition, actual));
+                    }
+                    result = Some(disposition);
                 }
             }
         }

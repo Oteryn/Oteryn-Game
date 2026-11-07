@@ -1060,6 +1060,7 @@ impl ChannelActorCarrier {
         cell: LocalPosition,
     ) -> bool {
         self.slots.iter().any(|slot| match slot {
+            Slot::Occupied { lifecycle, .. } if lifecycle.staff_ghost => false,
             Slot::Occupied {
                 committed: true,
                 position: Some(version),

@@ -47,6 +47,7 @@ impl ItemMintCause {
             loot_table: output_table,
             purpose_key,
             draw_ordinal,
+            corpse_race: None,
         })
     }
 }

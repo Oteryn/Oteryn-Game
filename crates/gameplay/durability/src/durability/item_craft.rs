@@ -26,9 +26,11 @@ pub(crate) mod audit;
 mod enchanting;
 mod event_containers;
 mod harvest;
+mod skinning;
 pub mod soulpit;
 pub use enchanting::EnchantingCraft;
 pub use harvest::{MapHarvestFeedback, MapHarvestOperand, MapHarvestRequest, MapHarvestResult};
+pub use skinning::SkinningRequest;
 
 #[derive(Debug, Clone)]
 pub struct ItemCraftRequest {
@@ -137,13 +139,30 @@ impl DurabilityRoot {
     }
 }
 
-#[allow(clippy::too_many_lines)]
 async fn write<C: ItemLoopContent>(
     tx: &mut super::item_mint_audit::Type2Transaction<'_>,
     fence: CurrentCharacterItemFence,
     request: &ItemCraftRequest,
     native: &NativeGameplayState,
     content: &C,
+) -> Result<UseDisposition, DurabilityError> {
+    write_with_skinning(tx, fence, request, native, content, None).await
+}
+
+#[allow(
+    clippy::too_many_lines,
+    reason = "existing craft writer retains its single atomic inventory and audit owner"
+)]
+async fn write_with_skinning<C: ItemLoopContent>(
+    tx: &mut super::item_mint_audit::Type2Transaction<'_>,
+    fence: CurrentCharacterItemFence,
+    request: &ItemCraftRequest,
+    native: &NativeGameplayState,
+    content: &C,
+    skinning: Option<(
+        &SkinningRequest,
+        &oteryn_gameplay_content::content::charm_source::CanonicalCharmCatalogue,
+    )>,
 ) -> Result<UseDisposition, DurabilityError> {
     if request.enchanting.is_some() {
         return enchanting::write(tx, fence, request, native, content).await;
@@ -179,11 +198,27 @@ async fn write<C: ItemLoopContent>(
     {
         return Ok(UseDisposition::NothingToUse);
     }
-    let consumes_source = request
-        .gathering
-        .as_ref()
-        .is_none_or(|g| g.attempt.consumes_bait);
-    let conversion = if let Some(gathering) = &request.gathering {
+    let skinning = if let Some((operand, catalogue)) = skinning {
+        let Some(prepared) =
+            skinning::prepare(tx, fence, operand, &definition, native, catalogue).await?
+        else {
+            return Ok(UseDisposition::NothingToUse);
+        };
+        Some(prepared)
+    } else {
+        None
+    };
+    let consumes_source = skinning.is_none()
+        && request
+            .gathering
+            .as_ref()
+            .is_none_or(|g| g.attempt.consumes_bait);
+    let conversion = if let Some(prepared) = &skinning {
+        Some(oteryn_gameplay_items::item_craft::CookingConversion {
+            recipe: prepared.conversion.recipe.clone(),
+            outputs: prepared.conversion.outputs.clone(),
+        })
+    } else if let Some(gathering) = &request.gathering {
         let bait = if gathering.mutation.tool_key == "oteryn:item.tibia.i9306"
             && u16::try_from(gathering.mutation.before).is_ok_and(|target| {
                 oteryn_gameplay_items::fishing::MECHANICAL_FISHING_WATER.contains(&target)
@@ -435,18 +470,36 @@ async fn write<C: ItemLoopContent>(
     }
     let (transaction, event, occurred): (String, String, i64) = sqlx::query_as("SELECT game_character_uuid_v7()::text,game_character_uuid_v7()::text,(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&mut ***tx).await?;
     let tuple = tx.tuple();
-    let envelope = audit::encode(
-        fence,
-        request,
-        &conversion.recipe,
-        native.source_digest(),
-        &before,
-        &outputs,
-        &transaction,
-        &event,
-        occurred,
-        tuple.tuple(),
-    )?;
+    let envelope = if let Some(prepared) = &skinning {
+        audit::encode_map_harvest(
+            fence,
+            request.command,
+            json!({
+                "recipe": conversion.recipe, "intent": request.intent, "character": fence.character_id.as_bytes(), "before": before, "station": null, "gathering": null,
+                "corpse": prepared.before, "skinning": prepared.proof, "spent": {"key": prepared.spent.production_key, "revision": prepared.spent.revision_ref},
+                "outputs": outputs, "content_digest": native.source_digest(),
+                "lease_generation": fence.character_lease_generation,
+                "scope_generation": fence.scope_ownership_generation.get(),
+            }),
+            &transaction,
+            &event,
+            occurred,
+            tuple.tuple(),
+        )?
+    } else {
+        audit::encode(
+            fence,
+            request,
+            &conversion.recipe,
+            native.source_digest(),
+            &before,
+            &outputs,
+            &transaction,
+            &event,
+            occurred,
+            tuple.tuple(),
+        )?
+    };
     if let Some(gathering) = &request.gathering
         && !super::terrain_tool::apply_in_transaction(
             tx,
@@ -465,8 +518,14 @@ async fn write<C: ItemLoopContent>(
             .bind(ingredient.as_slice()).fetch_optional(&mut ***tx).await?,
         None => None,
     };
+    if let Some(prepared) = &skinning {
+        skinning::record(tx, fence, prepared, &transaction).await?;
+    }
     sqlx::query("INSERT INTO game_item_craft_records(transaction_id,event_id,game_session_id,command_id,character_id,world_id,intent,recipe,source_item_instance_id,parent_item_instance_id,source_ordinal,before_item,outputs,occurred_at,envelope_sha256,consume_source,ingredient_item_instance_id,ingredient_before_item,event_source_location) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,$4::text::numeric,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7,$8,encode($9,'hex')::uuid,encode($10,'hex')::uuid,$11::text::numeric,$12,$13,$14,sha256($15),$16,encode($17,'hex')::uuid,$18,$19)")
         .bind(&transaction).bind(&event).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&request.intent).bind(&conversion.recipe).bind(request.source.as_slice()).bind(&parent).bind(source.try_get::<String,_>("ordinal")?).bind(&before).bind(json!(outputs)).bind(occurred).bind(&envelope).bind(consumes_source).bind(request.ingredient.map(|id| id.to_vec())).bind(ingredient_before).bind(&nested_source).execute(&mut ***tx).await?;
+    if let Some(prepared) = &skinning {
+        skinning::transform(tx, prepared, &transaction).await?;
+    }
     if consumes_source {
         sqlx::query("UPDATE game_item_instances SET quantity=quantity-$3,lifecycle=CASE WHEN quantity=$3 THEN 2 ELSE 1 END,last_transaction_id=$2::uuid WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(request.source.as_slice()).bind(&transaction).bind(consumed_quantity).execute(&mut ***tx).await?;

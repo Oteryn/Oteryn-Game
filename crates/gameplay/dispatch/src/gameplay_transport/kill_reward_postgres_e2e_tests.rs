@@ -86,6 +86,9 @@ fn charm_wire_missing_snapshot_preserves_combat_and_assignment_changes_damage_an
         if plain.is_empty() {
             return Ok(());
         }
+        assert_eq!(wound.len(), plain.len());
+        assert_eq!(dodge.len(), plain.len());
+        assert_eq!(parry.len(), plain.len());
         assert!(
             plain.iter().any(|(outgoing, _)| *outgoing > 0),
             "no snapshot still deals damage: {plain:?}"
@@ -100,7 +103,7 @@ fn charm_wire_missing_snapshot_preserves_combat_and_assignment_changes_damage_an
         );
         assert!(
             dodge.iter().zip(&plain).any(|(a, b)| a.1 < b.1),
-            "assigned Dodge cancels damage"
+            "assigned Dodge cancels damage: dodge={dodge:?}, plain={plain:?}"
         );
         assert!(
             parry.iter().zip(&plain).any(|(a, b)| a.0 > b.0),
@@ -319,16 +322,6 @@ fn scenario_with_creature_observed(
     let holy_target =
         matches!(radiant, Some("paragon" | "templar")) && ranged_spell && !elemental_area;
     run(async |admin| {
-        let harness =
-            Harness::create_with_admission_seed(admin, "kill_reward_e2e", false, false).await?;
-        prepare_current_session(&harness).await?;
-        let seal = harness.recovery.seal_current().map_err(debug)?;
-        let authority = harness
-            .root
-            .open_character_authority(&seal)
-            .await
-            .map_err(debug)?;
-
         // The production generation, activated for the fixture's World on the Thalom source
         // world (its tiles carry the protection-zone flags the swing reads).
         let world = WorldId::decode(&id(42)).map_err(debug)?;
@@ -343,6 +336,16 @@ fn scenario_with_creature_observed(
                 )),
                 w22a_tables.as_deref(),
             );
+        let harness =
+            Harness::create_with_admission_seed(admin, "kill_reward_e2e", false, false).await?;
+        prepare_current_session(&harness).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+
         let active = controller.active().expect("activated generation");
         let native = active.native_gameplay().expect("native gameplay state");
         let room = if natural {
@@ -1306,7 +1309,11 @@ fn scenario_with_creature_observed(
         // dies; each pass is one swing interval later on the owner clock.
         {
             let runtime = owner.runtime.lock().await;
-            let now = owner.owner_now();
+            let now = if charm.is_some() {
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(60_000_000)
+            } else {
+                owner.owner_now()
+            };
             assert_eq!(
                 owner.states.attack.lock().await.set_target(
                     &runtime,
@@ -1369,7 +1376,12 @@ fn scenario_with_creature_observed(
                     )
                 ));
             }
-            for _ in 0..64 {
+            // Compare identical semantic turns across all four assignments. Real
+            // database latency must not change attack scheduling or draw ordinals.
+            for turn in 0..256 {
+                let now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(
+                    60_000_000 + turn * 3_000_000,
+                );
                 {
                     let mut runtime = owner.runtime.lock().await;
                     // Keep the real rat alive so the same attack lineage exercises many draws.
@@ -1382,9 +1394,9 @@ fn scenario_with_creature_observed(
                         .ok_or("player state")?;
                     state.restore_saved_vitals(state.facts.max_health, state.facts.max_mana);
                 }
-                owner.refresh_attack_weapon(actor, session).await;
-                owner.drain_auto_attacks().await;
-                owner.drain_monster_melee().await;
+                owner.refresh_attack_weapon_at(actor, session, now).await;
+                owner.drain_auto_attacks_at(now).await;
+                owner.drain_monster_melee_at(now).await;
                 let runtime = owner.runtime.lock().await;
                 let outgoing =
                     maximum - i64::try_from(runtime.live_creature_health(rat_actor).unwrap_or(0))?;
@@ -1393,7 +1405,6 @@ fn scenario_with_creature_observed(
                 samples.push((outgoing, player.facts.max_health - player.vitals().health));
                 drop(states);
                 drop(runtime);
-                owner.clock_origin = owner.clock_origin.checked_sub(PASS).expect("advance clock");
             }
             drop(owner);
             drop(authority);

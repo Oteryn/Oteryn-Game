@@ -287,7 +287,6 @@ pub(super) async fn dispatch_ground(
 ) -> TestResult {
     use tokio::io::AsyncWriteExt;
     let actor = admitted.runtime_actor.ok_or("actor")?;
-    let session = admitted.game_session_id;
     let character = admitted.item_fence.ok_or("item fence")?.character_id;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = crate::gameplay_transport::connection::serve_admitted(
@@ -426,8 +425,15 @@ pub(super) async fn dispatch_ground(
             // custody read is blocked. Give the existing view-command window
             // time to expire before exercising the next commands.
             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-            revalidate_session_after_lock(session, &mut client, pool, root, selected_handle)
-                .await?;
+            revalidate_session_after_lock(
+                owner,
+                admitted,
+                &mut client,
+                pool,
+                root,
+                selected_handle,
+            )
+            .await?;
             client.write_all(&open(12, selected_handle)?).await?;
             let restored = read_views(&mut client, 12, 2).await?;
             let child = restored
@@ -533,13 +539,16 @@ async fn revalidate_after_lock(
 /// A privileged fixture advances the session only after the real command is
 /// waiting on the root row. The old session must not publish a refreshed view.
 async fn revalidate_session_after_lock(
-    session: crate::foundation::GameSessionId,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
     client: &mut tokio::io::DuplexStream,
     pool: &sqlx::PgPool,
     root: [u8; 16],
     handle: ItemHandle,
 ) -> TestResult {
+    use std::{future::Future, task::Poll};
     use tokio::io::AsyncWriteExt;
+    let session = admitted.game_session_id;
     let mut blocker = pool.begin().await?;
     let pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
         .fetch_one(&mut *blocker)
@@ -548,12 +557,33 @@ async fn revalidate_session_after_lock(
         .bind(root.as_slice()).execute(&mut *blocker).await?;
     client.write_all(&open(11, handle)?).await?;
     wait_for_blocker(pool, pid).await?;
+    // Queue behind the real read while it still owns the gameplay lane. FIFO
+    // admission then fences periodic refresh until the temporary fixture session
+    // displacement is restored, without suppressing any production refresh check.
+    let mut restoring_lane = std::pin::pin!(owner.spell_lane.acquire());
+    std::future::poll_fn(|cx| {
+        assert!(restoring_lane.as_mut().poll(cx).is_pending());
+        Poll::Ready(())
+    })
+    .await;
     fixture(pool, "UPDATE game_durability_reconnect_sessions SET current_generation=current_generation+1 WHERE game_session_id=encode($1,'hex')::uuid", &[*session.as_bytes()]).await?;
     blocker.commit().await?;
+    let restoring_lane = restoring_lane
+        .await
+        .map_err(|_| "fixture lane unresolved")?;
     read_outcome(client, 11, ContainerViewOutcome::Stale).await?;
+    // Prove a real refresh also waits for the fixture restoration barrier.
+    let mut refresh = std::pin::pin!(owner.staff_refresh(admitted));
+    std::future::poll_fn(|cx| {
+        assert!(refresh.as_mut().poll(cx).is_pending());
+        Poll::Ready(())
+    })
+    .await;
     // Restore only fixture data so the same advertised handle can demonstrate
     // that the refused read did not manufacture a new view or lose its parent.
     fixture(pool, "UPDATE game_durability_reconnect_sessions SET current_generation=current_generation-1 WHERE game_session_id=encode($1,'hex')::uuid", &[*session.as_bytes()]).await?;
+    drop(restoring_lane);
+    assert!(refresh.await, "restored session must pass the real refresh");
     Ok(())
 }
 

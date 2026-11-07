@@ -69,16 +69,16 @@ pub(super) fn world(
     let index = native.item_index().ok_or("retailer native Item index")?;
     let boot=crate::map::boot::boot(&bytes,&crate::map::boot::BootPins{bundle:pins,map_revision:crate::map::overlay::map_revision(&base),start:crate::map::overlay::TilePos{x:32951,y:32103,floor:-5}},world,crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,|key|{
  let rev=index.revision(key)?;let policy=native.item_policy(key,rev).map(|p|p.record());
- Some(crate::map::facts::ItemDefinition{reference:index.definition_ref("Item",key,rev)?,solid:policy.and_then(|p|p.attributes.blocks_movement),blocks_projectile:policy.and_then(|p|p.attributes.blocks_projectile).unwrap_or(true),pickupable:policy.is_some_and(|p|matches!(&p.semantics.physical,F::Known(p) if p.pickupable==F::Known(true))),door:policy.is_some_and(|p|matches!(&p.semantics.classification,F::Known(c) if c.item_type==F::Known(ReferenceItemType::Door)))})
+ Some(crate::map::facts::ItemDefinition{reference:index.definition_ref("Item",key,rev)?,solid:policy.and_then(|p|p.attributes.blocks_movement),blocks_projectile:policy.and_then(|p|p.attributes.blocks_projectile).or_else(||crate::map::spell_tiles::qualified_hugo_ground_projectile(key)).unwrap_or(true),pickupable:policy.is_some_and(|p|matches!(&p.semantics.physical,F::Known(p) if p.pickupable==F::Known(true))),door:policy.is_some_and(|p|matches!(&p.semantics.classification,F::Known(c) if c.item_type==F::Known(ReferenceItemType::Door)))})
  }).map_err(debug)?;
     Ok((boot, table))
 }
 #[path = "simon_boat_route.rs"]
 mod boat_route;
-#[path = "simon_open_exit.rs"]
-mod open_exit;
 #[path = "simon_ladder_route.rs"]
 mod ladder_route;
+#[path = "simon_open_exit.rs"]
+mod open_exit;
 #[path = "simon_walk.rs"]
 mod walk;
 // A new actual serve stream emits an empty NPC snapshot and clears focus.

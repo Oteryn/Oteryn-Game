@@ -26,6 +26,7 @@ pub mod cults_of_tibia;
 pub mod dark_trails;
 pub mod grave_danger;
 pub mod grizzly_adams;
+pub mod hero_of_bounac;
 pub mod isle_of_evil;
 pub mod liquid_black;
 pub mod loader;
@@ -37,8 +38,10 @@ mod npc_cosmetic_final_acquisition;
 pub mod npc_cosmetics;
 #[cfg(test)]
 pub mod npc_rules;
+pub mod planegazer_finale;
 mod quests_2_focus;
 pub mod rotten_blood;
+pub mod schrodinger_island;
 pub mod soul_war;
 pub mod soul_war_dialogue;
 pub mod spike_fame_acquisition;

@@ -82,6 +82,29 @@ pub(in crate::play) fn apply(
     };
 }
 fn catalogue(panel: &mut Panel, value: wire::Catalogue) {
+    if let Some(before) = &panel.catalogue {
+        let mut unlocked = Vec::new();
+        for outfit in &value.outfits {
+            match before.outfits.iter().find(|old| old.key == outfit.key) {
+                None => unlocked.push(format!("Unlocked outfit: {}", outfit.key)),
+                Some(old) if outfit.permitted_addons & !old.permitted_addons != 0 => {
+                    unlocked.push(format!(
+                        "Unlocked addon: {}; allowed mask: {}",
+                        outfit.key, outfit.permitted_addons
+                    ));
+                }
+                _ => {}
+            }
+        }
+        for mount in &value.mounts {
+            if !before.mounts.contains(mount) {
+                unlocked.push(format!("Unlocked mount: {mount}"));
+            }
+        }
+        if !unlocked.is_empty() {
+            panel.feedback = unlocked.join("\r\n");
+        }
+    }
     if panel.catalogue.is_none() {
         if let Some(selected) = &value.selected {
             panel.fields[0].clone_from(&selected.selection.outfit_key);

@@ -51,12 +51,19 @@ pub async fn run_session<T: Stepper>(
     outbox.wheel_initialize(session.wheel_selected());
     outbox.exiva_initialize(session.exiva_selected());
     outbox.loyalty_skills_initialize(session.loyalty_skills_selected());
+    outbox.mechanics_status_initialize(
+        session.feature_selected(
+            oteryn_client_runtime::mechanics_status::CAPABILITY_MECHANICS_STATUS_V1,
+        ),
+    );
     outbox.condition_status_initialize(session.feature_selected(276));
     outbox.rest_status_initialize(session.feature_selected(277));
     outbox.battle_instinct_status_initialize(session.feature_selected(278));
     outbox.skill_progress_initialize(session.feature_selected(279));
     outbox.skill_display_initialize(session.feature_selected(370));
     outbox.party_effects_initialize(session.feature_selected(280));
+    outbox.potion_durations_initialize(session.feature_selected(381));
+    outbox.death_protection_initialize(session.feature_selected(382));
     outbox.quest_initialize(session.quest_state());
     outbox.task_board_initialize(session.task_board_selected());
     outbox.stash_initialize(session.stash_selected());
@@ -140,14 +147,14 @@ pub async fn run_session<T: Stepper>(
                         14 => outbox.player_trade_container_result(&result),
                         25 | 67 | 87 => outbox.properties_result(&command, &result),
                         53 => outbox.world_event_result(&result),
-                        384 => {
+                        oteryn_client_runtime::world_interaction::world_rotate::CAPABILITY_WORLD_ROTATE_V1 => {
                             // Install preceding inventory/reset pushes before validating the
                             // advisory response against its selected-item generation.
                             publish(&mut session, &outbox, &mut held);
                             outbox.rotation_probe_result(&result);
                             continue;
                         },
-                        54 | 55 | 115 | 150 => outbox.properties_result(&command, &result),
+                        54 | 55 | 115 | 150 | 207 => outbox.properties_result(&command, &result),
                         39 | 57 | 134 => outbox.properties_result(&command, &result),
                         97 | 149 => outbox.properties_result(&command, &result),
                         59 | 86 | 99 => outbox.properties_result(&command, &result),
@@ -161,10 +168,13 @@ pub async fn run_session<T: Stepper>(
                         225 => outbox.boss_difficulty_result(&result),
                         250 => outbox.hireling_management_result(&result),
                         276 => outbox.condition_status_result(&result),
+                        oteryn_client_runtime::mechanics_status::CAPABILITY_MECHANICS_STATUS_V1 => outbox.mechanics_status_result(&result),
                         277 => outbox.rest_status_result(&result),
                         278 => outbox.battle_instinct_status_result(&result),
                         279 | 370 => outbox.skill_progress_result(&result),
                         280 => outbox.party_effects_result(&result),
+                        381 => outbox.potion_durations_result(&result),
+                        382 => outbox.death_protection_result(&result),
                         _ => {}
                     }
                     publish(&mut session, &outbox, &mut held);

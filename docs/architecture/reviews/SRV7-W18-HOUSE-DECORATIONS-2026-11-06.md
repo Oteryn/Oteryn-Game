@@ -27,9 +27,9 @@ command is necessary: ordinary USE of a bookcase must still reach its container
 owner, and USE of a lamp must not silently select its directional rotation.
 The existing four-chair MapBase USE rotation compatibility path is retained.
 
-New integration numbers (renumber at integration if necessary): capability384
-`WORLD_ROTATE_V1`; command669 `ROTATE_WORLD_ITEM`; mechanic ordinal642; offer
-order639. Migration0992 only. No new transport message is required: the native
+Current post-main integration numbers: capability388
+`WORLD_ROTATE_V1`; command670 `ROTATE_WORLD_ITEM`; mechanic ordinal646; offer
+order643. Migration0992 only. No new transport message is required: the native
 rotation command uses the existing bounded opaque-target and UseResult codecs.
 
 ## Preserved native interface and authority
@@ -151,7 +151,9 @@ and state domain104→105. Only the strict magic-effect codec, session/native
 domain admission and actual effect publication are required by these House
 side actions. Unrelated novelty behavior and S17 casting are excluded.
 Rotate384/669/mechanic642/offer639 were allocated before PR3013 independently
-claimed the same values; integration must renumber the collision.
+claimed the same values. The post-main owning next-free audit renumbered only
+SRV7 Rotate to capability388/command670/mechanic646/offer643; main mechanics
+status384/669 remains unchanged.
 
 Validation remains in progress; this receipt is not a declaration that pending
 real PG/native capture regressions have passed. Valid constructor semantic RED

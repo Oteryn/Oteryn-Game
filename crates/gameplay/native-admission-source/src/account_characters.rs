@@ -472,7 +472,7 @@ impl From<FenceUnusable> for FenceWrite {
 
 /// The fence directory, opened one component at a time without following a
 /// symbolic link anywhere in its path; every fence access is relative to it.
-fn open_directory(parent: &Path) -> Result<OwnedFd, FenceUnusable> {
+pub(crate) fn open_directory(parent: &Path) -> Result<OwnedFd, FenceUnusable> {
     let flags = OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC;
     let start = if parent.is_absolute() { "/" } else { "." };
     let mut current = rustix::fs::openat(rustix::fs::CWD, start, flags, Mode::empty())

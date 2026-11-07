@@ -8,6 +8,11 @@ pub use opaque::{
     encode_opaque_wrap_affordance,
 };
 
+mod catalogue;
+pub use catalogue::{
+    CATALOGUE_PAGE_SIZE, Catalogue, CatalogueEntry, decode_catalogue_query, encode_catalogue_query,
+};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Action {

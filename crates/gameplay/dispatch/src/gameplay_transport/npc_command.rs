@@ -44,6 +44,7 @@ mod fresh_greet;
 mod furniture_shop;
 mod grizzly;
 mod grizzly_shop;
+mod hero_of_bounac;
 #[path = "hireling_services.rs"]
 pub(super) mod hireling_services;
 mod horse_rental;
@@ -52,6 +53,7 @@ mod liquid_black;
 mod lynda_wedding;
 mod monk;
 mod npc_cosmetics;
+mod planegazer_finale;
 mod premium_purchase;
 mod quest_dialogue;
 mod seasonal_cake;
@@ -881,6 +883,16 @@ pub(super) async fn npc_bank_talk(
         drop(runtime);
         drop(_trade_permit);
         return wrath_sleeping_dragon::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = hero_of_bounac::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return hero_of_bounac::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = planegazer_finale::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return planegazer_finale::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = premium_purchase::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);

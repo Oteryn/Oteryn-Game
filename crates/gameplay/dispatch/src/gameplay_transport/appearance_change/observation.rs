@@ -74,6 +74,14 @@ pub(in crate::gameplay_transport) async fn observe(
             actor.placement_identity() == entity.identity
                 && actor.actor_local_generation() == entity.generation
         })?;
+        if states.player_hidden_from(
+            &runtime,
+            observer,
+            *actor,
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now),
+        ) {
+            continue;
+        }
         let Some(target_session) = *target_session else {
             let creature = runtime.companion_snapshot(*actor).ok()?;
             let look = if let Some(look_type) = creature.state.policy.outfit_appearance() {
@@ -187,7 +195,11 @@ pub(in crate::gameplay_transport) async fn observe(
         // invisible player remains observable, but other players receive no outfit.
         if empty_outfit
             && target_session != session
-            && (player.equipped_invisible() || spell.invisible_at(now) || owned.invisible_at(now))
+            && (admission.states.staff_world.invisible(*actor)
+                && admission.states.staff_world.group(observer) < 4
+                || player.equipped_invisible()
+                || spell.invisible_at(now)
+                || owned.invisible_at(now))
         {
             look = wire::Look::EmptyOutfit;
         } else if let Some(temporary) = spell_look.or(owned_look) {
@@ -203,7 +215,9 @@ pub(in crate::gameplay_transport) async fn observe(
             appearance_ref: 1,
             entity,
             root_revision: fence.expected_character_revision.get(),
-            condition_revision: player.revision(),
+            condition_revision: player
+                .revision()
+                .checked_add(runtime.actor_staff_visibility(*actor).ok()?.2)?,
             owner_time_us: now,
             look,
             selection_revision,

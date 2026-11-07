@@ -7,6 +7,33 @@ use crate::gameplay_transport::novelty_item_use::PendingItemEffect;
 use oteryn_gameplay_items::novelty_items::NoveltyEffects;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
+pub(super) fn scoped_item_position(
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    fence: CurrentCharacterItemFence,
+) -> Result<MovementLocalPosition, UseDisposition> {
+    Ok(match fence.runtime_scope {
+        RuntimeScopeRefV1::Channel { .. } => runtime
+            .read_actor_position(actor)
+            .map_err(|_| UseDisposition::StaleState)?
+            .position(),
+        RuntimeScopeRefV1::Instance { .. } => {
+            let at = runtime
+                .house_actor_state(actor, fence.game_session_id)
+                .map_err(|_| UseDisposition::StaleState)?
+                .position;
+            if !(0..=15).contains(&at.floor) {
+                return Err(UseDisposition::StaleState);
+            }
+            MovementLocalPosition {
+                x: at.x,
+                y: at.y,
+                floor: at.floor,
+            }
+        }
+    })
+}
+
 pub(super) fn scoped_item_current(
     runtime: &ChannelRuntimeV1,
     actor: ExactActorRef,
@@ -115,26 +142,7 @@ impl ChannelSpellStates {
             self.deaths
                 .try_reserve(1)
                 .map_err(|_| UseDisposition::NotPossible)?;
-            let cell = match fence.runtime_scope {
-                RuntimeScopeRefV1::Channel { .. } => runtime
-                    .read_actor_position(actor)
-                    .map_err(|_| UseDisposition::StaleState)?
-                    .position(),
-                RuntimeScopeRefV1::Instance { .. } => {
-                    let at = runtime
-                        .house_actor_state(actor, fence.game_session_id)
-                        .map_err(|_| UseDisposition::StaleState)?
-                        .position;
-                    if !(0..=15).contains(&at.floor) {
-                        return Err(UseDisposition::StaleState);
-                    }
-                    MovementLocalPosition {
-                        x: at.x,
-                        y: at.y,
-                        floor: at.floor,
-                    }
-                }
-            };
+            let cell = scoped_item_position(runtime, actor, fence)?;
             Some(PlayerDeath {
                 occurrence: (self.mint_death)().ok_or(UseDisposition::NotPossible)?,
                 cell,
@@ -145,11 +153,21 @@ impl ChannelSpellStates {
         self.pending_item_effects
             .try_reserve(1)
             .map_err(|_| UseDisposition::NotPossible)?;
+        let cue_position = if let Some(ground) = &effects.ground {
+            MovementLocalPosition {
+                x: ground.x,
+                y: ground.y,
+                floor: ground.floor,
+            }
+        } else {
+            scoped_item_position(runtime, actor, fence)?
+        };
         self.pending_item_effects.push(PendingItemEffect {
             actor,
             fence,
             request: request.clone(),
             effects,
+            cue_position,
             before_revision,
             after,
             death,

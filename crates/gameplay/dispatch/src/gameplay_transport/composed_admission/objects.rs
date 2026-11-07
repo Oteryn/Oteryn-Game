@@ -378,6 +378,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if let Some(outcome) = self.use_bundle_chest(actor, command, map, &target).await {
                 return outcome;
             }
+            if let Some(outcome) = self.use_bundle_ladder(actor, command, map, &target).await {
+                return outcome;
+            }
             return self
                 .use_bundle_door(actor, command.game_session_id, map, &target)
                 .await;

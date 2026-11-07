@@ -34,7 +34,11 @@ def main() -> None:
         if old["name"] != entry["name"]:
             parser.error("previous golden belongs to a different capability")
         if previous != target and target.exists():
-            parser.error("renumbered golden already exists")
+            # A merged capability can already own the identical canonical
+            # golden. Consolidation must never overwrite a different ABI.
+            existing = json.loads(target.read_text(encoding="utf-8"))
+            if existing != entry:
+                parser.error("renumbered golden already exists with different facts")
     target.write_text(json.dumps(entry, indent=2) + "\n", encoding="utf-8")
     if args.previous is not None and previous != target:
         previous.unlink()

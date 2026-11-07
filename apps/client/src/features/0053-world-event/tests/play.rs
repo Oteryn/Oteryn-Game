@@ -80,6 +80,15 @@ fn world_event_shell_query_crosses_the_session_loop(
                     &mut self,
                     command: &FeatureCommand,
                 ) -> Result<GatedCommandResult, SessionError> {
+                    // All-capability sessions also refresh the retained death receipt at login.
+                    if command.capability == 382 {
+                        assert_eq!(command.kind, 664);
+                        assert!(command.payload.is_empty());
+                        return Ok(GatedCommandResult {
+                            payload: vec![0],
+                            ..result(command.capability)?
+                        });
+                    }
                     assert_eq!((command.capability, command.kind), (53, 64));
                     assert!(command.payload.is_empty());
                     result(command.capability)

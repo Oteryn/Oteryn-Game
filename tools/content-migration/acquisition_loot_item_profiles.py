@@ -10,7 +10,7 @@ CRYSTAL = '201189f871d23597b82caf88fd611454a2ddefb8'
 IDS = {
     894, 895, 3348, 3403, 5886, 5903, 5921, 5945, 5947, 6099, 6100, 6101,
     6102, 6107, 7289, 9041, 9056, 9586, 10198, 10199, 11700, 11701,
-    14019, 14021, 14022, 14023, 20275, 20276, 22721, 28792, 28793, 30168, 30169,
+    13941, 13942, 14019, 14021, 14022, 14023, 20275, 20276, 22721, 28792, 28793, 30168, 30169,
 }
 PROFILE = 'tools/content-schema/native-gameplay/acquisition-loot-item-profiles.json'
 HASHES = {'data/items/items.xml': '8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509',
@@ -33,7 +33,7 @@ def capture(crystal):
                           independent_crystal_source=(CRYSTAL, raw['data/items/items.xml']))
     return {'schema': 'OTERYN_NATIVE_ACQUISITION_LOOT_ITEM_PROFILES/v1', 'source_repository': 'zimbadev/crystalserver',
             'source_revision': CRYSTAL, 'sources': [{'path': p, 'sha256': h} for p, h in HASHES.items()],
-            'source_scope': 'Pinned Crystal source-program operands, Lynda wedding box9586 and Hellspawn corpse9056. Physical admission does not establish an acquisition producer.',
+            'source_scope': 'Pinned Crystal source-program operands, Lynda wedding box9586 and Hellspawn corpse9056. Physical admission does not establish an acquisition producer. Source-map Golden Anchor targets13941/13942 for retained-item Navigator entry USE; no inventory pickup or natural anchor reward is inferred.',
             'records': bound['records']}
 
 

@@ -66,7 +66,7 @@ pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
             check_uuid_v7(&cause.occurrence)
         }
         Some(FeeBurnCauseV1::AreaDonation(cause))
-            if cause.area == 1
+            if (1..=1024).contains(&cause.area)
                 && cause.world == value.world_id
                 && (1..=10_000_000).contains(&value.fee_gold_units) =>
         {

@@ -1,7 +1,0 @@
-{
-  "mechanic": "0385-item-effects",
-  "kind": "panels",
-  "id": "0385-item-effects-scene",
-  "status": "supported",
-  "entry": "view.rs::status"
-}

@@ -452,7 +452,7 @@ fn palette_and_input_allocation_bounds_fail_closed() -> TestResult {
 }
 
 #[test]
-fn existing_unpopulated_outfit_index_and_empty_mount_records_are_not_cosmetics() -> TestResult {
+fn directory_index_and_identity_only_mount_records_are_not_cosmetics() -> TestResult {
     let f = Fixture::actual_source_raw_authored_document()?;
     for path in [
         "content/cosmetics/outfits/index.json",
@@ -461,7 +461,8 @@ fn existing_unpopulated_outfit_index_and_empty_mount_records_are_not_cosmetics()
         let bytes = std::fs::read(repository().join(path))?;
         let parsed: Value = serde_json::from_slice(&bytes)?;
         if path.ends_with("index.json") {
-            assert_eq!(parsed["population_state"], "READY_UNPOPULATED");
+            // The maintained source is now admitted, but its directory index is not a catalogue.
+            assert_eq!(parsed["population_state"], "POPULATED");
         } else {
             let records = parsed["records"].as_array().ok_or("mounts")?;
             assert_eq!(records.len(), 252);

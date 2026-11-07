@@ -214,6 +214,125 @@ fn death_notice_preserves_logout_feedback_and_server_warning() -> Result<(), Str
 }
 
 #[test]
+fn death_protection_is_requested_at_login_and_after_respawn_and_shown_in_hud() -> Result<(), String>
+{
+    use oteryn_session::death_protection::{DeathProtection, DeathProtectionReply};
+    let (link, mut commands, outbox) = play_channel();
+    outbox.death_protection_initialize(true);
+    let command = outbox
+        .death_command(&mut commands)
+        .map_err(|e| e.to_string())?;
+    assert!(
+        matches!(command, crate::combat_input::PlayCommand::Feature(ref value) if value.capability == 382 && value.kind == 664)
+    );
+    let value = DeathProtectionReply(Some(DeathProtection {
+        occurrence: [7; 16],
+        consumed: vec!["oteryn:blessing.twist_of_fate".into()],
+    }));
+    outbox.death_protection_result(&oteryn_session::GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: oteryn_session::CommandStatus::Accepted,
+        payload: value.encode().ok_or("encode")?,
+    });
+    let mut view = PlayView::new(TileCoord::new(1, 1), 0, &[]).map_err(|e| e.to_string())?;
+    view.tick(&link).map_err(|e| format!("{e:?}"))?;
+    assert!(view.hud_status().contains("Twist Of Fate"));
+    assert_eq!(
+        crate::play::mailbox::lock(&outbox.0)
+            .death
+            .protection
+            .as_ref()
+            .ok_or("death receipt")?
+            .occurrence,
+        [7; 16]
+    );
+    for health in [0, 150] {
+        outbox.vitals(Some(ActorVitals {
+            health,
+            max_health: 150,
+            ..Default::default()
+        }));
+    }
+    assert!(matches!(
+        outbox.death_command(&mut commands),
+        Ok(crate::combat_input::PlayCommand::Feature(_))
+    ));
+    outbox.death_protection_result(&oteryn_session::GatedCommandResult {
+        command_id: 2,
+        server_sequence: 2,
+        status: oteryn_session::CommandStatus::Accepted,
+        payload: vec![0, 1],
+    });
+    assert!(outbox.death_command(&mut commands).is_err());
+    view.tick(&link).map_err(|e| format!("{e:?}"))?;
+    assert!(
+        view.hud_status().contains("Twist Of Fate"),
+        "malformed reply must not invent consumption"
+    );
+    Ok(())
+}
+
+#[test]
+fn coalesced_alive_vitals_refreshes_death_receipt_without_query_feedback() -> Result<(), String> {
+    let (link, mut commands, outbox) = play_channel();
+    outbox.death_protection_initialize(true);
+    assert!(outbox.death_command(&mut commands).is_ok());
+    let result = |payload| oteryn_session::GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: oteryn_session::CommandStatus::Accepted,
+        payload,
+    };
+    outbox.death_protection_result(&result(vec![0]));
+    let alive = ActorVitals {
+        health: 150,
+        max_health: 150,
+        ..Default::default()
+    };
+    // Publishing the cached current vitals after a command never causes feedback.
+    outbox.vitals(Some(alive));
+    assert!(outbox.death_command(&mut commands).is_err());
+    // The wire may coalesce dead and respawn revisions into one alive delta.
+    outbox.push(vec![SessionEvent::ActorVitals(AppliedDelta {
+        server_sequence: 2,
+        base_revision: 1,
+        new_revision: 3,
+        value: alive,
+    })]);
+    assert!(matches!(
+        outbox.death_command(&mut commands),
+        Ok(crate::combat_input::PlayCommand::Feature(_))
+    ));
+    assert!(
+        outbox.death_command(&mut commands).is_err(),
+        "single query in flight"
+    );
+    let value = oteryn_session::death_protection::DeathProtectionReply(Some(
+        oteryn_session::death_protection::DeathProtection {
+            occurrence: [8; 16],
+            consumed: vec!["oteryn:blessing.spiritual_shielding".into()],
+        },
+    ));
+    outbox.death_protection_result(&result(value.encode().ok_or("encode")?));
+    outbox.vitals(Some(alive));
+    assert!(outbox.death_command(&mut commands).is_err());
+    let mut view = PlayView::new(TileCoord::new(1, 1), 0, &[]).map_err(|e| e.to_string())?;
+    view.tick(&link).map_err(|e| format!("{e:?}"))?;
+    assert!(view.hud_status().contains("Spiritual Shielding"));
+    assert_eq!(
+        crate::play::mailbox::lock(&outbox.0)
+            .death
+            .protection
+            .as_ref()
+            .ok_or("death receipt")?
+            .occurrence,
+        [8; 16]
+    );
+    Ok(())
+}
+
+#[test]
 fn srv7_dead_house_uses_real_exit_intent_before_native_temple_resume()
 -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     std::thread::Builder::new()

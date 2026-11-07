@@ -160,6 +160,13 @@ pub enum ActivityReturnReason {
     Abandoned {
         transport: crate::foundation::AuthenticatedTransportRefV1,
     },
+    /// Signed staff disconnect; exact ACTIVE controller, independently proved in SQL.
+    StaffKick {
+        transport: crate::foundation::AuthenticatedTransportRefV1,
+    },
+    StaffKickLost {
+        epoch: crate::foundation::ControlLossEpochRefV1,
+    },
     /// Existing D449 release after all recovery checks except selected support;
     /// the exact independently recorded loss remains authoritative.
     CapabilityMismatch {
@@ -179,6 +186,8 @@ impl ActivityReturnReason {
             Self::IdleLogout => 7,
             Self::Abandoned { .. } => 8,
             Self::CapabilityMismatch { .. } => 9,
+            Self::StaffKick { .. } => 10,
+            Self::StaffKickLost { .. } => 11,
         }
     }
 }
@@ -325,9 +334,9 @@ impl ActivityHandoffOwner {
         recovering: bool,
     ) -> Result<ActivityReturnOutcome> {
         if request.command_id == Some(0)
-            || matches!(request.reason, ActivityReturnReason::Abandoned { .. }
+            || matches!(request.reason, ActivityReturnReason::Abandoned { .. } | ActivityReturnReason::StaffKick { .. }
                 if request.command_id.is_some() || request.destination_transport.is_none() || recovering)
-            || matches!(request.reason, ActivityReturnReason::CapabilityMismatch { .. }
+            || matches!(request.reason, ActivityReturnReason::CapabilityMismatch { .. } | ActivityReturnReason::StaffKickLost { .. }
                 if request.command_id.is_some() || request.destination_transport.is_some() || recovering)
             || (request.reason == ActivityReturnReason::IdleLogout
                 && (request.command_id.is_some()

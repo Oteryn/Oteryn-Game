@@ -5,7 +5,7 @@ use crate::durability::item_use::cupcakes::CupcakeTransformContext;
 use crate::foundation::RuntimeScopeRefV1;
 use sha2::{Digest, Sha256};
 
-use super::super::scoped::scoped_item_current as current;
+use super::super::scoped::{scoped_item_current as current, scoped_item_position};
 
 impl ChannelSpellStates {
     pub(super) fn prepare_cupcake_effect(
@@ -70,11 +70,21 @@ impl ChannelSpellStates {
         self.pending_item_effects
             .try_reserve(1)
             .map_err(|_| UseDisposition::NotPossible)?;
+        let cue_position = if let Some(ground) = &effects.ground {
+            crate::foundation::MovementLocalPosition {
+                x: ground.x,
+                y: ground.y,
+                floor: ground.floor,
+            }
+        } else {
+            scoped_item_position(runtime, actor, fence)?
+        };
         self.pending_item_effects.push(PendingItemEffect {
             actor,
             fence,
             request: request.clone(),
             effects,
+            cue_position,
             before_revision,
             after: Some(after),
             death: None,

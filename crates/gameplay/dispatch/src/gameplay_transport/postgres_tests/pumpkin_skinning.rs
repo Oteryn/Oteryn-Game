@@ -98,7 +98,7 @@ pub(super) async fn qualify(
                     14,
                     15,
                     18,
-                    385,
+                    350,
                     oteryn_protocol_oteryn::chat::CAPABILITY_SCRIPTED_ITEM_SPEECH_V1,
                 ],
             )

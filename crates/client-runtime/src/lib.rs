@@ -2,7 +2,7 @@
 
 #[path = "features/0288-ambient-sound/protocol.rs"]
 pub mod ambient_sound;
-#[path = "features/0385-item-effects/protocol.rs"]
+#[path = "features/0350-item-effects/protocol.rs"]
 pub mod item_effects;
 
 /// Account achievement pages from core command 10.
@@ -197,9 +197,12 @@ pub use oteryn_session::exiva;
 
 pub use oteryn_session::battle_instinct_status;
 pub use oteryn_session::condition_status;
+pub use oteryn_session::death_protection;
 /// Loyalty skills wire values owned by the admitted session.
 pub use oteryn_session::loyalty_skills;
+pub use oteryn_session::mechanics_status;
 pub use oteryn_session::party_effects;
+pub use oteryn_session::potion_durations;
 pub use oteryn_session::rest_status;
 pub use oteryn_session::skill_display;
 pub use oteryn_session::skill_progress;
@@ -227,8 +230,8 @@ pub mod player_trade;
 pub mod player_typing;
 pub use oteryn_session::{CommandStatus, WorldSpatialEntity, player_typing::TypingUpdate};
 pub use oteryn_session::{
-    arena, boss_difficulty, character_info, cyclopedia_character, cyclopedia_tracker,
-    weapon_proficiency,
+    arena, boss_difficulty, character_info, creature_push, cyclopedia_character,
+    cyclopedia_tracker, weapon_proficiency,
 };
 /// Prey command execution through the admitted session.
 #[path = "features/0140-prey/protocol.rs"]

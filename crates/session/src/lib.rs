@@ -139,6 +139,7 @@ pub use oteryn_protocol_oteryn::chat::{
 pub use oteryn_protocol_oteryn::item_view::{
     CharacterInventory, ItemEntry, ItemHandle, ItemMoveDestination, ItemMoveIntent,
     ItemMoveOutcome, MAX_CHARACTER_INVENTORY_ITEMS, MAX_OPEN_CONTAINER_ENTRIES, OpenContainer,
+    decode_character_inventory_with_equip_drop, encode_character_inventory_with_equip_drop,
 };
 use oteryn_protocol_oteryn::logout;
 mod server_messages;
@@ -154,15 +155,18 @@ mod vip_presence;
 pub use oteryn_protocol_oteryn::achievement_notices::{AchievementEarned, AchievementWatermark};
 pub use oteryn_protocol_oteryn::battle_instinct_status;
 pub use oteryn_protocol_oteryn::condition_status;
+pub use oteryn_protocol_oteryn::death_protection;
 pub use oteryn_protocol_oteryn::exiva;
 /// Imbuement shrine wire values used by the native client adapter.
 pub use oteryn_protocol_oteryn::imbuement;
 /// The capability-21 logout result a client reads, re-exported so it needs no protocol import.
 pub use oteryn_protocol_oteryn::logout::LogoutResult;
 pub use oteryn_protocol_oteryn::loyalty_skills;
+pub use oteryn_protocol_oteryn::mechanics_status;
 pub use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTradeSide};
 pub use oteryn_protocol_oteryn::npc_shop;
 pub use oteryn_protocol_oteryn::party_effects;
+pub use oteryn_protocol_oteryn::potion_durations;
 pub use oteryn_protocol_oteryn::rest_status;
 pub use oteryn_protocol_oteryn::skill_display;
 pub use oteryn_protocol_oteryn::skill_progress;
@@ -185,7 +189,9 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
 /// `protocol-oteryn` edge (ADR-0020 section 1).
 pub use oteryn_protocol_oteryn::world_spatial_entities::{
     EntityDetail, EntityKind, EntityRef, WorldSpatialEntitiesDelta, WorldSpatialEntitiesSnapshot,
-    WorldSpatialEntity, decode_world_spatial_entities_snapshot_with_item_handles,
+    WorldSpatialEntity, decode_world_spatial_entities_delta_with_item_handles,
+    decode_world_spatial_entities_snapshot_with_item_handles,
+    encode_world_spatial_entities_delta_with_item_handles,
 };
 /// N8 admission refusal classes, re-exported so the client maps a refused code to its FND-04A
 /// public class without a direct `protocol-oteryn` edge (ADR-0020 section 1).

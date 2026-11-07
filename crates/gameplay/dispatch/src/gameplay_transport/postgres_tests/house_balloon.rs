@@ -78,11 +78,11 @@ const MAP_OFFERS: &[OfferedCapability] = &[
         requires: &[6],
     },
     OfferedCapability {
-        id: 384,
+        id: 388,
         requires: &[11],
     },
     OfferedCapability {
-        id: 385,
+        id: 350,
         requires: &[6],
     },
     OfferedCapability {

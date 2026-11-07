@@ -1,0 +1,19 @@
+{
+  "id": 388,
+  "name": "WORLD_ROTATE_V1",
+  "constant": "world_rotate::CAPABILITY_WORLD_ROTATE_V1",
+  "requires": [
+    11
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    670
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

@@ -4,22 +4,28 @@
 //! One transaction decides one `operation_id` and stores its receipt, or stores nothing:
 //! a stored receipt is republished byte-identical, a deterministic answer is a new stored
 //! receipt (migration 0087), and an unavailable dependency is transient. Only
-//! `CreateCharacter` / `PLATFORM_USER_CREATE` is decided; any other command is a stored
-//! `CHAR_CMD_UNSUPPORTED` receipt. Nothing here logs an identifier or a name (§8).
+//! `CreateCharacter` / `PLATFORM_USER_CREATE` and the configured PLAT3 v2 account
+//! closure producer are decided here. Unknown dependencies stay PENDING; other
+//! commands get a stored `CHAR_CMD_UNSUPPORTED` receipt. No identifier or name is logged (§8).
 
 use super::character_authority::{
     ReconciledCharacterAuthority, SERVER_BUILD_ID, Security, account_security,
     assert_recovery_fence, current_interpretation, uuid_text,
 };
-use oteryn_gameplay_characters::character_authority_audit::{EVENT_SCHEMA_REVISION, EVENT_TYPE_CHARACTER_AUTHORITY_BOOTSTRAPPED, RETENTION_PROFILE, encode_bootstrap};
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation};
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::character_name::CharacterName;
 use crate::native_admission_source::character_commands::{
-    CREATE_COMMAND, Decision, ISSUER_AUTHORITY, Input, command_valid, counter,
-    source_authority_valid, uuid_v7,
+    CREATE_COMMAND, Decision, ISSUER_AUTHORITY, Input, account_deletion_command, command_valid,
+    counter, source_authority_valid, uuid_v7,
 };
+use oteryn_gameplay_characters::character_authority_audit::{
+    EVENT_SCHEMA_REVISION, EVENT_TYPE_CHARACTER_AUTHORITY_BOOTSTRAPPED, RETENTION_PROFILE,
+    encode_bootstrap,
+};
+pub mod account_deletion;
+
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
@@ -342,6 +348,40 @@ impl DurabilityRoot {
         operation_id: &str,
         input: Input<'_>,
     ) -> Decision {
+        self.decide_character_command_configured(
+            authority,
+            proof,
+            source_authority,
+            (command, operation_id),
+            input,
+            &account_deletion::Config::default(),
+        )
+        .await
+    }
+
+    /// Configured producer; authority and node capabilities remain independent
+    /// inputs, and every enabled pass revalidates them in PostgreSQL.
+    pub async fn decide_character_command_configured(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        proof: &NodeIncarnationProof,
+        source_authority: &str,
+        entry: (&str, &str),
+        input: Input<'_>,
+        deletion: &account_deletion::Config,
+    ) -> Decision {
+        let (command, operation_id) = entry;
+        if command == super::bazaar::TRANSFER_COMMAND {
+            return super::bazaar::transfer_input(
+                self,
+                authority,
+                proof,
+                source_authority,
+                operation_id,
+                input,
+            )
+            .await;
+        }
         let Some(operation) = uuid_v7(operation_id)
             .then(|| uuid_bytes(operation_id))
             .flatten()
@@ -360,6 +400,7 @@ impl DurabilityRoot {
             Input::Unsupported => Owned::Unsupported,
             Input::Oversized => Owned::Oversized,
         };
+        let deletion = deletion.clone();
         let proof = proof.clone();
         let source_authority = source_authority.to_owned();
         let command = command.to_owned();
@@ -381,6 +422,7 @@ impl DurabilityRoot {
                         operation_id: &operation_text,
                         operation,
                         recovery_generation: recovery.recovery_generation,
+                        deletion: &deletion,
                     };
                     let decided = decide(&mut tx, &request, &input).await?;
                     if decided.is_some() {
@@ -391,6 +433,7 @@ impl DurabilityRoot {
             })
             .await;
         match decided {
+            Ok(Some(Some(stored))) if stored.receipt.is_empty() => Decision::Transient,
             Ok(Some(Some(stored))) => Decision::Publish {
                 receipt: stored.receipt,
                 result_code: stored.result_code,
@@ -407,6 +450,7 @@ struct Request<'a> {
     operation_id: &'a str,
     operation: [u8; 16],
     recovery_generation: u64,
+    deletion: &'a account_deletion::Config,
 }
 
 /// `None`: transient, roll back. `Some(None)`: conflict with a stored receipt, nothing
@@ -452,6 +496,24 @@ async fn decide(
     }
     if sqlx::query("SELECT 1 FROM game_character_operation_receipts WHERE operation_id = encode($1, 'hex')::uuid")
         .bind(request.operation.as_slice()).fetch_optional(&mut **tx).await?.is_some() {
+        return Ok(Some(None));
+    }
+    if sqlx::query("SELECT 1 FROM game_bazaar_decisions WHERE issuer='OTERYN_PLATFORM_CHARACTER_AUTHORITY' AND operation_id=encode($1,'hex')::uuid").bind(request.operation.as_slice()).fetch_optional(&mut **tx).await?.is_some(){return Ok(Some(None));}
+    if account_deletion_command(request.command) {
+        let now: i64 = sqlx::query_scalar("SELECT game_account_closure_now()")
+            .fetch_one(&mut **tx)
+            .await?;
+        return account_deletion::decide(
+            tx,
+            request,
+            input,
+            &binding,
+            u64::try_from(now).map_err(|_| DurabilityError::Unavailable)?,
+        )
+        .await;
+    }
+    // All operation writers share the namespace, including pending closure jobs.
+    if account_deletion::operation_exists(tx, &request.operation).await? {
         return Ok(Some(None));
     }
     // The account portfolio lock only once no stored receipt answers, so a

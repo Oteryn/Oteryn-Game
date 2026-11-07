@@ -168,7 +168,7 @@ fn run_scenario(historical: bool) -> TestResult {
             admitted.continuity.selected_capabilities =
                 crate::gameplay_transport::capabilities::SelectedCapabilities::select(
                     &offered,
-                    &[3, 6, 25, 385],
+                    &[3, 6, 25, 350],
                 )
                 .ok_or("actual source offered capabilities")?;
             owner.admit_quest_session(&admitted).await;

@@ -232,7 +232,7 @@ fn scenario_mode(large_cash: bool) -> TestResult {
         admitted.continuity.selected_capabilities =
             crate::gameplay_transport::capabilities::SelectedCapabilities::select(
                 &offered,
-                &[3, 4, 6, 11, 14, 15, 18, 25, 86, 92, 385],
+                &[3, 4, 6, 11, 14, 15, 18, 25, 86, 92, 350],
             )
             .ok_or("NPC capability")?;
         assert!(admitted.continuity.selected_capabilities.contains(25));

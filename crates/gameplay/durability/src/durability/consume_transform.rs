@@ -22,6 +22,7 @@ use super::consume_transform_audit as audit;
 mod carried_furniture;
 #[path = "consume_transform_cupcakes.rs"]
 mod cupcakes;
+mod dispenser;
 #[path = "consume_transform_ground.rs"]
 mod ground;
 #[path = "consume_transform_mount_kits.rs"]
@@ -91,6 +92,15 @@ pub(super) struct ExtraInput {
     pub source_kind: i32,
 }
 
+#[derive(Clone, Copy, Default)]
+enum ActionContext<'a> {
+    #[default]
+    Carried,
+    Ground(&'a GroundActionContext),
+    DispenserTarget(&'a GroundActionContext),
+    DispenserHouseTarget(&'a HouseActionContext),
+}
+
 // Borrow the existing transaction fences; the Ground capacity owner independently
 // revalidates them in this same physical transaction before inserting a new root.
 struct ActionGroundFences<'a> {
@@ -153,7 +163,17 @@ impl DurabilityRoot {
         premium: Option<&dyn super::consume_transform_cosmetics::ItemCosmeticPremium>,
     ) -> Result<Option<ConsumeTransformResult>, DurabilityError> {
         self.consume_transform_inner(
-            permit, recovery, node, fence, request, native, content, probe, premium, None, None,
+            permit,
+            recovery,
+            node,
+            fence,
+            request,
+            native,
+            content,
+            probe,
+            premium,
+            ActionContext::Carried,
+            None,
             None,
         )
         .await
@@ -176,7 +196,17 @@ impl DurabilityRoot {
         target: Option<&MountKitMapTarget>,
     ) -> Result<Option<ConsumeTransformResult>, DurabilityError> {
         self.consume_transform_inner(
-            permit, recovery, node, fence, request, native, content, false, None, None, target,
+            permit,
+            recovery,
+            node,
+            fence,
+            request,
+            native,
+            content,
+            false,
+            None,
+            ActionContext::Carried,
+            target,
             None,
         )
         .await
@@ -196,7 +226,7 @@ impl DurabilityRoot {
         content: &C,
         probe: bool,
         premium: Option<&dyn super::consume_transform_cosmetics::ItemCosmeticPremium>,
-        ground: Option<&GroundActionContext>,
+        ground: ActionContext<'_>,
         mount_target: Option<&MountKitMapTarget>,
         cupcake: Option<&crate::durability::item_use::cupcakes::CupcakeTransformContext>,
     ) -> Result<Option<ConsumeTransformResult>, DurabilityError> {
@@ -209,10 +239,13 @@ impl DurabilityRoot {
                 UseDisposition::Rejected,
             )));
         }
-        permit.check_scope(fence.runtime_scope)?;
+        if !matches!(ground, ActionContext::DispenserHouseTarget(_)) {
+            permit.check_scope(fence.runtime_scope)?;
+        }
         let record = recovery
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
+
         let node = node.clone();
         let mut context = (
             native,
@@ -240,7 +273,12 @@ impl DurabilityRoot {
                 return Ok(Some(result));
             }
             if probe { tx.commit(deadline).await?; return Ok(None); }
-            if assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence, Some(request.command), context.1.loop_content_digest()).await.is_err() {
+            if let ActionContext::DispenserHouseTarget(house) = context.3 {
+                super::db::lock_admission_relations(&mut tx).await?;
+                if !house.dispenser_current(&mut tx, &node).await? {
+                    return Ok(Some(ConsumeTransformResult::refused(UseDisposition::StaleState)));
+                }
+            } else if assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence, Some(request.command), context.1.loop_content_digest()).await.is_err() {
                 return Ok(Some(ConsumeTransformResult::refused(UseDisposition::Rejected)));
             }
             if let Some(cupcake)=context.6 && !super::item_use::cupcakes::check_transform_cooldown(&mut tx,&fence,&request,cupcake).await? {
@@ -267,11 +305,12 @@ async fn write<C: ItemLoopContent>(
     native: &NativeGameplayState,
     content: &C,
     premium: Option<&dyn super::consume_transform_cosmetics::ItemCosmeticPremium>,
-    ground: Option<&GroundActionContext>,
+    ground: ActionContext<'_>,
     mount_target: Option<&MountKitMapTarget>,
+
     ground_fences: &ActionGroundFences<'_>,
 ) -> Result<ConsumeTransformResult, DurabilityError> {
-    if let Some(context) = ground {
+    if let ActionContext::Ground(context) = ground {
         return ground::write(
             ground_fences.permit,
             tx,
@@ -285,7 +324,12 @@ async fn write<C: ItemLoopContent>(
         )
         .await;
     }
-    let (world, _) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
+    // Named-House dispenser actions have already proved their current House fence;
+    // they do not write Channel Ground and cannot borrow a Channel lane proof.
+    let permit =
+        (!matches!(ground, ActionContext::DispenserHouseTarget(_))).then_some(ground_fences.permit);
+    let world = fence.runtime_scope.world_id();
+
     // The full Character fence/root lock precedes item locks. The only equipment
     // source admitted here is the unchanged party hat in the actual head slot.
     let source = sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,uuid_send(coalesce(e.parent_item_instance_id,n.parent_item_instance_id)) AS parent,coalesce(e.placement_ordinal,n.placement_ordinal,1)::text AS ordinal,CASE WHEN h.item_instance_id IS NOT NULL THEN 2 WHEN n.item_instance_id IS NOT NULL THEN 4 ELSE 1 END AS custody,CASE WHEN h.item_instance_id IS NOT NULL THEN to_jsonb(h) WHEN n.item_instance_id IS NOT NULL THEN to_jsonb(n) ELSE to_jsonb(e) END AS source_location FROM game_item_instances i LEFT JOIN game_item_container_entries e ON e.item_instance_id=i.item_instance_id AND e.character_id=encode($2,'hex')::uuid LEFT JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id LEFT JOIN game_item_nested_entries n ON n.item_instance_id=i.item_instance_id LEFT JOIN LATERAL game_item_loop_owner(n.parent_item_instance_id) owner ON n.item_instance_id IS NOT NULL LEFT JOIN game_character_equipment_slots h ON h.item_instance_id=i.item_instance_id AND h.character_id=encode($2,'hex')::uuid AND h.slot=1 AND h.world_id=i.world_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND ((e.world_id=i.world_id AND b.world_id=i.world_id) OR h.item_instance_id IS NOT NULL OR (n.world_id=i.world_id AND owner.owner_character=encode($2,'hex')::uuid AND owner.depth BETWEEN 0 AND 7)) FOR UPDATE OF i")
@@ -313,7 +357,7 @@ async fn write<C: ItemLoopContent>(
         return santa_leaves::write(
             tx,
             ground_fences.node,
-            Some(ground_fences.permit),
+            permit,
             fence,
             request,
             native,
@@ -353,8 +397,32 @@ async fn write<C: ItemLoopContent>(
             }
             super::consume_transform_cosmetics::Preparation::Unrelated => None,
         };
-    let planting_plan = planting::prepare_carried(tx, fence, request, &definition, native).await?;
+    let planting_plan = match dispenser::prepare(
+        tx,
+        fence,
+        request,
+        &definition,
+        source.try_get("quantity")?,
+        native,
+        ground,
+        ground_fences.node,
+    )
+    .await?
+    {
+        Some(plan) => Some(plan),
+        None if matches!(
+            ground,
+            ActionContext::DispenserTarget(_) | ActionContext::DispenserHouseTarget(_)
+        ) =>
+        {
+            return Ok(ConsumeTransformResult::refused(
+                UseDisposition::NothingToUse,
+            ));
+        }
+        None => planting::prepare_carried(tx, fence, request, &definition, native).await?,
+    };
     let dracoyle_plan = dracoyle::prepare(tx, fence, request, &definition, native).await?;
+
     let mut planting_request = request.clone();
     if planting_plan.is_some() || mount_plan.is_some() || dracoyle_plan.is_some() {
         planting_request.target = None;
@@ -500,7 +568,7 @@ async fn write<C: ItemLoopContent>(
             return Err(DurabilityError::InvalidStoredState);
         }
         return persist_action(
-            Some(ground_fences.permit),
+            permit,
             tx,
             fence,
             request,
@@ -636,7 +704,13 @@ async fn write<C: ItemLoopContent>(
         0
     };
     let mut extra_weight = 0_u64;
-    for input in &conversion.extra_inputs {
+    // A depleted placed dispenser is retired atomically, but its Ground weight
+    // was never part of the carried projection and cannot free carrying capacity.
+    for input in conversion
+        .extra_inputs
+        .iter()
+        .filter(|input| matches!(input.source_kind, 1 | 4))
+    {
         let definition = TypedDefinitionRef {
             family: input
                 .before
@@ -740,7 +814,7 @@ async fn write<C: ItemLoopContent>(
         .map(|row| row.try_get::<Value, _>("before_item"))
         .transpose()?;
     persist_action(
-        Some(ground_fences.permit),
+        permit,
         tx,
         fence,
         request,
@@ -802,18 +876,13 @@ async fn persist_action(
         || plan.source_count > 100
         || plan.extra_inputs.len() > 6
         || plan.extra_inputs.iter().any(|input| {
-            input.count == 0 || input.count != 1 || !matches!(input.source_kind, 1 | 4)
+            input.count == 0 || input.count != 1 || !matches!(input.source_kind, 1 | 3 | 4 | 5)
         })
     {
         return Err(DurabilityError::InvalidStoredState);
     }
-    let world = if source_kind == 5 {
-        fence.runtime_scope.world_id()
-    } else {
-        scope_of(&fence)
-            .map_err(|_| DurabilityError::InvalidStoredState)?
-            .0
-    };
+    let world = fence.runtime_scope.world_id();
+
     let (transaction, event, occurred): (String, String, i64) = sqlx::query_as("SELECT game_character_uuid_v7()::text,game_character_uuid_v7()::text,(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&mut ***tx).await?;
     let tuple = tx.tuple();
     let extra_inputs = plan.extra_inputs.iter().map(|input| json!({
@@ -878,6 +947,17 @@ async fn persist_action(
         tuple.tuple(),
     )?;
     // Achievement writes use their existing in-transaction owner and the same event.
+    if plan.recipe == "oteryn:potion.demonic-blood.v1" {
+        super::account_achievement::add_progress(
+            tx,
+            fence.character_id,
+            "oteryn:achievement/demonic_barkeeper",
+            250,
+            oteryn_gameplay_progression::achievement_granters::TRANSFORM_SOURCE_KIND,
+            event.as_bytes(),
+        )
+        .await?;
+    }
     apply_achievements(tx, fence, &plan.effects, &event).await?;
     // Keep the established rust-remover achievement. Seed use is another two-input
     // conversion, so source recipe rather than operand count qualifies this progress.
@@ -965,23 +1045,26 @@ async fn persist_action(
     }
     // Afflicted Ground USE leaves the clicked trigger intact and spends all six
     // carried pieces. SQL admits this exact exception with the same owner proofs.
-    for input in &plan.extra_inputs {
-        consume_count(
-            permit,
-            tx,
-            input.item,
-            &input.before,
-            &transaction,
-            input.source_kind,
-            input.count,
-        )
-        .await?;
+    let dispenser = plan.recipe == "oteryn:dispenser.fill";
+    if !dispenser {
+        for input in &plan.extra_inputs {
+            consume_count(
+                permit,
+                tx,
+                input.item,
+                &input.before,
+                &transaction,
+                input.source_kind,
+                input.count,
+            )
+            .await?;
+        }
     }
-
     #[cfg(debug_assertions)]
     if plan.recipe == "oteryn:item-cosmetic.i21897.v1" {
         eprintln!("srv7_glider stage=all_inputs_consumed");
     }
+
     for (ordinal, output) in outputs.iter().enumerate() {
         if let Some((fences, context)) = ground_admission {
             // Actual source consumption above determines whether its root remains.
@@ -1035,6 +1118,24 @@ async fn persist_action(
         )
         .await?;
     }
+    // Crystal cask_and_kegs.lua:43-54: retain the leftover empty flasks first,
+    // create the filled potions, then debit/remove the dispenser. The source
+    // debit above leaves every unfilled flask untouched before potion creation.
+    if dispenser {
+        dispenser::apply(tx, fence, plan, &transaction).await?;
+        for input in &plan.extra_inputs {
+            consume_count(
+                permit,
+                tx,
+                input.item,
+                &input.before,
+                &transaction,
+                input.source_kind,
+                input.count,
+            )
+            .await?;
+        }
+    }
     sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES($1::uuid,$2::uuid,1,1,2,$3,$4,encode($5,'hex')::uuid,$6,$6+$7,$8,sha256($8),1)")
         .bind(&event).bind(&transaction).bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id())
         .bind(request.source.as_slice()).bind(occurred).bind(super::item_mint_audit::AUDIT_RETENTION_P90D_MS)
@@ -1056,7 +1157,10 @@ async fn consume_count(
     source_kind: i32,
     count: u32,
 ) -> Result<(), DurabilityError> {
-    if source_kind == 5 {
+    if source_kind == 5
+        && sqlx::query_scalar::<_, bool>("SELECT EXISTS (SELECT 1 FROM game_item_consume_transform_records WHERE transaction_id=$1::uuid AND recipe IN ('oteryn:seasonal.cupcake.28484','oteryn:seasonal.cupcake.28485','oteryn:seasonal.cupcake.28486'))")
+            .bind(transaction).fetch_one(&mut ***tx).await?
+    {
         if count != 1 {
             return Err(DurabilityError::InvalidStoredState);
         }
@@ -1074,7 +1178,7 @@ async fn consume_count(
         .get("quantity")
         .and_then(Value::as_i64)
         .ok_or(DurabilityError::InvalidStoredState)?;
-    if count == 0 || i64::from(count) > quantity || !matches!(source_kind, 1 | 3 | 4) {
+    if count == 0 || i64::from(count) > quantity || !matches!(source_kind, 1 | 3 | 4 | 5) {
         return Err(DurabilityError::InvalidStoredState);
     }
     let changed = sqlx::query("UPDATE game_item_instances SET quantity=quantity-$3,lifecycle=CASE WHEN quantity=$3 THEN 2 ELSE 1 END,last_transaction_id=$2::uuid WHERE item_instance_id=encode($1,'hex')::uuid")
@@ -1083,6 +1187,13 @@ async fn consume_count(
         return Err(DurabilityError::InvalidStoredState);
     }
     if quantity == i64::from(count) {
+        if source_kind == 5 {
+            sqlx::query("SELECT game_item_dispenser_house_retire($1::uuid)")
+                .bind(transaction)
+                .execute(&mut ***tx)
+                .await?;
+            return Ok(());
+        }
         let sql = match source_kind {
             3 => {
                 "DELETE FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid"

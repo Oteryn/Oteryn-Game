@@ -1,7 +1,7 @@
 //! Canonical type-2 cooking proof, operation tag 15.
 use super::super::item_mint_audit::{
-    self as mint, CausationRefV1, CausationV1, EnvelopeCommandRefV1, EventEnvelopeV1, OneItemOperationV1, OneItemTransactionV1, TransactionEventRefV1,
-    Type2EventTuple,
+    self as mint, CausationRefV1, CausationV1, EnvelopeCommandRefV1, EventEnvelopeV1,
+    OneItemOperationV1, OneItemTransactionV1, TransactionEventRefV1, Type2EventTuple,
 };
 use super::*;
 use prost::Message;
@@ -33,15 +33,28 @@ pub(super) fn encode(
         "content_digest": content_digest,
         "gathering": request.gathering.as_ref().map(|g| json!({"placement": g.mutation.placement,"before":g.mutation.before,"after":g.mutation.after,"expected_revision":g.mutation.expected_revision,"reset_epoch":g.scope.reset_epoch,"consume_bait":g.attempt.consumes_bait})),
         "lease_generation": fence.character_lease_generation})).map_err(|_| DurabilityError::InvalidStoredState)?;
-    encode_proof(fence, request.command, proof, transaction, event, occurred, tuple)
+    encode_proof(
+        fence,
+        request.command,
+        proof,
+        transaction,
+        event,
+        occurred,
+        tuple,
+    )
 }
 
 /// A map harvest is a craft consequence with a real map operand and no carried debit.
 /// It never invents an input ItemInstance to satisfy the item audit envelope.
 #[allow(clippy::too_many_arguments)]
 pub(in crate::durability) fn encode_map_harvest(
-    fence: CurrentCharacterItemFence, command: CommandRef, proof: Value,
-    transaction: &str, event: &str, occurred: i64, tuple: Type2EventTuple,
+    fence: CurrentCharacterItemFence,
+    command: CommandRef,
+    proof: Value,
+    transaction: &str,
+    event: &str,
+    occurred: i64,
+    tuple: Type2EventTuple,
 ) -> Result<Vec<u8>, DurabilityError> {
     let proof = serde_json::to_vec(&proof).map_err(|_| DurabilityError::InvalidStoredState)?;
     encode_proof(fence, command, proof, transaction, event, occurred, tuple)
@@ -49,8 +62,13 @@ pub(in crate::durability) fn encode_map_harvest(
 
 #[allow(clippy::too_many_arguments)]
 fn encode_proof(
-    fence: CurrentCharacterItemFence, command: CommandRef, proof: Vec<u8>,
-    transaction: &str, event: &str, occurred: i64, tuple: Type2EventTuple,
+    fence: CurrentCharacterItemFence,
+    command: CommandRef,
+    proof: Vec<u8>,
+    transaction: &str,
+    event: &str,
+    occurred: i64,
+    tuple: Type2EventTuple,
 ) -> Result<Vec<u8>, DurabilityError> {
     let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
     let payload = mint::encode_bounded(

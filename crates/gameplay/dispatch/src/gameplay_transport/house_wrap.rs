@@ -10,6 +10,9 @@ use crate::durability::item_mint::TypedDefinitionRef;
 use oteryn_protocol_oteryn::house_wrap as wire;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
+#[path = "house_wrap/catalogue.rs"]
+pub(super) mod catalogue;
+
 const FURNITURE: &str = "oteryn:item.tibia.i6355";
 const KIT: &str = "oteryn:item.tibia.i6371";
 
@@ -36,6 +39,11 @@ macro_rules! authority_methods {
         fn house_wrap_available(&self) -> bool {
             false
         }
+        fn house_furniture_catalogue(
+            &self, _: $crate::gameplay_transport::connection::AdmittedSession, _: u16,
+        ) -> impl std::future::Future<Output=Option<Result<oteryn_protocol_oteryn::house_wrap::Catalogue,oteryn_protocol_oteryn::house_wrap::Refusal>>> {
+            async { None }
+        }
         fn house_wrap(
             &self,
             _: $crate::gameplay_transport::connection::AdmittedSession,
@@ -55,6 +63,11 @@ macro_rules! composed_methods {
                     .active_generation
                     .and_then(|g| g.native_gameplay())
                     .is_some()
+        }
+        async fn house_furniture_catalogue(
+            &self, admitted: connection::AdmittedSession, page: u16,
+        ) -> Option<Result<oteryn_protocol_oteryn::house_wrap::Catalogue,oteryn_protocol_oteryn::house_wrap::Refusal>> {
+            house_wrap::catalogue::read(self, admitted, page).await
         }
         async fn house_wrap(
             &self,

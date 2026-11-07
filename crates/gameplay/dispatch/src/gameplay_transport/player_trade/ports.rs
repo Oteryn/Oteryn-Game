@@ -2,6 +2,7 @@ use super::*;
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn inspection_trade_item(
         &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
         admitted: AdmittedSession,
         id: u64,
         counter: bool,
@@ -15,7 +16,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if index != 0 {
             return None;
         }
-        let permit = self.spell_lane_permit().await?;
         let runtime = self.runtime.lock().await;
         runtime.owner_fence().ok()?;
         let record = self
@@ -40,7 +40,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         self.trade_pair(
-            &permit,
+            permit,
             &runtime,
             &lives,
             CommandRef::new(admitted.game_session_id, CommandId::new(id).ok()?),

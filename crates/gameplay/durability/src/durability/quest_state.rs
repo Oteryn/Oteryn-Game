@@ -554,6 +554,8 @@ pub(in crate::durability) use npc_endpoints::preload as preload_npc_source_bindi
 
 pub mod grizzly;
 pub mod grizzly_boss;
+mod hero_of_bounac;
+mod planegazer_finale;
 pub mod rotten_blood;
 pub mod rotten_blood_access;
 pub mod soul_war;

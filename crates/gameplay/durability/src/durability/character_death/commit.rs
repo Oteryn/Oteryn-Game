@@ -18,6 +18,13 @@ impl DurabilityRoot {
         house: Option<crate::durability::house_scope_handoff::HouseId>,
     ) -> Result<CharacterDeathOutcome> {
         validate_request(&fence, &request)?;
+        let charm_loss = premium.and_then(|owner| owner.charm_loss()).cloned();
+        if charm_loss
+            .as_ref()
+            .is_some_and(|loss| !loss.valid_for(request.occurrence))
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         let binding = command_binding(&fence, &request)?;
         let policy_digest = policy_digest(&request.policy)?;
         let recovery = authority
@@ -45,6 +52,13 @@ impl DurabilityRoot {
 
                     if let Some(row) = load_receipt(&mut tx, request.occurrence).await? {
                         let stored: Vec<u8> = row.try_get("command_binding")?;
+                        let (retained_charm, stored_base) = promotion::split_charm_loss(&stored)?;
+                        if retained_charm.as_ref().is_some_and(|loss| !loss.valid_for(request.occurrence)) {
+                            return Err(DurabilityError::InvalidStoredState);
+                        }
+                        if charm_loss.as_ref().is_some_and(|loss| retained_charm.as_ref() != Some(loss)) {
+                            return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
+                        }
                         let committed = decode_receipt(&row)?;
                         let expected = match &committed.build_loss {
                             None => binding.clone(),
@@ -59,7 +73,7 @@ impl DurabilityRoot {
                             Some(items) => items::binding(&expected, items),
                             None => expected,
                         };
-                        if stored != expected {
+                        if stored_base != expected {
                             return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
                         }
                         commit_semantic_transaction(tx, deadline).await?;
@@ -178,12 +192,13 @@ impl DurabilityRoot {
                         regular_blessings,
                         promoted_with_current_premium: promotion::benefit(&mut tx, fence.character_id, premium).await?,
                     };
-                    let mut staged = match calculate_progression(
+                    let mut staged = match crate::domain::progression::calculate_progression_with_bless(
                         &snapshot,
                         &request.context,
                         &request.policy_revision,
                         &operation,
                         &request.policy,
+                        charm_loss.as_ref().map_or(0, |loss| loss.percent),
                     ) {
                         Ok(staged) => staged,
                         Err(error) => {
@@ -291,6 +306,7 @@ impl DurabilityRoot {
                         Some(items) => items::binding(&binding, items),
                         None => binding,
                     };
+                    let binding = promotion::bind_charm_loss(&binding, charm_loss.as_ref())?;
                     let death_world = request.death_cell.runtime_scope.world_id();
                     let (death_kind, death_channel, death_instance) = match request.death_cell.runtime_scope {
                         RuntimeScopeRefV1::Channel { channel_id, .. } => (1_i16, Some(channel_id.as_bytes().to_vec()), None),

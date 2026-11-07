@@ -16,6 +16,7 @@ use crate::project::{CreatureFacts, Families, LegacyPosition};
 use crate::sector::{Item, Tile};
 use crate::spawn;
 
+pub mod layers;
 pub mod subareas;
 
 /// What a palette key of the World Project resolves to in the pinned content revision.
@@ -1167,6 +1168,7 @@ fn assemble(
         }
     }
     let skipped: BTreeSet<String> = state.diagnostics.iter().map(|d| d.key.clone()).collect();
+    let layers = layers::realize(input, state.resolver, &sectors)?;
     let manifest = Manifest {
         subareas: subareas?,
         format: bundle::FORMAT.into(),
@@ -1188,7 +1190,7 @@ fn assemble(
         },
         npcs: npc_report.counts(&npcs, input.families),
     };
-    let bytes = bundle::write_with_npcs(&manifest, &sectors, &spawns, &npcs)?;
+    let bytes = bundle::write_with_layers(&manifest, &sectors, &spawns, &npcs, &layers)?;
     let mut digest = [0; 32];
     digest.copy_from_slice(&bytes[bytes.len() - 32..]);
     Ok(Compiled {
@@ -1361,6 +1363,9 @@ fn prove(
         },
         npcs: npc_report.counts(&npcs, families),
     };
+    if read.layers != layers::realize(input, resolver, &read.sectors)? {
+        return differs("compiled layer table differs".into());
+    }
     let got = &read.manifest;
     for (field, same) in [
         ("subareas", expected.subareas == got.subareas),

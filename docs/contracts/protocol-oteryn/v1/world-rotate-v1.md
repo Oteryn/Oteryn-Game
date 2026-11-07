@@ -1,7 +1,7 @@
 # Explicit world item Rotate V1
 
-Capability **384 WORLD_ROTATE_V1** requires 11 WORLD_INTERACTION_V1 (transitively
-15 ITEM_USE_V1, 18 WORLD_MAP_VIEW_V1, 4 ITEM_VIEW_MOVE_V1 and 6 WORLD_SPATIAL_ENTITIES). Command **669
+Capability **388 WORLD_ROTATE_V1** requires 11 WORLD_INTERACTION_V1 (transitively
+15 ITEM_USE_V1, 18 WORLD_MAP_VIEW_V1, 4 ITEM_VIEW_MOVE_V1 and 6 WORLD_SPATIAL_ENTITIES). Command **670
 ROTATE_WORLD_ITEM** is independent of USE. Crystal
 `201189f871d23597b82caf88fd611454a2ddefb8 src/game/game.cpp:4521-4573`
 separates Rotate, refuses unique items, checks range and invited House access,
@@ -43,5 +43,5 @@ verified official `AppearanceFlags.rotate` (field 22, Canary pinned
 `src/protobuf/appearances.proto:154`); missing/unknown appearances offer no Rotate. It
 revalidates the exact live target, and displays the server result.
 
-Older same-major peers do not select 384 and never send 669. No prior field,
+Older same-major peers do not select 388 and never send 670. No prior field,
 command or USE meaning changes (FND-02 protocol compatibility contract §7/§9).

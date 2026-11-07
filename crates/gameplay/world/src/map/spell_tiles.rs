@@ -54,8 +54,15 @@ use oteryn_world_bundle::bundle::{Family, Manifest, Sector, TerrainKind};
 use std::collections::{BTreeSet, HashMap};
 use std::sync::Arc;
 
+mod hugo_ground;
 mod immovable;
 mod seasonal_ground;
+
+/// Exact source projectile facts of the three Fibula ladder destination grounds.
+/// No portable definition or materialization is admitted.
+pub fn qualified_hugo_ground_projectile(key: &str) -> Option<bool> {
+    hugo_ground::blocks_projectile(key)
+}
 
 /// Exact captured ground physics for a Terrain-owned palette source key.
 /// Callers use this only when their served Item profile has no projectile fact;
@@ -187,7 +194,10 @@ impl SpellTilesBuilder {
                                 entry
                                     .terrain
                                     .filter(|terrain| terrain.kind == TerrainKind::Ground)
-                                    .and_then(|_| seasonal_ground::blocks_projectile(&entry.key))
+                                    .and_then(|_| {
+                                        seasonal_ground::blocks_projectile(&entry.key)
+                                            .or_else(|| hugo_ground::blocks_projectile(&entry.key))
+                                    })
                             })
                             .unwrap_or(true),
                         pickupable: definition.is_some_and(|definition| definition.pickupable),

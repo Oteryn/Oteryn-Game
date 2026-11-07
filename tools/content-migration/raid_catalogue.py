@@ -503,6 +503,10 @@ def build_records(sources: dict[str, dict], evidence: dict, reconciliation: dict
                   "wiki_records": identities, "sources": refs, "schedule": schedule,
                   "variant_group": f"raid-group:{Path(path).parent.name}.{group}" if group else None,
                   "variants": [variant], "end": {"kind": "until_reset", "despawn_after_ms": None}, "inactive_reasons": []}
+        if key == "raid:furyfate.furyosa":
+            # Accepted EVENTS-WORLD-1 W6/W10:343permille entry availability also gates this raid.
+            record["requires_world_change"] = {"key": "fury_gates", "variant": None}
+            record["world_change_binding"] = "EVENTS-WORLD-1 W6/W10; WORLD-SRC-1105 native activation"
         for identity in identities:
             reconcile_global(record, wiki[identity])
         if key == "raid:abdendriel.chayenne":
@@ -530,7 +534,22 @@ def build_records(sources: dict[str, dict], evidence: dict, reconciliation: dict
             record["inactive_reasons"].remove("native_wave_area_unknown")
             if any(not entry["area"]["regions"] for entry in record["donor_cycle"]["areas"]):
                 record["inactive_reasons"].append("donor_flower_area_unbound")
-            record["inactive_reasons"].append("dryad_wave_conflict:wiki_five_waves_in_one_hour_vs_donor_indefinite_four_area_cycle")
+            # WORLD-SRC owner2026-11-05 explicitly selects donor-following spawn admission.
+            cycle = record["donor_cycle"]
+            record["schedule"].update(interval_ms=cycle["interval_ms"] * len(cycle["areas"]), repeat=True)
+            record["end"] = {"kind": "until_reset", "despawn_after_ms": None}
+            announcements, waves = [], []
+            for index, entry in enumerate(cycle["areas"]):
+                delay = index * cycle["interval_ms"]
+                announcements.append({"delay_ms": delay, "text": entry["message"], "kind": "advance", "source": entry["source"]})
+                waves.append({"delay_ms": delay, "entries": [{"creature": cycle["creature"], "source_name": "Dryad",
+                    "amount": {"min": cycle["requested_per_wave"], "max": cycle["requested_per_wave"]},
+                    "area_anchor": area_anchor(entry["area"]), "area": copy.deepcopy(entry["area"]),
+                    "boss": False, "spawn_mode": "shared_area", "source": entry["source"]}]})
+            record["variants"] = [{"key": "crystal:flower_month_cycle", "announcements": announcements, "waves": waves, "unresolved": []}]
+            record["inactive_reasons"] = [reason for reason in record["inactive_reasons"] if reason not in {
+                "wiki_donor_identity_unresolved", "message_kind_or_timing_unresolved", "calendar_firing_rule_unresolved"}]
+            record["compatibility_decision"] = "WORLD-SRC-1105: owner-authorized Crystal Flower Month cycle; archived Global conflict retained"
         admit_halloween_hare(record, observed)
         admit_mutated_pumpkin(record, observed)
         qualify(record, creatures, placements)

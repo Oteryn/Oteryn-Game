@@ -38,6 +38,7 @@ enum Case {
     VoodooSuccess,
     VoodooFailure,
     VoodooWithoutTarget,
+    VoodooFarTarget,
     Present,
     GroundCupcakeBlueberry,
     GroundCupcakeStrawberry,
@@ -77,6 +78,7 @@ impl Case {
             Self::VoodooSuccess
             | Self::VoodooFailure
             | Self::VoodooWithoutTarget
+            | Self::VoodooFarTarget
             | Self::GroundVoodoo => "oteryn:item.tibia.i3002",
             Self::Present | Self::GroundPresent => "oteryn:item.tibia.i906",
         }
@@ -120,7 +122,10 @@ impl Case {
         )
     }
     fn refused(self) -> bool {
-        matches!(self, Self::HatInBag | Self::VoodooWithoutTarget)
+        matches!(
+            self,
+            Self::HatInBag | Self::VoodooWithoutTarget | Self::VoodooFarTarget
+        )
     }
 }
 #[test]
@@ -226,6 +231,11 @@ fn run_case(case: Case) -> TestResult {
 #[path = "novelty_items/scenario.rs"]
 mod scenario;
 use scenario::scenario;
+
+#[test]
+fn novelty_voodoo_far_target_refuses_without_receipt_or_private_effect() -> TestResult {
+    run_case(Case::VoodooFarTarget)
+}
 
 #[path = "novelty_items/cupcakes.rs"]
 mod cupcakes;

@@ -25,6 +25,15 @@ pub struct DepotObservation {
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
+    /// NX-1: current durable bans/kicks and session staff flags; independent of presentation capabilities.
+    fn staff_refresh(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
+        async { true }
+    }
+    /// A closing account uses the existing activity/terminal-release owners.
+    fn account_closure_check(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
+        async { false }
+    }
+
     #[cfg(test)]
     fn test_durability_root(&self) -> Option<&crate::durability::DurabilityRoot> {
         None
@@ -486,6 +495,11 @@ pub trait FreshAdmissionAuthority {
         std::future::pending()
     }
 
+    /// A durable Newhaven kit changed carried items; consume its bounded display notification.
+    fn take_newhaven_inventory_changed(&self, _session: GameSessionId) -> bool {
+        false
+    }
+
     fn take_tutorial_notice(
         &self,
         _session: GameSessionId,
@@ -790,6 +804,18 @@ pub trait FreshAdmissionAuthority {
     /// item returns None so existing tool owners can handle it; uncertain writes close
     /// the command through Err instead of falling through to a second mutation owner.
     fn use_soulpit_items(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _target: Option<ItemKey>,
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
+    }
+
+    /// I14: probe flask/dispenser actions before Channel-only fluid handlers in a named House.
+    fn use_dispenser_action(
         &self,
         _actor: ExactActorRef,
         _command: UseCommand,

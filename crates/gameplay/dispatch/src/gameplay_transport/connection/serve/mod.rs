@@ -37,6 +37,7 @@ mod use_effects;
 // Fields drop in the reverse order of the original connection locals. In particular,
 // release the pacing claim before dropping the session command stream (which locks ingress).
 struct ServeState {
+    cast_chat_revision: u64,
     spell_catalog: Option<spell_catalog::SessionCatalog>,
     integrity: integrity::Integrity,
     target_walk: Option<target_move::PendingWalk>,
@@ -148,6 +149,9 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    // Staff visibility shares the view cadence; input/timer ticks must not turn
+    // best-effort reads into continuous contention for the gameplay DB holder.
+    let mut next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
     let mut integrity = integrity::Integrity::default();
     let root_authority = authority;
     // Keep one guard across owner changes. It must also drop the transferred
@@ -162,6 +166,11 @@ where
             Err(()) => return ServeEnd::Disconnected.finish(admitted),
         }
         let authority = scoped_authority.as_ref().unwrap_or(root_authority);
+        // Resolve the admitted scope before checking its actor, including a
+        // reconnect whose actor already belongs to an activity Instance.
+        if !authority.staff_refresh(admitted).await {
+            return ServeEnd::Disconnected.finish(admitted);
+        }
         if !authority.remember_activity_connection(admitted) {
             return ServeEnd::Disconnected.finish(admitted);
         }
@@ -240,6 +249,14 @@ where
                 Ok(None) => {}
                 Err(end) => return end.finish(session.admitted),
             }
+            // A committed handoff has retired the source actor. Cross its
+            // barrier before refreshing staff facts through the new owner.
+            if tokio::time::Instant::now() >= next_staff_refresh {
+                if !authority.staff_refresh(session.admitted).await {
+                    return ServeEnd::Disconnected.finish(session.admitted);
+                }
+                next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
+            }
             if let Err(end) = analyser::emit(stream, authority, &mut session).await {
                 authority.player_trade_disconnected(session.admitted.game_session_id);
                 return end.finish(authority.current_activity_connection(session.admitted));
@@ -256,6 +273,12 @@ where
                 }
                 Ok(None) => {}
                 Err(end) => return end.finish(session.admitted),
+            }
+            if tokio::time::Instant::now() >= next_staff_refresh {
+                if !authority.staff_refresh(session.admitted).await {
+                    return ServeEnd::Disconnected.finish(session.admitted);
+                }
+                next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
             }
             let input = match inbound::receive(stream, authority, &mut session, next).await {
                 Ok(Some(input)) => input,

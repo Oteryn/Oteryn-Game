@@ -1,0 +1,15 @@
+{
+  "id": 388,
+  "name": "WORLD_ROTATE_V1",
+  "owner_decision": "SRV7 post-main next-free reallocation: capability388, command670; main mechanics status384/669 preserved, 2026-11-07",
+  "owner": "world and House Item action owners",
+  "requires": [
+    11
+  ],
+  "command_types": [
+    670
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES; selected peers may send explicit Rotate. Existing USE and legacy clients retain their original behavior."
+}

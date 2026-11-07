@@ -22,6 +22,7 @@ pub struct ChannelSessionStates {
     pub boss_activity_handoff: super::BossActivityHandoffSlot,
     /// Shared weak browse containers live only while a connection holds a view.
     pub(super) browse_fields: super::container_view::browse_cache::BrowseFields,
+    pub casts: std::sync::OnceLock<super::cast::CastNode>,
     /// Calendar projection hint only; the durable Cake World owner rechecks every mutation.
     pub(super) cake_stage: std::sync::atomic::AtomicU8,
     pub(super) horse_expiry: super::horse_station::ExpiryClocks,
@@ -96,6 +97,8 @@ pub struct ChannelSessionStates {
     /// The Channel owner's player vitals and cooldowns (spell cast §4). Always locked after
     /// `runtime`, never before, like `door`.
     pub spell_states: Mutex<actor_spell::ChannelSpellStates>,
+    /// NX-1: current-session staff flags and uncertain world-effect receipts.
+    pub(super) staff_world: super::staff_tools::WorldTools,
     pub(super) tibiadrome: super::tibiadrome::Drome,
     pub(super) timed_items: super::timed_item::TimedRuntime,
     /// PAR-P12a: Characters whose level, tracked kill or boss kill may have changed a title
@@ -129,6 +132,7 @@ impl ChannelSessionStates {
     /// connection recipients, and its existing node shutdown/input gate.
     pub(super) fn for_activity(&self) -> Self {
         Self {
+            casts: self.casts.clone(),
             analyser: std::sync::Arc::clone(&self.analyser),
             gameplay_idle_policy: self.gameplay_idle_policy,
             input_gate: std::sync::Arc::clone(&self.input_gate),
@@ -139,6 +143,7 @@ impl ChannelSessionStates {
 
     /// Forget exactly the state retired after the runtime removes a terminal session.
     pub(super) fn forget_session(&self, session: GameSessionId) {
+        self.staff_world.forget(session);
         self.dawnport_departures.forget(session);
         self.analyser.forget(session);
         self.fence_holders.forget(session);

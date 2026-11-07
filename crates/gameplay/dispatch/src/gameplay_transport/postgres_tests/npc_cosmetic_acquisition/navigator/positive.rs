@@ -165,7 +165,7 @@ pub(super) async fn exercise(
             .position();
         assert_eq!(
             (position.x, position.y, position.floor),
-            (33640, 31379, -9),
+            (33640, 31379, 9),
             "exact source anchor destination"
         );
         let kept:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND minted_transaction_id=encode($2,'hex')::uuid AND lifecycle=1 AND quantity=1)").bind(uuid.as_slice()).bind(mint.as_slice()).fetch_one(&h.pool).await?;
@@ -217,7 +217,9 @@ pub(super) async fn exercise(
     assert_eq!(resolved[0].granting_character_id.as_bytes(), &id(41));
     assert_eq!(
         resolved[0].source_event_id.as_slice(),
-        sqlx::types::Uuid::parse_str(&receipt.0)?.as_bytes().as_slice()
+        sqlx::types::Uuid::parse_str(&receipt.0)?
+            .as_bytes()
+            .as_slice()
     );
     drop(connection);
     let final_command = first + 9;

@@ -359,7 +359,7 @@ fn srv7_native_rotate_session_loop_shows_server_completion()
                     Err(SessionError::SessionUnusable)
                 }
                 fn feature_selected(&self, capability: u32) -> bool {
-                    matches!(capability, 4 | 6 | 11 | 15 | 18 | 384)
+                    matches!(capability, 4 | 6 | 11 | 15 | 18 | 388)
                 }
                 async fn world_context(
                     &mut self,
@@ -382,7 +382,7 @@ fn srv7_native_rotate_session_loop_shows_server_completion()
                             world_rotate::CAPABILITY_WORLD_ROTATE_V1,
                             world_rotate::COMMAND_TYPE_ROTATE_WORLD_ITEM
                         ),
-                        (384, 669)
+                        (388, 670)
                     );
                     let payload = world_rotate::encode_rotate_result(
                         world_rotate::UseDisposition::Committed,
@@ -587,13 +587,13 @@ fn srv7_native_carried_rotate_probe_and_completion_cross_session_loop()
                     (domain == 17).then(|| self.map.clone())
                 }
                 fn feature_selected(&self, capability: u32) -> bool {
-                    matches!(capability, 4 | 6 | 11 | 15 | 18 | 384)
+                    matches!(capability, 4 | 6 | 11 | 15 | 18 | 388)
                 }
                 async fn feature(
                     &mut self,
                     command: &FeatureCommand,
                 ) -> Result<GatedCommandResult, SessionError> {
-                    assert_eq!((command.capability, command.kind), (384, 669));
+                    assert_eq!((command.capability, command.kind), (388, 670));
                     let request = world_rotate::decode_rotate_request(&command.payload)
                         .map_err(|_| SessionError::SessionUnusable)?;
                     assert!(request.probe);

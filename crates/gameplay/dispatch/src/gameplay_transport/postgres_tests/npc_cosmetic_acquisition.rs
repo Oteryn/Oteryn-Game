@@ -491,16 +491,16 @@ fn scenario_for_primal_case(
                 &offered,
                 if royal && royal::full() {
                     &[
-                        3, 4, 6, 7, 11, 15, 18, 28, 37, 49, 62, 86, 153, 207, 385, 386,
+                        3, 4, 6, 7, 11, 15, 18, 28, 37, 49, 62, 86, 153, 207, 350, 386,
                     ]
                 } else if npc_key == "oteryn:npc.gnomadness" {
-                    &[3, 6, 7, 11, 15, 18, 37, 92, 153, 207, 385]
+                    &[3, 6, 7, 11, 15, 18, 37, 92, 153, 207, 350]
                 } else if simon_lifetime_source || (navigator_source && navigator::owned()) {
-                    &[3, 4, 6, 11, 15, 18, 385]
+                    &[3, 4, 6, 11, 15, 18, 350]
                 } else if hanna_world {
-                    &[3, 6, 25, 385]
+                    &[3, 6, 25, 350]
                 } else {
-                    &[3, 6, 385]
+                    &[3, 6, 350]
                 },
             )
             .ok_or("NPC capability")?;

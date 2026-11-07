@@ -50,7 +50,7 @@ const _: () =
 pub const PROFILE: &str = "\
 WITH head AS (SELECT o.character_id, min(o.created_at) AS oldest \
                 FROM game_public_character_profile_outbox o \
-               WHERE NOT (o.character_id::text = ANY($1::text[])) \
+               WHERE NOT (o.character_id::text = ANY($1::text[])) AND NOT EXISTS(SELECT 1 FROM game_account_closure_members qm JOIN game_account_closures qc ON qc.account_id=qm.account_id AND qc.close_operation_id=qm.close_operation_id WHERE qm.character_id=o.character_id AND qm.step=2 AND qc.state='CANCELLING') \
                  AND NOT EXISTS (SELECT 1 FROM game_character_roots n \
                                    JOIN game_public_character_profile_outbox v \
                                      ON v.vacated_name_key = n.name_key \
@@ -73,7 +73,7 @@ SELECT h.character_id::text AS character_id, e.projection_epoch, p.projection_re
   FROM head h \
   JOIN game_public_character_profiles p USING (character_id) \
  CROSS JOIN game_public_projection_epoch e \
-  LEFT JOIN game_character_roots r ON r.character_id = h.character_id \
+  LEFT JOIN game_character_roots r ON r.character_id = h.character_id AND NOT game_account_closure_detached(r.character_id) \
   LEFT JOIN game_character_progression_state g ON g.character_id = h.character_id \
   LEFT JOIN game_character_build_state b ON b.character_id = h.character_id \
  WHERE e.epoch_scope = 1 \
@@ -105,6 +105,7 @@ SELECT o.world_id::text AS world_id, o.category, e.projection_epoch, h.projectio
  CROSS JOIN game_public_projection_epoch e \
  WHERE e.epoch_scope = 1 \
    AND NOT ((o.world_id::text || ':' || o.category::text) = ANY($1::text[])) \
+   AND NOT EXISTS(SELECT 1 FROM game_account_closure_members qm JOIN game_account_closures qc ON qc.account_id=qm.account_id AND qc.close_operation_id=qm.close_operation_id JOIN game_character_roots qr ON qr.character_id=qm.character_id WHERE qr.world_id=o.world_id AND qm.step=2 AND qc.state='CANCELLING') \
  ORDER BY o.created_at, o.world_id, o.category LIMIT 1";
 
 // The HIGHSCORES-0 tables (RANK-1, HS-1). Read only once `SOURCE` holds, in
@@ -116,7 +117,7 @@ SELECT s.computed_at_ms, r.filter::int AS filter, r.rank::text AS rank, \
        r.level::text AS level, r.value_primary::text AS value \
   FROM game_world_highscore_heads h \
   JOIN game_world_highscore_snapshots s ON s.snapshot_id = h.current_snapshot_id \
-  LEFT JOIN game_world_highscore_rows r ON r.snapshot_id = s.snapshot_id \
+  LEFT JOIN game_world_highscore_rows r ON r.snapshot_id = s.snapshot_id AND NOT game_account_closure_detached(r.character_id) \
  WHERE h.world_id = $1::uuid AND h.category = $2 \
  ORDER BY r.filter, r.position LIMIT $3";
 
@@ -149,7 +150,7 @@ WITH cut AS (SELECT e.projection_epoch, \
                   LEFT JOIN game_character_progression_state g \
                     ON g.character_id = r.character_id \
                   LEFT JOIN game_character_build_state b ON b.character_id = r.character_id \
-                 WHERE r.lifecycle = 1 \
+                 WHERE r.lifecycle = 1 AND NOT game_account_closure_detached(r.character_id) \
                    AND EXISTS (SELECT 1 FROM game_durability_admission_character_guards a \
                                   JOIN game_durability_reconnect_sessions s \
                                     ON s.game_session_id = a.holder_game_session_id \

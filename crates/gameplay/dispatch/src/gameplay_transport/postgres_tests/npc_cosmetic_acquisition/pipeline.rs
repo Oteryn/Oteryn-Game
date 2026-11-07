@@ -12,7 +12,7 @@ const FAME: &str = "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_fa
 async fn track(h: &Harness, key: &str) -> TestResult<i64> {
     Ok(sqlx::query_scalar::<_,i64>("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2").bind(id(41).as_slice()).bind(key).fetch_optional(&h.pool).await?.unwrap_or(-1))
 }
-async fn progression(h: &Harness) -> TestResult<(i64, i32)> {
+async fn progression(h: &Harness) -> TestResult<(i64, i64)> {
     Ok(sqlx::query_as("SELECT total_experience,level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?)
 }
 async fn source_clock(h: &Harness, seconds: i64) -> TestResult {

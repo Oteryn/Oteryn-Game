@@ -12,6 +12,10 @@ pub(super) enum Case {
     Outfit,
     Afflicted,
     ConcurrentGrant,
+    ProductionOutfit,
+    ProductionParts,
+    ProductionOtOnly,
+    ProductionMount,
     OtDollPolicy,
 }
 
@@ -123,24 +127,49 @@ pub(super) async fn execute(
             let source = reference("oteryn:item.tibia.i6579").ok_or("OT doll source")?;
             let item: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(item_instance_id) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i6579' AND lifecycle=1")
                 .fetch_one(&h.pool).await?;
-            let item: [u8;16] = item.try_into().map_err(|_| "OT doll identity")?;
-            let rule = oteryn_gameplay_items::item_cosmetics::rule("oteryn:item.tibia.i6579").ok_or("OT doll rule")?;
-            let stop = (1..=512).find(|command| {
-                oteryn_gameplay_items::item_cosmetics::select_for_command(rule, *admitted.game_session_id.as_bytes(), *command, item)
-                    .is_some_and(|choice| choice.grants.iter().all(|g| g.contains("430-431") || g.contains("514-516")))
-            }).ok_or("bounded admitted OT doll outcome")?;
+            let item: [u8; 16] = item.try_into().map_err(|_| "OT doll identity")?;
+            let rule = oteryn_gameplay_items::item_cosmetics::rule("oteryn:item.tibia.i6579")
+                .ok_or("OT doll rule")?;
+            let stop = (1..=512)
+                .find(|command| {
+                    oteryn_gameplay_items::item_cosmetics::select_for_command(
+                        rule,
+                        *admitted.game_session_id.as_bytes(),
+                        *command,
+                        item,
+                    )
+                    .is_some_and(|choice| {
+                        choice
+                            .grants
+                            .iter()
+                            .all(|g| g.contains("430-431") || g.contains("514-516"))
+                    })
+                })
+                .ok_or("bounded admitted OT doll outcome")?;
             for _ in 0..stop {
                 let command = admitted.continuity.next_command_id;
-                let (next, result, _) = super::super::rust_lottery::exchange(owner, admitted, command, &payload, Some(source), None).await?;
+                let (next, result, _) = super::super::rust_lottery::exchange(
+                    owner,
+                    admitted,
+                    command,
+                    &payload,
+                    Some(source),
+                    None,
+                )
+                .await?;
                 admitted = next;
-                assert_eq!(result, UseDisposition::NotPossible, "an OT-only addon-doll rule must not grant on the production caller");
+                assert_eq!(
+                    result,
+                    UseDisposition::NotPossible,
+                    "an OT-only addon-doll rule must not grant on the production caller"
+                );
             }
             assert_eq!(grant_count(h).await?, 0);
             let quantity: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
                 .bind(item.as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(quantity, 1);
         }
-        Case::Parts | Case::OmittedGrant | Case::ConcurrentGrant => {
+        Case::Parts | Case::OmittedGrant | Case::ConcurrentGrant | Case::ProductionParts => {
             let source = reference("oteryn:item.tibia.i36938").ok_or("source")?;
             assert!(
                 !appearance(owner, &admitted)
@@ -148,7 +177,12 @@ pub(super) async fn execute(
                     .catalogue
                     .mounts
                     .iter()
-                    .any(|k| k == packet::MOUNT)
+                    .any(|k| k
+                        == if matches!(case, Case::ProductionParts) {
+                            "oteryn:content.mount.singeing_steed"
+                        } else {
+                            packet::MOUNT
+                        })
             );
             let mut last_payload = Vec::new();
             for command in 1..=4 {
@@ -189,7 +223,12 @@ pub(super) async fn execute(
                     .catalogue
                     .mounts
                     .iter()
-                    .any(|k| k == packet::MOUNT)
+                    .any(|k| k
+                        == if matches!(case, Case::ProductionParts) {
+                            "oteryn:content.mount.singeing_steed"
+                        } else {
+                            packet::MOUNT
+                        })
             );
             let (end, result, _) = super::super::rust_lottery::exchange(
                 owner,
@@ -220,10 +259,15 @@ pub(super) async fn execute(
                     .catalogue
                     .mounts
                     .iter()
-                    .any(|k| k == packet::MOUNT)
+                    .any(|k| k
+                        == if matches!(case, Case::ProductionParts) {
+                            "oteryn:content.mount.singeing_steed"
+                        } else {
+                            packet::MOUNT
+                        })
             );
         }
-        Case::Outfit => {
+        Case::Outfit | Case::ProductionOutfit => {
             // Exercise the existing chat owner's local feedback without adding an
             // unrelated CHAT wire capability to this item transition fixture.
             owner.states.chat.admit(
@@ -365,9 +409,57 @@ pub(super) async fn execute(
                 .catalogue
                 .outfits
                 .iter()
-                .find(|o| o.key == packet::FUNGUS)
+                .find(|o| {
+                    o.key
+                        == if matches!(case, Case::ProductionOutfit) {
+                            "oteryn:content.outfit.soil_guardian_outfits"
+                        } else {
+                            packet::FUNGUS
+                        }
+                })
                 .ok_or("earned outfit")?;
             assert_eq!(outfit.permitted_addons, 3);
+        }
+        Case::ProductionMount => {
+            let (end, result, actual) = super::super::rust_lottery::exchange(
+                owner,
+                admitted,
+                1,
+                &payload,
+                reference("oteryn:item.tibia.i23538"),
+                None,
+            )
+            .await?;
+            assert_eq!(result, UseDisposition::Committed);
+            assert_eq!(item_quantity(h, 71).await?, 0);
+            assert!(
+                appearance(owner, &end)
+                    .await?
+                    .catalogue
+                    .mounts
+                    .iter()
+                    .any(|key| key == "oteryn:content.mount.sparkion_mount")
+            );
+            let (_, replayed, _) =
+                super::super::rust_lottery::exchange(owner, end, 1, &actual, None, None).await?;
+            assert_eq!(replayed, UseDisposition::Committed);
+            assert_eq!(grant_count(h).await?, 1);
+            assert_eq!(receipt_count(h).await?, 1);
+        }
+        Case::ProductionOtOnly => {
+            let (_, result, _) = super::super::rust_lottery::exchange(
+                owner,
+                admitted,
+                1,
+                &payload,
+                reference("oteryn:item.tibia.i6579"),
+                None,
+            )
+            .await?;
+            assert_eq!(result, UseDisposition::NotPossible);
+            assert_eq!(item_quantity(h, 71).await?, 1);
+            assert_eq!(grant_count(h).await?, 0);
+            assert_eq!(receipt_count(h).await?, 0);
         }
         Case::Afflicted => {
             let before: serde_json::Value = sqlx::query_scalar("SELECT to_jsonb(g) FROM game_item_ground_locations g WHERE item_instance_id=encode($1,'hex')::uuid")
