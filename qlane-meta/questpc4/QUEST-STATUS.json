@@ -3164,7 +3164,7 @@
     },
     "scope_note": "All LANE-L6 input source blockers remain obligations. Differences from selected recipe approximations are not authority to drop a blocker. Historical qengine ownership language is not treated as a reason to defer work now owned by L6.",
     "publication_branch": "claude/happy-davinci-ijz3wy-questpc4",
-    "latest_batch": "cloud-floor-assembly-04",
+    "latest_batch": "cloud-ruby-native-profile-05",
     "mechanisms": {
       "reusable_tools_and_atomic_counters": {
         "status": "QUALIFIED",
@@ -3353,6 +3353,46 @@
           "Source fire-area presentation",
           "Native altar and all remaining whole-quest access/reward composition"
         ]
+      },
+      "ruby_helmet_native_policy": {
+        "status": "QUALIFIED",
+        "scope": "Only native3230 identity/admission and exact absolute policy under real PostgreSQL activation; not ruby conversion, timer execution or whole Ancient Tombs qualification.",
+        "source": {
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/items/items.xml",
+          "line": 8079,
+          "sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
+          "duration_ms": 1800000,
+          "decay_target": 3229,
+          "stop_duration": false,
+          "charges": "NOT_APPLICABLE"
+        },
+        "red": {
+          "test": "l6_ruby_profile_admits_exact_helmet_absolute_policy",
+          "marker": "POSTGRES_DATABASE_READY l6-ruby-profile",
+          "result": "0 passed / 1 failed",
+          "duration_seconds": 53.29,
+          "error": "full helmet3230 native policy missing",
+          "log": "/tmp/questpc4-ruby-profile-red.log"
+        },
+        "green": {
+          "test": "l6_ruby_profile_admits_exact_helmet_absolute_policy",
+          "marker": "POSTGRES_CASE_COMPLETED l6-ruby-profile",
+          "result": "1 passed / 0 failed",
+          "duration_seconds": 53.116194692,
+          "log": "/tmp/questpc4-ruby-profile-green.log",
+          "scope": "Native policy only, exact identity3230,1800000ms absolute deadline to3229, no charges and actual active PostgreSQL content digest"
+        },
+        "generated_delta": {
+          "before": 3606,
+          "after": 3607,
+          "added": [
+            "oteryn:item.tibia.i3230"
+          ],
+          "changed_existing": [],
+          "removed": [],
+          "provider": "PASS write and --check,42 import files; native-only regeneration includes freshness checks"
+        }
       }
     },
     "active_counts": {
@@ -3363,118 +3403,93 @@
     },
     "latest_batch_checks": {
       "result": "PASS",
-      "focused_postgres": {
-        "result": "3 passed / 0 failed",
-        "total_seconds": 109.81,
-        "log": "/tmp/questpc4-floor-assembly-final-all.log",
-        "cases": [
-          {
-            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly",
-            "duration_seconds": 55.929983408
-          },
-          {
-            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-missing",
-            "duration_seconds": 55.980734694
-          },
-          {
-            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-unbound",
-            "duration_seconds": 53.871434084
-          }
-        ],
-        "probes": [
-          "busy Ground owner rejects without consequence",
-          "locked destination Item rejects without consequence",
-          "injected receipt trigger witness executes; entire original drop and assembly roll back",
-          "audit7 balance summaries + SHA256 of exact full immutable snapshots",
-          "fresh output instance and append ordinal; same physical xid as triggering move",
-          "original wire command replay writes no duplicate assembly"
-        ]
+      "profile_postgres": {
+        "test": "l6_ruby_profile_admits_exact_helmet_absolute_policy",
+        "marker": "POSTGRES_CASE_COMPLETED l6-ruby-profile",
+        "result": "1 passed / 0 failed",
+        "duration_seconds": 53.116194692,
+        "log": "/tmp/questpc4-ruby-profile-green.log",
+        "scope": "Native policy only, exact identity3230,1800000ms absolute deadline to3229, no charges and actual active PostgreSQL content digest"
       },
-      "cargo_check": "PASS items+durability+dispatch --all-targets --all-features,3m20s",
-      "clippy": "PASS items+durability+dispatch --all-targets --all-features -- -D warnings; see /tmp/questpc4-floor-assembly-clippy.log",
-      "cargo_fmt": "PASS all workspace and explicit mounted leaves",
-      "git_diff_check": "PASS",
-      "migration_numbers": "1060 unclaimed on main/open PRs; lane reservation1060..1079; duplicate check PASS",
-      "generated_inputs": "Unchanged in this runtime slice; no pin/source regeneration required."
+      "provider_and_capture": "PASS source capture check and native provider write/check42 files",
+      "cargo_check": "PASS content+dispatch all targets/features32.07s",
+      "clippy": "PASS content+dispatch all targets/features-D warnings45.91s",
+      "fmt": "PASS all and explicit mounted leaves",
+      "pin_refresh": "PASS unchanged World cb078e3d34c1440b2c7c9f35206ae3158d5341e507a87424f4959ccb66da7298; inputs12ba3d59676cac791a83eb85559de28fbab079275bf15dc987412f75aab83616",
+      "pin_check": "PASS exit0; unchanged World cb078e3d34c1440b2c7c9f35206ae3158d5341e507a87424f4959ccb66da7298"
     },
     "current_attempt": {
-      "name": "cloud-floor-assembly-04",
+      "name": "cloud-ruby-native-profile-05",
       "state": "GREEN",
-      "base_sha": "4fd80eac6bc9aa2bb55bca8adb2f7c10876f386f",
-      "whole_entries_newly_qualified": 0,
       "published": false,
-      "red": {
+      "whole_entries_newly_qualified": 0,
+      "base_sha": "516de7b0d",
+      "ruby_transform_red": {
         "marker": "POSTGRES_DATABASE_READY l6_floor_assembly",
-        "duration_seconds": 48.07,
         "result": "0 passed / 1 failed",
-        "actual": [
-          7,
-          0
+        "duration_seconds": 53.77,
+        "actual_same_helmet_definition": "oteryn:item.tibia.i3229",
+        "expected_same_helmet_definition": "oteryn:item.tibia.i3230",
+        "log": "/tmp/questpc4-floor-ruby-red.log"
+      },
+      "profile_red": {
+        "test": "l6_ruby_profile_admits_exact_helmet_absolute_policy",
+        "marker": "POSTGRES_DATABASE_READY l6-ruby-profile",
+        "result": "0 passed / 1 failed",
+        "duration_seconds": 53.29,
+        "error": "full helmet3230 native policy missing",
+        "log": "/tmp/questpc4-ruby-profile-red.log"
+      },
+      "decision": "Admit exactly source3230 absolute1800000ms decay policy before implementing generic identity-preserving floor transform. No whole Ancient Tombs qualification.",
+      "generated_delta": {
+        "before": 3606,
+        "after": 3607,
+        "added": [
+          "oteryn:item.tibia.i3230"
         ],
-        "expected": [
-          0,
-          1
-        ]
+        "changed_existing": [],
+        "removed": [],
+        "provider": "PASS write and --check,42 import files; native-only regeneration includes freshness checks"
       },
-      "intermediate_green": {
-        "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly",
-        "duration_seconds": 54.892081078,
+      "source": {
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data/items/items.xml",
+        "line": 8079,
+        "sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
+        "duration_ms": 1800000,
+        "decay_target": 3229,
+        "stop_duration": false,
+        "charges": "NOT_APPLICABLE"
+      },
+      "validation": "All bounded profile checks passed; commit/push immediately. Runtime RED stays unstaged.",
+      "reuse_check": "qengine2 a89547fd8 and available questpc3/8 have no physical3230/floor-transform runtime implementation",
+      "profile_green": {
+        "test": "l6_ruby_profile_admits_exact_helmet_absolute_policy",
+        "marker": "POSTGRES_CASE_COMPLETED l6-ruby-profile",
         "result": "1 passed / 0 failed",
-        "log": "/tmp/questpc4-floor-assembly-compact-green.log"
+        "duration_seconds": 53.116194692,
+        "log": "/tmp/questpc4-ruby-profile-green.log",
+        "scope": "Native policy only, exact identity3230,1800000ms absolute deadline to3229, no charges and actual active PostgreSQL content digest"
       },
-      "current_validation": "PASS final3-case PostgreSQL109.81s; check3m20s; all-target/all-feature clippy-D warnings; fmt/diff and migration allocation/duplicate checks. Publication follows immediately.",
-      "next_action": "Commit and fetch/merge/push cloud-floor-assembly-04 immediately, then implement ruby3030 consuming transform of existing helmet3229 to timed3230; preserve19 active entries and incoming Small Ruby qualification.",
-      "contention_fix": "Existing Ground census locks all tile Items before assembly; prelock bounded destination set NOWAIT after incoming Item, before Ground owner. SQLSTATE55P03 rejects and rolls back entire request; no timeout or original proof relaxed.",
-      "negative_pg": [
-        {
-          "case": "missing operand",
-          "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-missing",
-          "duration_seconds": 55.443260088
-        },
-        {
-          "case": "unbound altar",
-          "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-unbound",
-          "duration_seconds": 53.767192511
-        }
-      ],
-      "strict_main_pg_after_prelock": {
-        "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly",
-        "duration_seconds": 55.053883034,
-        "result": "1 passed / 0 failed",
-        "contention": "Err(Rejected); whole transaction unchanged",
-        "rollback": "injected trigger reached(sequence witness) and no consequence survived",
-        "audit": "bounded Craft proof; all7 exact snapshots committed by checked SHA256; same physical xid; fresh append output; original command replay",
-        "log": "/tmp/questpc4-floor-assembly-prelock-green.log"
+      "checks": {
+        "provider_and_capture": "PASS source capture check and native provider write/check42 files",
+        "cargo_check": "PASS content+dispatch all targets/features32.07s",
+        "clippy": "PASS content+dispatch all targets/features-D warnings45.91s",
+        "fmt": "PASS all and explicit mounted leaves",
+        "pin_refresh": "PASS unchanged World cb078e3d34c1440b2c7c9f35206ae3158d5341e507a87424f4959ccb66da7298; inputs12ba3d59676cac791a83eb85559de28fbab079275bf15dc987412f75aab83616",
+        "pin_check": "PASS exit0; unchanged World cb078e3d34c1440b2c7c9f35206ae3158d5341e507a87424f4959ccb66da7298"
       },
-      "final_postgres": {
-        "result": "3 passed / 0 failed",
-        "total_seconds": 109.81,
-        "log": "/tmp/questpc4-floor-assembly-final-all.log",
-        "cases": [
-          {
-            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly",
-            "duration_seconds": 55.929983408
-          },
-          {
-            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-missing",
-            "duration_seconds": 55.980734694
-          },
-          {
-            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-unbound",
-            "duration_seconds": 53.871434084
-          }
-        ],
-        "probes": [
-          "busy Ground owner rejects without consequence",
-          "locked destination Item rejects without consequence",
-          "injected receipt trigger witness executes; entire original drop and assembly roll back",
-          "audit7 balance summaries + SHA256 of exact full immutable snapshots",
-          "fresh output instance and append ordinal; same physical xid as triggering move",
-          "original wire command replay writes no duplicate assembly"
-        ]
-      }
+      "environment_recovery": "Sandbox failed No space left on device after all checks had exited0. Deleted only25GB disposable Rust incremental compiler cache via approved escalation; source and PostgreSQL untouched;25GB now free. No test weakened or skipped.",
+      "next_action": "After immediate profile push, implement same-instance floor transform and repeatable per-cycle deadlines through existing fenced timer owner; no deferral to another lane."
     },
-    "authoring_state": "AUTHORING"
+    "authoring_state": "AUTHORING",
+    "last_pushed_batch": {
+      "name": "cloud-floor-assembly-04",
+      "sha": "516de7b0d",
+      "branch": "claude/happy-davinci-ijz3wy-questpc4",
+      "published": true,
+      "checks": "PG3/0; check3m20s; clippy3m02s all targets/features; fmt/diff; migration allocation and duplicates"
+    }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",
   "shared_engine_integration": {
