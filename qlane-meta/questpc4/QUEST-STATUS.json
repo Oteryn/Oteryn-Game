@@ -7351,7 +7351,7 @@
       }
     },
     "paradox_story_batch_26": {
-      "status": "PG_GREEN_COMPILER_GATES_PENDING",
+      "status": "QUALIFIED_COMPONENT",
       "previous_pushed_head": "bc9c9ce60d6460ecb1d4faa833afa7ca6ef13335",
       "decision_at": "2026-11-07 14:34 UTC",
       "scope": "Four selected ordered NPC progression contacts: Zoltan,Padreia,Lubo,prisoner lesson; three native cases ordered/premature/replay. Oldrak level/premium gate reused.",
@@ -7405,16 +7405,28 @@
       "regressions": {
         "minimum_level": {
           "passed": 1,
-          "seconds": 136.717309008,
-          "postgres_version": "18.6"
+          "seconds": 135.09841624,
+          "postgres_version": "18.6",
+          "log": "/tmp/questpc4-paradox-story-final-level-regression.log"
         },
         "spirit_completion": {
           "passed": 1,
-          "seconds": 130.513234053,
-          "postgres_version": "18.6"
+          "seconds": 130.050489589,
+          "postgres_version": "18.6",
+          "log": "/tmp/questpc4-paradox-story-final-spirit-regression.log"
         }
       },
-      "gates": "Final repaired-source check/clippy, security/frozen/source units and two final legacy PG regressions still running.",
+      "gates": {
+        "fmt": "PASS",
+        "check": "PASS quests/dispatch alltargets/allfeatures6m42s including lock wait",
+        "clippy": "PASS -D warnings2m57s",
+        "metadata_units": "2 PASS0.01s",
+        "frozen_hashes": "1 PASS1.27s",
+        "binding_security": "4 PASS0.03s",
+        "source_units": "Ancient5 PASS2.64s;Room1 PASS1.33s",
+        "duplicates": "PASS",
+        "diff": "PASS"
+      },
       "repair": "Use existing qengine_rewards::wire_reward NPC0-RL-04 pattern: send/read each command and wait one second after four messages; reuse liveness-probe acknowledgement. Preserve limiter, all word assertions, native contacts and all state/grant/replay assertions.",
       "diagnostic": "Stopped obsolete diagnostic-only compile after existing wire helper exposed exact four-message rate-window rule; no diagnostic result claimed. Test-only production selector trace removed.",
       "green": {
@@ -7427,6 +7439,11 @@
         "lesson_guard_seconds": 146.729469554,
         "proof": "All contacts/story5, exact account achievement fact and grantrequest1, byte reply replay and fresh repeated lesson produce no new rows.",
         "log": "/tmp/questpc4-paradox-story-green2.log"
+      },
+      "main_registry_recheck": {
+        "sha": "bbb3e06d04875fc1e63f024b853194f7580cc875",
+        "checked_at": "2026-11-07 15:12 UTC",
+        "result": "No QENGINE2/QBASE migrations; conditional merge not applicable."
       }
     }
   },

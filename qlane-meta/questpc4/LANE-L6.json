@@ -222,10 +222,10 @@
       },
       "current_work": {
         "owner": "questpc4",
-        "stage": "owner_stop_replacement_r2_handoff",
+        "stage": "selected_story_qualified_native_climb_and_riddler_in_progress",
         "level_component": "PG18.6 GREEN91.999669123s; whole quest not yet qualified",
         "world_puzzles": "PG18.6 GREEN including actual advertised handle USE52.626333695s; whole native route remains in progress",
-        "next": "publish native component after final checks and incoming merge, then complete ordered NPC story and single whole physical selected climb/reward",
+        "next": "Complete source-native upper food floors and one whole selected physical climb, add protected climb checkpoint, then fixed Riddler sequence/final32talons/completion.",
         "source_document": "content/quests/authoring/paradox-tower.md",
         "shared_engine_contracts": [
           "qlane-meta/questpc4/LEVEL-BINDING-CONTRACT.md",
@@ -249,12 +249,19 @@
         "published_head": "2d8bd8c5c8d728f85ee44b74d47b9973aa359271"
       },
       "native_tower_component": {
-        "status": "GREEN_OWNER_HANDOFF_PENDING_PUSH",
+        "status": "QUALIFIED_COMPONENT",
         "proof": "QUEST-STATUS.json#/paradox_native_batch",
         "whole_entry": "IN_PROGRESS",
         "postgres": "18.6",
         "passed": 3,
-        "seconds": 137.64
+        "seconds": 137.64,
+        "published_head": "864b66a511beb9a9a2ba28249d478459d11cbdf0"
+      },
+      "selected_story_component": {
+        "status": "QUALIFIED_COMPONENT",
+        "proof": "QUEST-STATUS.json#/round_L6/paradox_story_batch_26",
+        "scope": "Five original native NPC centers, ordered contacts and guarded lesson, one Mathemagician account fact/source, exact replay and fresh-repeat refusal.",
+        "whole_entry": "IN_PROGRESS"
       }
     },
     {
