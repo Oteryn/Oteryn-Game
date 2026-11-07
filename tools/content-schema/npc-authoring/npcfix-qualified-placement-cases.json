@@ -2133,6 +2133,73 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-33",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a; tools/content-schema/npc-authoring/samples/npcfix-retail-placements.json:sha256:3aba747ac833bce3801b0f2a266eb56376590bcd746e7304848e74cb99eebdcd. Frozen packet supplies audited rows absent from the donor capture; all name/admission assertions remain exact.",
+      "cases": [
+        {
+          "npc": "oteryn:npc.jata",
+          "name": "Jata",
+          "expected": {
+            "x": 33809,
+            "y": 32851,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.kaumudi",
+          "name": "Kaumudi",
+          "expected": {
+            "x": 33705,
+            "y": 32764,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.nagging_naga",
+          "name": "Nagging Naga",
+          "expected": {
+            "x": 33909,
+            "y": 32762,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.nekaret",
+          "name": "Nekaret",
+          "expected": {
+            "x": 34034,
+            "y": 32506,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.nihaka",
+          "name": "Nihaka",
+          "expected": {
+            "x": 33721,
+            "y": 32770,
+            "floor": -3
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.nilavarna",
+          "name": "Nilavarna",
+          "expected": {
+            "x": 33730,
+            "y": 32825,
+            "floor": -6
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }

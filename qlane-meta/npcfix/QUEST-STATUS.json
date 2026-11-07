@@ -356,10 +356,10 @@
     "final_pg_log": "/tmp/npcfix-evidence/refusal-final-paid-clock-pg.log"
   },
   "counts": {
-    "QUALIFIED": 196,
+    "QUALIFIED": 202,
     "PENDING": 8,
     "EXCLUDED": 24,
-    "AUTHORED; QUALIFICATION PENDING": 89,
+    "AUTHORED; QUALIFICATION PENDING": 83,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
   },
@@ -2500,8 +2500,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/177",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-33",
+        "postgres_red_seconds": 56.9,
+        "postgres_green_seconds": 114.44,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Javala",
@@ -2518,8 +2524,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/188",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-33",
+        "postgres_red_seconds": 56.9,
+        "postgres_green_seconds": 114.44,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Nagging Naga",
@@ -2527,8 +2539,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/233",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-33",
+        "postgres_red_seconds": 56.9,
+        "postgres_green_seconds": 114.44,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Nekaret",
@@ -2536,8 +2554,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/236",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-33",
+        "postgres_red_seconds": 56.9,
+        "postgres_green_seconds": 114.44,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Nihaka",
@@ -2545,8 +2569,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/242",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-33",
+        "postgres_red_seconds": 56.9,
+        "postgres_green_seconds": 114.44,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Nilavarna",
@@ -2554,8 +2584,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/243",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-33",
+        "postgres_red_seconds": 56.9,
+        "postgres_green_seconds": 114.44,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Nipuna",
@@ -6586,6 +6622,34 @@
       "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at c918fc759804e081dbf1c0174247e5598e7426ef; details in verification_components.latest_checked_source. Source identity checked before each slice",
       "test_code_commit": "c918fc759804e081dbf1c0174247e5598e7426ef",
       "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
+    },
+    {
+      "name": "retail-population-qualification-33",
+      "state": "QUALIFIED",
+      "entries": [
+        "Jata",
+        "Kaumudi",
+        "Nagging Naga",
+        "Nekaret",
+        "Nihaka",
+        "Nilavarna"
+      ],
+      "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed.",
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 56.9,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-33-red.log",
+        "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
+      },
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 114.44,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-33-green.log",
+        "cumulative_cases": 189
+      },
+      "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at c918fc759804e081dbf1c0174247e5598e7426ef; details in verification_components.latest_checked_source. Source identity checked before each slice",
+      "test_code_commit": "c918fc759804e081dbf1c0174247e5598e7426ef",
+      "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
     }
   ],
   "shared_engine_lookup": {
@@ -7014,28 +7078,28 @@
   },
   "next_batch": "Continue remaining owned entries immediately; preserve all cumulative PG cases. No final turn until all owned scope qualified and pushed.",
   "active_batch": {
-    "name": "retail-population-qualification-32",
+    "name": "retail-population-qualification-33",
     "state": "QUALIFIED",
     "entries": [
-      "Fitzgerald",
-      "Gunther",
-      "Ztiss",
-      "Taya",
-      "Candra",
-      "Dhira"
+      "Jata",
+      "Kaumudi",
+      "Nagging Naga",
+      "Nekaret",
+      "Nihaka",
+      "Nilavarna"
     ],
     "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed.",
     "red": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 59.83,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-32-red.log",
+      "seconds": 56.9,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-33-red.log",
       "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
     },
     "green": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 139.85,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-32-green.log",
-      "cumulative_cases": 183
+      "seconds": 114.44,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-33-green.log",
+      "cumulative_cases": 189
     },
     "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at c918fc759804e081dbf1c0174247e5598e7426ef; details in verification_components.latest_checked_source. Source identity checked before each slice",
     "test_code_commit": "c918fc759804e081dbf1c0174247e5598e7426ef",
