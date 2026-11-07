@@ -167,9 +167,6 @@ fn scenario() -> TestResult {
             .bind(world.as_bytes().as_slice())
             .execute(&h.pool)
             .await?;
-        let mut reset_tx = h.pool.begin().await?;
-        crate::durability::world_event::changes::record_reset_fixture(&mut reset_tx, world, 1).await?;
-        reset_tx.commit().await?;
         h.root.world_changes(world, 1).await?.ok_or("shared day")?;
         let mut state = CounterState::new(CounterKind::Overhunting, 1, false);
         state.stage = 2;

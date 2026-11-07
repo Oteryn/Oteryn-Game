@@ -7,14 +7,11 @@ pub const CATALOGUE_JSON: &str =
 
 /// Resource bookkeeping only. A quest must fence and debit its resource in the same
 /// transaction; a tally alone never grants transport, rewards or activation.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ContributionKind {
     Coal,
     Medicine,
     Votes,
-    AwashCoal,
-    ThornfireExtinguished,
 }
 
 impl ContributionKind {
@@ -23,8 +20,6 @@ impl ContributionKind {
             Self::Coal => "coal",
             Self::Medicine => "medicine",
             Self::Votes => "votes",
-            Self::AwashCoal => "awash_coal",
-            Self::ThornfireExtinguished => "thornfire_extinguished",
         }
     }
 }
@@ -102,7 +97,7 @@ pub fn is_active(day: &DailyWorldChanges, key: &str) -> bool {
         "grimvale" => day.grimvale_full_moon,
         "stampede" => day.stampede,
         // Flower Month's waves are still held; the NPC alone is not completion.
-        _ => day.variant(key).is_some(),
+        _ => false,
     }
 }
 

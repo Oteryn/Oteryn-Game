@@ -187,8 +187,6 @@ def build():
         {"kind": "map_item", "definition": item(9582)}, [operand("USED", 9306, "KEEP")],
         weighted(entries), tool="rod", target_effect={"effect": "RETIRE"})
     append_rows(row, snapshot, items_xml_lines(), item, operand, fixed)
-    import wvar_item_profiles
-    recipes.append(wvar_item_profiles.overlay(ROOT)["prepared_bucket_recipe"])
     return sorted(recipes, key=lambda r: r["identity"]["key"])
 
 

@@ -628,7 +628,6 @@ fn world(world: crate::foundation::WorldId) -> TestResult<crate::map::boot::Bund
         TerrainKind,
     };
     let manifest = Manifest {
-        world_changes: None,
         subareas: towns(),
         format: writer::FORMAT.into(),
         min_reader_version: writer::VERSION,

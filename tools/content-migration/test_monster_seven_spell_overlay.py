@@ -24,15 +24,10 @@ class AcceptedOverlayTests(unittest.TestCase):
         for entry in self.receipt["files"]:
             self.assertEqual(overlay.digest(adopted[entry["path"]]),entry["output_sha256"])
         actual=bind_definitions(ROOT,adopted)
-        self.assertEqual(len(json.loads(actual['content/creatures/definitions/spell-native-profiles.json'])['records']),1870)
-        # WVAR is a separately authored native successor; the frozen overlay's
-        # exact1870 baseline and its receipt outputs above remain unchanged.
-        import wvar_creature_profiles
-        wvar_creature_profiles.admit(ROOT, actual)
         for path in overlay.ALLOWED_PATHS - {"content/creatures/definitions/spell-native-profiles.json", "content/spells.manifest.json"}:
             self.assertEqual(actual[path],(ROOT/path).read_bytes(),path)
         self.assertEqual(before,{k:overlay.digest(v) for k,v in self.base.items()})
-        self.assertEqual(len(json.loads(actual['content/creatures/definitions/spell-native-profiles.json'])['records']),1871)
+        self.assertEqual(len(json.loads(actual['content/creatures/definitions/spell-native-profiles.json'])['records']),1870)
         looks=json.loads(actual['content/presentations/bindings/spell-appearances.json'])
         self.assertEqual(len(looks['records']),334)
         self.assertEqual(len(looks['item_appearances']),6)

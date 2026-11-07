@@ -104,7 +104,6 @@ impl From<FactsRefusal> for BootRefusal {
 /// the walkable tiles a wall or a solid item blocks.
 #[derive(Debug)]
 pub struct BundleWorld {
-    world_changes_admitted: bool,
     daily: Option<super::daily::DailyMap>,
     base: Arc<WorldBase>,
     map: Arc<BundleMap>,
@@ -119,7 +118,6 @@ pub struct BundleWorld {
 impl PartialEq for BundleWorld {
     fn eq(&self, other: &Self) -> bool {
         self.daily == other.daily
-            && self.world_changes_admitted == other.world_changes_admitted
             && self.base.digest() == other.base.digest()
             && self.base.active_layers() == other.base.active_layers()
             && self.base.layer_epoch() == other.base.layer_epoch()
@@ -317,14 +315,6 @@ impl CheckedBundle {
         channel_id: ChannelId,
         item: impl Fn(&str) -> Option<ItemDefinition>,
     ) -> Result<BundleWorld, BootRefusal> {
-        if self.daily.is_none()
-            && super::daily::requires_decision(&self.data).map_err(LoadError::from)?
-        {
-            return Err(LoadError::from(oteryn_world_bundle::Error::Format(
-                "missing committed World change decision".into(),
-            ))
-            .into());
-        }
         let projection = self
             .daily
             .as_ref()
@@ -399,9 +389,6 @@ impl CheckedBundle {
             })
             .map_err(BootRefusal::FloorChain)?;
         Ok(BundleWorld {
-            world_changes_admitted: projection
-                .as_ref()
-                .is_some_and(|p| p.world_changes_admitted()),
             daily: self.daily,
             map: Arc::new(BundleMap {
                 entry_start: self.start,
@@ -435,23 +422,7 @@ fn scan(
     let mut masks: Vec<u8> = Vec::new();
     let mut floors = FloorTable::default();
     let mut refused = None;
-    let barriers: BTreeSet<_> = daily
-        .into_iter()
-        .flat_map(|projection| projection.barriers())
-        .map(|(x, y, z)| TilePos { x, y, floor: -z })
-        .collect();
-    let mut blocked = barriers.clone();
-    let managed_portals: BTreeSet<_> = if daily.is_some_and(|p| p.world_changes_admitted()) {
-        oteryn_gameplay_world_change::variants::definitions()
-            .into_iter()
-            .flatten()
-            .flat_map(|d| &d.variants)
-            .flat_map(|v| &v.portals)
-            .map(|p| p.position)
-            .collect()
-    } else {
-        BTreeSet::new()
-    };
+    let mut blocked = BTreeSet::new();
     let mut scan_sector = |manifest: &bundle::Manifest, sector: &bundle::Sector| {
         if facts.is_none() {
             match BundleFacts::palette(manifest, item) {
@@ -487,9 +458,7 @@ fn scan(
                 y: tile.y,
                 floor: sector.floor,
             };
-            if !managed_portals.contains(&(tile.x, tile.y, -sector.floor)) {
-                floors.add(at, mask);
-            }
+            floors.add(at, mask);
             // NEWHAVEN-TELEPORT-1: the teleport attribute of a top-level entry; its floor byte
             // is the native floor (format document §5), which the reader checked is in the World.
             if let Some((ordinal, source)) = tile
@@ -545,12 +514,6 @@ fn scan(
         None => BundleFacts::palette(&manifest, item)?,
     };
     facts.finish();
-    if !facts.seed_variant_barriers(&barriers) {
-        return Err(LoadError::from(oteryn_world_bundle::Error::Format(
-            "variant barrier admission refused".into(),
-        ))
-        .into());
-    }
     Ok((facts, blocked, floors))
 }
 
@@ -643,52 +606,6 @@ pub fn table_activation_spawns(
 }
 
 impl BundleWorld {
-    /// Selected-variant dependencies for the existing spawn owner. A gate names
-    /// exact source cells/creatures, so moved or respawned guards retain identity.
-    pub fn activation_spawn_gates(&self) -> Option<Vec<BundleSpawnGate>> {
-        let mut gates = Vec::new();
-        if !self.world_changes_admitted {
-            return Some(gates);
-        }
-        let Some(daily) = &self.daily else {
-            return None;
-        };
-        for variant in daily.variants.active() {
-            let guards: Vec<_> = variant
-                .spawns
-                .iter()
-                .filter(|s| s.after_kills.is_none())
-                .map(|s| {
-                    (
-                        (
-                            i32::from(s.position.0),
-                            i32::from(s.position.1),
-                            i16::from(s.position.2),
-                        ),
-                        s.creature.clone(),
-                    )
-                })
-                .collect();
-            for target in variant.spawns.iter().filter(|s| s.after_kills.is_some()) {
-                if usize::try_from(target.after_kills?).ok()? != guards.len() {
-                    return None;
-                }
-                gates.push(BundleSpawnGate {
-                    target: (
-                        (
-                            i32::from(target.position.0),
-                            i32::from(target.position.1),
-                            i16::from(target.position.2),
-                        ),
-                        target.creature.clone(),
-                    ),
-                    guards: guards.clone(),
-                });
-            }
-        }
-        Some(gates)
-    }
-
     /// SPAWN-1b (CREATURE-AI-0 §6.1): the bundle's spawn family as activation spawn sources; see
     /// [`table_activation_spawns`].
     pub fn activation_spawns(
@@ -718,44 +635,7 @@ impl BundleWorld {
             sources.retain(|(points, _)| !points.is_empty());
         }
         if let Some(daily) = &self.daily {
-            sources.extend(super::daily::grimvale_spawns(self, daily, &profile)?);
-            if !self.world_changes_admitted {
-                return Some(sources);
-            }
-            let definitions = oteryn_gameplay_world_change::variants::definitions().ok()?;
-            let managed: std::collections::BTreeSet<_> = definitions
-                .iter()
-                .flat_map(|d| &d.variants)
-                .flat_map(|v| &v.spawns)
-                .map(|s| {
-                    (
-                        i32::from(s.position.0),
-                        i32::from(s.position.1),
-                        i16::from(s.position.2),
-                    )
-                })
-                .collect();
-            for (points, _) in &mut sources {
-                points.retain(|p| !managed.contains(&p.0));
-            }
-            sources.retain(|s| !s.0.is_empty());
-            for spawn in daily.variants.active().flat_map(|v| &v.spawns) {
-                let (health, blockable) = profile(&spawn.creature)?;
-                sources.push((
-                    vec![(
-                        (
-                            i32::from(spawn.position.0),
-                            i32::from(spawn.position.1),
-                            i16::from(spawn.position.2),
-                        ),
-                        u64::from(spawn.respawn_ms),
-                        spawn.creature.clone(),
-                        health,
-                        blockable,
-                    )],
-                    BUNDLE_OCCUPANCY_RETRY_MS,
-                ));
-            }
+            sources.extend(super::daily::grimvale_spawns(self, daily, profile)?);
         }
         Some(sources)
     }
@@ -765,16 +645,6 @@ impl BundleWorld {
         let mut out = Vec::new();
         for source in &self.spawns.sources {
             for (ordinal, point) in source.points.iter().enumerate() {
-                if self.world_changes_admitted
-                    && oteryn_gameplay_world_change::variants::definitions()
-                        .into_iter()
-                        .flatten()
-                        .flat_map(|d| &d.variants)
-                        .flat_map(|v| &v.spawns)
-                        .any(|spawn| spawn.position == (point.x, point.y, -source.floor))
-                {
-                    continue;
-                }
                 if let Some(policy) = point.boss_policy {
                     out.push((
                         format!("{}:{ordinal}", source.key),
@@ -884,11 +754,6 @@ impl BundleWorld {
             Arc::clone(&self.map.spell_tiles),
         ))
     }
-}
-
-pub struct BundleSpawnGate {
-    pub target: ((i32, i32, i16), String),
-    pub guards: Vec<((i32, i32, i16), String)>,
 }
 
 /// What domain 17 of a bundle World's Channel is composed from: the Channel overlay, which stays
@@ -1243,7 +1108,6 @@ pub mod tests {
             terrain: None,
         };
         let mut manifest = Manifest {
-            world_changes: None,
             subareas: Default::default(),
             format: bundle::FORMAT.into(),
             min_reader_version: bundle::VERSION,
@@ -1369,7 +1233,6 @@ pub mod tests {
             terrain: None,
         };
         let mut manifest = Manifest {
-            world_changes: None,
             subareas: Default::default(),
             format: bundle::FORMAT.into(),
             min_reader_version: bundle::VERSION,
@@ -1692,7 +1555,6 @@ pub mod tests {
             .with_daily_map(super::super::daily::DailyMap {
                 seed: [7; 32],
                 fungus: true,
-                variants: Default::default(),
                 grimvale_full_moon: false,
                 trader: None,
             })

@@ -275,7 +275,7 @@ pub(super) async fn apply(
     if fence.item_fence() != item_fence {
         return rejected();
     }
-    let native_npc = {
+    {
         let runtime = admission.runtime.lock().await;
         let states = admission.states.spell_states.lock().await;
         if states.is_dead(actor)
@@ -296,22 +296,7 @@ pub(super) async fn apply(
         {
             return rejected();
         }
-        if oteryn_gameplay_quests::quest::world_change_npcs::for_transition(&transition).is_some() {
-            let Some(source) = super::world_change_npcs::source(
-                admission,
-                actor,
-                command,
-                intent.npc_actor.identity,
-                intent.npc_actor.generation,
-                &runtime,
-            ) else {
-                return rejected();
-            };
-            Some(source)
-        } else {
-            None
-        }
-    };
+    }
     let request = QuestTransitionRequest {
         transition_key: transition,
         cause: QuestCause::Command(CommandRef::new(command.game_session_id, id)),
@@ -340,19 +325,8 @@ pub(super) async fn apply(
             reply: step.reply.clone(),
         });
     }
-    let outcome = if let Some(source) = native_npc {
-        slot.commit_world_change_npc(
-            admission.root,
-            admission.character,
-            admission.holder,
-            fence,
-            request,
-            std::sync::Arc::clone(catalogue),
-            source,
-        )
-        .await
-    } else {
-        slot.commit_quest_transition(
+    let outcome = slot
+        .commit_quest_transition(
             admission.root,
             admission.character,
             admission.holder,
@@ -360,8 +334,7 @@ pub(super) async fn apply(
             request,
             std::sync::Arc::clone(catalogue),
         )
-        .await
-    };
+        .await;
     drop(slot);
     match outcome {
         Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => {

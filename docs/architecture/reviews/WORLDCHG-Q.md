@@ -1,5 +1,7 @@
 # WPKG combined World qualification
 
+WPKG packaging status: WORLDCHG remains merged; WVAR was reverted after incomplete focused qualification. WVAR entries below retain the source lane report and do not certify current package behavior.
+
 Current merged catalogue: 28 QUALIFIED,15 HELD. Source-lane reports and evidence are retained below as a union; their historical scope/holds refer to their own source heads.
 
 # WORLDCHG-Q — shared World owner and native bindings

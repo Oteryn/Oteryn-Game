@@ -16,7 +16,6 @@ pub(super) fn training_world(
         "oteryn:item.tibia.i28558",
     ];
     let manifest = Manifest {
-        world_changes: None,
         subareas: Default::default(),
         format: FORMAT.into(),
         min_reader_version: VERSION,
@@ -83,14 +82,7 @@ pub(super) fn training_world(
             floor: -7,
             sx: 0,
             sy: 0,
-            tiles: vec![
-                tile(1, vec![0]),
-                tile(2, vec![0]),
-                tile(3, vec![0]),
-                tile(4, vec![0]),
-                tile(5, vec![0]),
-                tile(6, vec![0, 1, 2]),
-            ],
+            tiles: vec![tile(1, vec![0]), tile(2, vec![0]), tile(3, vec![0]), tile(4, vec![0]), tile(5, vec![0]), tile(6, vec![0, 1, 2])],
         }],
         &Default::default(),
     )

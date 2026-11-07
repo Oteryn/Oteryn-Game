@@ -7,8 +7,8 @@ use oteryn_gameplay_world_change::counter::{BINDINGS_JSON, Bindings, CounterKind
 fn bindings() -> Bindings {
     serde_json::from_str(BINDINGS_JSON).expect("authored bindings")
 }
-fn stages(kind: K, stage: u8) -> [u8; 9] {
-    let mut values = [1; 9];
+fn stages(kind: K, stage: u8) -> [u8; 8] {
+    let mut values = [1; 8];
     values[kind.index()] = stage;
     values
 }

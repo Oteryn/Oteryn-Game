@@ -53,14 +53,7 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
             assert!(is_active(&all, key), "{key}");
         } else if entry["status"] == "QUALIFIED" {
             qualified += 1;
-            if let Some(recipe) = oteryn_gameplay_world_change::variants::definitions()?
-                .iter()
-                .find(|recipe| recipe.key == key)
-            {
-                assert!(!recipe.variants.is_empty(), "{key}");
-            } else {
-                assert!(entry["binding"].is_object(), "{key}");
-            }
+            assert!(entry["binding"].is_object(), "{key}");
             let mut active = all;
             if let Some(kind) = oteryn_gameplay_world_change::counter::CounterKind::from_key(key) {
                 use oteryn_gameplay_world_change::counter::CounterKind as K;
@@ -79,7 +72,7 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
             assert!(!is_active(&all, key), "{key}");
         }
     }
-    assert_eq!((ready, qualified), (0, 28));
+    assert_eq!((ready, qualified), (0, 12));
     assert_eq!(entries.len(), 43);
     for key in [
         "river_runs_deep",
@@ -132,9 +125,9 @@ fn worldchg_selection_replays_and_snapshot_retains_the_committed_epoch()
     assert_eq!(select(7), select(7));
     let bytes = serde_json::to_vec(&select(7))?;
     let mut immutable = select(7);
-    immutable.counter_stages = [0; 9];
-    immutable.counter_generations = [0; 9];
-    immutable.counter_progress = [[0; 3]; 9];
+    immutable.counter_stages = [0; 8];
+    immutable.counter_generations = [0; 8];
+    immutable.counter_progress = [[0; 3]; 8];
     // The current phase projection is read separately from its durable owner.
     assert_eq!(
         serde_json::from_slice::<DailyWorldChanges>(&bytes)?,
@@ -156,8 +149,8 @@ fn worldchg_authored_candidate_probabilities_control_selection() {
                 thawing_percent: percent,
                 voice_percent: percent,
                 trader_percent: percent,
+                fire_earth_permille: 199,
                 stampede_permille: u16::from(percent) * 10,
-                fire_earth_permille: u16::from(percent) * 10,
             },
             |_| u64::MAX,
         )
@@ -185,8 +178,8 @@ fn worldchg_stampede_uses_accepted_daily_gate_and_preserves_legacy_snapshots()
                 thawing_percent: 0,
                 voice_percent: 0,
                 trader_percent: 0,
+                fire_earth_permille: 199,
                 stampede_permille: 125,
-                fire_earth_permille: 0,
             },
             |purpose| {
                 if purpose == "stampede" {
@@ -211,7 +204,7 @@ fn worldchg_stampede_uses_accepted_daily_gate_and_preserves_legacy_snapshots()
 }
 
 #[test]
-fn worldchg_portal_sources_preserve_pairs_after_variant_admission()
+fn worldchg_portal_candidates_preserve_sourced_pairs_without_claiming_native_admission()
 -> Result<(), Box<dyn std::error::Error>> {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
     let candidate: serde_json::Value = serde_json::from_slice(&std::fs::read(
@@ -262,8 +255,8 @@ fn worldchg_portal_sources_preserve_pairs_after_variant_admission()
                 }
             );
         }
-        // The independent WVAR recipes now admit these sourced pairs; candidate flags remain source-only.
-        assert!(oteryn_gameplay_world_change::owner::is_active(
+        // Source facts do not bypass the still-unimplemented W1/native gate consumers.
+        assert!(!oteryn_gameplay_world_change::owner::is_active(
             &oteryn_gameplay_world_change::daily::DailyWorldChanges::roll(7, 6, 13, |_| 0),
             record["key"].as_str().ok_or("key")?,
         ));

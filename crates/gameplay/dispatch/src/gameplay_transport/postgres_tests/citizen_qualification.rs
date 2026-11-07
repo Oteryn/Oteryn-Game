@@ -238,7 +238,6 @@ fn world(world: crate::foundation::WorldId) -> TestResult<crate::map::boot::Bund
         .replace("subarea-0002-", "subarea-0003-");
     subareas.runs[0].subarea = 3;
     let manifest = Manifest {
-        world_changes: None,
         subareas,
         format: writer::FORMAT.into(),
         min_reader_version: writer::VERSION,

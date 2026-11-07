@@ -830,3 +830,23 @@ plus verified WVAR admissions before invoking existing evidence producers;
 257 imbuement tests pass84.997s in the prepared Python environment. Pin refresh
 passes249.826s. Pin check and native PostgreSQL execution are still pending;
 this checkpoint does not claim WVAR qualified in the package yet.
+
+
+### WVAR reverted within its packaging window
+
+Reverted merge7d24f6cb4 and its follow-ups832e65001,91f7fbf1f,892cef29d,
+982d52b00. The runtime, authored/generated content, pins and migrations now
+exactly match the previously green WORLDCHG registry checkpoint796d7b973;
+only unioned historical notes/reports differ. WVAR's1334/1335 migrations are
+absent. Source contract/report entries are retained as historical evidence.
+
+WVAR could not complete focused qualification in60 minutes. Final red point:
+the pin-check process was killed after139.659s and the dispatch PostgreSQL
+binary build after279.814s when overlapping memory exceeded the16GiB limit
+(cgroup oom_kill increased by2). No WVAR PostgreSQL case executed; no passing
+pin check or WVAR qualification is claimed. Future heavy builds and pin
+materialization must run serially. Its compile/Clippy, source producer,
+Prey simulation, quest-authoring recovery and pin-refresh evidence remain
+recorded above for recovery from the pushed history. Continue with WCONTRIB.
+
+Rollback validation: wvar-revert-check PASS 117.904s; wvar-revert-fmt PASS 15.026s.

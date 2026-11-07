@@ -84,7 +84,7 @@ impl OrientalTraderTown {
     }
 }
 
-/// Legacy daily purposes. Recipe-owned selections use their persisted variant purposes.
+/// The draws a day takes, in this order, each its own purpose.
 pub const DRAW_PURPOSES: [&str; 9] = [
     "thawing",
     "their-masters-voice",
@@ -182,13 +182,11 @@ pub struct DailyWorldChanges {
     pub world_counters: bool,
     /// Current counter projection, loaded through the owner; not an immutable daily draw.
     #[serde(skip)]
-    pub counter_stages: [u8; 9],
+    pub counter_stages: [u8; 8],
     #[serde(skip)]
-    pub counter_generations: [u64; 9],
-    #[serde(default)]
-    pub variants: crate::variants::Selected,
+    pub counter_generations: [u64; 8],
     #[serde(skip)]
-    pub counter_progress: [[u64; 3]; 9],
+    pub counter_progress: [[u64; 3]; 8],
     #[serde(skip)]
     pub shared_used_sources_mask: u8,
 }
@@ -226,9 +224,9 @@ impl DailyWorldChanges {
             town,
             stampede,
             fire,
-            _fury,
+            fury,
             fury_town,
-            _nightmare,
+            nightmare,
         ] = DRAW_PURPOSES;
         let thawing = percent_roll(draw(thawing), u64::from(candidates.thawing_percent));
         let their_masters_voice = percent_roll(draw(voice), u64::from(candidates.voice_percent));
@@ -242,28 +240,18 @@ impl DailyWorldChanges {
             (u128::from(draw(stampede)) * 1000) >> 64 < u128::from(candidates.stampede_permille);
         let fire_from_the_earth =
             (u128::from(draw(fire)) * 1000) >> 64 < u128::from(candidates.fire_earth_permille);
-        let variants = crate::variants::Selected::select(&mut draw);
-        // The admitted recipe owns entrance selection. Main's layer metadata
-        // projects that same immutable choice; an inactive Fury keeps its safe exit.
-        let fury_gates = variants
-            .active()
-            .flat_map(|v| &v.layers)
-            .find_map(|name| FURY_LAYERS.into_iter().find(|layer| *layer == name));
-        let fury_exit =
-            fury_gates.unwrap_or_else(|| FURY_LAYERS[choice(draw(fury_town), 10) as usize]);
-        let nightmare_isles = variants
-            .active()
-            .flat_map(|v| &v.layers)
-            .find_map(|name| NIGHTMARE_LAYERS.into_iter().find(|layer| *layer == name))
-            .unwrap_or_else(default_nightmare);
+        // EVENTS-WORLD-1 W10/W15 intentionally replaces donor unconditional availability.
+        let fury_active = (u128::from(draw(fury)) * 1000) >> 64 < 343;
+        let fury_exit = FURY_LAYERS[choice(draw(fury_town), 10) as usize];
+        let fury_gates = fury_active.then_some(fury_exit);
+        let nightmare_isles = NIGHTMARE_LAYERS[choice(draw(nightmare), 3) as usize];
         Self {
-            variants,
             stampede,
             fire_from_the_earth,
             world_counters: true,
-            counter_stages: [1, 3, u8::from(fire_from_the_earth), 1, 1, 1, 1, 1, 1],
-            counter_generations: [1; 9],
-            counter_progress: [[0; 3]; 9],
+            counter_stages: [1, 3, u8::from(fire_from_the_earth), 1, 1, 1, 1, 1],
+            counter_generations: [1; 8],
+            counter_progress: [[0; 3]; 8],
             shared_used_sources_mask: 0,
             reset_epoch,
             fury_gates,
@@ -295,45 +283,6 @@ impl DailyWorldChanges {
         (self.reset_epoch != 0 && self.flower_month)
             .then_some(ROSEMARIE)
             .into_iter()
-            .chain(
-                self.variants
-                    .active()
-                    .filter(|_| self.reset_epoch != 0)
-                    .flat_map(|v| v.npcs.iter().map(|n| (n.key.as_str(), n.position))),
-            )
-    }
-
-    pub fn variant(&self, key: &str) -> Option<usize> {
-        self.variants.variant(key)
-    }
-
-    /// Use the same persisted inactive Fury return as the main native layer owner.
-    pub fn passage(
-        &self,
-        position: crate::variants::Position,
-    ) -> Option<&'static crate::variants::Portal> {
-        let portal = self.variants.passage(position)?;
-        if !portal.exit || self.fury_gates.is_some() {
-            return Some(portal);
-        }
-        let definition = crate::variants::definitions()
-            .ok()?
-            .iter()
-            .find(|d| d.key == "fury_gates")?;
-        if !definition
-            .variants
-            .iter()
-            .flat_map(|v| &v.portals)
-            .any(|p| p.exit && p.position == position)
-        {
-            return Some(portal);
-        }
-        definition
-            .variants
-            .iter()
-            .find(|v| v.layers.iter().any(|layer| layer == self.fury_exit))
-            .and_then(|v| v.portals.iter().find(|p| p.exit && p.position == position))
-            .or(Some(portal))
     }
 
     /// The Items this day adds to the live map: `(appearance, (x, y, z))`.
@@ -369,29 +318,6 @@ mod tests {
     }
 
     #[test]
-    fn merged_inactive_fury_keeps_persisted_carlin_return() -> Result<(), Box<dyn std::error::Error>>
-    {
-        let mut day = DailyWorldChanges::roll(9, 1, 1, |_| u64::MAX);
-        assert_eq!(day.variant("fury_gates"), None);
-        day.fury_exit = "fury_gates/carlin";
-        let loaded: DailyWorldChanges = serde_json::from_value(serde_json::to_value(day)?)?;
-        let portal = loaded.passage((33290, 31785, 13)).ok_or("Fury return")?;
-        assert_eq!(portal.destination, (32263, 31848, 7));
-        let definition = crate::variants::definitions()?
-            .iter()
-            .find(|d| d.key == "fury_gates")
-            .ok_or("Fury definition")?;
-        let entrance = definition
-            .variants
-            .iter()
-            .flat_map(|v| &v.portals)
-            .find(|p| !p.exit)
-            .ok_or("Fury entrance")?;
-        assert!(loaded.passage(entrance.position).is_none());
-        Ok(())
-    }
-
-    #[test]
     fn merged_daily_layers_survive_owned_json_reload() -> Result<(), serde_json::Error> {
         let day = DailyWorldChanges::roll(9, 6, 13, |_| 0);
         let stored = serde_json::to_value(day)?;
@@ -409,12 +335,7 @@ mod tests {
     fn w05b_the_day_takes_each_roll_from_its_own_draw() {
         let roll = |draws: [u64; 9], month, day| {
             DailyWorldChanges::roll(9, month, day, |purpose| {
-                let index = match purpose {
-                    "wvar:fury_gates:chance" => Some(6),
-                    "wvar:fury_gates:variant" => Some(7),
-                    "wvar:nightmare_isles:variant" => Some(8),
-                    _ => DRAW_PURPOSES.iter().position(|p| *p == purpose),
-                };
+                let index = DRAW_PURPOSES.iter().position(|p| *p == purpose);
                 index
                     .and_then(|i| draws.get(i))
                     .copied()
@@ -425,7 +346,6 @@ mod tests {
         assert_eq!(
             all,
             DailyWorldChanges {
-                variants: all.variants,
                 reset_epoch: 9,
                 fury_gates: Some("fury_gates/abdendriel"),
                 fury_exit: "fury_gates/abdendriel",
@@ -438,9 +358,9 @@ mod tests {
                 stampede: true,
                 fire_from_the_earth: false,
                 world_counters: true,
-                counter_stages: [1, 3, 0, 1, 1, 1, 1, 1, 1],
-                counter_generations: [1; 9],
-                counter_progress: [[0; 3]; 9],
+                counter_stages: [1, 3, 0, 1, 1, 1, 1, 1],
+                counter_generations: [1; 8],
+                counter_progress: [[0; 3]; 8],
                 shared_used_sources_mask: 0,
             }
         );

@@ -21,8 +21,6 @@ pub fn roll(
     unix_ms: i64,
 ) -> Result<DailyWorldChanges, DurabilityError> {
     let candidates = authored_candidates()?;
-    oteryn_gameplay_world_change::variants::definitions()
-        .map_err(|_| DurabilityError::InvalidStoredState)?;
     let mut hash = Sha256::new();
     hash.update(b"oteryn.world_change.daily.v1\0");
     hash.update(world.as_bytes());
@@ -109,14 +107,6 @@ fn authored_candidates() -> Result<DailyCandidates, DurabilityError> {
                     && entry["trigger"]["day"] == 13 =>
             {
                 grimvale = true;
-                continue;
-            }
-            Some(key)
-                if oteryn_gameplay_world_change::variants::definitions()
-                    .map_err(|_| DurabilityError::InvalidStoredState)?
-                    .iter()
-                    .any(|d| d.key == key) =>
-            {
                 continue;
             }
             _ => return Err(DurabilityError::InvalidStoredState),
@@ -223,14 +213,13 @@ pub(super) async fn record(
     tx: &mut Transaction<'_, Postgres>,
     world: WorldId,
     epoch: u64,
-    activate_variants: bool,
 ) -> Result<DailyWorldChanges, DurabilityError> {
     let existing: Option<serde_json::Value> = sqlx::query_scalar("SELECT decision FROM game_world_change_days WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_optional(&mut **tx).await?;
     if let Some(existing) = existing {
         let mut day: DailyWorldChanges =
             serde_json::from_value(existing).map_err(|_| DurabilityError::InvalidStoredState)?;
-        if day.reset_epoch != epoch || !day.variants.compatible() {
+        if day.reset_epoch != epoch {
             return Err(DurabilityError::InvalidStoredState);
         }
         counters::project(tx, world, &mut day).await?;
@@ -239,51 +228,15 @@ pub(super) async fn record(
     let timestamp: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM activated_at)*1000)::bigint FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_one(&mut **tx).await?;
     let mut selected = roll(world, epoch, timestamp)?;
-    if activate_variants {
-        for definition in oteryn_gameplay_world_change::variants::definitions()
-            .map_err(|_| DurabilityError::InvalidStoredState)?
-        {
-            if let Some(rule) = &definition.reset_tally {
-                let previous = if let Some(previous) = epoch.checked_sub(1) {
-                    tally(tx, world, previous, rule.resource).await?
-                } else {
-                    0
-                };
-                selected.variants.0[definition.slot] = Some(if previous >= rule.threshold {
-                    rule.at_or_above
-                } else {
-                    rule.below
-                });
-            }
-        }
-        counters::at_reset(
-            tx,
-            world,
-            epoch,
-            selected.fire_from_the_earth,
-            u64::try_from(timestamp.max(0)).map_err(|_| DurabilityError::InvalidStoredState)?,
-        )
-        .await?;
-        counters::project(tx, world, &mut selected).await?;
-        for definition in oteryn_gameplay_world_change::variants::definitions()
-            .map_err(|_| DurabilityError::InvalidStoredState)?
-        {
-            if let Some(rule) = &definition.reset_counter {
-                let phase = selected.counter_stages[rule.kind.index()];
-                let variant = rule
-                    .variant(phase)
-                    .ok_or(DurabilityError::InvalidStoredState)?;
-                selected.variants.0[definition.slot] = Some(variant);
-            }
-        }
-    }
-    if !activate_variants {
-        // Counter/variant activation belongs only to a new reset, never boot backfill.
-        selected.variants = Default::default();
-        selected.world_counters = false;
-        selected.counter_stages = [0; 9];
-        selected.counter_generations = [0; 9];
-    }
+    counters::at_reset(
+        tx,
+        world,
+        epoch,
+        selected.fire_from_the_earth,
+        timestamp.max(0) as u64,
+    )
+    .await?;
+    counters::project(tx, world, &mut selected).await?;
     let decision =
         serde_json::to_value(selected).map_err(|_| DurabilityError::InvalidStoredState)?;
     sqlx::query("INSERT INTO game_world_change_days(world_id,reset_epoch,decision) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3) ON CONFLICT DO NOTHING")
@@ -294,17 +247,6 @@ pub(super) async fn record(
         return Err(DurabilityError::InvalidStoredState);
     }
     Ok(selected)
-}
-
-/// Test fixture for the real reset-finalization writer; unavailable to production callers.
-#[cfg(feature = "test-support")]
-pub async fn record_reset_fixture(
-    tx: &mut Transaction<'_, Postgres>,
-    world: WorldId,
-    epoch: u64,
-) -> Result<DailyWorldChanges, DurabilityError> {
-    lock_admission_relations(tx).await?;
-    record(tx, world, epoch, true).await
 }
 
 /// Reads a current decision in a caller-owned transaction. None is uninitialized,
@@ -320,76 +262,10 @@ pub async fn load(
     if current.as_deref() != Some(epoch.to_string().as_str()) {
         return Ok(None);
     }
-    record(tx, world, epoch, false).await.map(Some)
+    record(tx, world, epoch).await.map(Some)
 }
 
 impl DurabilityRoot {
-    /// Current Character/session/generation admission, composed with the existing
-    /// Premium owner in the same transaction as the current World decision read.
-    pub async fn world_change_passage<G: crate::durability::npc_travel::NpcTravelGate>(
-        &self,
-        authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
-        node: &crate::durability::runtime_scope_assignment::NodeIncarnationProof,
-        fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
-        epoch: u64,
-        position: oteryn_gameplay_world_change::variants::Position,
-        gate: &G,
-    ) -> Result<
-        Option<oteryn_gameplay_world_change::variants::Position>,
-        crate::durability::character_progression::CharacterProgressionError,
-    > {
-        use crate::durability::{
-            character_progression::{CharacterProgressionError, assert_gameplay_fence},
-            db::begin_type2_transaction,
-        };
-        if !matches!(
-            fence.runtime_scope,
-            crate::foundation::RuntimeScopeRefV1::Channel { .. }
-        ) {
-            return Err(CharacterProgressionError::InvalidInput);
-        }
-        let recovery = authority
-            .record_for(self)
-            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
-        let node = node.clone();
-        let mut gate = gate;
-        self.try_issue_semantic_pass()?.run_with_context(&mut gate, move |holder, deadline, gate| Box::pin(async move {
-            let mut tx = begin_type2_transaction(holder, deadline).await?;
-            assert_recovery_fence(&mut tx, &recovery).await?;
-            lock_admission_relations(&mut tx).await?;
-            // Premium precedes Character-root locking, as in the travel owner.
-            let account: Option<String> = sqlx::query_scalar("SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
-                .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
-            let premium = if let Some(account) = account {
-                gate.travel_permitted(&mut tx, crate::durability::character_authority::uuid_text(&account)?).await?
-            } else { false };
-            if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? { return Ok(Err(error)); }
-            let Some(day) = load(&mut tx, fence.runtime_scope.world_id(), epoch).await? else { return Ok(Ok(None)); };
-            let portal = day.passage(position);
-            let Some(portal) = portal else { return Ok(Ok(None)); };
-            if !portal.exit {
-                let definitions = oteryn_gameplay_world_change::variants::definitions()
-                    .map_err(|_| DurabilityError::InvalidStoredState)?;
-                if let Some(limit) = definitions.iter().find(|d| d.variants.iter().any(|v| v.portals.iter().any(|p| std::ptr::eq(p, portal))))
-                    .and_then(|d| d.entry_limit.as_ref()) {
-                    let count: Option<i64> = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
-                        .bind(fence.character_id.as_bytes().as_slice()).bind(&limit.track).fetch_optional(&mut **tx).await?;
-                    if count.unwrap_or(0) >= i64::from(limit.maximum) { return Ok(Ok(None)); }
-                }
-            }
-            let level: Option<i64> = sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
-                .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
-            let promoted = crate::durability::character_promotion::read_durable_promotion(&mut tx, fence.character_id).await?;
-            let destination = (!portal.premium || premium)
-                .then_some(())
-                .filter(|_| !portal.promoted || promoted)
-                .filter(|_| level.is_some_and(|level| level >= i64::from(portal.min_level)))
-                .map(|_| portal.destination);
-            tx.commit(deadline).await?;
-            Ok(Ok(destination))
-        })).await?
-    }
-
     pub async fn world_changes(
         &self,
         world: WorldId,

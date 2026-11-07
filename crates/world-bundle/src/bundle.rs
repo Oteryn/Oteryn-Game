@@ -20,10 +20,10 @@ pub const MAGIC: &[u8; 4] = b"OTWB";
 /// The node's runtime-compatibility version (`identity.min_runtime_version`), not the format
 /// `VERSION`. Raise it by one only in a PR whose content needs runtime behaviour a node built
 /// from the previous value lacks; it never goes down (decision ARCH-WORLD-CONTENT-SERVE-1 §1.2).
-pub const RUNTIME_VERSION: u32 = 5;
+pub const RUNTIME_VERSION: u32 = 4;
 /// The sorted, unique capabilities the node implements. A PR adds a value only with the runtime
-/// code that implements it. World-change packages bind exact admitted recipe bytes.
-pub const SUPPORTED_CAPABILITIES: &[&str] = &[crate::world_changes::CAPABILITY];
+/// code that implements it. Empty today.
+pub const SUPPORTED_CAPABILITIES: &[&str] = &[];
 /// Header bytes: `"OTWB" | version u16 | reserved u16 | manifest_length u32 | sector_count u32`.
 pub const HEADER: usize = 16;
 /// Sector table row bytes.
@@ -219,8 +219,6 @@ fn runtime_supported(value: &str) -> bool {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Manifest {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub world_changes: Option<crate::world_changes::Package>,
     /// Typed client-mask admission, covered by the bundle digest (format v5).
     pub subareas: crate::subarea::Table,
     pub format: String,
@@ -372,17 +370,6 @@ pub fn digest_of(body: &[u8]) -> [u8; 32] {
 
 /// The manifest rules the writer and the reader both apply.
 pub fn validate_manifest(m: &Manifest) -> Result<(), Error> {
-    check(
-        m.world_changes.is_some()
-            == m.identity
-                .required_capabilities
-                .iter()
-                .any(|capability| capability == crate::world_changes::CAPABILITY),
-        "World change package/capability mismatch",
-    )?;
-    if let Some(package) = &m.world_changes {
-        package.validate()?;
-    }
     m.subareas.validate(&m.world)?;
     check(
         m.format == FORMAT && m.min_reader_version == VERSION,

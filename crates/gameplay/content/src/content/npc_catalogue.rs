@@ -19,7 +19,6 @@ pub mod premium_services;
 pub mod replies;
 pub mod service;
 pub mod travel;
-pub mod world_change_shop;
 #[allow(
     unused_imports,
     reason = "read by NPC talk (NPC-TALK-1), which has no boot caller yet"

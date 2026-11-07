@@ -11,8 +11,8 @@ use super::super::runtime_scope_assignment::NodeIncarnationProof;
 use super::super::{DurabilityError, DurabilityRoot};
 use crate::domain::CharacterRevision;
 use crate::foundation::CommandRef;
-pub use oteryn_gameplay_quests::quest::soul_war::SoulWarState;
 use oteryn_gameplay_quests::quest::soul_war::{SoulWarRefusal, SoulWarTransition};
+pub use oteryn_gameplay_quests::quest::soul_war::SoulWarState;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
@@ -20,13 +20,10 @@ mod native;
 mod reward;
 mod storage;
 mod terminal;
-pub use native::{apply_soul_war_kill_in_transaction, soul_war_experience_in_transaction};
-pub(crate) use reward::confirm_soul_war_reward_in_transaction;
-pub use reward::{
-    PendingSoulWarReward, SOUL_WAR_REWARD_CLAIM, SOUL_WAR_REWARD_PLACEMENT,
-    SOUL_WAR_REWARD_REVISION,
-};
 pub(crate) use terminal::apply_soul_war_failed_final_in_transaction;
+pub use native::{apply_soul_war_kill_in_transaction, soul_war_experience_in_transaction};
+pub use reward::{PendingSoulWarReward, SOUL_WAR_REWARD_CLAIM, SOUL_WAR_REWARD_PLACEMENT, SOUL_WAR_REWARD_REVISION};
+pub(crate) use reward::confirm_soul_war_reward_in_transaction;
 
 type Result<T> = std::result::Result<T, CharacterProgressionError>;
 type StoredResult<T> = std::result::Result<T, DurabilityError>;
@@ -65,8 +62,7 @@ fn command_key(fence: &CurrentCharacterGameplayFence, command: CommandRef) -> [u
         .chain_update(command.game_session_id().as_bytes())
         .chain_update(fence.connection_generation.get().to_be_bytes())
         .chain_update(command.command_id().get().to_be_bytes())
-        .finalize()
-        .into()
+        .finalize().into()
 }
 
 impl DurabilityRoot {
@@ -79,28 +75,21 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
     ) -> Result<SoulWarState> {
-        let recovery = authority
-            .record_for(self)
+        let recovery = authority.record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
-        self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
-                Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
-                    lock_admission_relations(&mut tx).await?;
-                    if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? {
-                        return Ok(Err(error));
-                    }
-                    let now = storage::database_time(&mut tx).await?;
-                    let state = storage::load(&mut tx, fence.character_id)
-                        .await?
-                        .expired(now);
-                    commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok(state))
-                })
-            })
-            .await?
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? {
+                return Ok(Err(error));
+            }
+            let now = storage::database_time(&mut tx).await?;
+            let state = storage::load(&mut tx, fence.character_id).await?.expired(now);
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(state))
+        })).await?
     }
 
     /// Read-only reconciliation after an unknown NPC-command outcome. Absence
@@ -115,24 +104,18 @@ impl DurabilityRoot {
         if command_ref.game_session_id() != fence.game_session_id {
             return Err(CharacterProgressionError::AuthorityRejected);
         }
-        let recovery = authority
-            .record_for(self)
+        let recovery = authority.record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let key = command_key(&fence, command_ref);
         let binding = storage::binding(command.transition())?;
-        self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
-                Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
-                    storage::lock_occurrence(&mut tx, fence.character_id, &key).await?;
-                    let found =
-                        storage::replay(&mut tx, fence.character_id, &key, &binding).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
-                    Ok(found)
-                })
-            })
-            .await?
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            storage::lock_occurrence(&mut tx, fence.character_id, &key).await?;
+            let found = storage::replay(&mut tx, fence.character_id, &key, &binding).await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(found)
+        })).await?
     }
 
     /// The native dialogue handler owns the NPC reachability/identity check and
@@ -149,58 +132,44 @@ impl DurabilityRoot {
         if command_ref.game_session_id() != fence.game_session_id {
             return Err(CharacterProgressionError::AuthorityRejected);
         }
-        let recovery = authority
-            .record_for(self)
+        let recovery = authority.record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
         let key = command_key(&fence, command_ref);
         let transition = command.transition();
         let binding = storage::binding(transition)?;
-        self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
-                Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
-                    lock_admission_relations(&mut tx).await?;
-                    storage::lock_occurrence(&mut tx, fence.character_id, &key).await?;
-                    match storage::replay(&mut tx, fence.character_id, &key, &binding).await? {
-                        Ok(Some(outcome)) => {
-                            commit_semantic_transaction(tx, deadline).await?;
-                            return Ok(Ok(outcome));
-                        }
-                        Err(error) => return Ok(Err(error)),
-                        Ok(None) => {}
-                    }
-                    let root = match assert_gameplay_fence(&mut tx, &fence, &node).await? {
-                        Ok(root) => root,
-                        Err(error) => return Ok(Err(error)),
-                    };
-                    let outcome = storage::commit_locked(
-                        &mut tx,
-                        fence.character_id,
-                        &root,
-                        &key,
-                        transition,
-                        None,
-                        None,
-                    )
-                    .await?;
-                    if outcome.result.is_ok() && command == SoulWarCommand::ReportCompletion {
-                        super::super::character_appearance::grant_quest_outfit(
-                            &mut tx,
-                            fence.character_id,
-                            &key,
-                            super::super::character_appearance::QuestOutfitGrant::Revenant,
-                        )
-                        .await?;
-                    }
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            storage::lock_occurrence(&mut tx, fence.character_id, &key).await?;
+            match storage::replay(&mut tx, fence.character_id, &key, &binding).await? {
+                Ok(Some(outcome)) => {
                     commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok(outcome))
-                })
-            })
-            .await?
+                    return Ok(Ok(outcome));
+                }
+                Err(error) => return Ok(Err(error)),
+                Ok(None) => {}
+            }
+            let root = match assert_gameplay_fence(&mut tx, &fence, &node).await? {
+                Ok(root) => root,
+                Err(error) => return Ok(Err(error)),
+            };
+            let outcome = storage::commit_locked(
+                &mut tx, fence.character_id, &root, &key, transition, None, None,
+            ).await?;
+            if outcome.result.is_ok() && command == SoulWarCommand::ReportCompletion {
+                super::super::character_appearance::grant_quest_outfit(
+                    &mut tx, fence.character_id, &key,
+                    super::super::character_appearance::QuestOutfitGrant::Revenant,
+                ).await?;
+            }
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(outcome))
+        })).await?
     }
 }
+
 
 /// Read-only status projection. Caller holds the admitted Character root fence.
 pub(crate) async fn read_taint_count_in_transaction(

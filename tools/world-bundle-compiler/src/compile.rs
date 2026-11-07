@@ -1121,7 +1121,6 @@ fn assemble(
     let skipped: BTreeSet<String> = state.diagnostics.iter().map(|d| d.key.clone()).collect();
     let layers = layers::realize(input, state.resolver, &sectors)?;
     let manifest = Manifest {
-        world_changes: crate::world_changes::admit(input, state.resolver)?,
         subareas: subareas?,
         format: bundle::FORMAT.into(),
         min_reader_version: bundle::VERSION,
@@ -1295,7 +1294,6 @@ fn prove(
         })
         .collect::<Result<Vec<_>, _>>()?;
     let expected = Manifest {
-        world_changes: crate::world_changes::admit(input, resolver)?,
         subareas: subareas::realize(input, &npc_report, &facts)?,
         format: bundle::FORMAT.into(),
         min_reader_version: bundle::VERSION,
@@ -1321,7 +1319,6 @@ fn prove(
     }
     let got = &read.manifest;
     for (field, same) in [
-        ("world_changes", expected.world_changes == got.world_changes),
         ("subareas", expected.subareas == got.subareas),
         ("format", expected.format == got.format),
         (

@@ -58,9 +58,6 @@ async fn run(h: &fixture::Harness) -> fixture::TestResult {
         .bind(world.as_bytes().as_slice())
         .execute(&h.pool)
         .await?;
-    let mut reset_tx = h.pool.begin().await?;
-    crate::durability::world_event::changes::record_reset_fixture(&mut reset_tx, world, 0).await?;
-    reset_tx.commit().await?;
     let first = h.root.world_changes(world, 0).await?.ok_or("decision")?;
     assert!(first.flower_month && first.grimvale_full_moon);
     assert_eq!(h.root.world_changes(world, 0).await?, Some(first));
@@ -195,9 +192,6 @@ async fn run(h: &fixture::Harness) -> fixture::TestResult {
     .bind(world.as_bytes().as_slice())
     .execute(&h.pool)
     .await?;
-    let mut reset_tx = h.pool.begin().await?;
-    crate::durability::world_event::changes::record_reset_fixture(&mut reset_tx, world, 1).await?;
-    reset_tx.commit().await?;
     let next = h
         .root
         .world_changes(world, 1)
@@ -250,8 +244,8 @@ async fn run(h: &fixture::Harness) -> fixture::TestResult {
     // The immutable daily fields persist; current counter stages are a separate,
     // fenced projection and are intentionally omitted from the decision JSON.
     let mut immutable_next = next;
-    immutable_next.counter_stages = [0; 9];
-    immutable_next.counter_generations = [0; 9];
+    immutable_next.counter_stages = [0; 8];
+    immutable_next.counter_generations = [0; 8];
     assert_eq!(
         serde_json::from_value::<oteryn_gameplay_world_change::daily::DailyWorldChanges>(day)?,
         immutable_next

@@ -200,8 +200,8 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     generated[manifest_path] = canonical(manifest)
 
 
-def refresh_canonical_input_pins(root, baseline, *, packet_path=PATH, keys=None, qualify_selected=None):
-    """Repin only unchanged rows or exact outputs of a supplied source qualifier."""
+def refresh_canonical_input_pins(root, baseline, *, packet_path=PATH, keys=None):
+    """Repin shared shards only when every selected Item definition is unchanged."""
     path = root / packet_path
     packet = json.loads(path.read_bytes())
     if keys is None:
@@ -216,11 +216,8 @@ def refresh_canonical_input_pins(root, baseline, *, packet_path=PATH, keys=None,
             continue
         previous = subprocess.check_output(
             ['git', '-C', str(root), 'show', f"{baseline}:{descriptor['path']}"])
-        expected = selected_definitions(previous)
-        if qualify_selected is not None:
-            qualify_selected([row['definition'] for row in expected])
         if (hashlib.sha256(previous).hexdigest() != descriptor['sha256']
-                or expected != selected_definitions(current)):
+                or selected_definitions(previous) != selected_definitions(current)):
             raise ValueError('GRIZZLY_SHOP_REPIN_SELECTED_DEFINITION_CHANGED')
         descriptor['sha256'] = digest
     path.write_bytes(encode(packet))

@@ -32,7 +32,6 @@
 
 use oteryn_gameplay_economy::npc_trade as rules;
 mod grizzly;
-mod world_changes;
 pub mod yeo;
 pub use oteryn_gameplay_economy::npc_trade::{
     Entry, NpcTradeCoins, NpcTradeLine, NpcTradeLineKind,
@@ -81,7 +80,6 @@ pub use hireling::{HirelingPackageSelection, HirelingTradeSelection};
 #[derive(Default)]
 struct TradeCommitOptions<'a> {
     sell_all: bool,
-    world_npc: Option<super::quest_state::NativeWorldChangeNpc>,
     hireling: Option<hireling::Extra>,
     weights: Option<&'a dyn super::item_transfer::ItemWeightLookup>,
     /// Source coordinates captured from the exact live NPC by the normal trade caller.
@@ -743,30 +741,6 @@ impl DurabilityRoot {
         .await
     }
 
-    #[allow(clippy::too_many_arguments)]
-    pub async fn commit_world_change_npc_trade(
-        &self,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        node: &NodeIncarnationProof,
-        fence: CurrentCharacterItemFence,
-        request: NpcTradeRequest,
-        source: super::quest_state::NativeWorldChangeNpc,
-        sell_all: bool,
-    ) -> Result<NpcTradeOutcome> {
-        self.commit_trade(
-            authority,
-            node,
-            fence,
-            request,
-            TradeCommitOptions {
-                sell_all,
-                world_npc: Some(source),
-                ..TradeCommitOptions::default()
-            },
-        )
-        .await
-    }
-
     async fn commit_trade(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -779,7 +753,6 @@ impl DurabilityRoot {
             sell_all,
             hireling,
             weights,
-            world_npc,
             yasir_position,
             yeo_position,
         } = options;
@@ -858,9 +831,6 @@ impl DurabilityRoot {
                     let current=if let Some(source)=&hireling {source.admit(&mut tx,&node,&fence).await.map_err(|_|DurabilityError::InvalidStoredState)?}
                         else {character_item_fence_is_current(&mut tx,&node,&fence,request.command,fence.character_id,*world_id.as_bytes(),*channel_id.as_bytes()).await?};
                     if !current {
-                        return Ok(Err(NpcTradeError::AuthorityRejected));
-                    }
-                    if !world_changes::permitted(&mut tx,fence,&request,world_npc.as_ref()).await? {
                         return Ok(Err(NpcTradeError::AuthorityRejected));
                     }
                     if !yasir_permitted(&mut tx, world_id, &request.cause.npc_key, yasir_position).await? {

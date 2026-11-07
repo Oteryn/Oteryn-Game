@@ -275,10 +275,7 @@ pub(super) async fn grant_missing(
     .bind(keys)
     .fetch_all(&mut **tx)
     .await?;
-    for key in keys
-        .iter()
-        .filter(|key| !held.iter().any(|held| held == *key))
-    {
+    for key in keys.iter().filter(|key| !held.iter().any(|held| held == *key)) {
         let request = AchievementGrantRequest {
             achievement_key: (*key).to_owned(),
             catalogue: embedded_lookup(key)?,
@@ -305,61 +302,6 @@ pub(super) async fn add_progress(
     source_kind: &str,
     event_id: &[u8],
 ) -> std::result::Result<(), DurabilityError> {
-    add_progress_inner(
-        tx,
-        character_id,
-        key,
-        total,
-        source_kind,
-        event_id,
-        true,
-        false,
-    )
-    .await
-}
-
-/// Source branches may postpone the grant after reaching a saturated progress
-/// threshold. The original wrapper retains all existing unconditional behavior.
-#[allow(
-    clippy::too_many_arguments,
-    reason = "explicit existing progress provenance plus source branch"
-)]
-pub(super) async fn add_progress_conditionally(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    character_id: CharacterId,
-    key: &str,
-    total: u32,
-    source_kind: &str,
-    event_id: &[u8],
-    allow_grant: bool,
-) -> std::result::Result<(), DurabilityError> {
-    add_progress_inner(
-        tx,
-        character_id,
-        key,
-        total,
-        source_kind,
-        event_id,
-        allow_grant,
-        true,
-    )
-    .await
-}
-
-#[allow(
-    clippy::too_many_arguments,
-    reason = "one existing progress owner preserves unconditional and source-conditional grants"
-)]
-async fn add_progress_inner(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    character_id: CharacterId,
-    key: &str,
-    total: u32,
-    source_kind: &str,
-    event_id: &[u8],
-    allow_grant: bool,
-    recheck_saturated: bool,
-) -> std::result::Result<(), DurabilityError> {
     let progress: Option<i64> = sqlx::query_scalar(
         "INSERT INTO game_character_achievement_progress AS p \
                 (character_id, achievement_key, progress) \
@@ -373,16 +315,8 @@ async fn add_progress_inner(
     .bind(i64::from(total))
     .fetch_optional(&mut **tx)
     .await?;
-    if allow_grant {
-        let current = match progress {
-            Some(current) => Some(current),
-            None if recheck_saturated => sqlx::query_scalar("SELECT progress FROM game_character_achievement_progress WHERE character_id=encode($1,'hex')::uuid AND achievement_key=$2")
-                .bind(character_id.as_bytes().as_slice()).bind(key).fetch_optional(&mut **tx).await?,
-            None => None,
-        };
-        if current.is_some_and(|current| current >= i64::from(total)) {
-            grant_missing(tx, character_id, &[key], source_kind, event_id).await?;
-        }
+    if progress == Some(i64::from(total)) {
+        grant_missing(tx, character_id, &[key], source_kind, event_id).await?;
     }
     Ok(())
 }

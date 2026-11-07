@@ -185,9 +185,6 @@ fn scenario() -> TestResult {
             .bind(world_id.as_bytes().as_slice())
             .execute(&h.pool)
             .await?;
-        let mut reset_tx = h.pool.begin().await?;
-        crate::durability::world_event::changes::record_reset_fixture(&mut reset_tx, world_id, 0).await?;
-        reset_tx.commit().await?;
         let inactive = h
             .root
             .world_changes(world_id, 0)
@@ -250,9 +247,6 @@ fn scenario() -> TestResult {
 
         sqlx::query("UPDATE game_world_reset_active SET reset_epoch=1 WHERE world_id=encode($1,'hex')::uuid")
             .bind(world_id.as_bytes().as_slice()).execute(&h.pool).await?;
-        let mut reset_tx = h.pool.begin().await?;
-        crate::durability::world_event::changes::record_reset_fixture(&mut reset_tx, world_id, 1).await?;
-        reset_tx.commit().await?;
         let active = h
             .root
             .world_changes(world_id, 1)
@@ -353,9 +347,6 @@ fn scenario() -> TestResult {
         }
         sqlx::query("UPDATE game_world_reset_active SET reset_epoch=2 WHERE world_id=encode($1,'hex')::uuid")
             .bind(world_id.as_bytes().as_slice()).execute(&h.pool).await?;
-        let mut reset_tx = h.pool.begin().await?;
-        crate::durability::world_event::changes::record_reset_fixture(&mut reset_tx, world_id, 2).await?;
-        reset_tx.commit().await?;
         h.root.world_changes(world_id, 2).await?.ok_or("next day")?;
         assert!(
             !h.root
@@ -569,9 +560,6 @@ async fn producer_seed(
         .bind(owner.world_id.as_bytes().as_slice())
         .execute(&harness.pool)
         .await?;
-    let mut reset_tx = harness.pool.begin().await?;
-    crate::durability::world_event::changes::record_reset_fixture(&mut reset_tx, owner.world_id, 1).await?;
-    reset_tx.commit().await?;
     sqlx::query("INSERT INTO game_world_raid_schedules VALUES(encode($1,'hex')::uuid,$2,2,1,1,2,60000,0,NULL,false)")
         .bind(owner.world_id.as_bytes().as_slice()).bind(key.as_str()).execute(&harness.pool).await?;
     sqlx::query("INSERT INTO game_world_raid_firings VALUES(encode($1,'hex')::uuid,$2,1,encode($3,'hex')::uuid,1,0,$4,$5,1)")

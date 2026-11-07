@@ -240,18 +240,6 @@ pub fn gathering_attempt(
     catch_roll: u32,
     yield_roll: u32,
 ) -> Option<GatheringAttempt> {
-    // Crystal9f5a72 fishing.lua:148-175, SHA256
-    // 0ccb697378d9921d9f273d15864ce30dabe42852b90d046bd1f9e81d7b13aa5a.
-    if tool == 3483 && target == 13989 {
-        if !(1..=100_000).contains(&yield_roll) || !catches(skill, catch_roll) {
-            return None;
-        }
-        return Some(GatheringAttempt {
-            after: Some(13988),
-            yield_item: (yield_roll <= 1000).then_some(13992),
-            consumes_bait: true,
-        });
-    }
     if tool == 9306 && MECHANICAL_FISHING_WATER.contains(&target) {
         if !(1..=100_000).contains(&yield_roll) || !catches(skill, catch_roll) {
             return None;
@@ -334,7 +322,7 @@ pub fn catches(skill: u16, roll: u32) -> bool {
 /// Crystal data-global/scripts/actions/other/mechanical_fishing.lua:334-346,378.
 /// Only its ice-hole gathering slice is admitted for the mechanical rod here.
 pub fn accepts_fishing_rod(tool_key: &str, water_key: &str) -> bool {
-    (tool_key == FISHING_ROD && is_water(water_key) && water_key != "oteryn:item.tibia.i13988")
+    (tool_key == FISHING_ROD && is_water(water_key))
         || (tool_key == "oteryn:item.tibia.i9306" && water_key == "oteryn:item.tibia.i7236")
 }
 
@@ -348,24 +336,6 @@ pub fn is_water(production_key: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn wvar_desert_water_spends_bait_without_fabricating_standard_fish() {
-        assert_eq!(
-            gathering_attempt(3483, 13989, 80, 1, 1001),
-            Some(GatheringAttempt {
-                after: Some(13988),
-                yield_item: None,
-                consumes_bait: true,
-            })
-        );
-        assert_eq!(
-            gathering_attempt(3483, 13989, 80, 1, 1000).and_then(|a| a.yield_item),
-            Some(13992)
-        );
-        assert_eq!(gathering_attempt(3483, 13989, 80, 50001, 1), None);
-        assert_eq!(gathering_attempt(3483, 13988, 80, 1, 1), None);
-    }
 
     #[test]
     fn m09_mechanical_rod_is_admitted_on_ice_holes() {

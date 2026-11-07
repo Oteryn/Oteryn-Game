@@ -192,7 +192,7 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
                 })))
 }
 
-pub(super) fn step_command(
+fn step_command(
     actor: ExactActorRef,
     session: GameSessionId,
     revision: u64,

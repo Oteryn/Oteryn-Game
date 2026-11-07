@@ -27,16 +27,6 @@
         "SKILL_DISTANCE": "3"
       },
       "slot_count": 3
-    },
-    "7412": {
-      "families": {
-        "CRITICAL_HIT": "3",
-        "ELEMENTAL_DAMAGE": "3",
-        "LIFE_LEECH": "3",
-        "MANA_LEECH": "3",
-        "SKILL_AXE": "3"
-      },
-      "slot_count": 2
     }
   },
   "schema": "OTERYN_CRYSTAL_ITEM_IMBUEMENT_SLOT_FACTS/v1",

@@ -39,7 +39,6 @@ fn dawnport_trial_tiles_switch_all_five_vocations_and_back_and_refuse_level_twen
 fn trial_row() -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     let manifest = Manifest {
-        world_changes: None,
         subareas: Default::default(),
         format: FORMAT.into(),
         min_reader_version: VERSION,

@@ -28,12 +28,8 @@ mod event_containers;
 mod harvest;
 mod skinning;
 pub mod soulpit;
-mod world_changes;
 pub use enchanting::EnchantingCraft;
 pub use harvest::{MapHarvestOperand, MapHarvestRequest, MapHarvestResult};
-pub use world_changes::{
-    WOLF, WOLF_PADS, source_station_actor_binding, source_station_draw, source_station_wolves,
-};
 pub use skinning::SkinningRequest;
 
 #[derive(Debug, Clone)]
@@ -93,61 +89,6 @@ impl DurabilityRoot {
         probe: bool,
         window: Option<&mut super::spell_owner_commit::SpellCommitWindow<'_, T>>,
     ) -> Result<Option<UseDisposition>, DurabilityError> {
-        self.craft_item_owned_inner(
-            recovery, node, fence, request, native, content, probe, window, None,
-        )
-        .await
-    }
-
-    /// A source actor batch proves real reserved native slots through COMMIT.
-    /// The existing window retains the reservation if the outcome is unknown.
-    #[allow(
-        clippy::too_many_arguments,
-        reason = "existing craft owner plus sealed native reservation"
-    )]
-    pub async fn craft_item_with_source_actors<C: ItemLoopContent, T: Send + 'static>(
-        &self,
-        recovery: &ReconciledCharacterAuthority<'_, '_>,
-        node: &NodeIncarnationProof,
-        fence: CurrentCharacterItemFence,
-        request: ItemCraftRequest,
-        native: &NativeGameplayState,
-        content: &C,
-        window: &mut super::spell_owner_commit::SpellCommitWindow<'_, T>,
-        actors: &oteryn_gameplay_entities::carrier::native_actor_batch::NativeActorBatchProof,
-    ) -> Result<Option<UseDisposition>, DurabilityError> {
-        self.craft_item_owned_inner(
-            recovery,
-            node,
-            fence,
-            request,
-            native,
-            content,
-            false,
-            Some(window),
-            Some(actors),
-        )
-        .await
-    }
-
-    #[allow(
-        clippy::too_many_arguments,
-        reason = "wrapper-preserving shared craft transaction"
-    )]
-    async fn craft_item_owned_inner<C: ItemLoopContent, T: Send + 'static>(
-        &self,
-        recovery: &ReconciledCharacterAuthority<'_, '_>,
-        node: &NodeIncarnationProof,
-        fence: CurrentCharacterItemFence,
-        request: ItemCraftRequest,
-        native: &NativeGameplayState,
-        content: &C,
-        probe: bool,
-        window: Option<&mut super::spell_owner_commit::SpellCommitWindow<'_, T>>,
-        actors: Option<
-            &oteryn_gameplay_entities::carrier::native_actor_batch::NativeActorBatchProof,
-        >,
-    ) -> Result<Option<UseDisposition>, DurabilityError> {
         // An enchanting write may not bypass the live resource owner's retained successor.
         // Probes remain available to the common replay path before resolving current handles.
         if request.enchanting.is_some() && !probe && window.is_none() {
@@ -167,7 +108,7 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
-        let mut context = (native, content, window, actors);
+        let mut context = (native, content, window);
         self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, context| Box::pin(async move {
             let mut tx = begin_type2_transaction(holder, deadline).await?;
             super::character_authority::assert_recovery_fence(&mut tx, &record).await?;
@@ -187,7 +128,7 @@ impl DurabilityRoot {
             if assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence, Some(request.command), context.1.loop_content_digest()).await.is_err() {
                 return Ok(Some(UseDisposition::Rejected));
             }
-            let result = write(&mut tx, &record, fence, &request, context.0, context.1, context.3).await?;
+            let result = write(&mut tx, fence, &request, context.0, context.1).await?;
             if result == UseDisposition::Committed {
                 if let Some(window) = context.2.as_mut() {
                     super::pvp_live::commit_live_pvp_transaction(tx.into_inner(), deadline, window).await?;
@@ -200,26 +141,20 @@ impl DurabilityRoot {
 
 async fn write<C: ItemLoopContent>(
     tx: &mut super::item_mint_audit::Type2Transaction<'_>,
-    record: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
     fence: CurrentCharacterItemFence,
     request: &ItemCraftRequest,
     native: &NativeGameplayState,
     content: &C,
-    actor_batch: Option<
-        &oteryn_gameplay_entities::carrier::native_actor_batch::NativeActorBatchProof,
-    >,
 ) -> Result<UseDisposition, DurabilityError> {
-    write_with_skinning(tx, record, fence, request, native, content, None, actor_batch).await
+    write_with_skinning(tx, fence, request, native, content, None).await
 }
 
 #[allow(
     clippy::too_many_lines,
-    clippy::too_many_arguments,
     reason = "existing craft writer retains its single atomic inventory and audit owner"
 )]
 async fn write_with_skinning<C: ItemLoopContent>(
     tx: &mut super::item_mint_audit::Type2Transaction<'_>,
-    record: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
     fence: CurrentCharacterItemFence,
     request: &ItemCraftRequest,
     native: &NativeGameplayState,
@@ -228,12 +163,8 @@ async fn write_with_skinning<C: ItemLoopContent>(
         &SkinningRequest,
         &oteryn_gameplay_content::content::charm_source::CanonicalCharmCatalogue,
     )>,
-    actor_batch: Option<&oteryn_gameplay_entities::carrier::native_actor_batch::NativeActorBatchProof>,
 ) -> Result<UseDisposition, DurabilityError> {
     if request.enchanting.is_some() {
-        if actor_batch.is_some() {
-            return Ok(UseDisposition::Rejected);
-        }
         return enchanting::write(tx, fence, request, native, content).await;
     }
     let (world, _) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
@@ -267,14 +198,6 @@ async fn write_with_skinning<C: ItemLoopContent>(
     {
         return Ok(UseDisposition::NothingToUse);
     }
-    let station_use = world_changes::resolve(request, &definition);
-    if let Some(station) = &station_use {
-        if !world_changes::prepare(tx, fence, request, station, native, actor_batch).await? {
-            return Ok(UseDisposition::Rejected);
-        }
-    } else if actor_batch.is_some() {
-        return Ok(UseDisposition::Rejected);
-    }
     let skinning = if let Some((operand, catalogue)) = skinning {
         let Some(prepared) =
             skinning::prepare(tx, fence, operand, &definition, native, catalogue).await?
@@ -296,41 +219,6 @@ async fn write_with_skinning<C: ItemLoopContent>(
             outputs: prepared.conversion.outputs.clone(),
         })
     } else if let Some(gathering) = &request.gathering {
-        if gathering.mutation.before == 13989 {
-            let Some(day) = super::world_event::changes::load(
-                tx,
-                world,
-                u64::try_from(gathering.scope.reset_epoch)
-                    .map_err(|_| DurabilityError::InvalidStoredState)?,
-            )
-            .await?
-            else {
-                return Ok(UseDisposition::StaleState);
-            };
-            let placement = &gathering.mutation.placement;
-            let Some(position) =
-                oteryn_gameplay_world_change::variants::station_position(placement)
-            else {
-                return Ok(UseDisposition::StaleState);
-            };
-            if !world_changes::map_prefix_matches(placement, &gathering.scope.map_revision) {
-                return Ok(UseDisposition::StaleState);
-            }
-            let ordinal = usize::from(placement[39]);
-            let selected = oteryn_gameplay_world_change::variants::definitions()
-                .map_err(|_| DurabilityError::InvalidStoredState)?
-                .iter()
-                .find(|d| d.key == "river_runs_deep")
-                .and_then(|d| day.variant(&d.key).and_then(|i| d.variants.get(i)));
-            if !selected.is_some_and(|v| {
-                v.tiles.iter().any(|t| {
-                    t.position == position
-                        && t.entries.get(ordinal).is_some_and(|entry| entry.0 == 13989)
-                })
-            }) {
-                return Ok(UseDisposition::StaleState);
-            }
-        }
         let bait = if gathering.mutation.tool_key == "oteryn:item.tibia.i9306"
             && u16::try_from(gathering.mutation.before).is_ok_and(|target| {
                 oteryn_gameplay_items::fishing::MECHANICAL_FISHING_WATER.contains(&target)
@@ -373,10 +261,7 @@ async fn write_with_skinning<C: ItemLoopContent>(
             ))
             || tool_id != gathering.mutation.tool
             || gathering.scope.content_generation != native.source_digest()
-            || (consumes_source
-                && definition.production_key != bait
-                && !seed_is_qualified
-                && station_use.is_none())
+            || (consumes_source && definition.production_key != bait && !seed_is_qualified)
         {
             return Ok(UseDisposition::StaleState);
         }
@@ -398,9 +283,7 @@ async fn write_with_skinning<C: ItemLoopContent>(
             .collect::<Option<Vec<_>>>();
         outputs.map(
             |outputs| oteryn_gameplay_items::item_craft::CookingConversion {
-                recipe: if let Some(station) = &station_use {
-                    station.recipe()
-                } else if seed_is_qualified {
+                recipe: if seed_is_qualified {
                     "oteryn:planting.crystal"
                 } else {
                     "oteryn:gathering.crystal"
@@ -583,9 +466,7 @@ async fn write_with_skinning<C: ItemLoopContent>(
         let item: String = sqlx::query_scalar("SELECT game_character_uuid_v7()::text")
             .fetch_one(&mut ***tx)
             .await?;
-        let mut output = json!({"item": item, "key": definition.production_key, "revision": definition.revision_ref, "count": count, "ordinal": output_ordinal});
-        world_changes::decorate_output(&mut output, station_use.as_ref(), native.source_digest());
-        outputs.push(output);
+        outputs.push(json!({"item": item, "key": definition.production_key, "revision": definition.revision_ref, "count": count, "ordinal": output_ordinal}));
     }
     let (transaction, event, occurred): (String, String, i64) = sqlx::query_as("SELECT game_character_uuid_v7()::text,game_character_uuid_v7()::text,(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&mut ***tx).await?;
     let tuple = tx.tuple();
@@ -632,14 +513,6 @@ async fn write_with_skinning<C: ItemLoopContent>(
     {
         return Ok(UseDisposition::StaleState);
     }
-    if let Some(station) = &station_use {
-        world_changes::anchor_restore(tx, fence, request, station, occurred).await?;
-    }
-    if let Some(station) = &station_use
-        && !world_changes::contribute(tx, record, fence, request, station).await?
-    {
-        return Ok(UseDisposition::StaleState);
-    }
     let ingredient_before: Option<Value> = match request.ingredient {
         Some(ingredient) => sqlx::query_scalar("SELECT to_jsonb(i) FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
             .bind(ingredient.as_slice()).fetch_optional(&mut ***tx).await?,
@@ -674,20 +547,11 @@ async fn write_with_skinning<C: ItemLoopContent>(
             .execute(&mut ***tx)
             .await?;
     }
-    for (index, output) in outputs.into_iter().enumerate() {
+    for output in outputs {
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,'Item',$1->>'key',$1->>'revision',($1->>'count')::bigint,1,$3::uuid)")
             .bind(&output).bind(world.as_bytes().as_slice()).bind(&transaction).execute(&mut ***tx).await?;
         sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,($1->>'ordinal')::numeric,$5::uuid)")
             .bind(&output).bind(world.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(&parent).bind(&transaction).execute(&mut ***tx).await?;
-        super::spell_item_temporal::schedule_action_item_in_transaction(
-            tx,
-            &transaction,
-            u32::try_from(index + 1).map_err(|_| DurabilityError::InvalidStoredState)?,
-            &output,
-            native.source_digest(),
-            occurred,
-        )
-        .await?;
     }
     if conversion.recipe == "oteryn:planting.crystal"
         && request
@@ -706,7 +570,6 @@ async fn write_with_skinning<C: ItemLoopContent>(
     }
     sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES($1::uuid,$2::uuid,1,1,2,$3,$4,encode($5,'hex')::uuid,$6,$6+$7,$8,sha256($8),1)")
         .bind(&event).bind(&transaction).bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id()).bind(request.source.as_slice()).bind(occurred).bind(super::item_mint_audit::AUDIT_RETENTION_P90D_MS).bind(&envelope).execute(&mut ***tx).await?;
-    world_changes::achievement(tx, fence, request, station_use.as_ref(), event.as_bytes()).await?;
     // The successful yield, counter and grant share the craft receipt transaction.
     // Exact replay returned before this writer, so a retry never advances the counter.
     use oteryn_gameplay_progression::achievement_granters;

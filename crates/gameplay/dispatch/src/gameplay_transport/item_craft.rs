@@ -22,7 +22,6 @@ mod planting;
 mod rope;
 mod skinning;
 mod terrain;
-pub(super) mod world_changes;
 
 pub(super) async fn dispatch<A: FreshAdmissionAuthority>(
     authority: &A,
@@ -115,14 +114,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         match self
             .use_rope_tool(actor, command, &intent, source, target)
-            .await
-        {
-            Ok(Some(outcome)) => return Some(outcome),
-            Ok(None) => {}
-            Err(()) => return None,
-        }
-        match self
-            .use_world_change_station(actor, command, &intent, source, target)
             .await
         {
             Ok(Some(outcome)) => return Some(outcome),
@@ -469,9 +460,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // the open 7236 made by a pick has no duration/decayTo.
                     decay: if attempt.after == Some(7237) {
                         vec![(7200, 900_000)]
-                    } else if attempt.after == Some(13988) {
-                        // Crystal items.xml13988:1200seconds,decayTo13989.
-                        vec![(13989, 1_200_000)]
                     } else if tool_id == 9306 && attempt.after == Some(4609) {
                         // Crystal items.xml:13998-14005: spent sewer water recovers in 20 min.
                         vec![(4597, 1_200_000)]

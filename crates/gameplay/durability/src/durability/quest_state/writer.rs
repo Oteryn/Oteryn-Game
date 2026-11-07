@@ -121,195 +121,6 @@ impl DurabilityRoot {
             super::super::world_event::changes::counters::benevola::BenevolaHandover,
         )>,
     ) -> Result<QuestTransitionOutcome> {
-        self.commit_quest_inner_with_native_sources(
-            authority,
-            node,
-            fence,
-            request,
-            catalogue,
-            context,
-            grizzly_action,
-            grizzly_boss,
-            grizzly_party,
-            grizzly_gate,
-            grizzly_policy,
-            payment,
-            None,
-            None,
-            None,
-            benevola,
-        )
-        .await
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub(super) async fn commit_quest_inner_with_world_kill<
-        G: grizzly::GrizzlyPremiumGate,
-        const N: usize,
-    >(
-        &self,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        node: &NodeIncarnationProof,
-        fence: CurrentCharacterGameplayFence,
-        request: QuestTransitionRequest,
-        catalogue: Arc<QuestStateCatalogue>,
-        context: Option<(
-            &super::super::spell_owner_commit::SpellLanePermit,
-            super::super::quest_world_callback::QuestWorldContext,
-        )>,
-        grizzly_action: Option<oteryn_gameplay_quests::quest::grizzly_adams::GrizzlyAction>,
-        grizzly_boss: Option<(
-            &super::super::spell_owner_commit::SpellLanePermit,
-            grizzly_boss::GrizzlyBossEntryContext,
-        )>,
-        grizzly_party: Option<crate::foundation::PartySnapshot>,
-        grizzly_gate: &G,
-        grizzly_policy: Option<&FiniteProgressionPolicy<String, N>>,
-        payment: Option<super::rotten_blood_access::RottenBloodAccessPayment>,
-        world_kill: Option<(
-            &super::super::spell_owner_commit::SpellLanePermit,
-            world_change_kills::NativeWorldChangeKill,
-        )>,
-    ) -> Result<QuestTransitionOutcome> {
-        self.commit_quest_inner_with_native_context(
-            authority,
-            node,
-            fence,
-            request,
-            catalogue,
-            context,
-            grizzly_action,
-            grizzly_boss,
-            grizzly_party,
-            grizzly_gate,
-            grizzly_policy,
-            payment,
-            world_kill,
-            None,
-        )
-        .await
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub(super) async fn commit_quest_inner_with_native_context<
-        G: grizzly::GrizzlyPremiumGate,
-        const N: usize,
-    >(
-        &self,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        node: &NodeIncarnationProof,
-        fence: CurrentCharacterGameplayFence,
-        request: QuestTransitionRequest,
-        catalogue: Arc<QuestStateCatalogue>,
-        context: Option<(
-            &super::super::spell_owner_commit::SpellLanePermit,
-            super::super::quest_world_callback::QuestWorldContext,
-        )>,
-        grizzly_action: Option<oteryn_gameplay_quests::quest::grizzly_adams::GrizzlyAction>,
-        grizzly_boss: Option<(
-            &super::super::spell_owner_commit::SpellLanePermit,
-            grizzly_boss::GrizzlyBossEntryContext,
-        )>,
-        grizzly_party: Option<crate::foundation::PartySnapshot>,
-        grizzly_gate: &G,
-        grizzly_policy: Option<&FiniteProgressionPolicy<String, N>>,
-        payment: Option<super::rotten_blood_access::RottenBloodAccessPayment>,
-        world_kill: Option<(
-            &super::super::spell_owner_commit::SpellLanePermit,
-            world_change_kills::NativeWorldChangeKill,
-        )>,
-        world_npc: Option<NativeWorldChangeNpc>,
-    ) -> Result<QuestTransitionOutcome> {
-        self.commit_quest_inner_with_native_sources(
-            authority,
-            node,
-            fence,
-            request,
-            catalogue,
-            context,
-            grizzly_action,
-            grizzly_boss,
-            grizzly_party,
-            grizzly_gate,
-            grizzly_policy,
-            payment,
-            world_kill,
-            world_npc,
-            None,
-            None,
-        )
-        .await
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub(super) async fn commit_quest_inner_with_native_sources<
-        G: grizzly::GrizzlyPremiumGate,
-        const N: usize,
-    >(
-        &self,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        node: &NodeIncarnationProof,
-        fence: CurrentCharacterGameplayFence,
-        request: QuestTransitionRequest,
-        catalogue: Arc<QuestStateCatalogue>,
-        context: Option<(
-            &super::super::spell_owner_commit::SpellLanePermit,
-            super::super::quest_world_callback::QuestWorldContext,
-        )>,
-        grizzly_action: Option<oteryn_gameplay_quests::quest::grizzly_adams::GrizzlyAction>,
-        grizzly_boss: Option<(
-            &super::super::spell_owner_commit::SpellLanePermit,
-            grizzly_boss::GrizzlyBossEntryContext,
-        )>,
-        grizzly_party: Option<crate::foundation::PartySnapshot>,
-        grizzly_gate: &G,
-        grizzly_policy: Option<&FiniteProgressionPolicy<String, N>>,
-        payment: Option<super::rotten_blood_access::RottenBloodAccessPayment>,
-        world_kill: Option<(
-            &super::super::spell_owner_commit::SpellLanePermit,
-            world_change_kills::NativeWorldChangeKill,
-        )>,
-        world_npc: Option<NativeWorldChangeNpc>,
-        world_entry: Option<NativeWorldChangeEntry>,
-        benevola: Option<(
-            &super::super::spell_owner_commit::SpellLanePermit,
-            super::super::world_event::changes::counters::benevola::BenevolaHandover,
-        )>,
-    ) -> Result<QuestTransitionOutcome> {
-        let world_kill_rule = oteryn_gameplay_quests::quest::world_change_kills::for_transition(
-            &request.transition_key,
-        );
-        let world_kill_track =
-            catalogue
-                .transition(&request.transition_key)
-                .is_some_and(|transition| {
-                    transition.effects.iter().any(|effect| {
-                        oteryn_gameplay_quests::quest::world_change_kills::DEFINITIONS
-                            .iter()
-                            .any(|rule| rule.track == effect.track)
-                    })
-                });
-        if (world_kill_rule.is_some() || world_kill_track) != world_kill.is_some()
-            || world_kill
-                .as_ref()
-                .is_some_and(|(_, kill)| !kill.binds(fence, &request))
-        {
-            return Err(CharacterProgressionError::InvalidInput);
-        }
-        let world_entry_track =
-            oteryn_gameplay_quests::quest::world_change_entry::requires_native_source(
-                &catalogue,
-                &request.transition_key,
-            );
-        let world_npc_track =
-            oteryn_gameplay_quests::quest::world_change_npcs::requires_native_source(
-                &catalogue,
-                &request.transition_key,
-            );
-        let world_npc_achievement = world_change_npcs::prepare(&request)
-            .map_err(|_| CharacterProgressionError::InvalidInput)?;
-        let world_kill_achievement = world_change_kills::prepare(&request)
-            .map_err(|_| CharacterProgressionError::InvalidInput)?;
         if (request.transition_key
             == super::super::world_event::changes::counters::benevola::HANDOVER)
             != benevola.is_some()
@@ -446,9 +257,6 @@ impl DurabilityRoot {
                 .finalize();
             binding[1..].copy_from_slice(&digest);
         }
-        if let Some((_, kill)) = &world_kill {
-            kill.bind(&mut binding)?;
-        }
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
@@ -458,13 +266,10 @@ impl DurabilityRoot {
             grizzly_gate,
             grizzly_boss,
             grizzly_policy,
-            world_kill,
-            world_npc,
-            world_entry,
             benevola,
         );
         self.try_issue_semantic_pass()?
-            .run_with_context(&mut context, move |holder, deadline, (context, grizzly_gate, grizzly_boss, grizzly_policy, world_kill, world_npc, world_entry, benevola)| {
+            .run_with_context(&mut context, move |holder, deadline, (context, grizzly_gate, grizzly_boss, grizzly_policy, benevola)| {
                 Box::pin(async move {
                     let character = fence.character_id;
                     let mut tx = if let Some(payment)=&payment {
@@ -520,21 +325,6 @@ impl DurabilityRoot {
                         Ok(root) => root,
                         Err(error) => return Ok(Err(error)),
                     };
-                    if let Some((permit, kill)) = world_kill.as_ref()
-                        && !world_change_kills::admit(&mut tx, permit, fence, kill).await?
-                    { return Ok(Err(CharacterProgressionError::AuthorityRejected)); }
-                    if world_npc_track || world_npc.is_some() {
-                        let Some(source)=world_npc.as_ref() else {return Ok(Err(CharacterProgressionError::AuthorityRejected));};
-                        if !world_npc_track || !world_change_npcs::admit(&mut tx,fence,&request,source).await? {
-                            return Ok(Err(CharacterProgressionError::AuthorityRejected));
-                        }
-                    }
-                    if world_entry_track || world_entry.is_some() {
-                        let Some(source)=world_entry.as_ref() else {return Ok(Err(CharacterProgressionError::AuthorityRejected));};
-                        if !world_entry_track || !world_change_entry::admit(&mut tx,fence,&request,source).await? {
-                            return Ok(Err(CharacterProgressionError::AuthorityRejected));
-                        }
-                    }
                     let id = character.as_bytes().as_slice();
                     let state = sqlx::query(
                         "SELECT character_revision::text, level, total_experience, \
@@ -1026,8 +816,6 @@ impl DurabilityRoot {
                         super::super::quest_unnatural_selection::earn(&mut tx, fence, &request, callback,
                             &changes, dance_achievement.as_ref()).await?;
                     }
-                    world_change_kills::earn(&mut tx, fence, &request, &changes, world_kill_achievement.as_ref()).await?;
-                    world_change_npcs::earn(&mut tx,fence,&request,&changes,world_npc_achievement.as_ref()).await?;
                     super::hero_of_bounac::earn(&mut tx, fence, &request, &changes, lionheart.as_ref()).await?;
                     super::planegazer_finale::earn(&mut tx, fence, &request, &changes).await?;
                     super::wrath_sleeping_dragon::earn(&mut tx, fence, &request, &changes, wayfarer.as_ref()).await?;

@@ -64,7 +64,6 @@ impl Owner {
             Terrain, TerrainKind,
         };
         let manifest = Manifest {
-            world_changes: None,
             subareas: Default::default(),
             format: writer::FORMAT.into(),
             min_reader_version: writer::VERSION,

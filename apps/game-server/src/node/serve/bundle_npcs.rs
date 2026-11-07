@@ -521,7 +521,6 @@ mod tests {
         };
         use oteryn_world_bundle_compiler::sector::{Attrs, Item, Tile};
         let manifest = Manifest {
-            world_changes: None,
             subareas: Default::default(),
             format: bundle::FORMAT.into(),
             min_reader_version: bundle::VERSION,

@@ -41,7 +41,6 @@ fn bundle() -> Result<(Vec<u8>, BundlePins), Box<dyn StdError>> {
         terrain: None,
     };
     let manifest = Manifest {
-        world_changes: None,
         subareas: Default::default(),
         format: bundle::FORMAT.into(),
         min_reader_version: bundle::VERSION,

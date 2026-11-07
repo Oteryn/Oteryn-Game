@@ -3,10 +3,8 @@
   "world_schema_version": "reference-schema-v1",
   "content_revision": "e06-market-crystal-parity-20261031-r1",
   "content_lock_digest": "3873d0698b98aa2280046cf75d4900863124cf1d6aae6f7c100b1be195260531",
-  "min_runtime_version": "5",
-  "required_capabilities": [
-    "world_change_variants_v1"
-  ],
+  "min_runtime_version": "4",
+  "required_capabilities": [],
   "ruleset_compatibility": [
     "oteryn:ruleset/entry-r1"
   ],

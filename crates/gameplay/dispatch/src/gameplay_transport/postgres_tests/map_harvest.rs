@@ -298,9 +298,6 @@ fn scenario(before: u16, yields: bool, source: Option<ThawingSource>) -> TestRes
             }
             sqlx::query("INSERT INTO game_world_reset_active(world_id,reset_epoch) VALUES(encode($1,'hex')::uuid,$2) ON CONFLICT(world_id) DO UPDATE SET reset_epoch=excluded.reset_epoch")
                 .bind(admitted.world_id.as_bytes().as_slice()).bind(current).execute(&harness.pool).await?;
-            let mut reset_tx = harness.pool.begin().await?;
-            crate::durability::world_event::changes::record_reset_fixture(&mut reset_tx, admitted.world_id, current as u64).await?;
-            reset_tx.commit().await?;
             assert!(
                 harness
                     .root

@@ -47,7 +47,6 @@ pub(super) fn bundle(trap: Option<u16>) -> TestResult<(Vec<u8>, crate::map::Bund
         }),
     };
     let manifest = Manifest {
-        world_changes: None,
         subareas: Default::default(),
         format: writer::FORMAT.into(),
         min_reader_version: writer::VERSION,

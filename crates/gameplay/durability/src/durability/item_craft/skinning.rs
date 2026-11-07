@@ -78,7 +78,7 @@ impl DurabilityRoot {
             if assert_current_equipment_in_transaction(&mut tx,&record,&node,&fence,Some(request.craft.command),context.1.loop_content_digest()).await.is_err() {
                 return Ok(Some(UseDisposition::Rejected));
             }
-            let result=super::write_with_skinning(&mut tx,&record,fence,&request.craft,context.0,context.1,Some((&request,context.2)),None).await?;
+            let result=super::write_with_skinning(&mut tx,fence,&request.craft,context.0,context.1,Some((&request,context.2))).await?;
             if result==UseDisposition::Committed { tx.commit(deadline).await?; }
             Ok(Some(result))
         })).await

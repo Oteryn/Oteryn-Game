@@ -360,7 +360,6 @@ pub(super) async fn prepare_channel(
 fn bootstrap_world_changes() -> oteryn_gameplay_world_change::daily::DailyWorldChanges {
     oteryn_gameplay_world_change::daily::DailyWorldChanges {
         reset_epoch: 0,
-        variants: Default::default(),
         fury_gates: None,
         fury_exit: "fury_gates/abdendriel",
         nightmare_isles: "nightmare_isle/ankrahmun-north",
@@ -372,9 +371,9 @@ fn bootstrap_world_changes() -> oteryn_gameplay_world_change::daily::DailyWorldC
         stampede: false,
         fire_from_the_earth: false,
         world_counters: false,
-        counter_stages: [0; 9],
-        counter_generations: [0; 9],
-        counter_progress: [[0; 3]; 9],
+        counter_stages: [0; 8],
+        counter_generations: [0; 8],
+        counter_progress: [[0; 3]; 8],
         shared_used_sources_mask: 0,
     }
 }
