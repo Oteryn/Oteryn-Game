@@ -7462,12 +7462,21 @@
     "local_full_checkpoint": "git stash entry npcfix owner STOP: preserve local fluid source and generated checkpoint"
   },
   "active_fluid_work": {
-    "state": "WIP_COMPILES",
+    "state": "COMPILES; FRESH_DATA_RED_CONFIRMED",
     "entries": [
       "Ahmet"
     ],
     "compile": "Fresh dispatch PG test target PASS12m44s with source patch and migration1148; current-data PG marker present, run still active.",
     "exact_red_point": "Committed generated catalogue still omits2874/subtype7/price20,2874/subtype1/price40 and2901/subtype1/price40; canonical fluid-container facts2874/2901 remain UNKNOWN. Source packet54 and exact-before fact bridge are applied but not materialized.",
-    "next": "Complete current-data PG RED, run repository materialization and registered checks, validate only2 Item fluid groups/one service change, run fresh PG GREEN and focused oil/replay/refusal checks, finish strict Clippy then qualify Ahmet."
+    "next": "Complete current-data PG RED, run repository materialization and registered checks, validate only2 Item fluid groups/one service change, run fresh PG GREEN and focused oil/replay/refusal checks, finish strict Clippy then qualify Ahmet.",
+    "postgres_red": {
+      "marker": "POSTGRES_STARTED NPCFIX postage ahmet",
+      "seconds": 139.14,
+      "error": "ahmet: Ahmet must offer the exact sourced filled container",
+      "log": "/tmp/npcfix-evidence/fluid-current-data-red.log",
+      "sha256": "6771057e93b31a49f19f8b6e508bb37cb6f695d865cfa2d92a801d8038448d63"
+    },
+    "source_effect_unit": "PASS1/0.01s; pure unit, not a PostgreSQL proof: oil7 restores nothing, mana10/life11 map to their source effects.",
+    "regeneration": "RUNNING repository default generator and registered checks; runtime source unchanged from compiled WIP8369545b0."
   }
 }
