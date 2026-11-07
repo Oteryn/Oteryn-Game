@@ -3208,19 +3208,20 @@
     }
   },
   "prepush2": {
-    "main": "e1ca3e0033013c35b10d9b5b2be7f103f813fd14",
-    "local_merge": "3f300c2c8",
+    "main": "f641d8d6c1b7b800db28103f9a5f4e48972d051d",
+    "local_merge": "b1a20de4d",
     "merge_conflicts_resolved": 1,
-    "regeneration": "PASS full World package, content tree, native registrations and world pins; no generated drift",
+    "regeneration": "PASS full World rebuild followed by verified unchanged-World native/tree/central-list refresh for QNPCFX; pins refreshed",
     "audit_tags": "PASS repo updater, no diff",
     "quest_binding_evidence": "PASS310identities,6628exactJSONpointers",
     "item_mount_equivalence": "PASS34111items,252mounts",
     "world_metadata": "PASS",
     "unit_results": {
       "oteryn-gameplay-quests": {
-        "passed": 270,
+        "passed": 283,
         "skipped": 0,
-        "seconds": 34.251
+        "seconds": 41.627,
+        "includes_new_npc_metadata_boundaries": true
       },
       "items_and_social": {
         "passed": 326,
@@ -3233,11 +3234,21 @@
       "oteryn-gameplay-content lib/bin units",
       "oteryn-gameplay-dispatch lib/bin units",
       "oteryn-gameplay-durability lib/bin units",
-      "own authored carried exchange PostgreSQL case"
+      "authored carried exchange real-dispatch PostgreSQL",
+      "NPC general XP hand-in real-dispatch PostgreSQL",
+      "NPC source acceptance atomic eleven-track real-dispatch PostgreSQL"
     ],
     "pending_log": "/tmp/qengine2-prepush2-backend/state.json",
-    "workspace_log": "/tmp/qengine2-prepush2-workspace-check.log",
-    "fmt_log": "/tmp/qengine2-prepush2-fmt-check.log",
-    "no_new_quest_qualification": true
+    "workspace_log": "/tmp/qengine2-qnpcfx-repair-workspace-check.log",
+    "fmt_log": "/tmp/qengine2-qnpcfx-repair-fmt-check.log",
+    "no_new_quest_qualification": true,
+    "native_program_metadata_regression": {
+      "red": "/tmp/qengine2-npc-metadata-red2.log",
+      "green": "/tmp/qengine2-qnpcfx-quests-units-green2.log",
+      "policy": "Preserve unaffected program hashes and predecessor metadata; changed authored semantics do not silently inherit NPC-only revision allowances"
+    },
+    "workspace_result": "PASS workspace all targets, 6m15s",
+    "fmt_result": "PASS",
+    "publication_policy": "PREPUSH-2 cadence exception: mandatory merge/regeneration/workspace/fmt green; listed tests continue after publication"
   }
 }

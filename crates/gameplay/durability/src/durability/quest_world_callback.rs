@@ -17,6 +17,8 @@ pub struct QuestWorldContext {
     pub movement_revision: u64,
 }
 
+#[path = "quest_world_callback/carried_input.rs"]
+mod carried_input;
 #[path = "quest_world_callback/reward_inputs.rs"]
 mod reward_inputs;
 
@@ -449,19 +451,7 @@ async fn apply_input(
         return Err(DurabilityError::InvalidStoredState);
     };
     permit.check_channel(world_id, channel_id)?;
-    let changed = sqlx::query(
-        "UPDATE game_item_instances SET \
-         quantity=CASE WHEN $4::text IS NULL THEN quantity-$2 ELSE quantity END, \
-         lifecycle=CASE WHEN $4::text IS NULL AND quantity=$2 THEN 2 ELSE 1 END, \
-         definition_production_key=coalesce($4,definition_production_key), \
-         last_transaction_id=$3::uuid WHERE item_instance_id=$1::uuid AND lifecycle=1 AND quantity=$5",
-    )
-    .bind(&input.item).bind(i64::from(input.count)).bind(transaction)
-    .bind(&input.replacement).bind(input.quantity)
-    .execute(&mut **tx).await?;
-    if changed.rows_affected() != 1 {
-        return Err(DurabilityError::InvalidStoredState);
-    }
+    carried_input::update(tx, input, transaction).await?;
     if input.replacement.is_none() && input.quantity == i64::from(input.count) {
         let query = if input.kind == "ground" {
             "DELETE FROM game_item_ground_locations WHERE item_instance_id=$1::uuid"
@@ -562,7 +552,7 @@ pub(super) async fn consume_npc_inputs(
         }
         sqlx::query("INSERT INTO game_quest_callback_consumptions(transaction_id,item_instance_id,character_id,cause_id,cause_ordinal,transition_key,before_item,before_ground,quantity,proof,proof_sha256,before_location,location_kind) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6,$7,NULL,$8,$9,sha256($9),$10,$11)")
             .bind(&transaction).bind(&input.item).bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(&input.before).bind(i32::from(input.count)).bind(proof).bind(&input.location).bind(&input.kind).execute(&mut **tx).await?;
-        apply_input(tx, &input, &transaction).await?;
+        carried_input::apply(tx, &input, &transaction).await?;
     }
     Ok(true)
 }
