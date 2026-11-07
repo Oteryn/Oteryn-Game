@@ -839,44 +839,34 @@
       }
     ],
     "current_batch": {
-      "id": "tutorial-rewards-01",
+      "id": "cockroach-goal-01",
       "phase": "GREEN",
       "whole_entry_qualifications": 0,
       "entries": [
         "oteryn:quest.the_beginning_quest"
       ],
-      "source_callbacks": [
-        "legs-handin:3physical7882+100XP, both flags7/5",
-        "food-grant:3578x1, both flags11/9",
-        "zirella-reward:50XP, both flags8/8"
-      ],
-      "generic_feature": "Optional bounded NPC callback XP uses the existing Quest XP obligation/transfer owner; common writer requires callback and executable transition XP amounts to match. No new XP writer or schema.",
+      "scope": "Reusable conditional set over original locked effect values; configurable native kill gate value/completion; authored three-Cockroach5to6 bridge, preserving separate physical3legs/100XP.",
+      "assumption": "Pinned donor investigation did not recover the5to6 hook. Count three existing eligible native kill-credit occurrences at stage5; open stage6 only on third. No hand-in log, items or XP granted by deaths.",
+      "test_changes": "Two new sequential/burst cases share native lethal queue fixture. Existing unstarted negative assertion retained after draining any known-empty queue, with explicit zero physical leg instances.",
+      "red_log": "/tmp/questpc3-cockroach-goal-red.log",
+      "red_process_session": 32400,
+      "implementation": "Generic SetWhenAtLeast (bounded, hashed, original locked snapshot) plus configured native gate value and optional final-occurrence gate advancement. Cockroach stage5 becomes6 on exactly the third eligible native kill; no physical legs, hand-in log or XP manufactured.",
+      "reuse_check": "Latest qengine2 and refreshed questpc2/4/5/6/7/8/questl2 checked; no reusable conditional effect found. Existing sum references provide the bounded original-snapshot/hash pattern.",
       "red": {
-        "log": "/tmp/questpc3-beginning-rewards-red-valid-context.log",
-        "sha256": "af0fc50f48619a1aaf9c0b969282dcd68632bb5dffec5da85a85bc224d9a8b50",
-        "postgres_marker_ms": 96086,
-        "duration_seconds": 96.32,
-        "failure": "Ok versus required Rejected: source hand-in branch absent"
+        "duration_seconds": 53.63,
+        "postgres_marker_ms": 53526,
+        "failure": "the lethal event must enter the real queue"
       },
-      "excluded_fixture_runs": [
-        "Missing FreshAdmissionAuthority trait import: compile failure, not RED.",
-        "initialized=true seeded another progression profile: no valid fence; changed to fresh admission initialized=false, not RED.",
-        "First positive run proved legs/100XP/replay and native fish, then AlreadyPlaced at a second NPC installation. Place Santiago+Zirella once; rerun all three."
-      ],
-      "validation_so_far": {
-        "cargo_check": "PASS four changed crates/all features",
-        "parser": "PASS1 including invalid XP bounds",
-        "schema": "PASS",
-        "native_regeneration": "PASS no unexpected native inputs",
-        "clippy": "PASS final4crates/all features/all targets after both-NPC fixture correction."
+      "green": {
+        "duration_seconds": 55.11,
+        "cases": 2,
+        "completion_ms": [
+          55085,
+          55100
+        ]
       },
-      "proof_pending": [],
-      "proof": "checks.tutorial_rewards_01",
-      "publication": {
-        "local_commit": "023219279",
-        "integration_remote": "025936c3d8b4ff07d6cb57d60c0c8afb23a6cd7e",
-        "status": "GREEN source and metadata-only proof update merged; fast-forward push follows."
-      }
+      "qualification": "No whole quest qualified by this mechanism batch.",
+      "publication": "Commit and fast-forward push after these recorded checks."
     },
     "effective_entries": [
       "oteryn:quest.the_beginning_quest",
@@ -1497,6 +1487,117 @@
           "crates/gameplay/quests/src/quest/loader.rs": "b7ffac34197442b75912f2b3d05f0eb5a51aa7720bd0580c0dd485b281b632f1",
           "crates/gameplay/quests/src/quest/mod.rs": "ed1a016dea2c235271e3e6601e088ea770d67fa151e148f4734eb1683b205a1f"
         }
+      },
+      "cockroach_goal_01": {
+        "logs": {
+          "red": {
+            "log": "/tmp/questpc3-cockroach-goal-red.log",
+            "sha256": "4d494db7cf260392577feb866c39923dd0d7f8f96f44a06a4e41671b853fcb3a",
+            "evidence": [
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED creature=oteryn:creature.cockroach phase=native_capture duration_ms=53526",
+              "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2555 filtered out; finished in 53.63s"
+            ]
+          },
+          "green": {
+            "log": "/tmp/questpc3-cockroach-goal-green.log",
+            "sha256": "a7d570753578b3c5bb4863cccfe8df0882bfc9d187929436ac2af7b381011db2",
+            "evidence": [
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED kill=1 duration_ms=53721",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED creature=oteryn:creature.cockroach phase=native_capture duration_ms=53762",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED kill=2 duration_ms=53825",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED creature=oteryn:creature.cockroach phase=native_capture duration_ms=53862",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED kill=3 duration_ms=53919",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED creature=oteryn:creature.cockroach phase=native_capture duration_ms=54278",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED creature=oteryn:creature.cockroach phase=native_capture duration_ms=54278",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED creature=oteryn:creature.cockroach phase=native_capture duration_ms=54278",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED kill=3 duration_ms=54541",
+              "QUEST_L4_COUNTERS POSTGRES_CASE_COMPLETED creature=oteryn:creature.cockroach mode=TutorialBurst duration_ms=55085",
+              "QUEST_L4_COUNTERS POSTGRES_CASE_COMPLETED creature=oteryn:creature.cockroach mode=Tutorial duration_ms=55100",
+              "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 2554 filtered out; finished in 55.11s"
+            ]
+          },
+          "check": {
+            "log": "/tmp/questpc3-cockroach-goal-check.log",
+            "sha256": "4674a21211913621148b507303ee8d888a8596d39fa421004b8af1644a653050",
+            "evidence": [
+              "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 31.99s"
+            ]
+          },
+          "clippy": {
+            "log": "/tmp/questpc3-cockroach-goal-clippy.log",
+            "sha256": "59ff44379329014dc44c59f45ab23fce54b2974abca7b5376f37eedc063442c4",
+            "evidence": [
+              "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3m 08s"
+            ]
+          },
+          "conditional-units": {
+            "log": "/tmp/questpc3-cockroach-goal-conditional-units.log",
+            "sha256": "22530b5caaca155529367ef199d9dc7e363a483a278a76bcc5792d59c88e2db5",
+            "evidence": [
+              "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 257 filtered out; finished in 0.00s"
+            ]
+          },
+          "native-units": {
+            "log": "/tmp/questpc3-cockroach-goal-native-units.log",
+            "sha256": "b5c93af2729628ea6263a7d23bf737a9d1dffc405dc2cd67bbd26529fabb3701",
+            "evidence": [
+              "test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 245 filtered out; finished in 2.23s"
+            ]
+          },
+          "sum-units": {
+            "log": "/tmp/questpc3-cockroach-goal-sum-units.log",
+            "sha256": "9f50701cd0838ad3e3965c7362ef55cc3579be8504a0bb6a38b2271e90ce3341",
+            "evidence": [
+              "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 258 filtered out; finished in 0.01s"
+            ]
+          },
+          "negative": {
+            "log": "/tmp/questpc3-cockroach-goal-negative.log",
+            "sha256": "8b4620bfd477c198325e9461b3177d2a8ba0b8a399a810f2dbd2ec2b46c39850",
+            "evidence": [
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED creature=oteryn:creature.cockroach phase=native_capture duration_ms=55086",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED creature=oteryn:creature.cockroach phase=native_capture duration_ms=55102",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED creature=oteryn:creature.cockroach phase=native_capture duration_ms=55116",
+              "QUEST_L4_COUNTERS POSTGRES_CASE_COMPLETED creature=oteryn:creature.cockroach mode=Normal duration_ms=55461",
+              "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2555 filtered out; finished in 55.47s"
+            ]
+          },
+          "dragon-regression": {
+            "log": "/tmp/questpc3-cockroach-goal-dragon-regression.log",
+            "sha256": "552f3084d090d6c14f76fab40adf26e41ff36fdb042a5683942864404952382c",
+            "evidence": [
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED creature=oteryn:creature.dragon phase=native_capture duration_ms=49501",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED creature=oteryn:creature.dragon phase=native_capture duration_ms=49501",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED creature=oteryn:creature.dragon phase=native_capture duration_ms=49501",
+              "QUEST_L4_COUNTERS POSTGRES_ASSERTION_REACHED kill=3 duration_ms=49674",
+              "QUEST_L4_COUNTERS POSTGRES_CASE_COMPLETED creature=oteryn:creature.dragon mode=Burst duration_ms=50096",
+              "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2555 filtered out; finished in 50.10s"
+            ]
+          },
+          "sum-regression": {
+            "log": "/tmp/questpc3-cockroach-goal-sum-regression.log",
+            "sha256": "f8a3aa052eeae9d5fbd8dab81b770832a793a57e4baa3eb7dcf7e5b662c26236",
+            "evidence": [
+              "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=0 duration_ms=53190",
+              "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=1 duration_ms=53215",
+              "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=2 duration_ms=53293",
+              "QUEST_L4_SUM POSTGRES_CASE_COMPLETED duration_ms=53417 success=true",
+              "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2555 filtered out; finished in 53.42s"
+            ]
+          }
+        },
+        "fmt": "cargo fmt --all/check and explicit mounted test rustfmt passed",
+        "content": "Rust-only bridge; no content/native inputs/pins changed. No unrelated regeneration.",
+        "regressions": "All selected regressions GREEN: inactive Cockroach1/55.47s; original Dragon burst1/50.10s; Maelyrra sum1/53.42s. PostgreSQL completion markers55461/50096/53417ms.",
+        "review": "Bounded indices validated before access, all conditional parameters hashed, original values retained, old-counter changes preserve definition hashes, existing frozen membership/epoch/fence and exact replay checks retained. No new reward writer.",
+        "inputs": {
+          "crates/gameplay/quests/src/quest/mod.rs": "b3d10e6f8d4b4e0a240e33cc81600e535cc29c43b9762e0948abe694d65176e1",
+          "crates/gameplay/quests/src/quest/native_kills.rs": "7e382318e88a02c10ef598d6c374b21e0552b1224e726c1f6b9745ef7e034508",
+          "crates/gameplay/durability/src/durability/quest_state/native_kills.rs": "b011d0285853e01d797e5cfae685c7398e15c0271f06b964494d9f8f97d0d5ab",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_l4_counters.rs": "e9b5388e30da8378a00bc12c54ec82b7982a17774db6d8d559e948e516a3fd1c",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_l4_counters/tutorial.rs": "e291456944848fe99cbd8e99f51fe9fa7e9293f478e30b6680a176fb5ab8a1fb",
+          "crates/gameplay/quests/src/quest/conditional_tests.rs": "1602bb65e6843c0506cf7c4852eef8213460e7879234db167aada8b6d3492c02"
+        }
       }
     },
     "source_corrections": [
@@ -1524,7 +1625,7 @@
       "wvar": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
     },
     "shared_feature_owner": "questpc3: reuse existing implementations; implement every remaining engine, binding, NPC, Item and world-mechanic gap locally. No external dependency wait.",
-    "updated_at": "2026-11-07T01:09:24.158811+00:00",
+    "updated_at": "2026-11-07T01:39:02.972216+00:00",
     "publication_native_counters_01": {
       "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
       "pushed": true,
@@ -1706,6 +1807,77 @@
           "integrated_remote": "73a106fc5035885a844c81e8618900f80c028116"
         },
         "environment_recovery": "Content repository linker hit signal7/bus error with137MB free. Removed only obsolete unlocked incremental snapshots, retained newest caches and all build settings; retry5tests passed84.49s."
+      },
+      "tutorial-rewards-01": {
+        "id": "tutorial-rewards-01",
+        "phase": "GREEN",
+        "whole_entry_qualifications": 0,
+        "entries": [
+          "oteryn:quest.the_beginning_quest"
+        ],
+        "source_callbacks": [
+          "legs-handin:3physical7882+100XP, both flags7/5",
+          "food-grant:3578x1, both flags11/9",
+          "zirella-reward:50XP, both flags8/8"
+        ],
+        "generic_feature": "Optional bounded NPC callback XP uses the existing Quest XP obligation/transfer owner; common writer requires callback and executable transition XP amounts to match. No new XP writer or schema.",
+        "red": {
+          "log": "/tmp/questpc3-beginning-rewards-red-valid-context.log",
+          "sha256": "af0fc50f48619a1aaf9c0b969282dcd68632bb5dffec5da85a85bc224d9a8b50",
+          "postgres_marker_ms": 96086,
+          "duration_seconds": 96.32,
+          "failure": "Ok versus required Rejected: source hand-in branch absent"
+        },
+        "excluded_fixture_runs": [
+          "Missing FreshAdmissionAuthority trait import: compile failure, not RED.",
+          "initialized=true seeded another progression profile: no valid fence; changed to fresh admission initialized=false, not RED.",
+          "First positive run proved legs/100XP/replay and native fish, then AlreadyPlaced at a second NPC installation. Place Santiago+Zirella once; rerun all three."
+        ],
+        "validation_so_far": {
+          "cargo_check": "PASS four changed crates/all features",
+          "parser": "PASS1 including invalid XP bounds",
+          "schema": "PASS",
+          "native_regeneration": "PASS no unexpected native inputs",
+          "clippy": "PASS final4crates/all features/all targets after both-NPC fixture correction."
+        },
+        "proof_pending": [],
+        "proof": "checks.tutorial_rewards_01",
+        "publication": {
+          "local_commit": "023219279",
+          "source_merge": "8b4ef8e01",
+          "published_merge": "32d004db14a6758620659e608681f2d4d5f52c48",
+          "remote_verified": true
+        }
+      },
+      "cockroach-goal-01": {
+        "id": "cockroach-goal-01",
+        "phase": "GREEN",
+        "whole_entry_qualifications": 0,
+        "entries": [
+          "oteryn:quest.the_beginning_quest"
+        ],
+        "scope": "Reusable conditional set over original locked effect values; configurable native kill gate value/completion; authored three-Cockroach5to6 bridge, preserving separate physical3legs/100XP.",
+        "assumption": "Pinned donor investigation did not recover the5to6 hook. Count three existing eligible native kill-credit occurrences at stage5; open stage6 only on third. No hand-in log, items or XP granted by deaths.",
+        "test_changes": "Two new sequential/burst cases share native lethal queue fixture. Existing unstarted negative assertion retained after draining any known-empty queue, with explicit zero physical leg instances.",
+        "red_log": "/tmp/questpc3-cockroach-goal-red.log",
+        "red_process_session": 32400,
+        "implementation": "Generic SetWhenAtLeast (bounded, hashed, original locked snapshot) plus configured native gate value and optional final-occurrence gate advancement. Cockroach stage5 becomes6 on exactly the third eligible native kill; no physical legs, hand-in log or XP manufactured.",
+        "reuse_check": "Latest qengine2 and refreshed questpc2/4/5/6/7/8/questl2 checked; no reusable conditional effect found. Existing sum references provide the bounded original-snapshot/hash pattern.",
+        "red": {
+          "duration_seconds": 53.63,
+          "postgres_marker_ms": 53526,
+          "failure": "the lethal event must enter the real queue"
+        },
+        "green": {
+          "duration_seconds": 55.11,
+          "cases": 2,
+          "completion_ms": [
+            55085,
+            55100
+          ]
+        },
+        "qualification": "No whole quest qualified by this mechanism batch.",
+        "publication": "Commit and fast-forward push after these recorded checks."
       }
     },
     "completed_batches": [

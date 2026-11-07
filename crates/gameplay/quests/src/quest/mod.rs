@@ -23,6 +23,8 @@ pub mod batch3_a;
 pub mod beginning;
 pub mod classic_dialogue;
 pub mod classic_talk;
+#[cfg(test)]
+mod conditional_tests;
 pub mod cults_of_tibia;
 pub mod dark_trails;
 pub mod grave_danger;
@@ -178,6 +180,13 @@ pub enum QuestEffectKind {
         other_effect: u8,
         minimum: i64,
     },
+    /// Set this track when another effect's original locked value reaches the
+    /// threshold; otherwise preserve it. Indices never refer outside this quest.
+    SetWhenAtLeast {
+        other_effect: u8,
+        minimum: i64,
+        value: i64,
+    },
 }
 
 impl QuestEffectKind {
@@ -203,6 +212,15 @@ impl QuestEffectKind {
             } => {
                 out.extend_from_slice(&[6, other_effect]);
                 out.extend_from_slice(&minimum.to_be_bytes());
+            }
+            Self::SetWhenAtLeast {
+                other_effect,
+                minimum,
+                value,
+            } => {
+                out.extend_from_slice(&[7, other_effect]);
+                out.extend_from_slice(&minimum.to_be_bytes());
+                out.extend_from_slice(&value.to_be_bytes());
             }
         }
     }
@@ -365,6 +383,15 @@ impl QuestStateCatalogue {
                         usize::from(other_effect) < transition.effects.len()
                             && usize::from(other_effect) != index
                     }
+                    QuestEffectKind::SetWhenAtLeast {
+                        other_effect,
+                        value,
+                        ..
+                    } => {
+                        usize::from(other_effect) < transition.effects.len()
+                            && usize::from(other_effect) != index
+                            && (track.min..=track.max).contains(&value)
+                    }
                     _ => true,
                 };
                 if !comparison_ok || !effect_ok {
@@ -479,6 +506,12 @@ impl QuestStateCatalogue {
             current.push((track, value));
         }
         for (index, (effect, (_, value))) in transition.effects.iter().zip(&current).enumerate() {
+            if let QuestEffectKind::SetWhenAtLeast { other_effect, .. } = effect.effect
+                && (usize::from(other_effect) == index
+                    || current.get(usize::from(other_effect)).is_none())
+            {
+                return Err(QuestRefusal::NotSupported);
+            }
             if let QuestEffectKind::RequireSumAtLeast {
                 other_effect,
                 minimum,
@@ -515,7 +548,7 @@ impl QuestStateCatalogue {
         transition
             .effects
             .iter()
-            .zip(current)
+            .zip(current.iter().copied())
             .map(|(effect, (track, before))| {
                 let after = match effect.effect {
                     QuestEffectKind::Set(value) => Some(value),
@@ -526,6 +559,13 @@ impl QuestStateCatalogue {
                         .as_ref()
                         .and_then(|after| after.get(&effect.track).copied()),
                     QuestEffectKind::RequireSumAtLeast { .. } => Some(before),
+                    QuestEffectKind::SetWhenAtLeast {
+                        other_effect,
+                        minimum,
+                        value,
+                    } => current
+                        .get(usize::from(other_effect))
+                        .map(|(_, observed)| if *observed >= minimum { value } else { before }),
                 }
                 .filter(|after| (track.min..=track.max).contains(after))
                 .ok_or(QuestRefusal::OutOfRange)?;

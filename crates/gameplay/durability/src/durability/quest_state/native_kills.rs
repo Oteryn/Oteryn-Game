@@ -39,9 +39,9 @@ impl NativeQuestDeath {
             .ok_or(DurabilityError::InvalidStoredState)?;
         // Character root and the track rows are already locked. A queued death
         // cannot enter a mission started or reset after its captured snapshot.
-        Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND value=1 AND committed_character_revision <= $3::text::numeric)")
+        Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND value=$3 AND committed_character_revision <= $4::text::numeric)")
             .bind(character.as_bytes().as_slice()).bind(counter.gate)
-            .bind(self.observed_revision.to_string()).fetch_one(&mut **tx).await?)
+            .bind(counter.gate_value).bind(self.observed_revision.to_string()).fetch_one(&mut **tx).await?)
     }
 }
 

@@ -6,11 +6,25 @@ use crate::gameplay_transport::kill_reward::{DrainOutcome, KillSink};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use std::sync::Arc;
 
+#[path = "quest_l4_counters/tutorial.rs"]
+mod tutorial;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum CounterMode {
     Normal,
     Burst,
     WithoutQuestCatalogue,
+    Tutorial,
+    TutorialBurst,
+}
+
+impl CounterMode {
+    fn tutorial(self) -> bool {
+        matches!(self, Self::Tutorial | Self::TutorialBurst)
+    }
+    fn burst(self) -> bool {
+        matches!(self, Self::Burst | Self::TutorialBurst)
+    }
 }
 
 fn run_counter(
@@ -143,6 +157,11 @@ fn counter_scenario(
                 .catalogue()
                 .clone(),
         ));
+        if mode.tutorial() {
+            owner.quest_catalogue = Some(tutorial::catalogue(
+                owner.quest_catalogue.as_deref().ok_or("catalogue")?,
+            )?);
+        }
         deps.initialize(&owner).await;
         let mut admitted = deps.admitted;
         owner.admit_progression_session(&mut admitted).await;
@@ -271,7 +290,13 @@ fn counter_scenario(
             // Santiago consumes three physical legs (santiago.lua:88-96).
             // A death without ordinary corpse admission cannot invent those Items
             // or complete the hand-in through a synthetic scalar counter.
-            if creature == "oteryn:creature.cockroach" {
+            if creature == "oteryn:creature.cockroach" && !mode.tutorial() {
+                // Once the creature has a native binding, an ineligible death
+                // may enter the known-empty queue. It must drain without value.
+                assert_eq!(
+                    owner.drain_kill_rewards(session).await,
+                    DrainOutcome::Drained
+                );
                 assert!(!queue.has_session(session));
                 let copy = h
                     .root
@@ -285,6 +310,12 @@ fn counter_scenario(
                     ),
                     Some(&4)
                 );
+                let legs: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i7882' AND lifecycle=1")
+                    .fetch_one(&h.pool).await?;
+                assert_eq!(
+                    legs, 0,
+                    "counter admission cannot fabricate physical hand-in items"
+                );
                 continue;
             }
             assert!(
@@ -293,7 +324,7 @@ fn counter_scenario(
             );
             // Area damage can enqueue several deaths from one mission snapshot.
             // Earlier counter writes must not be mistaken for a mission reset.
-            if mode == CounterMode::Burst && ordinal < 3 {
+            if mode.burst() && ordinal < 3 {
                 continue;
             }
             let crate::gameplay_transport::kill_reward::TakeOutcome::Taken(taken) =
@@ -355,6 +386,9 @@ fn counter_scenario(
                 },
                 "one native occurrence, one increment"
             );
+            if mode.tutorial() {
+                tutorial::assert_goal(copy.tracks(), ordinal);
+            }
         }
         if mode != CounterMode::WithoutQuestCatalogue {
             // A dialogue/USE command cannot substitute for a native death occurrence.
@@ -389,7 +423,8 @@ fn counter_scenario(
         .await?;
         assert_eq!(
             receipts,
-            if creature == "oteryn:creature.cockroach" || mode == CounterMode::WithoutQuestCatalogue
+            if (creature == "oteryn:creature.cockroach" && !mode.tutorial())
+                || mode == CounterMode::WithoutQuestCatalogue
             {
                 0
             } else {
