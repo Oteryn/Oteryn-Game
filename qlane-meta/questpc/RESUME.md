@@ -1,3 +1,14 @@
+## Source death actual PostgreSQL RED / compiled WIP — 2026-11-07
+PG18.6: active47.168323876s and replay47.245271437s RED, explicit
+QuestDoorSome(0) remains0 instead of1 after real native lethal damage.
+Ordinary corpse_item_inadmissible refusal has no quest-only callback.
+Inactive50.802640971s GREEN. First missing-attacker-lease fixture failure
+retained separately and excluded from callbackRED. cargo fmt check and test
+compilation3m34s PASS. WIP contains tests, not a runtime claim or title promotion.
+Next apply reusable callback capture/locked predecessor check to existing kill
+queue, then focused GREEN, strict checks, push immediately. Source notes URL
+corrected to actual zimbadev/crystalserver corpus repository.
+
 ## Renegade Orc intake checkpoint — 2026-11-07
 No runtime edits since green4f151ba81. Exact missing point: generic damaging-player
 quest death handler is absent; focusedPG RED not yet authored, not falsely reported

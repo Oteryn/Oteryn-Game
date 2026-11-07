@@ -8635,9 +8635,24 @@
   "continuation": {
     "next": "Implement generic source-qualified damaging-player creature-death callbacks, beginning with Renegade Orc / An Uneasy Alliance.",
     "runtime_change_since_4f151ba81": false,
-    "red_point": "Kill settlement has no handler for RenegadeOrcDeath; focused PG RED not yet authored. No claim of a failed PostgreSQL test.",
+    "red_point": "Native Renegade Orc lethal damage is refused ordinary corpse settlement (corpse_item_inadmissible) and has no quest-only callback. Explicit stored QuestDoor remains Some(0), expected Some(1).",
     "source": "Crystal 9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d data-global/scripts/quests/an_uneasy_alliance/creaturescripts_renegade_orc_kill.lua, blob 8d1ecd7810b863df6f44e9e4aead98264fe50395",
-    "upstream_pr_3020": "OPEN, inspected 2026-11-07T13:28Z; retain exact shared migrations until merged."
+    "upstream_pr_3020": "OPEN, inspected 2026-11-07T13:28Z; retain exact shared migrations until merged.",
+    "focused_pg": {
+      "active": {
+        "status": "RED",
+        "duration_seconds": 47.168323876
+      },
+      "replay": {
+        "status": "RED",
+        "duration_seconds": 47.245271437
+      },
+      "inactive": {
+        "status": "GREEN",
+        "duration_seconds": 50.802640971
+      }
+    },
+    "proof": "cloud-source-death-progress.json"
   },
   "engine_progress": {
     "stateless_departure": {

@@ -1,0 +1,32 @@
+{
+  "status": "WIP_COMPILES_FOCUSED_PG_RED",
+  "baseline_head": "6bca9213a",
+  "postgres": "PostgreSQL 18.6",
+  "command": "source /workspace/oteryn-env/env.sh; CARGO_INCREMENTAL=0 cargo test -p oteryn-gameplay-dispatch --lib source_quest_death_renegade -- --nocapture --test-threads=3",
+  "compile_duration": "3m 34s",
+  "red_point": "Native Renegade Orc lethal damage is refused ordinary corpse settlement (corpse_item_inadmissible) and has no quest-only callback. Explicit stored QuestDoor remains Some(0), expected Some(1).",
+  "cases": {
+    "active": {
+      "status": "RED",
+      "duration_seconds": 47.168323876
+    },
+    "replay": {
+      "status": "RED",
+      "duration_seconds": 47.245271437
+    },
+    "inactive": {
+      "status": "GREEN",
+      "duration_seconds": 50.802640971
+    }
+  },
+  "excluded_fixture_run": "First run reached PG but lacked native attacker lease; SupersededAttackerSession is not callback RED proof.",
+  "runtime_implementation": "Not yet applied. No whole-quest qualification.",
+  "cloud-source-death-red.log": {
+    "raw_sha256": "af9e8ef349ed5e90726dc689c625e35e3c0660a8014f99d669b7eb550c734afa",
+    "stored_sha256": "af9e8ef349ed5e90726dc689c625e35e3c0660a8014f99d669b7eb550c734afa"
+  },
+  "cloud-source-death-fixture-lease.log": {
+    "raw_sha256": "2f69b942ffa9b7c4dfabecbbfbef4a589a44053b743789c9823e0744075ee686",
+    "stored_sha256": "2f69b942ffa9b7c4dfabecbbfbef4a589a44053b743789c9823e0744075ee686"
+  }
+}

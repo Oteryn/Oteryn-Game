@@ -32,6 +32,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let source_death = name.starts_with("source-quest-death-");
     let route = name.starts_with("draconia-route-");
     let container_stock = name.starts_with("draconia-container-stock-");
     let departure = name == "departure-map-regression";
@@ -65,7 +66,8 @@ fn scenario_case(
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
     let mut callback = callback(
-        if classic_npc
+        if source_death
+            || classic_npc
             || container_stock
             || route
             || departure
@@ -701,6 +703,8 @@ fn scenario_case(
         } else if name == "marlin-trophy-exchange" {
             super::super::marlin_trophy::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
+        } else if source_death {
+            super::super::source_quest_death::exercise(&owner, &admitted, &h, name).await?;
         } else if container_stock && name.contains("-wire-") {
             super::super::draconia_stock_wire::exercise(&owner, &mut admitted, &h, name).await?;
         } else if container_stock && name.contains("-epoch-") {
