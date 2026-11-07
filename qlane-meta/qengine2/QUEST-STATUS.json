@@ -203,7 +203,7 @@
           "matched_statuses": []
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "remaining_work": "Native source composition, generic carried-USE support and SQL selected-instance guard implemented. Complete filtered PostgreSQL stories and ordinary-USE regression are running; qualify only after full GREEN, with no shared-feature dependency deferral."
     },
     {
       "canonical": "oteryn:quest.cave_explorer_outfits_quest",
@@ -1141,7 +1141,7 @@
           "matched_path": "prior_rounds/N-Q-before-L3/quests"
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "remaining_work": "Native source composition, generic carried-USE support and SQL selected-instance guard implemented. Complete filtered PostgreSQL stories and ordinary-USE regression are running; qualify only after full GREEN, with no shared-feature dependency deferral."
     },
     {
       "canonical": "unresolved:questpc2:no_rest_for_the_wicked_quest",
@@ -2420,5 +2420,28 @@
       "Brotherhood Outfits Quest",
       "Nightmare Outfits Quest"
     ]
+  },
+  "active_batch_l1_10b": {
+    "entries": [
+      "Brotherhood Outfits Quest",
+      "Nightmare Outfits Quest"
+    ],
+    "implemented": [
+      "generic exact-instance carried USE through existing QuestReward owner",
+      "immutable exact-ingress replay probe",
+      "account base ownership refusal under existing grant lock",
+      "PostgreSQL1005 selected-instance/ingress same-transaction guard",
+      "actual NPC rank and500/1000essence document acquisition",
+      "read-only Dreamer puzzle-stage4 prerequisite"
+    ],
+    "checks": {
+      "rust": "9 tests1.34s",
+      "python": "26 tests10.105s",
+      "check": "three changed crates all-features2m49s",
+      "clippy": "three changed crates all-targets/all-features -D warnings2m58s; final fixture23.98s",
+      "generated": "reproducers and fmt pass; pin-refresh/pin-check24ab unchanged",
+      "repository": "123content2.73s;5world61.34s"
+    },
+    "pending": "Complete PG stories running after native level50 carrying-capacity fixture correction; Afflicted ordinary-USE regression queued. Counts remain28/38; no partial entry qualified."
   }
 }
