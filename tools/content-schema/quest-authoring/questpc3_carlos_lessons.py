@@ -92,8 +92,6 @@ def documents():
         else:
             document[field] = [row for row in document[field]
                                if (not row["key"].startswith(PREFIX) if field == "callbacks" else row["npc"] != NPC)] + own
-        if field in ("callbacks", "npcs"):
-            document[field].sort(key=lambda row: row["key"] if field == "callbacks" else row["npc"])
         result[path] = document
     path = "content/quests/shared-trade-callbacks.json"
     target = ROOT / path
@@ -108,7 +106,6 @@ def documents():
                     {**storage(BASE + "carlos_npc_trade_storage", 1, 1, 1), "preserve": True}],
         "sources": [SOURCE + "#L46-L48",
                     "#owner-authorized-source-hook-repair: actual committed eligible food sale; no report-only progress"]}]
-    document["callbacks"].sort(key=lambda row: row["key"])
     result[path] = document
     return result
 

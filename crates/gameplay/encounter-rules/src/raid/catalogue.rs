@@ -41,6 +41,41 @@ pub struct CatalogueRaid {
     pub variant_group: Option<String>,
     pub variants: Vec<CatalogueVariant>,
     pub end: CatalogueEnd,
+    #[serde(default)]
+    pub requires_world_change: Option<CatalogueWorldChange>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CatalogueWorldChange {
+    pub key: String,
+    pub variant: Option<String>,
+}
+impl CatalogueWorldChange {
+    fn validate(&self) -> Result<(), RaidError> {
+        if self.key != "fury_gates"
+            || self.variant.as_ref().is_some_and(|v| {
+                v.is_empty()
+                    || v.len() > 64
+                    || !v.bytes().all(|b| {
+                        b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'_' | b'-')
+                    })
+            })
+        {
+            return Err(RaidError::InvalidDefinition);
+        }
+        Ok(())
+    }
+    pub fn satisfied_by(&self, layers: &[String]) -> bool {
+        let prefix = format!("{}/", self.key);
+        layers.iter().any(|layer| {
+            layer.strip_prefix(&prefix).is_some_and(|variant| {
+                self.variant
+                    .as_deref()
+                    .is_none_or(|required| variant == required)
+            })
+        })
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -67,6 +102,8 @@ pub enum CatalogueSchedule {
     Calendar {
         window: Option<CatalogueWindow>,
         interval_ms: Option<u32>,
+        #[serde(default)]
+        repeat: bool,
     },
     Unknown,
 }
@@ -133,6 +170,8 @@ pub struct CatalogueEntry {
 pub enum CatalogueSpawnMode {
     Single,
     Area,
+    /// Flower Month:25 requests share250 attempts, Crystal flower_month.lua:28-46.
+    SharedArea,
     Zone,
 }
 
@@ -299,6 +338,9 @@ impl CatalogueRaid {
         if !self.active || !self.inactive_reasons.is_empty() || self.variants.is_empty() {
             return Err(RaidError::InvalidDefinition);
         }
+        if let Some(required) = &self.requires_world_change {
+            required.validate()?;
+        }
         match &self.schedule {
             CatalogueSchedule::LegacyXml { interval_s: 0, .. } | CatalogueSchedule::Unknown => {
                 return Err(RaidError::InvalidDefinition);
@@ -330,6 +372,7 @@ impl CatalogueRaid {
             CatalogueSchedule::Calendar {
                 window,
                 interval_ms,
+                ..
             } => {
                 window
                     .ok_or(RaidError::InvalidCalendar)?
@@ -383,6 +426,14 @@ impl CatalogueRaid {
                 if entry.amount.min == 0
                     || entry.amount.min > entry.amount.max
                     || entry.amount.max > MAX_CREATURES
+                {
+                    return Err(RaidError::InvalidDefinition);
+                }
+                if entry.spawn_mode == CatalogueSpawnMode::SharedArea
+                    && (entry.creature != "oteryn:creature.dryad"
+                        || entry.amount.min != 25
+                        || entry.amount.max != 25
+                        || wave.entries.len() != 1)
                 {
                     return Err(RaidError::InvalidDefinition);
                 }
@@ -528,7 +579,7 @@ mod tests {
         // RAIDS-GLOBAL 2026-11-01 replaces the former single-Badger catalogue:
         // 160 Crystal XML definitions + Sugar Mommy + 78 unresolved wiki identities.
         assert_eq!(catalogue.records().len(), 239);
-        assert_eq!(catalogue.active().count(), 135);
+        assert_eq!(catalogue.active().count(), 136);
         for record in catalogue.records() {
             if record.active {
                 record.select([7; 32], [9; 16])?.definition.validate()?;

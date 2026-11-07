@@ -1,0 +1,16 @@
+{
+  "id": 330,
+  "name": "STAFF_TOOLS_V1",
+  "owner_decision": "NX-1 owner 2026-11-05: donor GM/CM/God action catalogue and permission tiers",
+  "owner": "Game signed staff authority",
+  "requires": [
+    51
+  ],
+  "command_types": [
+    560,
+    561
+  ],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Transport only; STAFF_V1 restart-pinned off-host signature trust, current roster and donor action tier are rechecked for every request. Selection grants no staff permission."
+}

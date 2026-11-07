@@ -248,6 +248,8 @@ enum StepClock {
 #[derive(Debug, Default)]
 pub struct ChannelAttackStates {
     entries: Vec<ActorAttack>,
+    /// At most one source-qualified Bless selection per pending player death.
+    death_charms: Vec<charm_combat::DeathCharmSnapshot>,
     /// The block budget of each live creature a player has hit (ATTACK-0 §5), created at its
     /// first hit.
     blocks: Vec<(ExactActorRef, BlockBudget)>,
@@ -499,6 +501,11 @@ impl ChannelAttackStates {
     /// Drop the entries whose actor is no longer controlled by its session's slot, and the
     /// block budgets of creatures no longer live.
     fn prune(&mut self, runtime: &ChannelRuntimeV1) {
+        self.death_charms.retain(|entry| {
+            runtime
+                .player_control_facts(entry.actor, entry.session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+        });
         self.kills.prune_proficiency(runtime);
         self.entries.retain(|entry| {
             runtime
@@ -634,6 +641,12 @@ impl ChannelAttackStates {
         let Ok(command) = CommandId::new(command_id) else {
             return AttackIntentDisposition::Rejected;
         };
+        if runtime
+            .actor_staff_visibility(actor)
+            .is_ok_and(|flags| flags.0)
+        {
+            return AttackIntentDisposition::Rejected;
+        }
         let visible = runtime.visible_entities();
         let named = |actor: ExactActorRef, generation: u64| {
             actor.placement_identity() == target_ref.identity && generation == target_ref.generation
@@ -808,6 +821,25 @@ impl ChannelAttackStates {
         }
         entry.clear_target();
         true
+    }
+
+    /// A previously selected player ceases to be a target when invisibility starts.
+    pub(in crate::gameplay_transport) fn settle_invisible_target(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        states: &super::actor_spell::ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: SemanticTimeMicros,
+    ) {
+        if let Some(index) = self.index(actor, session)
+            && self.entries[index]
+                .state
+                .target()
+                .is_some_and(|target| states.player_hidden_from(runtime, actor, target, now))
+        {
+            self.entries[index].clear_target();
+        }
     }
 
     /// Stop attacking (reconnect, control loss); the in-fight deadline is kept (§3 Reconnect).
@@ -1153,6 +1185,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // ATTACK-0 §4: a `pacified` applied over the held target clears it before the chase
             // reads it.
             attack.settle_pacified_target(&runtime, &states, actor, session);
+            attack.settle_invisible_target(&runtime, &states, actor, session, now);
             attack.chase_decision(&runtime, room, actor, session, now, |cell| {
                 chase_path_tile(cells, blocking, cell)
             })?
@@ -1242,13 +1275,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) {
+        self.refresh_attack_weapon_at_time(actor, session, None)
+            .await;
+    }
+
+    #[cfg(test)]
+    pub(in crate::gameplay_transport) async fn refresh_attack_weapon_at(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: SemanticTimeMicros,
+    ) {
+        self.refresh_attack_weapon_at_time(actor, session, Some(now))
+            .await;
+    }
+
+    async fn refresh_attack_weapon_at_time(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: Option<SemanticTimeMicros>,
+    ) {
         let Some(content) = self
             .active_generation
             .and_then(|active| active.native_gameplay())
         else {
             return;
         };
-        let now = self.owner_now();
+        let now = now.unwrap_or_else(|| self.owner_now());
         let digest = self
             .runtime
             .lock()

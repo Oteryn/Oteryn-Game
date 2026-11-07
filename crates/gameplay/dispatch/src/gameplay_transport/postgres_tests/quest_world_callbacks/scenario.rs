@@ -201,6 +201,25 @@ fn scenario_case(
                 expected_destination,
             )
             .await?;
+        } else if name.starts_with("dryad-garden-") {
+            super::super::srvwld_dryad_garden::exercise(
+                &owner,
+                &mut admitted,
+                deps.actor,
+                &callback,
+                trigger,
+            )
+            .await?;
+        } else if name == "srv6-schrodinger-island" {
+            super::super::srv6_island_title::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                &callback,
+                origin,
+            )
+            .await?;
         } else if name == "nx6-wayfarer" {
             super::super::nx6_wayfarer::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if name == "conditional-quest-greetings" {

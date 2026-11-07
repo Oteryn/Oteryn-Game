@@ -34,10 +34,10 @@ class CanonicalVariantTests(unittest.TestCase):
     def test_plain_231_definition_records_remain_exact_with_one_scripted_claim(self):
         outputs = plain.generate(); index = json.loads(outputs[plain.INDEX_PATH])
         self.assertEqual(index['plain_record_count'], 231)
-        self.assertEqual(index['record_count'], 338)
-        self.assertEqual(index['scripted_rs_record_count'], 2)
-        self.assertEqual(index['readiness']['ready'], 224)
-        self.assertEqual(index['readiness']['waiting_item_semantics'], 9)
+        self.assertEqual(index['record_count'], 339)
+        self.assertEqual(index['scripted_rs_record_count'], 3)
+        self.assertEqual(index['readiness']['ready'], 226)
+        self.assertEqual(index['readiness']['waiting_item_semantics'], 8)
         for path in index['shards'][:3]:
             self.assertEqual(outputs[path], (self.root / path).read_text())
         self.assertEqual(index['native_admission']['variants'], 'WAITING_IMPLEMENTATION')
@@ -63,7 +63,11 @@ class CanonicalVariantTests(unittest.TestCase):
                     self.assertEqual(p['reward'][charge['reward_field']][charge['reward_index']]['count'], 1)
                 if charge['data_status'] == 'CONFLICT':
                     found += 1
-                    self.assertTrue(any(g['code'] == 'SOURCE_CHARGE_MISMATCH' for g in d['data_holds']))
+                    if d['identity']['key'] == 'oteryn:reward-claim.kv.ornamentedshield':
+                        self.assertFalse(any(g['code'] == 'SOURCE_CHARGE_MISMATCH' for g in d['data_holds']))
+                        self.assertTrue(d['native_contents']['placements'])
+                    else:
+                        self.assertTrue(any(g['code'] == 'SOURCE_CHARGE_MISMATCH' for g in d['data_holds']))
                     self.assertNotEqual(charge['source_raw_argument'], charge['definition_charges']['value'])
         self.assertEqual(found, 3)
 
@@ -126,11 +130,10 @@ class CanonicalVariantTests(unittest.TestCase):
 
     def test_compiler_boundary_keeps_unimplemented_shapes_closed(self):
         errors = variants.native_lowering_errors(self.records)
-        # The Protection Amulet admission also completes the existing Desert bag;
-        # 68 exact container/leaf recipes retain
-        # the immutable source dispositions of the105 original variant records.
-        self.assertEqual(sum('native_contents' in r['definition'] for r in self.records), 68)
-        self.assertEqual(len(errors), 37)
+        # ITEMHOLD-Q adds two recipes and QUESTPC3 one to W15b's 67;
+        # the 105 immutable source dispositions still retain their raw witnesses.
+        self.assertEqual(sum('native_contents' in r['definition'] for r in self.records), 70)
+        self.assertEqual(len(errors), 35)
         self.assertTrue(all(e['code'] == 'REWARD_CLAIM_NATIVE_LOWERING_NOT_IMPLEMENTED' and e['pending'] for e in errors))
 
     def test_committed_family_reproduces_with_separate_holds(self):

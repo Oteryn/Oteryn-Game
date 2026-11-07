@@ -141,6 +141,10 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // Monk shrine rewards 50267..=50269 and 50271..=50274 from
     // tools/content-migration/monk_reward_profiles.py. All have speed_bonus=0.
     ("MONKQUEST", 7),
+    // C19b: Newhaven's 34017, 21348, 21400, 21350 and 50166 are source-qualified
+    // by build_newhaven_starter_profiles.py (Canary 04b83b51 items.xml + official 15.30).
+    // Each has known speed_bonus=0; preserve the exact unknown-speed set below.
+    ("NEWHAVEN-C19B", 5),
     // P11: condition potions 7439/7440/7443/49271 from Crystal 201189f potions.lua:1-31
     // (tools/content-migration/condition_potion_profiles.py). All have speed_bonus=0.
     ("P11-CONDITION-POTIONS", 4),
@@ -163,6 +167,11 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // All 97 additions have speed_bonus=0.
     // Ten also belong to cohorts added on main; W15 contributes 87 distinct new keys.
     ("QUESTCHEST-W15", 87),
+    // ITEMHOLD-Q: captured wolf, dog collar, Monolith Kit, Bottled Dragon Breath
+    // and Guardian Ring from itemhold_q{,_remaining}.py; the newly qualified
+    // Ornamented Shield recipe also closes over lyre 2949 in quest_callback_profiles.py.
+    // All six retain the source-qualified speed_bonus=0 (ITEMHOLD-Q review evidence).
+    ("ITEMHOLD-Q", 6),
     // Item 7934 used by a world callback's item-on-target step
     // (tools/content-migration/quest_callback_profiles.py). speed_bonus=0.
     ("QUESTCB3", 1),
@@ -261,6 +270,13 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("I14-POTIONS", 2),
     // SRVGAP-C1: eight pinned Canary starter profiles have no speed override.
     ("SRVGAP-C1", 8),
+    // The pinned dispenser-item-profiles.json adds 22 source-qualified dispenser
+    // definitions (25879..=25914, its exact source subset), all with speed_bonus=0.
+    ("SRVGAP-DISPENSERS", 22),
+    // srx1-potion-profiles.json adds 53162..=53164, each with speed_bonus=0.
+    // Both SRX-1 cohorts are merged by the pinned item_profile_updates input;
+    // their keys are disjoint from the base and starting-loadout profiles.
+    ("SRX1-POTIONS", 3),
     // SV16 Echo catalysts 51588, 51589 and 54266, added to the W06/W07 overlay
     // (tools/content-migration/soulpit_echo_item_profiles.py EXTRA_IDS) from Crystal
     // 201189f871d23597b82caf88fd611454a2ddefb8 items.xml. All three keep speed_bonus=0.
@@ -276,6 +292,45 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         profiles.records.len(),
         ORIGINAL_PROFILES + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
     );
+    for id in [2949, 12369, 14156, 33330, 44179, 52732] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let record = profiles
+            .records
+            .iter()
+            .find(|record| record.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing source-qualified ITEMHOLD-Q profile {key}"))?;
+        assert!(record.admission.materializable, "{key}");
+        assert_eq!(record.attributes.speed_bonus, Some(0), "{key}");
+    }
+    // SRX-1 qualifies zero speed for these 34 newly admitted writing items.
+    // The producer preserves 2815/2821/3505/3507 under their existing owners;
+    // those four therefore retain their unknown-speed assertions below.
+    for id in [
+        637, 638, 639, 640, 641, 642, 2598, 2605, 2813, 2814, 2817, 2818, 2819, 2824, 2825, 2826,
+        2828, 2829, 2830, 2831, 2832, 2834, 2838, 2839, 2840, 2841, 2843, 2844, 2845, 2846, 2847,
+        4842, 4843, 7879,
+    ] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let record = profiles
+            .records
+            .iter()
+            .find(|record| record.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing source-qualified writing profile {key}"))?;
+        assert_eq!(record.attributes.speed_bonus, Some(0), "{key}");
+        assert!(
+            !matches!(record.semantics.equipment, ReferenceItemField::Known(_)),
+            "writing profile {key} remains non-equipment",
+        );
+    }
+    for id in [34017, 21348, 21400, 21350, 50166] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let record = profiles
+            .records
+            .iter()
+            .find(|record| record.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing source-qualified Newhaven profile {key}"))?;
+        assert_eq!(record.attributes.speed_bonus, Some(0), "{key}");
+    }
     for id in [2859, 3217, 18931, 19084, 19089, 19129] {
         let key = format!("oteryn:item.tibia.i{id}");
         let record = profiles
@@ -381,20 +436,19 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         )
         // I14G preserves absent speed for the five additional non-equipment consumables.
         .chain([3250, 7642, 23374, 23375, 23535].map(|id| format!("oteryn:item.tibia.i{id}")))
-        // READ-WRITE-1: the 19 readable profiles carry no speed attribute and are not equipment.
+        // READ-WRITE-1: retain unknown speed for the original readable cohort,
+        // except 2598/2605 now explicitly qualified by SRX-1 writing above.
         .chain(
             [
-                2012, 2013, 2014, 2015, 2016, 2017, 2021, 2022, 2023, 2024, 2597, 2598, 2602, 2605,
-                6121, 6122, 10322, 12782, 12783,
+                2012, 2013, 2014, 2015, 2016, 2017, 2021, 2022, 2023, 2024, 2597, 2602, 6121, 6122, 10322, 12782, 12783,
             ]
             .map(|id| format!("oteryn:item.tibia.i{id}")),
         )
         .chain(
             [
-                347, 401, 635, 636, 637, 638, 639, 640, 641, 642, 2813, 2814, 2815, 2817, 2818, 2819,
-                2821, 2824, 2825, 2826, 2827, 2828, 2829, 2830, 2831, 2832, 2833, 2834, 2835,
-                2838, 2839, 2840, 2841, 2842, 2843, 2844, 2845, 2846, 2847, 3212, 3505, 3507,
-                4100, 4842, 4843, 5785, 5799, 5805, 5806, 5807, 5956, 6386, 6538, 7879, 8150,
+                347, 401, 635, 636, 2815, 2821, 2827, 2833, 2835,
+                2842, 3212, 3505, 3507,
+                4100, 5785, 5799, 5805, 5806, 5807, 5956, 6386, 6538, 8150,
                 8151, 8155, 8156, 8737, 9206, 9207, 9208, 9209, 9210, 9211, 9212, 9213, 9214,
                 9215, 9216, 9217, 9218, 9219, 9220, 9221, 9222, 9223, 9224, 9538, 9614, 15276,
                 15633, 19072, 19073, 19074, 21445, 27932, 27933, 27934, 28572, 31266, 31268,

@@ -30,7 +30,7 @@
     },
     {
       "path": "tools/content-schema/imbuement-authoring/samples/imbuement-bindings.json",
-      "sha256": "229fe773bdda944a3fb42bdf1fd997b110cf39c078a636d7b678a0760c27c6a9"
+      "sha256": "2b711f4a73e8d2f6f51550e0954f4507bbafc3875f1bcf6ed0d36b31b8b374e8"
     },
     {
       "path": "tools/content-schema/imbuement-authoring/samples/imbuement-combat.json",
@@ -46,7 +46,7 @@
     },
     {
       "path": "tools/content-schema/imbuement-authoring/samples/imbuements-candidate.json",
-      "sha256": "4bd39d475edadecd22c5323edbeacbbf9e11004ecef628e49883cb289c7c62c0"
+      "sha256": "bd2dc4e5afba250411e3d15fec1d6646233ee0c7a2682775b67dcfb347f97fd4"
     },
     {
       "path": "tools/content-schema/imbuement-authoring/samples/missing-item-definitions.json",
@@ -80,7 +80,7 @@
     },
     {
       "path": "rulesets/items/imbuements/catalogue.json",
-      "sha256": "ff249b7e5866a06ebdfcdf05b24c45446c991646f66726cf59566831fddc3e58"
+      "sha256": "a7840b2a4cfeda28dfa029f2288f36a2837b301ea2fca6ba9b9530dcebcce2d8"
     },
     {
       "path": "rulesets/items/imbuements/equipment.json",

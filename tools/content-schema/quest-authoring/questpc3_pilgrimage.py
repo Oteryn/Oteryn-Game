@@ -49,7 +49,6 @@ def documents():
     path = "content/quests/shared-reward-callbacks.json"
     document = json.loads((ROOT / path).read_text())
     document["callbacks"] = [c for c in document["callbacks"] if not c["key"].startswith(PREFIX)] + callbacks
-    document["callbacks"].sort(key=lambda c: c["key"])
     result = {path: document}
     path = "content/dialogues/quests/shared-reward-greetings.json"
     document = json.loads((ROOT / path).read_text())
@@ -57,7 +56,6 @@ def documents():
     document["npcs"] = [n for n in document["npcs"] if n["npc"] not in names]
     document["npcs"] += [{"npc": npc, "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
                           "farewell": "Safe travels, |PLAYERNAME|.", "walkaway": "Safe travels."} for npc in sorted(names)]
-    document["npcs"].sort(key=lambda row: row["npc"])
     result[path] = document
     index_path = "content/services/blessings/index.json"
     index = json.loads((ROOT / index_path).read_text())

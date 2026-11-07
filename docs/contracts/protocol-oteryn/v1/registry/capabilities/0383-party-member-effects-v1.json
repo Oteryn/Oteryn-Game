@@ -1,0 +1,13 @@
+{
+  "id": 383,
+  "name": "PARTY_MEMBER_EFFECTS_V1",
+  "owner_decision": "NX-8 S13c owner allocation 2026-11-05",
+  "owner": "Game party member effect projection",
+  "requires": [
+    42
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. Negotiates optional field 5 on member entries of PARTY_V1 query 46. Without selection the server omits the field; existing peers retain their exact wire shape."
+}

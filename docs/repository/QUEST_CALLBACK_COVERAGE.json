@@ -2,7 +2,7 @@
   "counts": {
     "dispatch_pg_qualified": 34,
     "not_playable": 25,
-    "supported_unqualified": 279
+    "supported_unqualified": 282
   },
   "qualification": "Only dispatch_pg_qualified has a real source-placement PostgreSQL USE test. That status certifies reward granting, not every later Item consumer. Other supported shapes need per-World binding, Item admission and qualification. No deployed World or full-quest completion is certified.",
   "quests": [
@@ -5128,8 +5128,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED, NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED, TIMED_ITEM_BEHAVIOUR_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.pre_u6_0.ornamented_shield.rewards.ornamented_shield",
@@ -5439,8 +5439,8 @@
               ]
             }
           ],
-          "reason": "waiting_item_semantics",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/power_ring_quest"
@@ -5566,33 +5566,6 @@
         }
       ],
       "quest": "canary:quest/purple_tome_quest"
-    },
-    {
-      "chests": [
-        {
-          "claim": "oteryn:reward-claim.kv.rapier",
-          "placements": [
-            {
-              "position": {
-                "x": 32099,
-                "y": 32198,
-                "z": 9
-              },
-              "sources": [
-                {
-                  "citation": "crystal:data-global/startup/tables/chest.lua:3454",
-                  "reward_matches_current_source": false,
-                  "server": "crystalserver",
-                  "unique_id": 14042
-                }
-              ]
-            }
-          ],
-          "reason": "questpc3_rapier_claim_once_and_replay",
-          "status": "dispatch_pg_qualified"
-        }
-      ],
-      "quest": "canary:quest/rapier_quest"
     },
     {
       "chests": [
@@ -9768,8 +9741,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED, NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED, TIMED_ITEM_BEHAVIOUR_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/triangle_tower_quest"
@@ -10451,27 +10424,6 @@
     {
       "chests": [
         {
-          "claim": "oteryn:reward-claim.kv.smallsapphire",
-          "placements": [
-            {
-              "position": {
-                "x": 32962,
-                "y": 32429,
-                "z": 7
-              },
-              "sources": []
-            }
-          ],
-          "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
-          "reason": "questpc3_small_sapphire_full_recipe_once_and_replay",
-          "status": "dispatch_pg_qualified"
-        }
-      ],
-      "quest": "oteryn:quest.authored.small_sapphire_quest"
-    },
-    {
-      "chests": [
-        {
           "claim": "oteryn:reward-claim.kv.rookgaard05_brown_mushrooms",
           "placements": [
             {
@@ -10557,6 +10509,54 @@
         }
       ],
       "quest": "unlinked"
+    },
+    {
+      "chests": [
+        {
+          "claim": "oteryn:reward-claim.kv.rapier",
+          "placements": [
+            {
+              "position": {
+                "x": 32099,
+                "y": 32198,
+                "z": 9
+              },
+              "sources": [
+                {
+                  "citation": "crystal:data-global/startup/tables/chest.lua:3454",
+                  "reward_matches_current_source": false,
+                  "server": "crystalserver",
+                  "unique_id": 14042
+                }
+              ]
+            }
+          ],
+          "reason": "questpc3_rapier_claim_once_and_replay",
+          "status": "dispatch_pg_qualified"
+        }
+      ],
+      "quest": "canary:quest/rapier_quest"
+    },
+    {
+      "chests": [
+        {
+          "claim": "oteryn:reward-claim.kv.smallsapphire",
+          "placements": [
+            {
+              "position": {
+                "x": 32962,
+                "y": 32429,
+                "z": 7
+              },
+              "sources": []
+            }
+          ],
+          "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
+          "reason": "questpc3_small_sapphire_full_recipe_once_and_replay",
+          "status": "dispatch_pg_qualified"
+        }
+      ],
+      "quest": "oteryn:quest.authored.small_sapphire_quest"
     }
   ],
   "scope": "Once-only leaf/key/text chests and exact filled-container/shared-storage-choice recipes; levers and step-in scripts are separate owners.",

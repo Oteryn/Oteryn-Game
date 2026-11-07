@@ -82,18 +82,43 @@ impl OrientalTraderTown {
 }
 
 /// The draws a day takes, in this order, each its own purpose.
-pub const DRAW_PURPOSES: [&str; 5] = [
+pub const DRAW_PURPOSES: [&str; 8] = [
     "thawing",
     "their-masters-voice",
     "oriental-trader",
     "oriental-trader-town",
+    "fury-gates-active",
+    "fury-gates-town",
+    "nightmare-isles",
     "stampede",
+];
+
+// Crystal `fury_gates.lua:5-16` and `nightmare_isles.lua:5-9` source order.
+const FURY_LAYERS: [&str; 10] = [
+    "fury_gates/abdendriel",
+    "fury_gates/ankrahmun",
+    "fury_gates/carlin",
+    "fury_gates/darashia",
+    "fury_gates/edron",
+    "fury_gates/kazordoon",
+    "fury_gates/libertybay",
+    "fury_gates/porthope",
+    "fury_gates/thais",
+    "fury_gates/venore",
+];
+const NIGHTMARE_LAYERS: [&str; 3] = [
+    "nightmare_isle/ankrahmun-north",
+    "nightmare_isle/darashia-north",
+    "nightmare_isle/darashia-west",
 ];
 
 /// The world changes of one day.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DailyWorldChanges {
     pub reset_epoch: u64,
+    pub fury_gates: Option<&'static str>,
+    pub fury_exit: &'static str,
+    pub nightmare_isles: &'static str,
     pub thawing: bool,
     pub their_masters_voice: bool,
     pub oriental_trader: Option<OrientalTraderTown>,
@@ -108,7 +133,7 @@ impl DailyWorldChanges {
     /// Rolls the day after the reset `reset_epoch`, on the UTC calendar `month` and `day`.
     /// `draw(purpose)` returns the uniform 64-bit draw of that purpose for this epoch.
     pub fn roll(reset_epoch: u64, month: u8, day: u8, mut draw: impl FnMut(&str) -> u64) -> Self {
-        let [thawing, voice, trader, town, stampede] = DRAW_PURPOSES;
+        let [thawing, voice, trader, town, fury, fury_town, nightmare, stampede] = DRAW_PURPOSES;
         let thawing = percent_roll(draw(thawing), THAWING_PERCENT);
         let their_masters_voice = percent_roll(draw(voice), THEIR_MASTERS_VOICE_PERCENT);
         let oriental_trader = percent_roll(draw(trader), ORIENTAL_TRADER_PERCENT).then(|| {
@@ -118,8 +143,16 @@ impl DailyWorldChanges {
                 _ => OrientalTraderTown::LibertyBay,
             }
         });
+        // EVENTS-WORLD-1 W10/W15 intentionally replaces donor unconditional availability.
+        let fury_active = (u128::from(draw(fury)) * 1000) >> 64 < 343;
+        let fury_exit = FURY_LAYERS[choice(draw(fury_town), 10) as usize];
+        let fury_gates = fury_active.then_some(fury_exit);
+        let nightmare_isles = NIGHTMARE_LAYERS[choice(draw(nightmare), 3) as usize];
         Self {
             reset_epoch,
+            fury_gates,
+            fury_exit,
+            nightmare_isles,
             thawing,
             their_masters_voice,
             oriental_trader,
@@ -129,9 +162,24 @@ impl DailyWorldChanges {
         }
     }
 
+    /// Compiled entrance layers selected for this epoch, never paths loaded by the runtime.
+    pub fn layers(&self) -> Vec<&'static str> {
+        self.fury_gates
+            .into_iter()
+            .chain([self.nightmare_isles])
+            .collect()
+    }
+
+    /// Return choice stays available when the entrance is inactive (W10's343permille).
+    pub fn exit_layers(&self) -> [&'static str; 1] {
+        [self.fury_exit]
+    }
+
     /// The NPCs this day adds to the live map: `(key, (x, y, z))`.
     pub fn npcs(&self) -> impl Iterator<Item = (&'static str, (u16, u16, i8))> {
-        self.flower_month.then_some(ROSEMARIE).into_iter()
+        (self.reset_epoch != 0 && self.flower_month)
+            .then_some(ROSEMARIE)
+            .into_iter()
     }
 
     /// The Items this day adds to the live map: `(appearance, (x, y, z))`.
@@ -168,17 +216,20 @@ mod tests {
 
     #[test]
     fn w05b_the_day_takes_each_roll_from_its_own_draw() {
-        let roll = |draws: [u64; 5], month, day| {
+        let roll = |draws: [u64; 8], month, day| {
             DailyWorldChanges::roll(9, month, day, |purpose| {
                 let index = DRAW_PURPOSES.iter().position(|p| *p == purpose);
                 draws[index.unwrap_or(0)]
             })
         };
-        let all = roll([0, 0, 0, at(2, 3), 0], 6, 13);
+        let all = roll([0, 0, 0, at(2, 3), 0, 0, 0, 0], 6, 13);
         assert_eq!(
             all,
             DailyWorldChanges {
                 reset_epoch: 9,
+                fury_gates: Some("fury_gates/abdendriel"),
+                fury_exit: "fury_gates/abdendriel",
+                nightmare_isles: "nightmare_isle/ankrahmun-north",
                 thawing: true,
                 their_masters_voice: true,
                 oriental_trader: Some(OrientalTraderTown::LibertyBay),
@@ -187,7 +238,9 @@ mod tests {
                 stampede: true,
             }
         );
-        let none = roll([u64::MAX; 5], 5, 12);
+        let none = roll([u64::MAX; 8], 5, 12);
+        assert_eq!(none.fury_gates, None);
+        assert_eq!(none.exit_layers(), ["fury_gates/venore"]);
         assert_eq!(
             (
                 none.thawing,
@@ -199,7 +252,7 @@ mod tests {
             (false, false, None, false, false)
         );
         // The same epoch and draws roll the same day again.
-        assert_eq!(roll([0, 0, 0, at(2, 3), 0], 6, 13), all);
+        assert_eq!(roll([0, 0, 0, at(2, 3), 0, 0, 0, 0], 6, 13), all);
     }
 
     #[test]

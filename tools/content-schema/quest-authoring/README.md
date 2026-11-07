@@ -275,6 +275,36 @@ both original and current Source digests. Original donor ownership, requirements
 claims, progress, gates and Native holds survive. This offline authored approval is
 not a signature or runtime authority; all actual game journeys remain NOT_RUN.
 
+ITEMHOLD-Q's live claim admissions preserve that historical SOURCE frame, as the
+earlier Mad Mage admission does. `claim_catalogue()` retains the frozen Power Ring
+readiness and the Ornamented Shield, Present and Triangle Tower hold categories
+only for SOURCE compilation. Canonical claim holds and native contents remain the
+current admitted values. `amend_itemhold_source_receipt.py` refreshes only the
+compiler pin after comparing every frozen SOURCE core; it verifies all other
+receipt inputs and leaves approved core pairs and immutable completion242 inputs
+unchanged. Its `--check` mode verifies the exact generated receipt.
+
+After changing this compatibility projection, regenerate in dependency order:
+
+```sh
+python tools/content-schema/quest-authoring/amend_itemhold_source_receipt.py
+python tools/content-schema/quest-authoring/quest_tree_authoring.py content --source-packet tools/content-schema/quest-authoring/samples/migration/quest-source-packet.json
+python tools/content-schema/quest-authoring/quest_binding_authoring.py
+python tools/content-schema/quest-authoring/quest_completion_matrix.py
+python tools/content-schema/quest-authoring/quest_rollout_authoring.py
+python tools/content-schema/quest-authoring/quest_v2_export.py
+python tools/content-schema/quest-authoring/quest_state_lowering.py
+python tools/content-schema/quest-authoring/source_lowered_binding_plan.py
+python tools/content-schema/quest-authoring/quest_completion_import.py
+python tools/content-schema/quest-authoring/collect_claim_candidates.py
+python tools/content-schema/quest-authoring/use_trigger_candidates.py
+python tools/content-schema/quest-authoring/quest_native_binding_preflight.py
+python tools/content-schema/quest-authoring/quest_reward_only_binding_candidates.py
+python tools/content-schema/quest-authoring/grizzly_rooms.py
+python tools/content-schema/quest-authoring/run_checks.py --part checks
+python tools/content-schema/quest-authoring/run_checks.py --part unit-tests
+```
+
 ## Scoped enrichment and reviewed recipe refinements
 
 The portable `samples/enrichment242/` packet retains242 selected quest groups and
@@ -406,3 +436,9 @@ evidence retain their original identities; this projection does not admit
 native triggers or reward delivery. Regenerate with the tree command above;
 check reproducibility with `--check`. Resolver tests run with
 `python -m unittest discover -s . -p test_quest_item_keys.py`.
+
+Item or RewardClaim promotions also change the Rust chest witness inventory.
+Regenerate `quest_callback_coverage.py --canary <pinned-root> --crystal <pinned-root>`
+and verify the same command with `--check`; this tool verifies the retained
+Canary/Crystal chest-table hashes and updates `docs/repository/QUEST_CALLBACK_COVERAGE.json`.
+The dispatch callback test compares its supported set to the live binder.

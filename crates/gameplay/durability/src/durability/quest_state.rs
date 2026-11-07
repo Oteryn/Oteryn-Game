@@ -549,6 +549,8 @@ pub(super) fn report_refused_experience(
 pub(super) mod capacity;
 pub mod grizzly;
 pub mod grizzly_boss;
+mod hero_of_bounac;
+mod planegazer_finale;
 pub mod native_kills;
 pub mod rotten_blood;
 pub mod rotten_blood_access;

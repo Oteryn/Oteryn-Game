@@ -137,7 +137,7 @@ assert lock["family_counts"] == {
     "Item": 34111, "Mount": 252,  # E06 minted 68 client-only Crystal market Items.
     **family_counts, "Document": 1609,
     "Encounter.Raid": json.loads((ROOT / "content/encounters/raids/index.json").read_text())["record_count"],
-    "NPC": 1282, "Dialogue": 836, "Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 1, "Service.Promotion": 4, "Service.Blessing": 4, "Encounter": 108, "Charm": 25,
+    "NPC": 1282, "Dialogue": 836, "Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 1, "Service.Promotion": 4, "Service.Blessing": 8, "Encounter": 108, "Charm": 25,
     "Proficiency": 443, "RewardClaim": source_claim_count, "StarterKit": 1, "item_conversion": 129,
     **{family: value["records"] for family, value in quest_families.items()},
 }
@@ -169,7 +169,7 @@ assert manifest["families"]["Service.Trade"] == {"records": 324, "index": "conte
 assert manifest["families"]["Service.Travel"] == {"records": 56, "index": "content/services/travel/index.json"}
 assert manifest["families"]["Service.Bank"] == {"records": 1, "index": "content/services/bank/index.json"}
 assert manifest["families"]["Service.Promotion"] == {"records": 4, "index": "content/services/promotion/index.json"}
-assert manifest["families"]["Service.Blessing"] == {"records": 4, "index": "content/services/blessings/index.json"}
+assert manifest["families"]["Service.Blessing"] == {"records": 8, "index": "content/services/blessings/index.json"}
 assert any(path.startswith("content/services/bank/bank-") for path in paths)
 assert manifest["families"]["Charm"] == {"records": 25, "index": "content/charms/index.json"}
 assert "Charm" in project["migrated_families"] and "Charm" not in project["next_population_families"]

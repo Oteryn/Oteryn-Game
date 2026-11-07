@@ -67,7 +67,17 @@ fn cyclopedia_area_donation_audit_binds_world_area_and_occurrence() {
     let envelope =
         encode_fee_burn_event_with(identity(), value.clone(), Type2EventTuple::V1).unwrap();
     assert_eq!(decode_fee_burn_envelope(&envelope).unwrap().1, value);
-    for (world, area) in [(uuid(2), 1), (uuid(1), 0), (uuid(1), 2)] {
+    value.cause = Some(OneItemFeeBurnCauseV1 {
+        cause: Some(FeeBurnCauseV1::AreaDonation(OneItemAreaDonationV1 {
+            world: value.world_id.clone(),
+            area: 24,
+            occurrence: uuid(70),
+        })),
+    });
+    let canonical =
+        encode_fee_burn_event_with(identity(), value.clone(), Type2EventTuple::V1).unwrap();
+    assert_eq!(decode_fee_burn_envelope(&canonical).unwrap().1, value);
+    for (world, area) in [(uuid(2), 1), (uuid(1), 0), (uuid(1), 1025)] {
         value.cause = Some(OneItemFeeBurnCauseV1 {
             cause: Some(FeeBurnCauseV1::AreaDonation(OneItemAreaDonationV1 {
                 world,

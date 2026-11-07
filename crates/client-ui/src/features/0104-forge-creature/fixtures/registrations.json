@@ -1,17 +1,28 @@
 [
   {
     "mechanic": "0104-forge-creature",
+    "kind": "panels",
+    "id": "0104-forge-creature-label",
+    "status": "supported",
+    "entry": "view.rs::label"
+  },
+  {
+    "mechanic": "0104-forge-creature",
     "kind": "handlers",
-    "id": "0104-forge-creature-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0104-forge-creature-projection",
+    "status": "supported",
     "commands": [],
+    "direction": "server_to_client",
+    "capability": 104,
+    "entry": "protocol.rs::replace",
+    "push_messages": [
+      "Appearance"
+    ],
+    "reducer": "protocol.rs::replace",
+    "test": "tests/state.rs::pushed_forge_markers_replace_and_remove_creature_labels",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "input": "Server-owned creature markers have no client input.",
+      "settings": "Connection-local marker projection has no persisted settings."
     }
   }
 ]

@@ -12,6 +12,8 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import re
+import subprocess
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -193,12 +195,50 @@ def build() -> dict:
     }
 
 
+def refresh_definition_pin(baseline: str, output: bytes) -> None:
+    """Refresh canonical definition hashes without changing reviewed bindings."""
+    pin_path = HERE / "imbuement_authoring.py"
+    relative = str(OUTPUT.relative_to(ROOT))
+    previous = subprocess.check_output(["git", "show", f"{baseline}:{relative}"], cwd=ROOT)
+    source = pin_path.read_text()
+    pattern = r'("imbuement-bindings\.json": ")[0-9a-f]{64}(",)'
+    match = re.search(pattern, source)
+    if match is None or sha256(previous) not in match.group():
+        raise ValueError("baseline bindings do not match the reviewed evidence pin")
+
+    def identities(raw: bytes) -> object:
+        packet = json.loads(raw)
+        def visit(value: object) -> None:
+            if isinstance(value, dict):
+                canonical = value.get("canonical")
+                if isinstance(canonical, dict) and "definition_sha256" in canonical:
+                    canonical["definition_sha256"] = "canonical-definition-refresh"
+                for child in value.values():
+                    visit(child)
+            elif isinstance(value, list):
+                for child in value:
+                    visit(child)
+        visit(packet)
+        return packet
+
+    if identities(previous) != identities(output):
+        raise ValueError("reviewed binding identities or source evidence changed")
+    OUTPUT.write_bytes(output)
+    pin_path.write_text(re.sub(pattern, lambda m: m.group(1) + sha256(output) + m.group(2), source))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="reject stale bindings instead of writing")
+    parser.add_argument("--refresh-definition-pin", metavar="BASELINE",
+                        help="refresh only canonical definition hashes against reviewed Git bindings")
     args = parser.parse_args()
+    if args.check and args.refresh_definition_pin:
+        parser.error("--check and --refresh-definition-pin are mutually exclusive")
     output = (json.dumps(build(), ensure_ascii=False, sort_keys=True, indent=2) + "\n").encode()
-    if args.check:
+    if args.refresh_definition_pin:
+        refresh_definition_pin(args.refresh_definition_pin, output)
+    elif args.check:
         if not OUTPUT.exists() or OUTPUT.read_bytes() != output:
             raise SystemExit("imbuement bindings are stale; run binding_evidence.py")
     else:

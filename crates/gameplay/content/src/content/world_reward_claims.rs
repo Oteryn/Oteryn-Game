@@ -1019,6 +1019,29 @@ mod container_tests {
     }
 
     #[test]
+    fn itemhold_q_full_charge_claims_reach_the_native_reader() {
+        let ornament = authored("kv.ornamentedshield").expect("Ornamented Shield source");
+        let ornament = candidate(ornament.as_object().expect("definition"), &|_| true)
+            .expect("decoded")
+            .expect("qualified native container");
+        let necklace = ornament.placements[0]
+            .contents
+            .iter()
+            .find(|row| row.item.key().as_str() == "oteryn:item.tibia.i3083")
+            .expect("one necklace at the admitted definition's full 150 charges");
+        assert_eq!(necklace.count, 1);
+        let power = authored("kv.powerring2").expect("Power Ring source");
+        let power = candidate(power.as_object().expect("definition"), &|_| true)
+            .expect("decoded")
+            .expect("qualified full-charge leaf");
+        assert_eq!(
+            power.placements[0].item.key().as_str(),
+            "oteryn:item.tibia.i3056"
+        );
+        assert_eq!(power.placements[0].count, 1);
+    }
+
+    #[test]
     fn small_sapphire_requires_the_exact_native_binding_and_both_source_texts() {
         let source = authored("kv.smallsapphire").expect("Small Sapphire source");
         let decoded = candidate(source.as_object().expect("definition"), &|_| true)

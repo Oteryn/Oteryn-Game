@@ -190,11 +190,14 @@ impl DurabilityRoot {
                     }
                 } else if let Some(window) = &candidate.calendar_window {
                     let clock = calendar::clock(&mut tx, request.world, request.now_ms).await?;
-                    let in_window = window.window.contains(clock.month, clock.month_day)
+                    // Startup-activated repeating cycles belong to the committed reset date,
+                    // so a delayed reset cannot start the next month's source early.
+                    let (month,day) = if window.repeat { (clock.epoch_month,clock.epoch_month_day) } else { (clock.month,clock.month_day) };
+                    let in_window = window.window.contains(month,day)
                         .map_err(|_| DurabilityError::InvalidStoredState)?;
                     let interval_due = before.last_fired_at_ms.is_none_or(|last|
                         request.now_ms.saturating_sub(last) >= i64::from(window.interval_ms));
-                    let persistent_fired = candidate.definition.despawn_after_ms.is_none()
+                    let persistent_fired = !window.repeat && candidate.definition.despawn_after_ms.is_none()
                         && before.latest_firing.as_ref().is_some_and(|f| f.reset_epoch == request.reset_epoch);
                     RaidAction::ResolvedCheck {
                         now_ms: request.now_ms, selected: in_window && interval_due && !persistent_fired,

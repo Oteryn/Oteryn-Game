@@ -1305,7 +1305,7 @@
     "Orc Tooth": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "9849ea44bf7c76dc74a6c07d22cae9b3227441ac92a464cfbc88468048f5c5bc",
+          "definition_sha256": "842050c66b7671cab6a276f39bbff41f74d970a367b8d2ebd860e20cc6ca35bc",
           "name": "orc tooth",
           "path": "content/items/definitions/items-00000-00499.json"
         },

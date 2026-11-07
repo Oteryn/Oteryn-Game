@@ -14,6 +14,11 @@ use oteryn_gameplay_entities::carrier::RaidSpawnOutcome;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 #[test]
+fn world_src_postgres_flower_month_places_canonical_dryads_and_replays_once() -> TestResult {
+    run_case("world_src_flower_physical", "oteryn:raid.raid.dryad_invasion", 25, false)
+}
+
+#[test]
 fn quest_l4_stampede_raid_sixteen_native_elephants_and_spawn_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         eprintln!("QUEST_L4_POSTGRES_CASE_SKIPPED no_admin_url");
@@ -123,11 +128,14 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
     let firing = id(91);
     let key = ProductionKey::new(key).map_err(debug)?;
     let phased_boss = key.as_str() == "raid:venore.dracola";
+    let flower = key.as_str() == "oteryn:raid.raid.dryad_invasion";
     let catalogue = RaidCatalogue::embedded().map_err(debug)?;
     let selected = catalogue.get(&key).ok_or("catalogue raid")?.select(digest, firing).map_err(debug)?;
-    let mut area = *selected.areas.values().next().ok_or("source area")?;
-    assert_eq!(selected.areas.len(), if phased_boss { 2 } else { 1 });
-    for source_area in selected.areas.values() {
+    let mut area = if flower {
+        *selected.areas.get(&selected.definition.waves[0].entries[0].area_anchor).ok_or("Flower first source area")?
+    } else { *selected.areas.values().next().ok_or("source area")? };
+    assert_eq!(selected.areas.len(), if flower { 4 } else if phased_boss { 2 } else { 1 });
+    for source_area in selected.areas.values().filter(|_| !flower) {
         assert_eq!(source_area.from.floor, area.from.floor);
         assert_eq!(source_area.to.floor, area.to.floor);
         area.from.x = area.from.x.min(source_area.from.x);
@@ -139,6 +147,8 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
     if key.as_str() == "raid:porthope.stampede" {
         assert_eq!(selected.definition.announcements.len(), 1);
         assert_eq!(selected.definition.announcements[0].text, "Stampede! The Ape God has stirred up Tiquanda's elephants again!");
+    } else if flower {
+        assert_eq!(selected.definition.announcements.len(), 4);
     } else {
         assert!(selected.definition.announcements.is_empty());
     }
@@ -189,9 +199,15 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
         owner.broadcast_raid_notice(&notice).await.map_err(|_| "Stampede broadcast")?;
         assert_eq!(harness.root.acknowledge_raid_effect(&harness.node, notice.identity, Vec::new(), now).await?, RaidWrite::Applied);
     }
-    let wave = harness.root.advance_raid_run(
+    let mut wave = harness.root.advance_raid_run(
         &harness.node, firing, owner.channel_id, generation, selected.definition.clone(), now,
     ).await?.ok_or("committed wave")?;
+    if flower {
+        assert!(matches!(wave.action, CommittedRaidAction::Announcement { .. }));
+        assert_eq!(harness.root.acknowledge_raid_effect(&harness.node, wave.identity, Vec::new(), now).await?, RaidWrite::Applied);
+        wave = harness.root.advance_raid_run(&harness.node, firing, owner.channel_id, generation, selected.definition.clone(), now)
+            .await?.ok_or("Flower first committed wave")?;
+    }
     let outcomes = owner.apply_raid_wave(&wave, &selected, bundle_digest).await.map_err(|_| "physical raid wave")?;
     assert_eq!(outcomes.len(), expected);
     assert!(outcomes.iter().all(|outcome| outcome.placed));
@@ -214,6 +230,16 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
         }
         statuses
     };
+    if flower {
+        assert_eq!(selected.definition.waves[0].entries[0].creature.as_str(), "oteryn:creature.dryad");
+        assert_eq!(harness.root.acknowledge_raid_effect(&harness.node, wave.identity, outcomes, now).await?, RaidWrite::Applied);
+        assert!(harness.root.advance_raid_run(&harness.node, firing, owner.channel_id, generation, selected.definition.clone(), now + 899_999).await?.is_none());
+        let placed: i64 = sqlx::query_scalar("SELECT count(*) FROM game_world_raid_creature_placements WHERE placed").fetch_one(&harness.pool).await?;
+        assert_eq!(placed, 25, "replay keeps exactly one native wave");
+        assert_eq!(deps.runtime.lock().await.raid_creatures(firing).map_err(debug)?.iter().filter(|status| status.alive).count(), 25);
+        eprintln!("WORLD_SRC POSTGRES_CASE_COMPLETED Flower physical native25 replay25");
+        return Ok(());
+    }
     if !boss {
         assert_eq!(harness.root.acknowledge_raid_effect(&harness.node, wave.identity, outcomes, now).await?, RaidWrite::Applied);
         let end = harness.root.advance_raid_run(

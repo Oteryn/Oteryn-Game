@@ -96,6 +96,19 @@ pub(super) async fn exercise(
     owner.clock_origin -= std::time::Duration::from_secs(100);
     owner.tick_timed_items().await;
     assert_eq!(stored(h).await?, paused, "backpack duration is paused");
+    // The same frozen budget follows custody through the real depot owner.
+    let frozen:serde_json::Value=sqlx::query_scalar("SELECT to_jsonb(t) FROM game_item_timed_states t WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(90).as_slice()).fetch_one(&h.pool).await?;
+    let fence=owner.current_quest_fence(admitted.game_session_id).await.map_err(|_|"depot fence")?.ok_or("current depot fence")?.item_fence();
+    let permit=owner.spell_lane_permit().await.ok_or("depot lane")?;
+    let weights=crate::gameplay_transport::item_ref_admission::NativeItemWeights(native);
+    for (number,deposit) in [(920,true),(921,false)] {
+        let moved=owner.root.commit_depot_move(&permit,owner.character,owner.holder,&fence,
+            crate::foundation::CommandRef::new(fence.game_session_id,crate::foundation::CommandId::new(number).map_err(debug)?),&weights,
+            crate::durability::item_loop_move::DepotMove{town:1,box_number:1,deposit,request_digest:[if deposit {20} else {21};32],premium:crate::domain::premium::PremiumGate::CLOSED},id(90)).await.map_err(debug)?;
+        assert!(moved.is_ok(),"frozen duration depot movement: {moved:?}");
+        assert_eq!(sqlx::query_scalar::<_,serde_json::Value>("SELECT to_jsonb(t) FROM game_item_timed_states t WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(90).as_slice()).fetch_one(&h.pool).await?,frozen);
+    }
+    drop(permit);
     move_item(
         owner,
         admitted,

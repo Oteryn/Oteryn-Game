@@ -298,7 +298,7 @@ impl NpcTalkBook {
             } else if let Some((greet, farewell, _)) = rookgaard_exchange_messages(&reference.key) {
                 (greet.into(), farewell.into(), None, Vec::new())
             } else if let Some(greeting) = endgame_greeting(&reference.key) {
-                // W11: only these four source NPCs have native stateful Quest
+                // Only these source NPCs have native stateful Quest
                 // consumers. This admits their greeting, not their Lua/script
                 // branches; dispatch owns every confirmation and durable write.
                 (greeting.into(), "Farewell.".into(), None, Vec::new())
@@ -470,10 +470,17 @@ impl NpcTalkBook {
     }
 }
 
-/// Crystal201189f NPC greeting messages. A script-backed NPC outside this exact
-/// set remains unavailable through the native endgame conversation consumer.
+/// Source-qualified native finale speakers. A script-backed NPC outside this exact
+/// set remains unavailable through the native conversation consumer.
 fn endgame_greeting(key: &str) -> Option<&'static str> {
     Some(match key {
+        // SRV6: exact final-report speaker; Crystal kesar_the_younger_day.lua:286.
+        "oteryn:npc.kesar_the_younger_day" => {
+            "Hail, traveller. What brings you here during these dire times under {siege}? The fair Bounac is suffering greatly."
+        }
+        // Retained current-Tibia source identifies this canonical NPC. Its final
+        // sequence is native; unavailable intermediate story copy stays suppressed.
+        "oteryn:npc.planestrider_npc" => "Planestrider",
         // data-global/npc/flickering_soul.lua:198.
         "oteryn:npc.flickering_soul" => "Be greeted, living soul!",
         // data-global/npc/torkada.lua:96.

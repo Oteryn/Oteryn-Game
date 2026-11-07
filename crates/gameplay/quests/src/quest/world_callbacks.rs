@@ -10,7 +10,7 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 
 pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-callbacks.json");
-// The merged quest batches contain 224 static callbacks plus the dynamic altar.
+// Static quest batches and the code-built source callbacks share this bound.
 pub const MAX_CALLBACKS: usize = 512;
 pub const MAX_EFFECTS: usize = 8;
 
@@ -191,10 +191,11 @@ struct Document {
 /// Read the same closed content shape at boot and at the durable mutation boundary.
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
-    if callbacks.len() >= MAX_CALLBACKS {
-        return Err("callback bounds including Rotten Blood altar".into());
+    if callbacks.len() > MAX_CALLBACKS.saturating_sub(2) {
+        return Err("callback bounds including native source callbacks".into());
     }
     callbacks.push(super::rotten_blood::altar_callback());
+    callbacks.push(super::schrodinger_island::callback());
     Ok(callbacks)
 }
 

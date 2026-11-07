@@ -328,6 +328,10 @@ fn scenario(expansion: bool, premium_current: bool) -> TestResult {
 
         let query = reply(&owner, &mut admitted, CharmProgressionAction::Query).await?;
         assert_eq!(query.outcome, CharmProgressionOutcome::Query);
+        assert!(
+            query.charms.charms.iter().all(|charm| charm.effect_active),
+            "the qualified native command84 reply advertises connected runtime consumers"
+        );
         let earned = if expansion || premium_current {
             800
         } else {

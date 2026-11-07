@@ -10,8 +10,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
     open(
         link,
         Form {
-            title: "Mail",
-            labels: &["Item handle", "Mailbox handle", "Recipient and letter text"],
+            title: "Writing and mail",
+            labels: &["Selected item", "Selected mailbox (for posting)", "Text (include recipient address for mail)"],
             buttons: &["Write", "Post"],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.mail;

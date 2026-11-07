@@ -1,6 +1,8 @@
 use oteryn_gameplay_admission_evidence as admission_evidence;
 use std::{fmt, io};
 pub mod account_characters;
+pub mod account_closure;
+pub mod bazaar;
 pub mod character_commands;
 pub mod descriptor;
 pub mod http1_mtls;
@@ -9,6 +11,7 @@ pub mod restore_notice;
 pub mod runtime_status;
 pub mod scope_assignment;
 pub mod store;
+pub mod world_event_outcomes;
 pub const HANDSHAKE_INBOUND_BYTES: usize = 65_536;
 pub const PIPELINE_SLOTS: usize = 2;
 pub const QUEUED_REQUESTS: usize = 8;
