@@ -42,10 +42,9 @@ fn scenario_with_entry(expect_instance: bool, framed_entry: bool) -> TestResult 
     run(async |admin| {
         super::reset();
         let h =
-            super::fixture::Harness::create_with_admission_seed(admin, "srv7_rakesh", true, false)
+            super::fixture::Harness::create_with_admission_seed(admin, "srv7_rakesh", false, false)
                 .await?;
         prepare_current_session(&h).await?;
-        assert_current_progression(&h, &id(41)).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -164,8 +163,29 @@ fn scenario_with_entry(expect_instance: bool, framed_entry: bool) -> TestResult 
                 .map_err(|_| "register actual fully qualified Source gameplay template")?;
         }
         let mut admitted = deps.admitted;
+        deps.runtime
+            .lock()
+            .await
+            .initialize_pinned_test_position(
+                deps.actor,
+                MovementLocalPosition {
+                    x: 33038,
+                    y: 32964,
+                    floor: 8,
+                },
+            )
+            .map_err(debug)?;
         admitted.first_entry = crate::gameplay_transport::connection::FirstEntryOutcome::Positioned;
+        // The existing owner initializes all eight pins from THIS active
+        // progression policy. Legacy fixture pins are not the current policy.
         owner.admit_progression_session(&mut admitted).await;
+        assert!(
+            owner
+                .progression_binding(admitted.game_session_id)
+                .is_some(),
+            "actual native progression admission must bind before transfer"
+        );
+        assert_current_progression(&h, &id(41)).await?;
         assert_eq!(
             crate::map::floor::table_of(owner.movement_cells).and_then(|table| table.teleport(
                 crate::map::overlay::TilePos {
@@ -253,19 +273,6 @@ fn scenario_with_entry(expect_instance: bool, framed_entry: bool) -> TestResult 
             );
         }
 
-        deps.runtime
-            .lock()
-            .await
-            .initialize_pinned_test_position(
-                deps.actor,
-                MovementLocalPosition {
-                    x: 33038,
-                    y: 32964,
-                    floor: 8,
-                },
-            )
-            .map_err(debug)?;
-        admitted.first_entry = crate::gameplay_transport::connection::FirstEntryOutcome::Positioned;
         if let Some(instance_room) = child_room.as_ref() {
             use crate::foundation::{
                 ChannelRuntimeV1, RuntimeScopeRefV1, ScopeOwnershipGeneration,
@@ -601,37 +608,4 @@ async fn assert_current_progression(
         "current actual Root predecessor"
     );
     Ok(())
-}
-
-/// The existing peer factory creates the historical Character/bootstrap and
-/// real fresh admission. Copy only the same trusted fixture's progression
-/// predecessor into that distinct Character; never quest/access/reward facts.
-async fn initialize_peer_progression(
-    h: &super::fixture::Harness,
-    peer: crate::gameplay_transport::connection::AdmittedSession,
-) -> TestResult {
-    let character = peer
-        .item_fence
-        .ok_or("actual peer Character fence")?
-        .character_id;
-    let changed = sqlx::query(
-        "INSERT INTO game_character_progression_state \
-         SELECT r.character_id,r.character_revision,p.level,p.total_experience,p.profile_revision, \
-          p.ruleset_revision,p.content_revision,p.simulation_revision,p.evidence_revision, \
-          p.declaration_revision,p.policy_revision,p.reward_revision \
-         FROM game_character_roots r CROSS JOIN game_character_progression_state p \
-         WHERE r.character_id=encode($1,'hex')::uuid AND p.character_id=encode($2,'hex')::uuid \
-          AND r.profile_revision=p.profile_revision AND r.ruleset_revision=p.ruleset_revision \
-          AND r.content_revision=p.content_revision",
-    )
-    .bind(character.as_bytes().as_slice())
-    .bind(id(41).as_slice())
-    .execute(&h.pool)
-    .await?;
-    assert_eq!(
-        changed.rows_affected(),
-        1,
-        "one actual historical peer predecessor"
-    );
-    assert_current_progression(h, character.as_bytes()).await
 }

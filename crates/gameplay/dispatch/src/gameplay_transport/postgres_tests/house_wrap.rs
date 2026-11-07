@@ -821,13 +821,42 @@ async fn scenario(
         if native_wrap {
             assert_eq!(sqlx::query_scalar::<_,i64>("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(71).as_slice()).fetch_one(&h.pool).await?,original_quantity,"native unwrap restores exact source amount");
         }
+        let required_capabilities = std::sync::Arc::clone(&owner.required_capabilities);
         drop(owner);
         let mut owner = deps.owner(h, &authority);
         owner.movement_cells = &cells;
         owner.evidence = &evidence.evidence;
         owner.active_generation = Some(active);
+        owner.required_capabilities = required_capabilities;
+        // An empty command directory starts at1. Reconstruct its actual immutable
+        // Wrap1 prefix before replaying USE2, rather than claiming a missing
+        // directory already has high-water3 (prepare_quest_callback_resume).
+        let mut recovered = current;
+        recovered.continuity.next_command_id = 1;
+        if native_wrap {
+            let original:Vec<u8>=sqlx::query_scalar("SELECT use_intent FROM game_house_furniture_wrap_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=1").bind(recovered.game_session_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+            let (status, reply, _, _) =
+                opaque_peer::command(&owner, &mut recovered, 1, 402, original, None, false).await?;
+            assert!(matches!(
+                status,
+                CommandStatus::Accepted | CommandStatus::DuplicateReplay
+            ));
+            assert_eq!(wire::Reply::decode(&reply), Some(wire::Reply::Committed(2)));
+        } else {
+            assert_eq!(
+                exchange_checked(&owner, &mut recovered, 1, request, false)
+                    .await?
+                    .1,
+                wire::Reply::Committed(2)
+            );
+        }
+        assert_eq!(
+            recovered.continuity.next_command_id, command,
+            "actual prefix restores the next request; no cursor is invented"
+        );
         let (_, outcome, _) =
-            super::rust_lottery::exchange(&owner, current, command, &raw, None, None).await?;
+            super::rust_lottery::exchange(&owner, recovered, command, &raw, None, None).await?;
+
         assert_eq!(
             outcome,
             oteryn_protocol_oteryn::world_object::UseDisposition::Committed

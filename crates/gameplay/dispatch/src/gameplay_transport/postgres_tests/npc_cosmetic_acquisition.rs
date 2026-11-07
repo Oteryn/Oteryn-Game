@@ -1016,3 +1016,15 @@ fn srv7_bozo_creation_female_registered_greet() -> TestResult {
         .map_err(|_| "registered greet thread")??;
     Ok(())
 }
+
+#[path = "npc_cosmetic_acquisition/chondur/mod.rs"]
+mod chondur;
+#[test]
+fn srv7_chondur_natural_stampor_materials_real_npc_trade_grants_mount11() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| chondur::scenario().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "Chondur natural source scenario panicked")??;
+    Ok(())
+}

@@ -177,15 +177,18 @@ pub(super) async fn npc(
     oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
     Pos,
 )> {
-    let runtime = owner.runtime.lock().await;
+    let mut runtime = owner.runtime.lock().await;
     let visible = runtime.visible_entities();
     let n = visible
         .npcs
         .iter()
         .find(|n| runtime.npc_key(n.actor) == Some(key))
         .ok_or_else(|| format!("actual placed source NPC {key}"))?;
+    // NPC positions belong to the Movement view; the combat Actor lookup
+    // deliberately rejects the NPC role with StaleActorGeneration.
     let p = runtime
-        .read_actor_position(n.actor)
+        .borrow_movement_position()
+        .read(n.actor)
         .map_err(debug)?
         .position();
     let entity = oteryn_protocol_oteryn::world_spatial_entities::EntityRef {

@@ -61,7 +61,18 @@ pub(super) async fn join(
         },
     )
     .await?;
-    super::initialize_peer_progression(h, peer).await?;
+    assert!(
+        source.progression_binding(peer.game_session_id).is_some(),
+        "peer factory must bind its genuine active progression policy"
+    );
+    super::assert_current_progression(
+        h,
+        peer.item_fence
+            .ok_or("actual peer Character fence")?
+            .character_id
+            .as_bytes(),
+    )
+    .await?;
     let wire = oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1;
     peer.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(

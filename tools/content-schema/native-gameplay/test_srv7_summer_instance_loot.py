@@ -40,4 +40,3 @@ class SummerFacts(unittest.TestCase):
   def change(rows):rows['oteryn:item.tibia.i43758']['semantics']['container']['value']['capacity']['value']=31
   self.assertFalse(self.facts(change)['oteryn:item.tibia.i43758']['materializable'])
 if __name__=='__main__':unittest.main()
-

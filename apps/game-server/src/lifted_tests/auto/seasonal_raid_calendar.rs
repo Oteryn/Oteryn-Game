@@ -187,4 +187,3 @@ async fn exercise(h: &Harness) -> TestResult {
     );
     Ok(())
 }
-

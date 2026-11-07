@@ -50,8 +50,12 @@ pub(super) async fn exercise(
     owner.admit_quest_session(admitted).await;
     combat::historical_source_eligibility(h, owner, admitted).await?;
     let scene = scene::select(owner)?;
-    combat::initialize(owner, &scene).await?;
-    let (_, gnomilly_cell) = scene::npc(owner, "oteryn:npc.gnomilly").await?;
+    combat::initialize(owner, &scene)
+        .await
+        .map_err(|e| format!("Spike original spawn initialization: {e}"))?;
+    let (_, gnomilly_cell) = scene::npc(owner, "oteryn:npc.gnomilly")
+        .await
+        .map_err(|e| format!("Spike placed Gnomilly lookup after spawn: {e}"))?;
     let binding = owner
         .progression_binding(session)
         .ok_or("genuine native progression binding")?;
@@ -69,7 +73,9 @@ pub(super) async fn exercise(
     let mut prep = 0;
 
     while next_level - progression(h).await?.0 > 7 * last_kill_xp + 1000 {
-        walk::walk(owner, admitted, gnomilly_cell).await?;
+        walk::walk(owner, admitted, gnomilly_cell)
+            .await
+            .map_err(|e| format!("Spike actual Gnomilly approach: {e}"))?;
         let respawn_ms = scene
             .table
             .sources
@@ -115,7 +121,9 @@ pub(super) async fn exercise(
     let mut report_crossed = false;
     for cycle in 0..100 {
         source_clock(h, now).await?;
-        walk::walk(owner, admitted, gnomilly_cell).await?;
+        walk::walk(owner, admitted, gnomilly_cell)
+            .await
+            .map_err(|e| format!("Spike actual Gnomilly approach: {e}"))?;
         talk(owner, admitted, gnomilly, &["hi", "killing", "yes"]).await?;
         assert_eq!(
             track(h, MAIN).await?,
@@ -145,7 +153,9 @@ pub(super) async fn exercise(
                 "native source counter, cycle{cycle}"
             );
         }
-        walk::walk(owner, admitted, gnomilly_cell).await?;
+        walk::walk(owner, admitted, gnomilly_cell)
+            .await
+            .map_err(|e| format!("Spike actual Gnomilly approach: {e}"))?;
         let before = progression(h).await?;
         talk(owner, admitted, gnomilly, &["hi", "report", "killing"]).await?;
         let after = progression(h).await?;
