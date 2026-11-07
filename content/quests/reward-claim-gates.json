@@ -14,6 +14,11 @@
           "track": "oteryn:quest-progress/legion-helmet/viola",
           "minimum": 1,
           "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/legion-helmet/cave",
+          "minimum": 1,
+          "maximum": 1
         }
       ],
       "sources": [

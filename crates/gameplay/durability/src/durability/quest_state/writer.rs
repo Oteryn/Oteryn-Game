@@ -252,6 +252,9 @@ impl DurabilityRoot {
                                 || c.minimum_level.is_some()
                                 || c.experience.is_some()
                                 || c.monk_reward.is_some()
+                                || c.completes
+                                || !c.movement_origins.is_empty()
+                                || !c.required_claims.is_empty()
                                 || c.native_rule.is_some())
                     }))
         {

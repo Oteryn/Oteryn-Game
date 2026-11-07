@@ -32,12 +32,20 @@ async fn use_corpse(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
 ) -> TestResult<oteryn_protocol_oteryn::world_object::UseDisposition> {
+    use_corpse_at_ordinal(owner, admitted, 1).await
+}
+pub(super) async fn use_corpse_at_ordinal(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    ordinal: u8,
+) -> TestResult<oteryn_protocol_oteryn::world_object::UseDisposition> {
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
         .ok_or("clock")?;
     let map = owner.bundle_map().ok_or("map")?;
-    let key = oteryn_world_bundle::bundle::placement_key(-8, 32143, 31910, 1).ok_or("corpse")?;
+    let key =
+        oteryn_world_bundle::bundle::placement_key(-8, 32143, 31910, ordinal).ok_or("corpse")?;
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
     let target = oteryn_protocol_oteryn::world_object::WorldObjectTarget {
@@ -55,7 +63,7 @@ async fn use_corpse(
     .await?;
     oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)
 }
-async fn count(h: &Harness) -> TestResult<(i64, i64)> {
+pub(super) async fn count(h: &Harness) -> TestResult<(i64, i64)> {
     Ok(sqlx::query_as("SELECT (SELECT count(*) FROM game_reward_claims WHERE character_id=encode($1,'hex')::uuid AND claim_production_key=$2),(SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3374' AND lifecycle=1)").bind(id(41).as_slice()).bind(CLAIM).fetch_one(&h.pool).await?)
 }
 
@@ -132,7 +140,7 @@ pub(super) async fn exercise(
     let original = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
     let mut tracks = Vec::new();
     let mut transitions = Vec::new();
-    for name in ["gustavo", "viola"] {
+    for name in ["gustavo", "viola", "cave"] {
         let track = format!("oteryn:quest-progress/legion-helmet/{name}");
         tracks.push(original.track(&track).cloned().ok_or("contact track")?);
         transitions.push(QuestTransition {
@@ -152,7 +160,7 @@ pub(super) async fn exercise(
             .map_err(debug)?,
     );
     owner.quest_catalogue = Some(std::sync::Arc::clone(&catalogue));
-    for (i, name) in ["gustavo", "viola"].into_iter().enumerate() {
+    for (i, name) in ["gustavo", "viola", "cave"].into_iter().enumerate() {
         let fence = owner
             .current_quest_fence(admitted.game_session_id)
             .await
@@ -178,11 +186,11 @@ pub(super) async fn exercise(
             .map_err(debug)?;
         assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)));
         drop(slot);
-        if i == 0 {
+        if i < 2 {
             assert_ne!(
                 use_corpse(owner, admitted).await?,
                 oteryn_protocol_oteryn::world_object::UseDisposition::Committed,
-                "one contact is insufficient"
+                "both contacts and actual cave predicate are required"
             );
             assert_eq!(count(h).await?, (0, 0));
         }

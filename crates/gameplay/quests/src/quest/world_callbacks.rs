@@ -4,6 +4,7 @@ use super::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition,
 };
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 
 pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-callbacks.json");
@@ -150,6 +151,15 @@ pub struct Callback {
     pub minimum_level: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub experience: Option<i64>,
+    /// Shared completion lowering reused from questpc8 d90c1bfa2.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub completes: bool,
+    /// Native movement origin, used with the selector's actual landing position.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub movement_origins: Vec<Position>,
+    /// Actual personal once-claim receipts required in the fenced transaction.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub required_claims: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub monk_reward: Option<MonkReward>,
     pub offerings: Vec<Offering>,
@@ -190,6 +200,10 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/shared-outfit-callbacks.json"
     ))?);
+    callbacks.extend(parse_with_provenance(
+        include_str!("../../../../../content/quests/authored-world-callbacks.json"),
+        true,
+    )?);
     callbacks.retain(|callback| super::in_runtime_scope(&callback.quest));
     if callbacks.len() >= MAX_CALLBACKS {
         return Err("callback bounds including native source callbacks".into());
@@ -204,6 +218,10 @@ pub fn load() -> Result<Vec<Callback>, String> {
 }
 
 fn parse(text: &str) -> Result<Vec<Callback>, String> {
+    parse_with_provenance(text, false)
+}
+
+fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, String> {
     let document: Document = serde_json::from_str(text).map_err(|e| e.to_string())?;
     if document.schema != 1 || document.callbacks.len() > MAX_CALLBACKS {
         return Err("callback bounds".into());
@@ -223,6 +241,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
         let unique_offerings: BTreeSet<_> = callback.offerings.iter().map(|o| o.position).collect();
         let unique_passages: BTreeSet<_> = callback.passages.iter().map(|p| p.position).collect();
         let unique_storage: BTreeSet<_> = callback.storage.iter().map(|s| &s.track).collect();
+        let unique_claims: BTreeSet<_> = callback.required_claims.iter().collect();
         if !super::valid_quest_key(&callback.key)
             || !super::valid_quest_key(&callback.quest)
             || !keys.insert(&callback.key)
@@ -231,6 +250,15 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 && selector.action.is_none())
             || selector.position.is_some_and(|p| !valid_pos(p))
             || callback.teleport.is_some_and(|p| !valid_pos(p))
+            || callback.movement_origins.iter().any(|p| !valid_pos(*p)
+                || callback.trigger != Trigger::StepIn || callback.selector.position.is_none())
+            || callback.movement_origins.len() > MAX_EFFECTS
+            || callback.movement_origins.iter().collect::<BTreeSet<_>>().len() != callback.movement_origins.len()
+            || callback.required_claims.len() > MAX_EFFECTS
+            || unique_claims.len() != callback.required_claims.len()
+            || callback.required_claims.iter().any(|key| !key.starts_with("oteryn:reward-claim.") || !super::valid_quest_key(key))
+            || ((callback.completes || !callback.movement_origins.is_empty() || !callback.required_claims.is_empty())
+                && (callback.storage.is_empty() || callback.is_read_only() || callback.occupancy_driven))
             || !effects::valid(callback)
             || callback.remote_teleport.as_ref().is_some_and(|remote| {
                 !valid_pos(remote.position)
@@ -284,9 +312,12 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             })
             || (!callback.offerings.is_empty() && callback.storage.is_empty())
             || callback.sources.is_empty()
+            || (authored && (!callback.key.starts_with("oteryn:quest-callback/authored-")
+                || !callback.sources.iter().any(|source| source.starts_with("oteryn-authored:"))))
             || !callback.sources.iter().any(|source| {
                 // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
-                source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
+                (authored && source.starts_with("oteryn-authored:"))
+                    || source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
                     || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
                     || ((callback.effects.outfit_reward.is_some() || callback.occupancy_driven)
                         && source.starts_with("crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:"))
@@ -399,6 +430,35 @@ fn extend_callbacks(
         if callback.is_read_only() {
             continue;
         }
+        // Reuse questpc8's immutable plan witness so admission predicates and
+        // completion participate in the existing quest definition hash.
+        if callback.completes
+            || (callback.effects.portals.is_some() && !callback.storage.is_empty())
+            || !callback.movement_origins.is_empty()
+            || !callback.required_claims.is_empty()
+        {
+            let digest: String =
+                Sha256::digest(serde_json::to_vec(&callback).map_err(|e| e.to_string())?)
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect();
+            transitions.push(QuestTransition {
+                key: format!("oteryn:quest-world-plan/{digest}"),
+                quest: callback.quest.clone(),
+                effects: vec![QuestEffect {
+                    track: callback
+                        .storage
+                        .first()
+                        .ok_or("missing value guard")?
+                        .track
+                        .clone(),
+                    from: QuestComparison::Any,
+                    effect: QuestEffectKind::Computed,
+                }],
+                completes: false,
+                experience: None,
+            });
+        }
         transitions.push(QuestTransition {
             key: callback.key.clone(),
             quest: callback.quest.clone(),
@@ -415,7 +475,7 @@ fn extend_callbacks(
                     },
                 })
                 .collect(),
-            completes: false,
+            completes: callback.completes,
             experience: callback.experience,
         });
     }
@@ -1073,6 +1133,51 @@ mod grouped_occupancy_tests {
                 validate_occupancy_pairs(&bad).is_err(),
                 "malformed group {edit}"
             );
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod authored_completion_tests {
+    use super::*;
+    #[test]
+    fn authored_completion_origin_and_claims_are_closed_and_legacy_defaults_are_omitted()
+    -> Result<(), String> {
+        let callback = load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-callback/authored-legion-cave-return")
+            .ok_or("return")?;
+        let row = serde_json::to_value(callback).map_err(|e| e.to_string())?;
+        let document = |row| serde_json::json!({"schema":1,"callbacks":[row]}).to_string();
+        assert_eq!(
+            parse_with_provenance(&document(row.clone()), true)?.len(),
+            1
+        );
+        assert!(
+            parse(&document(row.clone())).is_err(),
+            "authored rules require their explicit registry"
+        );
+        let mut bad = row.clone();
+        bad["movement_origins"][0]["floor"] = 1.into();
+        assert!(parse_with_provenance(&document(bad), true).is_err());
+        let mut bad = row.clone();
+        bad["required_claims"] = serde_json::json!([
+            "oteryn:reward-claim.kv.legiondawnport",
+            "oteryn:reward-claim.kv.legiondawnport"
+        ]);
+        assert!(parse_with_provenance(&document(bad), true).is_err());
+        let mut bad = row.clone();
+        bad["required_claims"] = serde_json::json!(["canary:foreign"]);
+        assert!(parse_with_provenance(&document(bad), true).is_err());
+        let mut bad = row;
+        bad["storage"] = serde_json::json!([]);
+        assert!(parse_with_provenance(&document(bad), true).is_err());
+        for legacy in parse(EMBEDDED)? {
+            let row = serde_json::to_value(legacy).map_err(|e| e.to_string())?;
+            for key in ["completes", "movement_origins", "required_claims"] {
+                assert!(row.get(key).is_none(), "legacy plan gained {key}");
+            }
         }
         Ok(())
     }

@@ -439,6 +439,7 @@ mod tests {
         for raw in [
             include_str!("../../../../../content/quests/shared-access-callbacks.json"),
             include_str!("../../../../../content/quests/shared-outfit-callbacks.json"),
+            include_str!("../../../../../content/quests/authored-world-callbacks.json"),
         ] {
             let registry: serde_json::Value =
                 serde_json::from_str(raw).map_err(|e| e.to_string())?;

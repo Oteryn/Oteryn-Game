@@ -36,7 +36,7 @@
     "title": "Newhaven Legion Helmet Quest",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "Active implementation: both actual NPC contacts and generic atomic corpse claim predicates are proven. Finish native source buried-hole descent, add cave predicate, then source forcefield return/completion and whole-route PostgreSQL proof; no missing shared feature is deferred.",
+    "blocker": "Active scene authoring: shared completion, claim predicates, bounded movement origins and guarded portal journeys are implemented and PostgreSQL proven. Connect the native rope landing/equipment room to the clear east approach of the original source forcefield; the current sparse mechanism fixture crosses blocked western decoration1840 and is not whole qualification.",
     "from_lanes": [
       "questpc2"
     ],
@@ -70,6 +70,12 @@
       "postgres_red_seconds": 53.386024031,
       "postgres_green_seconds": 54.946823409,
       "proof": "cloud-legion-claim-gates-proof.json",
+      "whole_recipe_qualified": false
+    },
+    "world_mechanisms_progress": {
+      "proof": "cloud-legion-world-mechanisms-proof.json",
+      "postgres_sparse_green_seconds": 96.512593037,
+      "postgres_three_gate_green_seconds": 54.560888833,
       "whole_recipe_qualified": false
     }
   },

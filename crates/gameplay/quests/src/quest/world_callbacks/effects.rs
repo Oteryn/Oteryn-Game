@@ -116,13 +116,24 @@ pub(super) fn valid(callback: &Callback) -> bool {
     let operations = usize::from(effects.portals.is_some())
         + usize::from(effects.item_cycle.is_some())
         + usize::from(effects.encounter.is_some());
-    if operations > 1
-        || (operations > 0
-            && (!lever
-                || !callback.storage.is_empty()
-                || !callback.passages.is_empty()
-                || callback.teleport.is_some()))
-    {
+    // A receipt-bearing journey may open its bounded passage/portal pair and
+    // relocate the entrant together. The ordinary world writer checks its
+    // context and personal predicates before any projection is applied.
+    let guarded_portals = effects.portals.is_some()
+        && callback.trigger == Trigger::StepIn
+        && callback.lever.is_none()
+        && !callback.reversible
+        && !callback.storage.is_empty()
+        && !callback.is_read_only()
+        && callback.minimum_level.is_some()
+        && callback.storage.iter().any(|s| !s.preserve)
+        && callback.offerings.is_empty()
+        && callback.item_on_target.is_none();
+    let legacy_projection = lever
+        && callback.storage.is_empty()
+        && callback.passages.is_empty()
+        && callback.teleport.is_none();
+    if operations > 1 || (operations > 0 && !legacy_projection && !guarded_portals) {
         return false;
     }
     if let Some(pair) = &effects.portals

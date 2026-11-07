@@ -1,0 +1,49 @@
+{
+  "slice": "Shared authored world completion, bounded movement-origin and claim predicates, guarded portal journeys",
+  "whole_recipe_qualified": false,
+  "reuse": {
+    "branch": "origin/claude/happy-davinci-ijz3wy-questpc8",
+    "commit": "d90c1bfa2",
+    "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+    "components": [
+      "Explicit authored registry namespace/provenance isolation",
+      "Completion lowering",
+      "Immutable computed plan witness in quest definition hash"
+    ]
+  },
+  "postgres_red": {
+    "seconds": 52.750627503,
+    "server": "18.6",
+    "failure": "missing whole-route binding legion-route-entry",
+    "log": "/tmp/questpc5-legion-route-valid-source-red.log"
+  },
+  "postgres_sparse_mechanism_green": {
+    "seconds": 96.512593037,
+    "component_seconds": 42.87791837,
+    "server": "18.6",
+    "log": "/tmp/questpc5-legion-route-guarded-green.log",
+    "coverage": [
+      "Actual source NPC contacts",
+      "Native buried-hole opening and STEP descent",
+      "Exact UID6006 corpse USE and once claim",
+      "Early field without helmet refuses completion",
+      "Walking directly onto field landing cannot impersonate traversal",
+      "Actual static field hop plus claimed completion",
+      "Terminal replay and no quest XP"
+    ]
+  },
+  "postgres_three_predicate_claim_green": {
+    "seconds": 54.560888833,
+    "component_seconds": 1.209146331,
+    "log": "/tmp/questpc5-legion-route-three-gates-pg.log",
+    "scope": "Component contact/cave fixtures explicitly seeded; zero/one/two predicates refuse, all three grant once"
+  },
+  "checks": {
+    "world_callback_rust_units": 21,
+    "python_authoring_and_preservation": 5,
+    "generator_check": "PASS",
+    "final_rust_and_pins": "PASS fmt; cargo check17.49s; strict all-target/all-feature clippy54.39s; scope-loader1unit; repository pin-check07127a12e4dd254b9cb51d00db6543f2f4d93580213fe6b9f62fa57b54698354"
+  },
+  "source_scene_limit": "Sparse mechanism fixture permits the inherited western field approach; source appearance1840 has flags.unpass=true in client asset2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2. Whole recipe remains active until a physically connected authored equipment-room path uses the clear eastern approach32124,31939,8 (source4394+1056). Do not promote this sparse fixture to whole qualification.",
+  "next": "Use existing generic guarded portal pairs to link the native rope landing to equipment room and its source corpse to the clear source forcefield approach, preserving original terrain/claim objects and all once receipts."
+}

@@ -253,6 +253,13 @@ pub(super) async fn consume(
             return Ok(false);
         }
     }
+    for claim in &callback.required_claims {
+        let held: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_reward_claims WHERE character_id=encode($1,'hex')::uuid AND claim_family='RewardClaim' AND claim_production_key=$2)")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(claim).fetch_one(&mut **tx).await?;
+        if !held {
+            return Ok(false);
+        }
+    }
     if callback.offerings.is_empty() && callback.item_on_target.is_none() {
         return Ok(true);
     }

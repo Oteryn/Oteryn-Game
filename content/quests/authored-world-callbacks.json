@@ -1,0 +1,262 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/authored-legion-cave-entry",
+      "quest": "oteryn:quest.newhaven_legion_helmet_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32111,
+          "y": 31903,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 386
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/legion-helmet/gustavo",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/legion-helmet/viola",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/legion-helmet/cave",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "oteryn-authored:selected-recipe:legion-training-cave-source-hole-and-rope-spot",
+        "oteryn:source-map:content/world/placements/region-z07-x125-y124.b3:sha256:66e2b4e44eb7f3994f6ab3e927124db8682c7b31a5d13e3f9b192132f5da452e",
+        "oteryn:source-map:content/world/placements/region-z08-x125-y124.b3:sha256:c470089dbd8903d3be04a5c95ce9bcba46df5eda62ea1401452af54789c09828",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:0e9bf2893b18eb6bfc7914f1862f740daf775e6627d68d6a001ce637c7687f71"
+      ],
+      "minimum_level": 1
+    },
+    {
+      "key": "oteryn:quest-callback/authored-legion-cave-return",
+      "quest": "oteryn:quest.newhaven_legion_helmet_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32110,
+          "y": 31937,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4399
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32570,
+        "y": 32507,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/legion-helmet/gustavo",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/legion-helmet/viola",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/legion-helmet/cave",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/legion-helmet/finished",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "oteryn-authored:selected-recipe:legion-source-magic-forcefield-return",
+        "oteryn:source-map:content/world/placements/region-z07-x125-y124.b3:sha256:66e2b4e44eb7f3994f6ab3e927124db8682c7b31a5d13e3f9b192132f5da452e",
+        "oteryn:source-map:content/world/placements/region-z08-x125-y124.b3:sha256:c470089dbd8903d3be04a5c95ce9bcba46df5eda62ea1401452af54789c09828",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:0e9bf2893b18eb6bfc7914f1862f740daf775e6627d68d6a001ce637c7687f71"
+      ],
+      "movement_origins": [
+        {
+          "x": 32122,
+          "y": 31939,
+          "floor": -8
+        },
+        {
+          "x": 32124,
+          "y": 31939,
+          "floor": -8
+        },
+        {
+          "x": 32123,
+          "y": 31938,
+          "floor": -8
+        },
+        {
+          "x": 32123,
+          "y": 31940,
+          "floor": -8
+        }
+      ],
+      "required_claims": [
+        "oteryn:reward-claim.kv.legiondawnport"
+      ],
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-callback/authored-legion-route-entry",
+      "quest": "oteryn:quest.newhaven_legion_helmet_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32570,
+          "y": 32508,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4515
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 32111,
+            "y": 31903,
+            "floor": -7
+          },
+          "appearance": 593,
+          "replacement": 594
+        }
+      ],
+      "teleport": {
+        "x": 32111,
+        "y": 31904,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/legion-helmet/gustavo",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/legion-helmet/viola",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/legion-helmet/route",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": {
+          "appearance": 1949,
+          "lifetime_us": null,
+          "portals": [
+            {
+              "position": {
+                "x": 32570,
+                "y": 32508,
+                "floor": -7
+              },
+              "destination": {
+                "x": 32111,
+                "y": 31904,
+                "floor": -7
+              }
+            },
+            {
+              "position": {
+                "x": 32111,
+                "y": 31904,
+                "floor": -7
+              },
+              "destination": {
+                "x": 32570,
+                "y": 32507,
+                "floor": -7
+              }
+            }
+          ]
+        },
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "oteryn-authored:selected-recipe:authored-newhaven-school-to-inherited-training-cave",
+        "oteryn:source-map:content/world/placements/region-z07-x125-y124.b3:sha256:66e2b4e44eb7f3994f6ab3e927124db8682c7b31a5d13e3f9b192132f5da452e",
+        "oteryn:source-map:content/world/placements/region-z08-x125-y124.b3:sha256:c470089dbd8903d3be04a5c95ce9bcba46df5eda62ea1401452af54789c09828",
+        "oteryn:source-map:content/world/placements/region-z07-x127-y126.b3:sha256:32f787d0400a876b3382cee79a19901c4193f65df19037657aaa385f34df3af3",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:0e9bf2893b18eb6bfc7914f1862f740daf775e6627d68d6a001ce637c7687f71"
+      ],
+      "minimum_level": 1
+    }
+  ]
+}

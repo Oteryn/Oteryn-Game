@@ -687,7 +687,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(
                     self.callback_content()
                         .iter()
-                        .filter(move |c| c.trigger == trigger && matches(map, c, key))
+                        .filter(move |c| {
+                            c.trigger == trigger
+                                && (c.movement_origins.is_empty()
+                                    || c.movement_origins.iter().any(|required| {
+                                        native(origin.position()).is_some_and(|at| {
+                                            at.x == required.x
+                                                && at.y == required.y
+                                                && at.floor == required.floor
+                                        })
+                                    }))
+                                && matches(map, c, key)
+                        })
                         .map(move |c| (c, key)),
                 )
             })

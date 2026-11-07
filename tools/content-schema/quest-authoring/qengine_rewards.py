@@ -260,6 +260,7 @@ def build():
     import legion_helmet
     legion_helmet.extend(callbacks)
     generated['content/quests/reward-claim-gates.json']=encoded(legion_helmet.claim_gates())
+    generated['content/quests/authored-world-callbacks.json']=encoded(legion_helmet.world_callbacks())
     callbacks.sort(key=lambda c:c['key'])
     greetings.sort(key=lambda c:c['npc'])
     validate_callbacks({'schema':1,'callbacks':callbacks})

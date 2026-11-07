@@ -34,6 +34,7 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
                 "qengine-rewards-newhaven-native-goal"
                     | "qengine-rewards-newhaven-route"
                     | "qengine-rewards-newhaven-legion-contacts"
+                    | "qengine-rewards-newhaven-legion-route"
             ) {
                 Position {
                     x: 32560,
@@ -609,6 +610,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-newhaven-legion-route" {
+        return Box::pin(super::questpc5_legion_route::exercise(owner, admitted, h)).await;
+    }
     if name == "qengine-rewards-newhaven-legion-gates" {
         return Box::pin(super::questpc5_legion_claim_gate::exercise(
             owner, admitted, h,

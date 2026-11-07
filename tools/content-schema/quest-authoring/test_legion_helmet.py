@@ -29,8 +29,28 @@ class LegionContactsTests(unittest.TestCase):
         gate,=document['gates']
         self.assertEqual(gate['claim'],'oteryn:reward-claim.kv.legiondawnport')
         self.assertEqual(gate['quest'],'oteryn:quest.newhaven_legion_helmet_quest')
-        self.assertEqual(gate['conditions'],[dict(track='oteryn:quest-progress/legion-helmet/'+name,minimum=1,maximum=1) for name in ['gustavo','viola']])
+        self.assertEqual(gate['conditions'],[dict(track='oteryn:quest-progress/legion-helmet/'+name,minimum=1,maximum=1) for name in ['gustavo','viola','cave']])
         self.assertTrue(gate['sources'])
+
+    def test_whole_route_has_exact_source_geometry_and_claim_gated_completion(self):
+        rows=json.loads(qengine_rewards.build()['content/quests/authored-world-callbacks.json'])['callbacks']
+        self.assertEqual(len(rows),3)
+        by_name={r['key'].removeprefix('oteryn:quest-callback/authored-'):r for r in rows}
+        self.assertEqual(set(by_name),{'legion-route-entry','legion-cave-entry','legion-cave-return'})
+        entry=by_name['legion-route-entry']
+        self.assertEqual(entry['passages'],[dict(position=dict(x=32111,y=31903,floor=-7),appearance=593,replacement=594)])
+        self.assertEqual(entry['teleport'],dict(x=32111,y=31904,floor=-7))
+        cave=by_name['legion-cave-entry']
+        self.assertEqual(cave['selector']['position'],dict(x=32111,y=31903,floor=-8))
+        self.assertEqual(cave['selector']['appearance'],386)
+        finish=by_name['legion-cave-return']
+        self.assertEqual(finish['selector']['position'],dict(x=32110,y=31937,floor=-8))
+        self.assertEqual(finish['movement_origins'],[dict(x=x,y=y,floor=-8) for x,y in [(32122,31939),(32124,31939),(32123,31938),(32123,31940)]])
+        self.assertEqual(finish['required_claims'],['oteryn:reward-claim.kv.legiondawnport'])
+        self.assertTrue(finish['completes'])
+        for r in rows:
+            self.assertTrue(r['sources'][0].startswith('oteryn-authored:'))
+            self.assertTrue(any(s.startswith('oteryn:selected-recipe:') for s in r['sources']))
 
     def test_prior_callbacks_preserved_exactly(self):
         old=[r for r in self.rows if not r['key'].startswith('oteryn:quest-reward/legion-contact-')]
