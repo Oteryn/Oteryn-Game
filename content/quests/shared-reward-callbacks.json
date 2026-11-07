@@ -315,6 +315,234 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/questpc3/beginning/zirella-lesson-1",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "keywords": [
+        "yes",
+        "quest",
+        "ok"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_quest_log",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I need firewood for my oven. Will you help me?"
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zirella.lua#L107"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/beginning/zirella-lesson-2",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "keywords": [
+        "yes",
+        "quest",
+        "ok"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_quest_log",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Find a dead tree without leaves in the forest to the south."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zirella.lua#L112"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/beginning/zirella-lesson-3",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "keywords": [
+        "yes",
+        "quest",
+        "ok"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_quest_log",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Use the dead tree to break a branch from it."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zirella.lua#L117"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/beginning/zirella-lesson-4",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "keywords": [
+        "yes",
+        "quest",
+        "ok"
+      ],
+      "topic": 4,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_quest_log",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Move the branch across the ground, then use it with my cart."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zirella.lua#L122"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/beginning/zirella-lesson-5",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "keywords": [
+        "yes",
+        "quest",
+        "ok"
+      ],
+      "topic": 5,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_quest_log",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Drag and drop the branch across the grass until it is near my cart."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zirella.lua#L127"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/beginning/zirella-lesson-6",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.zirella",
+      "keywords": [
+        "yes",
+        "quest",
+        "ok"
+      ],
+      "topic": 6,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_quest_log",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Use a dead tree, drag its branch across the map, and use that ground branch with my cart."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zirella.lua#L139"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/questpc3/beginning/zirella-reward",
       "quest": "oteryn:quest.the_beginning_quest",
       "npc": "oteryn:npc.zirella",

@@ -220,6 +220,205 @@
       "reply": [
         "That is enough firewood for my oven. Are you ready for your reward?"
       ]
+    },
+    {
+      "npc": "oteryn:npc.zirella",
+      "keywords": [
+        "hi",
+        "hello",
+        "greetings"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": false
+        }
+      ],
+      "reply": [
+        "Could you help me with a quest?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zirella",
+      "keywords": [
+        "hi",
+        "hello",
+        "greetings"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "reply": [
+        "Welcome back. Shall I explain the firewood task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zirella",
+      "keywords": [
+        "hi",
+        "hello",
+        "greetings"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": false
+        }
+      ],
+      "reply": [
+        "Welcome back. Shall I explain the firewood task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zirella",
+      "keywords": [
+        "hi",
+        "hello",
+        "greetings"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": false
+        }
+      ],
+      "reply": [
+        "Welcome back. Shall I explain the firewood task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zirella",
+      "keywords": [
+        "hi",
+        "hello",
+        "greetings"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": false
+        }
+      ],
+      "reply": [
+        "Welcome back. Shall I explain the firewood task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zirella",
+      "keywords": [
+        "hi",
+        "hello",
+        "greetings"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": false
+        }
+      ],
+      "reply": [
+        "Welcome back. Shall I explain the firewood task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zirella",
+      "keywords": [
+        "hi",
+        "hello",
+        "greetings"
+      ],
+      "topic": 0,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": false
+        }
+      ],
+      "reply": [
+        "Welcome back. Shall I explain the firewood task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zirella",
+      "keywords": [
+        "yes",
+        "quest",
+        "ok"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": false
+        }
+      ],
+      "reply": [
+        "Quest is a keyword used to ask NPCs about tasks. Are you listening?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zirella",
+      "keywords": [
+        "yes",
+        "quest",
+        "ok",
+        "explain"
+      ],
+      "topic": 7,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": false
+        }
+      ],
+      "reply": [
+        "Use a dead tree, drag the branch along the ground to my cart, then use it with the cart."
+      ]
     }
   ]
 }

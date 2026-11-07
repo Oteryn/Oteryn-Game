@@ -839,34 +839,18 @@
       }
     ],
     "current_batch": {
-      "id": "cockroach-goal-01",
+      "id": "blessing-zirella-merge",
       "phase": "GREEN",
-      "whole_entry_qualifications": 0,
       "entries": [
-        "oteryn:quest.the_beginning_quest"
+        "oteryn:quest.the_beginning_quest",
+        "oteryn:quest.pilgrimage_of_ashes"
       ],
-      "scope": "Reusable conditional set over original locked effect values; configurable native kill gate value/completion; authored three-Cockroach5to6 bridge, preserving separate physical3legs/100XP.",
-      "assumption": "Pinned donor investigation did not recover the5to6 hook. Count three existing eligible native kill-credit occurrences at stage5; open stage6 only on third. No hand-in log, items or XP granted by deaths.",
-      "test_changes": "Two new sequential/burst cases share native lethal queue fixture. Existing unstarted negative assertion retained after draining any known-empty queue, with explicit zero physical leg instances.",
-      "red_log": "/tmp/questpc3-cockroach-goal-red.log",
-      "red_process_session": 32400,
-      "implementation": "Generic SetWhenAtLeast (bounded, hashed, original locked snapshot) plus configured native gate value and optional final-occurrence gate advancement. Cockroach stage5 becomes6 on exactly the third eligible native kill; no physical legs, hand-in log or XP manufactured.",
-      "reuse_check": "Latest qengine2 and refreshed questpc2/4/5/6/7/8/questl2 checked; no reusable conditional effect found. Existing sum references provide the bounded original-snapshot/hash pattern.",
-      "red": {
-        "duration_seconds": 53.63,
-        "postgres_marker_ms": 53526,
-        "failure": "the lethal event must enter the real queue"
-      },
-      "green": {
-        "duration_seconds": 55.11,
-        "cases": 2,
-        "completion_ms": [
-          55085,
-          55100
-        ]
-      },
-      "qualification": "No whole quest qualified by this mechanism batch.",
-      "publication": "Commit and fast-forward push after these recorded checks."
+      "whole_entry_qualifications": 0,
+      "local_commit": "c52468d50",
+      "incoming": "01a2019f667a6e1e645a655597e0f4987137e493",
+      "scope": "Merge green Zirella6instructions with generic canonical quest blessing/Premium/reward-value binding support;45callbacks retained. Material source merge requires combined verification before commit/push.",
+      "publication": "Commit merge and fast-forward push immediately; native physical tests remain separate unstaged RED batch.",
+      "checks": "Five changed crates strict check/Clippy; reward-binding/parser/conditional tag units; targeted real PG Zirella/rewards/Pilgrimage; content123/repository5; final pin check."
     },
     "effective_entries": [
       "oteryn:quest.the_beginning_quest",
@@ -1606,6 +1590,108 @@
         "validated_source_commit": "025936c3d8b4ff07d6cb57d60c0c8afb23a6cd7e",
         "scope": "quests/npc/durability/dispatch all features and targets; completed before Pilgrimage changes"
       },
+      "zirella_lessons_01": {
+        "fmt": "Workspace/check and explicit mounted test rustfmt passed.",
+        "producer": "Author and --check passed; Python py_compile passed.",
+        "check": "4crates/all features PASS50.95s",
+        "clippy": "4crates/all features/all targets -Dwarnings PASS1m13s",
+        "parser": "1passed1.49s",
+        "npc_book": "1passed43.87s",
+        "native_regeneration": "PASS registry producer and --check; no generated output drift",
+        "content": "123passed4.76s",
+        "world_repository": "5passed79.78s",
+        "world_pins": "PASS: unchanged inputs_digest e02234141bb28d95494c0d5bd62a3bd6ca6c1b2cfe852217e15db073d1f77ea5, package31101874bytes, digest e4b3e414c7c4fb5104cd011924da6146bb5a29900efa375c2a740128025a4f69.",
+        "logs": {
+          "red": {
+            "log": "/tmp/questpc3-zirella-lessons-red.log",
+            "sha256": "50c557889d36798850ed6a9509c077b93760e5c4e8c90022958a7eca608c6cee",
+            "evidence": [
+              "QUESTPC3_ZIRELLA POSTGRES_ASSERTION_REACHED duration_ms=100092",
+              "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2556 filtered out; finished in 100.38s"
+            ]
+          },
+          "green": {
+            "log": "/tmp/questpc3-zirella-lessons-green.log",
+            "sha256": "26f7fa6b23aafe644204b35bd086762f962207b23d5e2d8e22057e969170635c",
+            "evidence": [
+              "QUESTPC3_ZIRELLA POSTGRES_ASSERTION_REACHED duration_ms=96228",
+              "QUESTPC3_ZIRELLA POSTGRES_CASE_COMPLETED duration_ms=98268",
+              "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2556 filtered out; finished in 98.27s"
+            ]
+          },
+          "fmt": {
+            "log": "/tmp/questpc3-zirella-lessons-fmt.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "evidence": []
+          },
+          "check": {
+            "log": "/tmp/questpc3-zirella-lessons-check.log",
+            "sha256": "0f5285f509eaf3ddb76389cae0d3bcc0cfbb576330580653655437c1a05191f6",
+            "evidence": [
+              "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 50.95s"
+            ]
+          },
+          "clippy": {
+            "log": "/tmp/questpc3-zirella-lessons-clippy.log",
+            "sha256": "551c406ac30a994cf4bb4345dde250738ed64c9588dc6ff04b4230dcdcf24ba5",
+            "evidence": [
+              "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 13s"
+            ]
+          },
+          "parser": {
+            "log": "/tmp/questpc3-zirella-lessons-parser.log",
+            "sha256": "441e3caaf3d323be0b56826a509a3a6346ffa94e7074ccd64d937e88e5da4206",
+            "evidence": [
+              "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 259 filtered out; finished in 1.49s"
+            ]
+          },
+          "npc-book": {
+            "log": "/tmp/questpc3-zirella-lessons-npc-book.log",
+            "sha256": "bb90cc5df1082a7ab1a26e2263e803fdc66277ae48d1f3cc9583f41bd6e11c72",
+            "evidence": [
+              "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 24 filtered out; finished in 43.87s"
+            ]
+          },
+          "regen": {
+            "log": "/tmp/questpc3-zirella-lessons-regen.log",
+            "sha256": "b9cfaee5c12a30f2088b432476ec22d3e5d21fdd0776edd716d8812480dce754",
+            "evidence": [
+              "PASS registered spell import files=41 activation=false",
+              "PASS registered spell import files=41 activation=false"
+            ]
+          },
+          "pin": {
+            "log": "/tmp/questpc3-zirella-lessons-pin.log",
+            "sha256": "deaf5c01746e58f824f77af52c32fc2b7f7c49675a3665c35c548acc44f64f58",
+            "evidence": [
+              "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.22s",
+              "  \"inputs_digest\": \"e02234141bb28d95494c0d5bd62a3bd6ca6c1b2cfe852217e15db073d1f77ea5\",",
+              "      \"digest\": \"e4b3e414c7c4fb5104cd011924da6146bb5a29900efa375c2a740128025a4f69\","
+            ]
+          },
+          "content": {
+            "log": "/tmp/questpc3-zirella-lessons-content.log",
+            "sha256": "301ef04ad248ad412827fb4384ed87ccd7676dddeac98bade5b4d2e1a7ee7543",
+            "evidence": [
+              "test result: ok. 123 passed; 0 failed; 0 ignored; 0 measured; 152 filtered out; finished in 4.76s"
+            ]
+          },
+          "world": {
+            "log": "/tmp/questpc3-zirella-lessons-world.log",
+            "sha256": "d614b236c35e48e98e13f3b3a739137917222ff29441e8ad1924dcbb100f80b0",
+            "evidence": [
+              "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 79.78s"
+            ]
+          }
+        },
+        "inputs": {
+          "content/quests/shared-reward-callbacks.json": "de7ef7f5119ce89747cfd1c20176bd735a57e97da107caa03f735077c75beb63",
+          "content/quests/shared-reward-offers.json": "29a4cd37ea049ba473fa1ea6d5dfcf39143c420596ad89f6143cee019d9d39eb",
+          "tools/content-schema/quest-authoring/questpc3_npc_programs.py": "ae882996f4d19f10230b37ba0618fd508e45120614fb1f78c858c6205de7e7e9",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc3_zirella_lessons.rs": "9bededb1553da22294f16f787bca165ab6ee5346df444d6bb79e1f8924e2ee65"
+        },
+        "review": "Six paired monotone guarded progress writes; introductory and repeat offers read-only; original separate50XP callback unchanged; foreign NPC data preserved; no ground completion or other quest qualification claimed."
+      },
       "greeting_merge_02": {
         "own_greeting": {
           "log": "/tmp/questpc3-merged-own-greet-pg.log",
@@ -1680,6 +1766,146 @@
         "postgres": "Premerge blessing participant GREEN327.03s; next full-route test reruns the merged path. Whole quests remain IN_PROGRESS.",
         "clippy": "Premerge blessing implementation passed allfeatures/alltargets 13m56s; repeat after next production slice."
       },
+      "blessing_zirella_merge": {
+        "status": "GREEN",
+        "fmt": "PASS workspace fmt/check",
+        "sessions": {
+          "strict_check_clippy_units": 22522,
+          "zirella_pg": 6206,
+          "physical_rewards_pg": 23186,
+          "pilgrimage_pg": 90796,
+          "content_and_repository": 51086
+        },
+        "pin": {
+          "status": "PASS",
+          "log": "/tmp/questpc3-blessing-zirella-pin.log",
+          "sha256": "ed1accc3c9d979137c69267997335a1b6d08a80bcdd11931c9dab857b5ddb5bf",
+          "inputs_digest": "e8b3c1e823b5aa1df054ba86f7659cf9895c830d3b5f1717da103ac06efbad36",
+          "world_digest": "1aaf5e3b5400be0098e441e20a92ef55e1a222d210f87f640743ef3f4af4b2aa",
+          "bytes": 31101874
+        },
+        "logs": {
+          "fmt": {
+            "log": "/tmp/questpc3-blessing-zirella-fmt.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "evidence": []
+          },
+          "check": {
+            "log": "/tmp/questpc3-blessing-zirella-check.log",
+            "sha256": "3e3495c0d2aaf421dcc9bf44481554e1d58cafd894b36fc3c877c2bab0386377",
+            "evidence": [
+              "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5m 40s"
+            ]
+          },
+          "clippy": {
+            "log": "/tmp/questpc3-blessing-zirella-clippy.log",
+            "sha256": "7d8cc54aded236bd773c658786f79ae2b3bed3b2d27d06274b9e5851cf5138bd",
+            "evidence": [
+              "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 42.29s"
+            ]
+          },
+          "reward-units": {
+            "log": "/tmp/questpc3-blessing-zirella-reward-units.log",
+            "sha256": "1dd5385a91c7f96e34f20126264775c6ccb46372bf535db303c22c8e0cbf7a97",
+            "evidence": [
+              "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 260 filtered out; finished in 1.14s"
+            ]
+          },
+          "conditional-units": {
+            "log": "/tmp/questpc3-blessing-zirella-conditional-units.log",
+            "sha256": "d4147c285728447af0fbd16370b4d98064814eaf168a8785983062b1a1ccdc54",
+            "evidence": [
+              "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 258 filtered out; finished in 0.00s"
+            ]
+          },
+          "zirella-pg": {
+            "log": "/tmp/questpc3-blessing-zirella-zirella-pg.log",
+            "sha256": "ede53962a55304f27be708b1f8218aa7065ca140fbe9d1f44a91a9da1f4395cd",
+            "evidence": [
+              "QUESTPC3_ZIRELLA POSTGRES_ASSERTION_REACHED duration_ms=106131",
+              "QUESTPC3_ZIRELLA POSTGRES_CASE_COMPLETED duration_ms=110946",
+              "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2560 filtered out; finished in 110.97s"
+            ]
+          },
+          "rewards-pg": {
+            "log": "/tmp/questpc3-blessing-zirella-rewards-pg.log",
+            "sha256": "f50bd9e7b4724dc3d9e79d4c258dcf322e7d2bfd4fe1090d5cf5d27b58a56510",
+            "evidence": [
+              "QUESTPC3_BEGINNING_REWARDS POSTGRES_ASSERTION_REACHED before_shortfall duration_ms=141207",
+              "QUESTPC3_BEGINNING_REWARDS POSTGRES_ASSERTION_REACHED phase=legs duration_ms=141639",
+              "QUESTPC3_BEGINNING_REWARDS POSTGRES_ASSERTION_REACHED phase=fish duration_ms=141978",
+              "QUESTPC3_BEGINNING_REWARDS POSTGRES_ASSERTION_REACHED phase=zirella duration_ms=142207",
+              "QUESTPC3_BEGINNING_REWARDS POSTGRES_CASE_COMPLETED duration_ms=142996",
+              "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2560 filtered out; finished in 143.00s"
+            ]
+          },
+          "pilgrimage-pg": {
+            "log": "/tmp/questpc3-blessing-zirella-pilgrimage-pg.log",
+            "sha256": "f69dd2a51e8b63bc7e185352ca538a26c69c8743fede0805d55d2f2918ee4f43",
+            "evidence": [
+              "QUEST_L4_PILGRIMAGE POSTGRES_ASSERTION_REACHED greeting=Ok",
+              "QUEST_L4_PILGRIMAGE POSTGRES_CASE_COMPLETED duration_ms=143356 success=true",
+              "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2560 filtered out; finished in 143.36s"
+            ]
+          },
+          "content": {
+            "log": "/tmp/questpc3-blessing-zirella-content.log",
+            "sha256": "ecada2d6bf0f19aa311c1dc7ef4d25b56e3f6bf80a9224913181e152a6b1b164",
+            "evidence": [
+              "test result: ok. 123 passed; 0 failed; 0 ignored; 0 measured; 152 filtered out; finished in 6.39s"
+            ]
+          },
+          "world": {
+            "log": "/tmp/questpc3-blessing-zirella-world.log",
+            "sha256": "e552028b8278af03bc986f266a0582943576c3984efd185285ff253dd9cd8dec",
+            "evidence": [
+              "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 59.02s"
+            ]
+          },
+          "service-unit": {
+            "log": "/tmp/questpc3-blessing-zirella-service-unit.log",
+            "sha256": "e5e83d247d0adc4ec49add36e45eda1c198fe3e73ec6636b5633eebdf43d8984",
+            "evidence": [
+              "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 313 filtered out; finished in 0.00s"
+            ]
+          }
+        },
+        "postgres": "Zirella1/110.97s markers106131,110946ms; rewards1/143.00s completion142996ms; Pilgrimage1/143.36s completion143356ms success=true.",
+        "units": "Reward bindings2/1.14s; conditional+tag4; canonical/curated blessing boundary1. Pure units do not claim PostgreSQL.",
+        "content": "123/6.39s; repository5/59.02s.",
+        "clippy": "Five crates/all features/all targets -Dwarnings PASS42.29s on recovered retry.",
+        "recovery": "Filesystem exhaustion caused initial Clippy/tempdir, repository incremental-directory and service fingerprint failures (os error28), plus sandbox startup bwrap ENOSPC. Recovered with only obsolete unlocked incremental snapshots, newest/active retained; auto-review permitted the same cleanup outside the sandbox because it could not start. All failed checks reran and passed. No profile/linker settings or tests changed.",
+        "validated_inputs": {
+          "apps/game-server/migrations/1096_quest_blessing_grants.sql": "91f88afa30a1c04e56a0ddd514bd58976c95a78d0092b2fa79e9fa5e9820ac92",
+          "content/content.lock.json": "3688399d34d7d93fda709cf30f03bcb9f72830d63f10c42db0a66dad288b7de1",
+          "content/dialogues/quests/shared-reward-greetings.json": "3a93ddaff17120b0d1f6411d0620c7c976ab0aba990d41e2c7f4295b7a7b3595",
+          "content/manifest.json": "d571eca059134a02cfceb1f920ed53003133e0b6f320f4f65f66c826c8c8295f",
+          "content/quests/shared-reward-callbacks.json": "4947f0c8687056fa76f934c7055d5ae7f1a390f08e54b0d501deb00b81b7ce47",
+          "content/services/blessings/blessing-00000-00007.json": "67e57bd7249de46f408333646c6bf851afa1dae858a0673f1e763bd3412bab4e",
+          "content/services/blessings/index.json": "be4aceffe7a995d3203fe786dea64b8290cdfd0c96db5bdc7ad3c188193bc1bf",
+          "content/world/pins/oteryn.json": "d71f807085e07b0e0574408b849a1f1427ec71554027c426c383909429d9d9f1",
+          "crates/gameplay/content/src/content/blessing_catalogue.rs": "2ac4a6d67d7171519e4dcc97cd64af85bb12b95c917a2e055726da051e15a8cf",
+          "crates/gameplay/content/src/content/blessing_catalogue_tests.rs": "6f21cade5197eebbb2db008681e6db95bb87c5475142ec8378941ce102e190f8",
+          "crates/gameplay/dispatch/src/gameplay_transport/npc_command/quest_dialogue.rs": "2ce75e8961d124fa48bdd2e9fa44f93c84f10b58db6713053f0fe15d24adbdfa",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_l4_pilgrimage.rs": "9ea981d62455f8f3fb2e5f36a6ad6fbe5506f938ec1abf48b4343eacbbc60e02",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc3_beginning_rewards.rs": "82d87d87ddaa4234ff1e737de6eb6d97790003c4f6360ed56eab83c0447efcf2",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc3_npc_programs.rs": "59f7e0f26ed14c75d625d5acbe1419d957a2dafaeaad3623f5d91afd31421b98",
+          "crates/gameplay/durability/src/durability/character_revision_sequencer.rs": "81564651e536a73798ba5c942149cf61ce83309dfafbd1f685416860b7334abb",
+          "crates/gameplay/durability/src/durability/quest_state/writer.rs": "50171736f2df50f5f21abc96694201cc9c4bba474e96723110701843aa8a6687",
+          "crates/gameplay/durability/src/durability/reward_claim_mint/quest.rs": "09e14e0a8e10d4afac6321a15b5de70c545fb446f1a4ca2a30ef9602afeae07a",
+          "crates/gameplay/quests/src/quest/conditional_tests.rs": "b0564e199dff2ad74169263733aa3fdbbde30372c6404b740533e51f3c9a9632",
+          "crates/gameplay/quests/src/quest/mod.rs": "e7470c2684ba82115b91667408c51f57b8f23415637c608ad7da472e02e0c48b",
+          "crates/gameplay/quests/src/quest/reward_callbacks.rs": "97af36c9a8482baf41b93221ce51eb9412516bec087374a7242b384c2f4dcad1",
+          "deploy/synology-game/preprod-topology.toml": "1744ba05db3054d9a72f32a40d3976c2bb3c87475cb38ebe963b542d21460d50",
+          "tools/content-migration/validate_world_project_v2_to_tree.py": "d2eaee4042d0e683ea1c955c7198c23ba9e039202510e8d1e5da70deaa908aaf",
+          "tools/content-migration/world_project_v2_to_tree.py": "bd12dff9ac7ec421f7c6ed37240c0685acd50baf2976bfcf97fa9ef19a2be988",
+          "tools/content-schema/quest-authoring/questpc3_npc_programs.py": "9be4d6801aab5744246b270fb56750c6c053387e24c02bfe11324f61bf1ddbe8",
+          "tools/content-schema/quest-authoring/questpc3_pilgrimage.py": "abc05b2a090b9c426dba66ac826ca48a8af4a31683bbb71aec5863450a1b2dbf",
+          "tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json": "6ca3f489a8803b815079b1bde687c1843ee640123120762c8a33eb50b8d8099e",
+          "tools/content-schema/quest-authoring/test_questpc3_pilgrimage.py": "3f725e5a60328b84757cfa61fdef478bc820bec56de5f83473b3014795d47768"
+        },
+        "review": "Generic canonical Service/NPC blessing match, held provenance preservation, current transaction-aware Premium gate, full reward-term binding hashed with distinct tag8. Existing conditional7 and both tutorial callback/reward cohorts retained and real-PG verified. Five whole entries remain active."
+      },
       "pilgrimage_route_03": {
         "status": "PG_GREEN_FINAL_CHECKS_RUNNING",
         "red": {
@@ -1729,9 +1955,9 @@
       "fix": "Native receipts contain actual counter changes after locked guard evaluation; preserve SQL invariants and the original mission epoch."
     },
     "refreshed_dependency_heads": {
-      "qengine2": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
-      "questl2": "e5a4d6e7e46e7bf3a6754b563fd8647900de7680",
-      "questpc2": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
+      "qengine2": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
+      "questl2": "c48ad3674cfa7138f3b49c4b199b0916043b701a",
+      "questpc2": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
       "questpc4": "db95b72d3d8659a9f0a884f8169ea9da3a39c9fe",
       "questpc5": "f78cf159d8a2eef2703091197ea661d26537137a",
       "questpc6": "be812420e3c20d9dd8ae6c3c23a9c4acb942ceda",
@@ -1743,7 +1969,7 @@
       "wvar": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
     },
     "shared_feature_owner": "questpc3: reuse existing implementations; implement every remaining engine, binding, NPC, Item and world-mechanic gap locally. No external dependency wait.",
-    "updated_at": "2026-11-07T01:39:02.972216+00:00",
+    "updated_at": "2026-11-07T02:18:45.787570+00:00",
     "publication_native_counters_01": {
       "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
       "pushed": true,
@@ -1804,7 +2030,50 @@
         "Blossom Bag25780 atNightmare8",
         "tooth fairy presents and collection, tired tree/grumpy stone/map and treasure branches",
         "night raven herb bush timer source bug:60*30*1000 seconds; any30minute correction must be explicit"
-      ]
+      ],
+      "tutorial_physical_followup": {
+        "facts": [
+          "Pinned imports/canary/items-xml/items.xml:20960-20966 at04b83b512114bfd888000d6e1433ed8ecaec7c5b: Cockroach corpse7763,8slots,90seconds,weight60000,decayto0.",
+          "Crystal201189f data-global/monster/vermins/cockroach.lua:19,62-64: corpse7763, guaranteed one cockroach leg.",
+          "Crystal201189f appearances.dat SHA25617a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1:7763 container5/unmove14/corpse42 true, no cumulative6 ortake18;7882 no cumulative6/take18 true;3562 no cumulative6/take18 true.",
+          "Canonical Beginning recipe selected five Wood deliveries; source NPC explains ground branch/cart but recovered tree/cart hooks absent. Preserve selected5count in authored ground delivery and separate source reward."
+        ],
+        "reuse": "Root primal_corpse_items.py already provides corpse_definition; newly inspected questpc2 aed0b1aac/f1c59a37c general source corpse overlays, reward boss independence. Reuse existing Item/loot owner; no need import unrelated boss admissions.",
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/appearances.dat",
+        "next_test_correction": "Physical legs are nonstackable. Prior hand-in test seeded quantity2 in one fixture row; correct to three distinct genuine instances in future physical tutorial batch without weakening exact-total/shortfall/replay checks. Current source hand-in still consumes exact quantities; no claim that fixture rows prove native loot.",
+        "food_creature_sources": {
+          "pin": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "root_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/mammals/",
+          "rabbit.lua": {
+            "sha256": "981710f324b97ed2187c7ec5dc9193a229564d31b50d2bf8b97bea12963e46db",
+            "lines": "5:0XP;32:corpse6017;77:meat3577 chance85620/100000,max2"
+          },
+          "deer.lua": {
+            "sha256": "110f43e0b0cba4e46ec0d749b58f06809492439b80e05848c884ccfc819ff609",
+            "lines": "5:0XP;33:corpse5970;78:meat3577 chance80000,max4;79:ham3582 chance50000,max2"
+          }
+        },
+        "corpse_item_closure": {
+          "cockroach": [
+            7763
+          ],
+          "rabbit": [
+            6017,
+            4301,
+            4302,
+            4303
+          ],
+          "deer": [
+            5970,
+            4016,
+            4017,
+            4018
+          ],
+          "canonical_state": "All9 currently materializable=false. Pinned XML gives exact capacities/durations/targets/weights. Crystal appearance flags checked for all9; initial roots immovable/no pickup, later stages movable/pickupable;4302/4303 notcontainers,4301 notcorpseflag. Preserve facts, do not infer them from other species.",
+          "reuse": "questpc2 primal_corpse_items.py:113 corpse_definition helper is the reusable extraction missing locally; selective backport helper/refactor only (do not import unowned boss data). Root corpse overlay uses same durable Item semantics and existing ordinary kill writer.",
+          "fixture": "For nonstackable legs seed[(LEGS,1),(LEGS,1)], insert third atordinal3. Original no-hand-in negative must distinguish legitimate ordinary loot from a synthetic Quest grant when admission is added; retain no-stage6/no-hand-in/noXP100 boundaries, replay and all ownership checks."
+        }
+      }
     },
     "previous_batch": {
       "entries": [
@@ -1995,7 +2264,54 @@
           ]
         },
         "qualification": "No whole quest qualified by this mechanism batch.",
-        "publication": "Commit and fast-forward push after these recorded checks."
+        "publication": {
+          "implementation": "262618b3c",
+          "merge": "54b7759e64e8feeec3dd3d48a8df39f8a1c6e363",
+          "status": "PUSHED_REMOTE_VERIFIED"
+        }
+      },
+      "zirella-lessons-01": {
+        "id": "zirella-lessons-01",
+        "phase": "GREEN",
+        "scope": "Six source instruction callbacks and resumable offers, actual NPC_TALK path, no manufactured ground delivery or XP. Existing reusable shared callback engine.",
+        "entries": [
+          "oteryn:quest.the_beginning_quest"
+        ],
+        "whole_entry_qualifications": 0,
+        "red_log": "/tmp/questpc3-zirella-lessons-red.log",
+        "implementation": "Six source callbacks set greet/log1..6 atomically; source keyword offer plus per-stage returning greetings and read-only explain offer. No new owner, schema, rewards or synthetic delivery.",
+        "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zirella.lua#L100",
+        "red": {
+          "log": "/tmp/questpc3-zirella-lessons-red.log",
+          "sha256": "50c557889d36798850ed6a9509c077b93760e5c4e8c90022958a7eca608c6cee",
+          "postgres_marker_ms": 100092,
+          "duration_seconds": 100.38,
+          "failure": "actual first source lesson left progress0 instead of1"
+        },
+        "source_line_range": "Crystal201189f npc/zirella.lua:100-143",
+        "green": {
+          "log": "/tmp/questpc3-zirella-lessons-green.log",
+          "sha256": "26f7fa6b23aafe644204b35bd086762f962207b23d5e2d8e22057e969170635c",
+          "postgres_marker_ms": 96228,
+          "completion_ms": 98268,
+          "duration_seconds": 98.27,
+          "evidence": "All six paired source flags;6exact receipt rows;0XP; reopen/explain preserves count."
+        },
+        "publication": "Commit and fast-forward push now; retain independent next-batch test-only work unstaged."
+      },
+      "blessing-zirella-merge": {
+        "id": "blessing-zirella-merge",
+        "phase": "GREEN",
+        "entries": [
+          "oteryn:quest.the_beginning_quest",
+          "oteryn:quest.pilgrimage_of_ashes"
+        ],
+        "whole_entry_qualifications": 0,
+        "local_commit": "c52468d50",
+        "incoming": "01a2019f667a6e1e645a655597e0f4987137e493",
+        "scope": "Merge green Zirella6instructions with generic canonical quest blessing/Premium/reward-value binding support;45callbacks retained. Material source merge requires combined verification before commit/push.",
+        "publication": "Commit merge and fast-forward push immediately; native physical tests remain separate unstaged RED batch.",
+        "checks": "Five changed crates strict check/Clippy; reward-binding/parser/conditional tag units; targeted real PG Zirella/rewards/Pilgrimage; content123/repository5; final pin check."
       }
     },
     "completed_batches": [
@@ -2110,6 +2426,38 @@
           }
         },
         "combined_proof": "checks.tutorial_rewards_merge"
+      },
+      "01a2019f6": {
+        "scope": "Generic quest blessing grant under current transaction-aware Premium; stable reward-value binding tag8 (conditional remains7); regular Services and source callbacks. All Zirella lesson callbacks retained.",
+        "proof": {
+          "status": "GREEN",
+          "red": {
+            "log": "/tmp/questpc3-pilgrimage-red.log",
+            "postgres_marker": "QUEST_L4_PILGRIMAGE POSTGRES_ASSERTION_REACHED greeting=NoConversation",
+            "duration_seconds": 151.21
+          },
+          "check": "PASS 44.00s /tmp/questpc3-pilgrimage-check.log",
+          "unit": "PASS 2 reward binding/model tests; PASS 2 authoring tests",
+          "green": {
+            "log": "/tmp/questpc3-pilgrimage-green.log",
+            "duration_seconds": 327.03,
+            "marker": "QUEST_L4_PILGRIMAGE POSTGRES_CASE_COMPLETED duration_ms=327026 success=true",
+            "passed": 1
+          },
+          "clippy": "PASS all features/targets 13m56s /tmp/questpc3-pilgrimage-clippy.log",
+          "migration_claim": "1096 rechecked origin/main 91afbe0ba1; no open PR collision",
+          "scope": "First free regular blessing slice; whole quest remains IN_PROGRESS. Complete route/MINT/journal/native placement proof follows.",
+          "service_unit": "PASS 1 canonical/curated boundary test /tmp/questpc3-pilgrimage-service-unit.log",
+          "service_roundtrip": "PASS (1282 NPC,2747 bindings,393 Services), strict original389 plus4; /tmp/questpc3-pilgrimage-service-validation-green.log",
+          "regeneration": "PASS targeted world_project_v2_to_tree.py; /tmp/questpc3-pilgrimage-tree-regenerate.log",
+          "pin_refresh": {
+            "status": "PASS",
+            "log": "/tmp/questpc3-pilgrimage-pin-refresh.log",
+            "inputs_digest": "e8b3c1e823b5aa1df054ba86f7659cf9895c830d3b5f1717da103ac06efbad36",
+            "world_digest": "1aaf5e3b5400be0098e441e20a92ef55e1a222d210f87f640743ef3f4af4b2aa"
+          }
+        },
+        "resolution": "Three-way callback keys and metadata; preserve both green cohorts. Combined validation required before merge commit/push."
       }
     },
     "remote_metadata_proofs": {
@@ -2232,6 +2580,26 @@
           }
         },
         "rule": "Metadata-only delta from025936c3d; no source/data or validation inputs changed."
+      }
+    },
+    "next_batch_preparation": {
+      "id": "tutorial-native-corpses-01",
+      "scope": "Three source corpse/ordinary loot cases for Cockroach/Rabbit/Deer. Test-only parent and new child changes left UNSTAGED until current Zirella batch is committed/pushed.",
+      "phase": "RED_PROVEN; implementation not applied",
+      "log": "/tmp/questpc3-tutorial-corpse-red.log",
+      "session": 71338,
+      "security": "Retains no unstarted counter/no hand-in stage. Distinguishes ordinary source loot from synthetic Quest grant. Source legs are nonstackable; check one physical instance per guaranteed leg. Real native lethal captures, duplicate capture, double drain, stale fenced context retained.",
+      "red": {
+        "duration_seconds": 55.2,
+        "cases": 3,
+        "failure": "source corpse_item_inadmissible; Cockroach0 physical bodies vs1, Rabbit/Deer no ordinary loot queue",
+        "sha256": "985957da56ff08d290e2e5974d30bbc8a9b200f98ab19d07b6d8f695c6595322"
+      },
+      "drafts": {
+        "admission": "/tmp/questpc3_tutorial_item_admission.py",
+        "reused_helper": "/tmp/questpc3-primal-helper-reused.py",
+        "preview": "Read-only outputs(previewroot) passed:5Itemshards,1557916bytes; pinned XML policies9corpse stages; sourceflags3portableItems checked. No repository Item production change yet.",
+        "application": "After material merge is GREEN/pushed, backport helper/refactor, copy admission module, call it from existing questpc3_item_admission.apply_admissions (materializer+roundtrip already share that seam). Correct leg fixture to2distinct rows+thirdordinal3, preserve shortfall/replay/XP amount checks. Regenerate actual data via repo tools; native loot facts and world pins only repo tooling."
       }
     }
   }
