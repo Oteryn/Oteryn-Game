@@ -114,8 +114,8 @@ fn scenario() -> Result<(), String> {
     })?;
     // docs/reference/tibia-manual/combat.md:262: native filters use the existing highscore wire for both Drome lists.
     for (category, label) in [
-        (13, "Tibiadrome lifetime"),
-        (14, "Tibiadrome current rotation"),
+        (14, "Tibiadrome lifetime"),
+        (17, "Tibiadrome current rotation"),
     ] {
         link.highscores_request(Action::Filter {
             category,

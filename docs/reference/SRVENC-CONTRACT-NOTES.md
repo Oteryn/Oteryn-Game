@@ -1098,3 +1098,102 @@ shared historical lifecycle-at-cut reader (manual combat.md:263); it and the
 compiled fixture are checkpointed before production caller correction. Actual
 cut tests cover event history, not a simulated fortnight crossing.
 Final fmt PASS14.912s, architecture PASS3.540s, registry-fragments check PASS.
+
+## SRVENC final main composition and allocation correction
+
+Merged main1ae39c7fb (QENGINE2/QBASE0999-1008) in73128bf59. No1200-1205
+copy exists. The merged generator preserves the eight incoming quest B3 regions,
+all79 Sugar Terrain/projectile facts, and both native Item cohorts. QENGINE2's
+53 and Sugar's13 new keys are disjoint; the independent full-profile speed
+assertion remains exact at3676 and checks every original raw attribute. The
+53-item QENGINE2 proof and unknown-speed set remain unchanged.
+
+The earlier13/14 allocation is SUPERSEDED: HIGHSCORES0 section3 reserves13
+Loyalty,14 Drome Score,15 Taint and16 Phosphorus. Lifetime Drome uses existing14;
+current rotation allocates next-free17 (offset0). Command14/capability0009 are
+unchanged. Native Windows combo indices map through explicit category IDs; both
+directions and reserved gaps are tested. Game public encoding admits only
+1-12,14,17. Platform consumer rollout of the extra subjects remains explicit in
+PUBLIC_PROJECTIONS_V1; no Platform pages or E11 native-artifact adapter changed.
+
+Migration1107 retires incorrect13/14 snapshot tokens via normal guarded deletes,
+preserves public revision floors, and excludes retired13 metadata from resync.
+The actual PostgreSQL regression restores the prior schema/source, applies the
+real migration, and checks guards, owner, ACL, search_path, definer mode and
+wrapper preservation; it also verifies source scores remain unchanged.
+No immutable header/row is rewritten and no guard is disabled.
+
+The imported1150 candidate is absent from origin/main1ae39c7fb and remains
+unreleased ENCX branch work. Its unused catalogue UPDATE grant is corrected
+in place to INSERT only, matching the immutable scoped publisher. This is not
+a new migration allocation; no1151 or range exception is used. Earlier notes
+about preserving the candidate checksum are superseded by this pre-integration
+correction. The strict test retains UPDATE/DELETE/TRUNCATE denials and additionally
+checks column UPDATE, REFERENCES and MAINTAIN; its real RED was13.392s.
+The final grant/publication GREEN follows below after execution.
+
+## SRVENC validation after merged content
+
+The owner replaced the full reverse-dependency test rule with own mechanic
+checks plus workspace compilation and CI full suites. The old full run was
+stopped as directed (4589 passed; ten substantive failures grouped and fixed;
+three transient in-progress-manifest failures rerun GREEN; four interrupted).
+No test code was weakened, ignored or deleted.
+
+Workspace cargo check --workspace --all-targets PASS200.589s after five
+SharedOwner borrow adaptations in incoming QENGINE2 callers. Strict Clippy
+15changed crates, all-targets/all-features, -Dwarnings PASS423.288s.
+Merged repo-tool pin-refresh PASS138.093s; pin-check PASS161.208s (format8,
+32879502-byte bundle); duplicate migrations PASS0.370s. Reused main's owning
+client pin-refresh implementation rather than introducing another generator.
+Architecture PASS3.691s; fmt --check PASS15.063s.
+
+Focused mechanic batch:39 positive checks GREEN644.834s, with only the now
+corrected1150 candidate privilege mismatch RED. Actual PostgreSQL18.6 cases:
+Sugar full source entrance/Instance/corpse/personal reward/return PASS150.784s;
+scoped catalogue replay/conflict/current-reader PASS173.497s; production
+Instance corpse/personal custody PASS123.361s; physical boss-to-personal Item
+custody PASS91.977s. Drome genuine auction/public-profile proofs PASS43.367s
+and43.467s; migration1107 PASS9.868s; three waves PASS51.895s; reserved victory
+PASS76.197s; full raffle share PASS70.658s; irregular source hall PASS108.116s;
+current-HP corpse effect PASS75.500s; grace cleanup PASS80.173s.
+Focused library/protocol/UI53tests PASS82.966s (272.246s including build).
+Native client play/map8tests PASS9.677s (32.433s including build), including
+actual Highscores presentation and all four previous client pin regressions.
+The zero-test binary selector attempt is not counted as validation.
+
+W17 still cannot be called an authentic full production encounter: the pinned
+Crystal/Canary trees contain no native profiles for Murmillion, Scissorion,
+Hoodinion, Mearidion or Domestikion; combat.md:297 expressly leaves their
+HP/damage and wave difficulty curve unspecified. The existing practice pool
+and working scaling are not relabelled as source-qualified production data.
+All implemented native mechanics and presentation above are positively tested;
+no authentic Creature statistics or stronger drunk intensity was invented.
+
+## SRVENC final gate and row result
+
+The candidate grant correction is GREEN: strict staged boss privilege/dispatch
+case PASS6.607s; the same real scoped publication/current-reader/replay/conflict
+case PASS176.208s with UPDATE unavailable (2/2,176.211s runtime).
+Final cargo check --workspace --all-targets PASS204.573s; strict15-crate
+Clippy all-targets/all-features -Dwarnings PASS208.360s; fmt --check PASS15.011s;
+duplicate-migration check PASS0.359s; registry fragments check PASS.
+The earlier39 positive mechanic cases,53 focused library/protocol/UI cases and
+8 native client cases remain GREEN; no unrelated full suite was restarted.
+
+W02 DONE: source Sugar entrance/owned Instance, exact corpse qualification,
+physical corpse projection, scoped catalogue and replay/current fence proofs.
+W03 DONE: unchanged production reward-boss lethal settlement through personal
+physical chest to live Item custody, quantity and replay invariants.
+W17 BLOCKED on authentic production data, not on the implemented mechanics:
+`dispatch/src/gameplay_transport/tibiadrome.rs:700` still selects admitted
+Svargrond practice opponents. The five exclusive Creature profiles and their
+HP/damage/wave curve are absent from pinned donors; `entities/src/carrier/
+tibiadrome.rs:53` labels its working scale as an Oteryn choice, and manual
+combat.md:297 explicitly records the numeric source gap. Full source-native
+Drome cannot be claimed until those profiles/scaling are supplied and admitted.
+
+Final allocations:1100,1101,1103,1104,1105,1106,1107;1102 and1108-1109 unused.
+Existing unmerged1150 corrected, no1151 allocated. Existing Highscores14 reused,
+new17 allocated,13/15/16 reserved. Existing command14/capability0009 reused.
+Terrain8614-8692 and World Bundle format8 retained; all pins were generated.

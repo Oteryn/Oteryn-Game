@@ -110,15 +110,19 @@ pub fn activated_charm_points() -> Option<Vec<BestiaryCharmEntry>> {
 /// HIGHSCORES0 §3 row 12 and Crystal `game.cpp:434`: Boss Points.
 pub const BOSS_POINTS_CATEGORY: u8 = 12;
 /// docs/reference/tibia-manual/combat.md:262: cumulative levels and the current two-week rotation.
-pub const TIBIADROME_LIFETIME_CATEGORY: u8 = 13;
-pub const TIBIADROME_ROTATION_CATEGORY: u8 = 14;
+pub const TIBIADROME_LIFETIME_CATEGORY: u8 = 14;
+pub const TIBIADROME_ROTATION_CATEGORY: u8 = 17;
 const DROME_ROTATION_MS: i64 = super::tibiadrome::ROTATION_SECONDS as i64 * 1000;
 
-/// Categories 1-10 and 12-14 are always served; category 11 requires an activated Charm point
+/// Categories 1-10, 12, 14 and 17 are always served; category 11 requires an activated Charm point
 /// source.
 pub fn served_category(category: u8) -> bool {
     (1..=10).contains(&category)
-        || (BOSS_POINTS_CATEGORY..=TIBIADROME_ROTATION_CATEGORY).contains(&category)
+        || category == BOSS_POINTS_CATEGORY
+        || matches!(
+            category,
+            TIBIADROME_LIFETIME_CATEGORY | TIBIADROME_ROTATION_CATEGORY
+        )
         || (category == 11 && activated_charm_points().is_some())
 }
 
@@ -161,7 +165,7 @@ impl SnapshotCatalogues {
         })
     }
 
-    /// The categories one publication writes: 1..=10 and 12..=14, plus 11 with a Charm source.
+    /// The categories one publication writes: 1..=10, 12, 14 and 17, plus 11 with a Charm source.
     fn published_categories(&self) -> Vec<i32> {
         let mut categories: Vec<i32> = (1..=10).collect();
         if self.charm_points {
@@ -343,7 +347,12 @@ impl DurabilityRoot {
         snapshot_id: u64,
         character: CharacterId,
     ) -> Result<SnapshotPage> {
-        if !(1..=TIBIADROME_ROTATION_CATEGORY).contains(&category) {
+        if !(1..=12).contains(&category)
+            && !matches!(
+                category,
+                TIBIADROME_LIFETIME_CATEGORY | TIBIADROME_ROTATION_CATEGORY
+            )
+        {
             return Err(SnapshotError::NotSupported);
         }
         if page == 0 || (page > 1 && snapshot_id == 0) {
@@ -852,7 +861,7 @@ async fn publish_cut(
     // Read due state while holding the same per-category locks used by publication. A stale
     // concurrent RR cut loses with a typed conflict rather than publishing a second generation.
     if only_if_due {
-        let recent = sqlx::query("SELECT count(*) AS recent,min(s.computed_at_ms) AS oldest FROM game_world_highscore_heads h JOIN game_world_highscore_snapshots s ON s.snapshot_id=h.current_snapshot_id WHERE h.world_id=encode($1,'hex')::uuid AND h.category=ANY($2::int[]) AND s.computed_at_ms>$3 AND (h.category<>14 OR s.computed_at_ms/$4=$5/$4)")
+        let recent = sqlx::query("SELECT count(*) AS recent,min(s.computed_at_ms) AS oldest FROM game_world_highscore_heads h JOIN game_world_highscore_snapshots s ON s.snapshot_id=h.current_snapshot_id WHERE h.world_id=encode($1,'hex')::uuid AND h.category=ANY($2::int[]) AND s.computed_at_ms>$3 AND (h.category<>17 OR s.computed_at_ms/$4=$5/$4)")
             .bind(world.as_bytes().as_slice()).bind(&categories)
             .bind(computed_at_ms.saturating_sub(SNAPSHOT_INTERVAL_MS)).bind(DROME_ROTATION_MS).bind(computed_at_ms).fetch_one(&mut **tx).await?;
         if recent.try_get::<i64, _>("recent")?
@@ -974,7 +983,10 @@ async fn read_in_transaction(
     // docs/reference/tibia-manual/combat.md:263: auctioned Characters leave Drome
     // leaderboards immediately. Like account detachment, this withdraws captured rows;
     // it never reranks or fills gaps in a retained snapshot, or changes other categories.
-    let drome = (TIBIADROME_LIFETIME_CATEGORY..=TIBIADROME_ROTATION_CATEGORY).contains(&category);
+    let drome = matches!(
+        category,
+        TIBIADROME_LIFETIME_CATEGORY | TIBIADROME_ROTATION_CATEGORY
+    );
     let rows = sqlx::query("SELECT uuid_send(character_id) AS character_id,rank,name,vocation,level,value_primary,value_progress FROM game_world_highscore_rows hs WHERE snapshot_id=$1 AND filter=$2 AND NOT game_account_closure_detached(character_id) AND (NOT $5::boolean OR EXISTS(SELECT 1 FROM game_character_roots live WHERE live.character_id=hs.character_id AND live.lifecycle=1)) AND position>$3 AND position<=$4 ORDER BY position LIMIT 50")
         .bind(id).bind(filter).bind(start).bind(end).bind(drome).fetch_all(&mut **tx).await?
         .into_iter().map(stored_row).collect::<Result<Vec<_>>>()?;
@@ -1021,9 +1033,12 @@ mod category_set_tests {
         assert!(served_category(10));
         assert!(!served_category(11));
         assert!(!served_category(0));
-        assert!(served_category(13));
+        assert!(!served_category(13));
         assert!(served_category(14));
         assert!(!served_category(15));
+        assert!(served_category(17));
+        assert!(!served_category(18));
+        assert!(!served_category(16));
         assert_eq!(BOSS_POINTS_CATEGORY, 12);
     }
 }

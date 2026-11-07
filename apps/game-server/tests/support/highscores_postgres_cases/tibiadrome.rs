@@ -103,7 +103,7 @@ fn tibiadrome_projection_consumer_withdraws_auction_rows_paging_and_own_rank() -
         let target = CharacterId::decode(&generated(350))
             .map_err(|error| format!("native snapshot initial refresh/read: {error:?}"))?;
         let mut captured = Vec::new();
-        for category in [13, 14] {
+        for category in [14, 17] {
             let p = h
                 .root
                 .read_highscore_page(world(), category, None, 1, 0, target)
@@ -310,8 +310,9 @@ fn tibiadrome_native_profile_withdrawal_keeps_public_highscore_retries_identical
         assert_eq!(profile_before.character_id, target_text);
         assert!(profile_before.profile.is_some());
         let mut public_captured = Vec::new();
-        for category in [13, 14] {
-            let held: Vec<_> = (1..=14)
+        for category in [14, 17] {
+            let held: Vec<_> = (1..=12)
+                .chain([14, 17])
                 .filter(|c| *c != category)
                 .map(|c| format!("{world_text}:{c}"))
                 .collect();
@@ -528,9 +529,9 @@ fn tibiadrome_highscores_publish_lifetime_current_rotation_and_private_own_row()
             .refresh_highscore_schedule(world(), complete_catalogues()?, true)
             .await
             .map_err(debug)?;
-        assert!(published.snapshots.iter().any(|s| s.category == 13));
         assert!(published.snapshots.iter().any(|s| s.category == 14));
-        let lifetime = page(h, 13, None, 1, 0).await?;
+        assert!(published.snapshots.iter().any(|s| s.category == 17));
+        let lifetime = page(h, 14, None, 1, 0).await?;
         assert_eq!(
             lifetime.rows.len(),
             5,
@@ -551,7 +552,7 @@ fn tibiadrome_highscores_publish_lifetime_current_rotation_and_private_own_row()
             (&generated(300), 22),
             "lifetime follows the Character across Worlds and excludes future rotations"
         );
-        let current = page(h, 14, None, 1, 0).await?;
+        let current = page(h, 17, None, 1, 0).await?;
         assert_eq!(current.rows.len(), 5);
         assert_eq!(
             current.rows[0].character_id.as_bytes(),
@@ -570,7 +571,7 @@ fn tibiadrome_highscores_publish_lifetime_current_rotation_and_private_own_row()
             current.own_row.as_ref().map(|r| (r.rank, r.value.0)),
             Some((5, 4))
         );
-        for category in [13, 14] {
+        for category in [14, 17] {
             let HighscoresReply::Result(bytes) = client_reply(h, category, 1, 1, 0).await? else {
                 return Err("Drome query through the session handler was refused".into());
             };
@@ -586,10 +587,10 @@ fn tibiadrome_highscores_publish_lifetime_current_rotation_and_private_own_row()
             .await
             .map_err(debug)?;
         assert_eq!(
-            page(h, 14, None, 1, current.snapshot.snapshot_id).await?,
+            page(h, 17, None, 1, current.snapshot.snapshot_id).await?,
             current
         );
-        assert_eq!(page(h, 14, None, 1, 0).await?.rows[0].value.0, 8);
+        assert_eq!(page(h, 17, None, 1, 0).await?.rows[0].value.0, 8);
         Ok(())
     })
 }

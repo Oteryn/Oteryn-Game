@@ -7,9 +7,22 @@ fn tibiadrome_highscore_filters_decode_and_render_native_rankings()
 -> Result<(), Box<dyn std::error::Error>> {
     let mut panel = HighscoresPanel::default();
     panel.selected = true;
+    for category in [13, 15, 16] {
+        assert!(
+            highscores::request(
+                &mut panel,
+                Action::Filter {
+                    category,
+                    vocation: 0
+                }
+            )
+            .is_none(),
+            "Reserved category must remain unavailable in Game Highscores"
+        );
+    }
     for (category, label) in [
-        (13, "Tibiadrome lifetime"),
-        (14, "Tibiadrome current rotation"),
+        (14, "Tibiadrome lifetime"),
+        (17, "Tibiadrome current rotation"),
     ] {
         let command = highscores::request(
             &mut panel,
@@ -231,4 +244,20 @@ fn open_key_ignores_repeat_release_and_other_modifiers() -> Result<(), Box<dyn s
         false
     )]));
     Ok(())
+}
+
+#[test]
+fn native_combo_selection_preserves_reserved_category_gaps() {
+    assert_eq!(highscores::CATEGORIES.len(), highscores::CATEGORY_IDS.len());
+    for (index, category) in highscores::CATEGORY_IDS.into_iter().enumerate() {
+        assert_eq!(highscores::category_for_selection(index), Some(category));
+        assert_eq!(highscores::category_selection(category), Some(index));
+    }
+    assert_eq!(highscores::category_for_selection(12), Some(14));
+    assert_eq!(highscores::category_for_selection(13), Some(17));
+    assert_eq!(highscores::category_for_selection(14), None);
+    assert_eq!(highscores::category_for_selection(usize::MAX), None);
+    for category in [0, 13, 15, 16, 18, u32::MAX] {
+        assert_eq!(highscores::category_selection(category), None);
+    }
 }

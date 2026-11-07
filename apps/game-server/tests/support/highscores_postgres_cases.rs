@@ -38,6 +38,9 @@ use std::time::Instant;
 #[path = "highscores_postgres_cases/tibiadrome.rs"]
 mod tibiadrome;
 
+#[path = "highscores_postgres_cases/category_allocation.rs"]
+mod category_allocation;
+
 struct Formula;
 impl BuildFormula for Formula {
     fn required(&self, _: &str, _: usize, _: u16) -> Option<u64> {
@@ -214,7 +217,7 @@ fn committed_native_sources_cover_every_category_without_source_writes() -> Test
         assert_eq!(ids.len(), 14);
         assert_eq!(
             ids.iter().map(|s| s.category).collect::<Vec<_>>(),
-            (1..=14).collect::<Vec<_>>()
+            (1..=12).chain([14, 17]).collect::<Vec<_>>()
         );
         assert!(ids.iter().all(|s| s.source_cut == ids[0].source_cut));
         for category in 1..=9 {
@@ -507,7 +510,7 @@ fn world_category_token_isolation_empty_world_and_query_boundaries() -> TestResu
                 Err(SnapshotError::SnapshotExpired)
             ));
         }
-        for category in [0, 15, 16, 255] {
+        for category in [0, 13, 15, 16, 18, 255] {
             assert!(matches!(
                 h.root
                     .read_highscore_page(world(), category, None, 1, 0, asking())
@@ -767,7 +770,7 @@ fn account_representatives_and_earned_charm_points_use_native_sources() -> TestR
         assert_eq!(charms.rows[0].character_id, asking());
         assert_eq!(charms.rows[0].value, (25, 0));
         assert!(charms.rows[1..].iter().all(|r| r.value == (0, 0)));
-        assert!(page(h, 15, None, 1, 0).await.is_err());
+        assert!(page(h, 13, None, 1, 0).await.is_err());
         // Projection readability does not make the synthetic roots eligible for authority.
         // Preserve the exact guard that rejected the original fixture ordering.
         let seal = h.recovery.seal_current().map_err(debug)?;
@@ -991,7 +994,7 @@ fn account_representatives_include_vocation_none_and_choose_level_before_identit
 /// Seed valid retained derived headers with a short remaining interval. This fixture changes
 /// no source, bypasses no trigger, and supplies no current gameplay authority.
 async fn seed_near_due_headers(h: &Harness, remaining_ms: i64) -> TestResult {
-    sqlx::query("WITH inserted AS (INSERT INTO game_world_highscore_snapshots(world_id,category,computed_at_ms,source_cut,row_count) SELECT encode($1,'hex')::uuid,category,floor(extract(epoch FROM statement_timestamp())*1000)::bigint-1800000+$2,pg_current_snapshot()::text,0 FROM unnest(ARRAY[1,2,3,4,5,6,7,8,9,10,11,12,13,14]) category RETURNING world_id,category,snapshot_id) INSERT INTO game_world_highscore_heads(world_id,category,current_snapshot_id) SELECT world_id,category,snapshot_id FROM inserted")
+    sqlx::query("WITH inserted AS (INSERT INTO game_world_highscore_snapshots(world_id,category,computed_at_ms,source_cut,row_count) SELECT encode($1,'hex')::uuid,category,floor(extract(epoch FROM statement_timestamp())*1000)::bigint-1800000+$2,pg_current_snapshot()::text,0 FROM unnest(ARRAY[1,2,3,4,5,6,7,8,9,10,11,12,14,17]) category RETURNING world_id,category,snapshot_id) INSERT INTO game_world_highscore_heads(world_id,category,current_snapshot_id) SELECT world_id,category,snapshot_id FROM inserted")
         .bind(world().as_bytes().as_slice()).bind(remaining_ms).execute(&h.pool).await?;
     Ok(())
 }
@@ -1355,7 +1358,7 @@ fn experience_gain_reaches_the_client_through_the_snapshot_job() -> TestResult {
 }
 
 /// HIGHSCORES0 §3: with no activated per-race Charm point source (CHARM-6) the serve job's
-/// catalogues publish categories 1 to 10 and 12 to 14, and the client's category 11 query through the
+/// catalogues publish categories 1 to 10, 12, 14 and 17, and the client's category 11 query through the
 /// dispatched handler is `NOT_SUPPORTED` rather than a ranking of zero points.
 #[test]
 fn category_eleven_is_withheld_without_an_activated_charm_point_source() -> TestResult {
@@ -1465,7 +1468,7 @@ fn boss_points_query_is_served_through_the_client_handler() -> TestResult {
             12
         );
         assert_eq!(
-            client_reply(h, 15, 0, 1, 0).await?,
+            client_reply(h, 13, 0, 1, 0).await?,
             HighscoresReply::Terminal(FoundationProtocolError::NotSupported)
         );
         Ok(())
@@ -1774,7 +1777,7 @@ fn job_role_guard_refuses_a_pre_existing_group_with_direct_privileges() -> TestR
 /// Page 1 of every (category, filter) list of the current snapshots.
 async fn every_list(h: &Harness) -> TestResult<Vec<(u64, Vec<SnapshotRow>)>> {
     let mut lists = Vec::new();
-    for category in 1..=14 {
+    for category in (1..=12).chain([14, 17]) {
         for filter in FILTERS {
             let current = page(h, category, filter, 1, 0).await?;
             lists.push((current.snapshot.snapshot_id, current.rows));
