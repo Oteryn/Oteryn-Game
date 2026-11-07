@@ -25,7 +25,12 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
         super::quest_world_callbacks::scenario(
             name,
             Position {
-                x: 33294,
+                // Keep the longer NPC corridor away from Behemoth's five barriers.
+                x: if name == "qengine-rewards-paid-stake-priests" {
+                    33310
+                } else {
+                    33294
+                },
                 y: 31677,
                 floor: -15,
             },
@@ -155,6 +160,14 @@ fn questl2_paid_stake_fee_is_atomic_and_repeatable() -> TestResult {
     scenario("qengine-rewards-paid-stake")
 }
 
+#[test]
+fn questl2_paid_stake_full_priest_journey() -> TestResult {
+    scenario("qengine-rewards-paid-stake-priests")
+}
+
+#[path = "qengine_rewards/stake_priests.rs"]
+mod stake_priests;
+
 #[path = "qengine_rewards/paid_stake.rs"]
 mod paid_stake;
 
@@ -230,6 +243,7 @@ async fn talk(
 fn offer_words(key: &str) -> &'static [&'static str] {
     match key.rsplit('/').next().unwrap_or(key) {
         "exchange-quentin-start" | "exchange-gamon-stake" => &["stake"],
+        key if key.starts_with("exchange-prayer-") => &["stake"],
         "knight-sword" => &["forge"],
         "l1-warmaster-crest" => &["crest"],
         "l1-wayfarer-cape" => &["cape"],
@@ -720,6 +734,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-paid-stake-priests" {
+        return stake_priests::exercise(owner, admitted, h).await;
+    }
     if name == "qengine-rewards-paid-stake" {
         return paid_stake::exercise(owner, admitted, h).await;
     }

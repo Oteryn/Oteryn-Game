@@ -819,6 +819,9 @@ pub(super) async fn npc_bank_talk(
         .current_bank(&admission.states.chat, &runtime, actor, session, &intent)
     else {
         admission.states.npc_conversations.cancel_bank(session);
+        if reward_callbacks::unhandled_confirmation(admission, actor, command, &intent, &runtime) {
+            return rejected();
+        }
         return ordinary;
     };
     let (Some(fence), Some(reference)) = (command.item_fence, reference) else {

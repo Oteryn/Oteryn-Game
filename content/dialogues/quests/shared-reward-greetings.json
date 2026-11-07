@@ -2,6 +2,17 @@
   "schema": 1,
   "npcs": [
     {
+      "npc": "oteryn:npc.amanda",
+      "greet": "Welcome, young |PLAYERNAME|! If you are heavily wounded or poisoned, I can {heal} you for free.",
+      "farewell": "May the gods bless you, |PLAYERNAME|!",
+      "walkaway": "Remember: If you are heavily wounded or poisoned, I can heal you for free.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amanda.lua:200:sha256:ce09851af74f62f12b43b9cddea4717113f97f5240669306482020734e96fdef",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amanda.lua:202:sha256:ce09851af74f62f12b43b9cddea4717113f97f5240669306482020734e96fdef",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amanda.lua:201:sha256:ce09851af74f62f12b43b9cddea4717113f97f5240669306482020734e96fdef"
+      ]
+    },
+    {
       "npc": "oteryn:npc.an_old_dragonlord",
       "greet": "Greetings, |PLAYERNAME|.",
       "farewell": "Good bye, |PLAYERNAME|.",
@@ -32,6 +43,17 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/avar_tar.lua:137:sha256:2262a6867b3a8260696ca9e08cc556ebb6362bfa28a601eede7cc7e9a89aeea3",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/avar_tar.lua:138:sha256:2262a6867b3a8260696ca9e08cc556ebb6362bfa28a601eede7cc7e9a89aeea3",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/avar_tar.lua:139:sha256:2262a6867b3a8260696ca9e08cc556ebb6362bfa28a601eede7cc7e9a89aeea3"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.brewster",
+      "greet": "Welcome, young |PLAYERNAME|! If you are heavily wounded or poisoned, I can {heal} you for free.",
+      "farewell": "May the gods bless you, |PLAYERNAME|!",
+      "walkaway": "Remember: If you are heavily wounded or poisoned, I can heal you for free.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/brewster.lua:185:sha256:87af89081d39013a27efa93e35bb1006cf46ff19e051d865151e847a1b0e8bc4",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/brewster.lua:187:sha256:87af89081d39013a27efa93e35bb1006cf46ff19e051d865151e847a1b0e8bc4",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/brewster.lua:186:sha256:87af89081d39013a27efa93e35bb1006cf46ff19e051d865151e847a1b0e8bc4"
       ]
     },
     {
@@ -167,6 +189,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.isimov",
+      "greet": "Welcome, young |PLAYERNAME|! If you are heavily wounded or poisoned, I can {heal} you for free.",
+      "farewell": "May the gods bless you, |PLAYERNAME|!",
+      "walkaway": "Remember: If you are heavily wounded or poisoned, I can heal you for free.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/isimov.lua:169:sha256:83fc7dd789475bdc5cb3c49c04141c49469cb674537bac2d33343a221f8a4d10",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/isimov.lua:171:sha256:83fc7dd789475bdc5cb3c49c04141c49469cb674537bac2d33343a221f8a4d10",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/isimov.lua:170:sha256:83fc7dd789475bdc5cb3c49c04141c49469cb674537bac2d33343a221f8a4d10"
+      ]
+    },
+    {
       "npc": "oteryn:npc.jorge",
       "greet": "Greetings, |PLAYERNAME|.",
       "farewell": "Good bye, |PLAYERNAME|.",
@@ -178,6 +211,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.kasmir",
+      "greet": "Welcome, young |PLAYERNAME|! If you are heavily wounded or poisoned, I can {heal} you for free.",
+      "farewell": "May the gods bless you, |PLAYERNAME|!",
+      "walkaway": "Remember: If you are heavily wounded or poisoned, I can heal you for free.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/kasmir.lua:170:sha256:9ed3bb0bed0fc1b7e573b3a0e60e40bebb43eb270db997f97e5a6c5225721f62",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/kasmir.lua:172:sha256:9ed3bb0bed0fc1b7e573b3a0e60e40bebb43eb270db997f97e5a6c5225721f62",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/kasmir.lua:171:sha256:9ed3bb0bed0fc1b7e573b3a0e60e40bebb43eb270db997f97e5a6c5225721f62"
+      ]
+    },
+    {
       "npc": "oteryn:npc.kroox",
       "greet": "Welcome to Kroox Quality Armor, |PLAYERNAME|! Wanna take a look, ask me for a trade.",
       "farewell": "Good bye, |PLAYERNAME|.",
@@ -186,6 +230,17 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/kroox.lua:82:sha256:080ef330bea12ad63d9d9aecdf259e669df0eb448287907f583aa04fa5e64497",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.maealil",
+      "greet": "Welcome, young |PLAYERNAME|! If you are heavily wounded or poisoned, I can {heal} you for free.",
+      "farewell": "May the gods bless you, |PLAYERNAME|!",
+      "walkaway": "Remember: If you are heavily wounded or poisoned, I can heal you for free.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/maealil.lua:225:sha256:5513bfbb4b666300a1a51ba229698aac401a68021b1388b7b4170fca74957786",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/maealil.lua:227:sha256:5513bfbb4b666300a1a51ba229698aac401a68021b1388b7b4170fca74957786",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/maealil.lua:226:sha256:5513bfbb4b666300a1a51ba229698aac401a68021b1388b7b4170fca74957786"
       ]
     },
     {
@@ -255,6 +310,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.rahkem",
+      "greet": "Greetings, |PLAYERNAME|.",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:81:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
       "npc": "oteryn:npc.raymond_striker",
       "greet": "Be greeted. Is there anything I can {do for you}?",
       "farewell": "Good bye.",
@@ -288,6 +354,28 @@
       ]
     },
     {
+      "npc": "oteryn:npc.tibra",
+      "greet": "Welcome in the name of the gods, pilgrim |PLAYERNAME|!",
+      "farewell": "Good bye, |PLAYERNAME|. May the gods be with you to guard and guide you, my child!",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tibra.lua:137:sha256:ac4aa101390c470c2fb3881d2a1aedb1916620676d9abed2f4ea82412398c30f",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tibra.lua:138:sha256:ac4aa101390c470c2fb3881d2a1aedb1916620676d9abed2f4ea82412398c30f",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.tyrias",
+      "greet": "Welcome, young |PLAYERNAME|! If you are heavily wounded or poisoned, I can {heal} you for free.",
+      "farewell": "May the gods bless you, |PLAYERNAME|!",
+      "walkaway": "Remember: If you are heavily wounded or poisoned, I can heal you for free.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tyrias.lua:173:sha256:d940a44e911493aa8091f8c8331220036f364288df05eb830b741f2b82d312c6",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tyrias.lua:175:sha256:d940a44e911493aa8091f8c8331220036f364288df05eb830b741f2b82d312c6",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tyrias.lua:174:sha256:d940a44e911493aa8091f8c8331220036f364288df05eb830b741f2b82d312c6"
+      ]
+    },
+    {
       "npc": "oteryn:npc.yalahari",
       "greet": "Greetings, |PLAYERNAME|.",
       "farewell": "Good bye, |PLAYERNAME|.",
@@ -296,6 +384,17 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:81:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.yberius",
+      "greet": "Welcome, young |PLAYERNAME|! If you are heavily wounded or poisoned, I can {heal} you for free.",
+      "farewell": "May the gods bless you, |PLAYERNAME|!",
+      "walkaway": "Remember: If you are heavily wounded or poisoned, I can heal you for free.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yberius.lua:169:sha256:6a82e568681ecb911d988b30626f415ea07cb6cf2193c73246b8380e2a4363f5",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yberius.lua:171:sha256:6a82e568681ecb911d988b30626f415ea07cb6cf2193c73246b8380e2a4363f5",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yberius.lua:170:sha256:6a82e568681ecb911d988b30626f415ea07cb6cf2193c73246b8380e2a4363f5"
       ]
     }
   ]

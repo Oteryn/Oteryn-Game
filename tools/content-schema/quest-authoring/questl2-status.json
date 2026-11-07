@@ -497,7 +497,40 @@
     {
       "title": "Exchange Quests",
       "status": "PENDING",
-      "evidence": []
+      "evidence": [
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-paid-stake-priests",
+          "duration_seconds": 79.129433842,
+          "postgresql": "18.6",
+          "passed": true,
+          "path": "Wooden Stake: Quentin, Gamon and the ten priests"
+        }
+      ],
+      "completed_paths": [
+        "Wooden Stake: mission issue, paid wooden stake, ordered prayers, atomic blessed-stake hand-in and replay"
+      ],
+      "wooden_stake_journey": [
+        "No seeded quest progress",
+        "Actual wire movement into range of the eleven source NPCs",
+        "Quentin issues the mission",
+        "Gamon refuses unfunded purchase and charges exactly 5000 for each issued stake",
+        "Out-of-order Tyrias confirmation does not advance or grant",
+        "All nine intermediate prayers retain both original wooden-stake instance IDs",
+        "Tyrias consumes exactly one wooden stake, grants exactly one blessed stake and writes stage 11",
+        "Final confirmation replay and fresh repeated conversation do not duplicate the reward"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amanda.lua:129:sha256:ce09851af74f62f12b43b9cddea4717113f97f5240669306482020734e96fdef",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/brewster.lua:114:sha256:87af89081d39013a27efa93e35bb1006cf46ff19e051d865151e847a1b0e8bc4",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/isimov.lua:98:sha256:83fc7dd789475bdc5cb3c49c04141c49469cb674537bac2d33343a221f8a4d10",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/kasmir.lua:99:sha256:9ed3bb0bed0fc1b7e573b3a0e60e40bebb43eb270db997f97e5a6c5225721f62",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/maealil.lua:94:sha256:5513bfbb4b666300a1a51ba229698aac401a68021b1388b7b4170fca74957786",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/quentin.lua:73:sha256:ec847fd5847361ac4ac7e278426fa284712ffd50f77b1b00cc38cc5c4ff480e9",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rahkem.lua:130:sha256:5a3cbb6ed0041da27bbfc8b15b5ef0f203a256e0cde50c584fb1d64a17956174",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tibra.lua:61:sha256:ac4aa101390c470c2fb3881d2a1aedb1916620676d9abed2f4ea82412398c30f",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tyrias.lua:99:sha256:d940a44e911493aa8091f8c8331220036f364288df05eb830b741f2b82d312c6",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yberius.lua:98:sha256:6a82e568681ecb911d988b30626f415ea07cb6cf2193c73246b8380e2a4363f5"
+      ]
     },
     {
       "title": "Hidden Threats",
@@ -826,13 +859,13 @@
     "world_pins": {
       "regenerated": true,
       "checked": true,
-      "digest": "e767dfedaaf8c4ebedf312af0640d11076e42d93943b5eb8111dbb79755dd5c8",
-      "bytes": 31102331,
+      "digest": "01b8e8eb13da500767ee80ee5247dcda85560de8f2f9dd5ec2f5625cc2c1f941",
+      "bytes": 31102465,
       "tool": "convert_placements.py; regenerate_content.py --resolve --no-stage --skip-checks; world-bundle-compiler pin-check",
-      "regeneration_log": "/tmp/l2-paid-item-merged-regenerate.log",
-      "pin_check_log": "/tmp/l2-paid-item-merged-pin-check.log"
+      "regeneration_log": "/tmp/l2-priests-merged-regenerate.log",
+      "pin_check_log": "/tmp/l2-priests-merged-pin-check.log"
     },
-    "formatting": "cargo fmt --all --check passed after paid item merge",
+    "formatting": "cargo fmt --all --check passed after priest-journey merge",
     "content_tests": {
       "integration_rest_content": 123,
       "content_world_project_repository": 5,
@@ -908,8 +941,8 @@
     "npc_placement_tests": {
       "passed": 11,
       "failed": 0,
-      "seconds": 0.624,
-      "log": "/tmp/l2-paid-item-merged-placements.log"
+      "seconds": 0.427,
+      "log": "/tmp/l2-priests-merged-placement-tests.log"
     },
     "build_resource_settings": {
       "incremental": false,
@@ -945,25 +978,41 @@
       "failed": 0
     },
     "latest_focused_postgres": {
-      "passed": 3,
+      "passed": 4,
       "failed": 0,
       "selected_skipped": 0,
-      "unselected": 2630,
-      "seconds": 278.56,
-      "log": "/tmp/l2-paid-item-merged-pg2.log",
       "postgres_server": "18.6 (Debian 18.6-1.pgdg13+2)",
-      "cases": [
+      "runs": [
         {
-          "test": "questl2_paid_stake_fee_is_atomic_and_repeatable",
-          "seconds": 135.396463616
+          "passed": 3,
+          "unselected": 2631,
+          "seconds": 295.502,
+          "log": "/tmp/l2-priests-merged-pg.log"
         },
         {
-          "test": "qengine_l4_nobleman_paid_outfit_story",
-          "seconds": 142.950312301
+          "passed": 1,
+          "unselected": 2633,
+          "seconds": 286.922,
+          "log": "/tmp/l2-priests-merged-priest-pg.log"
+        }
+      ],
+      "cases": [
+        {
+          "test": "questl2_paid_stake_full_priest_journey",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-paid-stake-priests",
+          "seconds": 286.804990407
+        },
+        {
+          "test": "questl2_paid_stake_fee_is_atomic_and_repeatable",
+          "seconds": 295.386499161
         },
         {
           "test": "questl2_draconia_greeting_item_lifecycle",
-          "seconds": 145.880280572
+          "seconds": 246.423434931
+        },
+        {
+          "test": "qengine_l4_nobleman_paid_outfit_story",
+          "seconds": 267.830092855
         }
       ]
     },
@@ -976,8 +1025,8 @@
       "all_targets": true,
       "deny_warnings": true,
       "exit_code": 0,
-      "seconds": 463,
-      "log": "/tmp/l2-paid-item-merged-clippy.log"
+      "seconds": 609,
+      "log": "/tmp/l2-priests-merged-clippy.log"
     },
     "verified_conditional_parent": {
       "commit": "ae8ae247a",
@@ -1013,7 +1062,7 @@
     "reward_reproducibility": {
       "passed": true,
       "tool": "qengine_rewards.py --check",
-      "log": "/tmp/l2-paid-item-merged-reproduce.log"
+      "log": "/tmp/l2-priests-merged-reproduce.log"
     },
     "native_fetish_provider_tests": {
       "passed": 9,
@@ -1028,6 +1077,54 @@
       "unselected": 2625,
       "seconds": 483.562,
       "log": "/tmp/l2-draconia-merged-pg.log"
+    },
+    "wooden_stake_slice": {
+      "red": {
+        "marker": "POSTGRES_CASE_FAILED qengine-rewards-paid-stake-priests",
+        "duration_seconds": 80.187572706,
+        "failure": "Tyrias final prayer binding absent after the full paid-issue journey"
+      },
+      "confirmation_red": {
+        "marker": "POSTGRES_CASE_FAILED qengine-rewards-paid-stake-priests",
+        "duration_seconds": 78.215140291,
+        "failure": "Out-of-order confirmation acknowledged by ordinary NPC fallback"
+      },
+      "green": [
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-paid-stake",
+          "duration_seconds": 78.147778879,
+          "postgresql": "18.6",
+          "passed": true
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-paid-stake-priests",
+          "duration_seconds": 79.129433842,
+          "postgresql": "18.6",
+          "passed": true
+        }
+      ],
+      "reward_authoring_tests": 42,
+      "npc_placement_tests": 11,
+      "native_registration_files": 42,
+      "new_source_npcs": 9,
+      "clippy": {
+        "packages": [
+          "oteryn-gameplay-quests",
+          "oteryn-gameplay-dispatch"
+        ],
+        "all_targets": true,
+        "deny_warnings": true,
+        "exit_code": 0,
+        "log": "/tmp/l2-priests-clippy-guard.log"
+      },
+      "formatting": "cargo fmt --all --check and explicit mounted-file rustfmt --check passed"
+    },
+    "reward_authoring": {
+      "passed": 32,
+      "failed": 0,
+      "seconds": 47.709,
+      "command": "python3 -m unittest test_qengine_rewards test_questl2_rewards",
+      "log": "/tmp/l2-priests-merged-authoring-full.log"
     }
   },
   "cross_lane_inspection": {
@@ -1104,6 +1201,11 @@
       "commit": "80f41c77e48645a0513f56aae2133d9554aefbd9",
       "scope": "Keep published1142 bytes and its deferred paid-repeat cost proof, reuse Gamon paid stake issuance and full PostgreSQL case.",
       "fresh_postgres_green_seconds": 135.396463616
+    },
+    "wooden_stake_remote_merge": {
+      "commit": "79fd117c3",
+      "scope": "Ten source priests, exact carried stake evidence and ordinary-fallback confirmation refusal; preserve all existing QENGINE2/L2 callbacks.",
+      "fresh_postgres_green_seconds": 286.804990407
     }
   },
   "next_batch": {

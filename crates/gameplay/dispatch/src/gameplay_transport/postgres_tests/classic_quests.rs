@@ -49,6 +49,27 @@ pub(super) async fn install<const N: usize>(
     admitted: &AdmittedSession,
     keys: [&str; N],
 ) -> TestResult<[EntityRef; N]> {
+    install_offsets(owner, admitted, keys, |i| (i, 1)).await
+}
+
+/// Two rows keep a longer source NPC journey inside the compact walkable map.
+pub(super) async fn install_nearby<const N: usize>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    keys: [&str; N],
+) -> TestResult<[EntityRef; N]> {
+    install_offsets(owner, admitted, keys, |i| {
+        (i % 6, if i < 6 { -1 } else { 1 })
+    })
+    .await
+}
+
+async fn install_offsets<const N: usize>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    keys: [&str; N],
+    offset: impl Fn(i32) -> (i32, i32),
+) -> TestResult<[EntityRef; N]> {
     let catalogue = NpcDataCatalogue::load(
         std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
         std::ffi::OsStr::new("world"),
@@ -101,11 +122,12 @@ pub(super) async fn install<const N: usize>(
         .into_iter()
         .enumerate()
         .map(|(i, key)| {
+            let (dx, dy) = offset(i32::try_from(i)?);
             Ok(NpcPlacements {
                 key: key.into(),
                 placements: vec![NpcPlacement {
-                    x: u16::try_from(at.x + i32::try_from(i)?)?,
-                    y: u16::try_from(at.y + 1)?,
+                    x: u16::try_from(at.x + dx)?,
+                    y: u16::try_from(at.y + dy)?,
                     floor: -i8::try_from(at.floor)?,
                     direction: MovementFacing::South,
                 }],
