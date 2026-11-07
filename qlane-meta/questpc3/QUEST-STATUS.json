@@ -3128,7 +3128,7 @@
         "A Swan five feathers",
         "Grumpy Stone map"
       ],
-      "phase": "GREEN; ready to commit and fast-forward publish",
+      "phase": "GREEN and pushed; generated preprod pin mirror included in follow-up",
       "prior_fixtures": "Animals4 then14; GrumpyStone1 with four scratch flags1/fifth0, then prior fifth1; four then fifth collected feather. No outputs, consumption or successful receipts seeded.",
       "test_log": "/tmp/questpc3-animals-red.log",
       "postgres_red": {
@@ -3205,7 +3205,8 @@
           "result": "PASS"
         }
       },
-      "review": "Exactly3 new callback rows; all old callbacks preserved. Only25295 materializable/stack_class changes; canonical physical facts unchanged. Three NPC placements from retained promotion candidates. Four-of-five scratch negative, short feathers, topic guard and repeat refusal pass. No whole-quest completion claimed."
+      "review": "Exactly3 new callback rows; all old callbacks preserved. Only25295 materializable/stack_class changes; canonical physical facts unchanged. Three NPC placements from retained promotion candidates. Four-of-five scratch negative, short feathers, topic guard and repeat refusal pass. No whole-quest completion claimed.",
+      "published_commit": "73067a442"
     },
     "diagnosis": {
       "log": "/tmp/questpc3-counter-diagnosis.log",
