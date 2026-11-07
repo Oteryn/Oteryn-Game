@@ -19,6 +19,7 @@
 //! A refusal writes nothing; an unknown outcome is answered by [`DurabilityRoot::read_item_loop_move_receipt`].
 
 mod floor_assembly;
+pub(in crate::durability) mod floor_transform;
 pub use floor_assembly::FloorAssemblyTarget;
 
 mod seed_drop;

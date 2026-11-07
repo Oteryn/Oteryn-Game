@@ -25,28 +25,28 @@ pub(super) fn target(
         let crate::map::view::MapEntryKey::Base(key) = entry.source.key() else {
             continue;
         };
-        for recipe in oteryn_gameplay_items::floor_assembly::RECIPES {
+        for action in oteryn_gameplay_items::floor_assembly::actions() {
             if map
                 .facts
-                .quest_callback_matches(key, None, Some(recipe.action), None)
+                .quest_callback_matches(key, None, Some(action), None)
             {
                 if selected.is_some() {
                     return None;
                 }
-                selected = Some((key, recipe.action));
+                selected = Some((key, action));
             }
         }
     }
     let (key, action) = selected?;
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
-    Some(FloorAssemblyTarget {
+    Some(FloorAssemblyTarget::new(
         action,
         placement,
-        scope: TerrainScope {
+        TerrainScope {
             map_revision: map_revision(map.overlay.base()),
             content_generation: content,
             reset_epoch: epoch.try_into().ok()?,
         },
-    })
+    ))
 }
