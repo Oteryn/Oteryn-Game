@@ -100,6 +100,37 @@ impl DurabilityRoot {
         .await
     }
 
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_character_world_callback_with_reward_and_gate<G: grizzly::GrizzlyPremiumGate>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
+        context: super::super::quest_world_callback::QuestWorldContext,
+        admission: QuestRewardAdmission<'_>,
+        gate: &G,
+    ) -> Result<QuestTransitionOutcome> {
+        self.commit_quest_inner::<_, 0>(
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            Some((permit, context, Some(admission.native))),
+            None,
+            None,
+            None,
+            gate,
+            None,
+            None,
+            Some(admission),
+        )
+        .await
+    }
+
     /// Bloodshade's fixed access purchase uses the existing fee owner and then
     /// this same Quest writer in one physical transaction.
     pub async fn commit_rotten_blood_access_purchase(
@@ -193,7 +224,7 @@ impl DurabilityRoot {
             .map_err(|_| CharacterProgressionError::InvalidInput)?
             .into_iter()
             .find(|c| c.key == request.transition_key);
-        if reward_callback.is_some() != reward_admission.is_some()
+        if (context.is_none() && reward_callback.is_some() != reward_admission.is_some())
             || (reward_callback.is_some() && !matches!(request.cause, QuestCause::Command(_)))
         {
             return Err(CharacterProgressionError::InvalidInput);
@@ -243,6 +274,9 @@ impl DurabilityRoot {
         } else {
             None
         };
+        if context.is_some() && (callback.as_ref().is_some_and(|c| c.item_reward.is_some()) != reward_admission.is_some()) {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         let achievement = super::super::quest_monk_rewards::prepare(callback.as_ref())
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let dance_achievement = super::super::quest_unnatural_selection::prepare(callback.as_ref())
@@ -274,7 +308,7 @@ impl DurabilityRoot {
                                 || c.experience.is_some()
                                 || c.monk_reward.is_some()
                                 || c.native_rule.is_some()
-                                || c.outfit_reward.is_some()
+                                || c.outfit_reward.is_some() || c.item_reward.is_some()
                                 || c.requirements.is_some() || c.completes)
                     }))
         {
@@ -375,8 +409,8 @@ impl DurabilityRoot {
                     lock_admission_relations(&mut tx).await?;
                     lock_receipt_key(&mut tx, character, &request).await?;
                     // The MINT cause precedes the Character root, matching the item owner.
-                    if reward_callback.as_ref().is_some_and(|c|c.give.is_some())
-                        && let QuestCause::Command(command)=request.cause {
+                    if (reward_callback.as_ref().is_some_and(|c|c.give.is_some()) || callback.as_ref().is_some_and(|c|c.item_reward.is_some()))
+                        && let QuestCause::Command(command) | QuestCause::Use(command)=request.cause {
                         super::super::reward_claim_mint::lock_cause(&mut tx,command).await?;
                     }
                     if let Some(row) = load_receipt(&mut tx, character, &request).await? {
@@ -742,6 +776,9 @@ impl DurabilityRoot {
                     { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     if let (Some(callback),Some(admission),Some(tuple))=(&reward_callback,*reward_admission,reward_tuple)
                         && !super::super::reward_claim_mint::quest::apply(&mut tx,tuple,&node,fence,&request,callback,admission,reward_achievement.as_ref()).await?
+                    { tx.rollback().await?;return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
+                    if let (Some(world),Some(admission),Some(tuple))=(&callback,*reward_admission,reward_tuple)
+                        && !super::super::reward_claim_mint::quest::give_world(&mut tx,tuple,&node,fence,&request,world,admission).await?
                     { tx.rollback().await?;return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     if let Some(world) = &callback
                         && let Some(reward) = &world.outfit_reward

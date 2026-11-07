@@ -34,7 +34,7 @@ async fn walk_to(owner:&ComposedFreshAdmission<'_, '_, '_>,a:&mut AdmittedSessio
  }
  Err("native walking did not reach its declared target".into())
 }
-fn target(owner:&ComposedFreshAdmission<'_, '_, '_>,p:Position,appearance:u16)->TestResult<Vec<u8>>{
+pub(super) fn target(owner:&ComposedFreshAdmission<'_, '_, '_>,p:Position,appearance:u16)->TestResult<Vec<u8>>{
  let map=owner.bundle_map().ok_or("map")?;
  let tile=crate::map::overlay::TilePos{x:p.x,y:p.y,floor:p.floor};
  let base=map.overlay.base().tile(p.x,p.y,p.floor).ok_or("tile")?;

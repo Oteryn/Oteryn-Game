@@ -57,6 +57,18 @@ class QuestRewards(unittest.TestCase):
                for _,cells in region[3] for x,y,_,_,_,entries in cells}
         for position in [(33078,32015),(33079,32015),(33080,32015)]:
             self.assertEqual(tiles[position],[10113],position)
+        self.assertIn(2469,tiles[(33080,32014)],'the reward binds an existing physical chest')
+
+    def test_hidden_valuables_are_one_exact_once_only_backpack_plan(self):
+        rows=json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks']
+        chest=next(r for r in rows if r['key']=='oteryn:quest-callback/questpc7-hidden-valuables')
+        self.assertTrue(chest['completes'])
+        self.assertEqual(chest['trigger'],'use')
+        self.assertEqual(chest['activation'],{'track':chest['storage'][0]['track'],'minimum':1,'maximum':1})
+        self.assertEqual(chest['storage'][1]['minimum'],5)
+        self.assertTrue(chest['storage'][1]['preserve'])
+        self.assertEqual(chest['item_reward'],{'item':'oteryn:item.tibia.i3040','count':2,'contents':[],
+            'backpack_outputs':[{'item':f'oteryn:item.tibia.i{i}','count':1} for i in (3030,3032,3033)]})
 
     def test_selected_jorge_replica_consumes_exact_twenty_and_completes_once(self):
         rows=[c for c in self.callbacks['callbacks'] if c['key'].startswith('oteryn:quest-reward/questpc7-tokens-')]

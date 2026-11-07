@@ -34,6 +34,7 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
     let digest = Sha256::digest(source.binding(fence.character_id));
     let suffix = digest.iter().map(|byte| format!("{byte:02x}")).collect::<String>();
     let request = RewardClaimMintRequest {
+        backpack_outputs: false,
         command: source.command,
         claim: TypedDefinitionRef { family: "RewardClaim".into(), production_key: format!("oteryn:reward-claim.npc-exchange/{suffix}"), revision_ref: "npc-exchange-r1".into() },
         source_placement: source.transition_key.clone(), item, quantity, contents: Vec::new(),

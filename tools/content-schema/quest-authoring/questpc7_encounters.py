@@ -16,7 +16,7 @@ def worlds(root):
             if [(s['kind'], s['count']) for s in recipe['stages']] != [('explore',1),('kill',5),('use',1),('complete',1)]:
                 raise ValueError('QUESTPC7_HIDDEN_SELECTED_RECIPE_DRIFT')
             path = shard.relative_to(root).as_posix()
-            return [{'key':'oteryn:quest-callback/questpc7-hidden-entry',
+            entry = {'key':'oteryn:quest-callback/questpc7-hidden-entry',
                 'quest':definition['identity']['key'], 'trigger':'step_in',
                 'selector':{'position':{'x':33079,'y':32015,'floor':-13},'appearance':10113,'unique':None,'action':None},
                 'lever':None,'reversible':False,'passages':[],'teleport':None,
@@ -25,7 +25,16 @@ def worlds(root):
                 'minimum_level':None,'experience':None,'monk_reward':None,'offerings':[],
                 'item_on_target':None,'return_on_failure':False,'failure_message':None,
                 'success_message':'You have surveyed the concealed Corym chamber. Defeat five Coryms before searching its valuables.',
-                'sources':[f'canonical:{path}:1#/records/{index}/definition:sha256:{hashlib.sha256(raw).hexdigest()}']}]
+                'sources':[f'canonical:{path}:1#/records/{index}/definition:sha256:{hashlib.sha256(raw).hexdigest()}']}
+            chest = dict(entry, key='oteryn:quest-callback/questpc7-hidden-valuables', trigger='use',
+                selector={'position':{'x':33080,'y':32014,'floor':-13},'appearance':2469,'unique':None,'action':None},
+                storage=[{'track':'oteryn:quest-progress/questpc7/hidden/programme','minimum':1,'maximum':1,'set':2},
+                         {'track':'oteryn:quest-progress/questpc7/hidden/kills','minimum':5,'maximum':5,'set':5,'preserve':True}],
+                activation={'track':'oteryn:quest-progress/questpc7/hidden/programme','minimum':1,'maximum':1},
+                completes=True, item_reward={'item':'oteryn:item.tibia.i3040','count':2,'contents':[],
+                    'backpack_outputs':[{'item':f'oteryn:item.tibia.i{i}','count':1} for i in (3030,3032,3033)]},
+                success_message='You recover the valuables hidden in the Corym chamber.')
+            return [entry, chest]
     raise ValueError('QUESTPC7_HIDDEN_DEFINITION_MISSING')
 
 

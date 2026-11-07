@@ -245,8 +245,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 return UseDisposition::Rejected;
             };
-            let outcome = slot
-                .commit_world_callback_with_native_and_gate(
+            let outcome = if callback.item_reward.is_some() {
+                let Some(native) = self.active_generation.and_then(|g| g.native_gameplay()) else {
+                    return UseDisposition::Rejected;
+                };
+                let weights =
+                    crate::gameplay_transport::item_ref_admission::NativeItemWeights(native);
+                slot.commit_world_callback_with_reward_and_gate(
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    QuestTransitionRequest {
+                        transition_key: callback.key.clone(),
+                        cause,
+                    },
+                    std::sync::Arc::clone(catalogue),
+                    permit,
+                    context,
+                    crate::durability::reward_claim_mint::QuestRewardAdmission {
+                        native,
+                        weights: &weights,
+                        fee_payment: None,
+                    },
+                    &crate::gameplay_transport::spell_premium_coordinator::QuestRewardPremium(
+                        self.premium_coordinator,
+                    ),
+                )
+                .await
+            } else {
+                slot.commit_world_callback_with_native_and_gate(
                     self.root,
                     self.character,
                     self.holder,
@@ -264,7 +292,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         self.premium_coordinator,
                     ),
                 )
-                .await;
+                .await
+            };
             let fresh = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));
             match outcome {
                 Ok(

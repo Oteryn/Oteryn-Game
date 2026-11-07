@@ -145,7 +145,7 @@ pub(crate) async fn apply(
     }
     let minted = if let Some(reward) = &callback.give {
         let Some(transaction) =
-            mint(tx, tuple, node, fence, command, callback, reward, admission).await?
+            mint(tx, tuple, node, fence, command, &callback.key, callback.counter.is_some(), reward, admission).await?
         else {
             return Ok(false);
         };
@@ -172,6 +172,52 @@ pub(crate) async fn apply(
 
 #[allow(
     clippy::too_many_arguments,
+    reason = "binds the original world occurrence to the shared MINT participants"
+)]
+pub(crate) async fn give_world(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    tuple: SelectedType2Tuple,
+    node: &NodeIncarnationProof,
+    fence: CurrentCharacterGameplayFence,
+    request: &QuestTransitionRequest,
+    callback: &oteryn_gameplay_quests::quest::world_callbacks::Callback,
+    admission: QuestRewardAdmission<'_>,
+) -> std::result::Result<bool, DurabilityError> {
+    let (super::super::quest_state::QuestCause::Use(command), Some(reward)) =
+        (request.cause, callback.item_reward.as_ref())
+    else {
+        return Ok(false);
+    };
+    if admission.weights.generation_digest() != admission.native.source_digest() {
+        return Ok(false);
+    }
+    let Some(transaction) = mint(
+        tx,
+        tuple,
+        node,
+        fence,
+        command,
+        &callback.key,
+        false,
+        reward,
+        admission,
+    )
+    .await?
+    else {
+        return Ok(false);
+    };
+    let plan = serde_json::json!({"key": callback.key, "quest": callback.quest,
+        "storage": callback.storage, "take": [], "present": [], "give": reward,
+        "outfit": null, "world_callback": callback});
+    sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,encode($6,'hex')::uuid,ARRAY[]::text[])")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice())
+        .bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(plan)
+        .bind(transaction.as_slice()).execute(&mut **tx).await?;
+    Ok(true)
+}
+
+#[allow(
+    clippy::too_many_arguments,
     reason = "the existing MINT owner requires the same Quest, authority, content and request tuple"
 )]
 async fn mint(
@@ -180,7 +226,8 @@ async fn mint(
     node: &NodeIncarnationProof,
     fence: CurrentCharacterGameplayFence,
     command: CommandRef,
-    callback: &RewardCallback,
+    key: &str,
+    counted: bool,
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::ItemReward,
     admission: QuestRewardAdmission<'_>,
 ) -> std::result::Result<Option<[u8; 16]>, DurabilityError> {
@@ -220,22 +267,22 @@ async fn mint(
     );
     // The existing MINT once-claim is scoped to this exact command only for
     // counted services. Ordinary one-shot quest grants keep their original key.
-    let claim_key = if callback.counter.is_some() {
+    let claim_key = if counted {
         let session = command.game_session_id().as_bytes().iter().map(|byte| format!("{byte:02x}")).collect::<String>();
-        format!("{}/occurrence/{session}/{}", callback.key, command.command_id().get())
-    } else { callback.key.clone() };
+        format!("{}/occurrence/{session}/{}", key, command.command_id().get())
+    } else { key.to_owned() };
     let request = RewardClaimMintRequest {
+        backpack_outputs: !reward.backpack_outputs.is_empty(),
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),
             production_key: claim_key,
             revision_ref: content_revision.clone(),
         },
-        source_placement: callback.key.clone(),
+        source_placement: key.to_owned(),
         item: resolve(&reward.item)?,
         quantity: u32::from(reward.count),
-        contents: reward
-            .contents
+        contents: (if reward.backpack_outputs.is_empty() { &reward.contents } else { &reward.backpack_outputs })
             .iter()
             .map(|i| {
                 Ok(RewardClaimMintContent {

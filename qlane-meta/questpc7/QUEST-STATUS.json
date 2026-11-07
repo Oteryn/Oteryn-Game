@@ -1209,7 +1209,7 @@
     "title": "Hidden Threats Quest",
     "canonical": "oteryn:quest.hidden_threats_quest",
     "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/43/definition",
-    "status": "ACTIVE",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [
       {
@@ -1258,46 +1258,7 @@
         "log": ".questpc7/lane-rewards-pg.log:381"
       }
     ],
-    "queued_stage_binding": {
-      "stage": "s3",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
-    },
-    "first_unqualified_stage": {
-      "key": "s3",
-      "kind": "use",
-      "objective": "Recover the mine's concealed valuables.",
-      "targets": [
-        "mine concealed valuables"
-      ]
-    },
     "owner": "questpc7",
-    "remaining_work": {
-      "kind": "lane_implementation_work",
-      "missing_piece": "Compose the selected valuables and final completion on the qualified native five-Corym quota. World output/completion support is lane implementation work; no external dependency or ownership question.",
-      "evidence": [
-        "content/quests/definitions/quests-00000-00099.json:1#/records/43/definition",
-        "crates/gameplay/quests/src/quest/world_callbacks.rs:81",
-        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351",
-        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:230"
-      ],
-      "attempts": [
-        "Compared the key-fragment/metal-file source rewards and full selected mine route with both current transaction interfaces; selected all three source rewards for independent USE/replay/refusal qualification."
-      ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
-    },
-    "current_batch": {
-      "mechanism": "world item MINT and atomic direct backpack outputs",
-      "proof": "qlane-meta/questpc7/HIDDEN-PG-PROOF.json",
-      "postgres": "18.6",
-      "red_seconds": 43.512682362,
-      "green_seconds": 43.335733047,
-      "expanded_green_seconds": 46.515011045,
-      "state": "Pre-fix full and capacity PG GREEN. Retained original source claim routing RED97.67s; explicit active-phase overlay fix implemented, post-fix validation running. ACTIVE.",
-      "assumptions": [
-        "Standard GoldNugget3040 selected from ambiguous duplicate name; documented source choice in CONTRACT-NOTES."
-      ]
-    },
     "shared_native_death_mechanism": {
       "status": "QUALIFIED",
       "proof": "qlane-meta/questpc7/NATIVE-DEATH-PG-PROOF.json",
@@ -1306,6 +1267,34 @@
       "postgres": "18.6",
       "source_branch": "claude/happy-davinci-ijz3wy-questpc8",
       "source_sha": "7eeee8fb152806de66af062831f94c2183c915ee"
+    },
+    "qualification": {
+      "kind": "complete selected Hidden Threats native route",
+      "proof": "qlane-meta/questpc7/HIDDEN-PG-PROOF.json",
+      "test": "questpc7_hidden_full_native_route_and_atomic_valuables",
+      "postgres": "18.6",
+      "red_seconds": 43.512682362,
+      "green_seconds": 45.593580772,
+      "scope": [
+        "fresh subject state",
+        "native chamber entry",
+        "five native lethal occurrences with duplicate suppression",
+        "physical chest USE",
+        "exact direct carried outputs",
+        "completion and exact USE replay",
+        "17 distinct occupied main-backpack slots refuse all4 output entries atomically",
+        "ordinary native fish consumption frees a slot for retry",
+        "explicit phase overlay preserves original source chest interactions"
+      ],
+      "assumptions": [
+        "Select standard Gold Nugget3040 from ambiguous duplicate name; CONTRACT-NOTES cites retained XML and bounded403 lookup."
+      ],
+      "source_claim_regression": {
+        "red_seconds": 97.67,
+        "green_seconds": 110.64,
+        "retained_native_source_cases": 15
+      },
+      "checks": "Focused retained PG,loader/world/reward/MINT units,author/generation,check,strict clippy,content123/world5,pins and fmt GREEN."
     }
   },
   {

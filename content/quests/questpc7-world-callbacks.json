@@ -136,6 +136,76 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/questpc7-hidden-valuables",
+      "quest": "oteryn:quest.hidden_threats_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33080,
+          "y": 32014,
+          "floor": -13
+        },
+        "appearance": 2469,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/hidden/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/hidden/kills",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You recover the valuables hidden in the Corym chamber.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/43/definition:sha256:7f0c08859e1316aac2df4fe457e746687b4c759a673d93332bbb0ebdbaf14e9e"
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/hidden/programme",
+        "minimum": 1,
+        "maximum": 1
+      },
+      "completes": true,
+      "item_reward": {
+        "item": "oteryn:item.tibia.i3040",
+        "count": 2,
+        "contents": [],
+        "backpack_outputs": [
+          {
+            "item": "oteryn:item.tibia.i3030",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i3032",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i3033",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
       "key": "oteryn:quest-callback/questpc7-hoist-entry",
       "quest": "oteryn:quest.formogar_mine_hoist",
       "trigger": "step_in",

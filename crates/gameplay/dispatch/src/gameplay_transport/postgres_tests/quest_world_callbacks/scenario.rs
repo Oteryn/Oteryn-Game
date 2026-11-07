@@ -23,7 +23,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let monk = name.starts_with("monk-guidance");
-    let shared_rewards = name == "questpc7-hoist-story" || name == "questpc7-tokens" || name == "questpc7-hidden-deaths" || name.starts_with("questpc7-outfits-") || name == "l1-warmaster-wardrobe" || name.starts_with("questpc7-eligibility-")
+    let shared_rewards = name == "questpc7-hoist-story" || name == "questpc7-tokens" || name.starts_with("questpc7-hidden-") || name.starts_with("questpc7-outfits-") || name == "l1-warmaster-wardrobe" || name.starts_with("questpc7-eligibility-")
         || name.starts_with("qengine-rewards-")
         || name == "questpc7-golden"
         || name == "questpc7-friends";
@@ -44,7 +44,7 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if name == "questpc7-hoist-story" { "questpc7-hoist-entry" } else if name == "questpc7-hidden-deaths" { "questpc7-hidden-entry" } else if name == "questpc7-outfits-formal" { "questpc7-formal-display" } else if name == "l1-warmaster-wardrobe" { name } else if classic_npc {
+    let mut callback = callback(if name == "questpc7-hoist-story" { "questpc7-hoist-entry" } else if name.starts_with("questpc7-hidden-") { "questpc7-hidden-entry" } else if name == "questpc7-outfits-formal" { "questpc7-formal-display" } else if name == "l1-warmaster-wardrobe" { name } else if classic_npc {
         "behemoth"
     } else if rotten_purchase {
         "rotten-blood/sacrifice"
@@ -84,6 +84,8 @@ fn scenario_case(
             (Position{x:32156,y:31125,floor:-10},2773),
         ]);
         world_with_objects(&callback,trigger,&objects,&[2772])?
+    } else if name == "questpc7-hidden-story" {
+        world_with_objects(&callback,trigger,&[(Position{x:33080,y:32014,floor:-13},2469)],&[])?
     } else if name == "questpc7-outfits-formal" {
         // The fixture includes the same admitted entry appearance as the real palace.
         let mut physical = callback.clone();
@@ -292,8 +294,9 @@ fn scenario_case(
             super::super::questpc7_hoist_story::exercise(&mut owner,&mut admitted,&h).await?;
         } else if name == "questpc7-tokens" {
             super::super::questpc7_tokens::exercise(&mut owner,&mut admitted,&h).await?;
-        } else if name == "questpc7-hidden-deaths" {
+        } else if name.starts_with("questpc7-hidden-") {
             super::super::questpc7_native_deaths::exercise(&mut owner, &mut admitted, &h).await?;
+            if name == "questpc7-hidden-story" { super::super::questpc7_native_deaths::reward(&mut owner,&mut admitted,&h).await?; }
         } else if name == "questpc7-outfits-formal" {
             super::super::questpc7_formal::exercise(&mut owner, &mut admitted, &h, &callback).await?;
         } else if name.starts_with("questpc7-outfits-") {

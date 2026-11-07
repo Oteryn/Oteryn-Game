@@ -182,9 +182,59 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return false;
             };
             let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
-            let disposition = match slot.commit_world_callback_with_native_and_gate(self.root, self.character, self.holder, fence,
-                QuestTransitionRequest { transition_key: pending.callback, cause: pending.cause },
-                std::sync::Arc::clone(catalogue), &permit, context, self.active_generation.and_then(|generation| generation.native_gameplay()), &crate::gameplay_transport::spell_premium_coordinator::QuestRewardPremium(self.premium_coordinator)).await {
+            let world = oteryn_gameplay_quests::quest::world_callbacks::load()
+                .ok()
+                .and_then(|rows| rows.into_iter().find(|c| c.key == pending.callback));
+            let outcome = if world.as_ref().is_some_and(|c| c.item_reward.is_some()) {
+                let Some(native) = self.active_generation.and_then(|g| g.native_gameplay()) else {
+                    return false;
+                };
+                let weights =
+                    crate::gameplay_transport::item_ref_admission::NativeItemWeights(native);
+                slot.commit_world_callback_with_reward_and_gate(
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    QuestTransitionRequest {
+                        transition_key: pending.callback.clone(),
+                        cause: pending.cause,
+                    },
+                    std::sync::Arc::clone(catalogue),
+                    &permit,
+                    context,
+                    crate::durability::reward_claim_mint::QuestRewardAdmission {
+                        native,
+                        weights: &weights,
+                        fee_payment: None,
+                    },
+                    &crate::gameplay_transport::spell_premium_coordinator::QuestRewardPremium(
+                        self.premium_coordinator,
+                    ),
+                )
+                .await
+            } else {
+                slot.commit_world_callback_with_native_and_gate(
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    QuestTransitionRequest {
+                        transition_key: pending.callback,
+                        cause: pending.cause,
+                    },
+                    std::sync::Arc::clone(catalogue),
+                    &permit,
+                    context,
+                    self.active_generation
+                        .and_then(|generation| generation.native_gameplay()),
+                    &crate::gameplay_transport::spell_premium_coordinator::QuestRewardPremium(
+                        self.premium_coordinator,
+                    ),
+                )
+                .await
+            };
+            let disposition = match outcome {
                 Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => UseDisposition::Committed,
                 Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => return false,
                 Ok(_) | Err(_) => UseDisposition::Rejected,
@@ -339,7 +389,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let selected = self
             .callback_content()
             .iter()
-            .filter(|c| c.trigger == Trigger::Use && matches(map, c, resolved.placement_key))
+            .filter(|c| {
+                c.trigger == Trigger::Use
+                    && matches(map, c, resolved.placement_key)
+                    && c.activation.as_ref().is_none_or(|activation| {
+                        self.states
+                            .quest_sessions
+                            .lock()
+                            .ok()
+                            .and_then(|sessions| {
+                                sessions
+                                    .get(&command.game_session_id)
+                                    .and_then(|s| s.copy.as_ref())
+                                    .and_then(|copy| copy.tracks().get(&activation.track))
+                                    .copied()
+                            })
+                            .is_some_and(|value| {
+                                (activation.minimum..=activation.maximum).contains(&value)
+                            })
+                    })
+            })
             .collect::<Vec<_>>();
         let [callback] = selected.as_slice() else {
             return None;

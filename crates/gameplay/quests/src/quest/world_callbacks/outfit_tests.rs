@@ -35,7 +35,7 @@ fn world_outfits_require_a_stateful_use_and_a_closed_target() -> Result<(), Stri
 fn world_requirements_reject_unbounded_and_read_only_authority() -> Result<(), String> {
     let source = include_str!("../../../../../../content/quests/questpc7-world-callbacks.json");
     let document: serde_json::Value = serde_json::from_str(source).map_err(|e| e.to_string())?;
-    assert_eq!(parse(source)?.len(), 7);
+    assert_eq!(parse(source)?.len(), 8);
     for case in 0..4 {
         let mut row = document["callbacks"][0].clone();
         match case {
@@ -88,5 +88,52 @@ fn world_completion_requires_a_once_only_write_and_refuses_read_only_gates() -> 
         .ok_or("gate")?;
     gate["completes"] = true.into();
     assert!(parse(&source.to_string()).is_err());
+    Ok(())
+}
+
+#[test]
+fn world_item_outputs_are_once_only_bounded_and_have_one_layout() -> Result<(), String> {
+    let document: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/questpc7-world-callbacks.json"
+    ))
+    .map_err(|e| e.to_string())?;
+    let original = document["callbacks"]
+        .as_array()
+        .ok_or("callbacks")?
+        .iter()
+        .find(|r| r["key"] == "oteryn:quest-callback/questpc7-hidden-valuables")
+        .ok_or("reward")?;
+    for case in 0..11 {
+        let mut row = original.clone();
+        match case {
+            0 => row["trigger"] = "step_in".into(),
+            1 => row["storage"] = serde_json::json!([]),
+            2 => row["item_reward"]["count"] = 0.into(),
+            3 => {
+                row["item_reward"]["backpack_outputs"] = serde_json::Value::Array(vec![
+                    serde_json::json!({"item":"oteryn:item.tibia.i3030","count":1});
+                    20
+                ])
+            }
+            4 => {
+                row["item_reward"]["contents"] =
+                    serde_json::json!([{"item":"oteryn:item.tibia.i3030","count":1}])
+            }
+            5 => row["reversible"] = true.into(),
+            6 => {
+                for storage in row["storage"].as_array_mut().ok_or("storage")? {
+                    storage["preserve"] = true.into();
+                }
+            }
+            7 => row["storage"][0]["read_only"] = true.into(),
+            8 => row["activation"]["track"] = "oteryn:quest-progress/foreign/track".into(),
+            9 => row["activation"]["minimum"] = 0.into(),
+            _ => row["activation"]["maximum"] = 0.into(),
+        }
+        assert!(
+            parse(&serde_json::json!({"schema":1,"callbacks":[row]}).to_string()).is_err(),
+            "case {case}"
+        );
+    }
     Ok(())
 }

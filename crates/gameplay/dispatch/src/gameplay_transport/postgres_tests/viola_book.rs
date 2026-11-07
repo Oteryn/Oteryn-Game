@@ -165,6 +165,7 @@ fn scenario() -> TestResult {
         // No backpack room: refusal must not reserve a cycle or begin the timer.
         for index in 0..20 {
             let request = RewardClaimMintRequest {
+        backpack_outputs: false,
                 command: CommandRef::new(
                     admitted.game_session_id,
                     CommandId::new(100 + index).map_err(debug)?,

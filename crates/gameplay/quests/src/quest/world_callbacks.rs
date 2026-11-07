@@ -143,6 +143,11 @@ pub struct Callback {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outfit_reward: Option<super::reward_callbacks::OutfitReward>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub item_reward: Option<super::reward_callbacks::ItemReward>,
+    /// Route this overlay only during its declared phase; durable storage guards still authorize it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub activation: Option<super::reward_callbacks::TrackRequirement>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub requirements: Option<super::reward_callbacks::RewardRequirements>,
     #[serde(default, skip_serializing_if = "is_false")]
     pub completes: bool,
@@ -225,6 +230,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.monk_reward.is_some()
                     || callback.native_rule.is_some()
                     || callback.outfit_reward.is_some()
+                    || callback.item_reward.is_some()
                     || callback.requirements.is_some()
                     || callback.completes
                     || callback.storage.iter().any(|storage| storage.preserve)))
@@ -234,7 +240,31 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.storage.iter().all(|s| {
                         s.preserve || s.read_only || (s.minimum..=s.maximum).contains(&s.set)
                     })))
+            || callback.activation.as_ref().is_some_and(|a| {
+                callback.trigger != Trigger::Use
+                    || callback.is_read_only()
+                    || a.minimum > a.maximum
+                    || !callback.storage.iter().any(|s| {
+                        s.track == a.track
+                            && s.minimum == a.minimum
+                            && s.maximum == a.maximum
+                            && !s.preserve
+                            && !s.read_only
+                    })
+            })
             || callback.requirements.as_ref().is_some_and(|r| !r.valid())
+            || callback.item_reward.as_ref().is_some_and(|reward| {
+                !reward.valid()
+                    || callback.trigger != Trigger::Use
+                    || callback.storage.is_empty()
+                    || callback.native_rule.is_some()
+                    || callback.monk_reward.is_some()
+                    || callback.outfit_reward.is_some()
+                    || callback.reversible
+                    || callback.storage.iter().all(|s| {
+                        s.preserve || s.read_only || (s.minimum..=s.maximum).contains(&s.set)
+                    })
+            })
             || callback.outfit_reward.as_ref().is_some_and(|reward| {
                 callback.trigger != Trigger::Use
                     || callback.storage.is_empty()

@@ -820,3 +820,20 @@ push cadence; product source remains staged/uncommitted until validation.
 After GREEN stage all source again before pin-refresh (activation/fmt modified
 files after initial stage), run /tmp/questpc7-hidden-validation.py, finalize
 Hidden, commit/push, then implement /tmp/questpc7-hydra-next-plan.txt.
+
+## Hidden Threats and atomic world outputs fully QUALIFIED
+
+Full selected native route RED43.512682362s -> GREEN43.335733047s; expanded
+capacity refusal/retry GREEN46.515011045s; final phase-safe full route
+GREEN45.593580772s on actual PG18.6. No subject quest-state fixtures.
+Retained source routing regression RED97.67s was fixed generically; all15
+story source reward cases GREEN110.64s include all3 original Hidden claims.
+Father11-track route and Sam backpack exchange retained PG proofs pass.
+All18 focused validation gates pass, including strict checks and generated
+pins. HIDDEN-PG-PROOF.json preserves exact commands, markers and fixture fixes.
+GoldNugget3040 ambiguity remains an explicit conservative authored choice.
+Stage final proof/status/pins, commit source and push immediately.12 ACTIVE
+whole selected quests remain; continue Hydra Egg with the existing ordinary
+map pickup/reset owner. /tmp/questpc7-hydra-next-plan.txt contains bounded
+source findings, actual egg/nest positions and next implementation plan.
+No fake UID chest, duplicate quest reward MINT or additional donor investigation.

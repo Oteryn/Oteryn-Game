@@ -369,7 +369,9 @@ fn scenario() -> TestResult {
         let world = super::quest_world_callbacks::world(&Callback {
             key: "oteryn:quest-callback/soul-war-final-reward".into(), quest: "oteryn:quest/soul-war".into(),
             trigger: Trigger::Use, selector: Selector { position: Some(trigger), unique: None, action: None, appearance: None },
-            lever: None, reversible: false, passages: vec![], teleport: None, remote_teleport: None, outfit_reward: None, completes: false, requirements: None, storage: vec![],
+            lever: None, reversible: false, passages: vec![], teleport: None, remote_teleport: None, outfit_reward: None,
+        item_reward: None,
+        activation: None, completes: false, requirements: None, storage: vec![],
             minimum_level: None, experience: None, monk_reward: None, offerings: vec![], item_on_target: None,
             return_on_failure: false, failure_message: None, success_message: None,
             native_rule: None, sources: vec![],
@@ -635,6 +637,7 @@ async fn reward_delivery(
     };
     let backpack = generation_item_facts(native, &bag_definition).map_err(debug)?;
     let mut request = RewardClaimMintRequest {
+        backpack_outputs: false,
         command: CommandRef::new(session, CommandId::new(601).map_err(debug)?),
         claim: TypedDefinitionRef { family: "RewardClaim".into(), production_key: SOUL_WAR_REWARD_CLAIM.into(), revision_ref: SOUL_WAR_REWARD_REVISION.into() },
         source_placement: SOUL_WAR_REWARD_PLACEMENT.into(), item, quantity: 1, backpack,

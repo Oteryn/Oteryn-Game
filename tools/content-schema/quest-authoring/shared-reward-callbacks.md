@@ -111,3 +111,17 @@ its complete expected original UID selector, an explicit native position and
 appearance, and source evidence. Missing targets, changed original selectors,
 duplicates and malformed selectors fail the load. Only the selector and attached
 provenance change; quest guards, effects and transport remain unchanged.
+
+World callbacks may declare a top-level `item_reward` using the same item/count
+shape as NPC `give`. `contents` places children inside the reward container;
+`backpack_outputs` instead places at most19 additional outputs directly in the
+main backpack. These layouts are mutually exclusive. All outputs, capacity,
+weight, custody proofs and quest completion share one fenced MINT transaction.
+World rewards require a stateful once-only USE callback and admitted native
+item/weight facts. Default absent fields preserve legacy callback serialization.
+
+An optional world `activation` track/range routes a selected overlay only during
+its active personal phase, leaving unrelated original object interactions
+available otherwise. It must exactly match a non-preserved storage write guard;
+the fenced writer always rechecks that guard. The admitted quest copy chooses
+routing only and cannot authorize any reward or bypass durable admission.

@@ -22,6 +22,32 @@ pub struct ItemReward {
     pub count: u16,
     #[serde(default)]
     pub contents: Vec<ItemAmount>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub backpack_outputs: Vec<ItemAmount>,
+}
+
+impl ItemReward {
+    pub(super) fn valid(&self) -> bool {
+        let item = |key: &str, count: u16| {
+            key.len() <= 256
+                && (1..=100).contains(&count)
+                && key.strip_prefix("oteryn:item.").is_some_and(|tail| {
+                    !tail.is_empty()
+                        && tail.bytes().all(|b| {
+                            b.is_ascii_lowercase() || b.is_ascii_digit() || b"._/:-".contains(&b)
+                        })
+                })
+        };
+        item(&self.item, self.count)
+            && self.contents.len() <= 20
+            && self.backpack_outputs.len() <= 19
+            && (self.contents.is_empty() || self.backpack_outputs.is_empty())
+            && self
+                .contents
+                .iter()
+                .chain(&self.backpack_outputs)
+                .all(|i| item(&i.item, i.count))
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -175,8 +201,6 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                     })
             })
     };
-    let item =
-        |item: &str, count| slug(item, "oteryn:item.", b"._/:-", 256) && (1..=100).contains(&count);
     if document.schema != 1 || document.callbacks.len() > 256 {
         return Err("reward callback bounds".into());
     }
@@ -236,11 +260,7 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || c.take
                 .iter()
                 .any(|s| !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0)
-            || c.give.as_ref().is_some_and(|r| {
-                !item(&r.item, r.count)
-                    || r.contents.len() > 20
-                    || r.contents.iter().any(|s| !item(&s.item, s.count))
-            })
+            || c.give.as_ref().is_some_and(|r| !r.valid())
             || c.outfit
                 .as_ref()
                 .is_some_and(|r| !slug(&r.outfit, "oteryn:outfit.", b"_", 160) || r.addons > 3)
