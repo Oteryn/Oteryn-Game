@@ -1,3 +1,19 @@
+# WIP exact carpet source facts generated/compiled: push, then pins and PG
+
+Root reachability witness PG134.10s player32589,31642,z3 vs SkeletonEast
+32592,31644,z3, chaseNone. Nine exact static carpet profiles2572-2580 added
+through existing source_gate_item_profiles importer, no geometry/wall changes.
+Native43write+43check PASS. Source5cases RED12.202s ->GREEN12.977s.
+All3629existing profiles unchanged, exactly9added=3638 (scratch preservation
+JSON /tmp/questpc2-carpet-profile-preservation.json). Check18.84s and fmt PASS.
+Current files compile; world pin-refresh/check and post-profile full6 PG/final
+clippy pending, do not call whole quest qualified. Push this WIP checkpoint
+now (15min cadence), then isolated repo pin-refresh/check and focused6case.
+Native/cache exe is latest pre-carpet diagnostic RED; inactivecheck cache
+restored, clippy archived. Park check before memory-heavy pin generation.
+Last positive generic callback/sourceDragon slice9aec13e43 pushed; upper
+traversal WIPa93f449e7 pushed~14:28UTC. Owned27remain, do not endturn.
+
 # WIP upper traversal compiles; actual PG137.73s floor3 combat RED
 
 Source ladder USE and native stairs both succeed. Real combats advance through

@@ -144,7 +144,7 @@ async fn fight(
     let mut dealt_damage = false;
     for pass in 0..512 {
         // The connection scheduler normally drives chase separately from swings.
-        let _ = owner.chase_step_now(player, member.game_session_id).await;
+        let chase = owner.chase_step_now(player, member.game_session_id).await;
         owner
             .refresh_attack_weapon(player, member.game_session_id)
             .await;
@@ -199,6 +199,23 @@ async fn fight(
             super::annihilator_combat::heal(owner, member).await?;
         }
         if pass % 32 == 0 {
+            let (player_at, target_at, origin, maximum, forge) = {
+                let runtime = owner.runtime.lock().await;
+                let current = runtime.companion_snapshot(target).map_err(debug)?;
+                (
+                    runtime
+                        .read_actor_position(player)
+                        .map_err(debug)?
+                        .position(),
+                    current.position,
+                    runtime.creature_spawn_cell(target),
+                    current.maximum_health,
+                    current.forge,
+                )
+            };
+            eprintln!(
+                "ELVENBANE_WIRE_POS pass={pass} player={player_at:?} target={target_at:?} origin={origin:?} maximum={maximum} forge={forge:?} chase={chase:?}"
+            );
             eprintln!(
                 "ELVENBANE_WIRE_ATTACK pass={pass} health={remaining} initial_max={} combat={:?}",
                 initial.maximum_health,

@@ -10,7 +10,7 @@ class SourceGateItemProfiles(unittest.TestCase):
     def test_source_pair_is_exact_ground_only_door_with_level_base(self):
         packet = gate.capture()
         self.assertEqual({r['production_definition']['production_key'] for r in packet['records']},
-                         {f'oteryn:item.tibia.i{i}' for i in (1626,1627,1634,1635,1948,5111,5112,21935)})
+                         {f'oteryn:item.tibia.i{i}' for i in (1626,1627,1634,1635,1948,2572,2573,2574,2575,2576,2577,2578,2579,2580,5111,5112,21935)})
         for record in packet['records']:
             self.assertEqual(record['admission']['legal_destinations'], ['Ground'])
             self.assertEqual(record['semantics']['classification']['value']['item_type'],
@@ -42,6 +42,19 @@ class SourceGateItemProfiles(unittest.TestCase):
             self.assertEqual(row['semantics']['physical']['value']['movable'], {'state':'KNOWN','value':False})
             self.assertEqual(row['semantics']['classification']['value']['item_type'],{'state':'NOT_APPLICABLE'})
             self.assertEqual(row['production_binding']['disposition'],'EXACT')
+
+    def test_source_red_carpet_family_is_static_walkable_with_exact_bindings(self):
+        rows = {r['production_definition']['production_key']: r for r in gate.capture()['records']}
+        for item in range(2572,2581):
+            key = f'oteryn:item.tibia.i{item}'
+            self.assertIn(key, set(rows), 'source floor-three carpet must have native movement facts')
+            row = rows[key]
+            self.assertFalse(row['attributes']['blocks_movement'])
+            self.assertFalse(row['attributes']['blocks_projectile'])
+            self.assertEqual(row['admission']['legal_destinations'], ['Ground'])
+            self.assertEqual(row['semantics']['physical']['value']['movable'], {'state':'KNOWN','value':False})
+            self.assertEqual(row['semantics']['physical']['value']['pickupable'], {'state':'KNOWN','value':False})
+            self.assertEqual(row['production_binding']['disposition'], 'EXACT')
 
     def test_existing_profiles_preserved_and_conflicts_refuse(self):
         packet = gate.capture()

@@ -486,3 +486,29 @@ regression. Earlier RED89.39s ->GREEN88.91s. Check19.24s, clippy58.11s,
 fmt/duplicate migrations PASS. Quest whole qualification is still pending.
 Inspected existing callback execute.rs on QENGINE2@5a6de28c1, PC3@5e72a3f0b,
 PC4@db95b72d3; all retain Monk-only immediate publication, no generic reuse.
+
+
+2026-11-07: actual upper traversal and missing carpet profiles
+
+PG180006 all-six RED88.70s requires6sourcecredits, onlyDragon1 earned.
+Normal ladder32593,31643,z5 USE and stairs32588,31643,z4 then reach actual
+upper floors; corrected next PG137.73s stalls on floor3. Diagnostic PG134.10s
+retains bound target, player32589,31642,z3, SkeletonEast32592,31644,z3,
+chase=None throughout; native Forge scales its actual HP, no fake health.
+Source room's red carpet2572-2580 lacks native profiles. Reuse exact pinned
+source_gate_item_profiles importer to add that closed static family.
+Canary imports/canary/items-xml/items.xml:5314-5316,
+SHA2561cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2,
+identifies red carpet floor decorations. Client objects2572-2580 at
+content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat:1
+prove immovable, non-pickup Ground items, movement/projectile flags false;
+exact bindings imports/crystalserver/bindings/items.json:1 SHA256
+1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a.
+Existing importer validates those complete hashes and canonical conflicts.
+Original placement witness content/world/placements/region-z03-x127-y123.b3:1 SHA256521b9242b03f5f7f5af3aa79c536ce6e31735134de9bc07a2bc593a2125836f9,
+carpet around32589..32593,31643..31646,z3. No source geometry/walls modified.
+QENGINE2@5a6de28c1, PC3@5e72a3f0b, PC4@db95b72d3 have zero exact native
+profiles for2572-2580. Reuse importer, no missing-engine deferral.
+Source5cases RED12.202s missing2572 ->GREEN12.977s with allnine exact flags;
+existing profiles preservation/conflict and original ladder tests unchanged.
+Native43write/check and world pins/full-source PG proof remain in progress.

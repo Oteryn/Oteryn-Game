@@ -1,0 +1,52 @@
+{
+  "id": "native-carpet-reachability-2026-11-07",
+  "lifecycle": "AUTHORING",
+  "whole_quest_qualified": false,
+  "state": "COMPILING_WIP_PIN_AND_FULL_PG_PENDING",
+  "latest_red_pg": {
+    "server_version_num": 180006,
+    "seconds": 134.1,
+    "log": "/tmp/questpc2-upper-six-chase-diagnostic-pg.log",
+    "player": [
+      32589,
+      31642,
+      3
+    ],
+    "defender_origin": [
+      32592,
+      31644,
+      3
+    ],
+    "chase": "None"
+  },
+  "source_profiles": {
+    "ids": [
+      2572,
+      2573,
+      2574,
+      2575,
+      2576,
+      2577,
+      2578,
+      2579,
+      2580
+    ],
+    "old_records": 3629,
+    "new_records": 3638,
+    "all_existing_records_unchanged": true,
+    "preservation": "/tmp/questpc2-carpet-profile-preservation.json"
+  },
+  "source_tests": {
+    "cases": 5,
+    "red_seconds": 12.202,
+    "green_seconds": 12.977
+  },
+  "native_generation": "43write+43check PASS",
+  "check_seconds": 18.84,
+  "fmt": "PASS",
+  "pending": [
+    "world pin-refresh/check",
+    "post-profile full six-defender PG",
+    "final all-target/all-feature clippy"
+  ]
+}

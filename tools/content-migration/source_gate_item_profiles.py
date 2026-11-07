@@ -11,6 +11,9 @@ XML:3517-3519 declares open archways1626/1627, XML:43330 grass21935.
 Pinned client flags, not those names, prove their static walkable collision.
 The same capture admits passable buttresses1634/1635 (XML:3544), the final
 original entrance frontier; no walls or collision flags are overridden.
+XML:5314-5316 declares red carpet2572-2580. Their exact pinned client flags
+prove immovable, non-pickup, nonblocking floor decorations; the importer
+provides their missing native facts rather than changing source geometry.
 """
 import hashlib
 import json
@@ -22,7 +25,10 @@ sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
 import build_source_item_profiles as source
 import grizzly_shop_profiles as accepted
 
-CLASSES = {1626: None, 1627: None, 1634: None, 1635: None, 1948: "ladder", 5111: "door", 5112: "door", 21935: None}
+CLASSES = {1626: None, 1627: None, 1634: None, 1635: None, 1948: "ladder",
+           2572: None, 2573: None, 2574: None, 2575: None, 2576: None,
+           2577: None, 2578: None, 2579: None, 2580: None,
+           5111: "door", 5112: "door", 21935: None}
 IDS = set(CLASSES)
 XML = 'imports/canary/items-xml/items.xml'
 XML_SHA = '1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2'
