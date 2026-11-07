@@ -25,18 +25,30 @@
       "town": "Ab'Dendriel",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/21",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/23",
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-02",
+        "postgres_red_seconds": 29.32,
+        "postgres_green_seconds": 81.33,
+        "scope": "Previously authored placement-only rows. Current canonical map admission, native coordinates/floor and exact names; no additional quest/service claims."
+      }
     },
     {
       "npc": "Elvith",
       "town": "Ab'Dendriel",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/95",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/98",
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-02",
+        "postgres_red_seconds": 29.32,
+        "postgres_green_seconds": 81.33,
+        "scope": "Previously authored placement-only rows. Current canonical map admission, native coordinates/floor and exact names; no additional quest/service claims."
+      }
     },
     {
       "npc": "Olrik",
@@ -118,9 +130,15 @@
       "town": "Blue Valley",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/104",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/107",
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-02",
+        "postgres_red_seconds": 29.32,
+        "postgres_green_seconds": 81.33,
+        "scope": "Previously authored placement-only rows. Current canonical map admission, native coordinates/floor and exact names; no additional quest/service claims."
+      }
     },
     {
       "npc": "A Helpful Fairy",
@@ -170,9 +188,15 @@
       "town": "Carlin",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/58",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/60",
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-02",
+        "postgres_red_seconds": 29.32,
+        "postgres_green_seconds": 81.33,
+        "scope": "Previously authored placement-only rows. Current canonical map admission, native coordinates/floor and exact names; no additional quest/service claims."
+      }
     },
     {
       "npc": "Liane",
@@ -188,9 +212,15 @@
       "town": "Carlin",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/260",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/263",
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-02",
+        "postgres_red_seconds": 29.32,
+        "postgres_green_seconds": 81.33,
+        "scope": "Previously authored placement-only rows. Current canonical map admission, native coordinates/floor and exact names; no additional quest/service claims."
+      }
     },
     {
       "npc": "Altar",
@@ -227,9 +257,15 @@
       "town": "Darashia",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/96",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/99",
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-02",
+        "postgres_red_seconds": 29.32,
+        "postgres_green_seconds": 81.33,
+        "scope": "Previously authored placement-only rows. Current canonical map admission, native coordinates/floor and exact names; no additional quest/service claims."
+      }
     },
     {
       "npc": "Kasmir",
@@ -3559,6 +3595,34 @@
       },
       "self_review": "Only Edgar-Ellen canonical declaration changed; no identities added/removed. All pre-existing reward item profiles exactly preserved;15 reviewed passive profiles added with canonical weights and other custody conflict guards retained. No compiler/collision bypass, binary, workflow, repository-tool edit, test deletion or weakened assertion.",
       "next": "Push immediately, then continue existing placement-only rows in3-6-entry historical RED/current GREEN batches; retain all cumulative assertions."
+    },
+    {
+      "name": "retail-population-qualification-02",
+      "state": "QUALIFIED",
+      "entries": [
+        "Alkestios",
+        "Elvith",
+        "Enpa Rudra",
+        "Cerdras",
+        "Padreia",
+        "Elyen Ravenlock"
+      ],
+      "scope": "Previously authored placement-only rows. Current canonical map admission, native coordinates/floor and exact names; no additional quest/service claims.",
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 29.32,
+        "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-02-red.log"
+      },
+      "fixture_regression": "Cumulative current run72.67s exposed KeysNotAscending. Sort only constructed runtime table keys; production ordering guard and all case assertions retained.",
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 81.33,
+        "cumulative_cases": 12,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-02-final-green.log"
+      },
+      "checks": "PASS fmt; dispatch alltargets/allfeatures check and strict clippy. No production authoring data or pin inputs changed. Also repaired39 compound lane evidence references to the current shard.",
+      "next": "Immediately commit/fetch/merge/push, then restart placement helper from clean HEAD; retain all prior cumulative cases and respect workshop reservations."
     }
   ],
   "owner_constraints": {

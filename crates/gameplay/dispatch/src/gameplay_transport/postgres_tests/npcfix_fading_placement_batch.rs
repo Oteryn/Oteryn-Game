@@ -197,6 +197,8 @@ fn scenario() -> TestResult {
                     }],
                 });
             }
+            // Batch history is append-only; the runtime table requires canonical key order.
+            placements.sort_by(|left, right| left.key.cmp(&right.key));
             prepare_current_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h

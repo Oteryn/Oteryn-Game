@@ -87,6 +87,73 @@
           }
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-02",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.alkestios",
+          "name": "Alkestios",
+          "expected": {
+            "x": 32615,
+            "y": 31735,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.elvith",
+          "name": "Elvith",
+          "expected": {
+            "x": 32669,
+            "y": 31607,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.enpa_rudra",
+          "name": "Enpa Rudra",
+          "expected": {
+            "x": 33604,
+            "y": 31447,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.cerdras",
+          "name": "Cerdras",
+          "expected": {
+            "x": 32301,
+            "y": 31816,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.padreia",
+          "name": "Padreia",
+          "expected": {
+            "x": 32300,
+            "y": 31816,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.elyen_ravenlock",
+          "name": "Elyen Ravenlock",
+          "expected": {
+            "x": 33013,
+            "y": 32359,
+            "floor": -11
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }
