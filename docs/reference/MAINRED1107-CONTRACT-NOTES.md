@@ -50,6 +50,25 @@ native_combat_presentation damage_heal_and_hit_effect_reach_the_play_scene
 green (0.00 s; 36.501 s including Cargo). Clippy for all harness targets with
 `-D warnings` passed in 19.934 s.
 
+## Server Seam bootstrap ordering
+
+MAINRED14 `9d0925238` assumed ambience always preceded the channel list.
+The chat and visibility owners each use independent 250 ms timers, and
+Serene can also publish ambience. A channel-first interleaving therefore
+has valid contiguous server sequences and exact owner state but failed the
+qualification's global ordering assumption. The local regression reproduced
+the reported channel-list 1 / ambient 2 / party-icons 3 failure before the fix.
+
+The qualifier now matches expected owners in their received wire order,
+requiring exact event counts, payloads and per-domain revisions plus server
+sequences 1..N. Missing, duplicate, extra and corrupt owner state is still
+rejected. The regression checks all six interleavings and negative cases.
+`cargo test --locked -p oteryn-game-server --lib initial_pushes_ -- --nocapture`
+went from one failing/one passing case to two passing cases (0.00 s;
+17.165 s including Cargo). Full local WP5 runs compiled the server but Docker
+failed extracting its pinned PHP layer with `no space left on device`;
+no full-topology pass is inferred from the unit regression.
+
 The retained producer notes follow.
 
 # Integrated producer contract notes
