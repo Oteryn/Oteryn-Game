@@ -713,3 +713,12 @@ Renumbered 1320 validation: real-dispatch PostgreSQL passed in 72.30 seconds;
 physical snapshot PostgreSQL passed in 137.88 seconds. Pin refresh/check regenerated
 and verified the unchanged world artifact. Migration duplicate check runs on the
 committed candidate before publication.
+
+### QWORLD scheduling checkpoint (WIP)
+Migration `1321_world_change_occurrence_decisions.sql` is in the allocated range.
+The reset catalogue supports native daily, chance, calendar, rotation, and
+kill-counter rules; native choices are stored as an owned occurrence payload.
+The implementation compiles (focused check: 1m31s). Remaining validation points:
+generic-rule PostgreSQL cases, regenerated pins for the new runtime catalogue,
+and a fail-closed distinction between legacy upgrade and a missing already-bound
+occurrence payload. This checkpoint is not final qualification.

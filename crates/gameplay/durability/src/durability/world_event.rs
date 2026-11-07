@@ -14,12 +14,20 @@ use oteryn_protocol_oteryn::world_event::{
 };
 use sqlx::{Postgres, Row, Transaction};
 
+#[path = "world_event/occurrence.rs"]
+mod occurrence;
+
+pub(super) fn prepare_catalogue() -> Result<oteryn_gameplay_world_change::rules::Catalogue, DurabilityError> {
+    oteryn_gameplay_world_change::rules::Catalogue::embedded().map_err(|_| DurabilityError::InvalidStoredState)
+}
+
 /// Called exclusively inside reset finalization, including unknown-commit replay.
 pub(super) async fn record_reset(
     tx: &mut Transaction<'_, Postgres>,
     world: WorldId,
     epoch: u64,
     is_new: bool,
+    catalogue: &oteryn_gameplay_world_change::rules::Catalogue,
 ) -> Result<(), DurabilityError> {
     if epoch == 0 {
         return Err(DurabilityError::InvalidStoredState);
@@ -35,7 +43,7 @@ pub(super) async fn record_reset(
     if stored != (!announcement.is_empty(), announcement.to_owned()) {
         return Err(DurabilityError::InvalidStoredState);
     }
-    capture_calendar(tx, world, epoch).await?;
+    capture_calendar(tx, world, epoch, catalogue).await?;
     super::world_event_outcomes::capture_reset(tx, world, epoch).await?;
     Ok(())
 }
@@ -58,23 +66,34 @@ impl DurabilityRoot {
         epoch: u64,
         rule: WorldChangeCounter,
     ) -> Result<(), DurabilityError> {
-        if rule.key.is_empty() || rule.key.len() > 100 || !rule.key.bytes().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'_')
-            || rule.creature.is_empty() || rule.creature.len() > 256 || rule.goal == 0 {
-            return Err(DurabilityError::InvalidStoredState);
-        }
+        use oteryn_gameplay_world_change::rules::{Counter, Definition, Schedule};
+        self.bind_world_change_definition(authority, world, epoch, Definition {
+            key: rule.key, schedule: Schedule::AtReset { chance_permille: 1000 },
+            counter: Some(Counter { creature: rule.creature, kills: rule.goal, initial_active: false, active_on_goal: true }),
+            sources: vec!["oteryn:production/world_event/bind_world_change_counter".into()],
+        }).await
+    }
+
+    /// Register one immutable rule in the current occurrence. Authored reset
+    /// catalogues apply automatically at each save; this entry point also serves
+    /// fenced native event producers that discover their rule during bootstrap.
+    pub async fn bind_world_change_definition(
+        &self, authority: &ReconciledCharacterAuthority<'_, '_>, world: WorldId, epoch: u64,
+        definition: oteryn_gameplay_world_change::rules::Definition,
+    ) -> Result<(), DurabilityError> {
+        definition.validate().map_err(|_| DurabilityError::InvalidStoredState)?;
         let recovery = authority.record_for(self).map_err(|_| DurabilityError::InvalidStoredState)?;
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
+            occurrence::lock(&mut tx, world).await?;
             let current: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric)")
                 .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_one(&mut *tx).await?;
             if !current { return Err(DurabilityError::InvalidStoredState); }
-            sqlx::query("INSERT INTO game_world_change_states(world_id,reset_epoch,change_key,active,creature_key,kill_goal) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,false,$4,$5) ON CONFLICT DO NOTHING")
-                .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind(&rule.key).bind(&rule.creature).bind(i64::from(rule.goal)).execute(&mut *tx).await?;
-            let matches: bool = sqlx::query_scalar("SELECT coalesce(creature_key=$4 AND kill_goal=$5,false) FROM game_world_change_states WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric AND change_key=$3")
-                .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind(&rule.key).bind(&rule.creature).bind(i64::from(rule.goal)).fetch_one(&mut *tx).await?;
-            if !matches { return Err(DurabilityError::InvalidStoredState); }
+            let bound = occurrence::load(&mut tx, world, epoch).await?;
+            occurrence::capacity(&mut tx, world, epoch, &definition.key).await?;
+            occurrence::insert(&mut tx, world, epoch, &bound, &definition).await?;
             commit_semantic_transaction(tx, deadline).await?;
             Ok(())
         })).await
@@ -87,10 +106,13 @@ impl DurabilityRoot {
             lock_admission_relations(&mut tx).await?;
             let (month, day): (i16,i16) = sqlx::query_as("SELECT c.month,c.day FROM game_world_change_calendar c JOIN game_world_reset_active a USING(world_id,reset_epoch) WHERE c.world_id=encode($1,'hex')::uuid AND c.reset_epoch=$2::text::numeric")
                 .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_one(&mut *tx).await?;
-            let mut changes = oteryn_gameplay_world_change::daily::roll_calendar(world.as_bytes(), epoch, u8::try_from(month).map_err(|_| DurabilityError::InvalidStoredState)?, u8::try_from(day).map_err(|_| DurabilityError::InvalidStoredState)?);
-            changes.their_masters_voice = change_active(&mut tx, world, "their_masters_voice").await?;
-            changes.grimvale_full_moon = change_active(&mut tx, world, "grimvale").await?;
+            let bound = occurrence::load(&mut tx, world, epoch).await?;
+            if i16::from(bound.month) != month || i16::from(bound.day) != day { return Err(DurabilityError::InvalidStoredState); }
+            let mut changes = bound.native;
+            // Same key order as definition and kill writers.
             changes.fury_gates = change_active(&mut tx, world, "fury_gates").await?.then_some(changes.fury_exit);
+            changes.grimvale_full_moon = change_active(&mut tx, world, "grimvale").await?;
+            changes.their_masters_voice = change_active(&mut tx, world, "their_masters_voice").await?;
             commit_semantic_transaction(tx, deadline).await?;
             Ok(changes)
         })).await
@@ -110,6 +132,7 @@ impl DurabilityRoot {
 
     /// Read the calendar captured atomically by reset finalization.
     pub async fn world_change_calendar(&self, world: WorldId, epoch: u64) -> Result<(u8, u8), DurabilityError> {
+        let catalogue = prepare_catalogue()?;
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             lock_admission_relations(&mut tx).await?;
@@ -117,7 +140,7 @@ impl DurabilityRoot {
                 .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_one(&mut *tx).await?;
             if epoch == 0 || !current { return Err(DurabilityError::InvalidStoredState); }
             // Upgrade an already-existing epoch from its immutable activation time.
-            capture_calendar(&mut tx, world, epoch).await?;
+            capture_calendar(&mut tx, world, epoch, &catalogue).await?;
             let (month, day): (i16, i16) = sqlx::query_as("SELECT c.month,c.day FROM game_world_change_calendar c JOIN game_world_reset_active a USING(world_id,reset_epoch) WHERE c.world_id=encode($1,'hex')::uuid AND c.reset_epoch=$2::text::numeric")
                 .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_one(&mut *tx).await?;
             let calendar = (u8::try_from(month).map_err(|_| DurabilityError::InvalidStoredState)?, u8::try_from(day).map_err(|_| DurabilityError::InvalidStoredState)?);
@@ -215,6 +238,7 @@ impl DurabilityRoot {
                 return Err(DurabilityError::InvalidStoredState);
             }
             if state.reset_epoch != 0 {
+                occurrence::load(&mut tx, world, state.reset_epoch).await?;
                 let decisions: Vec<(String, bool)> = sqlx::query_as("SELECT change_key,active FROM game_world_change_states WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric AND change_key IN ('fury_gates','grimvale','their_masters_voice') ORDER BY change_key LIMIT 3")
                     .bind(world.as_bytes().as_slice()).bind(state.reset_epoch.to_string()).fetch_all(&mut *tx).await?;
                 if decisions.len() != 3 { return Err(DurabilityError::InvalidStoredState); }
@@ -250,8 +274,14 @@ impl DurabilityRoot {
 
 /// Read the active occurrence only; old epochs can never grant current progress.
 pub(super) async fn change_active(tx: &mut Transaction<'_, Postgres>, world: WorldId, key: &str) -> Result<bool, DurabilityError> {
-    Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_change_states s JOIN game_world_reset_active a USING(world_id,reset_epoch) WHERE s.world_id=encode($1,'hex')::uuid AND s.change_key=$2 AND s.active)")
-        .bind(world.as_bytes().as_slice()).bind(key).fetch_one(&mut **tx).await?)
+    let row: Option<(String,bool)> = sqlx::query_as("SELECT s.reset_epoch::text,s.active FROM game_world_change_states s JOIN game_world_reset_active a USING(world_id,reset_epoch) WHERE s.world_id=encode($1,'hex')::uuid AND s.change_key=$2 FOR SHARE OF s")
+        .bind(world.as_bytes().as_slice()).bind(key).fetch_optional(&mut **tx).await?;
+    if let Some((epoch,true)) = row {
+        let epoch = epoch.parse().map_err(|_| DurabilityError::InvalidStoredState)?;
+        occurrence::load(tx,world,epoch).await?;
+        return Ok(true);
+    }
+    Ok(false)
 }
 
 /// Composed with the existing sealed lethal-occurrence receipt. Replay returns
@@ -262,24 +292,24 @@ pub(super) async fn capture_kill<const N: usize>(
 ) -> Result<(), DurabilityError> {
     let Some(member) = input.members.first() else { return Err(DurabilityError::InvalidStoredState); };
     let world = member.fence.runtime_scope.world_id();
+    let epoch: Option<String> = sqlx::query_scalar("SELECT a.reset_epoch::text FROM game_world_reset_active a WHERE a.world_id=encode($1,'hex')::uuid AND EXISTS(SELECT 1 FROM game_world_change_states s WHERE (s.world_id,s.reset_epoch)=(a.world_id,a.reset_epoch) AND s.creature_key=$2)")
+        .bind(world.as_bytes().as_slice()).bind(&input.creature).fetch_optional(&mut **tx).await?;
+    let Some(epoch) = epoch else { return Ok(()); };
+    occurrence::load(tx,world,epoch.parse().map_err(|_| DurabilityError::InvalidStoredState)?).await?;
     // Stable row order across Channels sharing a World. Goals saturate so an
     // arbitrarily long-lived occurrence cannot overflow or repeatedly flip.
-    sqlx::query("WITH locked AS (SELECT s.world_id,s.reset_epoch,s.change_key FROM game_world_change_states s JOIN game_world_reset_active a USING(world_id,reset_epoch) WHERE s.world_id=encode($1,'hex')::uuid AND s.creature_key=$2 ORDER BY s.change_key FOR UPDATE OF s) UPDATE game_world_change_states s SET counter=s.counter+CASE WHEN s.counter<s.kill_goal THEN 1 ELSE 0 END,active=(s.counter>=s.kill_goal-1) FROM locked l WHERE (s.world_id,s.reset_epoch,s.change_key)=(l.world_id,l.reset_epoch,l.change_key)")
+    sqlx::query("WITH locked AS (SELECT s.world_id,s.reset_epoch,s.change_key FROM game_world_change_states s JOIN game_world_reset_active a USING(world_id,reset_epoch) WHERE s.world_id=encode($1,'hex')::uuid AND s.creature_key=$2 ORDER BY s.change_key FOR UPDATE OF s) UPDATE game_world_change_states s SET counter=s.counter+CASE WHEN s.counter<s.kill_goal THEN 1 ELSE 0 END,active=CASE WHEN s.counter>=s.kill_goal-1 THEN s.goal_active ELSE s.active END FROM locked l WHERE (s.world_id,s.reset_epoch,s.change_key)=(l.world_id,l.reset_epoch,l.change_key)")
         .bind(world.as_bytes().as_slice()).bind(&input.creature).execute(&mut **tx).await?;
     Ok(())
 }
 
-async fn capture_calendar(tx: &mut Transaction<'_, Postgres>, world: WorldId, epoch: u64) -> Result<(), DurabilityError> {
+async fn capture_calendar(tx: &mut Transaction<'_, Postgres>, world: WorldId, epoch: u64, catalogue: &oteryn_gameplay_world_change::rules::Catalogue) -> Result<(), DurabilityError> {
     sqlx::query("INSERT INTO game_world_change_calendar(world_id,reset_epoch,month,day) SELECT world_id,reset_epoch,EXTRACT(MONTH FROM activated_at AT TIME ZONE 'UTC')::smallint,EXTRACT(DAY FROM activated_at AT TIME ZONE 'UTC')::smallint FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric ON CONFLICT DO NOTHING")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).execute(&mut **tx).await?;
     let (month, day): (i16,i16) = sqlx::query_as("SELECT month,day FROM game_world_change_calendar WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_one(&mut **tx).await?;
     let month = u8::try_from(month).map_err(|_| DurabilityError::InvalidStoredState)?;
     let day = u8::try_from(day).map_err(|_| DurabilityError::InvalidStoredState)?;
-    let changes = oteryn_gameplay_world_change::daily::roll_calendar(world.as_bytes(), epoch, month, day);
-    for (key, active) in [("their_masters_voice", changes.their_masters_voice), ("grimvale", changes.grimvale_full_moon), ("fury_gates", changes.fury_gates.is_some())] {
-        sqlx::query("INSERT INTO game_world_change_states(world_id,reset_epoch,change_key,active) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,$4) ON CONFLICT DO NOTHING")
-            .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind(key).bind(active).execute(&mut **tx).await?;
-    }
+    occurrence::capture(tx,world,epoch,month,day,catalogue).await?;
     Ok(())
 }
