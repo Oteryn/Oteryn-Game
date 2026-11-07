@@ -1221,7 +1221,7 @@
     "title": "Mintwallin Cyclops Quest",
     "canonical": "oteryn:quest.mintwallin_cyclops_quest",
     "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/60/definition",
-    "status": "UNFINISHED",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [
       {
@@ -1230,10 +1230,7 @@
         "retained_test": "quest_catalogue_chests_phase_a_11_use_replay_and_refusal"
       }
     ],
-    "blocker": {
-      "missing_piece": "The source scene is PG-qualified. The Ruby cache at32591,32097,14 appearance2472 ordinal1 has no native UID6138; its explicit placement alias is being implemented against the existing once-only claim."
-    },
-    "disposition": "authoring",
+    "disposition": "qualified-current-lane",
     "qualified_elsewhere": [],
     "mechanism": "asymmetric_map_effects_multi_actor_moves",
     "round": "L7",
@@ -1244,8 +1241,16 @@
         "marker": "POSTGRES_CASE_COMPLETED questpc8_mintwallin_scene",
         "duration_seconds": 25.397996587,
         "proof": "native-scenes-validation.json"
+      },
+      {
+        "scope": "Actual untagged native Ruby cache, existing source claim and once-only mint/replay",
+        "test": "questpc8_mintwallin_native_cache_without_uid_mints_ruby_once",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_mintwallin_native_cache",
+        "duration_seconds": 25.495190726,
+        "proof": "native-alias-validation.json"
       }
-    ]
+    ],
+    "qualification_scope": "Complete selected native source scene and original once-only Ruby cache; no additional authored recipe is present."
   },
   {
     "title": "Mystery of the Valley Quest",
@@ -1297,9 +1302,6 @@
     "disposition": "authoring",
     "qualified_elsewhere": [],
     "mechanism": "native chosen exploration, captured Giant Spider death, exact central chest and atomic three-item backpack MINT",
-    "blocker": {
-      "missing_piece": "PG green38.609s; final static/regression checks and independent review in progress"
-    },
     "round": "L7",
     "qualified_components": [
       {
@@ -1312,9 +1314,20 @@
         "log_sha256": "fb8e46d5fa3c56c288cb9197df965c03d7ed83b10f86d3afd7592dd68b536fc9",
         "red_duration_seconds": 27.97,
         "red_failure": "open+absent lever revision advanced from 1 to 2"
+      },
+      {
+        "scope": "Native guardian, capacity refusal, exact direct backpack outputs, completion and replay",
+        "test": "questpc8_smith_cache_native_guardian_and_atomic_outputs",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_smith_cache_native_guardian_and_atomic_outputs",
+        "duration_seconds": 26.27184565,
+        "proof": "native-alias-smith-merge-validation.json"
       }
     ],
-    "proof": "cloud-smith-cache-proof.json"
+    "proof": "cloud-smith-cache-proof.json",
+    "qualification_scope": "Complete chosen exploration/Giant Spider/cache programme with exact hammer1, Talon1 and gold100 atomic outputs; retained source four-state lever is separately PG-qualified.",
+    "blocker": {
+      "missing_piece": "Finishing production guardian activation and its real-spawn PG proof; cached grant/kill and MINT proofs retained."
+    }
   },
   {
     "canonical": "oteryn:quest.triangle_tower_quest",

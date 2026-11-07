@@ -1,26 +1,32 @@
-# Current source-scene batch
+# Current completed native reward batch
 
-Mintwallin scene PG RED1.72s after PostgreSQL initialization, GREEN25.397996587s.
-New bounded scene projection supports32 edits without changing the old eight-
-passage limit. All nine removals, two creations, lever removal, stale refusal,
-replay and source-floor reconstruction passed.17 world callback units pass;
-Giant four-state source regression passes25.07s. Check, strict Clippy, fmt, generator and pin refresh/check pass.
-World digest is unchanged. No Cargo or pin job remains active. Logs /tmp/questpc8-scene-* and validation record
-native-scenes-validation.json. This is a source component, not whole Mintwallin
-qualification yet. Ruby cache native map has appearance2472 at32591,32097,14,
-ordinal1, no UID6138. Original claim is oteryn:reward-claim.kv.mintwallincyclops,
-reward i3028 x1, existing once-per-character identity. Next implement an explicit
-native placement alias supplement, preserving the source record and claim key;
-never allow arbitrary missing-UID fallback or any alias over a conflicting UID.
-Only embedded approved aliases should apply; fixture binder stays strict.
+Mintwallin Cyclops and Giant Smithhammer are QUALIFIED in this lane. Mintwallin
+retains its original Ruby claim/once ledger through one approved native alias;
+its eleven-edit source scene was already PG-qualified. Smith's chosen native
+exploration/guardian/cache gives hammer1, Talon1 and gold100 through reusable
+atomic backpack outputs, with full-capacity refusal and replay. Both features
+survived the concurrent-head merge. Do not redo either programme.
 
+Combined PG: Mintwallin25.03837681s, smith26.27184565s, nested bag25.879177332s,
+Father's exact atomic eleven-track acceptance47.156350738s and exact-charge
+chest29.083511268s. All-feature six-crate check, strict all-target/all-feature
+Clippy, fmt,16 profile units,40-file generator drift and pin refresh/check pass.
+World digest remains2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968.
+See native-alias-smith-merge-validation.json. An additional out-of-lane full
+Father eight-hand-in probe hit pre-existing missing native Item profiles; the
+exact before/after profile comparison is retained there, and no tests/guards
+were weakened. This is distinct from the required atomic write, which passed.
 
-The Tinder Box merge passed PG26.193199456s, Mintwallin scene revalidation
-25.09514015s,17 world units, all-feature check, strict all-target/all-feature
-Clippy and fmt. Preserve source scene support and native item admission.
-No Cargo job is active. Native Ruby cache alias is the next active slice; its
-RED test and strict alias implementation are drafted in /tmp/questpc8-native-*.
-Do not redo Tinder Box. Counts below:3 qualified here,3 elsewhere,17 remaining.
+Counts:5 qualified here,3 elsewhere,15 remaining. Next chosen batch is Voodoo
+Doll, Mastermind Potion and Kormarak. Scratch drafts (not applied):
+/tmp/questpc8-retrieval-tests.rs, /tmp/questpc8-apply-retrieval-data.py and
+/tmp/questpc8-next-retrieval-batch.md. First add only test harness/mount data and
+run all three PG cases RED; then add callbacks/death objectives/item profiles.
+Kormarak also needs an explicitly authored native guardian counterpart: current
+map has body32342,32125,z10 (4240 ordinal2) but no confirmed source coffin/guardian
+there. Use a documented conservative chosen restoration; never label it donor
+fact. No reference copies or binaries. Final stable candidate review remains
+for the completed lane; current state is AUTHORING.
 
 # questpc8 — AUTHORING
 
@@ -31,8 +37,8 @@ to ten minutes; document conservative choices in CONTRACT-NOTES.md. Shared
 engine features belong to this lane. Earlier publication bans are superseded.
 
 Scope: LANE-L7.json,23 entries. Triangle Tower, Waterfall and Vampire Shield are
-QUALIFIED elsewhere. Killing in the Name of, Braindeath and Tinder Box are QUALIFIED here;
-17 remain. Historical non-L7 rows are not additional scope. Preserve exclusions
+QUALIFIED elsewhere. Killing in the Name of, Braindeath, Tinder Box, Mintwallin and Giant Smithhammer are QUALIFIED here;
+15 remain. Historical non-L7 rows are not additional scope. Preserve exclusions
 Dawnport, W14/P23/X01-X06, atomic Father's Burden11-track write and exact charges.
 
 Pushed28a7715f7 after d90c1bfa2: Braindeath chosen exploration/native death/coffin
@@ -117,3 +123,9 @@ spawn, before qualification. Work is author-owned and continuing.
 Git local author identity corrected; future divergent merges use --no-commit
 and an explicit attributed/trailered commit. Published9bfd retains the earlier
 default-identity merge; history will not be rewritten.
+
+Concurrent7acf3ab44 adds and qualifies Mintwallin native cache alias; preserve
+all native-alias-smith-merge-validation.json proof. Smith cached grant/kill
+proofs retained, but live population contains no chamber Giant Spider. Keep
+Smith in verification while adding bounded guardian activation and a test
+that fights that actual spawned actor. Next source work belongs to this root.

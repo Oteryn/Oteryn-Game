@@ -1022,7 +1022,8 @@ pub(super) fn catalogue_source_world(
                 palette,
                 depth: 0,
                 attrs: sector::Attrs {
-                    unique: Some(unique),
+                    // Zero requests the actual native placement without a retained source tag.
+                    unique: (chest.unique != 0).then_some(unique),
                     ..Default::default()
                 },
             });

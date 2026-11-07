@@ -63,5 +63,6 @@
     "duration_seconds": 66.01,
     "passed": 1,
     "test": "catalogue_npc_father_fresh_acceptance_is_one_eleven_track_transaction"
-  }
+  },
+  "merged_validation": "native-alias-smith-merge-validation.json"
 }
