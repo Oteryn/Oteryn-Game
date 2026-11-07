@@ -66,7 +66,7 @@
         32737,
         8
       ],
-      "connected_tiles": 263,
+      "connected_tiles": 266,
       "reason": null,
       "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:24"
     },
@@ -154,7 +154,7 @@
         32802,
         11
       ],
-      "connected_tiles": 287,
+      "connected_tiles": 290,
       "reason": null,
       "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:68"
     },
@@ -242,7 +242,7 @@
         32281,
         8
       ],
-      "connected_tiles": 70,
+      "connected_tiles": 72,
       "reason": null,
       "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:112"
     },
@@ -374,7 +374,7 @@
         31023,
         8
       ],
-      "connected_tiles": 226,
+      "connected_tiles": 234,
       "reason": null,
       "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:178"
     },
@@ -396,7 +396,7 @@
         31027,
         2
       ],
-      "connected_tiles": 504,
+      "connected_tiles": 518,
       "reason": null,
       "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:189"
     },
@@ -462,7 +462,7 @@
         32450,
         11
       ],
-      "connected_tiles": 183,
+      "connected_tiles": 200,
       "reason": null,
       "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:222"
     },
@@ -484,7 +484,7 @@
         31677,
         15
       ],
-      "connected_tiles": 110,
+      "connected_tiles": 113,
       "reason": null,
       "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:233"
     },
@@ -594,7 +594,7 @@
         31187,
         10
       ],
-      "connected_tiles": 273,
+      "connected_tiles": 278,
       "reason": null,
       "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:288"
     },
@@ -660,13 +660,13 @@
         32588,
         4
       ],
-      "connected_tiles": 162,
+      "connected_tiles": 164,
       "reason": null,
       "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:321"
     }
   ],
   "inputs_sha256": {
-    "content/items/definitions/spell-native-profiles.json": "8dddf732916bffc7a8151ac772e73e4a9f47ca4d51768d76245295232557c5fd",
+    "content/items/definitions/spell-native-profiles.json": "1a40834da179e52c515b4411826674489bbe3f133d19a0af7c19fc7fd5bee543",
     "content/quests/killing-in-the-name-of.json": "954cd1b9feba72e3c01f03ed97d68ff08fcd78ab0bf8f1ae779c6abff9ce8309",
     "content/world/objects/objects-00000-00499.json": "76b4489d66b2affaa0929dc449e9a5f21c7f454d2fb66453e3a6757861f8fd9f",
     "content/world/objects/objects-00500-00999.json": "2ebd31bd6ba0bb6cd3f1561258b61893954891e9b907ef918444ddbb4206c1fb",
@@ -697,7 +697,7 @@
     "content/world/objects/objects-12782-12876.json": "a5b1b3f7fb8beb9b82b089f099bd401a62372a9a6602a2c5b4eb5bd6ac9a0a3a",
     "content/world/objects/objects-12877-12916.json": "2c190feb8bf04817077ffe9126360e1aac81652221ccd232d7436616ad9ddcaa",
     "content/world/objects/objects-12917-12931.json": "f261d0a2cc18309b9fb76b1b5f3970ef800586ae5d3562e885fb1a908b4cfb69",
-    "content/world/placements/index.json": "1261bae1bfbcc327a88ab10e0ee8889092e7fe33e89a8d1182d31dffb5287183",
+    "content/world/placements/index.json": "390b23d8622f4773492cd3200e934226c1e75c4fc2fac7f7e6d615f78baa8eb8",
     "content/world/placements/region-z01-x129-y121.b3": "c11e0e3ea456fbee69b320b8f4e8cacf2240e142045dacec81c91c679560d2be",
     "content/world/placements/region-z02-x125-y121.b3": "5d704484eadabaad8beca02502b161149daee492591a3369b30a0866c311a520",
     "content/world/placements/region-z02-x129-y121.b3": "c280a3777ab40f568fd4cda4883af45ceaea36e0a4bdc15e87b9ab3c237d34c3",
@@ -748,6 +748,9 @@
     "content/world/terrain/terrain-08548-08577.json": "5f2dca58c5b7e16dc66e2278ade5f8b23c4a30605c4390cdfe5b7a72377d7357",
     "content/world/terrain/terrain-08578-08611.json": "471e062add36ecdf53b6f4d4ab9d22313bab683fce781cb63ffbba8a165f00f4",
     "content/world/terrain/terrain-08612-08612.json": "fc560952a802576672c9473d12d1fab8013eeca07136a79c0b8732b5a2f485cf",
-    "content/world/terrain/terrain-08613-08613.json": "aefdac30e8f0a33bbb52acd1d4e160b33c7f40ce9d8d447496ba95d525b182aa"
+    "content/world/terrain/terrain-08613-08613.json": "aefdac30e8f0a33bbb52acd1d4e160b33c7f40ce9d8d447496ba95d525b182aa",
+    "content/world/terrain/terrain-08614-08614.json": "e93a2019073f206f44d807c686e9146456f64a4e313c719d9cd667fec2688cdc",
+    "content/world/terrain/terrain-08615-08617.json": "25fc8225052639d654a8264b104881c273e9437b9eb06198648b5cd4be9dbbfa",
+    "content/world/terrain/terrain-08618-08619.json": "126abd47da2be4760462c88ed1116909e8bb91dcb6bcaaee5d693f5c5e2e3011"
   }
 }

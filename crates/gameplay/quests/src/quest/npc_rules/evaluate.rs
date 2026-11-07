@@ -12,6 +12,7 @@ struct Staged<'a> {
     tracks: BTreeMap<String, i64>,
     observed: BTreeMap<String, i64>,
     changed: BTreeSet<String>,
+    track_limit: usize,
     inventory: NpcInventorySnapshot,
     outfits: BTreeMap<u16, u8>,
     topic: i32,
@@ -30,6 +31,7 @@ impl<'a> Staged<'a> {
             tracks: input.tracks.clone(),
             observed: BTreeMap::new(),
             changed: BTreeSet::new(),
+            track_limit: MAX_NPC_TRACK_CHANGES,
             inventory: input.inventory.clone(),
             outfits: input.outfits.clone(),
             topic: input.topic,
@@ -44,7 +46,11 @@ impl<'a> Staged<'a> {
             .copied()
             .or_else(|| definition.map(|track| track.initial))
             .ok_or_else(|| NpcRuleError::MissingTrack(key.to_owned()))?;
-        if definition.is_some_and(|track| !(track.min..=track.max).contains(&original)) {
+        // A source's absent sentinel is a read default, not permission to store
+        // that value outside the native owner's range. Explicit rows stay strict.
+        if self.original.contains_key(key)
+            && definition.is_some_and(|track| !(track.min..=track.max).contains(&original))
+        {
             return Err(NpcRuleError::Invalid(format!(
                 "track outside bounds: {key}"
             )));
@@ -66,7 +72,7 @@ impl<'a> Staged<'a> {
         }
         self.tracks.insert(key.to_owned(), value);
         self.changed.insert(key.to_owned());
-        if self.changed.len() > MAX_NPC_TRACK_CHANGES {
+        if self.changed.len() > self.track_limit {
             return Err(NpcRuleError::LimitExceeded);
         }
         Ok(())
@@ -284,6 +290,7 @@ pub(super) fn plan(
     catalogue: &NpcRuleCatalog,
     input: &NpcRuleInput<'_>,
     resolutions: &BTreeMap<String, Vec<NpcRuleEffect>>,
+    storage_only: bool,
     state_only: bool,
 ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
     if input.topic < 0 || input.message.len() > 4096 || input.inventory.items.len() > 4096 {
@@ -316,6 +323,16 @@ pub(super) fn plan(
             }
             let mut eligible = true;
             for guard in &rule.guards {
+                if storage_only
+                    && !matches!(
+                        guard,
+                        NpcRuleGuard::Storage { .. }
+                            | NpcRuleGuard::StorageTime { .. }
+                            | NpcRuleGuard::CalendarMonth { .. }
+                    )
+                {
+                    return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));
+                }
                 if state_only && !matches!(guard, NpcRuleGuard::Storage { .. }) {
                     return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));
                 }
@@ -327,7 +344,33 @@ pub(super) fn plan(
             if !eligible {
                 continue;
             }
+            // A single, immutable donor acceptance is the sole eleven-track owner.
+            // Generic planners and every other rule retain the ordinary eight-track cap.
+            if storage_only
+                && rule.key
+                    == "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-accept"
+                && !rule.continue_matching
+                && selected_rule_keys.is_empty()
+                && NpcRuleCatalog::embedded()?
+                    .program(&program.document.quest)
+                    .is_some_and(|original| original.digest == program.digest)
+            {
+                state.track_limit = 11;
+            }
             for effect in &rule.effects {
+                if storage_only
+                    && !matches!(
+                        effect,
+                        NpcRuleEffect::Set { .. }
+                            | NpcRuleEffect::Add { .. }
+                            | NpcRuleEffect::SetNowPlus { .. }
+                            | NpcRuleEffect::SetTopic { .. }
+                            | NpcRuleEffect::EndConversation { .. }
+                            | NpcRuleEffect::Experience { .. }
+                    )
+                {
+                    return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));
+                }
                 if state_only
                     && !matches!(
                         effect,
@@ -355,6 +398,9 @@ pub(super) fn plan(
             }
             selected_rule_keys.push(rule.key.clone());
             reply.extend_from_slice(&rule.reply);
+            if reply.len() > 32 {
+                return Err(NpcRuleError::LimitExceeded);
+            }
             if !rule.inventory_failure_reply.is_empty() {
                 inventory_failure_reply.clone_from(&rule.inventory_failure_reply);
             }

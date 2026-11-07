@@ -9319,8 +9319,8 @@
   },
   "prepush2_main_integration": {
     "last_pushed": "1c23eabb7a3bd13b365b461418960083a0fa841a",
-    "main": "e1ca3e003",
-    "merge": "CLEAN; uncommitted while repository generation runs",
+    "main": "f641d8d6c1b7b800db28103f9a5f4e48972d051d",
+    "merge": "Resolved and fully generated Main QNPCFX integration; preserving published history and local15a2e5095 predecessor",
     "regeneration": "prepush2-main-regeneration-2.log; initial missing QuestTransition.world_change fixed with None for ordinary NPCFIX transitions and fixtures",
     "unit_crates": "/tmp/npcfix-evidence/prepush2-changed-crates.json;10 own changed crates; unit run pending generation",
     "own_pg": "Guardian eight-topic test GREEN136.793s with PG marker. Five shops RED401.352s after unsupported24-slot fixture; global GAMEITEM01_CONTAINER_ENTRIES_MAX is20. Reverted larger backpack fixture. New43-line helper moves each remaining duplicate to Ground through real fenced item-loop after all unchanged trade assertions; retest pending.",
@@ -9335,6 +9335,15 @@
       "check": "PASS7m56s; prepush2-workspace-check.log",
       "fmt": "PASS; prepush2-fmt.log",
       "new_main": "Final fetch found f641d8d6c QNPCFX; merge and affected regeneration required before push"
+    },
+    "new_main": "Reused Main NPC programme engine and1310–1315 migrations. Planner arities and ordinary mint backpack_outputs=false reconciled; NPC carried-input mutations retain fenced NPC permit and ground writes retain spell permit. No qualification promotion.",
+    "current_gate": {
+      "generated": "PASS central tree/list rebuild, native44 files, all7 family authoring tools, Grizzly30/30, official pin refresh; prepush2-qnpcfx-tree-regeneration.log and prepush2-qnpcfx-tree-tail.log; audit/proficiency/Crystal/quest-bindings/world metadata generation prepush2-qnpcfx-generation-results.json",
+      "check": "PASS final post-generation cargo check --workspace --all-targets7m09s; prepush2-qnpcfx-final-check.log",
+      "fmt": "PASS final post-generation cargo fmt --all --check; prepush2-qnpcfx-final-fmt-2.log",
+      "unit_and_pg": "PENDING under PREPUSH-2 cadence exception:10 changed-crate unit suites and actual merged PG retests; Guardian historical136.793s retained, Toffee loop fixture not yet green",
+      "freshness": "PASS Item/Mount equivalence215.438s, materialized tree0.230s, quest binding42.572s, Grizzly11.219s; prepush2-qnpcfx-final-validation-results.json",
+      "completion_matrix": "PASS regenerated all373 matrix, byte-unchanged; prepush2-qnpcfx-completion-matrix.log"
     }
   }
 }
