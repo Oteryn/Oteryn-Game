@@ -104,6 +104,88 @@
           ]
         }
       }
+    },
+    {
+      "quest": "oteryn:quest.tinder_box_quest_chyllfroest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:tinder-box:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=76272&oldid=800663",
+        "Crystal9f5a72c6 tinder_box_quest_chyllfroest/actions_reward.lua: item20357 UID3263; native summit exact ordinal documented in CONTRACT-NOTES.md"
+      ],
+      "key": "oteryn:quest-callback/authored-tinder-box",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32084,
+          "y": 31025,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/tinder-box/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "premium_required": true
+    },
+    {
+      "quest": "oteryn:quest.tinder_box_quest_chyllfroest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:tinder-box:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=76272&oldid=800663",
+        "Crystal9f5a72c6 tinder_box_quest_chyllfroest/actions_reward.lua: item20357 UID3263; native summit exact ordinal documented in CONTRACT-NOTES.md"
+      ],
+      "key": "oteryn:quest-callback/authored-tinder-box-bones",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32085,
+          "y": 31025,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4285,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/tinder-box/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 3
+        }
+      ],
+      "premium_required": true,
+      "completes": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i20357",
+          "count": 1,
+          "contents": []
+        }
+      }
     }
   ]
 }

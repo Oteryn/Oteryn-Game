@@ -1360,11 +1360,12 @@
     "status": "UNFINISHED",
     "disposition": "authoring",
     "qualified_elsewhere": [],
-    "mechanism": "calendar_repeatable_random_rewards",
+    "mechanism": "Premium summit exploration, native exact bone-pile ordinal, once-only world MINT",
     "blocker": {
-      "missing_piece": "UID3263's source Apr1-May1/20-hour reward differs from the chosen permanent once-only recipe; native calendar/claim binding for that selected recipe is absent."
+      "missing_piece": "PG green40.243s; clean rebuild, generator check and exact-head review in progress"
     },
-    "round": "L7"
+    "round": "L7",
+    "proof": "cloud-tinder-box-proof.json"
   },
   {
     "canonical": "oteryn:quest.treasure_island_quest",

@@ -37,3 +37,23 @@
   UID6283; that UID remains source-table geometry evidence only. The PG fixture
   now also omits the UID. `Selector.ordinal` is optional for existing source
   callbacks, requires a position, and is restricted to floor0 for STEP triggers.
+
+Tinder Box chosen permanent route: pinned recipe deliberately removes the source
+April/May gate and 20-hour repeat. Source reward UID3263 is not retained anywhere
+in the native placement corpus. Native Chyllfroest summit retains exactly one
+pile-of-bones object in the island area: (32085,31025,z1), appearance4285,
+top-level ordinal1, no UID. Bind that existing object and its western approach
+(32084,31025,z1), without inventing a source UID. Premium is checked through the
+existing authority at exploration and reward; one Tinder Box20357 once.
+Source: https://tibia.fandom.com/index.php?curid=76272&oldid=800663 ; pinned
+Canary04b83b51/Crystal9f5a72c6 quests/tinder_box_quest_chyllfroest/actions_reward.lua
+specifies item20357/UID3263. Fandom API returned402; no retry or bypass. Exact
+native ordinal is an explicitly documented conservative authored binding.
+
+Reusable multi-output reward decision (qengine2/other lane heads rechecked):
+no atomic multi-root reward implementation found. Extend existing bounded MINT
+contents/receipt/audit owner with an explicit backpack-output layout. Keep the
+same occurrence and transaction, exact output plan, aggregate weight/entry
+capacity, stable derived output identities, and deferred complete-plan proof.
+Existing nested filled-container output remains the default. This permits
+selected rewards without adding an unselected bag or manufacturing commands.

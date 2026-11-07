@@ -1,59 +1,54 @@
 # questpc8 — AUTHORING
 
-Owner continuation: work directly on claude/happy-davinci-ijz3wy-questpc8;
-fetch/merge remote movement before every fast-forward push. Push every finished
-slice immediately and at least every 30 minutes. Investigation limit is ten
-minutes; record conservative decisions in CONTRACT-NOTES.md. Do not stop while
-L7 entries remain. Earlier publication bans and /home/mole paths are superseded.
+Continue directly on claude/happy-davinci-ijz3wy-questpc8. Fetch and merge its
+remote before every fast-forward push; never force/rebase/main/PR. Push each
+green slice immediately, at least every30minutes. Investigations are bounded
+to ten minutes; document conservative choices in CONTRACT-NOTES.md. Shared
+engine features belong to this lane. Earlier publication bans are superseded.
 
-Scope: LANE-L7.json, 23 entries; Triangle Tower, Waterfall and Vampire Shield are
-qualified elsewhere. Nineteen entries remain in authoring. Killing in the Name of is QUALIFIED:
-complete chosen-path PG, changed-crate static checks, regeneration, source
-regression and independent review are complete at committed head89ebe9ef9. Historical non-L7
-rows are not additional scope. No PR/main/force/rebase or credential reads.
+Scope: LANE-L7.json,23 entries. Triangle Tower, Waterfall and Vampire Shield are
+QUALIFIED elsewhere. Killing in the Name of and Braindeath are QUALIFIED here;
+18 remain. Historical non-L7 rows are not additional scope. Preserve exclusions
+Dawnport, W14/P23/X01-X06, atomic Father's Burden11-track write and exact charges.
 
-Current slice reuses qengine2 engine head 5a6de28c1 for atomic NPC items/outfits
-and world effects. Preserves this lane's NPC executor and Smithhammer no-op fix.
-Adds bounded authored XP/completion fields, exact immutable receipt predicates,
-and a definition-hash marker sealing the full reward plan. Optional source task
-repeats rearm boss flags; exact successful report receipts preserve the chosen
-campaign's victories without changing source behavior.
+Pushed28a7715f7 after d90c1bfa2: Braindeath chosen exploration/native death/coffin
+programme. Actual native coffin32546,31522,z11 appearance1983 ordinal1 has no
+UID. Reusable bounded death objectives use existing frozen death capture and
+quest revision settlement. World rewards use existing Premium/MINT owners.
+PG RED2.64s; final PG PASS1/1 in38.43930999s with POSTGRES_CASE_COMPLETED.
+Strict changed-crate check/Clippy, provenance unit, pin-refresh and independent
+exact-head review passed. See cloud-braindeath-proof.json.
 
-PG RED 171.08s (extra XP 0 rather than 10000); final selected PG PASS 1/1,
-179.886708384s with POSTGRES_CASE_COMPLETED. No counters, boss wins, points or
-quest receipts seeded. All three task/boss pairs, repeats/rank, missing-victory
-and missing-backpack refusals, exact extra XP/currency, completion and command/
-restored-quest replay proved. Receipt ownership/bounds units PASS 2/2, 1.15s.
-Proof: cloud-hunting-campaign-proof.json. Full logs retained under /tmp.
+Killing campaign: real native300Crocodiles/150Carniphilas repeats,650Hydras,
+three boss portals/victories/reports and rank gates. Historical successful boss
+report receipts survive legitimate source rearming. Chosen extra10000XP and
+5000gold units (50platinum) exact/once. PG RED171.08s; GREEN179.886708384s,
+source regression36.07s. Static checks/regen/review passed. See
+cloud-hunting-campaign-proof.json. qengine2 reusable participants reused from
+5a6de28c1; source NPC executor and Smithhammer no-op preserved.
 
-Next: Braindeath's exploration/kill/coffin programme, then remaining authored,
-world and calendar entries. Shared support is this lane's job. Braindeath RED
-ran on PostgreSQL for2.64s, with POSTGRES_CASE_STARTED, and failed at the missing
-callback. Its real-dispatch fixture/scaffold and generic death/world reward
-support are now being authored in the worktree; do not discard them. Existing
-source regression PG passed1/1 in36.07s. The source engine review found no issues.
-Source coffin: (32546,31522,11), UID6283, appearance1983; chosen rewards are red
-backpack2867, great health potion239 x2 and platinum3035 x13. Original source
-container additionally has rope/shovel/mana potion, intentionally source notes.
-Source reference: Crystal 201189f data-global/startup/tables/chest.lua:2709-2715.
+Current worktree: Tinder Box fixture and chosen permanent summit callbacks.
+Actual summit bone pile32085,31025,z1 appearance4285 ordinal1, no UID; western
+approach32084,31025,z1. Premium exploration and once-only item20357. Real PG
+RED2.71s at missing callback. Focused PG GREEN40.243466689s passed with regenerated native provider.
+All15 generator regressions passed; changed-crate check/Clippy and pin refresh
+passed. Qualification awaits independent review and clean Cargo rebuild. No new source binaries/map edits.
 
-Environment startup succeeded. Source /workspace/oteryn-env/env.sh for every
-Cargo/PG shell. Repository regeneration completed successfully; unchanged world
-pin. Full logs under /tmp, exact hashes in cloud-hunting-campaign-proof.json.
-No active regeneration job remains. Last push89ebe9ef9 at23:56:50Z November6;
-keep the new owner's30-minute maximum push cadence. Do not end at a checkpoint.
+Source /workspace/oteryn-env/env.sh for Cargo/PG; never print/read credentials.
+PostgreSQL18.6 local harness. Full regeneration already passed, world pin stayed
+unchanged. Incremental cache exhausted disk; disposable cache cleared. Use
+CARGO_INCREMENTAL=0 until stable. Logs under /tmp. Only focused tests; no full
+workspace/PG/nextest suites. No workflow/tools-repository edits.
 
+Next after Tinder: multi-item native reward composition and remaining chosen
+programmes; source Life Ring six-tile bridge/occupant relocation also researched
+from pinned Crystal thais_quest/actions_life_ring_lever.lua. Rechecked qengine2
+and other lane branches: no reusable multi-root reward batch found.
 
-Braindeath slice: real PG PASS 1/1 in 38.43930999s, after RED 2.64s.
-Native coffin has no retained source UID: bind actual position/appearance/ordinal1.
-Premium refusal, exploration, native death, pre-kill refusal, exact backpack and
-children, and durable replay passed. Generic death objectives and world rewards
-reuse existing capture, revision, Premium and MINT owners. cargo check passed;
-Clippy rerun after disk exhaustion cleared by deleting disposable incremental cache.
-Proof: cloud-braindeath-proof.json. Qualification awaits final checks/review.
-Last completed metadata push 15b02adfd at00:17:45Z November7.
-
-Braindeath QUALIFIED: PG native ordinal38.439s plus strict checks, provenance unit,
-pin refresh and independent exact-head review passed. L7 now18 remaining.
-Next Tinder Box RED fixture uses actual summit bone pile32085,31025,z1,
-appearance4285 ordinal1 (no UID); permanent chosen route, Premium and once-only.
+Tinder fix: native provider omitted20357; generic authored callback Item closure
+added to quest_callback_profiles.py and regenerated40 repository artifacts. Only
+one native profile added, no existing profile changed/removed. Diagnostic build
+OOM was retried; direct exact test binary proved actual native reward behavior.
+Giant Smithhammer next RED2.69s after real PG initialization, missing callback;
+its uncommitted questpc8_smith_cache.rs scaffold is intentionally not in this
+green slice. Native chest32776,32253,z8 appearance2472 ordinal1 has no UID.

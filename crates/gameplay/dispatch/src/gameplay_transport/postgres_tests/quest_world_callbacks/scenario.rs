@@ -41,8 +41,8 @@ fn scenario_case(
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false)
             .await?;
-        if name == "authored-braindeath" {
-            eprintln!("POSTGRES_CASE_STARTED authored-braindeath after PostgreSQL fixture initialization");
+        if name.starts_with("authored-") {
+            eprintln!("POSTGRES_CASE_STARTED {name} after PostgreSQL fixture initialization");
         }
         let mut callback = callback(if classic_npc {
             "behemoth"
@@ -75,6 +75,8 @@ fn scenario_case(
         }
         let world = if name == "authored-braindeath" {
             super::super::quest_callbacks::source_world((32546, 31522, -11), 0, 1983, 0)?
+        } else if name == "authored-tinder-box" {
+            super::super::quest_callbacks::source_world((32085, 31025, -1), 0, 4285, 0)?
         } else {
             world(&callback, trigger)?
         };
@@ -141,13 +143,30 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let premium = if name == "authored-braindeath" {
-            let (consumer, clock, activation, _) = crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
-            h.root.latch_premium_activation(&activation.activation_id, activation.switch_over_us,
-                activation.switch_over_us + 60_000_000).await.map_err(debug)?;
-            Some(crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
-                consumer, Some(clock), Some(activation), Some(h.root.clone())))
-        } else { None };
+        let premium = if name.starts_with("authored-") {
+            let (consumer, clock, activation, _) =
+                crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(
+                    id(40),
+                );
+            h.root
+                .latch_premium_activation(
+                    &activation.activation_id,
+                    activation.switch_over_us,
+                    activation.switch_over_us + 60_000_000,
+                )
+                .await
+                .map_err(debug)?;
+            Some(
+                crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
+                    consumer,
+                    Some(clock),
+                    Some(activation),
+                    Some(h.root.clone()),
+                ),
+            )
+        } else {
+            None
+        };
         let mut owner = deps.owner(&h, &authority);
         owner.premium_coordinator = premium.as_ref();
         owner.active_generation = Some(generation);
@@ -216,8 +235,18 @@ fn scenario_case(
         owner.admit_quest_session(&admitted).await;
         if name == "authored-braindeath" {
             super::super::questpc8_authored_programmes::exercise_braindeath(
-                &mut owner, &mut admitted, &h,
-            ).await?;
+                &mut owner,
+                &mut admitted,
+                &h,
+            )
+            .await?;
+        } else if name == "authored-tinder-box" {
+            super::super::questpc8_authored_programmes::exercise_tinder_box(
+                &mut owner,
+                &mut admitted,
+                &h,
+            )
+            .await?;
         } else if name == "giant-smithhammer-asymmetric" {
             super::super::quest_l7_asymmetric::exercise(
                 &mut owner,
@@ -685,7 +714,9 @@ fn scenario_case(
                         request.clone(),
                         catalogue.clone(),
                         &permit,
-                        context.clone(), None)
+                        context.clone(),
+                        None
+                    )
                     .await
                     .map_err(debug)?,
                     QuestTransitionOutcome::AlreadyCommitted(_)

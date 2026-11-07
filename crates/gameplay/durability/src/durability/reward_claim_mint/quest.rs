@@ -43,12 +43,19 @@ pub(crate) fn outfit_compatible(
     native: &NativeGameplayState,
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::OutfitReward,
 ) -> bool {
-    let Some(cosmetics) = native.cosmetics() else { return false; };
+    let Some(cosmetics) = native.cosmetics() else {
+        return false;
+    };
     (0..=2).all(|addon| {
-        if addon != 0 && reward.addons & (1 << (addon - 1)) == 0 { return true; }
+        if addon != 0 && reward.addons & (1 << (addon - 1)) == 0 {
+            return true;
+        }
         let key = format!("{}/quest-grant/{addon}", reward.outfit);
-        let target = if addon == 0 { EarnedCosmetic::Outfit(&reward.outfit) }
-            else { EarnedCosmetic::Addon(&reward.outfit, addon) };
+        let target = if addon == 0 {
+            EarnedCosmetic::Outfit(&reward.outfit)
+        } else {
+            EarnedCosmetic::Addon(&reward.outfit, addon)
+        };
         cosmetics.earned_unlock(&key, PROVENANCE, target) == UnlockFact::Compatible
     })
 }
@@ -99,7 +106,11 @@ pub(crate) async fn apply(
             return Ok(false);
         }
     }
-    if callback.outfit.as_ref().is_some_and(|reward| !outfit_compatible(admission.native, reward)) {
+    if callback
+        .outfit
+        .as_ref()
+        .is_some_and(|reward| !outfit_compatible(admission.native, reward))
+    {
         return Ok(false);
     }
     if !super::super::quest_world_callback::consume_reward_inputs(tx, fence, request, callback)
@@ -124,8 +135,17 @@ pub(crate) async fn apply(
         .await?;
     }
     let minted = if let Some(reward) = &callback.give {
-        let Some(transaction) =
-            mint(tx, tuple, node, fence, command, &callback.key, reward, admission).await?
+        let Some(transaction) = mint(
+            tx,
+            tuple,
+            node,
+            fence,
+            command,
+            &callback.key,
+            reward,
+            admission,
+        )
+        .await?
         else {
             return Ok(false);
         };
@@ -151,17 +171,41 @@ pub(crate) async fn apply(
 }
 
 /// Literal world USE borrows the same admitted backpack MINT as NPC exchanges.
-#[allow(clippy::too_many_arguments, reason = "binds the original world occurrence to the shared MINT participants")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "binds the original world occurrence to the shared MINT participants"
+)]
 pub(crate) async fn give_world(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>, tuple: SelectedType2Tuple,
-    node: &NodeIncarnationProof, fence: CurrentCharacterGameplayFence,
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    tuple: SelectedType2Tuple,
+    node: &NodeIncarnationProof,
+    fence: CurrentCharacterGameplayFence,
     request: &QuestTransitionRequest,
     callback: &oteryn_gameplay_quests::quest::world_callbacks::Callback,
     admission: QuestRewardAdmission<'_>,
 ) -> std::result::Result<bool, DurabilityError> {
-    let (super::super::quest_state::QuestCause::Use(command), Some(reward)) = (request.cause, callback.effects.item_reward.as_ref()) else { return Ok(false); };
-    if admission.weights.generation_digest() != admission.native.source_digest() { return Ok(false); }
-    let Some(transaction) = mint(tx, tuple, node, fence, command, &callback.key, reward, admission).await? else { return Ok(false); };
+    let (super::super::quest_state::QuestCause::Use(command), Some(reward)) =
+        (request.cause, callback.effects.item_reward.as_ref())
+    else {
+        return Ok(false);
+    };
+    if admission.weights.generation_digest() != admission.native.source_digest() {
+        return Ok(false);
+    }
+    let Some(transaction) = mint(
+        tx,
+        tuple,
+        node,
+        fence,
+        command,
+        &callback.key,
+        reward,
+        admission,
+    )
+    .await?
+    else {
+        return Ok(false);
+    };
     let plan = serde_json::json!({"key": callback.key, "quest": callback.quest,
         "storage": callback.storage, "take": [], "present": [], "give": reward,
         "outfit": null, "world_callback": callback});

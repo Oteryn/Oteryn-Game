@@ -45,6 +45,16 @@ class QuestCallbackProfiles(unittest.TestCase):
                        lambda r: r['production_definition']['production_key'],
                        lambda v: json.dumps(v, sort_keys=True).encode())
 
+    def test_authored_world_reward_closes_native_item_provider(self):
+        reward = {"item": "oteryn:item.tibia.i20357", "count": 1, "contents": []}
+        (self.root / 'content/quests/authored-world-callbacks.json').write_text(
+            json.dumps({"schema": 1, "callbacks": [{"effects": {"item_reward": reward}}]}))
+        self.admit()
+        rows = {r['production_definition']['production_key']: r
+                for r in json.loads(self.generated[PROFILE])['records']}
+        self.assertIn(reward['item'], rows)
+        self.assertIn('CharacterInventory', rows[reward['item']]['admission']['legal_destinations'])
+
     def test_fish_key_is_rebuilt_with_portable_admission_and_manifest_digest(self):
         self.admit()
         rows = [r for r in json.loads(self.generated[PROFILE])['records']

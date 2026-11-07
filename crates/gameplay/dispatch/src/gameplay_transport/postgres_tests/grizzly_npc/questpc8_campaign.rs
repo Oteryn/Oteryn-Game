@@ -129,7 +129,13 @@ pub(super) async fn exercise(
     let greeting = command + 1;
     command += 2;
     let early_xp = experience(h).await?;
-    wire::talk_refused(owner, admitted, npc, &[(greeting, "hi"), (command, "campaign")]).await?;
+    wire::talk_refused(
+        owner,
+        admitted,
+        npc,
+        &[(greeting, "hi"), (command, "campaign")],
+    )
+    .await?;
     assert_eq!(experience(h).await?, early_xp);
     assert_eq!(campaign_receipts(h).await?, 0);
 
@@ -163,20 +169,37 @@ pub(super) async fn exercise(
     // Missing custody refuses the whole reward, including XP and completion.
     let greeting = command + 1;
     command += 2;
-    wire::talk_refused(owner, admitted, npc, &[(greeting, "hi"), (command, "campaign")]).await?;
+    wire::talk_refused(
+        owner,
+        admitted,
+        npc,
+        &[(greeting, "hi"), (command, "campaign")],
+    )
+    .await?;
     assert_eq!(experience(h).await?, campaign_xp);
     assert_eq!(campaign_receipts(h).await?, 0);
     super::super::item_look::seed_main_backpack(h, &[]).await?;
     say(owner, admitted, npc, &mut command, &["hi", "campaign"]).await?;
-    assert_eq!(experience(h).await? - campaign_xp, 10_000,
-        "chosen campaign final XP must be separate from source task XP");
+    assert_eq!(
+        experience(h).await? - campaign_xp,
+        10_000,
+        "chosen campaign final XP must be separate from source task XP"
+    );
     assert_eq!(campaign_receipts(h).await?, 1);
     assert_eq!(campaign_gold(h).await?, 5_000);
     let complete: bool = sqlx::query_scalar(
         "SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2",
     ).bind(id(41).as_slice()).bind(quest::QUEST).fetch_one(&h.pool).await?;
-    assert!(complete, "the chosen campaign must have a durable completion");
-    owner.states.quest_sessions.lock().map_err(debug)?.remove(&admitted.game_session_id);
+    assert!(
+        complete,
+        "the chosen campaign must have a durable completion"
+    );
+    owner
+        .states
+        .quest_sessions
+        .lock()
+        .map_err(debug)?
+        .remove(&admitted.game_session_id);
     owner.admit_quest_session(admitted).await;
     say(owner, admitted, npc, &mut command, &["hi", "campaign"]).await?;
     assert_eq!(experience(h).await? - campaign_xp, 10_000);
