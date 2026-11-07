@@ -47,13 +47,28 @@ def extend_world(rows,make):
         sources.append(f'oteryn:source-map:{path}:sha256:{hashlib.sha256(raw).hexdigest()}')
         for _,tiles in world_region_codec.decode_region(raw)[3]:
             for x,y,flags,house,zones,items in tiles:
-                if (x,y) in [(32111,31903),(32122,31939),(32123,31939)]:
+                if (x,y) in [(32111,31903),(32111,31904),(32122,31939),(32123,31939),(32143,31909),(32143,31910),(32124,31939)]:
                     cells[(x,y,z)]=[(palette[p]['source_item_id'],attrs) for p,depth,attrs in items if depth==0]
     if (cells[(32111,31903,7)] != [(593,None)]
             or cells[(32111,31903,8)] != [(386,None)]
             or cells[(32122,31939,8)][0] != (4409,None)
             or cells[(32123,31939,8)] != [(500,None),(1949,{'teleport':(32110,31937,8)})]):
         raise ValueError('LEGION_SOURCE_CAVE_GEOMETRY_DRIFT')
+    expected={(32143,31909,8):[(4398,None),(6285,None),(105,None)],
+              (32143,31910,8):[(4402,None),(6298,None),(4240,None)],
+              (32124,31939,8):[(4394,None),(1056,None)],
+              (32111,31904,7):[(4526,None)]}
+    if any(cells.get(key)!=value for key,value in expected.items()):
+        raise ValueError('LEGION_EQUIPMENT_ROOM_SOURCE_DRIFT')
+    sys.path.insert(0,str(ROOT/'tools/content-schema/item-authoring'))
+    import engine_items
+    client='2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2'
+    client_raw=(ROOT/f'content/assets/files/appearances-{client}.dat').read_bytes()
+    if hashlib.sha256(client_raw).hexdigest()!=client:raise ValueError('LEGION_CLIENT_PIN')
+    objects=engine_items.load_appearance_objects(client_raw)
+    for items in expected.values():
+        if any(objects[item]['flags'].get('flags.unpass',False) for item,_ in items):
+            raise ValueError('LEGION_ROUTE_SOURCE_OBJECT_BLOCKS_MOVEMENT')
     def storage(name,minimum,maximum,value,preserve=False):
         return dict(track='oteryn:quest-progress/legion-helmet/'+name,minimum=minimum,maximum=maximum,set=value,**({'preserve':True} if preserve else {}))
     contacts=[storage(name,1,1,1,True) for name in ['gustavo','viola']]
@@ -63,6 +78,7 @@ def extend_world(rows,make):
     entry_raw=(ROOT/entry_path).read_bytes()
     entry_cells={(x,y):items for _,tiles in world_region_codec.decode_region(entry_raw)[3]
                  for x,y,flags,house,zones,items in tiles}
+    if len(entry_cells[(32570,32508)])!=1:raise ValueError('LEGION_SCHOOL_ENTRY_NOT_CLEAR')
     ground=palette[entry_cells[(32570,32508)][0][0]]['source_item_id']
     row=make('authored-legion-route-entry','newhaven_legion_helmet_quest','step_in',
              'selected-recipe:authored-newhaven-school-to-inherited-training-cave',source_pin='oteryn-authored:',
@@ -76,8 +92,11 @@ def extend_world(rows,make):
     rows.append(row)
     row=make('authored-legion-cave-entry','newhaven_legion_helmet_quest','step_in',
              'selected-recipe:legion-training-cave-source-hole-and-rope-spot',source_pin='oteryn-authored:',
-             at=dict(x=32111,y=31903,floor=-8),appearance=386)
-    row['storage']=contacts+[storage('cave',-1,-1,1)]
+             at=dict(x=32111,y=31903,floor=-8),appearance=386,teleport=dict(x=32143,y=31909,floor=-8),
+             portals=dict(appearance=1949,lifetime_us=None,portals=[
+                 dict(position=dict(x=32143,y=31909,floor=-8),destination=dict(x=32124,y=31939,floor=-8)),
+                 dict(position=dict(x=32124,y=31939,floor=-8),destination=dict(x=32143,y=31909,floor=-8))]))
+    row['storage']=contacts+[storage('cave',-1,1,1)]
     row['minimum_level']=1 # Every legal character; makes source world context mandatory.
     row['sources']+=sources
     rows.append(row)

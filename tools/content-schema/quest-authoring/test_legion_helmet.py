@@ -43,6 +43,10 @@ class LegionContactsTests(unittest.TestCase):
         cave=by_name['legion-cave-entry']
         self.assertEqual(cave['selector']['position'],dict(x=32111,y=31903,floor=-8))
         self.assertEqual(cave['selector']['appearance'],386)
+        self.assertEqual(cave['teleport'],dict(x=32143,y=31909,floor=-8))
+        self.assertEqual(cave['effects']['portals']['portals'],[
+            dict(position=dict(x=32143,y=31909,floor=-8),destination=dict(x=32124,y=31939,floor=-8)),
+            dict(position=dict(x=32124,y=31939,floor=-8),destination=dict(x=32143,y=31909,floor=-8))])
         finish=by_name['legion-cave-return']
         self.assertEqual(finish['selector']['position'],dict(x=32110,y=31937,floor=-8))
         self.assertEqual(finish['movement_origins'],[dict(x=x,y=y,floor=-8) for x,y in [(32122,31939),(32124,31939),(32123,31938),(32123,31940)]])

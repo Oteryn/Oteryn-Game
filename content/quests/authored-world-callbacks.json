@@ -18,7 +18,11 @@
       "lever": null,
       "reversible": false,
       "passages": [],
-      "teleport": null,
+      "teleport": {
+        "x": 32143,
+        "y": 31909,
+        "floor": -8
+      },
       "storage": [
         {
           "track": "oteryn:quest-progress/legion-helmet/gustavo",
@@ -37,7 +41,7 @@
         {
           "track": "oteryn:quest-progress/legion-helmet/cave",
           "minimum": -1,
-          "maximum": -1,
+          "maximum": 1,
           "set": 1
         }
       ],
@@ -48,7 +52,36 @@
         "transform": null,
         "facing": null,
         "magic": null,
-        "portals": null,
+        "portals": {
+          "appearance": 1949,
+          "lifetime_us": null,
+          "portals": [
+            {
+              "position": {
+                "x": 32143,
+                "y": 31909,
+                "floor": -8
+              },
+              "destination": {
+                "x": 32124,
+                "y": 31939,
+                "floor": -8
+              }
+            },
+            {
+              "position": {
+                "x": 32124,
+                "y": 31939,
+                "floor": -8
+              },
+              "destination": {
+                "x": 32143,
+                "y": 31909,
+                "floor": -8
+              }
+            }
+          ]
+        },
         "item_cycle": null,
         "encounter": null
       },

@@ -1,0 +1,67 @@
+{
+  "quest": "oteryn:quest.newhaven_legion_helmet_quest",
+  "whole_recipe_qualified": true,
+  "scope": "Whole chosen finite Newhaven Legion Helmet programme; original source holds and unselected source branches remain unchanged.",
+  "filter": "questpc5_legion_complete_both_contacts_native_descent_corpse_and_forcefield_return",
+  "postgres_server": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red": {
+    "seconds": 92.852365527,
+    "failure": "Actual native hole descent stopped at rope landing instead of connected equipment room",
+    "log": "/tmp/questpc5-legion-connected-route-red.log"
+  },
+  "green": {
+    "seconds": 101.906296394,
+    "component_seconds": 47.031079678,
+    "log": "/tmp/questpc5-legion-connected-route-green.log"
+  },
+  "coverage": [
+    "Actual Gustavo and Viola source conversations, no prerequisite quest completion",
+    "Contacts without native cave visit refuse corpse reward",
+    "School transport opens source593\u2192594; real STEP descends to386 before equipment-room transfer",
+    "Exact source UID6006/4240 corpse USE grants one native3374 with original once receipt",
+    "Equipment portal travels both directions to clear east approach32124,31939",
+    "Early actual forcefield without helmet refuses completion",
+    "Direct walk onto its destination refuses completion",
+    "Actual1949 forcefield hop completes and returns to Newhaven school",
+    "Second corpse USE and terminal field replay grant no additional item/completion/XP"
+  ],
+  "setup": "No quest tracks, reward items, completion or XP are seeded. Checked fixture relocation is used for NPC proximity and negative-case setup/resets; the positive descent/equipment/corpse/field chain uses actual native movement and USE.",
+  "source_startup": {
+    "binding": {
+      "position": [
+        32143,
+        31910,
+        8
+      ],
+      "item": 4240,
+      "attribute": "unique",
+      "value": 6006,
+      "source": "data-global/startup/tables/chest.lua",
+      "line": 623
+    },
+    "witness": {
+      "path": "data-global/startup/tables/chest.lua",
+      "sha256": "0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
+      "git_blob_sha1": "ea2ef1963395a479ed927481bc3a14065b125a3f"
+    },
+    "url": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/chest.lua#L623"
+  },
+  "adaptation": "Chosen bounded portal links connect Newhaven to inherited training-cave and equipment/field objects. The school link opens the buried hole because the selected recipe has no shovel requirement. This explicitly chosen travel programme avoids unselected legacy sanctuary/sacrifice prerequisites and does not certify original travel fidelity. Re-entering the cave can recreate its bounded scene projections without duplicating the personal reward or terminal completion.",
+  "checks": {
+    "source_startup_units": 4,
+    "route_authoring_and_preservation_units": 5,
+    "rust_world_callback_units": 21,
+    "rust_scope_loader_unit": 1,
+    "fmt": "PASS",
+    "cargo_check": "PASS15.38s",
+    "strict_all_targets_all_features_clippy": "PASS42.07s",
+    "source_generator_checks": "PASS",
+    "repository_pin_refresh": "PASS",
+    "repository_pin_check": "PASS independent compiler check3492205b964d74c721dba0c3db3e7e8ca32647aae1c41d9837c34935f965293b"
+  },
+  "world_pin": {
+    "previous": "07127a12e4dd254b9cb51d00db6543f2f4d93580213fe6b9f62fa57b54698354",
+    "current": "3492205b964d74c721dba0c3db3e7e8ca32647aae1c41d9837c34935f965293b",
+    "inputs_digest": "2fe7b57e2299deccc4290d5098d440ffded2b91f73866e3db582ae597dcaa715"
+  }
+}

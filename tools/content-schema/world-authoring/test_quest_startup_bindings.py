@@ -40,6 +40,12 @@ class QuestStartupBindings(unittest.TestCase):
             value = (objects[0][1] or {}).get(row['attribute'])
             self.assertIn(value, (None, row['value']), row)
 
+    def test_legion_helmet_retains_the_exact_donor_corpse_selector(self):
+        row,=[r for r in author.document()['bindings'] if r['attribute']=='unique' and r['value']==6006]
+        self.assertEqual((row['position'],row['item']),([32143,31910,8],4240))
+        self.assertEqual(row['source'],'data-global/startup/tables/chest.lua')
+        self.assertGreater(row['line'],0)
+
     def test_hoist_direction_lever_is_the_real_upper_floor_default(self):
         root = author.ROOT / 'content/world/placements'
         palette = json.loads((root / 'index.json').read_text())['palette']

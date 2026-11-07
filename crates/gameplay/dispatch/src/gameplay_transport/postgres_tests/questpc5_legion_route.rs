@@ -105,14 +105,14 @@ pub(super) async fn exercise(
         -1,
         "route bridge alone is not a descent"
     );
-    step(owner, admitted, StepDirection::North, p(32111, 31903, -8)).await?;
+    step(owner, admitted, StepDirection::North, p(32143, 31909, -8)).await?;
     assert_eq!(
         track(h, "cave").await?,
         1,
         "actual native hole descent records the equipment room visit"
     );
-    at(owner, admitted, p(32122, 31939, -8)).await?;
-    step(owner, admitted, StepDirection::East, p(32110, 31937, -8)).await?;
+    at(owner, admitted, p(32124, 31939, -8)).await?;
+    step(owner, admitted, StepDirection::West, p(32110, 31937, -8)).await?;
     assert_eq!(
         completed(h).await?,
         0,
@@ -141,18 +141,22 @@ pub(super) async fn exercise(
         "walking onto the portal destination cannot impersonate a forcefield traversal"
     );
     assert_eq!(track(h, "finished").await?, -1);
-    at(owner, admitted, p(32122, 31939, -8)).await?;
-    // A different departure from the same approach must not count as the forcefield.
-    step(owner, admitted, StepDirection::West, p(32121, 31939, -8)).await?;
+    at(owner, admitted, p(32143, 31909, -8)).await?; // Reset only the preceding negative fixture.
+    step(owner, admitted, StepDirection::South, p(32143, 31910, -8)).await?;
+    step(owner, admitted, StepDirection::North, p(32124, 31939, -8)).await?;
+    // This clear approach is source4394+1056; western1840 is a blocking decoration.
+    step(owner, admitted, StepDirection::North, p(32124, 31938, -8)).await?;
     assert_eq!(completed(h).await?, 0);
     assert_eq!(track(h, "finished").await?, -1);
-    step(owner, admitted, StepDirection::East, p(32122, 31939, -8)).await?;
-    step(owner, admitted, StepDirection::East, p(32570, 32507, -7)).await?;
+    step(owner, admitted, StepDirection::South, p(32143, 31909, -8)).await?; // Reverse equipment portal.
+    step(owner, admitted, StepDirection::South, p(32143, 31910, -8)).await?;
+    step(owner, admitted, StepDirection::North, p(32124, 31939, -8)).await?;
+    step(owner, admitted, StepDirection::West, p(32570, 32507, -7)).await?;
     assert_eq!(completed(h).await?, 1);
     assert_eq!(track(h, "finished").await?, 1);
     assert_eq!(super::questpc5_legion_claim_gate::count(h).await?, (1, 1));
-    at(owner, admitted, p(32122, 31939, -8)).await?;
-    step(owner, admitted, StepDirection::East, p(32110, 31937, -8)).await?;
+    at(owner, admitted, p(32124, 31939, -8)).await?;
+    step(owner, admitted, StepDirection::West, p(32110, 31937, -8)).await?;
     assert_eq!(
         completed(h).await?,
         1,
@@ -187,6 +191,7 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
         (386, true, 160),
         (4402, true, 120),
         (4398, true, 120),
+        (4394, true, 120),
         (4409, true, 120),
         (500, true, 160),
         (4399, true, 120),
@@ -198,6 +203,7 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
         (105, false, 0),
         (1840, false, 0),
         (1056, false, 0),
+        (1058, false, 0),
     ] {
         let index = u32::try_from(data.manifest.palette.len())?;
         palette.insert(appearance, index);
@@ -261,10 +267,24 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
     add(32121, 31939, -8, &[4409], 0)?;
     add(32122, 31939, -8, &[4409, 1840], 0)?;
     add(32123, 31939, -8, &[500, 1949], 0)?;
+    add(32124, 31938, -8, &[4394, 1058], 0)?;
+    add(32124, 31939, -8, &[4394, 1056], 0)?;
     add(32110, 31937, -8, &[4399, 1056], 0)?;
+    let startup: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../content/world/quest-startup-bindings.json"
+    )))?;
+    let selector = startup["bindings"]
+        .as_array()
+        .ok_or("startup")?
+        .iter()
+        .find(|r| r["attribute"] == "unique" && r["value"] == 6006)
+        .ok_or("production Legion corpse startup selector")?;
+    assert_eq!(selector["position"], serde_json::json!([32143, 31910, 8]));
+    assert_eq!(selector["item"], 4240);
     tiles.get_mut(&(-8, 31910, 32143)).ok_or("corpse")?.items[2]
         .attrs
-        .unique = Some(6006);
+        .unique = Some(u16::try_from(selector["value"].as_u64().ok_or("UID")?)?);
     tiles.get_mut(&(-8, 31939, 32123)).ok_or("portal")?.items[1]
         .attrs
         .teleport = Some((32110, 31937, (-8_i8).to_ne_bytes()[0]));

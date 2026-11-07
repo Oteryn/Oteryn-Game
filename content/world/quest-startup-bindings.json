@@ -45,6 +45,18 @@
     },
     {
       "position": [
+        32143,
+        31910,
+        8
+      ],
+      "item": 4240,
+      "attribute": "unique",
+      "value": 6006,
+      "source": "data-global/startup/tables/chest.lua",
+      "line": 623
+    },
+    {
+      "position": [
         32149,
         32105,
         11

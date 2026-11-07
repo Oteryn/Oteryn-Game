@@ -35,12 +35,11 @@
     "canonical": "oteryn:quest.newhaven_legion_helmet_quest",
     "title": "Newhaven Legion Helmet Quest",
     "mechanism": "native_item_identity_charges_lifetime",
-    "status": "UNFINISHED",
-    "blocker": "Active scene authoring: shared completion, claim predicates, bounded movement origins and guarded portal journeys are implemented and PostgreSQL proven. Connect the native rope landing/equipment room to the clear east approach of the original source forcefield; the current sparse mechanism fixture crosses blocked western decoration1840 and is not whole qualification.",
+    "status": "QUALIFIED",
     "from_lanes": [
       "questpc2"
     ],
-    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "qualification_scope": "Whole chosen finite programme: both source NPC contacts, connected authored training route, native hole descent, original source corpse helmet USE and actual source forcefield return, once-only personal helmet/completion. Original source holds and unselected branches are preserved.",
     "input_canonical": "unresolved:questpc2:newhaven_legion_helmet_quest",
     "canonical_location": {
       "path": "content/quests/definitions/quests-00000-00099.json",
@@ -77,7 +76,17 @@
       "postgres_sparse_green_seconds": 96.512593037,
       "postgres_three_gate_green_seconds": 54.560888833,
       "whole_recipe_qualified": false
-    }
+    },
+    "qualified_at": "2026-11-07",
+    "qualification_evidence": "cloud-legion-complete-proof.json",
+    "evidence": [
+      {
+        "filter": "questpc5_legion_complete_both_contacts_native_descent_corpse_and_forcefield_return",
+        "result": "PASS",
+        "duration_seconds": 101.906296394,
+        "proof": "cloud-legion-complete-proof.json"
+      }
+    ]
   },
   {
     "canonical": "oteryn:quest.newhaven_quest",
