@@ -4,13 +4,14 @@ use oteryn_gameplay_quests::quest::kill_objectives::KillObjective;
 
 /// Captured only from a committed native death and its coherent Character quest copy.
 /// No wire command can construct the sealed death identity.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct NativeObjectiveDeath {
     death: Vec<u8>,
     character: CharacterId,
     position: (i32, i32, i16),
     observed_revision: u64,
     phase: i64,
+    spawn_origin: Option<(i32, i32, i16)>,
 }
 
 impl NativeObjectiveDeath {
@@ -31,7 +32,21 @@ impl NativeObjectiveDeath {
             position: (at.x, at.y, at.floor),
             observed_revision,
             phase,
+            spawn_origin: None,
         })
+    }
+
+    /// Exact-origin goals additionally bind the immutable native spawn cell.
+    pub fn capture_goal(
+        runtime: &mut crate::foundation::ChannelRuntimeV1,
+        target: crate::foundation::ExactActorRef,
+        character: CharacterId,
+        observed_revision: u64,
+    ) -> Option<Self> {
+        let origin = runtime.creature_death_spawn_cell(target)?;
+        let mut source = Self::capture(runtime, target, character, observed_revision, 0)?;
+        source.spawn_origin = Some((origin.x, origin.y, origin.floor));
+        Some(source)
     }
 
     fn occurrence(
@@ -61,7 +76,67 @@ impl NativeObjectiveDeath {
             .chain_update(self.phase.to_be_bytes())
             .finalize();
         binding[1..].copy_from_slice(&hash);
+        if let Some((x, y, floor)) = self.spawn_origin {
+            let hash = Sha256::new()
+                .chain_update(*binding)
+                .chain_update(x.to_be_bytes())
+                .chain_update(y.to_be_bytes())
+                .chain_update(floor.to_be_bytes())
+                .finalize();
+            binding[1..].copy_from_slice(&hash);
+        }
         Ok(())
+    }
+}
+
+enum Binding {
+    Objective(KillObjective),
+    Goal(&'static oteryn_gameplay_quests::quest::native_kill_goals::Goal),
+}
+
+impl Binding {
+    fn resolve(key: &str) -> Result<Self> {
+        if let Some(rule) = oteryn_gameplay_quests::quest::kill_objectives::binding(key) {
+            return Ok(Self::Objective(rule));
+        }
+        oteryn_gameplay_quests::quest::native_kill_goals::load()
+            .map_err(|_| CharacterProgressionError::InvalidInput)?
+            .iter()
+            .find(|goal| goal.key == key)
+            .map(Self::Goal)
+            .ok_or(CharacterProgressionError::InvalidInput)
+    }
+
+    fn quest(&self) -> &str {
+        match self {
+            Self::Objective(rule) => rule.quest,
+            Self::Goal(goal) => &goal.quest,
+        }
+    }
+
+    fn creatures(&self, source: &NativeObjectiveDeath) -> Vec<&str> {
+        match self {
+            Self::Objective(rule)
+                if source.phase == rule.phase_before
+                    && rule.contains(source.position.0, source.position.1, source.position.2) =>
+            {
+                vec![rule.creature]
+            }
+            Self::Goal(goal) if source.phase == 0 => goal
+                .origins
+                .iter()
+                .filter_map(|origin| {
+                    (source.spawn_origin
+                        == Some((
+                            i32::from(origin.x),
+                            i32::from(origin.y),
+                            i16::from(origin.floor),
+                        )))
+                    .then_some(origin.creature.as_str())
+                })
+                .collect(),
+            _ => Vec::new(),
+        }
     }
 }
 
@@ -76,8 +151,7 @@ pub async fn apply_in_transaction(
     source: &NativeObjectiveDeath,
     catalogue: &QuestStateCatalogue,
 ) -> Result<Option<CommittedQuestTransition>> {
-    let rule = oteryn_gameplay_quests::quest::kill_objectives::binding(transition_key)
-        .ok_or(CharacterProgressionError::InvalidInput)?;
+    let rule = Binding::resolve(transition_key)?;
     let request = QuestTransitionRequest {
         transition_key: transition_key.into(),
         cause: QuestCause::CreatureDeath(source.occurrence()?),
@@ -86,7 +160,11 @@ pub async fn apply_in_transaction(
     source.bind(&mut binding)?;
     lock_receipt_key(tx, fence.character_id, &request).await?;
     if let Some(row) = load_receipt(tx, fence.character_id, &request).await? {
-        if row.try_get::<Vec<u8>, _>("request_binding").map_err(DurabilityError::from)? != binding {
+        if row
+            .try_get::<Vec<u8>, _>("request_binding")
+            .map_err(DurabilityError::from)?
+            != binding
+        {
             return Err(CharacterProgressionError::ConflictingOccurrence);
         }
         return Ok(Some(decode_receipt(&row)?));
@@ -98,7 +176,7 @@ pub async fn apply_in_transaction(
         CharacterRevision::new(numeric_u64(&row, "character_revision")?)
             .map_err(|_| DurabilityError::InvalidStoredState)?;
     let root = assert_gameplay_fence(tx, &current, node).await??;
-    if !authorize(tx, &current, &request, rule, source).await? {
+    if !authorize(tx, &current, &request, &rule, source).await? {
         return Err(CharacterProgressionError::AuthorityRejected);
     }
     let progression = sqlx::query("SELECT character_revision::text, level, total_experience, profile_revision, ruleset_revision, content_revision, simulation_revision, evidence_revision, declaration_revision, policy_revision, reward_revision FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
@@ -113,13 +191,13 @@ pub async fn apply_in_transaction(
         return Err(CharacterProgressionError::ProgressionContextMismatch);
     }
     let state = sqlx::query("SELECT pinned_content_revision, definition_hash, completed_character_revision IS NOT NULL AS completed FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 FOR UPDATE")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(rule.quest).fetch_one(&mut **tx).await.map_err(DurabilityError::from)?;
+        .bind(fence.character_id.as_bytes().as_slice()).bind(rule.quest()).fetch_one(&mut **tx).await.map_err(DurabilityError::from)?;
     let hash: [u8; 32] = state
         .try_get::<Vec<u8>, _>("definition_hash")
         .map_err(DurabilityError::from)?
         .try_into()
         .map_err(|_| DurabilityError::InvalidStoredState)?;
-    if catalogue.definition_hash(rule.quest) != Some(hash)
+    if catalogue.definition_hash(rule.quest()) != Some(hash)
         && !state
             .try_get::<bool, _>("completed")
             .map_err(DurabilityError::from)?
@@ -132,7 +210,7 @@ pub async fn apply_in_transaction(
     let transition = catalogue
         .transition(transition_key)
         .ok_or(CharacterProgressionError::InvalidInput)?;
-    if transition.quest != rule.quest || transition.experience.is_some() || transition.completes {
+    if transition.quest != rule.quest() || transition.experience.is_some() || transition.completes {
         return Err(CharacterProgressionError::InvalidInput);
     }
     let mut keys: Vec<&str> = transition
@@ -149,7 +227,7 @@ pub async fn apply_in_transaction(
         if row
             .try_get::<String, _>("quest_key")
             .map_err(DurabilityError::from)?
-            != rule.quest
+            != rule.quest()
         {
             return Err(DurabilityError::InvalidStoredState.into());
         }
@@ -193,17 +271,16 @@ pub async fn apply_in_transaction(
     Ok(Some(decode_receipt(&row)?))
 }
 
-pub(super) async fn authorize(
+async fn authorize(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     fence: &CurrentCharacterGameplayFence,
     request: &QuestTransitionRequest,
-    rule: KillObjective,
+    rule: &Binding,
     source: &NativeObjectiveDeath,
 ) -> StoredResult<bool> {
     if !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
         || source.character != fence.character_id
-        || source.phase != rule.phase_before
-        || !rule.contains(source.position.0, source.position.1, source.position.2)
+        || rule.creatures(source).is_empty()
         || !super::super::party_kill_xp::death_matches_fence(&source.death, fence)
         || !matches!(request.cause, QuestCause::CreatureDeath(id)
             if source.occurrence().is_ok_and(|expected| id == expected))
@@ -216,9 +293,9 @@ pub(super) async fn authorize(
         JOIN game_party_kill_xp_members m USING(death_key) \
         JOIN game_character_quest_states q ON q.character_id=m.character_id \
         WHERE d.death_key=$1 AND d.created_xact_id=pg_current_xact_id() AND d.principal_id=encode($2,'hex')::uuid \
-        AND m.character_id=d.principal_id AND d.creature_key=$3 AND q.quest_key=$4 \
+        AND m.character_id=d.principal_id AND d.creature_key=ANY($3::text[]) AND q.quest_key=$4 \
         AND q.started_character_revision <= $5::text::numeric)")
         .bind(&source.death).bind(fence.character_id.as_bytes().as_slice())
-        .bind(rule.creature).bind(rule.quest).bind(source.observed_revision.to_string())
+        .bind(rule.creatures(source)).bind(rule.quest()).bind(source.observed_revision.to_string())
         .fetch_one(&mut **tx).await.map_err(DurabilityError::from)
 }

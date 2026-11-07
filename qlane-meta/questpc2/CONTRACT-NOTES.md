@@ -362,3 +362,24 @@ PG76.98s/180006 passes basement/native ladder/stale/full-position replay then
 requires existing diagonal receipt runtime flag OTERYN_STEP_WAIT_RECEIPTS=1.
 Fixture keeps that receipt assertion; rerun with same flag as Desert driver.
 No whole quest or exploration GREEN claimed before this final rerun.
+
+## Exact-origin goals and native XP transaction (r2 continuation)
+
+At base5a26f9a0e, `grizzly_kills.rs::settle` called native-goal settlement
+before the ordinary XP future. These were separate transactions, rather than
+an atomic descendant. The focused native objective PG case activated the
+source Dragon exact-origin cohort alongside its isolated prior-route phase:
+PostgreSQL180006 RED75.68s (`/tmp/questpc2-exact-goal-atomic-red-pg.log`),
+receipt query returnedNone instead ofSome(true) for same XP transaction.
+The original XP/objective assertions passed before that new assertion.
+
+Reuse the published sealed native-death XP transaction helper for exact-origin
+goals; bind immutable spawn origin as well as death/Character/revision, require
+that transaction's principal death audit and current session fence, evaluate
+bounded catalogue phase/counter/prerequisite guards under row locks. Preserve
+existing five-objective receipt binding when no spawn-origin proof is present.
+Native-goal receipts now use that helper's stable death+Character occurrence;
+no production migration or whole-quest qualification is claimed in AUTHORING.
+Generic arbitrary Command/CreatureDeath UUIDs must not create these counters.
+Fresh qengine2@5a6de28c1 had no native-goal transaction helper to reuse. Existing
+incoming six exact-origin goals and ordinary corpse/loot closure are retained.

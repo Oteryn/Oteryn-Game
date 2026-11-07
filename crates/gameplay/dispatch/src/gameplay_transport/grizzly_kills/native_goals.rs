@@ -9,6 +9,7 @@ pub(super) struct Recipient {
     character: [u8; 16],
     lease_generation: u64,
     goals: Vec<String>,
+    source: crate::durability::quest_state::kill_objectives::NativeObjectiveDeath,
 }
 
 pub(super) fn active(tracks: &std::collections::BTreeMap<String, i64>) -> Vec<String> {
@@ -32,7 +33,7 @@ pub(super) fn tracks_creature(creature: &str) -> bool {
 }
 
 pub(super) fn freeze(
-    runtime: &ChannelRuntimeV1,
+    runtime: &mut ChannelRuntimeV1,
     entry: &PendingKillSettlement,
     present: bool,
     snapshots: &[TaskSnapshot],
@@ -59,93 +60,81 @@ pub(super) fn freeze(
         })
         .map(|g| g.key.clone())
         .collect();
-    (!actions.is_empty()).then_some(Recipient {
+    if actions.is_empty() {
+        return None;
+    }
+    let character = crate::domain::CharacterId::from_bytes(snapshot.character).ok()?;
+    let source =
+        crate::durability::quest_state::kill_objectives::NativeObjectiveDeath::capture_goal(
+            runtime,
+            entry.target,
+            character,
+            snapshot.observed_revision,
+        )?;
+    Some(Recipient {
         actor: snapshot.actor,
         session: snapshot.session,
         character: snapshot.character,
         lease_generation: snapshot.lease_generation,
         goals: actions,
+        source,
     })
 }
 
-pub(super) async fn settle(
-    admission: &ComposedFreshAdmission<'_, '_, '_>,
+pub(in crate::gameplay_transport) async fn apply_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    node: &crate::durability::runtime_scope_assignment::NodeIncarnationProof,
     entry: &PendingKillSettlement,
-) -> bool {
+    participants: &[(
+        crate::durability::character_progression::CurrentCharacterGameplayFence,
+        bool,
+    )],
+    catalogue: Option<&oteryn_gameplay_quests::quest::QuestStateCatalogue>,
+) -> Result<Vec<crate::durability::quest_state::CommittedQuestTransition>, CharacterProgressionError>
+{
+    let mut receipts = Vec::new();
     let Some(recipient) = entry.grizzly.as_ref().and_then(|f| f.native_goals.as_ref()) else {
-        return true;
+        return Ok(receipts);
     };
-    let Some(catalogue) = &admission.quest_catalogue else {
-        return false;
-    };
-    let fence = match admission.current_quest_fence(recipient.session).await {
-        Ok(Some(fence)) => fence,
-        Ok(None) => return true,
-        Err(()) => return false,
-    };
-    if fence.character_id.as_bytes() != &recipient.character
-        || fence.game_session_id != recipient.session
-        || fence.character_lease_generation != recipient.lease_generation
-    {
-        return true;
+    if entry.facts.principal.actor != recipient.actor {
+        return Err(CharacterProgressionError::AuthorityRejected);
     }
-    {
-        let runtime = admission.runtime.lock().await;
-        if runtime.owner_fence().is_err()
-            || !runtime
-                .bound_attacker_lease(recipient.actor, recipient.session)
-                .is_ok_and(|lease| {
-                    lease.character_id().as_bytes() == &recipient.character
-                        && lease.generation() == recipient.lease_generation
-                })
-        {
-            return true;
-        }
-    }
-    let Ok(occurrence) = ExperienceRewardOccurrence::from_bytes(entry.facts.occurrence) else {
-        return true;
-    };
-    let mut slot = admission
-        .revision_sequencer
-        .acquire(fence.character_id)
-        .await;
-    let mut changed = false;
+    let fence = participants
+        .iter()
+        .find_map(|(fence, damaged)| {
+            (*damaged
+                && fence.character_id.as_bytes() == &recipient.character
+                && fence.game_session_id == recipient.session
+                && fence.character_lease_generation == recipient.lease_generation)
+                .then_some(*fence)
+        })
+        .ok_or(CharacterProgressionError::AuthorityRejected)?;
+    let catalogue = catalogue.ok_or(CharacterProgressionError::InvalidInput)?;
     for goal in &recipient.goals {
-        let outcome = slot
-            .commit_quest_transition(
-                admission.root,
-                admission.character,
-                admission.holder,
+        if let Some(receipt) =
+            crate::durability::quest_state::kill_objectives::apply_in_transaction(
+                tx,
+                node,
                 fence,
-                crate::durability::quest_state::QuestTransitionRequest {
-                    transition_key: goal.clone(),
-                    cause: QuestCause::CreatureDeath(occurrence),
-                },
-                Arc::clone(catalogue),
+                goal,
+                &recipient.source,
+                catalogue,
             )
-            .await;
-        match outcome {
-            Ok(
-                QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_),
-            ) => changed = true,
-            Ok(QuestTransitionOutcome::Refused(_) | QuestTransitionOutcome::ObligationClosed) => {}
-            Err(
-                CharacterProgressionError::Unavailable(_)
-                | CharacterProgressionError::CharacterRevisionMismatch,
-            ) => {
-                admission.schedule_quest_refresh(recipient.session);
-                return false;
-            }
-            Err(error) => {
-                super::super::operator_event(&format!("native_kill_goal_refused reason={error:?}"))
-            }
+            .await?
+        {
+            receipts.push(receipt);
         }
     }
-    drop(slot);
-    if changed {
-        admission
-            .refresh_quest_session(recipient.session, false)
-            .await;
-    }
-    true
+    Ok(receipts)
+}
+
+pub(in crate::gameplay_transport) fn session(
+    entry: &PendingKillSettlement,
+) -> Option<GameSessionId> {
+    entry
+        .grizzly
+        .as_ref()?
+        .native_goals
+        .as_ref()
+        .map(|r| r.session)
 }

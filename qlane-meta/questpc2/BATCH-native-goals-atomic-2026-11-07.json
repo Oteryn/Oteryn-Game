@@ -1,0 +1,33 @@
+{
+  "batch_id": "native-goals-atomic-2026-11-07",
+  "state": "WIP_CHECK_PASS_PG_CODEGEN_OOM",
+  "lifecycle": "AUTHORING",
+  "base_sha": "5a26f9a0e",
+  "scope": "Six exact-origin native defender goals reuse sealed native XP/Quest transaction; whole Elvenbane remains unfinished.",
+  "red": {
+    "postgres_version": 180006,
+    "seconds": 75.68,
+    "assertion": "exact-origin goal must commit with XP before any deferred queue drain",
+    "observed": "None, expected Some(true)",
+    "log": "/tmp/questpc2-exact-goal-atomic-red-pg.log"
+  },
+  "checks": {
+    "cargo_check": "PASS durability+dispatch, 1m32s",
+    "log": "/tmp/questpc2-exact-goal-atomic-final-check.log",
+    "fmt": "PASS"
+  },
+  "pending": [
+    "Native test compilation killed signal9; cgroup oom19/kill8, previously18/7. No new PG result. Reduce inactive/failed RAM caches, retry unchanged focused case.",
+    "Corrected focused PostgreSQL atomic case",
+    "Focused authority and exact-origin defender regressions",
+    "fmt and changed-crate all-targets/all-features clippy -D warnings"
+  ],
+  "implementation": [
+    "Capture sealed native death and immutable source origin with original coherent snapshot.",
+    "Commit native goals using original XP transaction fresh-death audit, principal/current session fence, bounded phase/counter/prerequisite evaluation and shared Quest persistence.",
+    "Remove independent pre-XP native goal write; retain ordinary corpse/loot and Grizzly behavior.",
+    "Refresh coherent recipient snapshots after settlement and invalidate Character cursors for uncertain commits.",
+    "Generic Command and arbitrary CreatureDeath UUID cannot write native goal keys."
+  ],
+  "self_review": "AUTHORING; focused verification pending, no whole quest/readiness claim."
+}

@@ -38,15 +38,43 @@ pub(super) async fn scenario(
             tracks.push(catalogue.track(counter).ok_or("counter")?.clone());
         }
     }
+    // Activate the exact-origin goal alongside the isolated prior-route phase.
+    // Both descendants of this one real death must share the XP transaction.
+    let native_goal = oteryn_gameplay_quests::quest::native_kill_goals::load()
+        .map_err(debug)?
+        .iter()
+        .find(|goal| goal.key.ends_with("/elvenbane-dragon"))
+        .ok_or("native dragon goal")?;
+    let native_transition = catalogue
+        .transition(&native_goal.key)
+        .ok_or("native transition")?;
+    for effect in &native_transition.effects {
+        if !tracks.iter().any(|track| track.key == effect.track) {
+            tracks.push(
+                catalogue
+                    .track(&effect.track)
+                    .ok_or("native track")?
+                    .clone(),
+            );
+        }
+    }
+    transitions.push(native_transition.clone());
     const PRECONDITION: &str = "oteryn:quest-transition/elvenbane/fixture-prior-route";
     transitions.push(QuestTransition {
         key: PRECONDITION.into(),
         quest: rules::QUEST.into(),
-        effects: vec![QuestEffect {
-            track: rules::PHASE.into(),
-            from: QuestComparison::Eq(0),
-            effect: QuestEffectKind::Set(2),
-        }],
+        effects: vec![
+            QuestEffect {
+                track: rules::PHASE.into(),
+                from: QuestComparison::Eq(0),
+                effect: QuestEffectKind::Set(2),
+            },
+            QuestEffect {
+                track: native_goal.phase.clone(),
+                from: QuestComparison::Eq(-1),
+                effect: QuestEffectKind::Set(0),
+            },
+        ],
         completes: false,
         experience: None,
     });
@@ -199,6 +227,11 @@ pub(super) async fn scenario(
         Some(1),
         "freeze one genuine native objective"
     );
+    assert_eq!(
+        crate::gameplay_transport::grizzly_kills::native_goals::session(&entry),
+        Some(member.game_session_id),
+        "freeze the exact-origin goal on this native death"
+    );
     let lane =
         crate::durability::spell_owner_commit::SpellLane::new(member.world_id, member.channel_id);
     let permit = lane.acquire().await.map_err(|_| "spell lane")?;
@@ -225,6 +258,14 @@ pub(super) async fn scenario(
     assert!(
         same_transaction,
         "native objective and XP cannot have a crash gap"
+    );
+    let native_same_transaction: Option<bool> = sqlx::query_scalar("SELECT d.xmin=q.xmin FROM game_party_kill_xp_receipts d JOIN game_character_quest_receipts q ON q.character_id=d.principal_id WHERE d.death_key=$1 AND q.transition_key=$2")
+        .bind(crate::durability::party_kill_xp::encode_death_key(entry.facts.death))
+        .bind(&native_goal.key).fetch_optional(pool).await?;
+    assert_eq!(
+        native_same_transaction,
+        Some(true),
+        "exact-origin goal must commit with XP before any deferred queue drain"
     );
     eprintln!(
         "NATIVE_OBJECTIVE_ATOMIC POSTGRES_CASE_COMPLETED source_dragon=1 replay=stable same_xact=true elapsed_ms={}",

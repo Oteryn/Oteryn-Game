@@ -1,4 +1,19 @@
-# Active r2: source exploration and generic ladder GREEN, continue
+# Active r2: exact-origin goal atomicity WIP, continue immediately
+
+Latest BATCH-native-goals-atomic-2026-11-07.json: PG180006 RED75.68s,
+exact-origin Dragon receipt absent from XP transaction. Native goals previously
+committed separately BEFORE ordinary XP. New code composes sealed death/origin
+goals into existing XP transaction, refuses generic forged UUID causes, refreshes
+recipient copies and invalidates uncertain revision cursors. Cargo check for
+durability+dispatch PASS92s; fmt PASS. New native PG build hit SIGKILL/cgroup
+OOM19/kill8 (was18/7), not a PG result. Fix resource retention then retry:
+/tmp/questpc2-exact-goal-atomic-green-retry-pg.log. Earlier compile errors
+(visibility and auto-mounted test module path) were corrected; latest failure
+is codegen memory only. New isolated test also proves native-goal capture.
+Do not count whole Elvenbane qualified. Immediate: recover failed native working
+cache / current READY without profile changes, rerun focused atomic, authority
+and incoming defender cases; all-target/all-feature clippy -Dwarnings changed
+crates; publish green. WIP publication explicitly authorized by owner15min rule.
 
 Branch claude/happy-davinci-ijz3wy-questpc2; AUTHORING. Owned29:
 2QUALIFIED (Desert/Annihilator),27UNFINISHED,6world titles SKIPPED_OTHER_LANE
@@ -31,8 +46,8 @@ Source slice9ccbd3285 is pushed; final evidence is recorded in the batch JSON.
 Then full Elvenbane: actual source basement activation of existing exact-goal
 cohort, real-client Dragon+five defenders, seven-item physical atomic treasure
 (Spellbook3059 documented choice), once/replay/exit/journal; qualify whole.
-Incoming native-goal settlement currently deferred afterXP; inspect/compose
-with transaction or durable recovery before activating full route. Do not
+Incoming native-goal settlement was separate beforeXP; current WIP composes
+with the existing sealed native XP transaction before activating full route. Do not
 record an external dependency or stop; shared mechanisms are our job.
 After Elvenbane continue remaining owned entries, respecting QSPLIT/user
 exclusions and Father11atomic/grants-exact-match rules.

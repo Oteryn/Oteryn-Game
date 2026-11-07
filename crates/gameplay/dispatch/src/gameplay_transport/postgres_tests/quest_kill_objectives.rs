@@ -52,34 +52,39 @@ fn quest_kill_objectives_postgres_content_and_native_authority() -> TestResult {
             };
             use crate::durability::quest_state::{QuestCause, QuestTransitionRequest};
             use crate::foundation::{CommandId, CommandRef};
-            for cause in [
-                QuestCause::Command(CommandRef::new(
-                    deps.admitted.game_session_id,
-                    CommandId::new(9000).map_err(debug)?,
-                )),
-                QuestCause::CreatureDeath(
-                    ExperienceRewardOccurrence::from_bytes(super::fixture::id(91))
-                        .map_err(debug)?,
-                ),
+            for transition in [
+                "oteryn:quest-transition/elvenbane/dragon",
+                "oteryn:quest-transition/native-kill/elvenbane-dragon",
             ] {
-                let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-                let result = slot
-                    .commit_quest_transition(
-                        owner.root,
-                        owner.character,
-                        owner.holder,
-                        fence,
-                        QuestTransitionRequest {
-                            transition_key: "oteryn:quest-transition/elvenbane/dragon".into(),
-                            cause,
-                        },
-                        std::sync::Arc::new(catalogue.catalogue().clone()),
-                    )
-                    .await;
-                assert!(
-                    matches!(result, Err(CharacterProgressionError::InvalidInput)),
-                    "generic command/death occurrence cannot forge native source admission: {result:?}"
-                );
+                for cause in [
+                    QuestCause::Command(CommandRef::new(
+                        deps.admitted.game_session_id,
+                        CommandId::new(9000).map_err(debug)?,
+                    )),
+                    QuestCause::CreatureDeath(
+                        ExperienceRewardOccurrence::from_bytes(super::fixture::id(91))
+                            .map_err(debug)?,
+                    ),
+                ] {
+                    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+                    let result = slot
+                        .commit_quest_transition(
+                            owner.root,
+                            owner.character,
+                            owner.holder,
+                            fence,
+                            QuestTransitionRequest {
+                                transition_key: transition.into(),
+                                cause,
+                            },
+                            std::sync::Arc::new(catalogue.catalogue().clone()),
+                        )
+                        .await;
+                    assert!(
+                        matches!(result, Err(CharacterProgressionError::InvalidInput)),
+                        "generic command/death occurrence cannot forge native source admission: {result:?}"
+                    );
+                }
             }
             let after: i64 =
                 sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")

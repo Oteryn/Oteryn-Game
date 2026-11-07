@@ -168,13 +168,8 @@ impl DurabilityRoot {
         let reward_achievement =
             super::super::reward_claim_mint::quest::prepare_achievement(reward_callback.as_ref())
                 .map_err(|_| CharacterProgressionError::InvalidInput)?;
-        // Native counters accept only the retained creature-death authority.
-        if request.transition_key.starts_with("oteryn:quest-transition/native-kill/")
-            && (!matches!(request.cause, QuestCause::CreatureDeath(_))
-                || !oteryn_gameplay_quests::quest::native_kill_goals::load()
-                    .map_err(|_| CharacterProgressionError::InvalidInput)?
-                    .iter().any(|goal| goal.key == request.transition_key))
-        {
+        // Only the sealed native-death XP transaction may write these counters.
+        if request.transition_key.starts_with("oteryn:quest-transition/native-kill/") {
             return Err(CharacterProgressionError::InvalidInput);
         }
         // The specialised owner evaluates these computed rules under the locked snapshot.

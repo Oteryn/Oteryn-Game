@@ -4,7 +4,7 @@
 
 use std::sync::Arc;
 
-mod native_goals;
+pub(super) mod native_goals;
 
 use oteryn_gameplay_quests::quest::grizzly_adams::{self as quest, GrizzlyAction};
 
@@ -398,8 +398,7 @@ pub(super) async fn settle(
     entry: &PendingKillSettlement,
     ordinary: impl std::future::Future<Output = SettleReport>,
 ) -> SettleReport {
-    if !native_goals::settle(admission, entry).await || !admission.credit_grizzly_death(entry).await
-    {
+    if !admission.credit_grizzly_death(entry).await {
         return SettleReport {
             verdict: SettleVerdict::Retry,
             no_progression: false,

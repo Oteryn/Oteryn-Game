@@ -2012,5 +2012,15 @@
       "world_digest": "32170e60e0f946dd1ba74dc68e45399579b85e66e819259a7adfef3bc5ad8502",
       "published_source_slice": "9ccbd3285"
     }
+  },
+  "native_goals_atomic_authoring": {
+    "batch": "BATCH-native-goals-atomic-2026-11-07.json",
+    "state": "WIP_CHECK_PASS_PG_CODEGEN_OOM",
+    "base": "5a26f9a0e",
+    "red_postgres_seconds": 75.68,
+    "postgres_version": 180006,
+    "red_point": "Exact-origin goal receipt absent from XP transaction, expected Some(true).",
+    "check": "durability+dispatch PASS92s; fmt PASS",
+    "next": "Reduce failed/inactive native RAM caches; rerun focused atomic PG and authority/defender regressions; clippy then push green. Whole Elvenbane remains unfinished."
   }
 }

@@ -159,6 +159,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(super) async fn refresh_native_objective_recipients(&self, entry: &PendingKillSettlement) {
+        if let Some(session) = super::grizzly_kills::native_goals::session(entry) {
+            self.refresh_quest_session(session, false).await;
+        }
         if let Some(captured) = &entry.objectives {
             for objective in captured.iter() {
                 self.refresh_quest_session(objective.snapshot.session, false)
@@ -181,7 +184,14 @@ pub(super) async fn apply_in_transaction(
     catalogue: Option<&oteryn_gameplay_quests::quest::QuestStateCatalogue>,
 ) -> Result<Vec<crate::durability::quest_state::CommittedQuestTransition>, CharacterProgressionError>
 {
-    let mut committed = Vec::new();
+    let mut committed = super::grizzly_kills::native_goals::apply_in_transaction(
+        tx,
+        node,
+        entry,
+        participants,
+        catalogue,
+    )
+    .await?;
     let Some(captured) = &entry.objectives else {
         return Ok(committed);
     };

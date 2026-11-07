@@ -312,10 +312,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             slots.push(slot);
         }
         let endgame_kill = super::kill_reward::tracks_native_progression(&entry.creature);
-        let objective_kill = entry
-            .objectives
-            .as_ref()
-            .is_some_and(|captured| !captured.is_empty());
+        let objective_kill = super::grizzly_kills::native_goals::session(entry).is_some()
+            || entry
+                .objectives
+                .as_ref()
+                .is_some_and(|captured| !captured.is_empty());
         if endgame_kill || objective_kill {
             // The fences above retain the expected revisions. Invalidate the
             // cached cursors before the await so cancellation after an uncertain
