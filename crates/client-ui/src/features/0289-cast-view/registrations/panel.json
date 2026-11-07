@@ -1,0 +1,7 @@
+{
+  "mechanic": "0289-cast-view",
+  "kind": "panels",
+  "id": "0289-cast-view-picture",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

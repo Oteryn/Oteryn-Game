@@ -1287,3 +1287,23 @@ pending under the owner's emergency publication exception.
 Emergency publication gate: fresh `cargo check --workspace --all-targets`
 passed (3m22s), and `cargo fmt --all --check` passed. Only this validation
 record changes; no mechanic, generated pin or test expectation changes.
+
+## Main integration47db34f09 (2026-11-07)
+
+Merged main's NPC quest programs, world-change calendar and cast capabilities
+without changing lane ownership. The three conflicts were generated Item
+providers/spell manifest; merged producer code preserves QENGINE, QNPCFX,
+SRVENC Sugar13 profiles and ENCX source regions. No new lane number allocated;
+main's existing1310-1315/1320-1322 migrations are inherited unchanged.
+
+Confirmed all11 World package documents exactly match main and this lane has
+no World materializer/example input changes. Used the documented native-only
+regeneration path, then the canonical tree generator, rather than rerunning
+the unchanged World package. The initially attempted full materialization was
+stopped before copying any output into the repository. Quest binding evidence,
+NPC dialogue links, audit tag goldens, registry fragments and changed client
+registration goldens were regenerated with their tools. World metadata and
+duplicate migration checks pass. Final pins, workspace check, clippy, affected
+unit tests and own PG revalidation are tracked separately; none is claimed
+passed before its output is available. The inherited Primal hook-closure
+failure remains an ENCX-owned gap; no guard or test is weakened.
