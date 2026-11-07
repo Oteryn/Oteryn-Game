@@ -2643,6 +2643,43 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-41",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "Historical ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb 33-placement tree proves the selected cohort absent. Retain exact current audited retail positions and pinned promotion-candidates-v1.json SHA2561f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a; source-qualified names unchanged.",
+      "cases": [
+        {
+          "npc": "oteryn:npc.peter",
+          "name": "Peter",
+          "expected": {
+            "x": 32857,
+            "y": 31302,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.xorlosh",
+          "name": "Xorlosh",
+          "expected": {
+            "x": 32613,
+            "y": 31499,
+            "floor": -14
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.yalahari",
+          "name": "Yalahari",
+          "expected": {
+            "x": 32801,
+            "y": 31189,
+            "floor": -7
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }

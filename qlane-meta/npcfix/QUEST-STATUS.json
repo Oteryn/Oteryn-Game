@@ -263,27 +263,26 @@
   },
   "incoming_cooldown_delivery": {},
   "active_physical_batch": {
-    "name": "retail-population-qualification-40",
+    "name": "retail-population-qualification-41",
     "state": "PG_RED_GREEN_COMPLETE; STRICT_SOURCE_GATES_PENDING",
     "entries": [
-      "Maris",
-      "Maritima",
-      "Ortheus",
-      "Palimuth"
+      "Peter",
+      "Xorlosh",
+      "Yalahari"
     ],
-    "source_commit": "8f10f58947b82381fe1a959c02c393bbdb441ea1",
+    "source_commit": "f45fa01b853b82f00608e76c047bed0666eec11a",
     "scope": "Existing authored placement only; exact source name/cell and normal native/map admission. No service behavior claimed.",
     "red": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 69.66,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-40-red.log",
-      "sha256": "f5ed80b90d245a51a765ebf6f098411976d8a3a724035986f69caffcc0ccb073"
+      "seconds": 74.73,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-41-red.log",
+      "sha256": "88b2d07e1227c4585d848f703da0438590ef79e27806da13cf1893d60387598d"
     },
     "green": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 253.62,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-40-green.log",
-      "sha256": "ee62c0d32b7b72df0bebd3fe98c04a725b7d2e6feeff3856efe55272de3a8214"
+      "seconds": 151.37,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-41-green.log",
+      "sha256": "178aedb24d3dff6c873762ecf00df1f177ae33e380f73eb209cd9d15a77583e9"
     }
   },
   "active_refusal_batch": {
@@ -7701,6 +7700,29 @@
         "seconds": 253.62,
         "log": "/tmp/npcfix-evidence/retail-population-qualification-40-green.log",
         "sha256": "ee62c0d32b7b72df0bebd3fe98c04a725b7d2e6feeff3856efe55272de3a8214"
+      }
+    },
+    {
+      "name": "retail-population-qualification-41",
+      "state": "PG_RED_GREEN_COMPLETE; STRICT_SOURCE_GATES_PENDING",
+      "entries": [
+        "Peter",
+        "Xorlosh",
+        "Yalahari"
+      ],
+      "source_commit": "f45fa01b853b82f00608e76c047bed0666eec11a",
+      "scope": "Existing authored placement only; exact source name/cell and normal native/map admission. No service behavior claimed.",
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 74.73,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-41-red.log",
+        "sha256": "88b2d07e1227c4585d848f703da0438590ef79e27806da13cf1893d60387598d"
+      },
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 151.37,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-41-green.log",
+        "sha256": "178aedb24d3dff6c873762ecf00df1f177ae33e380f73eb209cd9d15a77583e9"
       }
     }
   ]
