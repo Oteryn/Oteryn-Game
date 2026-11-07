@@ -22,6 +22,8 @@ pub struct CallbackEffects {
     pub magic: Option<MagicEffect>,
     pub portals: Option<PortalPair>,
     pub item_cycle: Option<ItemCycle>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub item_presence: Option<ItemPresence>,
     pub encounter: Option<Encounter>,
 }
 
@@ -136,6 +138,14 @@ pub struct PortalPair {
     pub lifetime_us: Option<u64>,
 }
 
+/// An immovable walkable projection owned by its source callback, never an Item instance.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ItemPresence {
+    pub position: Position,
+    pub appearance: u16,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct ItemCycle {
@@ -219,6 +229,16 @@ pub(super) fn valid(callback: &Callback) -> bool {
             .is_some_and(|m| !pos(m.position) || m.effect == 0)
         || (callback.trigger == Trigger::StepOut && callback.return_on_failure)
     {
+        return false;
+    }
+    if effects.item_presence.as_ref().is_some_and(|presence| {
+        !pos(presence.position)
+            || presence.appearance == 0
+            || !callback.storage.is_empty()
+            || effects.portals.is_some()
+            || effects.item_cycle.is_some()
+            || effects.encounter.is_some()
+    }) {
         return false;
     }
     let operations = usize::from(effects.portals.is_some())

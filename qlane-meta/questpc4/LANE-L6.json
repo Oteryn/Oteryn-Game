@@ -146,32 +146,19 @@
       "from_lanes": [
         "questpc4"
       ],
-      "blocker": {
-        "missing_piece": "The Riddler answer branches and source reward/loss selection remain without a native conditional dialogue/reward binding; skull entry and chest recipes are partial only.",
-        "source": ".questpc4/evidence/wiki/The Paradox Tower Quest_Spoiler.wiki:24",
-        "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
-        "canonical_json_pointer": "/records/35/definition",
-        "native_evidence": [],
-        "tried": [
-          "Read retained source at .questpc4/evidence/wiki/The Paradox Tower Quest_Spoiler.wiki:24; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/35/definition).",
-          "Compared the current native callback registry: 1 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
-          "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
-        ],
-        "native_callbacks_present": [
-          "oteryn:quest-callback/paradox-skulls"
-        ],
-        "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
-        "kind": null,
-        "dependency": null
-      },
+      "blocker": null,
       "sources": [
         {
           "title": "The Paradox Tower Quest",
           "canonical": "oteryn:quest.the_paradox_tower_quest",
           "canonical_resolution": "input canonical",
           "from_lane": "questpc4",
-          "status": "ACTIONABLE",
-          "blocker": {
+          "status": "IN_PROGRESS",
+          "blocker": null,
+          "source": "in/questpc4.json#/quests/39",
+          "evidence": null,
+          "first_unqualified_stage": null,
+          "historical_blocker": {
             "missing_piece": "The Riddler answer branches and source reward/loss selection remain without a native conditional dialogue/reward binding; skull entry and chest recipes are partial only.",
             "source": ".questpc4/evidence/wiki/The Paradox Tower Quest_Spoiler.wiki:24",
             "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
@@ -189,9 +176,23 @@
             "kind": null,
             "dependency": null
           },
-          "source": "in/questpc4.json#/quests/39",
-          "evidence": null,
-          "first_unqualified_stage": null
+          "current_work": {
+            "owner": "questpc4",
+            "stage": "generic_engine_green_local_pending_remote_reconciliation",
+            "level_component": "PG18.6 GREEN91.999669123s; whole quest not yet qualified",
+            "world_puzzles": "PG18.6 GREEN including actual advertised handle USE52.626333695s; whole native route remains in progress",
+            "next": "complete native multifloor route and exact selected NPC/reward chain; implement remaining admission mechanisms here",
+            "source_document": "content/quests/authoring/paradox-tower.md",
+            "shared_engine_contracts": [
+              "qlane-meta/questpc4/LEVEL-BINDING-CONTRACT.md",
+              "qlane-meta/questpc4/WORLD-PUZZLE-CONTRACT.md"
+            ],
+            "verification_logs": [
+              "/tmp/questpc4-puzzle-final-pg.log",
+              "/tmp/questpc4-puzzle-map-use-pg.log"
+            ],
+            "checks": "fmt/check5crates/clippy5crates alltargets allfeatures -Dwarnings,9pureunits,pin-check and generated ladder check PASS"
+          }
         }
       ],
       "other_observed_mechanisms": [],
@@ -200,7 +201,42 @@
       "additional_mechanism_dependencies": [],
       "classification_evidence_sources": [
         "in/questpc4.json#/quests/39"
-      ]
+      ],
+      "historical_blocker": {
+        "missing_piece": "The Riddler answer branches and source reward/loss selection remain without a native conditional dialogue/reward binding; skull entry and chest recipes are partial only.",
+        "source": ".questpc4/evidence/wiki/The Paradox Tower Quest_Spoiler.wiki:24",
+        "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+        "canonical_json_pointer": "/records/35/definition",
+        "native_evidence": [],
+        "tried": [
+          "Read retained source at .questpc4/evidence/wiki/The Paradox Tower Quest_Spoiler.wiki:24; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/35/definition).",
+          "Compared the current native callback registry: 1 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+          "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+        ],
+        "native_callbacks_present": [
+          "oteryn:quest-callback/paradox-skulls"
+        ],
+        "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+        "kind": null,
+        "dependency": null
+      },
+      "current_work": {
+        "owner": "questpc4",
+        "stage": "generic_engine_green_local_pending_remote_reconciliation",
+        "level_component": "PG18.6 GREEN91.999669123s; whole quest not yet qualified",
+        "world_puzzles": "PG18.6 GREEN including actual advertised handle USE52.626333695s; whole native route remains in progress",
+        "next": "complete native multifloor route and exact selected NPC/reward chain; implement remaining admission mechanisms here",
+        "source_document": "content/quests/authoring/paradox-tower.md",
+        "shared_engine_contracts": [
+          "qlane-meta/questpc4/LEVEL-BINDING-CONTRACT.md",
+          "qlane-meta/questpc4/WORLD-PUZZLE-CONTRACT.md"
+        ],
+        "verification_logs": [
+          "/tmp/questpc4-puzzle-final-pg.log",
+          "/tmp/questpc4-puzzle-map-use-pg.log"
+        ],
+        "checks": "fmt/check5crates/clippy5crates alltargets allfeatures -Dwarnings,9pureunits,pin-check and generated ladder check PASS"
+      }
     },
     {
       "canonical": "oteryn:quest.the_spirit_will_get_you_quest",

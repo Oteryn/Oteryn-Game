@@ -119,6 +119,9 @@ pub struct RewardCallback {
     pub creation_sex: Option<CreationSex>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub requires_premium: bool,
+    /// Current locked progression must satisfy this source requirement (PC3 add7faf92).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub minimum_level: Option<u32>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub requires_outfits: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -316,6 +319,7 @@ fn validate_document(document: Document) -> Result<Document, String> {
             || !slug(&c.npc, "oteryn:npc.", b"_", 128)
             || c.storage.is_empty()
             || c.storage.len() > 8
+            || c.minimum_level == Some(0)
             || tracks.len() != c.storage.len()
             || c.requires_outfits.len() > 8
             || c.requires_outfits.iter().collect::<BTreeSet<_>>().len() != c.requires_outfits.len()
@@ -394,6 +398,23 @@ fn validate_document(document: Document) -> Result<Document, String> {
     Ok(document)
 }
 
+// Ungated published callbacks retain their original Set encoding. For newly
+// gated callbacks, reuse PC3's bound Set so changing admission/value terms also
+// changes the owning unfinished quest pin; speech/citations are not reward terms.
+/// Optional binding of newly gated admission/value terms; absent legacy gates keep old hashes.
+pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, String> {
+    if callback.minimum_level.is_none() {
+        return Ok(None);
+    }
+    use sha2::{Digest, Sha256};
+    let mut terms = serde_json::to_value(callback).map_err(|e| e.to_string())?;
+    let terms = terms.as_object_mut().ok_or("reward terms")?;
+    terms.remove("reply");
+    terms.remove("sources");
+    let bytes = serde_json::to_vec(terms).map_err(|e| e.to_string())?;
+    Ok(Some(Sha256::digest(bytes).into()))
+}
+
 pub fn participant_key(callback: &str, index: usize) -> String {
     format!("{callback}/participant/{index}")
 }
@@ -424,6 +445,12 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
     let callbacks = document.callbacks;
     let requires: Vec<_> = callbacks.iter().flat_map(|c| &c.requires).collect();
     for callback in &callbacks {
+        let binding = gated_binding(callback)?;
+        let bound_effect = callback
+            .storage
+            .iter()
+            .position(|s| !s.preserve)
+            .ok_or("reward needs a changed state")?;
         for operation in &callback.state_ops {
             if tracks
                 .iter()
@@ -509,11 +536,17 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
             effects: callback
                 .storage
                 .iter()
-                .map(|s| QuestEffect {
+                .enumerate()
+                .map(|(index, s)| QuestEffect {
                     track: s.track.clone(),
                     from: QuestComparison::Between(s.minimum, s.maximum),
                     effect: if s.preserve {
                         QuestEffectKind::Add(0)
+                    } else if let Some(binding) = binding.filter(|_| index == bound_effect) {
+                        QuestEffectKind::SetWithBinding {
+                            value: s.set,
+                            binding,
+                        }
                     } else {
                         QuestEffectKind::Set(s.set)
                     },
@@ -537,6 +570,63 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn gated_terms_bind_level_and_value_but_not_display_text() -> Result<(), String> {
+        let original = load()?
+            .into_iter()
+            .find(|c| c.minimum_level == Some(30))
+            .ok_or("gated callback")?;
+        let binding = gated_binding(&original)?.ok_or("binding")?;
+        let mut changed = original.clone();
+        changed.minimum_level = Some(31);
+        assert_ne!(gated_binding(&changed)?, Some(binding));
+        let mut changed = original.clone();
+        changed.requires_premium = !changed.requires_premium;
+        assert_ne!(gated_binding(&changed)?, Some(binding));
+        let mut changed = original.clone();
+        changed.reply = vec!["Different wording".into()];
+        changed.sources = vec!["Different citation".into()];
+        assert_eq!(gated_binding(&changed)?, Some(binding));
+        let mut changed = original;
+        changed.minimum_level = None;
+        assert_eq!(gated_binding(&changed)?, None);
+        let mut invalid = serde_json::to_value(changed).map_err(|e| e.to_string())?;
+        invalid["minimum_level"] = 0.into();
+        assert!(parse(&serde_json::json!({"schema":1,"callbacks":[invalid]}).to_string()).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn published_ungated_quest_hash_baseline() -> Result<(), String> {
+        let lowered = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|e| format!("{e:?}"))?;
+        for (key, expected) in [
+            (
+                "oteryn:quest.outfit_and_addon_quests",
+                "baea9b94d5d8f6ce007b7ab007a4eb81b7ccdc3114d6c752b37dcc85aee9f6fb",
+            ),
+            (
+                "oteryn:quest.the_ice_islands_quest",
+                "4d8180299446394b3a47bad282c4fd8d3faf51871aa4f335aad8ff252f3c686d",
+            ),
+            (
+                "oteryn:quest.the_spirit_will_get_you_quest",
+                "0df1f07a25989a00e27d16a890e8598556f37bcb08deb2a3b2feab8958747414",
+            ),
+        ] {
+            let hash = lowered
+                .catalogue()
+                .definition_hash(key)
+                .ok_or("published quest")?;
+            assert_eq!(
+                hash.iter().map(|b| format!("{b:02x}")).collect::<String>(),
+                expected,
+                "published ungated quest {key}"
+            );
+        }
+        Ok(())
+    }
+
     #[test]
     fn authored_shards_complete_only_the_selected_quest_and_preserve_old_plans()
     -> Result<(), String> {

@@ -267,6 +267,12 @@ pub struct LoopGroundFacts<'a, F> {
 }
 
 impl<F: MapFacts> MapFacts for LoopGroundFacts<'_, F> {
+    fn movement_item(&self, id: u64) -> Option<(TilePos, crate::map::overlay::EntryId)> {
+        self.inner.movement_item(id)
+    }
+    fn movement_items(&self, pos: TilePos) -> Vec<crate::map::view::ComposedEntry> {
+        self.inner.movement_items(pos)
+    }
     fn base_hidden(&self, key: u64) -> bool {
         self.inner.base_hidden(key)
     }

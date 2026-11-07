@@ -1179,7 +1179,7 @@
     },
     {
       "title": "The Paradox Tower Quest",
-      "status": "ACTIONABLE",
+      "status": "IN_PROGRESS",
       "canonical": [
         "oteryn:quest.the_paradox_tower_quest"
       ],
@@ -1193,7 +1193,10 @@
         "marker": "POSTGRES_CASE_COMPLETED source_quest_rewards The Paradox Tower Quest duration=175.733345465s",
         "scope": "reward paths only"
       },
-      "blocker": {
+      "blocker": null,
+      "owner": "questpc4",
+      "mechanism": "conditional_storyline_and_access",
+      "historical_blocker": {
         "missing_piece": "The Riddler answer branches and source reward/loss selection remain without a native conditional dialogue/reward binding; skull entry and chest recipes are partial only.",
         "source": ".questpc4/evidence/wiki/The Paradox Tower Quest_Spoiler.wiki:24",
         "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
@@ -1209,8 +1212,18 @@
         ],
         "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only."
       },
-      "owner": "questpc4",
-      "mechanism": "conditional_storyline_and_access"
+      "current_work": {
+        "owner": "questpc4",
+        "stage": "implement_and_verify_generic_world_puzzles",
+        "level_component": "PG18.6 GREEN91.999669123s; whole quest not yet qualified",
+        "world_puzzles": "implemented; current PG final verification /tmp/questpc4-puzzle-final-pg.log",
+        "next": "complete native multifloor route and exact selected NPC/reward chain; implement remaining admission mechanisms here",
+        "source_document": "content/quests/authoring/paradox-tower.md",
+        "shared_engine_contracts": [
+          "qlane-meta/questpc4/LEVEL-BINDING-CONTRACT.md",
+          "qlane-meta/questpc4/WORLD-PUZZLE-CONTRACT.md"
+        ]
+      }
     },
     {
       "title": "The Pits of Inferno Quest",
@@ -6007,7 +6020,7 @@
     "published_head": "e2b192354371d0529dc37a4193d126b1cdff4867"
   },
   "npc_story_batch": {
-    "status": "GREEN_PENDING_PUBLICATION",
+    "status": "GREEN_PUSHED",
     "canonical": "oteryn:quest.the_spirit_will_get_you_quest",
     "test": "l6_spirit_three_retained_wills_unlock_only_confession",
     "red_log": "/tmp/questpc4-spirit-red.log",
@@ -6063,9 +6076,7 @@
       "Native placement ordinal is u8 and ground coordinates are bounded u16",
       "World callback closed validation requires pinned source citation; added exact admitted item XML provenance while retaining explicit authored placement assumption. No guard weakened."
     ],
-    "pending": [
-      "commit and fast-forward push"
-    ],
+    "pending": [],
     "flow_red": {
       "postgres": "18.6",
       "duration_seconds": 93.353921244,
@@ -6094,6 +6105,319 @@
         "repeated final request refuses",
         "completed-stage confession reply is read-only"
       ]
+    },
+    "published_head": "18f87a584f777b2fbfc6e9e108d72218161f9e9b"
+  },
+  "paradox_attempt": {
+    "status": "GENERIC_ENGINE_GREEN_LOCAL_PENDING_REMOTE_RECONCILIATION",
+    "canonical": "oteryn:quest.the_paradox_tower_quest",
+    "test": "l6_paradox_complete_selected_route_and_exact_reward",
+    "red_log": "/tmp/questpc4-paradox-red.log",
+    "published_previous_batch": "18f87a584f777b2fbfc6e9e108d72218161f9e9b",
+    "engine_checks": {
+      "qengine2_head": "36927f208",
+      "result": "New actor Fire/Drunk and unowned-addon guards exist; no NPC minimum-level or world-read requirements for this entry. Reuse those later where needed, without merging unrelated outfit content now.",
+      "existing_minimum_level": "origin/claude/happy-davinci-ijz3wy-questpc3 @0874c26945d3680a96bee9c38027e75c97063688",
+      "reuse_commits": [
+        "add7faf928c344a1d90309e1777dd43ee9eecb85 locked progression level gate",
+        "f673adfebd7018b6c3e82026af3f5ed23e849fa4 SetWithBinding quest effect"
+      ],
+      "adaptation": "Use optional gated binding only for new minimum-level callbacks so published callbacks without a level gate keep their definition hashes."
+    },
+    "source_facts": [
+      "/tmp/questpc4-paradox-npc-spawn-facts.json",
+      "/tmp/questpc4-paradox-source-inventory.json"
+    ],
+    "remaining_generic_work": [
+      "bound physical world admission for personal climb checkpoints, reusing the new bound effect and preventing generic-writer bypass",
+      "opening-only durable input admission for repeatable food puzzle levers, preserving free close and exact consumption",
+      "admit required native immovable tower profiles with owning tools; retain every existing profile",
+      "promote the six source NPC placements and implement the ordered selected story/lesson/fixed answers",
+      "complete native multifloor climb and selected final reward/completion proof; use existing generic encounter for a conservative ghoul rule if source spawn cannot be established"
+    ],
+    "scope_note": "Initial RED proves missing first native conversation after actual PG initialization; whole qualification requires the complete selected climb and final fixed answers/reward.",
+    "red": {
+      "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "duration_seconds": 52.14233286,
+      "log": "/tmp/questpc4-paradox-red.log",
+      "marker": "POSTGRES_DATABASE_READY l6_paradox",
+      "error": "missing selected Paradox Oldrak acceptance callback"
+    },
+    "implemented_generic": [
+      "PC3 optional minimum_level field and locked progression check",
+      "PC3 SetWithBinding tag7, applied only to newly gated callbacks",
+      "exact registered binding check prevents stripped/altered/renamed admission terms",
+      "published ungated Outfit/Ice Islands/Spirit hashes unchanged",
+      "bounded exact readonly native-map appearance requirements; value participants forbidden; conditions checked only when opening",
+      "source-key-owned walkable ladder projection, immutable added identity, idempotent open/close",
+      "monster-only plate occupancy uses complete current creature census; player dispatch excludes monster callbacks; value participants forbidden at load",
+      "base and added ladder USE share source-revalidated sealed movement proof, native upstairs landing/PZ/occupancy rules and stair-hop cooldown",
+      "ladder source IDs generated from known immovable world-object catalogue with repository tool",
+      "explicit map handle USE authority route; retain carried/container admissions",
+      "PC6 loop Ground map movement projection delegation; preserve House isolation"
+    ],
+    "contract": "qlane-meta/questpc4/LEVEL-BINDING-CONTRACT.md",
+    "baseline_hashes": {
+      "oteryn:quest.outfit_and_addon_quests": "baea9b94d5d8f6ce007b7ab007a4eb81b7ccdc3114d6c752b37dcc85aee9f6fb",
+      "oteryn:quest.the_ice_islands_quest": "4d8180299446394b3a47bad282c4fd8d3faf51871aa4f335aad8ff252f3c686d",
+      "oteryn:quest.the_spirit_will_get_you_quest": "0df1f07a25989a00e27d16a890e8598556f37bcb08deb2a3b2feab8958747414"
+    },
+    "partial_mechanism": {
+      "status": "QUALIFIED_COMPONENT_ONLY",
+      "scope": "Generic minimum-level authority and exact bound terms, with Oldrak first-start consumer and authored greeting. Not whole Paradox.",
+      "postgres": "18.6",
+      "duration_seconds": 91.999669123,
+      "log": "/tmp/questpc4-level-greeting-fixed-pg.log",
+      "assertions": [
+        "below-level request refuses without writes",
+        "renamed bound transition cannot use generic writer",
+        "typed XP owner raises actual locked level to30 with no guard changes",
+        "real NPC wire request starts at eligible level"
+      ],
+      "greeting_setup_red": {
+        "duration_seconds": 90.268150116,
+        "log": "/tmp/questpc4-level-pg.log",
+        "error": "Oldrak hi returned NoConversation; corrected by projecting authored callback identities and owned greeting shard through existing NPC book. Strict greeting assertion preserved."
+      }
+    },
+    "ladder_facts": {
+      "script": "existing corpus Crystal9f5a72c:data/scripts/actions/items/ladder_up.lua:1-25",
+      "script_sha256": "730bc7664484e953b6efc3c8faeba9936d355c5cdde91d1f3e0686f714f4df13",
+      "position_rule": "data/libs/functions/position.lua:22-56 sha256:c18d16465394a4064e82d35463105511c1f273e7c6de588f29b9da8b1eadaf9b; preferred south landing upstairs then existing rope-compatible alternate order",
+      "xml_ladder_ids": [
+        1948,
+        1968,
+        5542,
+        9116,
+        20474,
+        20475,
+        28656,
+        31129,
+        31130,
+        31262,
+        33770,
+        34243,
+        43374,
+        48493,
+        48494,
+        50122,
+        50123
+      ],
+      "source_kinds": "All17 agree with committed WorldObject kind=ladder and blocks_movement=false",
+      "profile_preview": "/tmp/questpc4-ladder-profile-preview.json:1948 immovable/nonpickupable,Ground-only materializable,blocks_movement=false. Not yet admitted.",
+      "no_existing_implementation": "Searched qengine2/PC3/PC6/PC8/worldchg/wvar for world requirements/item presence/monster-step callback. No existing matching owner. Ladder USE absent in dispatch. Reuse rope sealed movement, map projection owner and actual creature movement owner."
+    },
+    "world_puzzle_engine": {
+      "status": "GREEN_COMPONENT_BATCH",
+      "red_log": "/tmp/questpc4-world-puzzles-red.log",
+      "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "red_cases": [
+        {
+          "name": "predicate",
+          "seconds": 51.472092696,
+          "error": "unknown field world_requirements"
+        },
+        {
+          "name": "presence",
+          "seconds": 52.304647796,
+          "error": "unknown field actor_kind"
+        },
+        {
+          "name": "ladder",
+          "seconds": 52.407120017,
+          "error": "NothingToUse instead of Committed"
+        }
+      ],
+      "implementation": [
+        "bounded exact readonly native-map appearance requirements; value participants forbidden; conditions checked only when opening",
+        "source-key-owned walkable ladder projection, immutable added identity, idempotent open/close",
+        "monster-only plate occupancy uses complete current creature census; player dispatch excludes monster callbacks; value participants forbidden at load",
+        "base and added ladder USE share source-revalidated sealed movement proof, native upstairs landing/PZ/occupancy rules and stair-hop cooldown",
+        "ladder source IDs generated from known immovable world-object catalogue with repository tool"
+      ],
+      "verification_log": "/tmp/questpc4-puzzle-map-use-pg.log",
+      "remote_reconciliation_pending": "origin questpc4 advanced to 5d078c61f with generic carried-step routes; preserve/reuse after this green mechanism batch",
+      "additional_red": {
+        "log": "/tmp/questpc4-world-puzzles-green2.log",
+        "case": "predicate close",
+        "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+        "duration_seconds": 56.310189281,
+        "error": "second wire USE returned Rejected rather than Committed after opening transformed the source appearance",
+        "fix": "Resolve the immutable authored base appearance as well as current transformed appearance for positional selectors. Preserve exact placement/unique/action checks; no assertion weakened.",
+        "follow_up": {
+          "log": "/tmp/questpc4-world-puzzles-green4.log",
+          "predicate_duration_seconds": 52.477196854,
+          "additional_fact": "Second wire command also hit the existing command cadence (exhaust=1). Separate fixture client interactions now advance owner clock2s, following existing Spirit/Mead helpers; no gate is weakened or cleared.",
+          "presence_duration_seconds": 52.880968421,
+          "presence_error": "DuplicateSpawnSource on the second rat; replaced with a distinct explicitly-qualified fixture spawn source, retaining all identity and USE assertions."
+        }
+      },
+      "intermediate_green": [
+        {
+          "case": "base ladder",
+          "duration_seconds": 53.706950465
+        },
+        {
+          "case": "monster presence/idempotence/despawn",
+          "duration_seconds": 53.736302096
+        },
+        {
+          "case": "wrong readonly state refused without receipt",
+          "duration_seconds": 56.165952373
+        }
+      ],
+      "verification_session": 16750,
+      "contract": "qlane-meta/questpc4/WORLD-PUZZLE-CONTRACT.md",
+      "unit_validation": "monster_puzzles_and_world_predicates_reject_value_participants passed1/0, /tmp/questpc4-puzzle-units.log",
+      "clippy": {
+        "log": "/tmp/questpc4-puzzle-clippy2.log",
+        "result": "PASS all-targets/all-features five changed crates; final map identity/cadence delta still requires same-head recheck before publication"
+      },
+      "pin_check": {
+        "log": "/tmp/questpc4-puzzle-pin-check2.log",
+        "result": "PASS",
+        "digest": "7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37",
+        "bytes": 31102360
+      },
+      "projection_bridge_red": {
+        "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+        "duration_seconds": 53.136554688,
+        "log": "/tmp/questpc4-puzzle-final-pg.log",
+        "error": "advertised ladder handle absent from actual wire world snapshot",
+        "fix": "LoopGroundFacts now delegates current movement_item and movement_items. House adapter remains intentionally excluding them; original House isolation unit included in focused rerun. No fake client handle or weaker assertion."
+      },
+      "other_final_cases": {
+        "passed": 6,
+        "failed_only": "added handle snapshot bridge before fix",
+        "postgres": "18.6",
+        "durations_seconds": {
+          "mead": 60.708971096,
+          "npc_level_binding": 95.129566145,
+          "spirit": 101.837761032,
+          "base_ladder": 53.97010143,
+          "readonly_predicate_open_close": 53.861539088,
+          "readonly_wrong_state_refusal": 52.52285676
+        }
+      },
+      "projection_bridge_reuse": {
+        "branch": "origin/claude/happy-davinci-ijz3wy-questpc6",
+        "sha": "390e024503a7c02b9e15d67e680cec0ac711fd5b",
+        "source": "crates/gameplay/dispatch/src/gameplay_transport/loop_move.rs:268-275",
+        "result": "Existing exact delegation pattern confirmed and reused; it was not on current qengine2/PC3/PC8 snapshots. House exclusion unchanged."
+      },
+      "map_use_route_red": {
+        "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+        "duration_seconds": 52.054854152,
+        "log": "/tmp/questpc4-puzzle-projection-bridge-pg.log",
+        "error": "advertised ladder handle now exists; USE returned StaleState because legacy route admits only carried Instance sources to item completion",
+        "fix": "Add optional explicit map-item authority hook after trade admission, before carried/container handlers; only known live ladder source receives sealed movement. Unknown map uses retain fallback. Keep carried admissions unchanged.",
+        "verification_log": "/tmp/questpc4-puzzle-map-use-pg.log",
+        "verification_session": 16750
+      },
+      "green": {
+        "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+        "cases": {
+          "readonly_open_close": 53.861539088,
+          "readonly_mismatch": 52.52285676,
+          "base_ladder": 53.97010143,
+          "monster_presence_actual_advertised_handle_use": 52.626333695,
+          "npc_level_binding": 95.129566145,
+          "mead_regression": 60.708971096,
+          "spirit_regression": 101.837761032
+        },
+        "logs": [
+          "/tmp/questpc4-puzzle-final-pg.log",
+          "/tmp/questpc4-puzzle-map-use-pg.log"
+        ],
+        "qualification_scope": "Generic engine components and two existing whole-entry regressions; whole Paradox is not yet qualified. Earlier7-case run had6green and1RED; the final focused rerun repaired that exact actual-wire failure without weakening assertions.",
+        "house_isolation_unit": "PASS with final actual wire test",
+        "pure_units": "9/0/0, including frozen published hashes and closed-shape value rejection, /tmp/questpc4-puzzle-final-units.log"
+      },
+      "publication_checks": {
+        "stage": "PASS",
+        "fmt": "/tmp/questpc4-engine-publish-fmt.log",
+        "check": {
+          "log": "/tmp/questpc4-engine-publish-check.log",
+          "duration": "25.91s",
+          "crates": [
+            "world",
+            "quests",
+            "npc",
+            "durability",
+            "dispatch"
+          ]
+        },
+        "clippy": {
+          "log": "/tmp/questpc4-engine-publish-clippy.log",
+          "duration": "1m55s",
+          "all_targets": true,
+          "all_features": true,
+          "deny_warnings": true
+        },
+        "pin_check": "unchanged7b26.../31102360 PASS",
+        "generated_ladders": "build_ladder_catalogue.py --check PASS"
+      }
     }
+  },
+  "generic_puzzle_batch": {
+    "status": "GREEN_LOCAL_PENDING_REMOTE_RECONCILIATION",
+    "whole_entry_status": "Paradox IN_PROGRESS; counts4QUALIFIED/17active/2external exclusions unchanged",
+    "postgres_components": {
+      "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "cases": {
+        "readonly_open_close": 53.861539088,
+        "readonly_mismatch": 52.52285676,
+        "base_ladder": 53.97010143,
+        "monster_presence_actual_advertised_handle_use": 52.626333695,
+        "npc_level_binding": 95.129566145,
+        "mead_regression": 60.708971096,
+        "spirit_regression": 101.837761032
+      },
+      "logs": [
+        "/tmp/questpc4-puzzle-final-pg.log",
+        "/tmp/questpc4-puzzle-map-use-pg.log"
+      ],
+      "qualification_scope": "Generic engine components and two existing whole-entry regressions; whole Paradox is not yet qualified. Earlier7-case run had6green and1RED; the final focused rerun repaired that exact actual-wire failure without weakening assertions.",
+      "house_isolation_unit": "PASS with final actual wire test",
+      "pure_units": "9/0/0, including frozen published hashes and closed-shape value rejection, /tmp/questpc4-puzzle-final-units.log"
+    },
+    "checks": {
+      "stage": "PASS",
+      "fmt": "/tmp/questpc4-engine-publish-fmt.log",
+      "check": {
+        "log": "/tmp/questpc4-engine-publish-check.log",
+        "duration": "25.91s",
+        "crates": [
+          "world",
+          "quests",
+          "npc",
+          "durability",
+          "dispatch"
+        ]
+      },
+      "clippy": {
+        "log": "/tmp/questpc4-engine-publish-clippy.log",
+        "duration": "1m55s",
+        "all_targets": true,
+        "all_features": true,
+        "deny_warnings": true
+      },
+      "pin_check": "unchanged7b26.../31102360 PASS",
+      "generated_ladders": "build_ladder_catalogue.py --check PASS"
+    },
+    "scope": [
+      "registered NPC minimum-level terms and locked progression",
+      "authored NPC greetings",
+      "readonly map predicates",
+      "owned immovable ladder presence",
+      "value-free monster plate occupancy",
+      "sealed base/advertised-handle ladder USE and map snapshot/dispatch bridges"
+    ],
+    "source_reuse": [
+      "PC3add7faf928c344a1d90309e1777dd43ee9eecb85",
+      "PC3f673adfebd7018b6c3e82026af3f5ed23e849fa4",
+      "PC6390e024503a7c02b9e15d67e680cec0ac711fd5b loop_move.rs:268-275"
+    ],
+    "next": "Commit/preserve, merge remote carried-step work, validate integration, FF push; continue full scope without final."
   }
 }

@@ -86,6 +86,36 @@
       "reply": [
         "You found all three wills. Their words have faded, but the memories remain. I hid these papers because I could not face the people I had failed. Keep the wills; you have heard my confession."
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-paradox-oldrak",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.oldrak",
+      "keywords": [
+        "hugo"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "minimum_level": 30,
+      "requires_premium": true,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/paradox/story",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "To learn about Hugo, ask Zoltan, then Padreia and Lubo. Seek the prisoner who studies mathemagics before you climb the tower."
+      ],
+      "sources": [
+        "content/quests/authoring/paradox-tower.md"
+      ]
     }
   ]
 }

@@ -194,6 +194,17 @@ impl DurabilityRoot {
         }
         let reward_callback = reward_callbacks.into_iter()
             .find(|c| c.key == request.transition_key);
+        // A bound admission effect cannot be renamed into the weaker generic
+        // writer, stripped from its registered callback, or given altered terms.
+        if let Some(transition)=catalogue.transition(&request.transition_key) {
+            let mut bindings=transition.effects.iter().filter_map(|effect| {
+                if let oteryn_gameplay_quests::quest::QuestEffectKind::SetWithBinding {binding,..}=effect.effect {Some(binding)} else {None}
+            });
+            let actual=bindings.next();
+            let expected=reward_callback.as_ref().map(oteryn_gameplay_quests::quest::reward_callbacks::gated_binding)
+                .transpose().map_err(|_|CharacterProgressionError::InvalidInput)?.flatten();
+            if bindings.next().is_some() || actual!=expected {return Err(CharacterProgressionError::InvalidInput);}
+        }
         let reward_achievement =
             super::super::reward_claim_mint::quest::prepare_achievement(reward_callback.as_ref())
                 .map_err(|_| CharacterProgressionError::InvalidInput)?;
@@ -431,6 +442,13 @@ impl DurabilityRoot {
                     let Some(state) = state else {
                         return Ok(Err(CharacterProgressionError::MissingProgressionState));
                     };
+                    // Reused from PC3 add7faf92: authoritative locked progression,
+                    // after historical receipt lookup and before any fresh write.
+                    if let Some(minimum)=reward_callback.as_ref().and_then(|c|c.minimum_level)
+                        && state.try_get::<i64,_>("level")? < i64::from(minimum) {
+                        tx.rollback().await?;
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    }
                     if numeric_u64(&state, "character_revision")? != root.revision {
                         return Err(DurabilityError::InvalidStoredState);
                     }

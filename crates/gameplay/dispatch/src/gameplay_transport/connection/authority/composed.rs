@@ -786,6 +786,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await;
     }
 
+    async fn use_map_item(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        item: item_view::ItemKey,
+    ) -> Option<UseOutcome> {
+        self.use_ladder_handle(actor, command, item).await
+    }
+
     /// ITEM-USE-1c: one `USE` of a main backpack entry under capability 15.
     async fn use_item(
         &self,

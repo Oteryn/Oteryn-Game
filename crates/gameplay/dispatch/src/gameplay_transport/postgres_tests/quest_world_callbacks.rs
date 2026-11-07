@@ -251,6 +251,10 @@ pub(super) fn world(
             cells.entry((p.floor - 1, p.x, p.y)).or_default();
         }
     }
+    if let Some(presence) = &callback.effects.item_presence {
+        let p = presence.position;
+        cells.entry((p.floor + 1,p.x,p.y + 1)).or_default();
+    }
     let mut effect_positions = Vec::new();
     if let Some(pair) = &callback.effects.portals {
         for portal in &pair.portals {
@@ -457,6 +461,9 @@ pub(super) fn world(
     }
     if let Some(pair) = &callback.effects.portals {
         effect_appearances.push(pair.appearance);
+    }
+    if let Some(presence) = &callback.effects.item_presence {
+        effect_appearances.push(presence.appearance);
     }
     if let Some(cycle) = &callback.effects.item_cycle {
         effect_appearances.extend([cycle.remove, cycle.create]);

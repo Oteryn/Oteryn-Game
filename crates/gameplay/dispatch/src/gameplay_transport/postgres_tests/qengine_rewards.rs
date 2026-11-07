@@ -637,6 +637,12 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name.starts_with("qengine-rewards-questpc4-puzzle-") {
+        return super::l6_world_puzzles::exercise(owner, admitted, h, name).await;
+    }
+    if name.starts_with("qengine-rewards-questpc4-paradox") {
+        return super::l6_paradox::exercise(owner, admitted, h, authority, name).await;
+    }
     if name == "qengine-rewards-questpc4-spirit" {
         return super::l6_spirit::exercise(owner, admitted, h, authority).await;
     }

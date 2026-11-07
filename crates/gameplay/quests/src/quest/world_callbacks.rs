@@ -30,7 +30,7 @@ pub enum Trigger {
 mod effects;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer, Facing,
-    ItemCycle, MagicEffect, Portal, PortalPair,
+    ItemCycle, ItemPresence, MagicEffect, Portal, PortalPair,
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -116,12 +116,36 @@ pub struct CallbackEffect {
     pub effect: u16,
 }
 
+/// Only value-free map callbacks can be triggered by monsters.
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ActorKind {
+    #[default]
+    Player,
+    Monster,
+}
+impl ActorKind {
+    fn is_player(&self) -> bool {
+        *self == Self::Player
+    }
+}
+
+/// A read-only exact appearance predicate on a native, immovable map entry.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct WorldRequirement {
+    pub position: Position,
+    pub appearance: u16,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Callback {
     pub key: String,
     pub quest: String,
     pub trigger: Trigger,
+    #[serde(default, skip_serializing_if = "ActorKind::is_player")]
+    pub actor_kind: ActorKind,
     pub selector: Selector,
     /// Both lever appearances. None for a step tile. One-way levers refuse their second use.
     pub lever: Option<[u16; 2]>,
@@ -134,6 +158,9 @@ pub struct Callback {
     #[serde(default, skip_serializing_if = "CallbackEffectSet::is_empty")]
     pub effects: CallbackEffectSet,
     pub storage: Vec<Storage>,
+    /// Opening predicates for value-free map puzzles, evaluated under the Channel turn.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub world_requirements: Vec<WorldRequirement>,
     /// Checked against the progression owner in the same fenced quest transaction.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub minimum_level: Option<u32>,
@@ -224,6 +251,38 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 && selector.action.is_none())
             || selector.position.is_some_and(|p| !valid_pos(p))
             || callback.teleport.is_some_and(|p| !valid_pos(p))
+            || (callback.actor_kind == ActorKind::Monster
+                && (callback.selector.position.is_none()
+                    || callback.trigger == Trigger::Use
+                    || !callback.storage.is_empty()
+                    || !callback.offerings.is_empty()
+                    || callback.item_on_target.is_some()
+                    || callback.teleport.is_some()
+                    || callback.minimum_level.is_some()
+                    || callback.experience.is_some()
+                    || callback.monk_reward.is_some()
+                    || callback.native_rule.is_some()
+                    || callback.effects.item_reward.is_some()
+                    || callback.effects.outfit_reward.is_some()
+                    || callback.effects.encounter.is_some()
+                    || callback.effects.portals.is_some()
+                    || callback.effects.item_cycle.is_some()
+                    || !callback.passages.is_empty()))
+            || callback.world_requirements.len() > MAX_EFFECTS
+            || callback
+                .world_requirements
+                .iter()
+                .any(|r| !valid_pos(r.position) || r.appearance == 0)
+            || (!callback.world_requirements.is_empty()
+                && (!callback.storage.is_empty()
+                    || !callback.offerings.is_empty()
+                    || callback.item_on_target.is_some()
+                    || callback.minimum_level.is_some()
+                    || callback.experience.is_some()
+                    || callback.monk_reward.is_some()
+                    || callback.native_rule.is_some()
+                    || callback.effects.item_reward.is_some()
+                    || callback.effects.outfit_reward.is_some()))
             || !effects::valid(callback)
             || callback
                 .facing
@@ -424,6 +483,78 @@ mod batch4_tests;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn monster_puzzles_and_world_predicates_reject_value_participants() -> Result<(), String> {
+        let mut callback = load()?
+            .into_iter()
+            .find(|c| c.key.ends_with("/behemoth"))
+            .ok_or("template")?;
+        callback.actor_kind = ActorKind::Monster;
+        callback.trigger = Trigger::StepIn;
+        callback.selector.position = Some(Position {
+            x: 32478,
+            y: 31904,
+            floor: -5,
+        });
+        callback.selector.unique = None;
+        callback.selector.action = None;
+        callback.selector.appearance = Some(431);
+        callback.lever = None;
+        callback.reversible = false;
+        callback.storage.clear();
+        callback.passages.clear();
+        callback.offerings.clear();
+        callback.teleport = None;
+        callback.effects.transform = Some(430);
+        callback.effects.item_presence = Some(ItemPresence {
+            position: Position {
+                x: 32478,
+                y: 31904,
+                floor: -5,
+            },
+            appearance: 1948,
+        });
+        let wire = |c: &Callback| serde_json::json!({"schema":1,"callbacks":[c]}).to_string();
+        parse(&wire(&callback))?;
+        for field in [
+            "storage",
+            "experience",
+            "teleport",
+            "minimum_level",
+            "item_on_target",
+        ] {
+            let mut value = serde_json::to_value(&callback).map_err(|e| e.to_string())?;
+            value[field] = match field {
+                "storage" => {
+                    serde_json::json!([{"track":"oteryn:quest-progress/fixture/test","minimum":-1,"maximum":0,"set":1}])
+                }
+                "experience" => 1.into(),
+                "minimum_level" => 30.into(),
+                "teleport" => serde_json::json!({"x":1,"y":1,"floor":-7}),
+                _ => {
+                    serde_json::json!({"item":"oteryn:item.tibia.i3031","count":1,"replacement":null,"target_replacement":null})
+                }
+            };
+            assert!(
+                parse(&serde_json::json!({"schema":1,"callbacks":[value]}).to_string()).is_err(),
+                "monster accepted {field}"
+            );
+        }
+        callback.actor_kind = ActorKind::Player;
+        callback.world_requirements = vec![WorldRequirement {
+            position: Position {
+                x: 1,
+                y: 1,
+                floor: -7,
+            },
+            appearance: 2773,
+        }];
+        parse(&wire(&callback))?;
+        callback.experience = Some(1);
+        assert!(parse(&wire(&callback)).is_err());
+        Ok(())
+    }
 
     #[test]
     fn registry_refuses_different_keys_on_the_same_selector() -> Result<(), String> {
