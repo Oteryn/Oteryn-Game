@@ -6464,7 +6464,7 @@
       "remote_verified": true
     },
     "migration_registry_batch_20": {
-      "status": "GREEN_READY_TO_FF_PUSH",
+      "status": "GREEN_PUSHED",
       "owner_range": "1250-1269",
       "planned": {
         "1060": "1250",
@@ -6602,7 +6602,186 @@
         "embedded_registry_unit": "1passed0failed0.00s pureunit, compile1m16s; actualPGverification is separate7case proof",
         "duplicates_diff": "PASS"
       },
-      "main_recheck": "4508fd2f1d31ba316792ec05a968f9101daa67f9 at12:06UTC;0999..1006/1200..1209 absent,3020notinmain"
+      "main_recheck": "4508fd2f1d31ba316792ec05a968f9101daa67f9 at12:06UTC;0999..1006/1200..1209 absent,3020notinmain",
+      "pushed_head": "455366efaa353d9cd42038d9d713142859d1065f",
+      "remote_verified": true
+    },
+    "native_room_batch_21": {
+      "status": "COMPILED_RED_WIP_CHECKPOINT",
+      "previous_pushed_head": "455366efaa353d9cd42038d9d713142859d1065f",
+      "scope": "5exactnativeRoomSTEP counterpart cases:missingDefaultStart/refusal+11cue, legitimateRooteligibilitysetup, literallanding/monotoneprogress, exactreceipt/noopguard/replay; notfullmaze",
+      "facts": [
+        {
+          "goal": [
+            33259,
+            32707,
+            13
+          ],
+          "goal_items": [
+            [
+              415,
+              0,
+              null
+            ]
+          ],
+          "candidate": [
+            1,
+            [
+              33258,
+              32707,
+              13
+            ],
+            415,
+            [
+              33257,
+              32707,
+              13
+            ],
+            415
+          ],
+          "region": "region-z13-x129-y127.b3",
+          "sha256": "bb2e90d7e09824f6404e9aaab3d28c46219e110e3d7bea2df4b2a495ee9db768"
+        },
+        {
+          "goal": [
+            33205,
+            32955,
+            14
+          ],
+          "goal_items": [
+            [
+              415,
+              0,
+              null
+            ]
+          ],
+          "candidate": [
+            1,
+            [
+              33205,
+              32956,
+              14
+            ],
+            415,
+            [
+              33204,
+              32956,
+              14
+            ],
+            415
+          ],
+          "region": "region-z14-x129-y128.b3",
+          "sha256": "fdb5b9acf61d8633ce36d1492741c208013ead7f6f958fa10f4c90206aa052e3"
+        },
+        {
+          "goal": [
+            33207,
+            33002,
+            14
+          ],
+          "goal_items": [
+            [
+              1236,
+              0,
+              null
+            ]
+          ],
+          "candidate": [
+            1,
+            [
+              33206,
+              33002,
+              14
+            ],
+            1236,
+            [
+              33205,
+              33002,
+              14
+            ],
+            1245
+          ],
+          "region": "region-z14-x129-y128.b3",
+          "sha256": "fdb5b9acf61d8633ce36d1492741c208013ead7f6f958fa10f4c90206aa052e3"
+        },
+        {
+          "goal": [
+            33124,
+            32760,
+            14
+          ],
+          "goal_items": [
+            [
+              415,
+              0,
+              null
+            ]
+          ],
+          "candidate": [
+            2,
+            [
+              33122,
+              32760,
+              14
+            ],
+            415,
+            [
+              33121,
+              32760,
+              14
+            ],
+            415
+          ],
+          "region": "region-z14-x129-y127.b3",
+          "sha256": "7e275e5d564705bbf28248ef65db63326133a43ac598bdba7d5a0e8aeb3cd5c4"
+        },
+        {
+          "goal": [
+            33086,
+            32781,
+            14
+          ],
+          "goal_items": [
+            [
+              423,
+              0,
+              null
+            ]
+          ],
+          "candidate": [
+            1,
+            [
+              33085,
+              32781,
+              14
+            ],
+            423,
+            [
+              33084,
+              32781,
+              14
+            ],
+            423
+          ],
+          "region": "region-z14-x129-y128.b3",
+          "sha256": "fdb5b9acf61d8633ce36d1492741c208013ead7f6f958fa10f4c90206aa052e3"
+        }
+      ],
+      "production_implementation": "None yet; genericoptionalNativeSelector+explicitteleportcue follow actualPGRED",
+      "red_log": "/tmp/questpc4-native-room-red2.log",
+      "red_session": 73030,
+      "first_build": "Preemptively corrected wrong Position carrier type path after verifying entities/src/carrier.rs:361; exactobsoleteCargo137161+descendants stopped143 beforecompilercompletion/PG, noREDclaim",
+      "next_migration": 1259,
+      "whole_entries_remaining": 17,
+      "red": {
+        "version": "18.6",
+        "seconds": 56.17,
+        "marker": "POSTGRES_DATABASE_READY l6_native_room",
+        "actual": "STEPstays33258,32707,z13",
+        "expected": "missingDefaultStartrestores33257,32707,z13",
+        "log": "/tmp/questpc4-native-room-red2.log",
+        "compiled": "4m49s"
+      }
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",

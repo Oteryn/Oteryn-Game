@@ -31,6 +31,7 @@ fn scenario_case(
     let spirit = name == "qengine-rewards-questpc4-spirit";
     let native_tower = name.starts_with("qengine-rewards-questpc4-native-tower-");
     let native_switch = name.starts_with("l6-tomb-switch-native-");
+    let native_room = name.starts_with("l6-native-room-");
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let native_crop = small_ruby
@@ -40,8 +41,11 @@ fn scenario_case(
         || native_tower
         || native_switch
         || native_gate
-        || native_altar;
-    let start = if native_altar {
+        || native_altar
+        || native_room;
+    let start = if native_room {
+        super::super::l6_native_rooms::start(name)?
+    } else if native_altar {
         super::super::l6_floor_native::start()
     } else if native_gate {
         super::super::l6_shared_gate_native::start(name)?
@@ -93,27 +97,31 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if ancient_instruments {
-        "ancient-tombs-diprath-sign-1"
-    } else if classic_npc || small_ruby || reward_fluids {
-        "behemoth"
-    } else if rotten_purchase {
-        "rotten-blood/sacrifice"
-    } else if monk {
-        "monk-guidance"
-    } else if target_swap
-        || reusable_tool
-        || floor_profiles
-        || floor_assembly
-        || room_raise
-        || carried_step
-        || shared_switch
-        || shared_gate
-    {
-        "fish-napping-key"
+    let mut callback = if native_room {
+        super::super::l6_native_rooms::callback(name)?
     } else {
-        name.strip_suffix("-expiry").unwrap_or(name)
-    })?;
+        callback(if ancient_instruments {
+            "ancient-tombs-diprath-sign-1"
+        } else if classic_npc || small_ruby || reward_fluids {
+            "behemoth"
+        } else if rotten_purchase {
+            "rotten-blood/sacrifice"
+        } else if monk {
+            "monk-guidance"
+        } else if target_swap
+            || reusable_tool
+            || floor_profiles
+            || floor_assembly
+            || room_raise
+            || carried_step
+            || shared_switch
+            || shared_gate
+        {
+            "fish-napping-key"
+        } else {
+            name.strip_suffix("-expiry").unwrap_or(name)
+        })?
+    };
     if shared_gate {
         let unique = name.rsplit('-').next().ok_or("gate UID")?.parse()?;
         callback.key = "oteryn:quest-callback/l6-shared-gate-fixture".into();
@@ -277,7 +285,12 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if native_altar {
+        let world = if native_room {
+            super::super::l6_native_rooms::world(
+                generation.native_gameplay().ok_or("native room policies")?,
+                name,
+            )?
+        } else if native_altar {
             super::super::l6_floor_native::world(
                 generation
                     .native_gameplay()
@@ -621,6 +634,8 @@ fn scenario_case(
             super::super::l6_ruby_profile::exercise(&owner, &h).await?;
         } else if floor_profiles {
             super::super::l6_floor_profiles::exercise(&mut owner, &mut admitted, &h, fence).await?;
+        } else if native_room {
+            super::super::l6_native_rooms::exercise(&mut owner, &mut admitted, &h, name).await?;
         } else if room_raise {
             super::super::l6_room_raise::exercise(&mut owner, &mut admitted, &h, name).await?;
         } else if native_altar {
