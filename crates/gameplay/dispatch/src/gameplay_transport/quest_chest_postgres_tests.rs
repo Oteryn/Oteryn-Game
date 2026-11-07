@@ -42,6 +42,19 @@ fn quest_chest_use_dispatch_mints_once_refreshes_and_pays_xp_once() -> TestResul
 }
 
 fn scenario() -> TestResult {
+    scenario_with_multiple(false)
+}
+
+pub(super) fn run_multiple() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario_with_multiple(true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "multi-item chest dispatch panicked")?
+        .map_err(Into::into)
+}
+
+fn scenario_with_multiple(multiple: bool) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "quest_chest_dispatch", false, false)
@@ -67,6 +80,11 @@ fn scenario() -> TestResult {
                 for placement in &mut claim.placements {
                     placement.quest_transition =
                         Some(super::quest_runtime_fixture::TRANSITION.into());
+                    if multiple {
+                        let mut extra = placement.items[0].clone();
+                        extra.count = 2;
+                        placement.items.push(extra);
+                    }
                 }
             }
         }
@@ -179,8 +197,11 @@ fn scenario() -> TestResult {
             .await
             .map_err(debug)?
             .ok_or("bag")?;
-        assert_eq!(bag.entries.len(), 1);
+        assert_eq!(bag.entries.len(), if multiple { 2 } else { 1 });
         assert_eq!(bag.entries[0].item.quantity, entry_chest::REWARD_COUNT);
+        if multiple {
+            assert_eq!(bag.entries[1].item.quantity, 2);
+        }
         // A replay on a new connection reaches the durable claim receipt again.
         let _ = super::weather_wire::fixture_access::serve_input(&owner, admitted, &input).await?;
         assert_eq!(
@@ -192,7 +213,7 @@ fn scenario() -> TestResult {
                 .ok_or("bag")?
                 .entries
                 .len(),
-            1
+            if multiple { 2 } else { 1 }
         );
         {
             let entry = owner.states.quest_sessions.lock().map_err(debug)?;

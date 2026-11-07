@@ -304,3 +304,17 @@ Existing item-action grants additionally require equal mount ID and client look
 across their older source packet and this source; mismatches fail generation.
 Declaring a store mount never grants it: only existing proven acquisition
 receipts and provenance map to ownership. Source speed and Premium fields remain.
+
+S06 construction audit: the four legacy item-target rows were never exercised
+by the creature-only PG pair loop. Their placeholder targets name the tool
+itself. Pinned crystal9f5a72c data/items/items.xml:29950/30010 identifies tin key
+12305 versus inoperative tin lizzard12319; :31157/31160 identifies inoperative
+uniwheel12800 versus golden can of oil12801; :70198/70201 identifies wind-up
+key37397 versus wind-up loco37398. Item XML sha
+c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb.
+Mount action :40..46 lists all seven Glooth Glider recipe components, :115..141
+refuses missing pieces before removing every one and granting mount71 plus
+Fabled Construction/Natural Born Cowboy; :230..250 checks actual target name
+and additionally consumes loco37398. Source action sha is recorded above.
+Implement missing construction checks and atomic recipe/target composition in a
+shared owner; these four rows cannot be qualified by the creature-only proof.

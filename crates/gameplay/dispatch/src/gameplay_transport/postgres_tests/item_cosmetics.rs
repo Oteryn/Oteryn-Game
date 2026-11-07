@@ -3,6 +3,8 @@
 mod packet;
 #[path = "item_cosmetics/positive.rs"]
 mod positive;
+#[path = "item_cosmetics/stock.rs"]
+mod stock;
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
@@ -32,19 +34,37 @@ fn run_case(ground: bool, afflicted: bool) -> TestResult {
 }
 
 fn run_all(ground: bool, afflicted: bool, case: Option<positive::Case>) -> TestResult {
+    run_configuration(ground, afflicted, case, false)
+}
+
+pub(super) fn run_stock_random_outfit() -> TestResult {
+    run_configuration(false, false, Some(positive::Case::RandomOutfit), true)
+}
+
+fn run_configuration(
+    ground: bool,
+    afflicted: bool,
+    case: Option<positive::Case>,
+    stock: bool,
+) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         eprintln!("W19 POSTGRES_CASE_COMPLETED status=SKIPPED no_admin_url");
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(ground, afflicted, case).map_err(|error| error.to_string()))?
+        .spawn(move || scenario(ground, afflicted, case, stock).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "cosmetic scenario thread")??;
     Ok(())
 }
 
-fn scenario(ground: bool, afflicted: bool, case: Option<positive::Case>) -> TestResult {
+fn scenario(
+    ground: bool,
+    afflicted: bool,
+    case: Option<positive::Case>,
+    stock: bool,
+) -> TestResult {
     let key = match case {
         Some(
             positive::Case::Parts | positive::Case::OmittedGrant | positive::Case::ConcurrentGrant,
@@ -70,10 +90,16 @@ fn scenario(ground: bool, afflicted: bool, case: Option<positive::Case>) -> Test
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let cosmetic_packet = case.map(|_| packet::cosmetics_packet()).transpose()?;
-        let (controller, pin) =
+        let (controller, pin) = if stock {
+            super::death_ml_loss_composed::production_generation_with_pin(
+                deps.admitted.world_id,
+                "content-1",
+            )?
+        } else {
             crate::content::native_gameplay::test_support::cosmetics_fixture::activated_with_optional_cosmetics(
                 deps.admitted.world_id, None, cosmetic_packet.as_deref(),
-            );
+            )
+        };
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
         if case.is_none() {

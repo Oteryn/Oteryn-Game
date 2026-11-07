@@ -792,3 +792,10 @@ construction rules are excluded by retained creature loop and need separate
 coverage before S06 qualification. Full authoring30passed66.753s; deterministic
 reproduction,fmt,3crate checkGREEN. Content integration123passed6.85s. Strict
 clippy, pin-refresh/check and world-repository5checks completing. Counts44/66.
+
+Compiled follow-on PG RED: stock addon doll NotPossible65.301330002s; actual
+multi-item chest USE refuses complete claim/quest/XP bundle65.609357574s.
+Markers/logs recorded in status. Tests compile and retain original cases.
+Prior mount step strictclippy passed7m22s; world repository5passed177.50s;
+pin-refresh unchanged24ab. First pin-check was SIGKILL during concurrent
+large test build; rerun serially after current compilation. Do not call it GREEN.

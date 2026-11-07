@@ -12,6 +12,7 @@ pub(super) enum Case {
     Outfit,
     Afflicted,
     ConcurrentGrant,
+    RandomOutfit,
 }
 
 #[path = "race.rs"]
@@ -113,6 +114,9 @@ pub(super) async fn execute(
     })
     .map_err(debug)?;
     match case {
+        Case::RandomOutfit => {
+            return super::stock::random_outfit(owner, h, admitted, reference).await;
+        }
         Case::Parts | Case::OmittedGrant | Case::ConcurrentGrant => {
             let source = reference("oteryn:item.tibia.i36938").ok_or("source")?;
             assert!(
