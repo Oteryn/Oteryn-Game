@@ -231,10 +231,24 @@ pub fn select_for_command(
 /// native catalogue plus its explicit compatible grant mapping for each target.
 pub trait SourceCosmetics: AppearanceContent<String> {
     fn outfit_pair(&self, looks: &[u32]) -> Option<String>;
+    fn outfit_for_grant(&self, looks: &[u32], _grant_key: &str) -> Option<String> {
+        self.outfit_pair(looks)
+    }
     fn mount_look(&self, look: u32) -> Option<String>;
 }
 
 impl SourceCosmetics for NativeCosmeticsView {
+    fn outfit_for_grant(&self, looks: &[u32], grant_key: &str) -> Option<String> {
+        // Equal looks can have explicitly retained historical aliases. Resolve the
+        // authored primary target; resolve() still checks provenance/kind/addon.
+        let key = match self.authored_grant_target(grant_key)? {
+            EarnedCosmetic::Outfit(key) | EarnedCosmetic::Addon(key, _) => key,
+            EarnedCosmetic::Mount(_) => return None,
+        };
+        let female = self.look_type(key, Sex::Female)?;
+        let male = self.look_type(key, Sex::Male)?;
+        (female != male && looks.contains(&female) && looks.contains(&male)).then(|| key.to_owned())
+    }
     fn outfit_pair(&self, looks: &[u32]) -> Option<String> {
         let mut found = self.outfit_keys().filter(|key| {
             let pair = [
@@ -321,7 +335,9 @@ pub fn resolve(
         GrantKind::Mount => {
             content.mount_look(source.look_type.ok_or(Refusal::ContentUnavailable)?)
         }
-        GrantKind::Outfit | GrantKind::Addon => content.outfit_pair(&source.look_types),
+        GrantKind::Outfit | GrantKind::Addon => {
+            content.outfit_for_grant(&source.look_types, &source.key)
+        }
     }
     .ok_or(Refusal::ContentUnavailable)?;
     let grant = ResolvedGrant {

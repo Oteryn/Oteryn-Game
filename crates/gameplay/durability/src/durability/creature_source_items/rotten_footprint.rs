@@ -563,43 +563,51 @@ impl DurabilityRoot {
 #[cfg(test)]
 mod intrinsic_clock_tests {
     use super::*;
-    fn scope(instance: u8) -> crate::foundation::RuntimeScopeRefV1 {
+    type TestResult<T = ()> = std::result::Result<T, String>;
+    fn scope(instance: u8) -> TestResult<crate::foundation::RuntimeScopeRefV1> {
         let bytes = [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1];
-        crate::foundation::RuntimeScopeRefV1::Instance {
-            world_id: crate::foundation::WorldId::decode(&bytes).expect("world"),
+        Ok(crate::foundation::RuntimeScopeRefV1::Instance {
+            world_id: crate::foundation::WorldId::decode(&bytes)
+                .map_err(|error| format!("{error:?}"))?,
             instance_id: [instance; 16],
-        }
+        })
     }
-    fn sample() -> RottenFootprintClockSample {
-        RottenFootprintClockSample {
-            scope: scope(1),
+    fn sample() -> TestResult<RottenFootprintClockSample> {
+        Ok(RottenFootprintClockSample {
+            scope: scope(1)?,
             generation: 9,
             cast: [3; 32],
             unix_ms: 1_000_000,
-        }
+        })
     }
     #[test]
-    fn source_intrinsic_clock_preserves_elapsed_and_retained_retry_deadline() {
-        let original = sample()
-            .project(scope(1), 9, [3; 32], 2_000_000, 7_000_000)
-            .unwrap();
+    fn source_intrinsic_clock_preserves_elapsed_and_retained_retry_deadline() -> TestResult {
+        let original = sample()?
+            .project(scope(1)?, 9, [3; 32], 2_000_000, 7_000_000)
+            .map_err(|error| format!("{error:?}"))?;
         assert_eq!(original.execution_unix_ms, 995_000);
         assert_eq!(original.execution_unix_ms + 248_000, 1_243_000);
         // A retry retains this proof rather than sampling a new epoch.
         let retained = original.clone();
         assert_eq!(retained, original);
         // A late first attempt keeps the already-expired original deadline.
-        let late = sample()
-            .project(scope(1), 9, [3; 32], 0, 300_000_000)
-            .unwrap();
+        let late = sample()?
+            .project(scope(1)?, 9, [3; 32], 0, 300_000_000)
+            .map_err(|error| format!("{error:?}"))?;
         assert_eq!(late.execution_unix_ms + 248_000, 948_000);
+        Ok(())
     }
     #[test]
-    fn source_intrinsic_clock_refuses_foreign_scope_generation_or_execution() {
-        assert!(sample().project(scope(2), 9, [3; 32], 0, 0).is_err());
-        assert!(sample().project(scope(1), 10, [3; 32], 0, 0).is_err());
-        assert!(sample().project(scope(1), 9, [4; 32], 0, 0).is_err());
-        assert!(sample().project(scope(1), 9, [3; 32], 2, 1).is_err());
-        assert!(sample().project(scope(1), 9, [3; 32], 0, u64::MAX).is_err());
+    fn source_intrinsic_clock_refuses_foreign_scope_generation_or_execution() -> TestResult {
+        assert!(sample()?.project(scope(2)?, 9, [3; 32], 0, 0).is_err());
+        assert!(sample()?.project(scope(1)?, 10, [3; 32], 0, 0).is_err());
+        assert!(sample()?.project(scope(1)?, 9, [4; 32], 0, 0).is_err());
+        assert!(sample()?.project(scope(1)?, 9, [3; 32], 2, 1).is_err());
+        assert!(
+            sample()?
+                .project(scope(1)?, 9, [3; 32], 0, u64::MAX)
+                .is_err()
+        );
+        Ok(())
     }
 }

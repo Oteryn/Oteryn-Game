@@ -575,6 +575,9 @@ fn recycled_actor_and_stale_owner_reject_before_cell_lookup() {
             stale_snapshot.version.position,
         )
         .expect("new actor position");
+    // Position initialization legitimately assigns a new canonical tile-entry
+    // order. Rejected moves must preserve that complete actual predecessor.
+    let slot_before_rejections = fixture.carrier.slots[0].clone();
     let index = fixture.index(
         LocalPosition {
             x: 5,
@@ -604,6 +607,7 @@ fn recycled_actor_and_stale_owner_reject_before_cell_lookup() {
         Err(MoveError::Actor(CarrierError::StaleActorGeneration))
     );
     assert_eq!(probe.lookups, 0);
+    assert_eq!(fixture.carrier.slots[0], slot_before_rejections);
     assert_eq!(
         fixture.carrier.read_position(&fixture.owner, fixture.actor),
         Ok(fixture.snapshot)
@@ -629,18 +633,7 @@ fn recycled_actor_and_stale_owner_reject_before_cell_lookup() {
         Err(MoveError::Actor(CarrierError::WrongScope))
     );
     assert_eq!(probe.lookups, 0);
-    assert_eq!(
-        fixture.carrier.slots[0],
-        Slot::Occupied {
-            generation: fixture.actor.actor_local_generation.0,
-            actor: ActorState(2),
-            game_session_id: None,
-            committed: true,
-            position: Some(fixture.snapshot.version),
-            lifecycle: Box::default(),
-            spell_combat: Box::default(),
-        }
-    );
+    assert_eq!(fixture.carrier.slots[0], slot_before_rejections);
 }
 
 #[test]

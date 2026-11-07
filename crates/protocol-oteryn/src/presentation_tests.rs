@@ -740,7 +740,7 @@ fn malformed_cooldowns_fail_closed() {
 }
 
 #[test]
-fn registry_binds_the_presentation_wire_ids_and_limits() {
+fn registry_binds_the_presentation_wire_ids_and_limits() -> Result<(), Box<dyn std::error::Error>> {
     let protocol: Value = serde_json::from_str(PROTOCOL_REGISTRY).expect("protocol registry");
     let only = |section: &str, id: u32| {
         let matches: Vec<&Value> = protocol[section]
@@ -775,10 +775,10 @@ fn registry_binds_the_presentation_wire_ids_and_limits() {
     ] {
         let row = native_domain[section]
             .as_array()
-            .unwrap()
+            .ok_or("native presentation type collection")?
             .iter()
             .find(|row| row["id"] == 2)
-            .unwrap();
+            .ok_or("native presentation type2 row")?;
         assert_eq!(row["name"], name);
         assert_eq!(row["capability"], 385);
         assert_eq!(row["max_payload_bytes"], bound);
@@ -895,6 +895,7 @@ fn registry_binds_the_presentation_wire_ids_and_limits() {
                 "OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md"
             ));
     }
+    Ok(())
 }
 
 #[cfg(test)]

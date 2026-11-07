@@ -38,61 +38,62 @@ struct Policy {
     pickupable: bool,
     dynamic_kind: Option<String>,
 }
-fn records() -> &'static BTreeMap<String, StaticSurfaceFacts> {
-    static RECORDS: OnceLock<BTreeMap<String, StaticSurfaceFacts>> = OnceLock::new();
-    RECORDS.get_or_init(|| {
-        let registry: Registry = serde_json::from_slice(include_bytes!(
-            "../../../../../content/encounters/source-static-definitions.json"
-        ))
-        .expect("repository-generated bounded static surface registry");
-        assert_eq!(
-            registry.source_revision,
-            "201189f871d23597b82caf88fd611454a2ddefb8"
-        );
-        assert_eq!(registry.records.len(), 162);
-        registry
-            .records
-            .into_iter()
-            .map(|record| {
-                let family = if record.policy.ground {
-                    "Terrain"
-                } else {
-                    "WorldObject"
-                };
-                let prefix = if record.policy.ground {
-                    "terrain"
-                } else {
-                    "world-object"
-                };
-                assert_eq!(record.identity.family, family);
-                assert_eq!(record.identity.revision, "definition-r1");
-                assert_eq!(
-                    record.identity.key,
-                    format!("oteryn:{prefix}.tibia.i{}", record.source_item_id)
-                );
-                assert!(
-                    !record.policy.movable
-                        && !record.policy.pickupable
-                        && record.policy.dynamic_kind.is_none()
-                );
-                (
-                    record.identity.key,
-                    StaticSurfaceFacts {
-                        source_id: record.source_item_id,
-                        block_solid: record.policy.block_solid,
-                        blocks_projectile: record.policy.block_projectile,
-                        ground: record
-                            .policy
-                            .ground
-                            .then_some((!record.policy.block_solid, record.policy.ground_speed)),
-                    },
-                )
-            })
-            .collect()
-    })
+fn records() -> Option<&'static BTreeMap<String, StaticSurfaceFacts>> {
+    static RECORDS: OnceLock<Option<BTreeMap<String, StaticSurfaceFacts>>> = OnceLock::new();
+    RECORDS
+        .get_or_init(|| {
+            let registry: Registry = serde_json::from_slice(include_bytes!(
+                "../../../../../content/encounters/source-static-definitions.json"
+            ))
+            .ok()?;
+            if registry.source_revision != "201189f871d23597b82caf88fd611454a2ddefb8"
+                || registry.records.len() != 162
+            {
+                return None;
+            }
+            registry
+                .records
+                .into_iter()
+                .map(|record| {
+                    let family = if record.policy.ground {
+                        "Terrain"
+                    } else {
+                        "WorldObject"
+                    };
+                    let prefix = if record.policy.ground {
+                        "terrain"
+                    } else {
+                        "world-object"
+                    };
+                    if record.identity.family != family
+                        || record.identity.revision != "definition-r1"
+                        || record.identity.key
+                            != format!("oteryn:{prefix}.tibia.i{}", record.source_item_id)
+                        || record.policy.movable
+                        || record.policy.pickupable
+                        || record.policy.dynamic_kind.is_some()
+                    {
+                        return None;
+                    }
+                    Some((
+                        record.identity.key,
+                        StaticSurfaceFacts {
+                            source_id: record.source_item_id,
+                            block_solid: record.policy.block_solid,
+                            blocks_projectile: record.policy.block_projectile,
+                            ground: record.policy.ground.then_some((
+                                !record.policy.block_solid,
+                                record.policy.ground_speed,
+                            )),
+                        },
+                    ))
+                })
+                .collect()
+        })
+        .as_ref()
 }
 pub fn qualified_static_surface(key: &str) -> Option<StaticSurfaceFacts> {
-    records().get(key).copied()
+    records()?.get(key).copied()
 }
 #[cfg(test)]
 mod tests {
@@ -127,30 +128,27 @@ pub fn qualified_static_binding(family: &str, key: &str, revision: &str, source_
 /// Compact map-only definition id shared with the bundle compiler. Never an ItemRef.
 pub fn static_surface_definition_id(key: &str) -> Option<u32> {
     qualified_static_surface(key)?;
-    static IDS: OnceLock<BTreeMap<String, u32>> = OnceLock::new();
+    static IDS: OnceLock<Option<BTreeMap<String, u32>>> = OnceLock::new();
     IDS.get_or_init(|| {
         let registry: Registry = serde_json::from_slice(include_bytes!(
             "../../../../../content/encounters/source-static-definitions.json"
         ))
-        .expect("repository-generated static map definition index");
-        assert!(
-            registry
-                .technical_terrain_keys
-                .windows(2)
-                .all(|keys| keys[0] < keys[1])
-        );
+        .ok()?;
+        if !registry
+            .technical_terrain_keys
+            .windows(2)
+            .all(|keys| keys[0] < keys[1])
+        {
+            return None;
+        }
         registry
             .technical_terrain_keys
             .into_iter()
             .enumerate()
-            .map(|(index, key)| {
-                (
-                    key,
-                    u32::try_from(index).expect("bounded map definition index"),
-                )
-            })
+            .map(|(index, key)| Some((key, u32::try_from(index).ok()?)))
             .collect()
     })
+    .as_ref()?
     .get(key)
     .copied()
 }

@@ -85,7 +85,9 @@ fn source_map(stage: u8) -> Result<wire::world_map::WorldMapViewSnapshot, ScopeE
     })
 }
 
-fn initial_body(stage: u8) -> Result<Vec<(u32, u64, u32, Vec<u8>)>, ScopeError> {
+type InitialDomainBody = (u32, u64, u32, Vec<u8>);
+
+fn initial_body(stage: u8) -> Result<Vec<InitialDomainBody>, ScopeError> {
     let map = source_map(stage)?;
     let own = wire::world_spatial_entities::WorldSpatialEntity {
         display_name: None,

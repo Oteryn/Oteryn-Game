@@ -87,6 +87,8 @@ pub enum FeeBurnCause {
     QuestAccessPurchase {
         occurrence: [u8; 16],
     },
+    /// Exact source-bound Quest payment, atomic with the Quest's value grant.
+    QuestRewardPayment { callback: String, occurrence: [u8;16], gold: u64, include_bank: bool },
     /// Crystal E12 cooking and imbuement-package purchases.
     HirelingService {
         service: String,
@@ -335,6 +337,18 @@ pub async fn burn_fee_in_transaction(
     burn_fee(tx, fence, request, tuple).await
 }
 
+/// Reuse the fee owner with the Type2 tuple already selected by the Quest root.
+/// Only a source-bound quest-payment cause is accepted by this entry point.
+pub(crate) async fn burn_quest_reward_fee_in_transaction(
+    connection: &mut PgConnection,
+    fence: &CurrentCharacterGameplayFence,
+    request: &FeeBurnRequest,
+    tuple: super::item_mint_audit::SelectedType2Tuple,
+) -> Result<FeeBurnOutcome> {
+    if !matches!(request.cause, FeeBurnCause::QuestRewardPayment { .. }) { return Err(FeeBurnError::InvalidInput); }
+    burn_fee(connection, fence, request, tuple.tuple()).await
+}
+
 /// Reuses the existing coin/change/bank fee owner under an exact named-House fence.
 /// Only Hireling service callers may supply a House's independently proven origin channel.
 pub(crate) async fn burn_hireling_fee_in_transaction(
@@ -438,6 +452,9 @@ async fn burn_fee_at_channel(
         None
     };
     request.cause.validate()?;
+    if let FeeBurnCause::QuestRewardPayment { gold, .. } = &request.cause
+        && *gold != request.fee_gold_units { return Err(FeeBurnError::InvalidInput); }
+
     let change_ids = request.change.item_instance_ids();
     let committed = fence
         .expected_character_revision
@@ -588,7 +605,7 @@ async fn burn_fee_at_channel(
         } else {
             tuple
         },
-        fee_payer_is_junior(fence.character_id),
+        fee_payer_is_junior(fence.character_id) || matches!(request.cause, FeeBurnCause::QuestRewardPayment { include_bank: false, .. }),
     )?;
     // With a bank part every eligible input is burned whole: the plan of their whole worth.
     let coin_part = request.fee_gold_units - bank_debit_gold_units;

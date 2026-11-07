@@ -78,7 +78,7 @@ pub(crate) fn altar_callback() -> super::world_callbacks::Callback {
             replacement: None, target_replacement: None }),
         return_on_failure: false,
         failure_message: Some("You need a bloody tear for the sacrifice.".into()),
-        success_message: None, native_rule: None,
+        success_message: None, native_rule: None, effects: Default::default(),
         sources: vec!["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_sacrifice.lua:4-33".into()],
     }
 }

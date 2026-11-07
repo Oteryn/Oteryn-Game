@@ -193,6 +193,7 @@ async fn live_pod(capture: &Capture) -> Result<(), Error> {
     )
     .await?;
     let reference = item_reference(capture, "pod39176")?;
+    let definition = MapDefinition::Item(reference.try_into()?);
     let observed_vitals = epoch
         .session
         .actor_vitals()
@@ -205,12 +206,7 @@ async fn live_pod(capture: &Capture) -> Result<(), Error> {
     let position = snapshot
         .tiles
         .iter()
-        .find(|tile| {
-            tile.items.iter().any(|item| {
-                item.definition
-                    == MapDefinition::Item(reference.try_into().expect("nonzero source reference"))
-            })
-        })
+        .find(|tile| tile.items.iter().any(|item| item.definition == definition))
         .map(|tile| tile.position)
         .ok_or("actual source Pod39176 absent from server snapshot")?;
     let mut view = view(&epoch)?;

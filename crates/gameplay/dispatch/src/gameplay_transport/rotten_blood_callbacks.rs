@@ -104,6 +104,12 @@ impl RottenBloodCallbacks {
             .agony_commit(actor)
             .map(|commit| (commit.before, commit.after, commit.amount))
     }
+    // PARTIAL: the copied Bakragore death/loot handler will consume this
+    // current-owner count; a test-only gate would hide the missing live caller.
+    #[allow(
+        dead_code,
+        reason = "PARTIAL Rotten Blood: copied Bakragore death-loot consumer is pending"
+    )]
     pub(super) fn actual_bakragore_essence_count_at_death(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -231,6 +237,12 @@ fn draw(
 /// Deferred-death barrier port. A due callback remains pending until its
 /// original-deadline consumer has been qualified; this port never reserves a
 /// fresh think or advances the owner with a synthetic time.
+// PARTIAL: preserve the source barrier port while the original-deadline
+// arbiter and its real canonical-notice regression are completed.
+#[allow(
+    dead_code,
+    reason = "PARTIAL Rotten Blood: canonical source-death due-only arbiter is not wired yet"
+)]
 #[allow(clippy::too_many_arguments)]
 pub(super) async fn drive_due_before(
     runtime: &mut ChannelRuntimeV1,

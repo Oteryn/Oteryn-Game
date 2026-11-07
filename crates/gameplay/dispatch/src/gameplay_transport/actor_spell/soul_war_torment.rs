@@ -3,6 +3,12 @@ use super::*;
 use oteryn_gameplay_encounters::bosses::soul_war_torment::Pulse;
 
 impl ChannelSpellStates {
+    // PARTIAL W11: native HP/counter tests cover this owner; the shared
+    // Symbol/Megalomania Think cohort driver still needs its production caller.
+    #[allow(
+        dead_code,
+        reason = "PARTIAL W11: shared Torment Think/cohort driver is not wired yet"
+    )]
     #[allow(clippy::too_many_arguments)]
     pub(in crate::gameplay_transport) fn apply_soul_war_torment_pulse(
         &mut self,

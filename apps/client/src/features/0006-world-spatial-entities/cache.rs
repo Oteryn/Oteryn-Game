@@ -11,6 +11,9 @@ struct Assets {
     sheets: SpriteSheets,
 }
 
+type ItemCacheKey = (u16, u32, i32, i32, i16);
+type ItemDrawCache = BTreeMap<ItemCacheKey, Option<Vec<Draw>>>;
+
 #[derive(Clone, Default)]
 pub(super) struct PresentationCache {
     assets: Option<Arc<Mutex<Assets>>>,
@@ -18,7 +21,7 @@ pub(super) struct PresentationCache {
     pixels: Vec<u8>,
     glyphs: BTreeMap<char, u16>,
     outfits: BTreeMap<(u32, u32), Vec<Draw>>,
-    items: BTreeMap<(u16, u32, i32, i32, i16), Option<Vec<Draw>>>,
+    items: ItemDrawCache,
     image: Option<Arc<AtlasImage>>,
     packed_cells: usize,
     #[cfg(test)]

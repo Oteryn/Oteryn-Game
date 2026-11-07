@@ -69,15 +69,12 @@ mod tests {
         }
     }
     #[test]
-    fn srx3_native_map_presentation_codec_accepts_negative_floor_without_loosening_legacy() {
+    fn srx3_native_map_presentation_codec_accepts_negative_floor_without_loosening_legacy()
+    -> WireResult<()> {
         for floor in [-15, -14, 0] {
             let events = vec![event(floor)];
-            let raw =
-                encode_native_map_presentation_batch(&events).expect("qualified native floor");
-            assert_eq!(
-                decode_native_map_presentation_batch(&raw).expect("native decode"),
-                events
-            );
+            let raw = encode_native_map_presentation_batch(&events)?;
+            assert_eq!(decode_native_map_presentation_batch(&raw)?, events);
             if floor < 0 {
                 assert!(presentation::encode_presentation_batch(&events).is_err());
                 assert!(presentation::decode_presentation_batch(&raw).is_err());
@@ -85,9 +82,10 @@ mod tests {
         }
         assert!(encode_native_map_presentation_batch(&[event(1)]).is_err());
         assert!(encode_native_map_presentation_batch(&[event(-16)]).is_err());
+        Ok(())
     }
     #[test]
-    fn srx3_native_map_chat_codec_covers_human_and_monster_local_speech() {
+    fn srx3_native_map_chat_codec_covers_human_and_monster_local_speech() -> WireResult<()> {
         for mode in [
             chat::ChatSpeechMode::Say,
             chat::ChatSpeechMode::Whisper,
@@ -95,58 +93,52 @@ mod tests {
             chat::ChatSpeechMode::MonsterSay,
         ] {
             let line = speech(-14, mode);
-            let raw = encode_native_map_chat_line(&line).expect("qualified native local speech");
-            assert_eq!(
-                decode_native_map_chat_line(&raw).expect("native chat decode"),
-                line
-            );
+            let raw = encode_native_map_chat_line(&line)?;
+            assert_eq!(decode_native_map_chat_line(&raw)?, line);
             assert!(chat::encode_chat_line(&line).is_err());
             assert!(chat::decode_chat_line(&raw).is_err());
         }
         assert!(encode_native_map_chat_line(&speech(1, chat::ChatSpeechMode::Say)).is_err());
+        Ok(())
     }
     #[test]
-    fn srx3_legacy_presentation_and_chat_bytes_remain_unchanged() {
+    fn srx3_legacy_presentation_and_chat_bytes_remain_unchanged() -> WireResult<()> {
         let events = vec![event(14)];
-        let raw = presentation::encode_presentation_batch(&events).expect("legacy");
-        assert_eq!(
-            presentation::decode_presentation_batch(&raw).expect("legacy decode"),
-            events
-        );
+        let raw = presentation::encode_presentation_batch(&events)?;
+        assert_eq!(presentation::decode_presentation_batch(&raw)?, events);
         let line = speech(14, chat::ChatSpeechMode::Say);
-        let bytes = chat::encode_chat_line(&line).expect("legacy line");
-        assert_eq!(
-            chat::decode_chat_line(&bytes).expect("legacy line decode"),
-            line
-        );
+        let bytes = chat::encode_chat_line(&line)?;
+        assert_eq!(chat::decode_chat_line(&bytes)?, line);
+        Ok(())
     }
     #[test]
-    fn native_codec_preserves_structural_and_basis_refusals() {
-        let raw = presentation::encode_presentation_batch(&[event(14)]).unwrap();
+    fn native_codec_preserves_structural_and_basis_refusals() -> WireResult<()> {
+        let raw = presentation::encode_presentation_batch(&[event(14)])?;
         assert!(decode_native_map_presentation_batch(&raw).is_err());
         assert!(decode_native_map_presentation_batch(&[]).is_err());
         assert!(decode_native_map_presentation_batch(&[0]).is_err());
         assert!(encode_native_map_presentation_batch(&[event(-14), event(-14)]).is_err());
-        let mut raw = encode_native_map_presentation_batch(&[event(-14)]).unwrap();
+        let mut raw = encode_native_map_presentation_batch(&[event(-14)])?;
         raw.extend_from_slice(&[0]);
         assert!(decode_native_map_presentation_batch(&raw).is_err());
-        let raw = chat::encode_chat_line(&speech(14, chat::ChatSpeechMode::Say)).unwrap();
+        let raw = chat::encode_chat_line(&speech(14, chat::ChatSpeechMode::Say))?;
         assert!(decode_native_map_chat_line(&raw).is_err());
         assert!(decode_native_map_chat_line(&[0]).is_err());
         assert!(encode_native_map_chat_line(&speech(-16, chat::ChatSpeechMode::Say)).is_err());
         // Floor zero has identical bytes in both explicitly selected coordinate bases.
         assert_eq!(
-            encode_native_map_presentation_batch(&[event(0)]).unwrap(),
-            presentation::encode_presentation_batch(&[event(0)]).unwrap()
+            encode_native_map_presentation_batch(&[event(0)])?,
+            presentation::encode_presentation_batch(&[event(0)])?
         );
         let line = speech(0, chat::ChatSpeechMode::Say);
         assert_eq!(
-            encode_native_map_chat_line(&line).unwrap(),
-            chat::encode_chat_line(&line).unwrap()
+            encode_native_map_chat_line(&line)?,
+            chat::encode_chat_line(&line)?
         );
+        Ok(())
     }
     #[test]
-    fn native_codec_checks_every_position_bearing_presentation_variant() {
+    fn native_codec_checks_every_position_bearing_presentation_variant() -> WireResult<()> {
         use presentation::{PresentationEventKind as K, PresentationSource as S};
         let position = ActorPosition {
             x: 1,
@@ -223,11 +215,8 @@ mod tests {
                 emission_ordinal: 1,
                 kind,
             }];
-            let bytes = encode_native_map_presentation_batch(&events).unwrap();
-            assert_eq!(
-                decode_native_map_presentation_batch(&bytes).unwrap(),
-                events
-            );
+            let bytes = encode_native_map_presentation_batch(&events)?;
+            assert_eq!(decode_native_map_presentation_batch(&bytes)?, events);
             assert!(presentation::encode_presentation_batch(&events).is_err());
             assert!(presentation::decode_presentation_batch(&bytes).is_err());
         }
@@ -242,5 +231,6 @@ mod tests {
             },
         }];
         assert!(encode_native_map_presentation_batch(&mixed).is_err());
+        Ok(())
     }
 }

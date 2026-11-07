@@ -25,10 +25,9 @@ pub(crate) fn project_native(
     if matches!(
         runtime.binding().runtime_scope(),
         crate::foundation::RuntimeScopeRefV1::Instance { .. }
-    ) {
-        if let Some(source) = native.soul_war_source_attacks(creature) {
-            return project_native_parts(record, source.behavior(), source.abilities());
-        }
+    ) && let Some(source) = native.soul_war_source_attacks(creature)
+    {
+        return project_native_parts(record, source.behavior(), source.abilities());
     }
     if let Some(source) = native.omrafir_source_attacks(creature) {
         return project_native_parts(record, source.behavior(), source.abilities());

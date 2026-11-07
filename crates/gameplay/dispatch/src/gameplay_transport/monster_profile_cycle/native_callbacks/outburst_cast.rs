@@ -15,12 +15,17 @@ use oteryn_gameplay_entities::{
 pub(in crate::gameplay_transport) struct OutburstCastReceipt {
     pub caster: ExactActorRef,
     pub replacement: Option<ExactActorRef>,
+    #[cfg(test)]
     pub global_health: u64,
     pub synchronized_health: Option<i64>,
     pub committed_null_lethal: bool,
     pub no_player_credit: bool,
 }
 #[derive(Debug)]
+#[allow(
+    dead_code,
+    reason = "retained native NULL death proof awaits its production completion consumer"
+)]
 pub(in crate::gameplay_transport) struct OutburstNullDeath {
     pub actor: ExactActorRef,
     pub receipt: CommittedLethalReceipt,
@@ -66,6 +71,10 @@ impl OutburstCasts {
             .find(|p| p.receipt.caster == caster && p.complete)
             .map(|p| p.receipt.clone())
     }
+    #[allow(
+        dead_code,
+        reason = "native NULL completion drain remains an explicit unfinished production port"
+    )]
     pub(super) fn take_deaths(&mut self) -> Vec<OutburstNullDeath> {
         self.0
             .iter_mut()
@@ -208,6 +217,7 @@ impl OutburstCasts {
                 receipt: OutburstCastReceipt {
                     caster: plan.proposal().issuer,
                     replacement: None,
+                    #[cfg(test)]
                     global_health: globals.source_health(),
                     synchronized_health: None,
                     committed_null_lethal: false,

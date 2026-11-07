@@ -73,7 +73,7 @@ pub(super) async fn consume(
     if held.unwrap_or(0) != 0 {
         if held.unwrap_or(0) >= 1 {
             match super::super::item_use::soul_war_source::assert_retained_source(
-                &mut ***tx,
+                tx,
                 &fence.item_fence(),
                 &input.item,
             )
@@ -89,7 +89,7 @@ pub(super) async fn consume(
         return Ok(false);
     }
     let tuple = tx.tuple();
-    match super::super::item_use::write(&mut ***tx, &fence.item_fence(), &input.item, tuple).await {
+    match super::super::item_use::write(tx, &fence.item_fence(), &input.item, tuple).await {
         Ok(ItemUseOutcome::Written { .. }) => Ok(true),
         Ok(ItemUseOutcome::AlreadyCommitted { .. }) => Err(DurabilityError::InvalidStoredState),
         Err(ItemUseError::Unavailable(error)) => Err(error),
@@ -169,6 +169,8 @@ impl DurabilityRoot {
             None,
             None,
             &grizzly::NoGrizzlyPremium,
+            None,
+            None,
             None,
             None,
             Some(input),

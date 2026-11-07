@@ -38,6 +38,7 @@ mod creature_visuals;
 pub use creature_visuals::{CreatureVisualCue, CreatureVisualKind};
 mod quest_callbacks;
 use quest_callbacks::CallbackStates;
+pub use quest_callbacks::QuestCallbackProjection;
 
 type RotationStates = BTreeMap<u64, (u64, EntryFacts)>;
 
@@ -197,7 +198,7 @@ impl BundleFacts {
             }
         }
         // 13842: W05b Thawing ice flower (Crystal thawing.lua:1).
-        let movement_definitions = [12369, 13842, 26077, 26087, 26100]
+        let movement_definitions = [1025, 1949, 12369, 13842, 26077, 26087, 26100]
             .into_iter()
             .chain(6594..=6608)
             .filter_map(|id| {

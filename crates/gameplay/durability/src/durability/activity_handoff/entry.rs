@@ -310,8 +310,8 @@ pub(super) async fn enter_in_transaction(
         insert_participant(tx, r, p).await?;
     }
     super::super::quest_state::rotten_flame::record_entry_origin(tx, r).await?;
-    if let Some(admission) = soulpit {
-        if let Err(error) = root
+    if let Some(admission) = soulpit
+        && let Err(error) = root
             .write_soulpit_entry_with_recovery_in_transaction(
                 tx,
                 admission.permit,
@@ -322,17 +322,16 @@ pub(super) async fn enter_in_transaction(
                 admission.native,
             )
             .await
-        {
-            use super::super::soulpit::SoulpitWriteError;
-            let refusal = match error {
-                SoulpitWriteError::Unavailable(error) => return Err(error),
-                SoulpitWriteError::AuthorityRejected => ActivityRefusal::AuthorityRejected,
-                SoulpitWriteError::ConflictingOccurrence => ActivityRefusal::ReplayConflict,
-                SoulpitWriteError::StaleState => ActivityRefusal::ContentChanged,
-                SoulpitWriteError::Rule(_) => ActivityRefusal::InvalidInput,
-            };
-            return Ok(ActivityEnterOutcome::Refused(refusal));
-        }
+    {
+        use super::super::soulpit::SoulpitWriteError;
+        let refusal = match error {
+            SoulpitWriteError::Unavailable(error) => return Err(error),
+            SoulpitWriteError::AuthorityRejected => ActivityRefusal::AuthorityRejected,
+            SoulpitWriteError::ConflictingOccurrence => ActivityRefusal::ReplayConflict,
+            SoulpitWriteError::StaleState => ActivityRefusal::ContentChanged,
+            SoulpitWriteError::Rule(_) => ActivityRefusal::InvalidInput,
+        };
+        return Ok(ActivityEnterOutcome::Refused(refusal));
     }
     // 0265 source-ended trigger would abort PREPARED. Decide before terminalizing
     // any source; its deferred proof checks all fresh destinations at COMMIT.

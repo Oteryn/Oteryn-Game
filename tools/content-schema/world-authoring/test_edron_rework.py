@@ -338,6 +338,7 @@ class BuildAndValidateTest(unittest.TestCase):
         )
         return convert.build(
             {
+                **fixtures.QUEST_ACCESS_INPUT,
                 convert.OTBM: base,
                 convert.ITEMS_XML: ITEMS_XML,
                 self.SUMMER_KEY: summer,
@@ -406,6 +407,7 @@ class BuildAndValidateTest(unittest.TestCase):
     def test_without_tibiamaps_no_tile_changes(self):
         out = convert.build(
             {
+                **fixtures.QUEST_ACCESS_INPUT,
                 convert.OTBM: self.otbm(self.area(10, [(0, 0, [GROUND])])),
                 convert.ITEMS_XML: ITEMS_XML,
             },
@@ -420,6 +422,7 @@ class BuildAndValidateTest(unittest.TestCase):
         with self.assertRaises(convert.ConvertError):
             convert.build(
                 {
+                    **fixtures.QUEST_ACCESS_INPUT,
                     convert.OTBM: self.otbm(self.area(10, [(0, 0, [GROUND])])),
                     convert.ITEMS_XML: ITEMS_XML,
                 },

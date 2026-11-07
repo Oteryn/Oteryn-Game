@@ -9,34 +9,38 @@ pub(super) struct StaticSurface {
     pub ground: bool,
 }
 
-fn expected() -> &'static BTreeMap<String, (Value, StaticSurface)> {
-    static RECORDS: OnceLock<BTreeMap<String, (Value, StaticSurface)>> = OnceLock::new();
-    RECORDS.get_or_init(|| {
-        let registry: Value = serde_json::from_slice(include_bytes!(
-            "../../../../content/encounters/source-static-definitions.json"
-        ))
-        .expect("generated static source registry");
-        let mut records = BTreeMap::new();
-        for row in registry["records"].as_array().expect("records") {
-            let record = row["catalogue_record"].clone();
-            let key = row["identity"]["key"].as_str().expect("key");
-            assert_eq!(record["identity"], row["identity"]);
-            records.insert(
-                key.to_owned(),
-                (
-                    record,
-                    StaticSurface {
-                        solid: row["policy"]["block_solid"]
-                            .as_bool()
-                            .expect("source solidity"),
-                        ground: row["policy"]["ground"].as_bool().expect("source ground"),
-                    },
-                ),
-            );
-        }
-        assert_eq!(records.len(), 162);
-        records
-    })
+fn expected() -> Option<&'static BTreeMap<String, (Value, StaticSurface)>> {
+    static RECORDS: OnceLock<Option<BTreeMap<String, (Value, StaticSurface)>>> = OnceLock::new();
+    RECORDS
+        .get_or_init(|| {
+            let registry: Value = serde_json::from_slice(include_bytes!(
+                "../../../../content/encounters/source-static-definitions.json"
+            ))
+            .ok()?;
+            let mut records = BTreeMap::new();
+            for row in registry["records"].as_array()? {
+                let record = row["catalogue_record"].clone();
+                let key = row["identity"]["key"].as_str()?;
+                if record["identity"] != row["identity"] {
+                    return None;
+                }
+                records.insert(
+                    key.to_owned(),
+                    (
+                        record,
+                        StaticSurface {
+                            solid: row["policy"]["block_solid"].as_bool()?,
+                            ground: row["policy"]["ground"].as_bool()?,
+                        },
+                    ),
+                );
+            }
+            if records.len() != 162 {
+                return None;
+            }
+            Some(records)
+        })
+        .as_ref()
 }
 
 pub(super) fn qualify(
@@ -45,6 +49,7 @@ pub(super) fn qualify(
 ) -> Result<BTreeMap<String, StaticSurface>, Error> {
     let document: Value =
         serde_json::from_slice(bytes).map_err(|error| format(error.to_string()))?;
+    let expected = expected().ok_or_else(|| format("source static registry"))?;
     let mut qualified = BTreeMap::new();
     for record in document["records"]
         .as_array()
@@ -53,7 +58,7 @@ pub(super) fn qualify(
         let Some(key) = record["identity"]["key"].as_str() else {
             continue;
         };
-        let Some((expected, facts)) = expected().get(key) else {
+        let Some((expected, facts)) = expected.get(key) else {
             continue;
         };
         if expected != record || record["identity"]["family"].as_str() != Some(family) {

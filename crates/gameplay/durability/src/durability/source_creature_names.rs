@@ -154,7 +154,7 @@ pub async fn read_prepared_source_player_names_in_transaction(
          FROM game_character_roots r JOIN unnest($1::text[]) AS requested(id) \
          ON r.character_id=requested.id::uuid \
          WHERE r.lifecycle=1 AND lower(r.name)=ANY($2::text[]) FOR SHARE OF r"
-    ).bind(requested).bind(&names).fetch_all(&mut **tx).await?;
+    ).bind(requested).bind(names).fetch_all(&mut **tx).await?;
     let mut result = Vec::with_capacity(rows.len());
     for entry in &plan.entries {
         let (actor, session, character) = (entry.actor, entry.session, entry.character);

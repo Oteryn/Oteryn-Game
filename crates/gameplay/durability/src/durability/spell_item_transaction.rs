@@ -3374,6 +3374,9 @@ pub enum PhysicalItemOwner<'a> {
     Creature(&'a SpellItemScopeAuthority),
     RegisteredGlobal(&'a SpellItemScopeAuthority),
 }
+// Serialized scope tag and its mutually exclusive Channel/Instance columns.
+type PhysicalItemScopeColumns = (i16, Option<[u8; 16]>, Option<[u8; 16]>);
+
 impl PhysicalItemOwner<'_> {
     fn world(&self) -> &[u8; 16] {
         match self {
@@ -3381,7 +3384,7 @@ impl PhysicalItemOwner<'_> {
             Self::Creature(a) | Self::RegisteredGlobal(a) => &a.world,
         }
     }
-    fn scope_parts(&self) -> Result<(i16, Option<[u8; 16]>, Option<[u8; 16]>)> {
+    fn scope_parts(&self) -> Result<PhysicalItemScopeColumns> {
         let scope = match self {
             Self::Player(a) => {
                 // Physical Player operations retain their existing Channel-only

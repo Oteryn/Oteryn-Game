@@ -451,7 +451,7 @@ fn srx3_native_object_pixels_use_explicit_resource_not_opaque_definition_referen
                 item_definition_ref: 42,
                 quantity: 1,
                 item_handle: std::num::NonZeroU64::new(2),
-                appearance_id: std::num::NonZeroU16::new(39529).unwrap(),
+                appearance_id: std::num::NonZeroU16::new(39529).ok_or(BatchError::InvalidView)?,
             },
         },
     };

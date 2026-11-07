@@ -34,7 +34,7 @@ use crate::durability::item_loop_move::{
 };
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::{CurrentCharacterItemFence, ItemDefinitionFacts};
-use crate::foundation::{ChannelId, CommandId, CommandRef, ExactActorRef, WorldId};
+use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use crate::map::WorldBase;
 use crate::map::overlay::{AddedItem, ChannelOverlay, EntryId, TilePos, map_revision};
 use crate::map::view::{self, EntryFacts, MapFacts};
@@ -156,36 +156,6 @@ pub struct LoopGroundOverlay {
 }
 
 impl LoopGroundOverlay {
-    /// An overlay of `items` over `base`, lowest stack ordinal first. An item that does not
-    /// belong to this World, Channel and bundle, whose cell is not a base tile, or whose
-    /// definition `index` does not name, is left out.
-    pub fn build(
-        base: Arc<WorldBase>,
-        world: WorldId,
-        channel: ChannelId,
-        index: &ItemDefinitionIndex,
-        field_pin: ([u8; 32], [u8; 32], u64),
-        items: Vec<crate::durability::item_loop_move::LoopGroundItem>,
-    ) -> Self {
-        Self::build_for_scope(
-            base,
-            crate::foundation::RuntimeScopeRefV1::channel(world, channel),
-            index,
-            field_pin,
-            items,
-        )
-    }
-
-    pub fn build_for_scope(
-        base: Arc<WorldBase>,
-        scope: crate::foundation::RuntimeScopeRefV1,
-        index: &ItemDefinitionIndex,
-        field_pin: ([u8; 32], [u8; 32], u64),
-        items: Vec<crate::durability::item_loop_move::LoopGroundItem>,
-    ) -> Self {
-        Self::build_with_native(base, scope, index, field_pin, items, None)
-    }
-
     fn build_with_native(
         base: Arc<WorldBase>,
         scope: crate::foundation::RuntimeScopeRefV1,

@@ -79,7 +79,7 @@ pub(super) fn replacement_events(
     next: &SnapshotState,
 ) -> Result<Vec<SessionEvent>, SessionError> {
     let mut events = next.events.clone();
-    for domain in decode_snapshot_body(&body)? {
+    for domain in decode_snapshot_body(body)? {
         let base = match domain.domain_id {
             1 => old.spatial_revision,
             2 => old.overlay_revision,

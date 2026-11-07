@@ -589,6 +589,7 @@ pub(super) mod capacity;
 pub mod grizzly;
 pub mod grizzly_boss;
 mod hero_of_bounac;
+pub mod native_kills;
 mod planegazer_finale;
 pub mod rotten_area;
 pub mod rotten_blood;
@@ -619,7 +620,7 @@ pub(super) async fn inquisition_blessing_eligible(
 /// Private closed source union: causes alone never grant autonomous mutations.
 #[derive(Debug, Clone)]
 pub(super) enum QuestSourceAction {
-    SoulWar(soul_war_source::SoulWarSourceAction),
+    SoulWar(Box<soul_war_source::SoulWarSourceAction>),
     RottenArea(rotten_area::QualifiedRottenAreaThink),
 }
 impl QuestSourceAction {

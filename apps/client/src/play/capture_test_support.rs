@@ -2,6 +2,7 @@
 use oteryn_session::test_support::wire;
 use serde_json::Value;
 pub(crate) type Error = Box<dyn std::error::Error + Send + Sync>;
+type FrameBatch = Vec<Vec<u8>>;
 
 pub(crate) struct Capture {
     pub(crate) value: Value,
@@ -47,7 +48,9 @@ pub(crate) fn hex(value: &Value) -> Result<Vec<u8>, Error> {
         return Err("odd actual native hex string".into());
     }
     text.as_bytes()
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|pair| {
             let digit = |v| match v {
                 b'0'..=b'9' => Some(v - b'0'),
@@ -72,7 +75,7 @@ pub(crate) fn position(value: &Value) -> Result<(oteryn_renderer::TileCoord, i16
         i16::try_from(coordinates[2].as_i64().ok_or("native floor")?)?,
     ))
 }
-pub(crate) fn split_initial(raw: &[Vec<u8>]) -> Result<(Vec<Vec<u8>>, Vec<Vec<u8>>), Error> {
+pub(crate) fn split_initial(raw: &[Vec<u8>]) -> Result<(FrameBatch, FrameBatch), Error> {
     let boundary = raw
         .iter()
         .position(|frame| {

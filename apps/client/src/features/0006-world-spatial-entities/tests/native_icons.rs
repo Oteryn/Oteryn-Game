@@ -62,7 +62,7 @@ fn srx3_native_creature_icons_decode_into_native_labels_and_clear_on_removal()
             content_generation: [0; 32],
             actor_position: at,
             own_identity: own.identity,
-            entities: vec![entity.clone()],
+            entities: vec![entity],
         };
         let bytes = wire::encode_world_spatial_entities_snapshot_with_fields(
             &snapshot,
@@ -80,7 +80,7 @@ fn srx3_native_creature_icons_decode_into_native_labels_and_clear_on_removal()
             &[VisibleAppearance {
                 forge_stacks: None,
                 light: None,
-                entity: decoded.entities[0].clone(),
+                entity: decoded.entities[0],
                 look: None,
             }],
             0,

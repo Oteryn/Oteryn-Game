@@ -71,7 +71,7 @@ pub(crate) fn callbacks() -> Vec<Callback> {
         storage:vec![Storage { track:source.storage.into(), minimum:1, maximum:1, set:0, preserve:false }],
         minimum_level:None, experience:None, monk_reward:None, offerings:Vec::new(), item_on_target:None,
         return_on_failure:false, failure_message:None,
-        success_message:Some(format!("essence of {} activated.",source.flavor)), native_rule:None,
+        success_message:Some(format!("essence of {} activated.",source.flavor)), native_rule:None, effects:Default::default(),
         sources:vec!["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/rottenEssences.lua:70-111".into()],
     }).collect()
 }

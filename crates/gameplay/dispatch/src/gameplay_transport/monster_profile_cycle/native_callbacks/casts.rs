@@ -209,6 +209,10 @@ impl NativeCasts {
     ) -> Option<super::outburst_cast::OutburstCastReceipt> {
         self.outburst.receipt(caster)
     }
+    #[allow(
+        dead_code,
+        reason = "native NULL completion drain remains an explicit unfinished production port"
+    )]
     pub(super) fn take_outburst_null_deaths(
         &mut self,
     ) -> Vec<super::outburst_cast::OutburstNullDeath> {

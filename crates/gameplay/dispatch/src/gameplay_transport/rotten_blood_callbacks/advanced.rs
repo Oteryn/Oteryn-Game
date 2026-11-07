@@ -149,6 +149,11 @@ impl AdvancedCallbacks {
             )
             .min()
     }
+    // PARTIAL: feeds the source-fenced death getter, not an invented count.
+    #[allow(
+        dead_code,
+        reason = "PARTIAL Rotten Blood: captured Bakragore death-loot count consumer is pending"
+    )]
     pub(super) fn actual_bakragore_essence_count(&self, target: ExactActorRef) -> Option<u8> {
         self.bosses
             .iter()
@@ -182,6 +187,12 @@ fn center(key: &str) -> RoomPosition {
         _ => bak::BAKRAGORE_ROOM_CENTRE,
     }
 }
+// PARTIAL: the parent due-only port awaits actual source-death arbiter wiring;
+// retain its refusal rather than manufacture a timer execution or fresh Think.
+#[allow(
+    dead_code,
+    reason = "PARTIAL Rotten Blood: original-deadline advanced arbiter is not wired yet"
+)]
 #[allow(
     clippy::too_many_arguments,
     reason = "due-only work retains the same separately fenced physical owners"

@@ -718,6 +718,10 @@ impl NativeCallbacks {
     ) -> Option<outburst_cast::OutburstCastReceipt> {
         self.owner.try_lock().ok()?.casts.outburst_receipt(caster)
     }
+    #[allow(
+        dead_code,
+        reason = "native NULL completion drain remains an explicit unfinished production port"
+    )]
     pub(in crate::gameplay_transport) async fn take_outburst_null_deaths(
         &self,
     ) -> Vec<outburst_cast::OutburstNullDeath> {
@@ -732,12 +736,6 @@ impl NativeCallbacks {
         self.owner
             .try_lock()
             .map_or(Some(0), |owner| owner.next_due_time())
-    }
-    #[cfg(test)]
-    pub(in crate::gameplay_transport) async fn outburst_raw_globals_for_test(
-        &self,
-    ) -> (i64, i64, Option<i64>) {
-        self.owner.lock().await.outburst.raw_globals_for_test()
     }
     #[cfg(test)]
     pub(in crate::gameplay_transport) async fn enable_omrafir_declared_think_review_for_test(

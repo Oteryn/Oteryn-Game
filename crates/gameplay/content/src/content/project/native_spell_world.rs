@@ -566,21 +566,19 @@ pub fn qualify(
         return Err(invalid());
     }
     let doc: SourceWorldDocument = serde_json::from_slice(bytes).map_err(|_| invalid())?;
-    if let Some(value) = &doc.ambient_xml_spawns {
-        if activity
+    if let Some(value) = &doc.ambient_xml_spawns
+        && activity
             .and_then(crate::content::native_soul_war_spawns::expected)
             .as_ref()
             != Some(value)
-        {
-            return Err(invalid());
-        }
+    {
+        return Err(invalid());
     }
-    if let Some(value) = &doc.registered_global_events {
-        if activity != Some(PinnedActivitySourceRoom::GoshnarsSpite)
-            || !crate::content::native_soul_war_global_events::matches_capture(value)
-        {
-            return Err(invalid());
-        }
+    if let Some(value) = &doc.registered_global_events
+        && (activity != Some(PinnedActivitySourceRoom::GoshnarsSpite)
+            || !crate::content::native_soul_war_global_events::matches_capture(value))
+    {
+        return Err(invalid());
     }
     if activity.is_none()
         && (doc.schema != "OTERYN_NATIVE_SPELL_SOURCE_WORLD/v1"
@@ -609,8 +607,8 @@ pub fn qualify(
     {
         return Err(invalid());
     }
-    if let Some(room) = activity {
-        if doc.schema != "OTERYN_NATIVE_ACTIVITY_SOURCE_WORLD/v1"
+    if let Some(room) = activity
+        && (doc.schema != "OTERYN_NATIVE_ACTIVITY_SOURCE_WORLD/v1"
             || doc.source_revision != "201189f871d23597b82caf88fd611454a2ddefb8"
             || doc.source_repository != "https://github.com/zimbadev/crystalserver"
             || doc.candidate_profile != format!("native-crystal-{}-activity-201189f", room.name())
@@ -636,10 +634,9 @@ pub fn qualify(
             || doc.source_town.is_some()
             || doc.tiles.is_empty()
             || doc.tiles.len() > 4096
-            || doc.source_closure.len() != 3
-        {
-            return Err(invalid());
-        }
+            || doc.source_closure.len() != 3)
+    {
+        return Err(invalid());
     }
     let mut policies = BTreeMap::new();
     for p in &doc.item_policies {

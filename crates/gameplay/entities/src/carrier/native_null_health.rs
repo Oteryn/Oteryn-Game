@@ -148,6 +148,10 @@ impl ChannelRuntimeV1 {
     }
     /// Production source callbacks retain their real owner microsecond clock
     /// at HP publication, independently of later deferred-task execution.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "source proof, health sample, target snapshot, occurrence binding and owner clock require independent validation"
+    )]
     pub fn commit_native_null_health_sync_at(
         &mut self,
         native: &NativeGameplayState,
@@ -168,6 +172,10 @@ impl ChannelRuntimeV1 {
             Some(now_us),
         )
     }
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "source proof, health sample, target snapshot, occurrence binding and owner clock require independent validation"
+    )]
     fn commit_native_null_health_sync_inner(
         &mut self,
         native: &NativeGameplayState,

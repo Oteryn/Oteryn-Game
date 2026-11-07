@@ -245,16 +245,15 @@ impl BakPublicReset {
                     flames::PILLAR_INACTIVE,
                 )
             };
-            if let Some(slot) = slot {
-                if slot.before != before
+            if let Some(slot) = slot
+                && (slot.before != before
                     || slot.after != after
                     || slot.position.x != position[0]
                     || slot.position.y != position[1]
                     || slot.position.floor != i16::try_from(position[2]).ok()?
-                    || slot.revision == u64::MAX
-                {
-                    return None;
-                }
+                    || slot.revision == u64::MAX)
+            {
+                return None;
             }
         }
         Some(Self { prepared, slots })

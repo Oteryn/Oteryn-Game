@@ -29,13 +29,13 @@ pub async fn run_session<T: Stepper>(
     }
     let mut held = Vec::new();
     loop {
-        if outbox.scope_needs_initialize() {
-            if let Err(error) = super::session_initialize::initialize(&session, &outbox) {
-                #[cfg(test)]
-                eprintln!("native successor projection failed: {error:?}");
-                outbox.end(public_class(&error));
-                return;
-            }
+        if outbox.scope_needs_initialize()
+            && let Err(error) = super::session_initialize::initialize(&session, &outbox)
+        {
+            #[cfg(test)]
+            eprintln!("native successor projection failed: {error:?}");
+            outbox.end(public_class(&error));
+            return;
         }
         let ended = super::feature_0014_container_tree::protocol::dispatch! {
             outbox.scope_command(&commands), session, outbox, held, publish;

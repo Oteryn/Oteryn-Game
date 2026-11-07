@@ -37,8 +37,6 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     logout::CAPABILITY_LOGOUT_V1,
     oteryn_protocol_oteryn::world_object::CAPABILITY_RUNE_USE_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_PRESENTATION_V1,
-    oteryn_protocol_oteryn::native_map_cues::CAPABILITY_NATIVE_MAP_CUES_V1,
-    oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_NATIVE_OBJECT_APPEARANCE_V1,
     oteryn_protocol_oteryn::appearance::CAPABILITY_APPEARANCE_V1,
     oteryn_protocol_oteryn::world_weather::CAPABILITY_WORLD_WEATHER_V1,
     oteryn_protocol_oteryn::capability_tables::CAPABILITY_ITEM_LOOK_V1,
@@ -129,11 +127,13 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::staff_tools::CAPABILITY_STAFF_TOOLS_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_ITEM_EFFECTS_V1,
     skill_display::CAPABILITY_SKILL_DISPLAY_V1,
+    oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_NATIVE_CREATURE_ICONS_V1,
     potion_durations::CAPABILITY_POTION_DURATIONS_V1,
     death_protection::CAPABILITY_DEATH_PROTECTION_V1,
     party::CAPABILITY_PARTY_MEMBER_EFFECTS_V1,
     mechanics_status::CAPABILITY_MECHANICS_STATUS_V1,
-    oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_NATIVE_CREATURE_ICONS_V1,
+    oteryn_protocol_oteryn::native_map_cues::CAPABILITY_NATIVE_MAP_CUES_V1,
+    oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_NATIVE_OBJECT_APPEARANCE_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in

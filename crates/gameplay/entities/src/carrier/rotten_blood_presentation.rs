@@ -2,6 +2,11 @@
 //! Crystal201189f creature.hpp:273-302 and rotten area-icons.lua:108-149,214-216.
 use super::*;
 
+/// Source key, icon category, icon identifier and count before the shared limit.
+pub type RottenBloodKeyedIcons = [Option<(&'static str, u8, u8, u16)>; 4];
+/// Icon category, icon identifier and count in the current first-three projection.
+pub type RottenBloodVisibleIcons = [Option<(u8, u8, u16)>; 3];
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RottenBloodIconKey {
     AgonyStacks,
@@ -59,7 +64,7 @@ impl RottenBloodPresentation {
         self.counts[key.index()] = count;
         Ok(())
     }
-    fn keyed(&self) -> [Option<(&'static str, u8, u8, u16)>; 4] {
+    fn keyed(&self) -> RottenBloodKeyedIcons {
         [
             RottenBloodIconKey::AgonyStacks,
             RottenBloodIconKey::Area,
@@ -68,7 +73,7 @@ impl RottenBloodPresentation {
         ]
         .map(|key| self.counts[key.index()].map(|count| (key.source_key(), 0, key.icon(), count)))
     }
-    pub(super) fn visible(&self) -> [Option<(u8, u8, u16)>; 3] {
+    pub(super) fn visible(&self) -> RottenBloodVisibleIcons {
         let mut result = [None; 3];
         let mut count = 0;
         // std::map<string,CreatureIcon> order in Crystal creature.hpp:273-282.
@@ -108,7 +113,7 @@ impl ChannelRuntimeV1 {
     pub fn rotten_blood_keyed_icons(
         &self,
         actor: ExactActorRef,
-    ) -> Result<[Option<(&'static str, u8, u8, u16)>; 4], CarrierError> {
+    ) -> Result<RottenBloodKeyedIcons, CarrierError> {
         self.owner_fence()?;
         let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
         match &self.carrier.slots[index] {
@@ -130,7 +135,7 @@ impl ChannelRuntimeV1 {
     pub fn rotten_blood_visible_icons(
         &self,
         actor: ExactActorRef,
-    ) -> Result<[Option<(u8, u8, u16)>; 3], CarrierError> {
+    ) -> Result<RottenBloodVisibleIcons, CarrierError> {
         self.owner_fence()?;
         let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
         match &self.carrier.slots[index] {

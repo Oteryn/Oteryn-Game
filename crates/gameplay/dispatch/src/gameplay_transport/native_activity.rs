@@ -349,18 +349,6 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         .await
     }
 
-    /// Server-side callers supply authored cells and a preallocated scope. Every
-    /// source fence, position, lease, pin and live participant is checked again
-    /// under both native owners before the durable writer sees the request.
-    pub(super) async fn enter_native_activity(
-        &self,
-        request: ActivityEnterRequest,
-        boss_room: bool,
-    ) -> Result<NativeActivityOutcome, ()> {
-        self.enter_native_activity_inner(request, boss_room, None, None)
-            .await
-    }
-
     /// Boss wire payload remains bound to its original source command when
     /// the two literal onUseExtra callbacks are evaluated under native owners.
     pub(super) async fn enter_native_boss_activity(

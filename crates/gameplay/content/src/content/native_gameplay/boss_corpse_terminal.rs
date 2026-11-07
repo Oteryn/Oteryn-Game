@@ -47,7 +47,7 @@ pub(super) fn qualified_record() -> Result<ItemProfileRecord, ContentError> {
     }
     let records: Vec<ItemProfileRecord> = serde_json::from_value(capture["records"].clone())
         .map_err(|_| invalid("native Elder corpse source records"))?;
-    if records.len() != 191 {
+    if records.len() != 199 {
         return Err(invalid("native Elder corpse complete source closure"));
     }
     let mut matches = records

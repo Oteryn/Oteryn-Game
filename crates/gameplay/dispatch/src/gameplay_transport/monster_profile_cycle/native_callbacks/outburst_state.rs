@@ -18,14 +18,6 @@ impl Default for OutburstState {
     }
 }
 impl OutburstState {
-    #[cfg(test)]
-    pub(super) fn raw_globals_for_test(&self) -> (i64, i64, Option<i64>) {
-        (
-            self.stage,
-            self.health,
-            self.sample.as_ref().map(|sample| sample.health()),
-        )
-    }
     pub(super) fn source_health(&self) -> u64 {
         u64::try_from(self.health).unwrap_or(0)
     }
@@ -78,6 +70,10 @@ impl OutburstState {
     pub(super) fn mark_exploded(&mut self) {
         self.charging_killed = 1;
     }
+    #[allow(
+        dead_code,
+        reason = "pinned ChargingOutDeath restore predicate awaits the copied source-death production leaf"
+    )]
     pub(super) fn charging_death_should_restore(&self) -> bool {
         self.charging_killed < 1
     }

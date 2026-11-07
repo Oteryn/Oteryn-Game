@@ -1210,18 +1210,18 @@ impl ChannelRuntimeV1 {
                 receipt,
             });
         }
-        if let Some(reservation) = caster_state.pending_owner.as_ref() {
-            if let Some(successor) = reservation.source_successor.as_ref() {
-                let mut retained = successor.as_ref().clone();
-                for (_, original) in &mut retained.originals {
-                    state_mut(original)?.pending_owner = Some(reservation.clone());
-                }
-                retained.reservation = Some(reservation.clone());
-                // The existing player owner must bind its independently current seal again.
-                retained.player_preflight_bound = retained.player_effects.is_empty();
-                self.validate_staged_spell_batch(&retained)?;
-                return Ok(retained);
+        if let Some(reservation) = caster_state.pending_owner.as_ref()
+            && let Some(successor) = reservation.source_successor.as_ref()
+        {
+            let mut retained = successor.as_ref().clone();
+            for (_, original) in &mut retained.originals {
+                state_mut(original)?.pending_owner = Some(reservation.clone());
             }
+            retained.reservation = Some(reservation.clone());
+            // The existing player owner must bind its independently current seal again.
+            retained.player_preflight_bound = retained.player_effects.is_empty();
+            self.validate_staged_spell_batch(&retained)?;
+            return Ok(retained);
         }
         let deferred = if let Some(authority) = &batch.deferred {
             if authority.phase_ordinal() == 0
