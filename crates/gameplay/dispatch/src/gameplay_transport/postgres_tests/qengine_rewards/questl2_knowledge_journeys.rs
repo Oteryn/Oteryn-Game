@@ -1,5 +1,6 @@
 //! L2 Regalia, alliance supplies and tome progression enter through native commands.
 use super::*;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 fn probe(case: &'static str, required: &[&str]) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -480,6 +481,12 @@ async fn kill_rebel(
     };
     let target = {
         let mut runtime = owner.runtime.lock().await;
+        owner
+            .active_generation
+            .and_then(|g| g.native_gameplay())
+            .ok_or("native creature policies")?
+            .install_companion_policies(&mut runtime)
+            .map_err(debug)?;
         let before: Vec<_> = runtime
             .visible_entities()
             .creatures
