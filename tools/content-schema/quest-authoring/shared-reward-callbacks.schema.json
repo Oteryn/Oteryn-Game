@@ -334,6 +334,19 @@
           "items": {
             "$ref": "#/$defs/stateOperation"
           }
+        },
+        "requires_premium": {
+          "type": "boolean"
+        },
+        "requires_outfits": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "maxLength": 128,
+            "pattern": "^oteryn:outfit\\.[a-z0-9_]+$"
+          }
         }
       }
     },

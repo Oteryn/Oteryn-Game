@@ -98,6 +98,14 @@ pub(crate) async fn apply(
     if callback.outfit.as_ref().is_some_and(|reward| !outfit_compatible(admission.native, reward)) {
         return Ok(false);
     }
+    if !callback.requires_outfits.is_empty() {
+        let Some(cosmetics) = admission.native.cosmetics() else { return Ok(false); };
+        for outfit in &callback.requires_outfits {
+            if !super::super::character_appearance::podium_cosmetic_owned(
+                tx, fence.character_id, cosmetics, EarnedCosmetic::Outfit(outfit)
+            ).await? { return Ok(false); }
+        }
+    }
     if let Some(required) = callback.creation_sex {
         use oteryn_gameplay_quests::quest::reward_callbacks::CreationSex;
         let sex = super::super::character_appearance::item_action_sex(tx,fence.character_id).await?;

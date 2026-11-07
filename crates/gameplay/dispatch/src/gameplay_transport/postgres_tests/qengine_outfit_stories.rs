@@ -81,6 +81,15 @@ fn qengine_l6_citizen_rook_complete_source_outfit_story() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-l6-citizen-rook-story")
 }
 
+#[test]
+fn qengine_l6_beggar_female_complete_source_outfit_story() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-l6-beggar-female-story")
+}
+#[test]
+fn qengine_l6_beggar_male_complete_source_outfit_story() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-l6-beggar-male-story")
+}
+
 const ICE_ISLANDS: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/";
 
 const ORC_POWDER: &str = "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder";
@@ -414,6 +423,41 @@ pub(super) async fn exercise(
             ],
             148,
         ),
+        "qengine-rewards-l6-beggar-female-story" => (
+            "beggar",
+            &[
+                ("start", None, None, None),
+                ("cloth", Some((5913, 20)), None, None),
+                ("leather", Some((5878, 50)), None, None),
+                ("wings", Some((5894, 10)), None, None),
+                ("blossoms", Some((5921, 30)), None, None),
+                ("base", None, None, Some(0)),
+                ("first-start", None, None, None),
+                ("first-materials", Some((5883, 100)), None, None),
+                ("dress", None, None, Some(1)),
+                ("staff-start", None, None, None),
+                ("staff", Some((6107, 1)), None, Some(2)),
+            ],
+            157,
+        ),
+        "qengine-rewards-l6-beggar-male-story" => (
+            "beggar",
+            &[
+                ("start", None, None, None),
+                ("cloth", Some((5913, 20)), None, None),
+                ("leather", Some((5878, 50)), None, None),
+                ("wings", Some((5894, 10)), None, None),
+                ("blossoms", Some((5921, 30)), None, None),
+                ("base", None, None, Some(0)),
+                ("first-start", None, None, None),
+                ("first-materials", Some((5883, 100)), None, None),
+                ("beard-start", None, None, None),
+                ("beard", None, None, Some(1)),
+                ("staff-start", None, None, None),
+                ("staff", Some((6107, 1)), None, Some(2)),
+            ],
+            153,
+        ),
         "qengine-rewards-l6-citizen-rook-story" => (
             "citizen-rook",
             &[
@@ -494,6 +538,16 @@ pub(super) async fn exercise(
             }
         );
         assert_eq!(callback.outfit.as_ref().map(|o| o.addons), *addon);
+        if family == "beggar" && *suffix == "first-materials" {
+            assert_eq!(
+                serde_json::to_value(&callback)?["fee"],
+                serde_json::json!({"gold":20000,"include_bank":true})
+            );
+            assert!(callback.requires_premium);
+        }
+        if family == "beggar" && *suffix == "first-start" {
+            assert_eq!(callback.requires_outfits, vec!["oteryn:outfit.beggar"]);
+        }
         if family == "nobleman" && addon.is_some() {
             let value = serde_json::to_value(&callback)?;
             assert_eq!(
@@ -649,18 +703,18 @@ pub(super) async fn exercise(
             );
         }
     }
-    if family == "citizen-rook" {
-        let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM now()))::bigint")
-            .fetch_one(&h.pool)
-            .await?;
-        transitions.push(QuestTransition {
-            key:"oteryn:quest-transition/qengine2-story/clock-advance".into(),
-            quest:"oteryn:quest.citizen_outfits_quest_on_rook".into(),
-            effects:vec![QuestEffect {
-                track:"oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook_timer".into(),
-                from:QuestComparison::Any,effect:QuestEffectKind::Set(now-7202),
-            }],completes:false,experience:None,
-        });
+    let mut clock_fixtures = BTreeMap::new();
+    for callback in &callbacks {
+        for operation in &callback.state_ops {
+            if let oteryn_gameplay_quests::quest::reward_callbacks::StateCondition::ElapsedAtLeast { seconds } = operation.from {
+                let now:i64=sqlx::query_scalar("SELECT floor(extract(epoch FROM now()))::bigint").fetch_one(&h.pool).await?;
+                let key=format!("oteryn:quest-transition/qengine2-story/clock-advance-{}",clock_fixtures.len());
+                transitions.push(QuestTransition {key:key.clone(),quest:callback.quest.clone(),
+                    effects:vec![QuestEffect {track:operation.track.clone(),from:QuestComparison::Any,
+                        effect:QuestEffectKind::Set(now-i64::from(seconds)-1)}],completes:false,experience:None});
+                clock_fixtures.insert(callback.key.clone(),(operation.track.clone(),seconds,key));
+            }
+        }
     }
     if family == "oriental" {
         let opposite = all
@@ -909,6 +963,7 @@ pub(super) async fn exercise(
                     weights: &weights,
                     fee_payment: None,
                 },
+                &owner.premium_coordinator,
             )
             .await
             .map_err(debug)?
@@ -978,6 +1033,12 @@ pub(super) async fn exercise(
         for (key, actor) in keys.into_iter().zip(actors) {
             npcs.insert(key.to_owned(), actor);
         }
+    } else if family == "beggar" {
+        let keys = ["oteryn:npc.hugo", "oteryn:npc.simon_the_beggar"];
+        let actors = super::classic_quests::install(owner, admitted, keys).await?;
+        for (key, actor) in keys.into_iter().zip(actors) {
+            npcs.insert(key.to_owned(), actor);
+        }
     } else if family == "festive" {
         let keys = ["oteryn:npc.the_first_dragon", "oteryn:npc.muriel"];
         let actors = super::classic_quests::install(owner, admitted, keys).await?;
@@ -993,7 +1054,7 @@ pub(super) async fn exercise(
     let mut earned_base = false;
     let mut bags = Vec::new();
     let mut occurrence = 500;
-    for callback in &callbacks {
+    for (step_index, callback) in callbacks.iter().enumerate() {
         let npc = *npcs.get(&callback.npc).ok_or("story NPC actor")?;
         if name == "qengine-rewards-l3-dark-trails-story" && callback.key.ends_with("-second") {
             commit_fixture(
@@ -1028,16 +1089,11 @@ pub(super) async fn exercise(
             let changed:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_tracks WHERE track_key IN('oteryn:quest-progress/quest/u8_0/the_ice_islands/norseman_outfit','oteryn:quest-progress/outfit_quest/default_start')").fetch_one(&h.pool).await?;
             assert_eq!(changed, 0, "refusal cannot retain foreign source stages");
         }
-        if family == "citizen-rook" && callback.key.ends_with("-backpack") {
-            let op = serde_json::to_value(callback)?;
-            assert_eq!(
-                op["state_ops"][0]["from"],
-                serde_json::json!({"kind":"elapsed_at_least","seconds":7201})
-            );
-            let (stamp,now):(i64,i64)=sqlx::query_as("SELECT value,floor(extract(epoch FROM now()))::bigint FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook_timer'").fetch_one(&h.pool).await?;
+        if let Some((timer, seconds, fixture_key)) = clock_fixtures.get(&callback.key) {
+            let (stamp,now):(i64,i64)=sqlx::query_as("SELECT value,floor(extract(epoch FROM now()))::bigint FROM game_character_quest_tracks WHERE track_key=$1").bind(timer).fetch_one(&h.pool).await?;
             assert!(
-                stamp > 0 && stamp <= now && now - stamp < 7201,
-                "actual start timestamp must be fresh"
+                stamp > 0 && stamp <= now && now - stamp < i64::from(*seconds),
+                "source start timestamp is fresh"
             );
             let before = counts(h).await?;
             let (result, _, _) =
@@ -1045,23 +1101,16 @@ pub(super) async fn exercise(
             assert_eq!(
                 result,
                 NpcIntentDisposition::Rejected,
-                "two-hour wait cannot grant early"
+                "source wait cannot grant early"
             );
             assert_eq!(counts(h).await?, before);
-            let before_stages:Vec<(String,i64)>=sqlx::query_as("SELECT track_key,value FROM game_character_quest_tracks WHERE track_key<>'oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook_timer' ORDER BY track_key").fetch_all(&h.pool).await?;
-            // Simulate elapsed wall time through the existing fenced owner. No quest
-            // progress or entitlement is seeded; every source stage already ran literally.
-            commit_fixture(
-                owner,
-                admitted,
-                "oteryn:quest-transition/qengine2-story/clock-advance",
-                9800,
-            )
-            .await?;
-            let after_stages:Vec<(String,i64)>=sqlx::query_as("SELECT track_key,value FROM game_character_quest_tracks WHERE track_key<>'oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook_timer' ORDER BY track_key").fetch_all(&h.pool).await?;
+            let before_stages:Vec<(String,i64)>=sqlx::query_as("SELECT track_key,value FROM game_character_quest_tracks WHERE track_key<>$1 ORDER BY track_key").bind(timer).fetch_all(&h.pool).await?;
+            // Only elapsed wall time is arranged; all outfit stages run literally.
+            commit_fixture(owner, admitted, fixture_key, 9800 + step_index as u64).await?;
+            let after_stages:Vec<(String,i64)>=sqlx::query_as("SELECT track_key,value FROM game_character_quest_tracks WHERE track_key<>$1 ORDER BY track_key").bind(timer).fetch_all(&h.pool).await?;
             assert_eq!(
                 after_stages, before_stages,
-                "clock arrangement must never seed an outfit stage"
+                "clock arrangement never seeds an outfit stage"
             );
             owner
                 .refresh_quest_session(admitted.game_session_id, false)
@@ -1153,6 +1202,7 @@ pub(super) async fn exercise(
                         weights: &weights,
                         fee_payment: None,
                     },
+                    &owner.premium_coordinator,
                 )
                 .await
                 .map_err(debug)?
@@ -1185,7 +1235,7 @@ pub(super) async fn exercise(
         for item in &needed {
             held.insert(item.item.clone(), quantity(h, &item.item).await?);
         }
-        if family == "nobleman" && callback.outfit.is_some() {
+        if let Some(fee) = &callback.fee {
             let before = counts(h).await?;
             let (result, _, _) =
                 super::qengine_rewards::wire_reward(owner, admitted, npc, callback, false).await?;
@@ -1205,18 +1255,44 @@ pub(super) async fn exercise(
                 h,
                 &oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
                     item: "oteryn:item.tibia.i3043".into(),
-                    count: 15,
+                    count: u16::try_from(fee.gold / 10000).map_err(debug)?,
                 },
                 &mut bags,
                 &mut occurrence,
             )
             .await?;
         }
-        let money_before = if family == "nobleman" {
+        let money_before = if callback.fee.is_some() {
             Some(coin_worth(h).await?)
         } else {
             None
         };
+        if callback.requires_premium {
+            let current = owner.premium_coordinator.take();
+            let before = counts(h).await?;
+            let coins = coin_worth(h).await?;
+            let (result, _, _) =
+                super::qengine_rewards::wire_reward(owner, admitted, npc, callback, false).await?;
+            owner.premium_coordinator = current;
+            assert_eq!(
+                result,
+                NpcIntentDisposition::Rejected,
+                "absent premium owner fails closed"
+            );
+            assert_eq!(
+                counts(h).await?,
+                before,
+                "premium refusal has no durable effects"
+            );
+            assert_eq!(coin_worth(h).await?, coins, "premium refusal cannot charge");
+            for (item, count) in &held {
+                assert_eq!(
+                    quantity(h, item).await?,
+                    *count,
+                    "premium refusal cannot consume"
+                );
+            }
+        }
         let before = counts(h).await?;
         let (result, catalogues, command) =
             super::qengine_rewards::wire_reward(owner, admitted, npc, callback, true).await?;
@@ -1233,7 +1309,7 @@ pub(super) async fn exercise(
         if let Some(before) = money_before {
             assert_eq!(
                 coin_worth(h).await?,
-                before - if callback.outfit.is_some() { 150000 } else { 0 },
+                before - i64::try_from(callback.fee.as_ref().ok_or("fee")?.gold).map_err(debug)?,
                 "exact source fee, retain all change"
             );
         }
@@ -1282,7 +1358,7 @@ pub(super) async fn exercise(
                 })
             }));
         }
-        let retained_money = if family == "nobleman" {
+        let retained_money = if callback.fee.is_some() {
             Some(coin_worth(h).await?)
         } else {
             None
@@ -1324,6 +1400,14 @@ pub(super) async fn exercise(
             paid,
             (2, 300000, 0),
             "exactly two source prices, no bank debit"
+        );
+    }
+    if family == "beggar" {
+        let paid:(i64,i64,i64)=sqlx::query_as("SELECT count(*),coalesce(sum(fee_gold_units),0)::bigint,coalesce(sum(bank_debit_gold_units),0)::bigint FROM game_item_fee_burns WHERE cause_kind=18").fetch_one(&h.pool).await?;
+        assert_eq!(
+            paid,
+            (1, 20000, 0),
+            "one exact source fee,carried payment retains bank"
         );
     }
     let observed = owner

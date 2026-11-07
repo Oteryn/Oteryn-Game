@@ -21,6 +21,17 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amber.lua:103-106:sha256:00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9"
       ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_first_addon_door",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "initial": 0,
+      "min": -1,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/simon_the_beggar.lua:158-166:sha256:7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74"
+      ]
     }
   ],
   "callbacks": [
@@ -2564,6 +2575,524 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/razan.lua:sha256:c12e695654ada3a5f4b1775657835fa18e5957b0870e735803a5ead2e7483acb"
       ],
       "creation_sex": "male"
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-base",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.beggar",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hugo.lua:55-199:sha256:60069ed647e4379a2e1177d32652602d86d8d50ad8da066f7dc65529b92fa55d"
+      ],
+      "requires_premium": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit_timer",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 86401
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-beard",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "beard",
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_first_addon_door",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.beggar",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/simon_the_beggar.lua:84-222:sha256:7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74"
+      ],
+      "creation_sex": "male",
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit_timer_addon",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 432000
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-beard-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "beard"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/simon_the_beggar.lua:84-222:sha256:7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74"
+      ],
+      "creation_sex": "male",
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit_timer_addon",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-blossoms",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5921",
+          "count": 30
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hugo.lua:55-199:sha256:60069ed647e4379a2e1177d32652602d86d8d50ad8da066f7dc65529b92fa55d"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit_timer",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-cloth",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5913",
+          "count": 20
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hugo.lua:55-199:sha256:60069ed647e4379a2e1177d32652602d86d8d50ad8da066f7dc65529b92fa55d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-dress",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "gypsy dress"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 10
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_first_addon_door",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.beggar",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/simon_the_beggar.lua:84-222:sha256:7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74"
+      ],
+      "creation_sex": "female"
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-first-materials",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_first_addon_door",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5883",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/simon_the_beggar.lua:84-222:sha256:7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74"
+      ],
+      "fee": {
+        "gold": 20000,
+        "include_bank": true
+      },
+      "requires_premium": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit_timer_addon",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-first-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/simon_the_beggar.lua:84-222:sha256:7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74"
+      ],
+      "requires_outfits": [
+        "oteryn:outfit.beggar"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-leather",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5878",
+          "count": 50
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hugo.lua:55-199:sha256:60069ed647e4379a2e1177d32652602d86d8d50ad8da066f7dc65529b92fa55d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-staff",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 11,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_second_addon",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6107",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.beggar",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/simon_the_beggar.lua:84-222:sha256:7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-staff-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_first_addon_door",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/simon_the_beggar.lua:84-222:sha256:7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hugo.lua:55-199:sha256:60069ed647e4379a2e1177d32652602d86d8d50ad8da066f7dc65529b92fa55d"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-wings",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5894",
+          "count": 10
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hugo.lua:55-199:sha256:60069ed647e4379a2e1177d32652602d86d8d50ad8da066f7dc65529b92fa55d"
+      ]
     },
     {
       "key": "oteryn:quest-reward/l6-citizen-rook-backpack",

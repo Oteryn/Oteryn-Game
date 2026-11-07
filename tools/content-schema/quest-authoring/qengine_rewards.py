@@ -32,7 +32,7 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma')]
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar')]
     paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua']
@@ -456,6 +456,71 @@ def build():
         take=[(3374,1),(5902,50),(5890,100)],outfit=('citizen',2),topic=2)
     offers.append({'npc':'oteryn:npc.norma','keywords':['addon','outfit','hat'],'topic':0,'next_topic':2,
         'storage':states,'reply':['Have you brought a legion helmet, 50 honeycombs and 100 chicken feathers?']})
+    beggar=prefix+'u7_8/beggar_outfits/'
+    beggar_stage=beggar+'beggar_outfit'
+    beggar_timer=beggar+'beggar_outfit_timer'
+    beggar_addon_timer=beggar+'beggar_outfit_timer_addon'
+    beggar_door=beggar+'beggar_first_addon_door'
+    general='outfit_and_addon_quests'
+    def beggar_source(npc,lines):
+        path='data-global/npc/'+npc+'.lua'
+        return f'crystal:{PIN}:{path}:{lines}:sha256:{sha(inputs[path])}'
+    declarations.append({'key':beggar_door,'quest':'oteryn:quest.'+general,'initial':0,
+        'min':-1,'max':1,'writable':True,'sources':[beggar_source('simon_the_beggar','158-166')]})
+    def beggar_offer(npc,words,topic,next_topic,states,reply):
+        offers.append({'npc':'oteryn:npc.'+npc,'keywords':words,'topic':topic,
+            'next_topic':next_topic,'storage':states,'reply':[reply]})
+    states=[storage(beggar_stage,-1,1,0),storage('oteryn:quest-progress/outfit_quest/default_start',0,1,1)]
+    add('l6-beggar-start',general,'hugo',['yes'],states,topic=3)
+    callbacks[-1]['requires_premium']=True
+    for word,topic,next_topic in [('outfit',0,2),('yes',2,3)]:
+        beggar_offer('hugo',[word],topic,next_topic,states,'Will you help gather the materials for my creation?')
+    for suffix,word,item,count,stage in [('cloth','20 brown pieces of cloth',5913,20,1),
+            ('leather','50 minotaur leathers',5878,50,2),('wings','10 bat wings',5894,10,3),
+            ('blossoms','30 heaven blossoms',5921,30,4)]:
+        states=[storage(beggar_stage,stage,stage+1)]
+        add('l6-beggar-'+suffix,general,'hugo',['yes'],states,take=[(item,count)],topic=4)
+        if suffix=='blossoms':
+            callbacks[-1]['state_ops']=[{'track':beggar_timer,'from':{'kind':'any'},'effect':{'kind':'set_now'}}]
+        beggar_offer('hugo',[word],0,4,states,f'Have you brought {count} of the requested materials?')
+    states=[storage(beggar_stage,5,6)]
+    add('l6-beggar-base',general,'hugo',['yes'],states,outfit=('beggar',0),topic=5)
+    callbacks[-1]['requires_premium']=True
+    callbacks[-1]['state_ops']=[{'track':beggar_timer,'from':{'kind':'elapsed_at_least','seconds':86401},'effect':{'kind':'add','value':0}}]
+    beggar_offer('hugo',['outfit'],0,5,states,'Have you come to collect your new outfit?')
+    states=[storage(beggar_stage,6,7)]
+    add('l6-beggar-first-start',general,'simon_the_beggar',['yes'],states,topic=2)
+    callbacks[-1]['requires_outfits']=['oteryn:outfit.beggar']
+    for word,topic,next_topic in [('outfit',0,1),('yes',1,2)]:
+        beggar_offer('simon_the_beggar',[word],topic,next_topic,states,'Will you bring 100 ape fur and pay 20000 gold for our deal?')
+    states=[storage(beggar_stage,7,8),storage(beggar_door,-1,0,0,preserve=True)]
+    add('l6-beggar-first-materials',general,'simon_the_beggar',['yes'],states,
+        take=[(5883,100)],fee={'gold':20000,'include_bank':True},topic=3)
+    callbacks[-1]['requires_premium']=True
+    callbacks[-1]['state_ops']=[{'track':beggar_addon_timer,'from':{'kind':'any'},'effect':{'kind':'set_now'}}]
+    beggar_offer('simon_the_beggar',['100 ape fur'],0,3,states,'Did you bring the fur and the 20000 gold fee?')
+    add('l6-beggar-dress',general,'simon_the_beggar',['gypsy dress'],
+        [storage(beggar_stage,8,10),storage(beggar_door,-1,1,0)],outfit=('beggar',1))
+    callbacks[-1]['creation_sex']='female'
+    add('l6-beggar-beard-start',general,'simon_the_beggar',['beard'],[storage(beggar_stage,8,9)])
+    callbacks[-1]['creation_sex']='male'
+    callbacks[-1]['state_ops']=[{'track':beggar_addon_timer,'from':{'kind':'any'},'effect':{'kind':'set_now'}}]
+    add('l6-beggar-beard',general,'simon_the_beggar',['beard','addon'],
+        [storage(beggar_stage,9,10),storage(beggar_door,-1,1,0)],outfit=('beggar',1))
+    callbacks[-1]['creation_sex']='male'
+    callbacks[-1]['state_ops']=[{'track':beggar_addon_timer,'from':{'kind':'elapsed_at_least','seconds':432000},'effect':{'kind':'add','value':0}}]
+    states=[storage(beggar_stage,10,11),storage(beggar_door,1,1)]
+    add('l6-beggar-staff-start',general,'simon_the_beggar',['yes'],states,topic=6)
+    for word,topic,next_topic in [('addon',0,4),('staff',4,5),('yes',5,6)]:
+        beggar_offer('simon_the_beggar',[word],topic,next_topic,states,'Will you retrieve my favourite staff?')
+    states=[storage(beggar_stage,11,11,preserve=True),storage(beggar+'beggar_second_addon',0,2,1)]
+    add('l6-beggar-staff',general,'simon_the_beggar',['yes'],states,take=[(6107,1)],outfit=('beggar',2),topic=7)
+    callbacks[-1]['requires_premium']=True
+    beggar_offer('simon_the_beggar',['staff'],0,7,states,'Did you bring my favourite staff?')
+    for callback in callbacks:
+        if callback['key'].startswith('oteryn:quest-reward/l6-beggar-'):
+            npc=callback['npc'].split('.')[-1]
+            callback['sources']=[beggar_source(npc,'55-199' if npc=='hugo' else '84-222')]
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})

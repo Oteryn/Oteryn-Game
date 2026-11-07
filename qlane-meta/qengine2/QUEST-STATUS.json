@@ -3,8 +3,8 @@
   "lifecycle": "AUTHORING; owner-authorized local commits and fast-forward pushes to claude/happy-davinci-ijz3wy-qengine2 after each green batch",
   "qualification_boundary": "Whole L1 entry, not an isolated seeded reward stage. No entry is promoted before all of its required stages and relevant PG cases pass.",
   "counts": {
-    "qualified": 17,
-    "unfinished": 49,
+    "qualified": 18,
+    "unfinished": 48,
     "blocked": 0
   },
   "quests": [
@@ -135,7 +135,7 @@
     {
       "canonical": "oteryn:quest.beggar_outfits_quest",
       "title": "Beggar Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc",
@@ -150,7 +150,16 @@
           "matched_statuses": []
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "qualification": {
+        "batch": "L1-06C",
+        "scope": "Complete Hugo intro,20browncloth5913/50minotaurleather5878/10batwings5894/30heavenblossoms5921,strict24h wait/base;Simon owned-base introduction,100apefur5883+20000gold paid hand-in,female dress or male beard request/full5daywait,staff introduction/6107x1 and addon2. Native Current premium refusals preserve flags/items/money;exact fee once,recipe refusals,replay,3accountfacts and normal appearance proved for both immutable creation sexes. Timer-only fixtures seed no outfit stage.",
+        "native_owner_canonical": "oteryn:quest.outfit_and_addon_quests",
+        "postgres_markers": [
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l6-beggar-female-story duration=83.822053307s success=true",
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l6-beggar-male-story duration=84.297408765s success=true"
+        ],
+        "assumptions": "CONTRACT-NOTES.md:strict Hugo deadline normalized to start+86401;General FirstAddonDoor native0 admits source-unset;female completed addon1 advances10/door1 to permit source staff chain;shared unused female addon clock;one-shot staff completion bound."
+      }
     },
     {
       "canonical": "oteryn:quest.between_the_lines_quest",
@@ -2159,7 +2168,7 @@
       "oteryn:quest.citizen_outfits_quest_on_rook",
       "oteryn:quest.beggar_outfits_quest"
     ],
-    "phase": "CitizenRook all checks complete and source pushed. Beggar male/female independent full-story PG RED queued before premium source implementation.",
+    "phase": "Beggar male/female actual PostgreSQL GREEN;commit/push immediately. CitizenRook/DruidRook regressions still running in same4case target;then targeted content/world/pin followon and next3entry source batch.",
     "facts": "Tom.lua:230-250:direct addon introduction bodyStage<1->1;paws/yes takes5896x50+5897x50,stage1->2,bodyaddon1. No source second addon on Rook;testmustassertmask1,notinventmask2. Hugo needs24hdeadline,Amber2hdeadline and Ref counter;Simon male5daytimer/femaleimmediate path with source stage bug.",
     "eligibility_audit": "Readactualsource:IrmanahasNOisPremiumguard;do not reopenfinishedNobleman. Hugo/Simon explicitlyrequirepremium;reuseexistingGrizzlyPremiumGate Current native authority for those new paths.",
     "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-druid-rook-story duration=43.490976609s success=false",
@@ -2209,8 +2218,35 @@
         "follow_on_verification": "COMPLETE:123content2.08s;5world47.03s;pin-check24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25",
         "commit": "e9d98947f",
         "push": "fast-forward confirmed"
+      },
+      {
+        "id": "L1-06C",
+        "status": "QUALIFIED",
+        "entries": [
+          "oteryn:quest.beggar_outfits_quest"
+        ],
+        "red": [
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l6-beggar-male-story duration=44.20147279s success=false",
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l6-beggar-female-story duration=44.275113452s success=false"
+        ],
+        "green": [
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l6-beggar-female-story duration=83.822053307s success=true",
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l6-beggar-male-story duration=84.297408765s success=true"
+        ],
+        "scope": "Complete Hugo intro,20browncloth5913/50minotaurleather5878/10batwings5894/30heavenblossoms5921,strict24h wait/base;Simon owned-base introduction,100apefur5883+20000gold paid hand-in,female dress or male beard request/full5daywait,staff introduction/6107x1 and addon2. Native Current premium refusals preserve flags/items/money;exact fee once,recipe refusals,replay,3accountfacts and normal appearance proved for both immutable creation sexes. Timer-only fixtures seed no outfit stage.",
+        "checks": [
+          "21authoring6.921s;callback/placement reproduction",
+          "6Rustreward_callback1.14s;check19.82s;strictclippy2m14s;fmt",
+          "repo pin-refresh24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25"
+        ],
+        "mechanisms": "Optional Current premium requirement reuses native GrizzlyPremiumGate,including failclosed absent owner. Optional bounded owned-outfit requirements reuse normal starter/compatible-earned appearance owner. Both evaluated in same fenced SQL transaction before costs;legacy omitted defaults unchanged. Generic clock fixture and exact monetary assertions cover both sex stories.",
+        "follow_on_verification": "PENDING:2Rook regressions already running;content/world/pin after immediate source push"
       }
     ],
-    "citizen_red": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-citizen-rook-story duration=43.140819762s success=false"
+    "citizen_red": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-citizen-rook-story duration=43.140819762s success=false",
+    "beggar_red": [
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l6-beggar-male-story duration=44.20147279s success=false",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l6-beggar-female-story duration=44.275113452s success=false"
+    ]
   }
 }

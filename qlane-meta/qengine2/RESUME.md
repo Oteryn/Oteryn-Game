@@ -418,3 +418,29 @@ CitizenRookfollowon COMPLETE:123content2.08s;5world47.03s;pin-check
 Source e9d98947f fast-forward pushed. Beggar male/female story tests added;
 actualPGRED pending,log /tmp/qengine2-batch6-beggar-red.log. Native Current
 premium fixture reused in outer scenario,immutable male/female root creation.
+
+BeggarL1-06C active:actualPGREDmale44.20147279s/female44.275113452s,
+missing l6-beggar-start. Native Current premium gate implemented on same
+fenced writer using existing GrizzlyPremiumGate;OptionalNone failsclosed.
+Requires_outfits reuses normal starter/compatible-earned appearance owner,
+no entitlement inferred from quest stage or dialogue cache.13sourcecallbacks
+Hugo+Simon authored,General owner retained,24hstrict86401/male5day432000
+native timers;generic clock-only fixture supportsallwaits. Both immutable
+creation-sex fullstory tests,earlywaitrefusal,premiumabsence/nocharge/nocost,
+exact20kfee and recipes,replay and normalappearance. Two missingphysicalitems
+5921/6107 authored using repository tooling,otherprofiles/placements reused.
+Female source missing completion/staff progression normalized only on earned
+addon1 to stage10/door1;FirstAddonDoor initial0 native-unset assumption;
+source hash+lines and conservative choices in CONTRACT-NOTES.md.
+Check19.82s passed;final21Python/repro/unit/clippy/PG GREEN still pending.
+
+BeggarL1-06C QUALIFIED actualPostgreSQL female83.822053307s/male84.297408765s.
+Both complete literal11/12stage source stories,Currentpremiumabsencefailclosed,
+exactrecipes/20kfeeoneburn,replay/3facts/normalappearance;all waits earlyrefuse.
+Native owned-base proof and immutable sex reused;no outfit stages seeded.
+21Python6.921s;6Rustunit1.14s;check19.82s;strictclippy2m14s;fmt,repro,
+pinrefresh24ab.18/66qualified48remaining. Commit/push now;two Rookregressions
+still running in same4case focusedPGtarget;content/world/pin followon pending.
+Nextbatch proposed Knight/Druid/Assassin source paths;facts captured in /tmp
+qengine2-next-{morgan,sam,ustan,a_majestic_warwolf,vescu,erayo}.lua.
+Do not redo finished entries;refresh other lane source/status before nextbatch.

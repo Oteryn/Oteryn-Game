@@ -104,6 +104,10 @@ pub struct RewardCallback {
     pub participants: Vec<QuestParticipant>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub creation_sex: Option<CreationSex>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub requires_premium: bool,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub requires_outfits: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub requires: Vec<TrackRequirement>,
     pub take: Vec<ItemAmount>,
@@ -280,6 +284,11 @@ fn parse_document(text: &str) -> Result<Document, String> {
             || c.storage.is_empty()
             || c.storage.len() > 8
             || tracks.len() != c.storage.len()
+            || c.requires_outfits.len() > 8
+            || c.requires_outfits.iter().collect::<BTreeSet<_>>().len() != c.requires_outfits.len()
+            || c.requires_outfits
+                .iter()
+                .any(|key| !slug(key, "oteryn:outfit.", b"_", 128))
             || c.requires.len() > 8
             || requires.len() != c.requires.len()
             || !requires.is_disjoint(&tracks)
@@ -537,6 +546,37 @@ mod tests {
         let encoded = serde_json::to_value(legacy).map_err(|e| e.to_string())?;
         assert!(encoded.get("participants").is_none());
         assert!(encoded.get("creation_sex").is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn native_eligibility_guards_are_bounded_and_preserve_legacy_plans() -> Result<(), String> {
+        let original: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/shared-reward-callbacks.json"
+        ))
+        .map_err(|e| e.to_string())?;
+        for guard in [
+            serde_json::json!({"requires_premium":"yes"}),
+            serde_json::json!({"requires_outfits":["oteryn:outfit.beggar","oteryn:outfit.beggar"]}),
+            serde_json::json!({"requires_outfits":["untrusted"]}),
+        ] {
+            let mut doc = original.clone();
+            let edits = guard.as_object().ok_or("guards")?;
+            for (key, value) in edits {
+                doc["callbacks"][0][key] = value.clone();
+            }
+            assert!(
+                parse(&doc.to_string()).is_err(),
+                "invalid native eligibility guard"
+            );
+        }
+        let legacy = load()?
+            .into_iter()
+            .find(|c| !c.requires_premium && c.requires_outfits.is_empty())
+            .ok_or("legacy")?;
+        let value = serde_json::to_value(legacy).map_err(|e| e.to_string())?;
+        assert!(value.get("requires_premium").is_none());
+        assert!(value.get("requires_outfits").is_none());
         Ok(())
     }
 

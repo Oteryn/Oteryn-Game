@@ -132,3 +132,9 @@ Every writer must match its declared owner;existing native metadata must still
 match exactly. This permits missing shared counters without reassigning tracks.
 Immutable source/participant proofs validate exact operation conditions/results,
 and all state,costs,grants and original owner pins commit or roll back together.
+
+Optional `requires_premium` uses the existing native premium Current authority in
+the fenced transaction; an absent owner refuses before costs. Optional
+`requires_outfits` (at most8 distinct outfit identities) reuses the normal
+starter-or-compatible-earned account appearance proof in that transaction,
+before inventory or value effects. Empty/default fields preserve legacy plans.

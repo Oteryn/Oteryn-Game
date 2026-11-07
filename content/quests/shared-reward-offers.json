@@ -753,6 +753,151 @@
       ]
     },
     {
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "10 bat wings"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Have you brought 10 of the requested materials?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "20 brown pieces of cloth"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Have you brought 20 of the requested materials?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "30 heaven blossoms"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "reply": [
+        "Have you brought 30 of the requested materials?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "50 minotaur leathers"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Have you brought 50 of the requested materials?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help gather the materials for my creation?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "reply": [
+        "Have you come to collect your new outfit?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help gather the materials for my creation?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.irmana",
       "keywords": [
         "addon"
@@ -1770,6 +1915,171 @@
           "maximum": 0,
           "set": 1
         }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "100 ape fur"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_first_addon_door",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring the fur and the 20000 gold fee?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_first_addon_door",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you retrieve my favourite staff?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "reply": [
+        "Will you bring 100 ape fur and pay 20000 gold for our deal?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "staff"
+      ],
+      "topic": 0,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 11,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_second_addon",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Did you bring my favourite staff?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "reply": [
+        "Will you bring 100 ape fur and pay 20000 gold for our deal?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "staff"
+      ],
+      "topic": 4,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_first_addon_door",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you retrieve my favourite staff?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_first_addon_door",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you retrieve my favourite staff?"
       ]
     },
     {

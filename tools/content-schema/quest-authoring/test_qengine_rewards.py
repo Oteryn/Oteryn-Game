@@ -26,6 +26,23 @@ class QuestRewards(unittest.TestCase):
         self.assertEqual(reachable[0]['next_topic'],second['topic'])
         self.assertTrue(all(s['minimum']<=phase<=s['maximum'] for s in second['storage']))
 
+    def test_beggar_preserves_source_costs_clocks_and_native_guards(self):
+        rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
+        for name,item,count in [('cloth',5913,20),('leather',5878,50),('wings',5894,10),('blossoms',5921,30),('first-materials',5883,100),('staff',6107,1)]:
+            self.assertEqual(rows['l6-beggar-'+name]['take'],[{'item':f'oteryn:item.tibia.i{item}','count':count}])
+        self.assertEqual(rows['l6-beggar-base']['state_ops'][0]['from'],{'kind':'elapsed_at_least','seconds':86401})
+        self.assertEqual(rows['l6-beggar-beard']['state_ops'][0]['from'],{'kind':'elapsed_at_least','seconds':432000})
+        self.assertEqual(rows['l6-beggar-dress']['creation_sex'],'female')
+        self.assertEqual(rows['l6-beggar-beard']['creation_sex'],'male')
+        self.assertEqual(rows['l6-beggar-first-start']['requires_outfits'],['oteryn:outfit.beggar'])
+        for name in ('start','base','first-materials','staff'):
+            self.assertTrue(rows['l6-beggar-'+name]['requires_premium'])
+        self.assertEqual(rows['l6-beggar-first-materials']['fee'],{'gold':20000,'include_bank':True})
+        for guard in ('requires_premium','requires_outfits'):
+            bad=copy.deepcopy(self.callbacks)
+            bad['callbacks'][0][guard]='untrusted'
+            with self.assertRaises(ValidationError):q.validate_callbacks(bad)
+
     def test_citizen_rook_timer_and_shared_counter_are_explicit_source_operations(self):
         callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}
         start=callbacks['l6-citizen-rook-backpack-start']
@@ -173,8 +190,8 @@ class QuestRewards(unittest.TestCase):
         callbacks=self.callbacks['callbacks']
         self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),44)
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),29)
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),48)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),38)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 
