@@ -1,0 +1,6677 @@
+{
+  "schema": "OTERYN_HOUSE_DECORATION_ACTIONS/v1",
+  "crystal_commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "sources": [
+    {
+      "path": "data-crystal/scripts/actions/other/birdcage.lua",
+      "sha256": "4504b9651981523189555c25184db64350f022e0cd972f94027403dd37020cce"
+    },
+    {
+      "path": "data-global/scripts/actions/other/fish_tank.lua",
+      "sha256": "1dfed0074ff497d409ae0b9e9dd01b1359bb713a6897c0e26ff3c4b39a1744bc"
+    },
+    {
+      "path": "data-global/scripts/actions/other/magic_tree.lua",
+      "sha256": "123e7705928ec4e14199333e2accfbf82a6df011d2c2af03057469ebcda0536d"
+    },
+    {
+      "path": "data-global/scripts/actions/other/music.lua",
+      "sha256": "f78ece38b382dac3d7c61f138334c1dc0f2d4fc3f66f85fa0b66616bc8c3b7f4"
+    },
+    {
+      "path": "data/items/items.xml",
+      "sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509"
+    },
+    {
+      "path": "data/libs/functions/constants.lua",
+      "sha256": "3d0a8ee1c73a73bd9cae58ab97456be8bdd40720e17120f864edc5ea0e37219e"
+    },
+    {
+      "path": "data/libs/tables/windows.lua",
+      "sha256": "318cbbc884da29cf3038e75833f263451ed9f8592ad18d6ce1140333763cd90a"
+    },
+    {
+      "path": "data/scripts/actions/items/bed_modification_kits.lua",
+      "sha256": "f225a0c397d0ea3912cbc58239fbebe938bf0f3a7b8eae54a18da5dd0df752d9"
+    },
+    {
+      "path": "data/scripts/actions/objects/bath_tub_drain.lua",
+      "sha256": "fc654b41fd8ee17a05da8e096de9050f42a47612c24bbb0abcd896198ffbb8af"
+    },
+    {
+      "path": "data/scripts/actions/objects/carpets.lua",
+      "sha256": "40fc24caff8b2e7a635dfcf2db6e8c8403fe0bd653c07413aa78ce6d21e422dd"
+    },
+    {
+      "path": "data/scripts/actions/objects/wall_mirror.lua",
+      "sha256": "d0418ee595d9f56817f350ef49fc00828feff057d08ba2eac36fc218ddbca3c6"
+    },
+    {
+      "path": "data/scripts/actions/objects/windows.lua",
+      "sha256": "cacc475389569d0d9507ae68f722d9ab23b9c57dd5acca992667e5d779e0d150"
+    },
+    {
+      "path": "src/game/game.cpp",
+      "sha256": "5f7ba67a158af607bacb9d75451ca490817f189ca7d3dcf9e774d55dc1ccaab6"
+    },
+    {
+      "path": "src/items/item.hpp",
+      "sha256": "6d4093a5a89d2b1a639ae7c7fd3358ffa1cc53a70d9a5fc07d55b08ad43c8656"
+    },
+    {
+      "path": "src/items/items.cpp",
+      "sha256": "f39d8fc6c1c81b8ec6f749e1f152dd945472ffd5a36b9cf3cd9a3a64b2f19b1d"
+    },
+    {
+      "path": "src/utils/utils_definitions.hpp",
+      "sha256": "03ebfc0da66b01cdef46dca4195c4f1a0132a0fce058d6c670cb401bcc35ae7d"
+    }
+  ],
+  "carpets": [
+    {
+      "item_id": 22736,
+      "target": 22737,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 22737,
+      "target": 22736,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 23431,
+      "target": 23453,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 23432,
+      "target": 23454,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 23433,
+      "target": 23455,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 23453,
+      "target": 23431,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 23454,
+      "target": 23432,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 23455,
+      "target": 23433,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 23536,
+      "target": 23537,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 23537,
+      "target": 23536,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 23707,
+      "target": 23715,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 23710,
+      "target": 23716,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 23711,
+      "target": 23717,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 23712,
+      "target": 23718,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 23713,
+      "target": 23719,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 23714,
+      "target": 23720,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 23715,
+      "target": 23707,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 23716,
+      "target": 23710,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 23717,
+      "target": 23711,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 23718,
+      "target": 23712,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 23719,
+      "target": 23713,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 23720,
+      "target": 23714,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 24416,
+      "target": 24424,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 24417,
+      "target": 24425,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 24418,
+      "target": 24426,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 24419,
+      "target": 24427,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 24420,
+      "target": 24428,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 24421,
+      "target": 24429,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 24422,
+      "target": 24430,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 24423,
+      "target": 24431,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 24424,
+      "target": 24416,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 24425,
+      "target": 24417,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 24426,
+      "target": 24418,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 24427,
+      "target": 24419,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 24428,
+      "target": 24420,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 24429,
+      "target": 24421,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 24430,
+      "target": 24422,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 24431,
+      "target": 24423,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 26114,
+      "target": 26115,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 26115,
+      "target": 26114,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 26116,
+      "target": 26117,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 26117,
+      "target": 26116,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 26118,
+      "target": 26119,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 26119,
+      "target": 26118,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 26120,
+      "target": 26121,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 26121,
+      "target": 26120,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 26122,
+      "target": 26123,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 26123,
+      "target": 26122,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 26150,
+      "target": 26151,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 26151,
+      "target": 26150,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 26152,
+      "target": 26153,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 26153,
+      "target": 26152,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 26154,
+      "target": 26155,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 26155,
+      "target": 26154,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 31466,
+      "target": 31468,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 31467,
+      "target": 31469,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 31468,
+      "target": 31466,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 31469,
+      "target": 31467,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 35887,
+      "target": 35888,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 35888,
+      "target": 35887,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 35889,
+      "target": 35890,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 35890,
+      "target": 35889,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 35891,
+      "target": 35892,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 35892,
+      "target": 35891,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 35893,
+      "target": 35894,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 35894,
+      "target": 35893,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 35895,
+      "target": 35896,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 35896,
+      "target": 35895,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 35897,
+      "target": 35898,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 35898,
+      "target": 35897,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 35899,
+      "target": 35900,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 35900,
+      "target": 35899,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 35941,
+      "target": 35942,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 35942,
+      "target": 35941,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 36496,
+      "target": 36838,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 36838,
+      "target": 36496,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 36939,
+      "target": 36951,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 36940,
+      "target": 36939,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 36941,
+      "target": 36952,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 36942,
+      "target": 36941,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 36943,
+      "target": 36953,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 36944,
+      "target": 36943,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 36945,
+      "target": 36954,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 36946,
+      "target": 36945,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 36947,
+      "target": 36955,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 36948,
+      "target": 36947,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 36949,
+      "target": 36956,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 36950,
+      "target": 36949,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 36951,
+      "target": 36939,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 36952,
+      "target": 36941,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 36953,
+      "target": 36943,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 36954,
+      "target": 36945,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 36955,
+      "target": 36947,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 36956,
+      "target": 36949,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37019,
+      "target": 37020,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37020,
+      "target": 37019,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37353,
+      "target": 37354,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37354,
+      "target": 37353,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37355,
+      "target": 37357,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37356,
+      "target": 37358,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37357,
+      "target": 37355,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37358,
+      "target": 37356,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37359,
+      "target": 37360,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37360,
+      "target": 37359,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37361,
+      "target": 37362,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37362,
+      "target": 37361,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37363,
+      "target": 37364,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37364,
+      "target": 37363,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37365,
+      "target": 37366,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37366,
+      "target": 37365,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37367,
+      "target": 37374,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37368,
+      "target": 37375,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37369,
+      "target": 37376,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37370,
+      "target": 37377,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37371,
+      "target": 37378,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37372,
+      "target": 37379,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37373,
+      "target": 37380,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37374,
+      "target": 37367,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37375,
+      "target": 37368,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37376,
+      "target": 37369,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37377,
+      "target": 37370,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37378,
+      "target": 37371,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37379,
+      "target": 37372,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37380,
+      "target": 37373,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37381,
+      "target": 37382,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37382,
+      "target": 37381,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37383,
+      "target": 37390,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37384,
+      "target": 37391,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37385,
+      "target": 37392,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37386,
+      "target": 37393,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37387,
+      "target": 37394,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37388,
+      "target": 37395,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37389,
+      "target": 37396,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37390,
+      "target": 37383,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37391,
+      "target": 37384,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37392,
+      "target": 37385,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37393,
+      "target": 37386,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37394,
+      "target": 37387,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37395,
+      "target": 37388,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37396,
+      "target": 37389,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37763,
+      "target": 37764,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37764,
+      "target": 37763,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37765,
+      "target": 37766,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37766,
+      "target": 37765,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37767,
+      "target": 37768,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37768,
+      "target": 37767,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37769,
+      "target": 37770,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37770,
+      "target": 37769,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37771,
+      "target": 37772,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37772,
+      "target": 37771,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37773,
+      "target": 37774,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 37774,
+      "target": 37773,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 39797,
+      "target": 39798,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 39798,
+      "target": 39797,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 42336,
+      "target": 42337,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 42337,
+      "target": 42336,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 42338,
+      "target": 42339,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 42339,
+      "target": 42338,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 42340,
+      "target": 42341,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    },
+    {
+      "item_id": 42341,
+      "target": 42340,
+      "donor": "data/scripts/actions/objects/carpets.lua:1"
+    }
+  ],
+  "windows": [
+    {
+      "item_id": 5302,
+      "target": 6447,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 5303,
+      "target": 6448,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6435,
+      "target": 6437,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6436,
+      "target": 6438,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6437,
+      "target": 6435,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6438,
+      "target": 6436,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6439,
+      "target": 6441,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6440,
+      "target": 6442,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6441,
+      "target": 6439,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6442,
+      "target": 6440,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6443,
+      "target": 6445,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6444,
+      "target": 6446,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6445,
+      "target": 6443,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6446,
+      "target": 6444,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6447,
+      "target": 5302,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6448,
+      "target": 5303,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6449,
+      "target": 6451,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6450,
+      "target": 6452,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6451,
+      "target": 6449,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6452,
+      "target": 6450,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6453,
+      "target": 6455,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6454,
+      "target": 6456,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6455,
+      "target": 6453,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6456,
+      "target": 6454,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6457,
+      "target": 6459,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6458,
+      "target": 6460,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6459,
+      "target": 6457,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6460,
+      "target": 6458,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6461,
+      "target": 6463,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6462,
+      "target": 6464,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6463,
+      "target": 6461,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6464,
+      "target": 6462,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6465,
+      "target": 6467,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6466,
+      "target": 6468,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6467,
+      "target": 6465,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6468,
+      "target": 6466,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6469,
+      "target": 6471,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6470,
+      "target": 6472,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6471,
+      "target": 6469,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6472,
+      "target": 6470,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6788,
+      "target": 6790,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6789,
+      "target": 6791,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6790,
+      "target": 6788,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 6791,
+      "target": 6789,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 7025,
+      "target": 7027,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 7026,
+      "target": 7028,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 7027,
+      "target": 7025,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 7028,
+      "target": 7026,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 7029,
+      "target": 7051,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 7030,
+      "target": 7052,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 7051,
+      "target": 7029,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 7052,
+      "target": 7030,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 9347,
+      "target": 9349,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 9348,
+      "target": 9350,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 9349,
+      "target": 9347,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 9350,
+      "target": 9348,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 9571,
+      "target": 9573,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 9572,
+      "target": 9574,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 9573,
+      "target": 9571,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 9574,
+      "target": 9572,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 17147,
+      "target": 17167,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 17148,
+      "target": 17168,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 17160,
+      "target": 17169,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 17161,
+      "target": 17170,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 17163,
+      "target": 17900,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 17164,
+      "target": 17901,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 17165,
+      "target": 17903,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 17166,
+      "target": 17904,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 17167,
+      "target": 17147,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 17168,
+      "target": 17148,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 17169,
+      "target": 17160,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 17170,
+      "target": 17161,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 17694,
+      "target": 17902,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 17695,
+      "target": 17905,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 17900,
+      "target": 17163,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 17901,
+      "target": 17164,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 17902,
+      "target": 17694,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 17903,
+      "target": 17165,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 17904,
+      "target": 17166,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 17905,
+      "target": 17695,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 20441,
+      "target": 20467,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 20442,
+      "target": 20468,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 20467,
+      "target": 20441,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 20468,
+      "target": 20442,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 30817,
+      "target": 30873,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 30818,
+      "target": 30876,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 30873,
+      "target": 30817,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 30874,
+      "target": 30875,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 30875,
+      "target": 30874,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 30876,
+      "target": 30818,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 30877,
+      "target": 30878,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 30878,
+      "target": 30877,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 33628,
+      "target": 33630,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 33629,
+      "target": 33631,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 33630,
+      "target": 33628,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 33631,
+      "target": 33629,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 33638,
+      "target": 33640,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 33639,
+      "target": 33641,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 33640,
+      "target": 33638,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 33641,
+      "target": 33639,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 33642,
+      "target": 33644,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 33643,
+      "target": 33645,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 33644,
+      "target": 33642,
+      "donor": "data/libs/tables/windows.lua:1"
+    },
+    {
+      "item_id": 33645,
+      "target": 33643,
+      "donor": "data/libs/tables/windows.lua:1"
+    }
+  ],
+  "mirror": {
+    "item_ids": [
+      2603,
+      2604,
+      2630,
+      2631,
+      2633,
+      2634,
+      2636,
+      2637
+    ],
+    "speech": [
+      "You could win a beauty contest today!",
+      "You rarely looked better.",
+      "Well, you can't look good every day.",
+      "You should think about a makeover.",
+      "Is that the indication of a potbelly looming under your clothes?",
+      "You look irresistible.",
+      "You look tired.",
+      "You look awesome!",
+      "You nearly don't recognize yourself.",
+      "You look fabulous.",
+      "Surprise, surprise, you don't see yourself."
+    ],
+    "cooldown_ms": 72000000,
+    "exhausted_speech": "Don't be so vain about your appearance.",
+    "donor": "data/scripts/actions/objects/wall_mirror.lua:1"
+  },
+  "bathtub": {
+    "item_id": 26077,
+    "target": 26076,
+    "donor": "data/scripts/actions/objects/bath_tub_drain.lua:3-13"
+  },
+  "music": [
+    {
+      "item_id": 2948,
+      "effect_id": 19,
+      "effect_binding": "canary.appearance:effect/sound_green",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 2949,
+      "effect_id": 19,
+      "effect_binding": "canary.appearance:effect/sound_green",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 2950,
+      "effect_id": 19,
+      "effect_binding": "canary.appearance:effect/sound_green",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 2951,
+      "effect_id": 24,
+      "effect_binding": "canary.appearance:effect/sound_blue",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 2953,
+      "effect_id": 24,
+      "effect_binding": "canary.appearance:effect/sound_blue",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 2954,
+      "effect_id": 19,
+      "effect_binding": "canary.appearance:effect/sound_green",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 2955,
+      "effect_id": 19,
+      "effect_binding": "canary.appearance:effect/sound_green",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 2956,
+      "effect_id": 19,
+      "effect_binding": "canary.appearance:effect/sound_green",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 2957,
+      "effect_id": 19,
+      "effect_binding": "canary.appearance:effect/sound_green",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 2958,
+      "effect_id": 20,
+      "effect_binding": "canary.appearance:effect/sound_red",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 2959,
+      "effect_id": 24,
+      "effect_binding": "canary.appearance:effect/sound_blue",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 2960,
+      "effect_id": 24,
+      "effect_binding": "canary.appearance:effect/sound_blue",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 2961,
+      "effect_id": 24,
+      "effect_binding": "canary.appearance:effect/sound_blue",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 2962,
+      "effect_id": 24,
+      "effect_binding": "canary.appearance:effect/sound_blue",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 2963,
+      "effect_id": 24,
+      "effect_binding": "canary.appearance:effect/sound_blue",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 2964,
+      "effect_id": 24,
+      "effect_binding": "canary.appearance:effect/sound_blue",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 2965,
+      "effect_id": 19,
+      "effect_binding": "canary.appearance:effect/sound_green",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 2966,
+      "effect_id": 20,
+      "effect_binding": "canary.appearance:effect/sound_red",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 3103,
+      "effect_id": 22,
+      "effect_binding": "canary.appearance:effect/sound_yellow",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 3219,
+      "effect_id": 19,
+      "effect_binding": "canary.appearance:effect/sound_green",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 3255,
+      "effect_id": 19,
+      "effect_binding": "canary.appearance:effect/sound_green",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 3256,
+      "effect_id": 19,
+      "effect_binding": "canary.appearance:effect/sound_green",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 3258,
+      "effect_id": 19,
+      "effect_binding": "canary.appearance:effect/sound_green",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 3259,
+      "effect_id": 24,
+      "effect_binding": "canary.appearance:effect/sound_blue",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 3260,
+      "effect_id": 19,
+      "effect_binding": "canary.appearance:effect/sound_green",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 3261,
+      "effect_id": 24,
+      "effect_binding": "canary.appearance:effect/sound_blue",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 5786,
+      "effect_id": 19,
+      "effect_binding": "canary.appearance:effect/sound_green",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 6123,
+      "effect_id": 24,
+      "effect_binding": "canary.appearance:effect/sound_blue",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 8142,
+      "effect_id": 24,
+      "effect_binding": "canary.appearance:effect/sound_blue",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 8645,
+      "effect_id": 24,
+      "effect_binding": "canary.appearance:effect/sound_blue",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 12602,
+      "effect_id": 24,
+      "effect_binding": "canary.appearance:effect/sound_blue",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 14253,
+      "effect_id": 19,
+      "effect_binding": "canary.appearance:effect/sound_green",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    },
+    {
+      "item_id": 21372,
+      "effect_id": 24,
+      "effect_binding": "canary.appearance:effect/sound_blue",
+      "donor": "data-global/scripts/actions/other/music.lua:1",
+      "achievement_progress": {
+        "key": "oteryn:achievement/rockstar",
+        "target": 10000
+      }
+    }
+  ],
+  "birdcage": {
+    "item_id": 2976,
+    "target": 2975,
+    "success_out_of": 100,
+    "effect_id": 22,
+    "effect_binding": "canary.appearance:effect/sound_yellow",
+    "donor": "data-crystal/scripts/actions/other/birdcage.lua:3-12"
+  },
+  "fish_tank": {
+    "item_id": 23691,
+    "effect_id": 175,
+    "effect_binding": "canary.appearance:effect/plunging_fish",
+    "donor": "data-global/scripts/actions/other/fish_tank.lua:3-8"
+  },
+  "magic_trees": [
+    {
+      "item_id": 26187,
+      "target": 26191,
+      "storage": 29423,
+      "cooldown_seconds": 1,
+      "donor": "data-global/scripts/actions/other/magic_tree.lua:1"
+    },
+    {
+      "item_id": 26188,
+      "target": 26192,
+      "storage": 29428,
+      "cooldown_seconds": 1,
+      "donor": "data-global/scripts/actions/other/magic_tree.lua:1"
+    },
+    {
+      "item_id": 26189,
+      "target": 26193,
+      "storage": 29425,
+      "cooldown_seconds": 1,
+      "donor": "data-global/scripts/actions/other/magic_tree.lua:1"
+    },
+    {
+      "item_id": 26190,
+      "target": 26194,
+      "storage": 29426,
+      "cooldown_seconds": 1,
+      "donor": "data-global/scripts/actions/other/magic_tree.lua:1"
+    },
+    {
+      "item_id": 26191,
+      "target": 26187,
+      "storage": 29423,
+      "cooldown_seconds": 1,
+      "donor": "data-global/scripts/actions/other/magic_tree.lua:1"
+    },
+    {
+      "item_id": 26192,
+      "target": 26188,
+      "storage": 29428,
+      "cooldown_seconds": 1,
+      "donor": "data-global/scripts/actions/other/magic_tree.lua:1"
+    },
+    {
+      "item_id": 26193,
+      "target": 26189,
+      "storage": 29425,
+      "cooldown_seconds": 1,
+      "donor": "data-global/scripts/actions/other/magic_tree.lua:1"
+    },
+    {
+      "item_id": 26194,
+      "target": 26190,
+      "storage": 29426,
+      "cooldown_seconds": 1,
+      "donor": "data-global/scripts/actions/other/magic_tree.lua:1"
+    }
+  ],
+  "bed_kits": [
+    {
+      "item_id": 831,
+      "south": [
+        734,
+        735
+      ],
+      "east": [
+        736,
+        737
+      ],
+      "effect_id": 3,
+      "effect_binding": "canary.appearance:effect/poff",
+      "donor": "data/scripts/actions/items/bed_modification_kits.lua:1"
+    },
+    {
+      "item_id": 832,
+      "south": [
+        742,
+        743
+      ],
+      "east": [
+        744,
+        745
+      ],
+      "effect_id": 3,
+      "effect_binding": "canary.appearance:effect/poff",
+      "donor": "data/scripts/actions/items/bed_modification_kits.lua:1"
+    },
+    {
+      "item_id": 833,
+      "south": [
+        738,
+        739
+      ],
+      "east": [
+        740,
+        741
+      ],
+      "effect_id": 3,
+      "effect_binding": "canary.appearance:effect/poff",
+      "donor": "data/scripts/actions/items/bed_modification_kits.lua:1"
+    },
+    {
+      "item_id": 834,
+      "south": [
+        2487,
+        2488
+      ],
+      "east": [
+        2493,
+        2494
+      ],
+      "effect_id": 3,
+      "effect_binding": "canary.appearance:effect/poff",
+      "donor": "data/scripts/actions/items/bed_modification_kits.lua:1"
+    },
+    {
+      "item_id": 17972,
+      "south": [
+        17917,
+        17918
+      ],
+      "east": [
+        17919,
+        17920
+      ],
+      "effect_id": 3,
+      "effect_binding": "canary.appearance:effect/poff",
+      "donor": "data/scripts/actions/items/bed_modification_kits.lua:1"
+    }
+  ],
+  "bed_item_ids": [
+    694,
+    695,
+    696,
+    697,
+    698,
+    699,
+    700,
+    701,
+    702,
+    703,
+    704,
+    705,
+    706,
+    707,
+    708,
+    709,
+    710,
+    711,
+    712,
+    713,
+    714,
+    715,
+    716,
+    717,
+    718,
+    719,
+    720,
+    721,
+    722,
+    723,
+    724,
+    725,
+    726,
+    731,
+    732,
+    733,
+    734,
+    735,
+    736,
+    737,
+    738,
+    739,
+    740,
+    741,
+    742,
+    743,
+    744,
+    745,
+    764,
+    765,
+    766,
+    767,
+    2487,
+    2488,
+    2489,
+    2490,
+    2491,
+    2492,
+    2493,
+    2494,
+    2495,
+    2496,
+    2497,
+    2498,
+    2499,
+    2500,
+    2501,
+    2502,
+    2503,
+    2504,
+    2505,
+    2506,
+    2507,
+    2508,
+    2509,
+    2510,
+    5495,
+    5496,
+    5497,
+    5498,
+    5499,
+    5500,
+    5501,
+    5502,
+    15506,
+    15507,
+    15508,
+    15509,
+    15510,
+    15511,
+    15512,
+    15513,
+    15514,
+    15515,
+    15516,
+    15517,
+    17917,
+    17918,
+    17919,
+    17920,
+    17921,
+    17922,
+    17923,
+    17924,
+    17925,
+    17926,
+    17927,
+    17928,
+    26088,
+    26089,
+    26090,
+    26091,
+    26092,
+    26093,
+    26094,
+    26095,
+    26096,
+    26097,
+    26098,
+    26099,
+    32473,
+    32474,
+    32475,
+    32476,
+    32477,
+    32478,
+    32479,
+    32480,
+    32481,
+    32482,
+    32483,
+    32484,
+    32485,
+    32486,
+    32487,
+    32488,
+    32489,
+    32490,
+    32491,
+    32492,
+    32493,
+    32494,
+    32495,
+    32496,
+    32497,
+    32498,
+    32499,
+    32500,
+    32501,
+    32502,
+    32503,
+    32504,
+    32505,
+    32506,
+    32507,
+    32508,
+    32509,
+    32510,
+    32511,
+    32512,
+    32513,
+    32514,
+    32515,
+    32516,
+    32517,
+    32518,
+    32519,
+    32520,
+    32521,
+    32522,
+    32523,
+    32524,
+    32525,
+    32526,
+    32527,
+    32528,
+    32529,
+    32530,
+    32531,
+    32532,
+    32533,
+    32534,
+    32535,
+    32536,
+    32541,
+    32542,
+    32543,
+    32544,
+    32545,
+    32546,
+    32547,
+    32548,
+    32549,
+    32550,
+    32551,
+    32552,
+    32553,
+    32554,
+    32555,
+    32556,
+    32557,
+    32558,
+    32559,
+    32560,
+    32561,
+    32562,
+    32563,
+    32564,
+    32565,
+    32566,
+    32795,
+    32796,
+    32797,
+    32798,
+    32799,
+    32800,
+    32801,
+    32802,
+    32803,
+    32804,
+    34312,
+    34313,
+    34314,
+    34315,
+    34316,
+    34317,
+    34318,
+    34319,
+    34320,
+    34321,
+    34322,
+    34323,
+    35189,
+    35190,
+    35191,
+    35192,
+    35193,
+    35203,
+    35204,
+    35205,
+    35206,
+    35207,
+    35208,
+    35209,
+    35851,
+    35852,
+    35853,
+    35854,
+    35855,
+    35856,
+    35857,
+    35858,
+    35859,
+    35860,
+    35861,
+    35862,
+    35863,
+    35864,
+    35865,
+    35866,
+    35867,
+    35868,
+    35869,
+    35870,
+    35871,
+    35872,
+    35873,
+    35874,
+    35875,
+    35876,
+    35877,
+    35878,
+    35879,
+    35880,
+    35881,
+    35882,
+    35883,
+    35884,
+    35885,
+    35886,
+    35928,
+    35929,
+    35930,
+    35931,
+    35932,
+    35933,
+    35934,
+    35935,
+    35936,
+    35937,
+    35938,
+    35939,
+    37023,
+    37024,
+    37025,
+    37026,
+    37027,
+    37028,
+    37029,
+    37030,
+    37031,
+    37032,
+    37033,
+    37034,
+    37193,
+    37194,
+    37195,
+    37196,
+    37197,
+    37198,
+    37199,
+    37200,
+    37201,
+    37202,
+    37203,
+    37204,
+    37786,
+    37787,
+    37788,
+    37789,
+    37790,
+    37791,
+    37792,
+    37793,
+    37794,
+    37795,
+    37796,
+    37797,
+    39429,
+    39430,
+    39431,
+    39432,
+    39433,
+    39434,
+    39435,
+    39436,
+    39437,
+    39438,
+    39439,
+    39440,
+    39781,
+    39782,
+    39783,
+    39784,
+    39785,
+    39786,
+    39787,
+    39788,
+    39789,
+    39790,
+    39791,
+    39792,
+    42279,
+    42280,
+    42281,
+    42282,
+    42283,
+    42284,
+    42285,
+    42286,
+    42287,
+    42288,
+    42289,
+    42290,
+    42351,
+    42352,
+    42353,
+    42354,
+    42355,
+    42356,
+    42357,
+    42358,
+    42359,
+    42360,
+    42361,
+    42362,
+    48441,
+    48442,
+    48443,
+    48444,
+    48449,
+    48450,
+    48451,
+    48452,
+    50213,
+    50214,
+    50215,
+    50216,
+    51208,
+    51209,
+    51210,
+    51211,
+    51212,
+    51213,
+    51214,
+    51215,
+    51216,
+    51217,
+    51218,
+    51219
+  ],
+  "native_transforms": [
+    {
+      "item_id": 2025,
+      "kind": "ROTATE",
+      "target": 2059,
+      "donor": "data/items/items.xml:4091"
+    },
+    {
+      "item_id": 2029,
+      "kind": "ROTATE",
+      "target": 2045,
+      "donor": "data/items/items.xml:4105"
+    },
+    {
+      "item_id": 2030,
+      "kind": "ROTATE",
+      "target": 2048,
+      "donor": "data/items/items.xml:4109"
+    },
+    {
+      "item_id": 2043,
+      "kind": "ROTATE",
+      "target": 2044,
+      "donor": "data/items/items.xml:4141"
+    },
+    {
+      "item_id": 2044,
+      "kind": "ROTATE",
+      "target": 2029,
+      "donor": "data/items/items.xml:4145"
+    },
+    {
+      "item_id": 2045,
+      "kind": "ROTATE",
+      "target": 2043,
+      "donor": "data/items/items.xml:4149"
+    },
+    {
+      "item_id": 2046,
+      "kind": "ROTATE",
+      "target": 2047,
+      "donor": "data/items/items.xml:4153"
+    },
+    {
+      "item_id": 2047,
+      "kind": "ROTATE",
+      "target": 2030,
+      "donor": "data/items/items.xml:4157"
+    },
+    {
+      "item_id": 2048,
+      "kind": "ROTATE",
+      "target": 2046,
+      "donor": "data/items/items.xml:4161"
+    },
+    {
+      "item_id": 2059,
+      "kind": "ROTATE",
+      "target": 2060,
+      "donor": "data/items/items.xml:4186"
+    },
+    {
+      "item_id": 2060,
+      "kind": "ROTATE",
+      "target": 2061,
+      "donor": "data/items/items.xml:4189"
+    },
+    {
+      "item_id": 2061,
+      "kind": "ROTATE",
+      "target": 2025,
+      "donor": "data/items/items.xml:4192"
+    },
+    {
+      "item_id": 2346,
+      "kind": "ROTATE",
+      "target": 2347,
+      "donor": "data/items/items.xml:4672"
+    },
+    {
+      "item_id": 2347,
+      "kind": "ROTATE",
+      "target": 2346,
+      "donor": "data/items/items.xml:4676"
+    },
+    {
+      "item_id": 2348,
+      "kind": "ROTATE",
+      "target": 2349,
+      "donor": "data/items/items.xml:4679"
+    },
+    {
+      "item_id": 2349,
+      "kind": "ROTATE",
+      "target": 2348,
+      "donor": "data/items/items.xml:4683"
+    },
+    {
+      "item_id": 2350,
+      "kind": "ROTATE",
+      "target": 2351,
+      "donor": "data/items/items.xml:4687"
+    },
+    {
+      "item_id": 2351,
+      "kind": "ROTATE",
+      "target": 2350,
+      "donor": "data/items/items.xml:4691"
+    },
+    {
+      "item_id": 2358,
+      "kind": "ROTATE",
+      "target": 2359,
+      "donor": "data/items/items.xml:4704"
+    },
+    {
+      "item_id": 2359,
+      "kind": "ROTATE",
+      "target": 2360,
+      "donor": "data/items/items.xml:4708"
+    },
+    {
+      "item_id": 2360,
+      "kind": "ROTATE",
+      "target": 2361,
+      "donor": "data/items/items.xml:4712"
+    },
+    {
+      "item_id": 2361,
+      "kind": "ROTATE",
+      "target": 2358,
+      "donor": "data/items/items.xml:4716"
+    },
+    {
+      "item_id": 2366,
+      "kind": "ROTATE",
+      "target": 2369,
+      "donor": "data/items/items.xml:4723"
+    },
+    {
+      "item_id": 2367,
+      "kind": "ROTATE",
+      "target": 2368,
+      "donor": "data/items/items.xml:4727"
+    },
+    {
+      "item_id": 2368,
+      "kind": "ROTATE",
+      "target": 2366,
+      "donor": "data/items/items.xml:4731"
+    },
+    {
+      "item_id": 2369,
+      "kind": "ROTATE",
+      "target": 2367,
+      "donor": "data/items/items.xml:4735"
+    },
+    {
+      "item_id": 2374,
+      "kind": "ROTATE",
+      "target": 2377,
+      "donor": "data/items/items.xml:4742"
+    },
+    {
+      "item_id": 2375,
+      "kind": "ROTATE",
+      "target": 2376,
+      "donor": "data/items/items.xml:4746"
+    },
+    {
+      "item_id": 2376,
+      "kind": "ROTATE",
+      "target": 2374,
+      "donor": "data/items/items.xml:4750"
+    },
+    {
+      "item_id": 2377,
+      "kind": "ROTATE",
+      "target": 2375,
+      "donor": "data/items/items.xml:4754"
+    },
+    {
+      "item_id": 2378,
+      "kind": "ROTATE",
+      "target": 2381,
+      "donor": "data/items/items.xml:4758"
+    },
+    {
+      "item_id": 2379,
+      "kind": "ROTATE",
+      "target": 2380,
+      "donor": "data/items/items.xml:4762"
+    },
+    {
+      "item_id": 2380,
+      "kind": "ROTATE",
+      "target": 2378,
+      "donor": "data/items/items.xml:4766"
+    },
+    {
+      "item_id": 2381,
+      "kind": "ROTATE",
+      "target": 2379,
+      "donor": "data/items/items.xml:4770"
+    },
+    {
+      "item_id": 2382,
+      "kind": "ROTATE",
+      "target": 2385,
+      "donor": "data/items/items.xml:4774"
+    },
+    {
+      "item_id": 2383,
+      "kind": "ROTATE",
+      "target": 2384,
+      "donor": "data/items/items.xml:4778"
+    },
+    {
+      "item_id": 2384,
+      "kind": "ROTATE",
+      "target": 2382,
+      "donor": "data/items/items.xml:4782"
+    },
+    {
+      "item_id": 2385,
+      "kind": "ROTATE",
+      "target": 2383,
+      "donor": "data/items/items.xml:4786"
+    },
+    {
+      "item_id": 2418,
+      "kind": "ROTATE",
+      "target": 2421,
+      "donor": "data/items/items.xml:4860"
+    },
+    {
+      "item_id": 2419,
+      "kind": "ROTATE",
+      "target": 2420,
+      "donor": "data/items/items.xml:4864"
+    },
+    {
+      "item_id": 2420,
+      "kind": "ROTATE",
+      "target": 2418,
+      "donor": "data/items/items.xml:4868"
+    },
+    {
+      "item_id": 2421,
+      "kind": "ROTATE",
+      "target": 2419,
+      "donor": "data/items/items.xml:4872"
+    },
+    {
+      "item_id": 2422,
+      "kind": "ROTATE",
+      "target": 2425,
+      "donor": "data/items/items.xml:4876"
+    },
+    {
+      "item_id": 2423,
+      "kind": "ROTATE",
+      "target": 2424,
+      "donor": "data/items/items.xml:4880"
+    },
+    {
+      "item_id": 2424,
+      "kind": "ROTATE",
+      "target": 2422,
+      "donor": "data/items/items.xml:4884"
+    },
+    {
+      "item_id": 2425,
+      "kind": "ROTATE",
+      "target": 2423,
+      "donor": "data/items/items.xml:4888"
+    },
+    {
+      "item_id": 2431,
+      "kind": "ROTATE",
+      "target": 2434,
+      "donor": "data/items/items.xml:4899"
+    },
+    {
+      "item_id": 2432,
+      "kind": "ROTATE",
+      "target": 2431,
+      "donor": "data/items/items.xml:4903"
+    },
+    {
+      "item_id": 2433,
+      "kind": "ROTATE",
+      "target": 2432,
+      "donor": "data/items/items.xml:4907"
+    },
+    {
+      "item_id": 2434,
+      "kind": "ROTATE",
+      "target": 2433,
+      "donor": "data/items/items.xml:4911"
+    },
+    {
+      "item_id": 2441,
+      "kind": "ROTATE",
+      "target": 2444,
+      "donor": "data/items/items.xml:4919"
+    },
+    {
+      "item_id": 2442,
+      "kind": "ROTATE",
+      "target": 2441,
+      "donor": "data/items/items.xml:4924"
+    },
+    {
+      "item_id": 2443,
+      "kind": "ROTATE",
+      "target": 2442,
+      "donor": "data/items/items.xml:4929"
+    },
+    {
+      "item_id": 2444,
+      "kind": "ROTATE",
+      "target": 2443,
+      "donor": "data/items/items.xml:4934"
+    },
+    {
+      "item_id": 2445,
+      "kind": "ROTATE",
+      "target": 2448,
+      "donor": "data/items/items.xml:4939"
+    },
+    {
+      "item_id": 2446,
+      "kind": "ROTATE",
+      "target": 2445,
+      "donor": "data/items/items.xml:4943"
+    },
+    {
+      "item_id": 2447,
+      "kind": "ROTATE",
+      "target": 2446,
+      "donor": "data/items/items.xml:4947"
+    },
+    {
+      "item_id": 2448,
+      "kind": "ROTATE",
+      "target": 2447,
+      "donor": "data/items/items.xml:4951"
+    },
+    {
+      "item_id": 2449,
+      "kind": "ROTATE",
+      "target": 2452,
+      "donor": "data/items/items.xml:4955"
+    },
+    {
+      "item_id": 2450,
+      "kind": "ROTATE",
+      "target": 2451,
+      "donor": "data/items/items.xml:4960"
+    },
+    {
+      "item_id": 2451,
+      "kind": "ROTATE",
+      "target": 2449,
+      "donor": "data/items/items.xml:4965"
+    },
+    {
+      "item_id": 2452,
+      "kind": "ROTATE",
+      "target": 2450,
+      "donor": "data/items/items.xml:4970"
+    },
+    {
+      "item_id": 2465,
+      "kind": "ROTATE",
+      "target": 2468,
+      "donor": "data/items/items.xml:4995"
+    },
+    {
+      "item_id": 2466,
+      "kind": "ROTATE",
+      "target": 2465,
+      "donor": "data/items/items.xml:5000"
+    },
+    {
+      "item_id": 2467,
+      "kind": "ROTATE",
+      "target": 2466,
+      "donor": "data/items/items.xml:5005"
+    },
+    {
+      "item_id": 2468,
+      "kind": "ROTATE",
+      "target": 2467,
+      "donor": "data/items/items.xml:5010"
+    },
+    {
+      "item_id": 2483,
+      "kind": "ROTATE",
+      "target": 2486,
+      "donor": "data/items/items.xml:5074"
+    },
+    {
+      "item_id": 2484,
+      "kind": "ROTATE",
+      "target": 2485,
+      "donor": "data/items/items.xml:5079"
+    },
+    {
+      "item_id": 2485,
+      "kind": "ROTATE",
+      "target": 2483,
+      "donor": "data/items/items.xml:5084"
+    },
+    {
+      "item_id": 2486,
+      "kind": "ROTATE",
+      "target": 2484,
+      "donor": "data/items/items.xml:5089"
+    },
+    {
+      "item_id": 2959,
+      "kind": "ROTATE",
+      "target": 2962,
+      "donor": "data/items/items.xml:6460"
+    },
+    {
+      "item_id": 2960,
+      "kind": "ROTATE",
+      "target": 2961,
+      "donor": "data/items/items.xml:6464"
+    },
+    {
+      "item_id": 2961,
+      "kind": "ROTATE",
+      "target": 2959,
+      "donor": "data/items/items.xml:6468"
+    },
+    {
+      "item_id": 2962,
+      "kind": "ROTATE",
+      "target": 2960,
+      "donor": "data/items/items.xml:6472"
+    },
+    {
+      "item_id": 2963,
+      "kind": "ROTATE",
+      "target": 2964,
+      "donor": "data/items/items.xml:6476"
+    },
+    {
+      "item_id": 2964,
+      "kind": "ROTATE",
+      "target": 2963,
+      "donor": "data/items/items.xml:6480"
+    },
+    {
+      "item_id": 2997,
+      "kind": "ROTATE",
+      "target": 2998,
+      "donor": "data/items/items.xml:6626"
+    },
+    {
+      "item_id": 2998,
+      "kind": "ROTATE",
+      "target": 2999,
+      "donor": "data/items/items.xml:6630"
+    },
+    {
+      "item_id": 2999,
+      "kind": "ROTATE",
+      "target": 3000,
+      "donor": "data/items/items.xml:6634"
+    },
+    {
+      "item_id": 3000,
+      "kind": "ROTATE",
+      "target": 2997,
+      "donor": "data/items/items.xml:6638"
+    },
+    {
+      "item_id": 3484,
+      "kind": "ROTATE",
+      "target": 3487,
+      "donor": "data/items/items.xml:10931"
+    },
+    {
+      "item_id": 3485,
+      "kind": "ROTATE",
+      "target": 3486,
+      "donor": "data/items/items.xml:10935"
+    },
+    {
+      "item_id": 3486,
+      "kind": "ROTATE",
+      "target": 3484,
+      "donor": "data/items/items.xml:10939"
+    },
+    {
+      "item_id": 3487,
+      "kind": "ROTATE",
+      "target": 3485,
+      "donor": "data/items/items.xml:10943"
+    },
+    {
+      "item_id": 6109,
+      "kind": "ROTATE",
+      "target": 6110,
+      "donor": "data/items/items.xml:17032"
+    },
+    {
+      "item_id": 6110,
+      "kind": "ROTATE",
+      "target": 6109,
+      "donor": "data/items/items.xml:17038"
+    },
+    {
+      "item_id": 6111,
+      "kind": "ROTATE",
+      "target": 6112,
+      "donor": "data/items/items.xml:17044"
+    },
+    {
+      "item_id": 6112,
+      "kind": "ROTATE",
+      "target": 6111,
+      "donor": "data/items/items.xml:17050"
+    },
+    {
+      "item_id": 6355,
+      "kind": "ROTATE",
+      "target": 6357,
+      "donor": "data/items/items.xml:17630"
+    },
+    {
+      "item_id": 6356,
+      "kind": "ROTATE",
+      "target": 6358,
+      "donor": "data/items/items.xml:17635"
+    },
+    {
+      "item_id": 6357,
+      "kind": "ROTATE",
+      "target": 6359,
+      "donor": "data/items/items.xml:17640"
+    },
+    {
+      "item_id": 6358,
+      "kind": "ROTATE",
+      "target": 6360,
+      "donor": "data/items/items.xml:17645"
+    },
+    {
+      "item_id": 6359,
+      "kind": "ROTATE",
+      "target": 6361,
+      "donor": "data/items/items.xml:17650"
+    },
+    {
+      "item_id": 6360,
+      "kind": "ROTATE",
+      "target": 6362,
+      "donor": "data/items/items.xml:17655"
+    },
+    {
+      "item_id": 6361,
+      "kind": "ROTATE",
+      "target": 6355,
+      "donor": "data/items/items.xml:17660"
+    },
+    {
+      "item_id": 6362,
+      "kind": "ROTATE",
+      "target": 6356,
+      "donor": "data/items/items.xml:17665"
+    },
+    {
+      "item_id": 6367,
+      "kind": "ROTATE",
+      "target": 6370,
+      "donor": "data/items/items.xml:17690"
+    },
+    {
+      "item_id": 6368,
+      "kind": "ROTATE",
+      "target": 6367,
+      "donor": "data/items/items.xml:17696"
+    },
+    {
+      "item_id": 6369,
+      "kind": "ROTATE",
+      "target": 6368,
+      "donor": "data/items/items.xml:17702"
+    },
+    {
+      "item_id": 6370,
+      "kind": "ROTATE",
+      "target": 6369,
+      "donor": "data/items/items.xml:17708"
+    },
+    {
+      "item_id": 7860,
+      "kind": "ROTATE",
+      "target": 7862,
+      "donor": "data/items/items.xml:21160"
+    },
+    {
+      "item_id": 7862,
+      "kind": "ROTATE",
+      "target": 7860,
+      "donor": "data/items/items.xml:21168"
+    },
+    {
+      "item_id": 10210,
+      "kind": "ROTATE",
+      "target": 10211,
+      "donor": "data/items/items.xml:26689"
+    },
+    {
+      "item_id": 10211,
+      "kind": "ROTATE",
+      "target": 10210,
+      "donor": "data/items/items.xml:26694"
+    },
+    {
+      "item_id": 10212,
+      "kind": "ROTATE",
+      "target": 10214,
+      "donor": "data/items/items.xml:26699"
+    },
+    {
+      "item_id": 10213,
+      "kind": "ROTATE",
+      "target": 10212,
+      "donor": "data/items/items.xml:26703"
+    },
+    {
+      "item_id": 10214,
+      "kind": "ROTATE",
+      "target": 10215,
+      "donor": "data/items/items.xml:26707"
+    },
+    {
+      "item_id": 10215,
+      "kind": "ROTATE",
+      "target": 10213,
+      "donor": "data/items/items.xml:26711"
+    },
+    {
+      "item_id": 10286,
+      "kind": "ROTATE",
+      "target": 10287,
+      "donor": "data/items/items.xml:26829"
+    },
+    {
+      "item_id": 10287,
+      "kind": "ROTATE",
+      "target": 10286,
+      "donor": "data/items/items.xml:26833"
+    },
+    {
+      "item_id": 14754,
+      "kind": "ROTATE",
+      "target": 14755,
+      "donor": "data/items/items.xml:33024"
+    },
+    {
+      "item_id": 14755,
+      "kind": "ROTATE",
+      "target": 14754,
+      "donor": "data/items/items.xml:33030"
+    },
+    {
+      "item_id": 18015,
+      "kind": "ROTATE",
+      "target": 18016,
+      "donor": "data/items/items.xml:36649"
+    },
+    {
+      "item_id": 18016,
+      "kind": "ROTATE",
+      "target": 18015,
+      "donor": "data/items/items.xml:36654"
+    },
+    {
+      "item_id": 18017,
+      "kind": "ROTATE",
+      "target": 18018,
+      "donor": "data/items/items.xml:36659"
+    },
+    {
+      "item_id": 18018,
+      "kind": "ROTATE",
+      "target": 18017,
+      "donor": "data/items/items.xml:36664"
+    },
+    {
+      "item_id": 18019,
+      "kind": "ROTATE",
+      "target": 18020,
+      "donor": "data/items/items.xml:36669"
+    },
+    {
+      "item_id": 18020,
+      "kind": "ROTATE",
+      "target": 18019,
+      "donor": "data/items/items.xml:36674"
+    },
+    {
+      "item_id": 23399,
+      "kind": "ROTATE",
+      "target": 23400,
+      "donor": "data/items/items.xml:46153"
+    },
+    {
+      "item_id": 23400,
+      "kind": "ROTATE",
+      "target": 23399,
+      "donor": "data/items/items.xml:46160"
+    },
+    {
+      "item_id": 23401,
+      "kind": "ROTATE",
+      "target": 23402,
+      "donor": "data/items/items.xml:46167"
+    },
+    {
+      "item_id": 23402,
+      "kind": "ROTATE",
+      "target": 23401,
+      "donor": "data/items/items.xml:46174"
+    },
+    {
+      "item_id": 23403,
+      "kind": "ROTATE",
+      "target": 23404,
+      "donor": "data/items/items.xml:46181"
+    },
+    {
+      "item_id": 23404,
+      "kind": "ROTATE",
+      "target": 23405,
+      "donor": "data/items/items.xml:46186"
+    },
+    {
+      "item_id": 23405,
+      "kind": "ROTATE",
+      "target": 23406,
+      "donor": "data/items/items.xml:46191"
+    },
+    {
+      "item_id": 23406,
+      "kind": "ROTATE",
+      "target": 23403,
+      "donor": "data/items/items.xml:46196"
+    },
+    {
+      "item_id": 23407,
+      "kind": "ROTATE",
+      "target": 23408,
+      "donor": "data/items/items.xml:46201"
+    },
+    {
+      "item_id": 23408,
+      "kind": "ROTATE",
+      "target": 23409,
+      "donor": "data/items/items.xml:46206"
+    },
+    {
+      "item_id": 23409,
+      "kind": "ROTATE",
+      "target": 23410,
+      "donor": "data/items/items.xml:46211"
+    },
+    {
+      "item_id": 23410,
+      "kind": "ROTATE",
+      "target": 23407,
+      "donor": "data/items/items.xml:46216"
+    },
+    {
+      "item_id": 23411,
+      "kind": "ROTATE",
+      "target": 23414,
+      "donor": "data/items/items.xml:46221"
+    },
+    {
+      "item_id": 23414,
+      "kind": "ROTATE",
+      "target": 23411,
+      "donor": "data/items/items.xml:46236"
+    },
+    {
+      "item_id": 23417,
+      "kind": "ROTATE",
+      "target": 23418,
+      "donor": "data/items/items.xml:46250"
+    },
+    {
+      "item_id": 23418,
+      "kind": "ROTATE",
+      "target": 23417,
+      "donor": "data/items/items.xml:46255"
+    },
+    {
+      "item_id": 23419,
+      "kind": "ROTATE",
+      "target": 23420,
+      "donor": "data/items/items.xml:46260"
+    },
+    {
+      "item_id": 23420,
+      "kind": "ROTATE",
+      "target": 23419,
+      "donor": "data/items/items.xml:46266"
+    },
+    {
+      "item_id": 23421,
+      "kind": "ROTATE",
+      "target": 23422,
+      "donor": "data/items/items.xml:46272"
+    },
+    {
+      "item_id": 23422,
+      "kind": "ROTATE",
+      "target": 23421,
+      "donor": "data/items/items.xml:46278"
+    },
+    {
+      "item_id": 23423,
+      "kind": "ROTATE",
+      "target": 23424,
+      "donor": "data/items/items.xml:46284"
+    },
+    {
+      "item_id": 23424,
+      "kind": "ROTATE",
+      "target": 23425,
+      "donor": "data/items/items.xml:46290"
+    },
+    {
+      "item_id": 23425,
+      "kind": "ROTATE",
+      "target": 23426,
+      "donor": "data/items/items.xml:46296"
+    },
+    {
+      "item_id": 23426,
+      "kind": "ROTATE",
+      "target": 23423,
+      "donor": "data/items/items.xml:46302"
+    },
+    {
+      "item_id": 23427,
+      "kind": "ROTATE",
+      "target": 23428,
+      "donor": "data/items/items.xml:46308"
+    },
+    {
+      "item_id": 23428,
+      "kind": "ROTATE",
+      "target": 23429,
+      "donor": "data/items/items.xml:46314"
+    },
+    {
+      "item_id": 23429,
+      "kind": "ROTATE",
+      "target": 23430,
+      "donor": "data/items/items.xml:46320"
+    },
+    {
+      "item_id": 23430,
+      "kind": "ROTATE",
+      "target": 23427,
+      "donor": "data/items/items.xml:46326"
+    },
+    {
+      "item_id": 23434,
+      "kind": "ROTATE",
+      "target": 23435,
+      "donor": "data/items/items.xml:46345"
+    },
+    {
+      "item_id": 23435,
+      "kind": "ROTATE",
+      "target": 23434,
+      "donor": "data/items/items.xml:46350"
+    },
+    {
+      "item_id": 23436,
+      "kind": "ROTATE",
+      "target": 23437,
+      "donor": "data/items/items.xml:46355"
+    },
+    {
+      "item_id": 23437,
+      "kind": "ROTATE",
+      "target": 23436,
+      "donor": "data/items/items.xml:46360"
+    },
+    {
+      "item_id": 23438,
+      "kind": "ROTATE",
+      "target": 23439,
+      "donor": "data/items/items.xml:46365"
+    },
+    {
+      "item_id": 23439,
+      "kind": "ROTATE",
+      "target": 23438,
+      "donor": "data/items/items.xml:46370"
+    },
+    {
+      "item_id": 23440,
+      "kind": "ROTATE",
+      "target": 23441,
+      "donor": "data/items/items.xml:46375"
+    },
+    {
+      "item_id": 23441,
+      "kind": "ROTATE",
+      "target": 23440,
+      "donor": "data/items/items.xml:46380"
+    },
+    {
+      "item_id": 23693,
+      "kind": "ROTATE",
+      "target": 23694,
+      "donor": "data/items/items.xml:47080"
+    },
+    {
+      "item_id": 23694,
+      "kind": "ROTATE",
+      "target": 23695,
+      "donor": "data/items/items.xml:47085"
+    },
+    {
+      "item_id": 23695,
+      "kind": "ROTATE",
+      "target": 23696,
+      "donor": "data/items/items.xml:47090"
+    },
+    {
+      "item_id": 23696,
+      "kind": "ROTATE",
+      "target": 23693,
+      "donor": "data/items/items.xml:47095"
+    },
+    {
+      "item_id": 23698,
+      "kind": "ROTATE",
+      "target": 23699,
+      "donor": "data/items/items.xml:47107"
+    },
+    {
+      "item_id": 23699,
+      "kind": "ROTATE",
+      "target": 23698,
+      "donor": "data/items/items.xml:47112"
+    },
+    {
+      "item_id": 23700,
+      "kind": "ROTATE",
+      "target": 23701,
+      "donor": "data/items/items.xml:47117"
+    },
+    {
+      "item_id": 23701,
+      "kind": "ROTATE",
+      "target": 23700,
+      "donor": "data/items/items.xml:47123"
+    },
+    {
+      "item_id": 23702,
+      "kind": "ROTATE",
+      "target": 23704,
+      "donor": "data/items/items.xml:47129"
+    },
+    {
+      "item_id": 23704,
+      "kind": "ROTATE",
+      "target": 23705,
+      "donor": "data/items/items.xml:47142"
+    },
+    {
+      "item_id": 23705,
+      "kind": "ROTATE",
+      "target": 23706,
+      "donor": "data/items/items.xml:47148"
+    },
+    {
+      "item_id": 23706,
+      "kind": "ROTATE",
+      "target": 23702,
+      "donor": "data/items/items.xml:47154"
+    },
+    {
+      "item_id": 25103,
+      "kind": "ROTATE",
+      "target": 25104,
+      "donor": "data/items/items.xml:48336"
+    },
+    {
+      "item_id": 25104,
+      "kind": "ROTATE",
+      "target": 25103,
+      "donor": "data/items/items.xml:48342"
+    },
+    {
+      "item_id": 25174,
+      "kind": "ROTATE",
+      "target": 25175,
+      "donor": "data/items/items.xml:48388"
+    },
+    {
+      "item_id": 25175,
+      "kind": "ROTATE",
+      "target": 25174,
+      "donor": "data/items/items.xml:48394"
+    },
+    {
+      "item_id": 25182,
+      "kind": "ROTATE",
+      "target": 25183,
+      "donor": "data/items/items.xml:48400"
+    },
+    {
+      "item_id": 25183,
+      "kind": "ROTATE",
+      "target": 25182,
+      "donor": "data/items/items.xml:48406"
+    },
+    {
+      "item_id": 25221,
+      "kind": "ROTATE",
+      "target": 25222,
+      "donor": "data/items/items.xml:48519"
+    },
+    {
+      "item_id": 25222,
+      "kind": "ROTATE",
+      "target": 25223,
+      "donor": "data/items/items.xml:48524"
+    },
+    {
+      "item_id": 25223,
+      "kind": "ROTATE",
+      "target": 25224,
+      "donor": "data/items/items.xml:48529"
+    },
+    {
+      "item_id": 25224,
+      "kind": "ROTATE",
+      "target": 25221,
+      "donor": "data/items/items.xml:48534"
+    },
+    {
+      "item_id": 25225,
+      "kind": "ROTATE",
+      "target": 25226,
+      "donor": "data/items/items.xml:48539"
+    },
+    {
+      "item_id": 25226,
+      "kind": "ROTATE",
+      "target": 25225,
+      "donor": "data/items/items.xml:48544"
+    },
+    {
+      "item_id": 25227,
+      "kind": "ROTATE",
+      "target": 25228,
+      "donor": "data/items/items.xml:48549"
+    },
+    {
+      "item_id": 25228,
+      "kind": "ROTATE",
+      "target": 25227,
+      "donor": "data/items/items.xml:48555"
+    },
+    {
+      "item_id": 25229,
+      "kind": "ROTATE",
+      "target": 25230,
+      "donor": "data/items/items.xml:48561"
+    },
+    {
+      "item_id": 25230,
+      "kind": "ROTATE",
+      "target": 25231,
+      "donor": "data/items/items.xml:48567"
+    },
+    {
+      "item_id": 25231,
+      "kind": "ROTATE",
+      "target": 25232,
+      "donor": "data/items/items.xml:48573"
+    },
+    {
+      "item_id": 25232,
+      "kind": "ROTATE",
+      "target": 25229,
+      "donor": "data/items/items.xml:48579"
+    },
+    {
+      "item_id": 25720,
+      "kind": "ROTATE",
+      "target": 25721,
+      "donor": "data/items/items.xml:49019"
+    },
+    {
+      "item_id": 25721,
+      "kind": "ROTATE",
+      "target": 25720,
+      "donor": "data/items/items.xml:49026"
+    },
+    {
+      "item_id": 25722,
+      "kind": "ROTATE",
+      "target": 25723,
+      "donor": "data/items/items.xml:49033"
+    },
+    {
+      "item_id": 25723,
+      "kind": "ROTATE",
+      "target": 25722,
+      "donor": "data/items/items.xml:49040"
+    },
+    {
+      "item_id": 26081,
+      "kind": "ROTATE",
+      "target": 26082,
+      "donor": "data/items/items.xml:51231"
+    },
+    {
+      "item_id": 26082,
+      "kind": "ROTATE",
+      "target": 26081,
+      "donor": "data/items/items.xml:51237"
+    },
+    {
+      "item_id": 26083,
+      "kind": "ROTATE",
+      "target": 26084,
+      "donor": "data/items/items.xml:51243"
+    },
+    {
+      "item_id": 26084,
+      "kind": "ROTATE",
+      "target": 26083,
+      "donor": "data/items/items.xml:51249"
+    },
+    {
+      "item_id": 26099,
+      "kind": "ROTATE",
+      "target": 26099,
+      "donor": "data/items/items.xml:51363",
+      "runtime_noop": true,
+      "engine_donor": "src/game/game.cpp:3054-3057",
+      "requested_target": 23397,
+      "noop": true
+    },
+    {
+      "item_id": 26101,
+      "kind": "ROTATE",
+      "target": 26102,
+      "donor": "data/items/items.xml:51377"
+    },
+    {
+      "item_id": 26102,
+      "kind": "ROTATE",
+      "target": 26103,
+      "donor": "data/items/items.xml:51382"
+    },
+    {
+      "item_id": 26103,
+      "kind": "ROTATE",
+      "target": 26104,
+      "donor": "data/items/items.xml:51387"
+    },
+    {
+      "item_id": 26104,
+      "kind": "ROTATE",
+      "target": 26101,
+      "donor": "data/items/items.xml:51392"
+    },
+    {
+      "item_id": 26105,
+      "kind": "ROTATE",
+      "target": 26106,
+      "donor": "data/items/items.xml:51397"
+    },
+    {
+      "item_id": 26106,
+      "kind": "ROTATE",
+      "target": 26105,
+      "donor": "data/items/items.xml:51403"
+    },
+    {
+      "item_id": 26107,
+      "kind": "ROTATE",
+      "target": 26108,
+      "donor": "data/items/items.xml:51409"
+    },
+    {
+      "item_id": 26108,
+      "kind": "ROTATE",
+      "target": 26107,
+      "donor": "data/items/items.xml:51415"
+    },
+    {
+      "item_id": 26109,
+      "kind": "ROTATE",
+      "target": 26110,
+      "donor": "data/items/items.xml:51421"
+    },
+    {
+      "item_id": 26110,
+      "kind": "ROTATE",
+      "target": 26109,
+      "donor": "data/items/items.xml:51427"
+    },
+    {
+      "item_id": 26112,
+      "kind": "ROTATE",
+      "target": 26113,
+      "donor": "data/items/items.xml:51437"
+    },
+    {
+      "item_id": 26113,
+      "kind": "ROTATE",
+      "target": 26112,
+      "donor": "data/items/items.xml:51442"
+    },
+    {
+      "item_id": 26156,
+      "kind": "ROTATE",
+      "target": 26157,
+      "donor": "data/items/items.xml:51534"
+    },
+    {
+      "item_id": 26157,
+      "kind": "ROTATE",
+      "target": 26158,
+      "donor": "data/items/items.xml:51538"
+    },
+    {
+      "item_id": 26158,
+      "kind": "ROTATE",
+      "target": 26159,
+      "donor": "data/items/items.xml:51542"
+    },
+    {
+      "item_id": 26159,
+      "kind": "ROTATE",
+      "target": 26156,
+      "donor": "data/items/items.xml:51546"
+    },
+    {
+      "item_id": 26160,
+      "kind": "ROTATE",
+      "target": 26161,
+      "donor": "data/items/items.xml:51550"
+    },
+    {
+      "item_id": 26161,
+      "kind": "ROTATE",
+      "target": 26160,
+      "donor": "data/items/items.xml:51555"
+    },
+    {
+      "item_id": 26162,
+      "kind": "ROTATE",
+      "target": 26163,
+      "donor": "data/items/items.xml:51560"
+    },
+    {
+      "item_id": 26163,
+      "kind": "ROTATE",
+      "target": 26162,
+      "donor": "data/items/items.xml:51566"
+    },
+    {
+      "item_id": 26164,
+      "kind": "ROTATE",
+      "target": 26165,
+      "donor": "data/items/items.xml:51572"
+    },
+    {
+      "item_id": 26165,
+      "kind": "ROTATE",
+      "target": 26167,
+      "donor": "data/items/items.xml:51578"
+    },
+    {
+      "item_id": 26166,
+      "kind": "ROTATE",
+      "target": 26164,
+      "donor": "data/items/items.xml:51584"
+    },
+    {
+      "item_id": 26167,
+      "kind": "ROTATE",
+      "target": 26166,
+      "donor": "data/items/items.xml:51590"
+    },
+    {
+      "item_id": 26173,
+      "kind": "ROTATE",
+      "target": 26174,
+      "donor": "data/items/items.xml:51613"
+    },
+    {
+      "item_id": 26174,
+      "kind": "ROTATE",
+      "target": 26173,
+      "donor": "data/items/items.xml:51618"
+    },
+    {
+      "item_id": 27661,
+      "kind": "ROTATE",
+      "target": 27662,
+      "donor": "data/items/items.xml:52802"
+    },
+    {
+      "item_id": 27662,
+      "kind": "ROTATE",
+      "target": 27661,
+      "donor": "data/items/items.xml:52807"
+    },
+    {
+      "item_id": 27663,
+      "kind": "ROTATE",
+      "target": 27664,
+      "donor": "data/items/items.xml:52812"
+    },
+    {
+      "item_id": 27664,
+      "kind": "ROTATE",
+      "target": 27663,
+      "donor": "data/items/items.xml:52818"
+    },
+    {
+      "item_id": 27665,
+      "kind": "ROTATE",
+      "target": 27666,
+      "donor": "data/items/items.xml:52824"
+    },
+    {
+      "item_id": 27666,
+      "kind": "ROTATE",
+      "target": 27665,
+      "donor": "data/items/items.xml:52829"
+    },
+    {
+      "item_id": 27679,
+      "kind": "ROTATE",
+      "target": 27680,
+      "donor": "data/items/items.xml:52860"
+    },
+    {
+      "item_id": 27680,
+      "kind": "ROTATE",
+      "target": 27679,
+      "donor": "data/items/items.xml:52865"
+    },
+    {
+      "item_id": 27681,
+      "kind": "ROTATE",
+      "target": 27682,
+      "donor": "data/items/items.xml:52870"
+    },
+    {
+      "item_id": 27682,
+      "kind": "ROTATE",
+      "target": 27681,
+      "donor": "data/items/items.xml:52875"
+    },
+    {
+      "item_id": 27691,
+      "kind": "ROTATE",
+      "target": 27693,
+      "donor": "data/items/items.xml:52911"
+    },
+    {
+      "item_id": 27692,
+      "kind": "ROTATE",
+      "target": 27694,
+      "donor": "data/items/items.xml:52917"
+    },
+    {
+      "item_id": 27693,
+      "kind": "ROTATE",
+      "target": 27691,
+      "donor": "data/items/items.xml:52923"
+    },
+    {
+      "item_id": 27694,
+      "kind": "ROTATE",
+      "target": 27692,
+      "donor": "data/items/items.xml:52929"
+    },
+    {
+      "item_id": 27695,
+      "kind": "ROTATE",
+      "target": 27696,
+      "donor": "data/items/items.xml:52935"
+    },
+    {
+      "item_id": 27696,
+      "kind": "ROTATE",
+      "target": 27695,
+      "donor": "data/items/items.xml:52940"
+    },
+    {
+      "item_id": 27702,
+      "kind": "ROTATE",
+      "target": 27703,
+      "donor": "data/items/items.xml:52959"
+    },
+    {
+      "item_id": 27703,
+      "kind": "ROTATE",
+      "target": 27702,
+      "donor": "data/items/items.xml:52964"
+    },
+    {
+      "item_id": 28559,
+      "kind": "ROTATE",
+      "target": 28560,
+      "donor": "data/items/items.xml:53561"
+    },
+    {
+      "item_id": 28560,
+      "kind": "ROTATE",
+      "target": 28559,
+      "donor": "data/items/items.xml:53570"
+    },
+    {
+      "item_id": 28561,
+      "kind": "ROTATE",
+      "target": 28562,
+      "donor": "data/items/items.xml:53579"
+    },
+    {
+      "item_id": 28562,
+      "kind": "ROTATE",
+      "target": 28561,
+      "donor": "data/items/items.xml:53588"
+    },
+    {
+      "item_id": 28563,
+      "kind": "ROTATE",
+      "target": 28564,
+      "donor": "data/items/items.xml:53597"
+    },
+    {
+      "item_id": 28564,
+      "kind": "ROTATE",
+      "target": 28563,
+      "donor": "data/items/items.xml:53606"
+    },
+    {
+      "item_id": 28676,
+      "kind": "ROTATE",
+      "target": 28677,
+      "donor": "data/items/items.xml:54096"
+    },
+    {
+      "item_id": 28677,
+      "kind": "ROTATE",
+      "target": 28679,
+      "donor": "data/items/items.xml:54101"
+    },
+    {
+      "item_id": 28678,
+      "kind": "ROTATE",
+      "target": 28676,
+      "donor": "data/items/items.xml:54106"
+    },
+    {
+      "item_id": 28679,
+      "kind": "ROTATE",
+      "target": 28678,
+      "donor": "data/items/items.xml:54111"
+    },
+    {
+      "item_id": 28680,
+      "kind": "ROTATE",
+      "target": 28681,
+      "donor": "data/items/items.xml:54116"
+    },
+    {
+      "item_id": 28681,
+      "kind": "ROTATE",
+      "target": 28680,
+      "donor": "data/items/items.xml:54121"
+    },
+    {
+      "item_id": 28682,
+      "kind": "ROTATE",
+      "target": 28683,
+      "donor": "data/items/items.xml:54126"
+    },
+    {
+      "item_id": 28683,
+      "kind": "ROTATE",
+      "target": 28684,
+      "donor": "data/items/items.xml:54132"
+    },
+    {
+      "item_id": 28684,
+      "kind": "ROTATE",
+      "target": 28685,
+      "donor": "data/items/items.xml:54138"
+    },
+    {
+      "item_id": 28685,
+      "kind": "ROTATE",
+      "target": 28682,
+      "donor": "data/items/items.xml:54144"
+    },
+    {
+      "item_id": 28686,
+      "kind": "ROTATE",
+      "target": 28687,
+      "donor": "data/items/items.xml:54150"
+    },
+    {
+      "item_id": 28687,
+      "kind": "ROTATE",
+      "target": 28686,
+      "donor": "data/items/items.xml:54156"
+    },
+    {
+      "item_id": 28688,
+      "kind": "ROTATE",
+      "target": 28689,
+      "donor": "data/items/items.xml:54162"
+    },
+    {
+      "item_id": 28689,
+      "kind": "ROTATE",
+      "target": 28688,
+      "donor": "data/items/items.xml:54168"
+    },
+    {
+      "item_id": 28928,
+      "kind": "ROTATE",
+      "target": 28929,
+      "donor": "data/items/items.xml:55217"
+    },
+    {
+      "item_id": 28929,
+      "kind": "ROTATE",
+      "target": 28928,
+      "donor": "data/items/items.xml:55222"
+    },
+    {
+      "item_id": 28930,
+      "kind": "ROTATE",
+      "target": 28931,
+      "donor": "data/items/items.xml:55227"
+    },
+    {
+      "item_id": 28931,
+      "kind": "ROTATE",
+      "target": 28930,
+      "donor": "data/items/items.xml:55232"
+    },
+    {
+      "item_id": 28932,
+      "kind": "ROTATE",
+      "target": 28933,
+      "donor": "data/items/items.xml:55237"
+    },
+    {
+      "item_id": 28933,
+      "kind": "ROTATE",
+      "target": 28934,
+      "donor": "data/items/items.xml:55242"
+    },
+    {
+      "item_id": 28934,
+      "kind": "ROTATE",
+      "target": 28935,
+      "donor": "data/items/items.xml:55247"
+    },
+    {
+      "item_id": 28935,
+      "kind": "ROTATE",
+      "target": 28932,
+      "donor": "data/items/items.xml:55252"
+    },
+    {
+      "item_id": 28936,
+      "kind": "ROTATE",
+      "target": 28937,
+      "donor": "data/items/items.xml:55257"
+    },
+    {
+      "item_id": 28937,
+      "kind": "ROTATE",
+      "target": 28936,
+      "donor": "data/items/items.xml:55262"
+    },
+    {
+      "item_id": 28938,
+      "kind": "ROTATE",
+      "target": 28940,
+      "donor": "data/items/items.xml:55267"
+    },
+    {
+      "item_id": 28939,
+      "kind": "ROTATE",
+      "target": 28938,
+      "donor": "data/items/items.xml:55273"
+    },
+    {
+      "item_id": 28940,
+      "kind": "ROTATE",
+      "target": 28941,
+      "donor": "data/items/items.xml:55279"
+    },
+    {
+      "item_id": 28941,
+      "kind": "ROTATE",
+      "target": 28939,
+      "donor": "data/items/items.xml:55285"
+    },
+    {
+      "item_id": 28942,
+      "kind": "ROTATE",
+      "target": 28943,
+      "donor": "data/items/items.xml:55291"
+    },
+    {
+      "item_id": 28943,
+      "kind": "ROTATE",
+      "target": 28942,
+      "donor": "data/items/items.xml:55297"
+    },
+    {
+      "item_id": 28945,
+      "kind": "ROTATE",
+      "target": 28946,
+      "donor": "data/items/items.xml:55307"
+    },
+    {
+      "item_id": 28946,
+      "kind": "ROTATE",
+      "target": 28945,
+      "donor": "data/items/items.xml:55312"
+    },
+    {
+      "item_id": 30227,
+      "kind": "ROTATE",
+      "target": 30228,
+      "donor": "data/items/items.xml:56899"
+    },
+    {
+      "item_id": 30228,
+      "kind": "ROTATE",
+      "target": 30227,
+      "donor": "data/items/items.xml:56904"
+    },
+    {
+      "item_id": 30233,
+      "kind": "ROTATE",
+      "target": 30235,
+      "donor": "data/items/items.xml:56925"
+    },
+    {
+      "item_id": 30234,
+      "kind": "ROTATE",
+      "target": 30236,
+      "donor": "data/items/items.xml:56930"
+    },
+    {
+      "item_id": 30235,
+      "kind": "ROTATE",
+      "target": 30233,
+      "donor": "data/items/items.xml:56935"
+    },
+    {
+      "item_id": 30236,
+      "kind": "ROTATE",
+      "target": 30234,
+      "donor": "data/items/items.xml:56940"
+    },
+    {
+      "item_id": 30239,
+      "kind": "ROTATE",
+      "target": 30240,
+      "donor": "data/items/items.xml:56953"
+    },
+    {
+      "item_id": 30240,
+      "kind": "ROTATE",
+      "target": 30241,
+      "donor": "data/items/items.xml:56958"
+    },
+    {
+      "item_id": 30241,
+      "kind": "ROTATE",
+      "target": 30242,
+      "donor": "data/items/items.xml:56963"
+    },
+    {
+      "item_id": 30242,
+      "kind": "ROTATE",
+      "target": 30239,
+      "donor": "data/items/items.xml:56968"
+    },
+    {
+      "item_id": 30243,
+      "kind": "ROTATE",
+      "target": 30244,
+      "donor": "data/items/items.xml:56973"
+    },
+    {
+      "item_id": 30244,
+      "kind": "ROTATE",
+      "target": 30243,
+      "donor": "data/items/items.xml:56978"
+    },
+    {
+      "item_id": 30245,
+      "kind": "ROTATE",
+      "target": 30246,
+      "donor": "data/items/items.xml:56983"
+    },
+    {
+      "item_id": 30246,
+      "kind": "ROTATE",
+      "target": 30245,
+      "donor": "data/items/items.xml:56987"
+    },
+    {
+      "item_id": 31183,
+      "kind": "ROTATE",
+      "target": 31184,
+      "donor": "data/items/items.xml:57997"
+    },
+    {
+      "item_id": 31184,
+      "kind": "ROTATE",
+      "target": 31185,
+      "donor": "data/items/items.xml:58001"
+    },
+    {
+      "item_id": 31185,
+      "kind": "ROTATE",
+      "target": 31186,
+      "donor": "data/items/items.xml:58005"
+    },
+    {
+      "item_id": 31186,
+      "kind": "ROTATE",
+      "target": 31183,
+      "donor": "data/items/items.xml:58009"
+    },
+    {
+      "item_id": 31187,
+      "kind": "ROTATE",
+      "target": 31189,
+      "donor": "data/items/items.xml:58013"
+    },
+    {
+      "item_id": 31188,
+      "kind": "ROTATE",
+      "target": 31187,
+      "donor": "data/items/items.xml:58019"
+    },
+    {
+      "item_id": 31189,
+      "kind": "ROTATE",
+      "target": 31190,
+      "donor": "data/items/items.xml:58025"
+    },
+    {
+      "item_id": 31190,
+      "kind": "ROTATE",
+      "target": 31188,
+      "donor": "data/items/items.xml:58031"
+    },
+    {
+      "item_id": 31192,
+      "kind": "ROTATE",
+      "target": 31193,
+      "donor": "data/items/items.xml:58041"
+    },
+    {
+      "item_id": 31193,
+      "kind": "ROTATE",
+      "target": 31192,
+      "donor": "data/items/items.xml:58047"
+    },
+    {
+      "item_id": 31194,
+      "kind": "ROTATE",
+      "target": 31195,
+      "donor": "data/items/items.xml:58053"
+    },
+    {
+      "item_id": 31195,
+      "kind": "ROTATE",
+      "target": 31194,
+      "donor": "data/items/items.xml:58059"
+    },
+    {
+      "item_id": 31209,
+      "kind": "ROTATE",
+      "target": 31223,
+      "donor": "data/items/items.xml:58083"
+    },
+    {
+      "item_id": 31210,
+      "kind": "ROTATE",
+      "target": 31224,
+      "donor": "data/items/items.xml:58088"
+    },
+    {
+      "item_id": 31211,
+      "kind": "ROTATE",
+      "target": 31225,
+      "donor": "data/items/items.xml:58094"
+    },
+    {
+      "item_id": 31212,
+      "kind": "ROTATE",
+      "target": 31226,
+      "donor": "data/items/items.xml:58099"
+    },
+    {
+      "item_id": 31213,
+      "kind": "ROTATE",
+      "target": 31214,
+      "donor": "data/items/items.xml:58104"
+    },
+    {
+      "item_id": 31214,
+      "kind": "ROTATE",
+      "target": 31215,
+      "donor": "data/items/items.xml:58109"
+    },
+    {
+      "item_id": 31215,
+      "kind": "ROTATE",
+      "target": 31216,
+      "donor": "data/items/items.xml:58114"
+    },
+    {
+      "item_id": 31216,
+      "kind": "ROTATE",
+      "target": 31213,
+      "donor": "data/items/items.xml:58118"
+    },
+    {
+      "item_id": 31223,
+      "kind": "ROTATE",
+      "target": 31209,
+      "donor": "data/items/items.xml:58146"
+    },
+    {
+      "item_id": 31224,
+      "kind": "ROTATE",
+      "target": 31210,
+      "donor": "data/items/items.xml:58151"
+    },
+    {
+      "item_id": 31225,
+      "kind": "ROTATE",
+      "target": 31211,
+      "donor": "data/items/items.xml:58157"
+    },
+    {
+      "item_id": 31226,
+      "kind": "ROTATE",
+      "target": 31212,
+      "donor": "data/items/items.xml:58162"
+    },
+    {
+      "item_id": 31500,
+      "kind": "ROTATE",
+      "target": 31502,
+      "donor": "data/items/items.xml:58964"
+    },
+    {
+      "item_id": 31502,
+      "kind": "ROTATE",
+      "target": 31503,
+      "donor": "data/items/items.xml:58969"
+    },
+    {
+      "item_id": 31503,
+      "kind": "ROTATE",
+      "target": 31504,
+      "donor": "data/items/items.xml:58973"
+    },
+    {
+      "item_id": 31504,
+      "kind": "ROTATE",
+      "target": 31500,
+      "donor": "data/items/items.xml:58977"
+    },
+    {
+      "item_id": 31505,
+      "kind": "ROTATE",
+      "target": 31506,
+      "donor": "data/items/items.xml:58981"
+    },
+    {
+      "item_id": 31506,
+      "kind": "ROTATE",
+      "target": 31507,
+      "donor": "data/items/items.xml:58985"
+    },
+    {
+      "item_id": 31507,
+      "kind": "ROTATE",
+      "target": 31508,
+      "donor": "data/items/items.xml:58989"
+    },
+    {
+      "item_id": 31508,
+      "kind": "ROTATE",
+      "target": 31505,
+      "donor": "data/items/items.xml:58993"
+    },
+    {
+      "item_id": 31509,
+      "kind": "ROTATE",
+      "target": 31510,
+      "donor": "data/items/items.xml:58997"
+    },
+    {
+      "item_id": 31510,
+      "kind": "ROTATE",
+      "target": 31511,
+      "donor": "data/items/items.xml:59001"
+    },
+    {
+      "item_id": 31511,
+      "kind": "ROTATE",
+      "target": 31512,
+      "donor": "data/items/items.xml:59005"
+    },
+    {
+      "item_id": 31512,
+      "kind": "ROTATE",
+      "target": 31509,
+      "donor": "data/items/items.xml:59009"
+    },
+    {
+      "item_id": 31513,
+      "kind": "ROTATE",
+      "target": 31514,
+      "donor": "data/items/items.xml:59013"
+    },
+    {
+      "item_id": 31514,
+      "kind": "ROTATE",
+      "target": 31515,
+      "donor": "data/items/items.xml:59017"
+    },
+    {
+      "item_id": 31515,
+      "kind": "ROTATE",
+      "target": 31516,
+      "donor": "data/items/items.xml:59021"
+    },
+    {
+      "item_id": 31516,
+      "kind": "ROTATE",
+      "target": 31513,
+      "donor": "data/items/items.xml:59025"
+    },
+    {
+      "item_id": 31687,
+      "kind": "ROTATE",
+      "target": 31689,
+      "donor": "data/items/items.xml:59816"
+    },
+    {
+      "item_id": 31688,
+      "kind": "ROTATE",
+      "target": 31687,
+      "donor": "data/items/items.xml:59822"
+    },
+    {
+      "item_id": 31689,
+      "kind": "ROTATE",
+      "target": 31690,
+      "donor": "data/items/items.xml:59828"
+    },
+    {
+      "item_id": 31690,
+      "kind": "ROTATE",
+      "target": 31688,
+      "donor": "data/items/items.xml:59834"
+    },
+    {
+      "item_id": 31691,
+      "kind": "ROTATE",
+      "target": 31692,
+      "donor": "data/items/items.xml:59840"
+    },
+    {
+      "item_id": 31692,
+      "kind": "ROTATE",
+      "target": 31693,
+      "donor": "data/items/items.xml:59845"
+    },
+    {
+      "item_id": 31693,
+      "kind": "ROTATE",
+      "target": 31694,
+      "donor": "data/items/items.xml:59850"
+    },
+    {
+      "item_id": 31694,
+      "kind": "ROTATE",
+      "target": 31691,
+      "donor": "data/items/items.xml:59855"
+    },
+    {
+      "item_id": 31705,
+      "kind": "ROTATE",
+      "target": 31706,
+      "donor": "data/items/items.xml:59879"
+    },
+    {
+      "item_id": 31706,
+      "kind": "ROTATE",
+      "target": 31705,
+      "donor": "data/items/items.xml:59885"
+    },
+    {
+      "item_id": 31931,
+      "kind": "ROTATE",
+      "target": 31932,
+      "donor": "data/items/items.xml:60013"
+    },
+    {
+      "item_id": 31932,
+      "kind": "ROTATE",
+      "target": 31933,
+      "donor": "data/items/items.xml:60018"
+    },
+    {
+      "item_id": 31933,
+      "kind": "ROTATE",
+      "target": 31934,
+      "donor": "data/items/items.xml:60023"
+    },
+    {
+      "item_id": 31934,
+      "kind": "ROTATE",
+      "target": 31931,
+      "donor": "data/items/items.xml:60028"
+    },
+    {
+      "item_id": 31935,
+      "kind": "ROTATE",
+      "target": 31936,
+      "donor": "data/items/items.xml:60033"
+    },
+    {
+      "item_id": 31936,
+      "kind": "ROTATE",
+      "target": 31935,
+      "donor": "data/items/items.xml:60038"
+    },
+    {
+      "item_id": 31937,
+      "kind": "ROTATE",
+      "target": 31938,
+      "donor": "data/items/items.xml:60043"
+    },
+    {
+      "item_id": 31938,
+      "kind": "ROTATE",
+      "target": 31937,
+      "donor": "data/items/items.xml:60047"
+    },
+    {
+      "item_id": 31939,
+      "kind": "ROTATE",
+      "target": 31940,
+      "donor": "data/items/items.xml:60051"
+    },
+    {
+      "item_id": 31940,
+      "kind": "ROTATE",
+      "target": 31939,
+      "donor": "data/items/items.xml:60055"
+    },
+    {
+      "item_id": 31941,
+      "kind": "ROTATE",
+      "target": 31942,
+      "donor": "data/items/items.xml:60059"
+    },
+    {
+      "item_id": 31942,
+      "kind": "ROTATE",
+      "target": 31941,
+      "donor": "data/items/items.xml:60064"
+    },
+    {
+      "item_id": 31943,
+      "kind": "ROTATE",
+      "target": 31944,
+      "donor": "data/items/items.xml:60069"
+    },
+    {
+      "item_id": 31944,
+      "kind": "ROTATE",
+      "target": 31943,
+      "donor": "data/items/items.xml:60074"
+    },
+    {
+      "item_id": 31949,
+      "kind": "ROTATE",
+      "target": 31950,
+      "donor": "data/items/items.xml:60094"
+    },
+    {
+      "item_id": 31950,
+      "kind": "ROTATE",
+      "target": 31949,
+      "donor": "data/items/items.xml:60099"
+    },
+    {
+      "item_id": 31955,
+      "kind": "ROTATE",
+      "target": 31956,
+      "donor": "data/items/items.xml:60109"
+    },
+    {
+      "item_id": 31956,
+      "kind": "ROTATE",
+      "target": 31955,
+      "donor": "data/items/items.xml:60115"
+    },
+    {
+      "item_id": 32123,
+      "kind": "ROTATE",
+      "target": 32128,
+      "donor": "data/items/items.xml:60388"
+    },
+    {
+      "item_id": 32128,
+      "kind": "ROTATE",
+      "target": 32129,
+      "donor": "data/items/items.xml:60413"
+    },
+    {
+      "item_id": 32129,
+      "kind": "ROTATE",
+      "target": 32130,
+      "donor": "data/items/items.xml:60418"
+    },
+    {
+      "item_id": 32130,
+      "kind": "ROTATE",
+      "target": 32123,
+      "donor": "data/items/items.xml:60423"
+    },
+    {
+      "item_id": 32131,
+      "kind": "ROTATE",
+      "target": 32132,
+      "donor": "data/items/items.xml:60428"
+    },
+    {
+      "item_id": 32132,
+      "kind": "ROTATE",
+      "target": 32133,
+      "donor": "data/items/items.xml:60433"
+    },
+    {
+      "item_id": 32133,
+      "kind": "ROTATE",
+      "target": 32134,
+      "donor": "data/items/items.xml:60438"
+    },
+    {
+      "item_id": 32134,
+      "kind": "ROTATE",
+      "target": 32131,
+      "donor": "data/items/items.xml:60443"
+    },
+    {
+      "item_id": 32135,
+      "kind": "ROTATE",
+      "target": 32136,
+      "donor": "data/items/items.xml:60448"
+    },
+    {
+      "item_id": 32136,
+      "kind": "ROTATE",
+      "target": 32137,
+      "donor": "data/items/items.xml:60453"
+    },
+    {
+      "item_id": 32137,
+      "kind": "ROTATE",
+      "target": 32138,
+      "donor": "data/items/items.xml:60458"
+    },
+    {
+      "item_id": 32138,
+      "kind": "ROTATE",
+      "target": 32135,
+      "donor": "data/items/items.xml:60463"
+    },
+    {
+      "item_id": 32142,
+      "kind": "ROTATE",
+      "target": 32143,
+      "donor": "data/items/items.xml:60480"
+    },
+    {
+      "item_id": 32143,
+      "kind": "ROTATE",
+      "target": 32142,
+      "donor": "data/items/items.xml:60486"
+    },
+    {
+      "item_id": 32144,
+      "kind": "ROTATE",
+      "target": 32145,
+      "donor": "data/items/items.xml:60492"
+    },
+    {
+      "item_id": 32145,
+      "kind": "ROTATE",
+      "target": 32144,
+      "donor": "data/items/items.xml:60498"
+    },
+    {
+      "item_id": 32146,
+      "kind": "ROTATE",
+      "target": 32147,
+      "donor": "data/items/items.xml:60504"
+    },
+    {
+      "item_id": 32147,
+      "kind": "ROTATE",
+      "target": 32146,
+      "donor": "data/items/items.xml:60510"
+    },
+    {
+      "item_id": 32148,
+      "kind": "ROTATE",
+      "target": 32149,
+      "donor": "data/items/items.xml:60516"
+    },
+    {
+      "item_id": 32149,
+      "kind": "ROTATE",
+      "target": 32150,
+      "donor": "data/items/items.xml:60521"
+    },
+    {
+      "item_id": 32150,
+      "kind": "ROTATE",
+      "target": 32151,
+      "donor": "data/items/items.xml:60526"
+    },
+    {
+      "item_id": 32151,
+      "kind": "ROTATE",
+      "target": 32148,
+      "donor": "data/items/items.xml:60531"
+    },
+    {
+      "item_id": 32152,
+      "kind": "ROTATE",
+      "target": 32153,
+      "donor": "data/items/items.xml:60536"
+    },
+    {
+      "item_id": 32153,
+      "kind": "ROTATE",
+      "target": 32152,
+      "donor": "data/items/items.xml:60541"
+    },
+    {
+      "item_id": 32154,
+      "kind": "ROTATE",
+      "target": 32155,
+      "donor": "data/items/items.xml:60546"
+    },
+    {
+      "item_id": 32155,
+      "kind": "ROTATE",
+      "target": 32154,
+      "donor": "data/items/items.xml:60551"
+    },
+    {
+      "item_id": 32156,
+      "kind": "ROTATE",
+      "target": 32157,
+      "donor": "data/items/items.xml:60556"
+    },
+    {
+      "item_id": 32157,
+      "kind": "ROTATE",
+      "target": 32156,
+      "donor": "data/items/items.xml:60561"
+    },
+    {
+      "item_id": 32158,
+      "kind": "ROTATE",
+      "target": 32159,
+      "donor": "data/items/items.xml:60566"
+    },
+    {
+      "item_id": 32159,
+      "kind": "ROTATE",
+      "target": 32158,
+      "donor": "data/items/items.xml:60571"
+    },
+    {
+      "item_id": 32160,
+      "kind": "ROTATE",
+      "target": 32163,
+      "donor": "data/items/items.xml:60576"
+    },
+    {
+      "item_id": 32161,
+      "kind": "ROTATE",
+      "target": 32162,
+      "donor": "data/items/items.xml:60581"
+    },
+    {
+      "item_id": 32162,
+      "kind": "ROTATE",
+      "target": 32161,
+      "donor": "data/items/items.xml:60586"
+    },
+    {
+      "item_id": 32163,
+      "kind": "ROTATE",
+      "target": 32160,
+      "donor": "data/items/items.xml:60591"
+    },
+    {
+      "item_id": 32775,
+      "kind": "ROTATE",
+      "target": 32776,
+      "donor": "data/items/items.xml:62375"
+    },
+    {
+      "item_id": 32776,
+      "kind": "ROTATE",
+      "target": 32775,
+      "donor": "data/items/items.xml:62381"
+    },
+    {
+      "item_id": 32778,
+      "kind": "ROTATE",
+      "target": 32779,
+      "donor": "data/items/items.xml:62391"
+    },
+    {
+      "item_id": 32779,
+      "kind": "ROTATE",
+      "target": 32778,
+      "donor": "data/items/items.xml:62396"
+    },
+    {
+      "item_id": 32780,
+      "kind": "ROTATE",
+      "target": 32781,
+      "donor": "data/items/items.xml:62401"
+    },
+    {
+      "item_id": 32781,
+      "kind": "ROTATE",
+      "target": 32783,
+      "donor": "data/items/items.xml:62407"
+    },
+    {
+      "item_id": 32782,
+      "kind": "ROTATE",
+      "target": 32780,
+      "donor": "data/items/items.xml:62413"
+    },
+    {
+      "item_id": 32783,
+      "kind": "ROTATE",
+      "target": 32782,
+      "donor": "data/items/items.xml:62419"
+    },
+    {
+      "item_id": 32786,
+      "kind": "ROTATE",
+      "target": 32787,
+      "donor": "data/items/items.xml:62433"
+    },
+    {
+      "item_id": 32787,
+      "kind": "ROTATE",
+      "target": 32786,
+      "donor": "data/items/items.xml:62437"
+    },
+    {
+      "item_id": 32946,
+      "kind": "ROTATE",
+      "target": 32947,
+      "donor": "data/items/items.xml:62663"
+    },
+    {
+      "item_id": 32947,
+      "kind": "ROTATE",
+      "target": 32948,
+      "donor": "data/items/items.xml:62667"
+    },
+    {
+      "item_id": 32948,
+      "kind": "ROTATE",
+      "target": 32949,
+      "donor": "data/items/items.xml:62671"
+    },
+    {
+      "item_id": 32949,
+      "kind": "ROTATE",
+      "target": 32946,
+      "donor": "data/items/items.xml:62675"
+    },
+    {
+      "item_id": 32950,
+      "kind": "ROTATE",
+      "target": 32951,
+      "donor": "data/items/items.xml:62679"
+    },
+    {
+      "item_id": 32951,
+      "kind": "ROTATE",
+      "target": 32952,
+      "donor": "data/items/items.xml:62683"
+    },
+    {
+      "item_id": 32952,
+      "kind": "ROTATE",
+      "target": 32953,
+      "donor": "data/items/items.xml:62687"
+    },
+    {
+      "item_id": 32953,
+      "kind": "ROTATE",
+      "target": 32950,
+      "donor": "data/items/items.xml:62691"
+    },
+    {
+      "item_id": 32954,
+      "kind": "ROTATE",
+      "target": 32955,
+      "donor": "data/items/items.xml:62695"
+    },
+    {
+      "item_id": 32955,
+      "kind": "ROTATE",
+      "target": 32956,
+      "donor": "data/items/items.xml:62699"
+    },
+    {
+      "item_id": 32956,
+      "kind": "ROTATE",
+      "target": 32957,
+      "donor": "data/items/items.xml:62703"
+    },
+    {
+      "item_id": 32957,
+      "kind": "ROTATE",
+      "target": 32954,
+      "donor": "data/items/items.xml:62707"
+    },
+    {
+      "item_id": 32958,
+      "kind": "ROTATE",
+      "target": 32959,
+      "donor": "data/items/items.xml:62711"
+    },
+    {
+      "item_id": 32959,
+      "kind": "ROTATE",
+      "target": 32960,
+      "donor": "data/items/items.xml:62715"
+    },
+    {
+      "item_id": 32960,
+      "kind": "ROTATE",
+      "target": 32961,
+      "donor": "data/items/items.xml:62719"
+    },
+    {
+      "item_id": 32961,
+      "kind": "ROTATE",
+      "target": 32958,
+      "donor": "data/items/items.xml:62723"
+    },
+    {
+      "item_id": 32962,
+      "kind": "ROTATE",
+      "target": 32963,
+      "donor": "data/items/items.xml:62727"
+    },
+    {
+      "item_id": 32963,
+      "kind": "ROTATE",
+      "target": 32964,
+      "donor": "data/items/items.xml:62731"
+    },
+    {
+      "item_id": 32964,
+      "kind": "ROTATE",
+      "target": 32965,
+      "donor": "data/items/items.xml:62735"
+    },
+    {
+      "item_id": 32965,
+      "kind": "ROTATE",
+      "target": 32962,
+      "donor": "data/items/items.xml:62739"
+    },
+    {
+      "item_id": 32966,
+      "kind": "ROTATE",
+      "target": 32967,
+      "donor": "data/items/items.xml:62743"
+    },
+    {
+      "item_id": 32967,
+      "kind": "ROTATE",
+      "target": 32968,
+      "donor": "data/items/items.xml:62747"
+    },
+    {
+      "item_id": 32968,
+      "kind": "ROTATE",
+      "target": 32969,
+      "donor": "data/items/items.xml:62751"
+    },
+    {
+      "item_id": 32969,
+      "kind": "ROTATE",
+      "target": 32966,
+      "donor": "data/items/items.xml:62755"
+    },
+    {
+      "item_id": 32970,
+      "kind": "ROTATE",
+      "target": 32971,
+      "donor": "data/items/items.xml:62759"
+    },
+    {
+      "item_id": 32971,
+      "kind": "ROTATE",
+      "target": 32972,
+      "donor": "data/items/items.xml:62763"
+    },
+    {
+      "item_id": 32972,
+      "kind": "ROTATE",
+      "target": 32973,
+      "donor": "data/items/items.xml:62767"
+    },
+    {
+      "item_id": 32973,
+      "kind": "ROTATE",
+      "target": 32970,
+      "donor": "data/items/items.xml:62771"
+    },
+    {
+      "item_id": 33032,
+      "kind": "ROTATE",
+      "target": 33033,
+      "donor": "data/items/items.xml:62799"
+    },
+    {
+      "item_id": 33033,
+      "kind": "ROTATE",
+      "target": 33034,
+      "donor": "data/items/items.xml:62805"
+    },
+    {
+      "item_id": 33034,
+      "kind": "ROTATE",
+      "target": 33035,
+      "donor": "data/items/items.xml:62811"
+    },
+    {
+      "item_id": 33035,
+      "kind": "ROTATE",
+      "target": 33034,
+      "donor": "data/items/items.xml:62816"
+    },
+    {
+      "item_id": 33036,
+      "kind": "ROTATE",
+      "target": 33037,
+      "donor": "data/items/items.xml:62821"
+    },
+    {
+      "item_id": 33037,
+      "kind": "ROTATE",
+      "target": 33038,
+      "donor": "data/items/items.xml:62825"
+    },
+    {
+      "item_id": 33038,
+      "kind": "ROTATE",
+      "target": 33039,
+      "donor": "data/items/items.xml:62829"
+    },
+    {
+      "item_id": 33039,
+      "kind": "ROTATE",
+      "target": 33040,
+      "donor": "data/items/items.xml:62833"
+    },
+    {
+      "item_id": 33043,
+      "kind": "ROTATE",
+      "target": 33045,
+      "donor": "data/items/items.xml:62856"
+    },
+    {
+      "item_id": 33044,
+      "kind": "ROTATE",
+      "target": 33043,
+      "donor": "data/items/items.xml:62862"
+    },
+    {
+      "item_id": 33045,
+      "kind": "ROTATE",
+      "target": 33046,
+      "donor": "data/items/items.xml:62868"
+    },
+    {
+      "item_id": 33046,
+      "kind": "ROTATE",
+      "target": 33044,
+      "donor": "data/items/items.xml:62874"
+    },
+    {
+      "item_id": 34030,
+      "kind": "ROTATE",
+      "target": 34032,
+      "donor": "data/items/items.xml:63936"
+    },
+    {
+      "item_id": 34031,
+      "kind": "ROTATE",
+      "target": 34033,
+      "donor": "data/items/items.xml:63940"
+    },
+    {
+      "item_id": 34032,
+      "kind": "ROTATE",
+      "target": 34030,
+      "donor": "data/items/items.xml:63944"
+    },
+    {
+      "item_id": 34033,
+      "kind": "ROTATE",
+      "target": 34031,
+      "donor": "data/items/items.xml:63948"
+    },
+    {
+      "item_id": 34036,
+      "kind": "ROTATE",
+      "target": 34037,
+      "donor": "data/items/items.xml:63956"
+    },
+    {
+      "item_id": 34037,
+      "kind": "ROTATE",
+      "target": 34038,
+      "donor": "data/items/items.xml:63960"
+    },
+    {
+      "item_id": 34038,
+      "kind": "ROTATE",
+      "target": 34039,
+      "donor": "data/items/items.xml:63964"
+    },
+    {
+      "item_id": 34039,
+      "kind": "ROTATE",
+      "target": 34036,
+      "donor": "data/items/items.xml:63968"
+    },
+    {
+      "item_id": 34040,
+      "kind": "ROTATE",
+      "target": 34042,
+      "donor": "data/items/items.xml:63972"
+    },
+    {
+      "item_id": 34041,
+      "kind": "ROTATE",
+      "target": 34040,
+      "donor": "data/items/items.xml:63978"
+    },
+    {
+      "item_id": 34042,
+      "kind": "ROTATE",
+      "target": 34043,
+      "donor": "data/items/items.xml:63984"
+    },
+    {
+      "item_id": 34043,
+      "kind": "ROTATE",
+      "target": 34041,
+      "donor": "data/items/items.xml:63990"
+    },
+    {
+      "item_id": 34044,
+      "kind": "ROTATE",
+      "target": 34046,
+      "donor": "data/items/items.xml:63996"
+    },
+    {
+      "item_id": 34045,
+      "kind": "ROTATE",
+      "target": 34047,
+      "donor": "data/items/items.xml:64001"
+    },
+    {
+      "item_id": 34046,
+      "kind": "ROTATE",
+      "target": 34044,
+      "donor": "data/items/items.xml:64006"
+    },
+    {
+      "item_id": 34047,
+      "kind": "ROTATE",
+      "target": 34045,
+      "donor": "data/items/items.xml:64011"
+    },
+    {
+      "item_id": 34050,
+      "kind": "ROTATE",
+      "target": 34051,
+      "donor": "data/items/items.xml:64020"
+    },
+    {
+      "item_id": 34051,
+      "kind": "ROTATE",
+      "target": 34052,
+      "donor": "data/items/items.xml:64024"
+    },
+    {
+      "item_id": 34052,
+      "kind": "ROTATE",
+      "target": 34053,
+      "donor": "data/items/items.xml:64028"
+    },
+    {
+      "item_id": 34053,
+      "kind": "ROTATE",
+      "target": 34050,
+      "donor": "data/items/items.xml:64032"
+    },
+    {
+      "item_id": 34054,
+      "kind": "ROTATE",
+      "target": 34056,
+      "donor": "data/items/items.xml:64036"
+    },
+    {
+      "item_id": 34055,
+      "kind": "ROTATE",
+      "target": 34054,
+      "donor": "data/items/items.xml:64042"
+    },
+    {
+      "item_id": 34056,
+      "kind": "ROTATE",
+      "target": 34057,
+      "donor": "data/items/items.xml:64048"
+    },
+    {
+      "item_id": 34057,
+      "kind": "ROTATE",
+      "target": 34055,
+      "donor": "data/items/items.xml:64054"
+    },
+    {
+      "item_id": 34059,
+      "kind": "ROTATE",
+      "target": 34058,
+      "donor": "data/items/items.xml:64065"
+    },
+    {
+      "item_id": 34060,
+      "kind": "ROTATE",
+      "target": 34061,
+      "donor": "data/items/items.xml:64070"
+    },
+    {
+      "item_id": 34061,
+      "kind": "ROTATE",
+      "target": 34060,
+      "donor": "data/items/items.xml:64075"
+    },
+    {
+      "item_id": 34062,
+      "kind": "ROTATE",
+      "target": 34063,
+      "donor": "data/items/items.xml:64080"
+    },
+    {
+      "item_id": 34063,
+      "kind": "ROTATE",
+      "target": 34062,
+      "donor": "data/items/items.xml:64085"
+    },
+    {
+      "item_id": 34064,
+      "kind": "ROTATE",
+      "target": 34068,
+      "donor": "data/items/items.xml:64090"
+    },
+    {
+      "item_id": 34065,
+      "kind": "ROTATE",
+      "target": 34069,
+      "donor": "data/items/items.xml:64095"
+    },
+    {
+      "item_id": 34066,
+      "kind": "ROTATE",
+      "target": 34070,
+      "donor": "data/items/items.xml:64100"
+    },
+    {
+      "item_id": 34067,
+      "kind": "ROTATE",
+      "target": 34071,
+      "donor": "data/items/items.xml:64105"
+    },
+    {
+      "item_id": 34068,
+      "kind": "ROTATE",
+      "target": 34064,
+      "donor": "data/items/items.xml:64110"
+    },
+    {
+      "item_id": 34069,
+      "kind": "ROTATE",
+      "target": 34065,
+      "donor": "data/items/items.xml:64115"
+    },
+    {
+      "item_id": 34070,
+      "kind": "ROTATE",
+      "target": 34066,
+      "donor": "data/items/items.xml:64120"
+    },
+    {
+      "item_id": 34071,
+      "kind": "ROTATE",
+      "target": 34067,
+      "donor": "data/items/items.xml:64125"
+    },
+    {
+      "item_id": 34272,
+      "kind": "ROTATE",
+      "target": 34274,
+      "donor": "data/items/items.xml:65354"
+    },
+    {
+      "item_id": 34273,
+      "kind": "ROTATE",
+      "target": 34275,
+      "donor": "data/items/items.xml:65359"
+    },
+    {
+      "item_id": 34274,
+      "kind": "ROTATE",
+      "target": 34272,
+      "donor": "data/items/items.xml:65364"
+    },
+    {
+      "item_id": 34275,
+      "kind": "ROTATE",
+      "target": 34273,
+      "donor": "data/items/items.xml:65369"
+    },
+    {
+      "item_id": 34276,
+      "kind": "ROTATE",
+      "target": 34276,
+      "donor": "data/items/items.xml:65374",
+      "runtime_noop": true,
+      "engine_donor": "src/game/game.cpp:3054-3057",
+      "requested_target": 34277,
+      "noop": true
+    },
+    {
+      "item_id": 34278,
+      "kind": "ROTATE",
+      "target": 34276,
+      "donor": "data/items/items.xml:65380"
+    },
+    {
+      "item_id": 34284,
+      "kind": "ROTATE",
+      "target": 34287,
+      "donor": "data/items/items.xml:65393"
+    },
+    {
+      "item_id": 34285,
+      "kind": "ROTATE",
+      "target": 34288,
+      "donor": "data/items/items.xml:65398"
+    },
+    {
+      "item_id": 34286,
+      "kind": "ROTATE",
+      "target": 34289,
+      "donor": "data/items/items.xml:65403"
+    },
+    {
+      "item_id": 34287,
+      "kind": "ROTATE",
+      "target": 34284,
+      "donor": "data/items/items.xml:65408"
+    },
+    {
+      "item_id": 34288,
+      "kind": "ROTATE",
+      "target": 34285,
+      "donor": "data/items/items.xml:65413"
+    },
+    {
+      "item_id": 34289,
+      "kind": "ROTATE",
+      "target": 34286,
+      "donor": "data/items/items.xml:65418"
+    },
+    {
+      "item_id": 34290,
+      "kind": "ROTATE",
+      "target": 34291,
+      "donor": "data/items/items.xml:65423"
+    },
+    {
+      "item_id": 34291,
+      "kind": "ROTATE",
+      "target": 34290,
+      "donor": "data/items/items.xml:65428"
+    },
+    {
+      "item_id": 34292,
+      "kind": "ROTATE",
+      "target": 34293,
+      "donor": "data/items/items.xml:65433"
+    },
+    {
+      "item_id": 34293,
+      "kind": "ROTATE",
+      "target": 34294,
+      "donor": "data/items/items.xml:65437"
+    },
+    {
+      "item_id": 34294,
+      "kind": "ROTATE",
+      "target": 34295,
+      "donor": "data/items/items.xml:65441"
+    },
+    {
+      "item_id": 34295,
+      "kind": "ROTATE",
+      "target": 34292,
+      "donor": "data/items/items.xml:65445"
+    },
+    {
+      "item_id": 34296,
+      "kind": "ROTATE",
+      "target": 34297,
+      "donor": "data/items/items.xml:65449"
+    },
+    {
+      "item_id": 34297,
+      "kind": "ROTATE",
+      "target": 34298,
+      "donor": "data/items/items.xml:65455"
+    },
+    {
+      "item_id": 34298,
+      "kind": "ROTATE",
+      "target": 34299,
+      "donor": "data/items/items.xml:65461"
+    },
+    {
+      "item_id": 34299,
+      "kind": "ROTATE",
+      "target": 34296,
+      "donor": "data/items/items.xml:65467"
+    },
+    {
+      "item_id": 34300,
+      "kind": "ROTATE",
+      "target": 35156,
+      "donor": "data/items/items.xml:65473"
+    },
+    {
+      "item_id": 34301,
+      "kind": "ROTATE",
+      "target": 35156,
+      "donor": "data/items/items.xml:65473"
+    },
+    {
+      "item_id": 34302,
+      "kind": "ROTATE",
+      "target": 34303,
+      "donor": "data/items/items.xml:65478"
+    },
+    {
+      "item_id": 34303,
+      "kind": "ROTATE",
+      "target": 34302,
+      "donor": "data/items/items.xml:65483"
+    },
+    {
+      "item_id": 34324,
+      "kind": "ROTATE",
+      "target": 34325,
+      "donor": "data/items/items.xml:65612"
+    },
+    {
+      "item_id": 34325,
+      "kind": "ROTATE",
+      "target": 34324,
+      "donor": "data/items/items.xml:65617"
+    },
+    {
+      "item_id": 35155,
+      "kind": "ROTATE",
+      "target": 35156,
+      "donor": "data/items/items.xml:65669"
+    },
+    {
+      "item_id": 35156,
+      "kind": "ROTATE",
+      "target": 35155,
+      "donor": "data/items/items.xml:65673"
+    },
+    {
+      "item_id": 35157,
+      "kind": "ROTATE",
+      "target": 35158,
+      "donor": "data/items/items.xml:65677"
+    },
+    {
+      "item_id": 35158,
+      "kind": "ROTATE",
+      "target": 35157,
+      "donor": "data/items/items.xml:65681"
+    },
+    {
+      "item_id": 35159,
+      "kind": "ROTATE",
+      "target": 35160,
+      "donor": "data/items/items.xml:65685"
+    },
+    {
+      "item_id": 35160,
+      "kind": "ROTATE",
+      "target": 35159,
+      "donor": "data/items/items.xml:65689"
+    },
+    {
+      "item_id": 35161,
+      "kind": "ROTATE",
+      "target": 35183,
+      "donor": "data/items/items.xml:65693"
+    },
+    {
+      "item_id": 35162,
+      "kind": "ROTATE",
+      "target": 35183,
+      "donor": "data/items/items.xml:65693"
+    },
+    {
+      "item_id": 35163,
+      "kind": "ROTATE",
+      "target": 35164,
+      "donor": "data/items/items.xml:65698"
+    },
+    {
+      "item_id": 35164,
+      "kind": "ROTATE",
+      "target": 35163,
+      "donor": "data/items/items.xml:65702"
+    },
+    {
+      "item_id": 35165,
+      "kind": "ROTATE",
+      "target": 35166,
+      "donor": "data/items/items.xml:65706"
+    },
+    {
+      "item_id": 35166,
+      "kind": "ROTATE",
+      "target": 35165,
+      "donor": "data/items/items.xml:65710"
+    },
+    {
+      "item_id": 35167,
+      "kind": "ROTATE",
+      "target": 35168,
+      "donor": "data/items/items.xml:65714"
+    },
+    {
+      "item_id": 35168,
+      "kind": "ROTATE",
+      "target": 35169,
+      "donor": "data/items/items.xml:65718"
+    },
+    {
+      "item_id": 35169,
+      "kind": "ROTATE",
+      "target": 35170,
+      "donor": "data/items/items.xml:65722"
+    },
+    {
+      "item_id": 35170,
+      "kind": "ROTATE",
+      "target": 35167,
+      "donor": "data/items/items.xml:65726"
+    },
+    {
+      "item_id": 35171,
+      "kind": "ROTATE",
+      "target": 35172,
+      "donor": "data/items/items.xml:65730"
+    },
+    {
+      "item_id": 35172,
+      "kind": "ROTATE",
+      "target": 35173,
+      "donor": "data/items/items.xml:65736"
+    },
+    {
+      "item_id": 35173,
+      "kind": "ROTATE",
+      "target": 35174,
+      "donor": "data/items/items.xml:65742"
+    },
+    {
+      "item_id": 35174,
+      "kind": "ROTATE",
+      "target": 35171,
+      "donor": "data/items/items.xml:65748"
+    },
+    {
+      "item_id": 35175,
+      "kind": "ROTATE",
+      "target": 35176,
+      "donor": "data/items/items.xml:65754"
+    },
+    {
+      "item_id": 35176,
+      "kind": "ROTATE",
+      "target": 35175,
+      "donor": "data/items/items.xml:65760"
+    },
+    {
+      "item_id": 35177,
+      "kind": "ROTATE",
+      "target": 35178,
+      "donor": "data/items/items.xml:65766"
+    },
+    {
+      "item_id": 35178,
+      "kind": "ROTATE",
+      "target": 35177,
+      "donor": "data/items/items.xml:65770"
+    },
+    {
+      "item_id": 35179,
+      "kind": "ROTATE",
+      "target": 35180,
+      "donor": "data/items/items.xml:65774"
+    },
+    {
+      "item_id": 35180,
+      "kind": "ROTATE",
+      "target": 35179,
+      "donor": "data/items/items.xml:65778"
+    },
+    {
+      "item_id": 35181,
+      "kind": "ROTATE",
+      "target": 3182,
+      "donor": "data/items/items.xml:65782"
+    },
+    {
+      "item_id": 35182,
+      "kind": "ROTATE",
+      "target": 35181,
+      "donor": "data/items/items.xml:65786"
+    },
+    {
+      "item_id": 35183,
+      "kind": "ROTATE",
+      "target": 35184,
+      "donor": "data/items/items.xml:65790"
+    },
+    {
+      "item_id": 35184,
+      "kind": "ROTATE",
+      "target": 35183,
+      "donor": "data/items/items.xml:65794"
+    },
+    {
+      "item_id": 35911,
+      "kind": "ROTATE",
+      "target": 35912,
+      "donor": "data/items/items.xml:66918"
+    },
+    {
+      "item_id": 35912,
+      "kind": "ROTATE",
+      "target": 35911,
+      "donor": "data/items/items.xml:66924"
+    },
+    {
+      "item_id": 35913,
+      "kind": "ROTATE",
+      "target": 35914,
+      "donor": "data/items/items.xml:66930"
+    },
+    {
+      "item_id": 35914,
+      "kind": "ROTATE",
+      "target": 35913,
+      "donor": "data/items/items.xml:66936"
+    },
+    {
+      "item_id": 35915,
+      "kind": "ROTATE",
+      "target": 35916,
+      "donor": "data/items/items.xml:66942"
+    },
+    {
+      "item_id": 35916,
+      "kind": "ROTATE",
+      "target": 35917,
+      "donor": "data/items/items.xml:66947"
+    },
+    {
+      "item_id": 35917,
+      "kind": "ROTATE",
+      "target": 35918,
+      "donor": "data/items/items.xml:66952"
+    },
+    {
+      "item_id": 35918,
+      "kind": "ROTATE",
+      "target": 35915,
+      "donor": "data/items/items.xml:66957"
+    },
+    {
+      "item_id": 35919,
+      "kind": "ROTATE",
+      "target": 35920,
+      "donor": "data/items/items.xml:66962"
+    },
+    {
+      "item_id": 35920,
+      "kind": "ROTATE",
+      "target": 35921,
+      "donor": "data/items/items.xml:66968"
+    },
+    {
+      "item_id": 35921,
+      "kind": "ROTATE",
+      "target": 35922,
+      "donor": "data/items/items.xml:66974"
+    },
+    {
+      "item_id": 35922,
+      "kind": "ROTATE",
+      "target": 35919,
+      "donor": "data/items/items.xml:66980"
+    },
+    {
+      "item_id": 35923,
+      "kind": "ROTATE",
+      "target": 35924,
+      "donor": "data/items/items.xml:66986"
+    },
+    {
+      "item_id": 35924,
+      "kind": "ROTATE",
+      "target": 35925,
+      "donor": "data/items/items.xml:66992"
+    },
+    {
+      "item_id": 35925,
+      "kind": "ROTATE",
+      "target": 35926,
+      "donor": "data/items/items.xml:66998"
+    },
+    {
+      "item_id": 35926,
+      "kind": "ROTATE",
+      "target": 35923,
+      "donor": "data/items/items.xml:67004"
+    },
+    {
+      "item_id": 35927,
+      "kind": "ROTATE",
+      "target": 35956,
+      "donor": "data/items/items.xml:67010"
+    },
+    {
+      "item_id": 35949,
+      "kind": "ROTATE",
+      "target": 35969,
+      "donor": "data/items/items.xml:67147"
+    },
+    {
+      "item_id": 35954,
+      "kind": "ROTATE",
+      "target": 35957,
+      "donor": "data/items/items.xml:67174"
+    },
+    {
+      "item_id": 35955,
+      "kind": "ROTATE",
+      "target": 35958,
+      "donor": "data/items/items.xml:67178"
+    },
+    {
+      "item_id": 35956,
+      "kind": "ROTATE",
+      "target": 35961,
+      "donor": "data/items/items.xml:67182"
+    },
+    {
+      "item_id": 35957,
+      "kind": "ROTATE",
+      "target": 35960,
+      "donor": "data/items/items.xml:67186"
+    },
+    {
+      "item_id": 35958,
+      "kind": "ROTATE",
+      "target": 35959,
+      "donor": "data/items/items.xml:67190"
+    },
+    {
+      "item_id": 35959,
+      "kind": "ROTATE",
+      "target": 35962,
+      "donor": "data/items/items.xml:67194"
+    },
+    {
+      "item_id": 35960,
+      "kind": "ROTATE",
+      "target": 35963,
+      "donor": "data/items/items.xml:67198"
+    },
+    {
+      "item_id": 35961,
+      "kind": "ROTATE",
+      "target": 35964,
+      "donor": "data/items/items.xml:67202"
+    },
+    {
+      "item_id": 35962,
+      "kind": "ROTATE",
+      "target": 35955,
+      "donor": "data/items/items.xml:67206"
+    },
+    {
+      "item_id": 35963,
+      "kind": "ROTATE",
+      "target": 35954,
+      "donor": "data/items/items.xml:67210"
+    },
+    {
+      "item_id": 35964,
+      "kind": "ROTATE",
+      "target": 35927,
+      "donor": "data/items/items.xml:67214"
+    },
+    {
+      "item_id": 35969,
+      "kind": "ROTATE",
+      "target": 35949,
+      "donor": "data/items/items.xml:67218"
+    },
+    {
+      "item_id": 35973,
+      "kind": "USE",
+      "target": 35974,
+      "donor": "data/items/items.xml:67245"
+    },
+    {
+      "item_id": 35974,
+      "kind": "USE",
+      "target": 35973,
+      "donor": "data/items/items.xml:67249"
+    },
+    {
+      "item_id": 36626,
+      "kind": "ROTATE",
+      "target": 36627,
+      "donor": "data/items/items.xml:67424"
+    },
+    {
+      "item_id": 36627,
+      "kind": "ROTATE",
+      "target": 36626,
+      "donor": "data/items/items.xml:67429"
+    },
+    {
+      "item_id": 36628,
+      "kind": "ROTATE",
+      "target": 36629,
+      "donor": "data/items/items.xml:67434"
+    },
+    {
+      "item_id": 36629,
+      "kind": "ROTATE",
+      "target": 36628,
+      "donor": "data/items/items.xml:67439"
+    },
+    {
+      "item_id": 36630,
+      "kind": "ROTATE",
+      "target": 36631,
+      "donor": "data/items/items.xml:67444"
+    },
+    {
+      "item_id": 36631,
+      "kind": "ROTATE",
+      "target": 36632,
+      "donor": "data/items/items.xml:67450"
+    },
+    {
+      "item_id": 36632,
+      "kind": "ROTATE",
+      "target": 36633,
+      "donor": "data/items/items.xml:67456"
+    },
+    {
+      "item_id": 36633,
+      "kind": "ROTATE",
+      "target": 36630,
+      "donor": "data/items/items.xml:67462"
+    },
+    {
+      "item_id": 36634,
+      "kind": "ROTATE",
+      "target": 36635,
+      "donor": "data/items/items.xml:67468"
+    },
+    {
+      "item_id": 36635,
+      "kind": "ROTATE",
+      "target": 36636,
+      "donor": "data/items/items.xml:67473"
+    },
+    {
+      "item_id": 36636,
+      "kind": "ROTATE",
+      "target": 36637,
+      "donor": "data/items/items.xml:67478"
+    },
+    {
+      "item_id": 36637,
+      "kind": "ROTATE",
+      "target": 36634,
+      "donor": "data/items/items.xml:67483"
+    },
+    {
+      "item_id": 36640,
+      "kind": "ROTATE",
+      "target": 36641,
+      "donor": "data/items/items.xml:67492"
+    },
+    {
+      "item_id": 36641,
+      "kind": "ROTATE",
+      "target": 36640,
+      "donor": "data/items/items.xml:67497"
+    },
+    {
+      "item_id": 36642,
+      "kind": "ROTATE",
+      "target": 36643,
+      "donor": "data/items/items.xml:67502"
+    },
+    {
+      "item_id": 36643,
+      "kind": "ROTATE",
+      "target": 36642,
+      "donor": "data/items/items.xml:67507"
+    },
+    {
+      "item_id": 36644,
+      "kind": "ROTATE",
+      "target": 36645,
+      "donor": "data/items/items.xml:67512"
+    },
+    {
+      "item_id": 36645,
+      "kind": "ROTATE",
+      "target": 36644,
+      "donor": "data/items/items.xml:67517"
+    },
+    {
+      "item_id": 37004,
+      "kind": "ROTATE",
+      "target": 37005,
+      "donor": "data/items/items.xml:69164"
+    },
+    {
+      "item_id": 37005,
+      "kind": "ROTATE",
+      "target": 37006,
+      "donor": "data/items/items.xml:69169"
+    },
+    {
+      "item_id": 37006,
+      "kind": "ROTATE",
+      "target": 37007,
+      "donor": "data/items/items.xml:69174"
+    },
+    {
+      "item_id": 37007,
+      "kind": "ROTATE",
+      "target": 37004,
+      "donor": "data/items/items.xml:69179"
+    },
+    {
+      "item_id": 37009,
+      "kind": "ROTATE",
+      "target": 37010,
+      "donor": "data/items/items.xml:69188"
+    },
+    {
+      "item_id": 37010,
+      "kind": "ROTATE",
+      "target": 37009,
+      "donor": "data/items/items.xml:69194"
+    },
+    {
+      "item_id": 37011,
+      "kind": "ROTATE",
+      "target": 37012,
+      "donor": "data/items/items.xml:69200"
+    },
+    {
+      "item_id": 37012,
+      "kind": "ROTATE",
+      "target": 37013,
+      "donor": "data/items/items.xml:69206"
+    },
+    {
+      "item_id": 37013,
+      "kind": "ROTATE",
+      "target": 37014,
+      "donor": "data/items/items.xml:69212"
+    },
+    {
+      "item_id": 37014,
+      "kind": "ROTATE",
+      "target": 37011,
+      "donor": "data/items/items.xml:69218"
+    },
+    {
+      "item_id": 37174,
+      "kind": "ROTATE",
+      "target": 37175,
+      "donor": "data/items/items.xml:69506"
+    },
+    {
+      "item_id": 37175,
+      "kind": "ROTATE",
+      "target": 37176,
+      "donor": "data/items/items.xml:69511"
+    },
+    {
+      "item_id": 37176,
+      "kind": "ROTATE",
+      "target": 37177,
+      "donor": "data/items/items.xml:69516"
+    },
+    {
+      "item_id": 37177,
+      "kind": "ROTATE",
+      "target": 37174,
+      "donor": "data/items/items.xml:69521"
+    },
+    {
+      "item_id": 37179,
+      "kind": "ROTATE",
+      "target": 37180,
+      "donor": "data/items/items.xml:69530"
+    },
+    {
+      "item_id": 37180,
+      "kind": "ROTATE",
+      "target": 37179,
+      "donor": "data/items/items.xml:69536"
+    },
+    {
+      "item_id": 37181,
+      "kind": "ROTATE",
+      "target": 37182,
+      "donor": "data/items/items.xml:69542"
+    },
+    {
+      "item_id": 37182,
+      "kind": "ROTATE",
+      "target": 37183,
+      "donor": "data/items/items.xml:69548"
+    },
+    {
+      "item_id": 37183,
+      "kind": "ROTATE",
+      "target": 37184,
+      "donor": "data/items/items.xml:69554"
+    },
+    {
+      "item_id": 37184,
+      "kind": "ROTATE",
+      "target": 37181,
+      "donor": "data/items/items.xml:69560"
+    },
+    {
+      "item_id": 37189,
+      "kind": "ROTATE",
+      "target": 37190,
+      "donor": "data/items/items.xml:69575"
+    },
+    {
+      "item_id": 37190,
+      "kind": "ROTATE",
+      "target": 37189,
+      "donor": "data/items/items.xml:69580"
+    },
+    {
+      "item_id": 37191,
+      "kind": "ROTATE",
+      "target": 37192,
+      "donor": "data/items/items.xml:69585"
+    },
+    {
+      "item_id": 37192,
+      "kind": "ROTATE",
+      "target": 37191,
+      "donor": "data/items/items.xml:69590"
+    },
+    {
+      "item_id": 37205,
+      "kind": "ROTATE",
+      "target": 37208,
+      "donor": "data/items/items.xml:69711"
+    },
+    {
+      "item_id": 37206,
+      "kind": "ROTATE",
+      "target": 37209,
+      "donor": "data/items/items.xml:69716"
+    },
+    {
+      "item_id": 37207,
+      "kind": "ROTATE",
+      "target": 37210,
+      "donor": "data/items/items.xml:69721"
+    },
+    {
+      "item_id": 37208,
+      "kind": "ROTATE",
+      "target": 37205,
+      "donor": "data/items/items.xml:69726"
+    },
+    {
+      "item_id": 37209,
+      "kind": "ROTATE",
+      "target": 37206,
+      "donor": "data/items/items.xml:69731"
+    },
+    {
+      "item_id": 37210,
+      "kind": "ROTATE",
+      "target": 37207,
+      "donor": "data/items/items.xml:69736"
+    },
+    {
+      "item_id": 37778,
+      "kind": "ROTATE",
+      "target": 37779,
+      "donor": "data/items/items.xml:70931"
+    },
+    {
+      "item_id": 37779,
+      "kind": "ROTATE",
+      "target": 37780,
+      "donor": "data/items/items.xml:70936"
+    },
+    {
+      "item_id": 37780,
+      "kind": "ROTATE",
+      "target": 37781,
+      "donor": "data/items/items.xml:70941"
+    },
+    {
+      "item_id": 37781,
+      "kind": "ROTATE",
+      "target": 37778,
+      "donor": "data/items/items.xml:70946"
+    },
+    {
+      "item_id": 37782,
+      "kind": "ROTATE",
+      "target": 37782,
+      "donor": "data/items/items.xml:70951",
+      "runtime_noop": true,
+      "engine_donor": "src/game/game.cpp:3054-3057",
+      "requested_target": 37883,
+      "noop": true
+    },
+    {
+      "item_id": 37783,
+      "kind": "ROTATE",
+      "target": 37782,
+      "donor": "data/items/items.xml:70957"
+    },
+    {
+      "item_id": 37784,
+      "kind": "ROTATE",
+      "target": 37785,
+      "donor": "data/items/items.xml:70963"
+    },
+    {
+      "item_id": 37785,
+      "kind": "ROTATE",
+      "target": 37784,
+      "donor": "data/items/items.xml:70968"
+    },
+    {
+      "item_id": 37801,
+      "kind": "ROTATE",
+      "target": 37802,
+      "donor": "data/items/items.xml:71116"
+    },
+    {
+      "item_id": 37802,
+      "kind": "ROTATE",
+      "target": 37801,
+      "donor": "data/items/items.xml:71121"
+    },
+    {
+      "item_id": 37804,
+      "kind": "ROTATE",
+      "target": 37805,
+      "donor": "data/items/items.xml:71130"
+    },
+    {
+      "item_id": 37805,
+      "kind": "ROTATE",
+      "target": 37804,
+      "donor": "data/items/items.xml:71135"
+    },
+    {
+      "item_id": 37815,
+      "kind": "ROTATE",
+      "target": 37816,
+      "donor": "data/items/items.xml:71165"
+    },
+    {
+      "item_id": 37816,
+      "kind": "ROTATE",
+      "target": 37815,
+      "donor": "data/items/items.xml:71170"
+    },
+    {
+      "item_id": 39419,
+      "kind": "ROTATE",
+      "target": 39420,
+      "donor": "data/items/items.xml:72991"
+    },
+    {
+      "item_id": 39420,
+      "kind": "ROTATE",
+      "target": 39421,
+      "donor": "data/items/items.xml:72996"
+    },
+    {
+      "item_id": 39421,
+      "kind": "ROTATE",
+      "target": 39422,
+      "donor": "data/items/items.xml:73001"
+    },
+    {
+      "item_id": 39422,
+      "kind": "ROTATE",
+      "target": 39419,
+      "donor": "data/items/items.xml:73006"
+    },
+    {
+      "item_id": 39423,
+      "kind": "ROTATE",
+      "target": 39424,
+      "donor": "data/items/items.xml:73011"
+    },
+    {
+      "item_id": 39424,
+      "kind": "ROTATE",
+      "target": 39423,
+      "donor": "data/items/items.xml:73016"
+    },
+    {
+      "item_id": 39425,
+      "kind": "ROTATE",
+      "target": 39426,
+      "donor": "data/items/items.xml:73021"
+    },
+    {
+      "item_id": 39426,
+      "kind": "ROTATE",
+      "target": 39425,
+      "donor": "data/items/items.xml:73026"
+    },
+    {
+      "item_id": 39441,
+      "kind": "ROTATE",
+      "target": 39442,
+      "donor": "data/items/items.xml:73167"
+    },
+    {
+      "item_id": 39442,
+      "kind": "ROTATE",
+      "target": 39441,
+      "donor": "data/items/items.xml:73173"
+    },
+    {
+      "item_id": 39446,
+      "kind": "USE",
+      "target": 39447,
+      "donor": "data/items/items.xml:73191"
+    },
+    {
+      "item_id": 39447,
+      "kind": "USE",
+      "target": 39446,
+      "donor": "data/items/items.xml:73196"
+    },
+    {
+      "item_id": 39496,
+      "kind": "USE",
+      "target": 39497,
+      "donor": "data/items/items.xml:73202"
+    },
+    {
+      "item_id": 39497,
+      "kind": "USE",
+      "target": 39496,
+      "donor": "data/items/items.xml:73207"
+    },
+    {
+      "item_id": 39504,
+      "kind": "ROTATE",
+      "target": 39505,
+      "donor": "data/items/items.xml:73232"
+    },
+    {
+      "item_id": 39505,
+      "kind": "ROTATE",
+      "target": 39506,
+      "donor": "data/items/items.xml:73238"
+    },
+    {
+      "item_id": 39506,
+      "kind": "ROTATE",
+      "target": 39507,
+      "donor": "data/items/items.xml:73244"
+    },
+    {
+      "item_id": 39507,
+      "kind": "ROTATE",
+      "target": 39504,
+      "donor": "data/items/items.xml:73250"
+    },
+    {
+      "item_id": 39517,
+      "kind": "ROTATE",
+      "target": 39526,
+      "donor": "data/items/items.xml:73278"
+    },
+    {
+      "item_id": 39518,
+      "kind": "ROTATE",
+      "target": 39525,
+      "donor": "data/items/items.xml:73283"
+    },
+    {
+      "item_id": 39519,
+      "kind": "ROTATE",
+      "target": 39524,
+      "donor": "data/items/items.xml:73288"
+    },
+    {
+      "item_id": 39520,
+      "kind": "ROTATE",
+      "target": 39523,
+      "donor": "data/items/items.xml:73293"
+    },
+    {
+      "item_id": 39521,
+      "kind": "ROTATE",
+      "target": 39522,
+      "donor": "data/items/items.xml:73298"
+    },
+    {
+      "item_id": 39522,
+      "kind": "ROTATE",
+      "target": 39521,
+      "donor": "data/items/items.xml:73303"
+    },
+    {
+      "item_id": 39523,
+      "kind": "ROTATE",
+      "target": 39520,
+      "donor": "data/items/items.xml:73308"
+    },
+    {
+      "item_id": 39524,
+      "kind": "ROTATE",
+      "target": 39519,
+      "donor": "data/items/items.xml:73313"
+    },
+    {
+      "item_id": 39525,
+      "kind": "ROTATE",
+      "target": 39518,
+      "donor": "data/items/items.xml:73318"
+    },
+    {
+      "item_id": 39526,
+      "kind": "ROTATE",
+      "target": 39517,
+      "donor": "data/items/items.xml:73323"
+    },
+    {
+      "item_id": 39768,
+      "kind": "ROTATE",
+      "target": 39769,
+      "donor": "data/items/items.xml:73752"
+    },
+    {
+      "item_id": 39769,
+      "kind": "ROTATE",
+      "target": 39770,
+      "donor": "data/items/items.xml:73757"
+    },
+    {
+      "item_id": 39770,
+      "kind": "ROTATE",
+      "target": 39771,
+      "donor": "data/items/items.xml:73762"
+    },
+    {
+      "item_id": 39771,
+      "kind": "ROTATE",
+      "target": 39768,
+      "donor": "data/items/items.xml:73767"
+    },
+    {
+      "item_id": 39775,
+      "kind": "ROTATE",
+      "target": 39776,
+      "donor": "data/items/items.xml:73784"
+    },
+    {
+      "item_id": 39776,
+      "kind": "ROTATE",
+      "target": 39775,
+      "donor": "data/items/items.xml:73790"
+    },
+    {
+      "item_id": 39777,
+      "kind": "ROTATE",
+      "target": 39778,
+      "donor": "data/items/items.xml:73796"
+    },
+    {
+      "item_id": 39778,
+      "kind": "ROTATE",
+      "target": 39779,
+      "donor": "data/items/items.xml:73802"
+    },
+    {
+      "item_id": 39779,
+      "kind": "ROTATE",
+      "target": 39780,
+      "donor": "data/items/items.xml:73808"
+    },
+    {
+      "item_id": 39780,
+      "kind": "ROTATE",
+      "target": 39777,
+      "donor": "data/items/items.xml:73814"
+    },
+    {
+      "item_id": 42267,
+      "kind": "ROTATE",
+      "target": 42268,
+      "donor": "data/items/items.xml:74591"
+    },
+    {
+      "item_id": 42268,
+      "kind": "ROTATE",
+      "target": 42269,
+      "donor": "data/items/items.xml:74596"
+    },
+    {
+      "item_id": 42269,
+      "kind": "ROTATE",
+      "target": 42270,
+      "donor": "data/items/items.xml:74601"
+    },
+    {
+      "item_id": 42270,
+      "kind": "ROTATE",
+      "target": 42267,
+      "donor": "data/items/items.xml:74606"
+    },
+    {
+      "item_id": 42271,
+      "kind": "ROTATE",
+      "target": 42272,
+      "donor": "data/items/items.xml:74611"
+    },
+    {
+      "item_id": 42272,
+      "kind": "ROTATE",
+      "target": 42271,
+      "donor": "data/items/items.xml:74616"
+    },
+    {
+      "item_id": 42273,
+      "kind": "ROTATE",
+      "target": 42274,
+      "donor": "data/items/items.xml:74621"
+    },
+    {
+      "item_id": 42274,
+      "kind": "ROTATE",
+      "target": 42273,
+      "donor": "data/items/items.xml:74626"
+    },
+    {
+      "item_id": 42275,
+      "kind": "ROTATE",
+      "target": 42276,
+      "donor": "data/items/items.xml:74631"
+    },
+    {
+      "item_id": 42276,
+      "kind": "ROTATE",
+      "target": 42277,
+      "donor": "data/items/items.xml:74636"
+    },
+    {
+      "item_id": 42277,
+      "kind": "ROTATE",
+      "target": 42278,
+      "donor": "data/items/items.xml:74641"
+    },
+    {
+      "item_id": 42278,
+      "kind": "ROTATE",
+      "target": 42275,
+      "donor": "data/items/items.xml:74646"
+    },
+    {
+      "item_id": 42320,
+      "kind": "ROTATE",
+      "target": 42321,
+      "donor": "data/items/items.xml:74833"
+    },
+    {
+      "item_id": 42321,
+      "kind": "ROTATE",
+      "target": 42322,
+      "donor": "data/items/items.xml:74838"
+    },
+    {
+      "item_id": 42322,
+      "kind": "ROTATE",
+      "target": 42323,
+      "donor": "data/items/items.xml:74843"
+    },
+    {
+      "item_id": 42323,
+      "kind": "ROTATE",
+      "target": 42320,
+      "donor": "data/items/items.xml:74848"
+    },
+    {
+      "item_id": 42324,
+      "kind": "ROTATE",
+      "target": 42325,
+      "donor": "data/items/items.xml:74853"
+    },
+    {
+      "item_id": 42325,
+      "kind": "ROTATE",
+      "target": 42324,
+      "donor": "data/items/items.xml:74858"
+    },
+    {
+      "item_id": 42326,
+      "kind": "ROTATE",
+      "target": 42327,
+      "donor": "data/items/items.xml:74863"
+    },
+    {
+      "item_id": 42327,
+      "kind": "ROTATE",
+      "target": 42326,
+      "donor": "data/items/items.xml:74868"
+    },
+    {
+      "item_id": 42328,
+      "kind": "ROTATE",
+      "target": 42329,
+      "donor": "data/items/items.xml:74873"
+    },
+    {
+      "item_id": 42329,
+      "kind": "ROTATE",
+      "target": 42330,
+      "donor": "data/items/items.xml:74878"
+    },
+    {
+      "item_id": 42330,
+      "kind": "ROTATE",
+      "target": 42331,
+      "donor": "data/items/items.xml:74883"
+    },
+    {
+      "item_id": 42331,
+      "kind": "ROTATE",
+      "target": 42328,
+      "donor": "data/items/items.xml:74888"
+    },
+    {
+      "item_id": 42332,
+      "kind": "ROTATE",
+      "target": 42333,
+      "donor": "data/items/items.xml:74893"
+    },
+    {
+      "item_id": 42333,
+      "kind": "ROTATE",
+      "target": 42332,
+      "donor": "data/items/items.xml:74898"
+    },
+    {
+      "item_id": 42334,
+      "kind": "ROTATE",
+      "target": 42335,
+      "donor": "data/items/items.xml:74903"
+    },
+    {
+      "item_id": 42335,
+      "kind": "ROTATE",
+      "target": 42334,
+      "donor": "data/items/items.xml:74908"
+    },
+    {
+      "item_id": 42346,
+      "kind": "ROTATE",
+      "target": 42348,
+      "donor": "data/items/items.xml:74955"
+    },
+    {
+      "item_id": 42347,
+      "kind": "ROTATE",
+      "target": 42349,
+      "donor": "data/items/items.xml:74959"
+    },
+    {
+      "item_id": 42348,
+      "kind": "ROTATE",
+      "target": 42346,
+      "donor": "data/items/items.xml:74963"
+    },
+    {
+      "item_id": 42349,
+      "kind": "ROTATE",
+      "target": 42347,
+      "donor": "data/items/items.xml:74967"
+    },
+    {
+      "item_id": 42367,
+      "kind": "USE",
+      "target": 42368,
+      "donor": "data/items/items.xml:75107"
+    },
+    {
+      "item_id": 42368,
+      "kind": "USE",
+      "target": 42367,
+      "donor": "data/items/items.xml:75111"
+    },
+    {
+      "item_id": 48574,
+      "kind": "ROTATE",
+      "target": 48575,
+      "donor": "data/items/items.xml:81891"
+    },
+    {
+      "item_id": 48575,
+      "kind": "ROTATE",
+      "target": 48574,
+      "donor": "data/items/items.xml:81897"
+    },
+    {
+      "item_id": 48576,
+      "kind": "ROTATE",
+      "target": 48577,
+      "donor": "data/items/items.xml:81903"
+    },
+    {
+      "item_id": 48577,
+      "kind": "ROTATE",
+      "target": 48576,
+      "donor": "data/items/items.xml:81908"
+    },
+    {
+      "item_id": 50435,
+      "kind": "ROTATE",
+      "target": 50436,
+      "donor": "data/items/items.xml:86029"
+    },
+    {
+      "item_id": 50436,
+      "kind": "ROTATE",
+      "target": 50435,
+      "donor": "data/items/items.xml:86034"
+    },
+    {
+      "item_id": 51186,
+      "kind": "ROTATE",
+      "target": 51188,
+      "donor": "data/items/items.xml:86069"
+    },
+    {
+      "item_id": 51188,
+      "kind": "ROTATE",
+      "target": 51189,
+      "donor": "data/items/items.xml:86074"
+    },
+    {
+      "item_id": 51189,
+      "kind": "ROTATE",
+      "target": 51190,
+      "donor": "data/items/items.xml:86079"
+    },
+    {
+      "item_id": 51190,
+      "kind": "ROTATE",
+      "target": 51186,
+      "donor": "data/items/items.xml:86084"
+    },
+    {
+      "item_id": 51196,
+      "kind": "ROTATE",
+      "target": 51197,
+      "donor": "data/items/items.xml:86089"
+    },
+    {
+      "item_id": 51197,
+      "kind": "ROTATE",
+      "target": 51198,
+      "donor": "data/items/items.xml:86095"
+    },
+    {
+      "item_id": 51198,
+      "kind": "ROTATE",
+      "target": 51199,
+      "donor": "data/items/items.xml:86101"
+    },
+    {
+      "item_id": 51199,
+      "kind": "ROTATE",
+      "target": 51196,
+      "donor": "data/items/items.xml:86107"
+    },
+    {
+      "item_id": 51204,
+      "kind": "ROTATE",
+      "target": 51205,
+      "donor": "data/items/items.xml:86113"
+    },
+    {
+      "item_id": 51205,
+      "kind": "ROTATE",
+      "target": 51204,
+      "donor": "data/items/items.xml:86118"
+    },
+    {
+      "item_id": 51206,
+      "kind": "ROTATE",
+      "target": 51207,
+      "donor": "data/items/items.xml:86123"
+    },
+    {
+      "item_id": 51207,
+      "kind": "ROTATE",
+      "target": 51206,
+      "donor": "data/items/items.xml:86129"
+    },
+    {
+      "item_id": 51220,
+      "kind": "USE",
+      "target": 51221,
+      "donor": "data/items/items.xml:86263"
+    },
+    {
+      "item_id": 51221,
+      "kind": "USE",
+      "target": 51220,
+      "donor": "data/items/items.xml:86268"
+    }
+  ],
+  "unavailable_native_transforms": [
+    {
+      "item_id": 34276,
+      "kind": "ROTATE",
+      "target": 34277,
+      "donor": "data/items/items.xml:65374",
+      "runtime_noop": true,
+      "engine_donor": "src/game/game.cpp:3054-3057"
+    },
+    {
+      "item_id": 37782,
+      "kind": "ROTATE",
+      "target": 37883,
+      "donor": "data/items/items.xml:70951",
+      "runtime_noop": true,
+      "engine_donor": "src/game/game.cpp:3054-3057"
+    },
+    {
+      "item_id": 26099,
+      "kind": "ROTATE",
+      "target": 23397,
+      "donor": "data/items/items.xml:51363",
+      "runtime_noop": true,
+      "engine_donor": "src/game/game.cpp:3054-3057"
+    }
+  ]
+}

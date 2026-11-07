@@ -708,3 +708,25 @@ Donor pins: Crystal `201189f871d23597b82caf88fd611454a2ddefb8`, Canary
 `47dfd51f45280a59a1d3e50ba7edd573d7234446` (`OTS_HYPOTHESIS_ONLY`).
 No migration, command ID, capability bit, mechanic ordinal or registry entry is
 allocated. Migration range 1160–1169 and lane offset +60 remain unused.
+
+### Continued implementation after owner feedback
+
+The preceding whole-row BLOCKED conclusions are superseded; independent runtime
+components are being implemented. No specific owner prohibition was found for
+34277, 37883 or 23397. The normal pinned source loader has no usable ItemType for
+them; Crystal `src/items/items.cpp:419-422` rejects an uninitialized/reserved type,
+and `src/game/game.cpp:3054-3057` returns the original Item unchanged for such a
+transform target. The captured recipes preserve those exact no-ops rather than
+inventing target identities or refusing all furniture.
+
+W18 source catalogue and policies now cover 160 carpets, 104 windows, 33 music
+items, eight mirror IDs, eight magic trees, five bed kits, and 722 XML furniture
+transform entries including the three engine-backed no-ops. Migration **1161**
+contains generated exact source/target pair helpers. No command, capability or
+mechanic ordinal is allocated. Runtime integration is work in progress; the
+published source-capture step does not yet wire the new native policies. Its
+remaining red point is
+`test_source_carpet_and_mirror_have_real_native_policies` against the historical
+provider (missing carpet 37365). Source capture/admission preservation tests pass.
+
+All future notes for this lane live in this file, not repository-root notes.
