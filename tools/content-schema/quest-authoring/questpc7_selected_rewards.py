@@ -43,7 +43,8 @@ def append_golden(root, callbacks, offers, inputs, pin):
         ('gloves', ['boots and gloves'], 'Golden boots and gloves', prices[1], 1),
         ('helmet', ['golden helmet'], 'Golden helmet', prices[2], 2),
     ]):
-        topic = stage + 1
+        # Keep the selected commission separate from main's donor topics1-5.
+        topic = 101 + stage
         offers.append({'npc': npc, 'keywords': words, 'topic': 0, 'next_topic': topic,
                        'storage': [storage(stage, stage, True)],
                        'reply': [f'The {label} costs {price} gold. Do you agree?']})
@@ -93,8 +94,18 @@ def append_friends(root, callbacks, offers, inputs, pin):
     for number, npc in enumerate(priests):
         add('prayer-' + npc, npc, 3 + number, 4 + number, ['stake prayer'],
             'Your stake has received this line of the prayer.', present=[(5941, 1)])
+        # An out-of-order prayer is a normal reply, with no quest transition.
+        # Eligible reward callbacks are selected before these ordinary offers.
+        offers.append({'npc':'oteryn:npc.'+npc,'keywords':['stake prayer'],
+                       'topic':0,'next_topic':0,
+                       'storage':[{'track':track,'minimum':-1,'maximum':15,'set':-1,'preserve':True}],
+                       'reply':['Follow the selected prayer order and keep your wooden stake.']})
     add('blessing', 'quentin', 13, 14, ['finish prayer'], 'The ten-part prayer has blessed your wooden stake.',
         take=[(5941, 1)], give=(5942, 1))
+    offers.append({'npc':'oteryn:npc.quentin','keywords':['finish prayer'],
+                   'topic':0,'next_topic':0,
+                   'storage':[{'track':track,'minimum':-1,'maximum':15,'set':-1,'preserve':True}],
+                   'reply':['The prayer may bless your wooden stake only once.']})
     add('complete', 'quentin', 14, 15, ['complete friendships'], 'Your Friends and Traders programme is complete.', completes=True)
     add('royal-steel', 'a_sweaty_cyclops', 1, 1, ['forge royal steel'], 'Cling clang!',
         take=[(3381, 1)], give=(5887, 1), counter='steel-uses', maximum=15)

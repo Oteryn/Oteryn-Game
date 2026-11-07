@@ -22,6 +22,26 @@
       ]
     },
     {
+      "npc": "oteryn:npc.amanda",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
+      ]
+    },
+    {
       "npc": "oteryn:npc.amber",
       "keywords": [
         "addon",
@@ -272,6 +292,26 @@
       "storage": [],
       "reply": [
         "Choose the base, shield or helmet."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.brewster",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
       ]
     },
     {
@@ -2163,12 +2203,52 @@
       ]
     },
     {
+      "npc": "oteryn:npc.isimov",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.kasmir",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
+      ]
+    },
+    {
       "npc": "oteryn:npc.king_tibianus",
       "keywords": [
         "base outfit"
       ],
       "topic": 0,
-      "next_topic": 1,
+      "next_topic": 101,
       "storage": [
         {
           "track": "oteryn:quest-progress/questpc7/golden/commission",
@@ -2188,7 +2268,7 @@
         "boots and gloves"
       ],
       "topic": 0,
-      "next_topic": 2,
+      "next_topic": 102,
       "storage": [
         {
           "track": "oteryn:quest-progress/questpc7/golden/commission",
@@ -2208,7 +2288,7 @@
         "golden helmet"
       ],
       "topic": 0,
-      "next_topic": 3,
+      "next_topic": 103,
       "storage": [
         {
           "track": "oteryn:quest-progress/questpc7/golden/commission",
@@ -2436,6 +2516,26 @@
       ],
       "reply": [
         "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.maealil",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
       ]
     },
     {
@@ -3261,6 +3361,66 @@
       ]
     },
     {
+      "npc": "oteryn:npc.quentin",
+      "keywords": [
+        "finish prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The prayer may bless your wooden stake only once."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.quentin",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rahkem",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
+      ]
+    },
+    {
       "npc": "oteryn:npc.razan",
       "keywords": [
         "ape fur"
@@ -3908,6 +4068,26 @@
       ]
     },
     {
+      "npc": "oteryn:npc.tibra",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
+      ]
+    },
+    {
       "npc": "oteryn:npc.tom",
       "keywords": [
         "paws",
@@ -3925,6 +4105,26 @@
       ],
       "reply": [
         "Have you brought 50 bear paws and 50 wolf paws?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.tyrias",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
       ]
     },
     {
@@ -4225,6 +4425,26 @@
       ],
       "reply": [
         "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.yberius",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
       ]
     },
     {

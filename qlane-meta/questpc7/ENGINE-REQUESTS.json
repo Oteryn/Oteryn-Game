@@ -1,0 +1,82 @@
+{
+  "owner_rule": "New work rules: shared engine belongs to qengine2; local helper under ~50 lines only in a new file",
+  "requests": [
+    {
+      "id": "feaster-world-rewards",
+      "quest": "Feaster of Souls Quest",
+      "canonical": "oteryn:quest.feaster_of_souls_quest",
+      "feature": "Phase-discriminated STEP routes; bounded repeatable world USE rewards with exact carried and ground input proofs",
+      "where": [
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs",
+        "crates/gameplay/durability/src/durability/reward_claim_mint/quest.rs",
+        "game_quest_reward_complete()"
+      ],
+      "proof": {
+        "command": "cargo nextest run --locked -p oteryn-gameplay-dispatch -E test(questpc7_feaster_native_sampling_prefix)",
+        "postgres": "18.6",
+        "red_seconds": 77.666321927,
+        "exact_error": "quest reward consumed an unauthored input",
+        "at": "native grinder after the real NPC-given bell and three fixed bell passages",
+        "previous_red": "two eligible STEP definitions at the same entrance are correctly refused as ambiguous"
+      },
+      "local_draft": "stash: questpc7: unqualified Feaster engine extensions awaiting qengine2 ownership",
+      "boundary": "Draft retained, not shipped as a qualified engine. Coordinator routes ownership to qengine2.",
+      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2"
+    },
+    {
+      "id": "goblin-live-capture",
+      "quest": "Goblin Merchant Quest",
+      "canonical": "oteryn:quest.goblin_merchant_quest",
+      "feature": "Carried quest-tool capture of an exact live creature, one fenced quest receipt per distinct creature occurrence",
+      "where": [
+        "crates/gameplay/dispatch/src/gameplay_transport/item_use.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/cosmetic_item_use.rs",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs"
+      ],
+      "evidence": "Current carried reward route rejects use-with targets; world Selector admits position/appearance/action/unique, not an exact live Actor. Selected stage s4 requires three Adventurers captured with Guardcatcher17669.",
+      "reuse_checked": "QENGINE2 5c01deabb and inherited main1ae39c7fb; no live quest-capture route found.",
+      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2"
+    },
+    {
+      "id": "hot-cuisine-native-eligibility",
+      "quest": "Hot Cuisine Quest",
+      "canonical": "oteryn:quest.hot_cuisine_quest",
+      "feature": "Fenced Premium and real progression-level eligibility in native NPC programmes",
+      "where": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs",
+        "crates/gameplay/quests/src/quest/npc_rules.rs"
+      ],
+      "evidence": "Locked native NPC evaluator supplies level:0, with no Premium gate. Existing HotCuisine planner has UTC calendar and exact ingredient transactions; reuse it, do not replace it.",
+      "reuse": "questpc8 70a0d92af already supplies authored NPC programmes with transactional Premium; route that reusable owner through qengine2/main.",
+      "scope": "The canonical chosen recipe is a once-only fourteen-course apprenticeship (101 stages), ending Sweet Mangonaise Elixir11588. Native source has a fifteenth later course50334, outside this chosen itinerary. Existing UTC can_cook permits a first cooking when last=None and retains its source August/new-period/bonus rules.",
+      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2"
+    },
+    {
+      "id": "illuminated-first-party-constructors",
+      "quest": "Illuminated Warrior Outfits Quest",
+      "canonical": "oteryn:quest.authored.illuminated_warrior_outfits_quest",
+      "feature": "First-party portable item and cosmetic constructors without invented Tibia external IDs",
+      "where": [
+        "crates/gameplay/content/src/content/native_gameplay/authored_items.rs",
+        "crates/gameplay/content/src/content/native_gameplay/cosmetics_loader.rs"
+      ],
+      "evidence": "Peer constructor37aa8adda requires existing numeric oteryn:item.tibia.i* identities and pinned client facts; it cannot admit a newly authored non-Tibia identity for Scraps of a Radiant Attire.",
+      "reuse": "Reuse37aa8adda/ec811acb7 constructor proof discipline; extend via qengine2 rather than fork a second admission owner.",
+      "facts": {
+        "item": "Scraps of a Radiant Attire",
+        "stackable": false,
+        "weight_hundredths_oz": 30,
+        "donations": [
+          2500,
+          1250,
+          1250
+        ],
+        "min_level": 1000,
+        "premium": true,
+        "parent": "Make Believe Quest"
+      },
+      "boundary": "No fake source ID or invented official look type. Existing min-level/Premium/parent and state-operation owners can compose the route after constructors land.",
+      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2"
+    }
+  ]
+}

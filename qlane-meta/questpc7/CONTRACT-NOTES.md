@@ -669,3 +669,46 @@ RED STARTING_LOADOUT_PROFILE_DUPLICATE4.112s, then four starter tests GREEN
 41 outputs with3765 base profiles plus10 starter profiles and no duplicate
 production identities. Recipe evidence was recaptured with repository tooling
 from the already pinned local donor after main changed canonical input hashes.
+
+## PR3020 integration: adopted owners and exact content inventories
+
+Main `1ae39c7fb9bef09c3cd50d16410374f4134b1676` supplies QENGINE2 migrations
+0999–1008 unchanged. The earlier provisional document-level outfit alias
+proposal is superseded: the lane consumes main's per-grant appearance aliases
+and sex-aware cosmetic owner. No second alias owner remains.
+
+The catalogue registration order is reward declarations once, native death
+transitions next; death transitions must never precede their declared tracks.
+World callback inventory equality includes main's shared-access document as
+well as donor, shared-outfit, lane and native altar inputs, with Dawnport
+excluded uniformly. Exact equality is retained.
+
+Authored prop documents are hash-pinned members of their world family, not
+stray files. Family validation checks their immediate-child paths, unique
+identities, 256 KiB bound, regular non-symlink files and exact SHA-256 values;
+unpinned files still fail the unchanged closed inventory comparison. The
+repository regeneration check list now runs the five focused inventory cases.
+
+## Shared-engine reuse check after owner ownership reminder
+
+Fetched QENGINE2 branch head `5c01deabb33b448fe7de795a3f9271477af05ea6`.
+Its quest callback shape has neither the lane's activation discriminator nor
+bounded world item-reward settlement; these remain small reusable extensions
+of main's existing callback and fenced MINT owners. Main0999–1008 remain the
+adopted SQL authority. The newer QENGINE2 branch also has different1007/1008
+migration names, so merging that branch wholesale would reintroduce collisions;
+reuse only applicable nonduplicated mechanisms after comparing to main.
+
+Peer questpc8 already supplies exact first-party static item constructor
+admissions (`37aa8adda`) and exact callback-profile constructor reuse
+(`ec811acb7`). Reuse those implementations for any still-missing first-party
+items rather than creating a second constructor. No quest outside the owner's
+25-entry questpc7 ledger is started or claimed by this lane.
+
+## Current publication boundary
+
+The owner hard rule now permits publishing compiling WIP after workspace check
+and formatting. This integration repairs the three completed quest regressions
+with real PG proof, while the four unfinished quests retain explicit qengine2
+requests. The unqualified Feaster prefix stays present and RED; no test is skipped
+or weakened and no unfinished quest is relabelled QUALIFIED.

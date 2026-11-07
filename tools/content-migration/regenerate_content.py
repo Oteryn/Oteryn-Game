@@ -100,6 +100,7 @@ CHECKS = (
     ["python3", "tools/content-migration/validate_world_project_v2_to_tree.py"],
     ["python3", "tools/content-migration/test_world_project_v2_to_tree.py"],
     ["python3", "tools/content-schema/validate_materialized_game_tree.py"],
+    ["python3", "tools/content-schema/test_materialized_authored_props.py"],
     ["python3", "tools/content-census/item_key_references.py"],
     *(["python3", tool, "content", "--check"] for tool in AUTHORING_TOOLS),
     ["python3", "tools/content-schema/item-authoring/test_engine_items.py"],

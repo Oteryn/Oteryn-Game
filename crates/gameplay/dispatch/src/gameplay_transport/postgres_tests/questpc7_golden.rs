@@ -59,17 +59,17 @@ pub(super) async fn exercise(
     super::classic_quests::talk(owner, admitted, king, 800, "hi").await?;
     super::classic_quests::talk(owner, admitted, king, 801, "golden commission").await?;
     assert_eq!(super::classic_quests::progress(owner, admitted, authority, TRACK).await?, 0);
-    for (index, (suffix, offer, price)) in [
+    for (index, (suffix, _offer, price)) in [
         ("base", "base outfit", 100000_i64),
         ("gloves", "boots and gloves", 50000),
         ("helmet", "golden helmet", 50000),
     ].into_iter().enumerate() {
         let callback = callbacks.iter().find(|c| c.key == format!("oteryn:quest-reward/questpc7-golden-{suffix}")).ok_or("callback")?;
-        let command = 810 + u64::try_from(index)? * 10;
         assert_eq!(money(h).await?, 0);
-        super::classic_quests::talk(owner, admitted, king, command - 1, "hi").await?;
-        super::classic_quests::talk(owner, admitted, king, command, offer).await?;
-        assert_eq!(super::qengine_rewards::talk(owner, admitted, king, command + 1, "yes").await?, NpcIntentDisposition::Rejected, "a commission never grants without its payment");
+        // Keep the actual offer and confirmation on one connection, as required
+        // by the normal conversation owner. Closing it clears engagement.
+        let (unpaid, _, _) = super::qengine_rewards::wire_reward(owner, admitted, king, callback, false).await?;
+        assert_eq!(unpaid, NpcIntentDisposition::Rejected, "a commission never grants without its payment");
         assert_eq!(super::classic_quests::progress(owner, admitted, authority, TRACK).await?, i64::try_from(index)?);
         let fence = owner.current_quest_fence(admitted.game_session_id).await.map_err(|()| "fence")?.ok_or("fence")?;
         super::quest_world_callbacks::input_item(owner, fence.item_fence(), &Offering {

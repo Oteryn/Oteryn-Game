@@ -31,7 +31,8 @@
         "content/world/npc-placements/index.json"
       ],
       "generic_owner": "bounded Add(1), original fenced input/MINT/fee owners and exact command-scoped claim proof; original one-shot MINT keys retained"
-    }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   },
   {
     "title": "Falconer Outfits Quest",
@@ -95,7 +96,7 @@
     "owner": "questpc7",
     "remaining_work": {
       "kind": "lane_implementation_work",
-      "missing_piece": "Poltergeist Outfits: the reusable fenced NPC outfit/addon and account appearance mapping owner is implemented. Compose the full pinned route and exact owned NPC/physical/encounter bindings; implement remaining guard or currency mechanisms here and qualify the whole route with real PostgreSQL proof.",
+      "missing_piece": "Compose the quest-owned route using the shared engine requested in ENGINE-REQUESTS.json after qengine2 delivery; do not implement a large new engine in this lane.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/41/definition",
         "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
@@ -104,7 +105,7 @@
       "attempts": [
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
+      "boundary": "Owner new work rules: qengine2 owns missing shared engines; compose only quest-owned content here and reuse delivered engines. This supersedes the earlier instruction assigning all engine work to this lane."
     },
     "shared_reward_mechanism": {
       "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
@@ -126,16 +127,16 @@
       "shared_migrations": "0999-1008 byte-exact main;1200-1205 removed; own1280-1288"
     },
     "integration_validation": {
-      "main": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
-      "state": "RUNNING_OWN_FOCUSED_CHECKS",
-      "policy": "owner speed rule: own PG, workspace all-target compile, changed-crate strict clippy, fmt, duplicate migrations, repo generation/pins",
-      "red": "PG migration anchor repaired; catalogue duplicate and required-track registration order repaired; next run pending",
-      "logs": [
-        "/tmp/questpc7-pr3020-own-pg3.log",
-        "/tmp/questpc7-pr3020-workspace-final.log",
-        "/tmp/questpc7-pr3020-remaining-generation.log"
-      ]
-    }
+      "state": "COMPILE_FMT_PASS_ENGINE_REQUESTS_PENDING",
+      "proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+      "owner_push_rule": "publish compiling state now; do not wait for full tests"
+    },
+    "engine_request": {
+      "id": "feaster-world-rewards",
+      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2",
+      "packet": "qlane-meta/questpc7/ENGINE-REQUESTS.json"
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   },
   {
     "title": "Feral Trappers Quest",
@@ -262,7 +263,8 @@
         "fixture Ground MINT now uses real content/frame metadata, preserving production compatibility guard"
       ],
       "validation": "14 focused gates GREEN; retained Hero PG53.248s, check/strict clippy3crates, repository generation/pins, content123/world5, fmt"
-    }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   },
   {
     "title": "Festive Outfits Quest",
@@ -295,7 +297,8 @@
       "case_seconds": 89.658220585,
       "batch_result": "3 full stories passed in95.79s",
       "source": "qlane-meta/qengine2/RESUME.md:44; case marker at:54"
-    }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   },
   {
     "title": "Fiend Slayer Outfits Quest",
@@ -331,7 +334,8 @@
         ]
       },
       "fixture_boundary": "Only the completed prerequisite is arranged through its fenced writer. This does not qualify that parent; all subject progress, token MINT/consumption and appearance facts start fresh."
-    }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   },
   {
     "title": "Fire from the Earth Mini World Change",
@@ -392,7 +396,8 @@
       "postgres_green_seconds": 95.848776751,
       "proof": "qlane-meta/questpc7/FIRE-PG-PROOF.json",
       "boundary": "Peer native Lava Lurker hunting/outfit programme is authoritative. Local independent Fire Elemental prototype discarded; its PG evidence does not claim shipped code."
-    }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   },
   {
     "title": "Forgotten Knowledge Quest",
@@ -554,7 +559,8 @@
         "content/quests/shared-reward-callbacks.json",
         "content/quests/imbuement-knowledge.json"
       ]
-    }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   },
   {
     "title": "Formal Dress Outfits Quest",
@@ -600,7 +606,8 @@
         "content/quests/questpc7-world-callbacks.json"
       ],
       "generic_owner": "Fresh fenced world requirements reuse NPC bounds, semantic ownership and existing Current Premium authority; immediate committed quest copy supports world-to-NPC sequences."
-    }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   },
   {
     "title": "Formorgar Mines Hoist Quest",
@@ -677,7 +684,8 @@
         "result": "PASS",
         "boundary": "Original read-only guards and asymmetric remote lever effects retained."
       }
-    }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   },
   {
     "title": "Formorgar Mines Quest",
@@ -741,7 +749,8 @@
       },
       "boundary": "External lane qualification is retained with its precise scope; no local whole-route PG claim is invented.",
       "ownership_decision": "QSPLIT L1 outfit entry is explicitly QUALIFIED at the same canonical/title on qengine2. Skip that entry under current owner rule. Peer proof covers the complete Norseman/Formorgar outfit path with other-parent prerequisites, not a new local certification of every Ice Islands recipe stage."
-    }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   },
   {
     "title": "Fury Gates Mini World Change",
@@ -883,7 +892,8 @@
         ]
       },
       "boundary": "External lane qualification is retained with its precise scope; no local whole-route PG claim is invented."
-    }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   },
   {
     "title": "Glooth Engineer Outfits Quest",
@@ -922,7 +932,8 @@
         "scope": "Whole owned L1 outfit-grant mechanism; Dark Trails and Glooth Engineer share exactly one source base grant and both addon order paths. Encounter/exploration/voting objectives retain other lane ownership.",
         "evidence": "3 full source outfit stories passed PostgreSQL18.6 in93.80s; exact per-case markers, source file:line/SHA and checks in batches[L1-03]."
       }
-    }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   },
   {
     "title": "Goblin Merchant Quest",
@@ -948,7 +959,7 @@
     "owner": "questpc7",
     "remaining_work": {
       "kind": "lane_implementation_work",
-      "missing_piece": "Implement the Guardcatcher/Adventurer carried-tool consumption, exact live-creature capture/removal and captured-item delivery atomically; compose the selected pickup/reset, NPC and quest progression route.",
+      "missing_piece": "Compose the quest-owned route using the shared engine requested in ENGINE-REQUESTS.json after qengine2 delivery; do not implement a large new engine in this lane.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/51/definition",
         "crates/gameplay/quests/src/quest/world_callbacks.rs:81",
@@ -957,7 +968,7 @@
       "attempts": [
         "Read the chosen Guardcatcher/Adventurer and perfume/trunk stages; compared the single-carried-item map callback schema with the required actor capture operation."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
+      "boundary": "Owner new work rules: qengine2 owns missing shared engines; compose only quest-owned content here and reuse delivered engines. This supersedes the earlier instruction assigning all engine work to this lane."
     },
     "mandatory_validation": {
       "state": "FOCUSED_CHECKS_RUNNING",
@@ -971,16 +982,16 @@
       "shared_migrations": "0999-1008 byte-exact main;1200-1205 removed; own1280-1288"
     },
     "integration_validation": {
-      "main": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
-      "state": "RUNNING_OWN_FOCUSED_CHECKS",
-      "policy": "owner speed rule: own PG, workspace all-target compile, changed-crate strict clippy, fmt, duplicate migrations, repo generation/pins",
-      "red": "PG migration anchor repaired; catalogue duplicate and required-track registration order repaired; next run pending",
-      "logs": [
-        "/tmp/questpc7-pr3020-own-pg3.log",
-        "/tmp/questpc7-pr3020-workspace-final.log",
-        "/tmp/questpc7-pr3020-remaining-generation.log"
-      ]
-    }
+      "state": "COMPILE_FMT_PASS_ENGINE_REQUESTS_PENDING",
+      "proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+      "owner_push_rule": "publish compiling state now; do not wait for full tests"
+    },
+    "engine_request": {
+      "id": "goblin-live-capture",
+      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2",
+      "packet": "qlane-meta/questpc7/ENGINE-REQUESTS.json"
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   },
   {
     "title": "Golden Outfits Quest",
@@ -1012,7 +1023,8 @@
       ],
       "source_contract": "qlane-meta/questpc7/CONTRACT-NOTES.md",
       "generated_pin_companion": "deploy/synology-game/preprod-topology.toml:46; pin-refresh updated both map_revision and world_bundle.digest to the checked world pin"
-    }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   },
   {
     "title": "Grave Danger Quest",
@@ -1048,7 +1060,8 @@
       ],
       "boundary": "Whole selected finite programme. Seven literal upstream grave coordinates; five documented conservative native grave bindings in named regions. Original raid/global/cooldown/party logic and optional corpse loot remain outside proof.",
       "validation": "14 focused gates GREEN; retained Ferumbras PG52.553s, check/strict clippy, repository generators/pins, content123/world5, fmt"
-    }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   },
   {
     "title": "Grimvale Mini World Change",
@@ -1121,7 +1134,8 @@
         "content/world/npc-placements/index.json"
       ],
       "assumptions": "Personal botanical collection plots, selected inspection cells and native Feroxa objective are explicit conservative adaptations; see CONTRACT-NOTES.md. Original global full-moon, source form-chain and optional raid/corpse-loot fidelity are outside the pinned chosen programme."
-    }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   },
   {
     "title": "Hand of the Inquisition Outfits Quest",
@@ -1157,7 +1171,8 @@
         ]
       },
       "fixture_boundary": "Only the completed prerequisite is arranged through its fenced writer. This does not qualify that parent; all subject progress, token MINT/consumption and appearance facts start fresh."
-    }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   },
   {
     "title": "Heart of Destruction Quest",
@@ -1192,7 +1207,8 @@
         "content/quests/shared-reward-callbacks.json",
         "content/quests/imbuement-knowledge.json"
       ]
-    }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   },
   {
     "title": "Hero of Rathleton Quest",
@@ -1222,7 +1238,8 @@
       ],
       "boundary": "Selected finite Oteryn recipe. Original source global machines/FastWay and optional ordinary corpse loot remain outside this programme proof. No new party entitlement is inferred.",
       "validation": "13 focused gates GREEN; check, strict clippy, repository generators/pins, content123/world5, fmt"
-    }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   },
   {
     "title": "Hidden Threats Quest",
@@ -1314,7 +1331,8 @@
         "retained_native_source_cases": 15
       },
       "checks": "Focused retained PG,loader/world/reward/MINT units,author/generation,check,strict clippy,content123/world5,pins and fmt GREEN."
-    }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   },
   {
     "title": "Hive Born World Change",
@@ -1447,7 +1465,7 @@
     "owner": "questpc7",
     "remaining_work": {
       "kind": "lane_implementation_work",
-      "missing_piece": "Complete all fifteen source recipes including fluid and corpse operands, acquisition and cookbook access through real dispatch; prove the whole source route. The ordered UTC calendar and atomic plain carried exchange mechanism are implemented.",
+      "missing_piece": "Compose the quest-owned route using the shared engine requested in ENGINE-REQUESTS.json after qengine2 delivery; do not implement a large new engine in this lane.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/60/definition",
         "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351",
@@ -1458,7 +1476,7 @@
       "attempts": [
         "Read the source recipe/bonus calendar planner and the real generic writer; traced the retained Jean Pierre hi rejection to unsupported CalendarMonth rather than interpreting it as an absent test. Did not duplicate qengine2 or activate the test-only cooking planner."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "boundary": "Owner new work rules: qengine2 owns missing shared engines; compose only quest-owned content here and reuse delivered engines. This supersedes the earlier instruction assigning all engine work to this lane.",
       "source_recipe_requirement": "Each Jean Pierre cooking operation must consume all exact ingredient quantities and fluid subtypes, deliver the dish and commit cooking progress under one receipt/fence."
     },
     "mechanism_proof": {
@@ -1498,16 +1516,16 @@
       "shared_migrations": "0999-1008 byte-exact main;1200-1205 removed; own1280-1288"
     },
     "integration_validation": {
-      "main": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
-      "state": "RUNNING_OWN_FOCUSED_CHECKS",
-      "policy": "owner speed rule: own PG, workspace all-target compile, changed-crate strict clippy, fmt, duplicate migrations, repo generation/pins",
-      "red": "PG migration anchor repaired; catalogue duplicate and required-track registration order repaired; next run pending",
-      "logs": [
-        "/tmp/questpc7-pr3020-own-pg3.log",
-        "/tmp/questpc7-pr3020-workspace-final.log",
-        "/tmp/questpc7-pr3020-remaining-generation.log"
-      ]
-    }
+      "state": "COMPILE_FMT_PASS_ENGINE_REQUESTS_PENDING",
+      "proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+      "owner_push_rule": "publish compiling state now; do not wait for full tests"
+    },
+    "engine_request": {
+      "id": "hot-cuisine-native-eligibility",
+      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2",
+      "packet": "qlane-meta/questpc7/ENGINE-REQUESTS.json"
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   },
   {
     "title": "Hunter Outfits Quest",
@@ -1564,7 +1582,8 @@
         "qlane-meta/qengine2/CONTRACT-NOTES.md:86-99"
       ],
       "boundary": "External complete source NPC story has native General outfit/addon ownership. This records the peer canonical Hunter ledger qualification and skips duplicate implementation; it does not claim this lane authored a new Hunter cache route or renamed the native owner."
-    }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   },
   {
     "title": "Hunting for Tokens Quest",
@@ -1598,7 +1617,8 @@
         "content/world/npc-placements/index.json"
       ],
       "generic_owner": "Existing exact carried exchange/MINT/quest transaction; new canonical physical profiles19083/19151 and retained Jorge placement."
-    }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   },
   {
     "title": "Hydra Egg Quest",
@@ -1637,7 +1657,8 @@
       "physical_item": "Existing accepted native4839 profile retained; no redundant qualifier or inferred use effect.",
       "checks": "All15 non-empty focused gates GREEN: retained Hidden PG44.066s; loader/callback/reward/pickup/codec/compiler/author units; generation/check/strictclippy; rebuilt compiler pins; content123/world5/fmt.",
       "verification_audit": "Two ancillary filters matched0 tests and are not evidence. Actual world pickup3 covers strict item zero/101 refusal; compiler bundle13 covers codec/export. HYDRA-PG-PROOF.json records the correction."
-    }
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   },
   {
     "title": "Illuminated Warrior Outfits Quest",
@@ -1662,7 +1683,7 @@
     "owner": "questpc7",
     "remaining_work": {
       "kind": "lane_implementation_work",
-      "missing_piece": "Illuminated Warrior Outfits, Illuminated Warrior first addon, Illuminated Warrior second addon: the reusable fenced NPC outfit/addon and account appearance mapping owner is implemented. Compose the full pinned route and exact owned NPC/physical/encounter bindings; implement remaining guard or currency mechanisms here and qualify the whole route with real PostgreSQL proof.",
+      "missing_piece": "Compose the quest-owned route using the shared engine requested in ENGINE-REQUESTS.json after qengine2 delivery; do not implement a large new engine in this lane.",
       "evidence": [
         "content/quests/definitions/quests-00300-00351.json:1#/records/5/definition",
         "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
@@ -1671,7 +1692,7 @@
       "attempts": [
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
+      "boundary": "Owner new work rules: qengine2 owns missing shared engines; compose only quest-owned content here and reuse delivered engines. This supersedes the earlier instruction assigning all engine work to this lane."
     },
     "shared_reward_mechanism": {
       "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
@@ -1696,15 +1717,15 @@
       "shared_migrations": "0999-1008 byte-exact main;1200-1205 removed; own1280-1288"
     },
     "integration_validation": {
-      "main": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
-      "state": "RUNNING_OWN_FOCUSED_CHECKS",
-      "policy": "owner speed rule: own PG, workspace all-target compile, changed-crate strict clippy, fmt, duplicate migrations, repo generation/pins",
-      "red": "PG migration anchor repaired; catalogue duplicate and required-track registration order repaired; next run pending",
-      "logs": [
-        "/tmp/questpc7-pr3020-own-pg3.log",
-        "/tmp/questpc7-pr3020-workspace-final.log",
-        "/tmp/questpc7-pr3020-remaining-generation.log"
-      ]
-    }
+      "state": "COMPILE_FMT_PASS_ENGINE_REQUESTS_PENDING",
+      "proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+      "owner_push_rule": "publish compiling state now; do not wait for full tests"
+    },
+    "engine_request": {
+      "id": "illuminated-first-party-constructors",
+      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2",
+      "packet": "qlane-meta/questpc7/ENGINE-REQUESTS.json"
+    },
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
   }
 ]

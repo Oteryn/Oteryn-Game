@@ -81,7 +81,21 @@ async fn pick_native_egg(owner:&ComposedFreshAdmission<'_, '_, '_>,a:&AdmittedSe
  let snapshot=oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(&snapshot.payload).map_err(debug)?;
  assert_eq!(snapshot.header.reset_epoch,owner.reset_epoch);
  let map=owner.bundle_map().ok_or("bundle")?;
- let key=ItemKey::MapBase{bundle_digest:map.overlay.base().digest(),placement_key:oteryn_world_bundle::bundle::placement_key(-3,33004,32664,2).ok_or("key")?,reset_epoch:owner.reset_epoch};
+ // Resolve the exact native definition, independent of fixture stack order.
+ use crate::map::view::MapFacts;
+ let position=crate::map::overlay::TilePos{x:33004,y:32664,floor:-3};
+ let native=owner.active_generation.and_then(|g|g.native_gameplay()).ok_or("native")?;
+ let expected=native.item_index().and_then(|i|i.definition_ref("Item","oteryn:item.tibia.i4839","definition-r1")).ok_or("egg definition")?;
+ let tile=map.overlay.base().tile(position.x,position.y,position.floor).ok_or("nest tile")?;
+ let candidates=tile.ids().iter().zip(tile.depths()).filter(|(_,depth)|**depth==0).enumerate()
+  .filter_map(|(ordinal,(id,_))|{
+   let ordinal=u8::try_from(ordinal).ok()?;
+   let fact=map.facts.base_entry(position,ordinal,*id)?;
+   (fact.definition==oteryn_protocol_oteryn::world_map::MapDefinition::Item(expected)
+    && fact.pickupable && !fact.bound).then_some(ordinal)
+  }).collect::<Vec<_>>();
+ assert_eq!(candidates.len(),1,"one exact movable native egg at the nest");
+ let key=ItemKey::MapBase{bundle_digest:map.overlay.base().digest(),placement_key:oteryn_world_bundle::bundle::placement_key(-3,33004,32664,candidates[0]).ok_or("key")?,reset_epoch:owner.reset_epoch};
  let handle=items.table().handle(&key).ok_or("native egg map handle")?;
  let selection=ItemMoveSelection{equip_drop:true,container_tree:true,world_interaction:true};
  let payload=encode_item_move_intent_for(&ItemMoveIntent{source:handle,destination:ItemMoveDestination::MainBackpack},selection).map_err(debug)?;

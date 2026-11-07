@@ -13,6 +13,22 @@ class QuestPc7QuestRewards(unittest.TestCase):
         cls.callbacks=json.loads(cls.outputs['content/quests/shared-reward-callbacks.json'])
         cls.author=json.loads(cls.outputs['content/cosmetics/outfits/authoring.json'])
         cls.schema=json.loads((q.ROOT/'tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json').read_text())
+    def test_golden_confirmation_topics_do_not_collide_with_other_king_routes(self):
+        own=[c for c in self.callbacks['callbacks'] if c['key'].startswith('oteryn:quest-reward/questpc7-golden-') and 'fee' in c]
+        others=[c for c in self.callbacks['callbacks'] if c['npc']=='oteryn:npc.king_tibianus' and not c['key'].startswith('oteryn:quest-reward/questpc7-golden-')]
+        self.assertEqual({c['topic'] for c in own},{101,102,103})
+        self.assertFalse({c['topic'] for c in own}&{c['topic'] for c in others})
+
+    def test_out_of_order_prayers_have_an_explicit_reply_without_transition(self):
+        offers=json.loads(self.outputs['content/quests/shared-reward-offers.json'])['offers']
+        prayers=[o for o in offers if o['keywords']==['stake prayer']]
+        self.assertEqual(len(prayers),10)
+        for offer in prayers:
+            self.assertEqual((offer['topic'],offer['next_topic']),(0,0))
+            self.assertEqual(len(offer['storage']),1)
+            self.assertTrue(offer['storage'][0]['preserve'])
+            self.assertFalse({'give','take','fee','outfit','transition'}&offer.keys())
+
     def test_formal_exhibition_requires_current_premium_and_consumed_button(self):
         worlds=[c for c in json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks'] if c['key'].startswith('oteryn:quest-callback/questpc7-formal-')]
         self.assertEqual(len(worlds),2)

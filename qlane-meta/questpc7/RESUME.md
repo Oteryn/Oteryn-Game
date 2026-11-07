@@ -1,3 +1,91 @@
+# PUBLISH NOW — owner hard rule, 2026-11-07 20:00 UTC
+
+cargo check --workspace --all-targets PASS10m59s; cargo fmt --all -- --check
+PASS. Strict Clippy12 changed crates/all targets/all features/-Dwarnings
+PASS9m11s. Own repaired Friends, Golden and Hydra native PG all3PASS112.236s,
+with PG18.6 markers and exact migration1286 checksum;24author tests PASS71.041s.
+Dup migration, exact world inventory,5new inventory cases and authoring freshness
+PASS. Full repo regeneration/pins already completed; current World inputs match
+those checked pins. Publish this compiling integration immediately, no extra gate.
+
+PUBLISH-PROOF.json holds the full1280-1288 file list and actual checksums.
+0999-1008 are byte-exact main;1200-1205 absent. Source main1ae39c7fb is merged
+in061f7d713. Fetch the task branch and merge FETCH_HEAD if moved, then commit
+with the owner's author/trailers and fast-forward push. Remote tracking ref is
+stale; live ls-remote/FETCH_HEAD is authoritative. Do not open a PR: wpkg collects.
+
+21 owned quests have earlier pushed qualifications;4 remain ACTIVE with shared
+engine requests now owned by qengine2. Do not claim the whole branch PG-green:
+the pre-existing unqualified Feaster prefix remains RED, its test is preserved,
+and new engine drafts are stashed, not shipped as a qualified engine. New owner
+hard rule explicitly allows publishing compiling WIP while CI owns full suites.
+Continue quest-owned work when engine delivery lands; merge main immediately
+when coordinator announces it. Push compiling progress at least every30minutes.
+
+# OWNER NEW WORK RULES — current direction, supersedes older engine ownership
+
+Shared engines now belong to qengine2. Four concrete requests were sent in the
+conversation and are recorded in ENGINE-REQUESTS.json. Questpc7 must not build
+large new engines; only a small helper under~50 lines in a NEW file is allowed.
+Do not open a PR: wpkg collects lane branches into one PR. Push checked ready
+batches to this lane; merge main after coordinator delivery/collector merges.
+Generated outputs are refreshed at batch publication, not after each quest.
+
+Unqualified Feaster generic extensions are preserved in the newest local stash
+(label: questpc7: unqualified Feaster engine extensions awaiting qengine2 ownership).
+Do not blindly apply it over a delivered qengine2 owner. The existing published
+Feaster prefix remains unfinished and its PG test remains present and RED;
+its missing engine is expressly routed to qengine2, not a qualified quest.
+
+Ready integration repairs: main0999-1008 adopted unchanged, lane migrations
+1280-1288, exact loader inventory restored, Golden confirmation topics101-103
+avoid donor topic collisions, one-connection unpaid/payment/replay proof,
+Friends explicit wrong-order/repeated-prayer reply-only offers, Hydra resolves
+one exact movable native egg rather than a fixture stack ordinal.
+Latest native run: /tmp/questpc7-ready-final-pg.log (Friends/Golden/Hydra).
+24 author tests passed69.829s before the final repeated-blessing reply addition.
+Final workspace check and strict Clippy use CARGO_INCREMENTAL=0 and2buildjobs
+so they cannot consume another12GB of incremental metadata:
+/tmp/questpc7-ready-workspace-final.log
+/tmp/questpc7-ready-clippy-final.log
+Earlier check filled disk; inactive own target caches reclaimed,49 old databases
+were removed only after proving a persisted questpc7 receipt and no connections.
+No credentials read. Do not claim the unqualified Feaster test green or skip it.
+
+# Current grouped integration repairs — 2026-11-07 19:11 UTC
+
+Main merge is local061f7d713, not pushed. Actual remote HEAD verified with
+ls-remote is d58add72dde9dff485e365fb5a594e5c215d02d4; origin's tracking ref
+is stale96b478e86, so use FETCH_HEAD/live ls-remote when merging before push.
+All25 owned canonical quest definitions counted; pushed ledger21 QUALIFIED,
+4 ACTIVE,0 unstarted,0 hard blockers. Eight other-lane/excluded rows are out
+of the owner's25-entry scope. Existing qualification is not new integration proof.
+
+Complete30-case native PG baseline:26 pass,4 fail in796.444s. Father11-track
+fresh acceptance, legacy receipt reload and complete8-handin/cape/replay PASS.
+Failures grouped once: Feaster same-selector entrance ambiguity; Friends old
+numeric checksum query; Golden helper lost its3 offer phrases; Hydra hardcoded
+native egg stack ordinal. Repairs authored together; no tests/assertions weakened.
+Feaster also uses bounded world MINT command identities and exact same-TX USE
+counter proof; the prefix now asserts exact command replay does not mint twice.
+Shared activation selection remains advisory and ambiguous eligible callbacks
+still refuse; the existing fenced writer rechecks every storage guard.
+
+Latest4-case rebuilt repair run:
+/tmp/questpc7-pr3020-grouped-repairs-final-pg.log (CARGO_BUILD_JOBS=2,2PGthreads).
+One earlier compiler was SIGKILLed while a7.5GB world pin-check overlapped;
+pin-check is now finished and heavy tools are sequenced to avoid that peak.
+The cache cleaner was stopped after it evicted useful recent incremental state;
+only inactive caches of unchanged crates and obsolete test executables may be
+removed while preserving the12 changed crates' current caches.
+
+11 loader tests PASS17.60s,5 main alias tests PASS5.81s,22 author tests
+PASS73.433s,1 activation guard unit PASS,5 inventory validation cases PASS.
+Workspace all-target compile previously PASS9m30s; must repeat after material
+repairs. Strict Clippy final was interrupted to prioritize functional PG repairs;
+rerun changed12 crates after repaired PG, then fmt/dup/pins as required and push.
+Do not run a full reverse-dependency suite. Do not end:4 ACTIVE entries remain.
+
 # Current integration repair — 2026-11-07 18:39 UTC
 
 Pending merge of origin/main1ae39c7fb; no unresolved index conflicts.

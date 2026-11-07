@@ -459,6 +459,7 @@ mod tests {
         // These independently authored callback inputs extend the original donor file.
         // Keep exact inventory equality and apply the same owner exclusion to each input.
         for source in [
+            include_str!("../../../../../content/quests/shared-access-callbacks.json"),
             include_str!("../../../../../content/quests/shared-outfit-callbacks.json"),
             include_str!("../../../../../content/quests/questpc7-world-callbacks.json"),
         ] {
@@ -471,6 +472,7 @@ mod tests {
             }
         }
         expected.insert(crate::quest::rotten_blood::altar_callback().key);
+        expected.insert(crate::quest::schrodinger_island::callback().key);
         assert_eq!(
             callbacks
                 .into_iter()

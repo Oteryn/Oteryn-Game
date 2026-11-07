@@ -1,0 +1,85 @@
+{
+  "state": "COMPILING_INTEGRATION_READY_FOR_PUSH",
+  "main_merged": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+  "merge_commit": "061f7d713",
+  "owner_push_rule": "2026-11-07 hard rule: cargo check --workspace --all-targets and fmt; publish compiling state now; CI owns full suites",
+  "validation": {
+    "workspace_all_targets": "PASS,10m59s including build-lock wait",
+    "changed_crates_clippy": "PASS,12 crates/all targets/all features/-D warnings,9m11s",
+    "fmt": "PASS",
+    "duplicate_migrations": "PASS",
+    "authoring": "24 passed,71.041s",
+    "authored_prop_inventory": "5 passed",
+    "authoring_freshness": "PASS",
+    "repository_generation_pins": "repo full regeneration and pin-refresh completed; standalone pin-check passed; subsequent changes affect quest dialogue data only",
+    "own_postgres": {
+      "version": "18.6",
+      "summary_seconds": 112.236,
+      "cases": [
+        {
+          "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_golden::questpc7_golden_full_commission_charges_exactly_once",
+          "seconds": 73.916
+        },
+        {
+          "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_friends::questpc7_friends_full_route_and_repeatable_unlocked_services",
+          "seconds": 73.966
+        },
+        {
+          "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_hydra::questpc7_hydra_requires_personal_native_nest_pickup",
+          "seconds": 38.317
+        }
+      ],
+      "friends_migration1286_checksum": true
+    }
+  },
+  "main_migrations_0999_1008": "byte-exact main;1200-1205 absent",
+  "lane_migrations": [
+    {
+      "file": "1280_quest_native_reward_initialization.sql",
+      "sha256": "19cbc47c9b675b8527658d001d94fb66e3c494b4f4519de4d6b69a37cf15ada4",
+      "sqlx_sha384": "db94049089a2e7ce47fc46dfa7c5187d3e7cbe8f43eef69ff65a1fb34b2cfaaf44b5e24f2b997653e960667d32ca0ad6"
+    },
+    {
+      "file": "1281_quest_corruptor_lifecycle.sql",
+      "sha256": "01bea81b0c68c863301828f9e190bbf7235426c0ea2d1da55f47ebc3eb285907",
+      "sqlx_sha384": "c1bd0765ec3630e56e63860070ad45f0c3120f1d85cf1794fb00c11d8b22b8cdaec4d8456bd5ee1a4cb15d1502eb6541"
+    },
+    {
+      "file": "1282_quest_native_npc_revision.sql",
+      "sha256": "fd0ac2ce6cb93580f148c4602f8eb68155bec05cc191ea8412a2ed36bf6bc66a",
+      "sqlx_sha384": "1bcf942067d5195519e0cf264e8e0a0f7c043247f2ebeb7a93f264674e0944bfdf2d308a39190fa6e37357d42f091320"
+    },
+    {
+      "file": "1283_quest_viola_rewards.sql",
+      "sha256": "1762bec1c53f98a72bf28c98bfdbbbebea1fadb9ea061c97417a99e2d4c7bb32",
+      "sqlx_sha384": "95d61fec9dd8c10e57fe9875a5c86c66b16b68960361e18a17289f764dd800561345610c8b5d9224e123f0e999652c64"
+    },
+    {
+      "file": "1284_npc_quest_item_exchange.sql",
+      "sha256": "fa9b6a3cfb00153ae27c6550325065c314f03aac13273208699135aaa3d3e85f",
+      "sqlx_sha384": "bc829d43ead38f144a082c68c853e0479345d136f9ea66dcd6aa70087afea9f0b1e43fef218ec3e102e8d81b72911e91"
+    },
+    {
+      "file": "1285_fathers_burden_xp_proof_name.sql",
+      "sha256": "52422802ea454ea000ced8f7ade39ef6ddcca2e6e1b9888556c19dff6ae0c7c6",
+      "sqlx_sha384": "847d941b564957a77f84abc4ee3759f7954233b3b8dbd46a9e6aec40b4e5666abdf6958947e27196420bb5f3c8990032"
+    },
+    {
+      "file": "1286_quest_repeatable_exchanges.sql",
+      "sha256": "67f6a6d70d73f865df6acd3b688f203fcc6dee051e9162653d3562ac9fa79e40",
+      "sqlx_sha384": "b39a89f8078dfe37546ca96ca651433c79135bf8977813bc03bf87fc9717344494f15490f35d37cb2f08e35d5e926dab"
+    },
+    {
+      "file": "1287_quest_world_item_rewards.sql",
+      "sha256": "261a092a4e15e92d563368d5afb0b95ce4f75870a4061a195615be2e968db926",
+      "sqlx_sha384": "3d5c30ad4208864e69dc20b60afaee57078df04aa758f79323de7396479f46d41490fae440370abc8abe9872b70686dd"
+    },
+    {
+      "file": "1288_quest_backpack_outputs.sql",
+      "sha256": "ffc7094ae396ef1ca0ec4d9186b907500813ab5c690279e3b3574f0060a65e5f",
+      "sqlx_sha384": "c3d63ddd0a7a927dcaa33b0d9bd0f817c424963337db661d4b4774e0545e4dc93b371d0ce1d291dae3e49c341fab0298"
+    }
+  ],
+  "unfinished_scope": "4 ACTIVE; engine requests routed to qengine2 under the new ownership rule. Pre-existing unqualified Feaster prefix test remains RED and present; unqualified generic extensions preserved in local stash, not published as qualified work.",
+  "engine_requests": "qlane-meta/questpc7/ENGINE-REQUESTS.json"
+}

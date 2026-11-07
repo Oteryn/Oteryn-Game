@@ -144,6 +144,9 @@ pub(super) async fn talk(
 fn offer_words(key: &str) -> &'static [&'static str] {
     match key.rsplit('/').next().unwrap_or(key) {
         "knight-sword" => &["forge"],
+        "questpc7-golden-base" => &["base outfit"],
+        "questpc7-golden-gloves" => &["boots and gloves"],
+        "questpc7-golden-helmet" => &["golden helmet"],
         "l1-warmaster-crest" => &["crest"],
         "l1-wayfarer-cape" => &["cape"],
         "l1-yalaharian-sage" | "l1-yalaharian-villain" => &["addon"],

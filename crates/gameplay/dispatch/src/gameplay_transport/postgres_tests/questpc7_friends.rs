@@ -84,7 +84,7 @@ pub(super) async fn exercise(
         .await?;
     eprintln!("QUESTPC7_FRIENDS POSTGRES_STARTED version={version}");
     let applied: Vec<u8> =
-        sqlx::query_scalar("SELECT checksum FROM _sqlx_migrations WHERE version=1282 AND success")
+        sqlx::query_scalar("SELECT checksum FROM _sqlx_migrations WHERE version=1286 AND success")
             .fetch_one(&h.pool)
             .await?;
     let source = std::fs::read(concat!(
@@ -97,7 +97,7 @@ pub(super) async fn exercise(
         &expected[..],
         "PG must execute the final migration bytes, including the exact counter-source proof"
     );
-    eprintln!("QUESTPC7_FRIENDS MIGRATION_1282_SOURCE_MATCHED");
+    eprintln!("QUESTPC7_FRIENDS MIGRATION_1286_SOURCE_MATCHED");
 
     let mut selected = admitted
         .continuity
