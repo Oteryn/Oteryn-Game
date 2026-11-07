@@ -15,11 +15,14 @@ pub(super) struct PeriodicHealthEvents {
     pub(super) target_identity: Option<Arc<[u8]>>,
     pub(super) conditions: Option<runtime_actor_conditions::ActorConditionState>,
     hatred_defense: Option<u32>,
+    stamp: RuntimeWorkStamp,
+    pub(super) blood: Vec<super::super::soul_war_native_health_events::CommittedCloakBloodEvent>,
 }
 impl PeriodicHealthEvents {
     pub(super) fn new(
         runtime: &ChannelRuntimeV1,
         actor: ExactActorRef,
+        stamp: RuntimeWorkStamp,
     ) -> Result<Self, CarrierError> {
         Ok(Self {
             callback: runtime
@@ -29,6 +32,8 @@ impl PeriodicHealthEvents {
             target_identity: None,
             conditions: None,
             hatred_defense: None,
+            stamp,
+            blood: Vec::new(),
         })
     }
     #[allow(
@@ -43,6 +48,7 @@ impl PeriodicHealthEvents {
         health: &mut i64,
         maximum: i64,
         tick: &ConditionTick<ExactActorRef>,
+        tick_index: usize,
         damage: i64,
         now_us: u64,
     ) -> Result<i64, CarrierError> {
@@ -68,6 +74,38 @@ impl PeriodicHealthEvents {
             SoulWarPlayerSourceOrigin::Condition,
             runtime.content_pin(),
         )?;
+        use sha2::{Digest, Sha256};
+        let occurrence = Sha256::new()
+            .chain_update(b"oteryn:cloak-periodic-health-event:v1")
+            .chain_update(self.stamp.generation().get().to_be_bytes())
+            .chain_update(self.stamp.ordinal().get().to_be_bytes())
+            .chain_update(actor.placement_identity())
+            .chain_update(
+                u64::try_from(tick_index)
+                    .map_err(|_| CarrierError::CapacityArithmeticOverflow)?
+                    .to_be_bytes(),
+            )
+            .chain_update(tick.sequence.to_be_bytes())
+            .chain_update(tick.due.to_be_bytes())
+            .chain_update(tick.provenance.definition_key.as_bytes())
+            .chain_update(tick.provenance.definition_revision.to_be_bytes())
+            .finalize()
+            .into();
+        if let Some(mut event) = runtime.carrier.stage_cloak_blood_event(
+            &runtime.continuity,
+            runtime.content_pin(),
+            actor,
+            &source,
+            damage.checked_neg().ok_or(CarrierError::InvalidDamage)?,
+            0,
+            occurrence,
+        )? {
+            event.stamp = Some(self.stamp);
+            self.blood
+                .try_reserve(1)
+                .map_err(|_| CarrierError::AllocationFailed)?;
+            self.blood.push(event);
+        }
         let mut binding = Vec::with_capacity(40);
         binding.extend_from_slice(&actor.placement_identity());
         binding.extend_from_slice(&tick.sequence.to_be_bytes());
@@ -222,7 +260,7 @@ impl PeriodicHealthEvents {
         spell_combat: &mut runtime_actor_spell::ActorCombatState,
         committed: &mut runtime_actor_conditions::CreatureCommitState,
         target_identity: &mut Arc<[u8]>,
-    ) {
+    ) -> Vec<super::super::soul_war_native_health_events::CommittedCloakBloodEvent> {
         if let Some(identity) = self.target_identity {
             *target_identity = identity;
             spell_combat.soul_war_health = self.callback;
@@ -234,5 +272,6 @@ impl PeriodicHealthEvents {
         if let Some(delta) = self.hatred_defense {
             spell_combat.soul_war_defense_delta = delta;
         }
+        self.blood
     }
 }

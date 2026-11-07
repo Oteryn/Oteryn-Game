@@ -201,9 +201,9 @@ impl ChannelRuntimeV1 {
         let mut total = 0i64;
         let mut had_damage = false;
         let mut health_after = before.health;
-        let mut health_events = PeriodicHealthEvents::new(self, actor)?;
+        let mut health_events = PeriodicHealthEvents::new(self, actor, stamp)?;
         let mut current_type = before.clone();
-        for tick in &ticks {
+        for (tick_index, tick) in ticks.iter().enumerate() {
             match tick.kind {
                 TickKind::Damage {
                     amount,
@@ -355,6 +355,7 @@ impl ChannelRuntimeV1 {
                         &mut health_after,
                         before.maximum_health,
                         tick,
+                        tick_index,
                         damage,
                         now_us,
                     )?;
@@ -407,6 +408,7 @@ impl ChannelRuntimeV1 {
                         &mut health_after,
                         before.maximum_health,
                         tick,
+                        tick_index,
                         damage,
                         now_us,
                     )?;
@@ -621,6 +623,8 @@ impl ChannelRuntimeV1 {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
         self.carrier
+            .reserve_cloak_blood_capacity(&prepared.health_events.blood)?;
+        self.carrier
             .reserve_native_death_capacity(prepared.native_death.as_slice())?;
         let Slot::CreatureOccupied {
             health,
@@ -657,10 +661,11 @@ impl ChannelRuntimeV1 {
         if prepared.health_after == 0 {
             committed.conditions.die();
         }
-        prepared
+        let blood = prepared
             .health_events
             .install(spell_combat, committed, target_identity);
         *companion = Some(next);
+        self.carrier.install_cloak_blood_events(blood);
         self.carrier
             .install_native_death_events(prepared.native_death);
         Ok(CreaturePeriodicReceipt {

@@ -206,12 +206,14 @@ impl ChannelRuntimeV1 {
                 OwnerCombatChange::Heal { magnitude, .. } => magnitude,
                 // Crystal game.cpp:7400-7401 sends absorbed healing through
                 // combatChangeHealth(nullptr, ...): it has no attacker and no
-                // health-change event. Residual Player loss is negative, so
-                // neither call satisfies Cloak's positive/non-NULL predicate.
-                OwnerCombatChange::DamageWithHealing { .. } => 0,
+                // health-change event. Only actual residual Player loss may
+                // qualify the narrowly accepted Q6a hit rule.
+                OwnerCombatChange::DamageWithHealing { damage, .. } => {
+                    damage.checked_neg().ok_or(Error::InvalidMagnitude)?
+                }
                 _ => 0,
             };
-            if primary > 0 && matches!(next.slots[index], Slot::CreatureOccupied { .. }) {
+            if primary != 0 && matches!(next.slots[index], Slot::CreatureOccupied { .. }) {
                 let source = self.carrier.soul_war_health_context(
                     &self.continuity,
                     Some(batch.caster),

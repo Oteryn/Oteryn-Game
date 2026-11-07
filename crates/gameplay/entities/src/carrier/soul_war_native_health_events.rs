@@ -103,9 +103,14 @@ impl ChannelActorCarrier {
         occurrence: [u8; 32],
     ) -> Result<Option<CommittedCloakBloodEvent>, CarrierError> {
         use super::soul_war_health::HealthSourceKind;
+        if !source.invoke_health_change {
+            return Ok(None);
+        }
         let eligible = match source.kind {
             HealthSourceKind::Null => false,
-            HealthSourceKind::Player(_) => primary > 0 || secondary > 0,
+            // Accepted authoring13.7 Q6a: actual Player HIT leaves a pool.
+            // Preserve raw signed components for every other source callback.
+            HealthSourceKind::Player(_) => primary != 0 || secondary != 0,
             HealthSourceKind::NonPlayer => secondary > 0,
         };
         if !eligible {

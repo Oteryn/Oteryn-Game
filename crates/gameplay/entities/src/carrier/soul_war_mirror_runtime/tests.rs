@@ -1075,12 +1075,56 @@ fn srx3_cloak_canonical_absorption_heal_has_null_attacker_and_no_blood() {
         before + 100,
         "both canonical heal and residual loss must execute before checking source blood"
     );
-    assert!(
+    assert_eq!(
         runtime
             .pending_cloak_blood_events(64)
             .expect("actual source queue")
-            .is_empty(),
-        "NULL absorption healing must not inherit the Player attacker of residual negative damage"
+            .len(),
+        1,
+        "Q6a residual Player hit emits one event; NULL absorption healing must not emit a second"
+    );
+    let heal_only = cloak_health_batch(
+        player,
+        session,
+        cloak,
+        2,
+        runtime_actor_spell_types::OwnerCombatChange::DamageWithHealing {
+            target_atom: "oteryn:creature.cloak_of_terror".into(),
+            damage: 0,
+            healing: 200,
+        },
+    );
+    let prepared = runtime
+        .stage_spell_batch(&heal_only)
+        .expect("actual NULL absorption heal");
+    assert!(
+        runtime
+            .commit_spell_batch(prepared)
+            .expect("known NULL heal")
+            .applied
+    );
+    assert_eq!(
+        runtime
+            .companion_snapshot(cloak)
+            .expect("after NULL heal")
+            .health,
+        before + 300
+    );
+    assert_eq!(
+        runtime
+            .pending_cloak_blood_events(64)
+            .expect("NULL heal queue")
+            .len(),
+        1
+    );
+    let replay_heal = runtime
+        .stage_spell_batch(&heal_only)
+        .expect("same NULL heal occurrence");
+    assert!(
+        !runtime
+            .commit_spell_batch(replay_heal)
+            .expect("known NULL heal replay")
+            .applied
     );
     let replay = runtime
         .stage_spell_batch(&batch)
@@ -1091,11 +1135,12 @@ fn srx3_cloak_canonical_absorption_heal_has_null_attacker_and_no_blood() {
             .expect("same known receipt")
             .applied
     );
-    assert!(
+    assert_eq!(
         runtime
             .pending_cloak_blood_events(64)
             .expect("replayed source queue")
-            .is_empty()
+            .len(),
+        1
     );
 }
 
