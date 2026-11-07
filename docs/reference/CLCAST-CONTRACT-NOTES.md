@@ -793,3 +793,13 @@ Platform preference/password storage, account directory and ticket issuance
 remain the existing handoff; no Platform or migration files changed.
 
 All three cases passed together from clean code head `8a71047cf40ed969f37bad44b209426d6ed0571a`: 3 passed, 0 failed, 105.45 s total. No content compiler or other validation job ran during this PostgreSQL proof.
+
+Final Linux gates on the same source: `cargo fmt --all --check` 18.845 s;
+seven-package `cargo check --all-features` 147.433 s; seven-package
+`cargo clippy --all-targets --all-features -- -D warnings` 337.453 s;
+10 focused cast transport unit tests passed. Pin refresh (723.600 s), pin check
+(612.714 s) and workspace architecture check (506.159 s) passed; generated pins
+needed no content changes. These wall times include compilation/queue time.
+Native draw/use tests run on the Linux host; Windows HWND execution was not run.
+The Watch entry retains the existing CLIENT-INSTALLER-0 lifetime guard before
+loading assets, independently of character bootstrap.
