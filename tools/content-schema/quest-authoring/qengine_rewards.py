@@ -32,7 +32,7 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan')]
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern')]
     paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua']
@@ -394,6 +394,24 @@ def build():
             callbacks[-1]['creation_sex']=sex
             offers.append({'npc':'oteryn:npc.'+second_npc,'keywords':[word],'topic':0,'next_topic':3,
                 'storage':states,'reply':['Did you bring the '+word+'?']})
+    ice=prefix+'u8_0/the_ice_islands/'
+    norseman=ice+'norseman_outfit'
+    shared_start='oteryn:quest-progress/outfit_quest/default_start'
+    add('l5-norseman-base','the_ice_islands_quest','hjaern',['mission'],
+        [storage(ice+'questline',39,40),storage(ice+'mission12',0,6,2147483647),storage(ice+'yakchal_door',0,1,1)],
+        take=[(7289,1)],outfit=('norseman',0),requires=[requirement(ice+'obelisk0'+str(n),5) for n in range(1,5)])
+    callbacks[-1]['participants']=[{'quest':'oteryn:quest.outfit_and_addon_quests',
+        'storage':[storage(norseman,0,1,3),storage(shared_start,-1,1,1)]}]
+    for name,count,before,topic in [('first',5,40,3),('second',10,42,4)]:
+        states=[storage(ice+'questline',before,before+1)]
+        add('l5-norseman-'+name+'-shards','the_ice_islands_quest','hjaern',['yes'],states,take=[(7290,count)],topic=topic)
+        offers.append({'npc':'oteryn:npc.hjaern','keywords':['shard'],'topic':0,'next_topic':topic,
+            'storage':states,'reply':['Have you brought '+str(count)+' frostheart shards?']})
+        bit=1 if name=='first' else 2
+        add('l5-norseman-'+name+'-reward','the_ice_islands_quest','hjaern',['reward'],
+            [storage(ice+'questline',before+1,before+2)],outfit=('norseman',bit),next_topic=topic)
+        callbacks[-1]['participants']=[{'quest':'oteryn:quest.outfit_and_addon_quests',
+            'storage':[storage(norseman,0,bit+1,3)]}]
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})

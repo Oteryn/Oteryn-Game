@@ -3,8 +3,8 @@
   "lifecycle": "AUTHORING; owner-authorized local commits and fast-forward pushes to claude/happy-davinci-ijz3wy-qengine2 after each green batch",
   "qualification_boundary": "Whole L1 entry, not an isolated seeded reward stage. No entry is promoted before all of its required stages and relevant PG cases pass.",
   "counts": {
-    "qualified": 13,
-    "unfinished": 53,
+    "qualified": 15,
+    "unfinished": 51,
     "blocked": 0
   },
   "quests": [
@@ -664,7 +664,7 @@
     {
       "canonical": "oteryn:quest.the_ice_islands_quest",
       "title": "Formorgar Mines Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc",
@@ -688,7 +688,17 @@
           ]
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral.",
+      "qualification": {
+        "batch": "L1-05B",
+        "scope": "Complete shared Norseman/Formorgar L1 outfit path:base exact frost charm7289x1 with four parentObelisks5/Questline39;5+10shards7290 and both reward conversations;no internal outfit-stage seeding;late missing item rolls back foreign stages;all3 foreign proofs share primary revisions/original owners;replay,3immutable account facts and ordinary final appearance pass.",
+        "native_owners": [
+          "oteryn:quest.the_ice_islands_quest",
+          "oteryn:quest.outfit_and_addon_quests"
+        ],
+        "identity_resolution": "Original L1 title identity retained;Norseman source outfit stages use shared General owner,Formorgar progress uses existing IceIslands owner. No fabricated dedicated Norseman quest record.",
+        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-norseman-story duration=79.824440352s success=true"
+      }
     },
     {
       "canonical": "oteryn:quest.glooth_engineer_outfits_quest",
@@ -1082,13 +1092,16 @@
       "qualification": {
         "batch": "L1-04A",
         "scope": "Complete executable source Nobleman paid-addon story; native fee participant plus actual source price/once guards.",
-        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-nobleman-story duration=82.309922214s success=true"
+        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-nobleman-story duration=82.309922214s success=true",
+        "native_owner_canonical": "oteryn:quest.outfit_and_addon_quests",
+        "identity_resolution": "Dedicated catalogue identity exists;source outfit tracks retain shared General state owner.",
+        "resolved_canonical": "oteryn:quest.nobleman_outfits_quest"
       }
     },
     {
       "canonical": "unresolved:questpc2:norseman_outfits_quest",
       "title": "Norseman Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc2",
@@ -1099,7 +1112,17 @@
           "matched_path": "prior_rounds/N-Q-before-L3/quests"
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral.",
+      "qualification": {
+        "batch": "L1-05B",
+        "scope": "Complete shared Norseman/Formorgar L1 outfit path:base exact frost charm7289x1 with four parentObelisks5/Questline39;5+10shards7290 and both reward conversations;no internal outfit-stage seeding;late missing item rolls back foreign stages;all3 foreign proofs share primary revisions/original owners;replay,3immutable account facts and ordinary final appearance pass.",
+        "native_owners": [
+          "oteryn:quest.the_ice_islands_quest",
+          "oteryn:quest.outfit_and_addon_quests"
+        ],
+        "identity_resolution": "Original L1 title identity retained;Norseman source outfit stages use shared General owner,Formorgar progress uses existing IceIslands owner. No fabricated dedicated Norseman quest record.",
+        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-norseman-story duration=79.824440352s success=true"
+      }
     },
     {
       "canonical": "unresolved:questpc2:orcsoberfest",
@@ -1156,9 +1179,10 @@
       "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral.",
       "qualification": {
         "batch": "L1-04C",
-        "resolved_canonical": "oteryn:quest.pirate_outfits_quest",
         "scope": "Complete source base, Duncan introductions and three100-item hand-ins, original Morgan sabre, Ariella introduction and four-item hat exchange. Only external Shattered Isles prerequisites seeded;partial recipe refuses atomically;replay,three immutable account facts and ordinary final appearance selection pass.",
-        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-pirate-story duration=81.775046751s success=true"
+        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-pirate-story duration=81.775046751s success=true",
+        "native_owner_canonical": "oteryn:quest.outfit_and_addon_quests",
+        "identity_resolution": "Original L1 title identity retained;source outfit path belongs to existing shared native quest owner,not a separately admitted dedicated quest record."
       }
     },
     {
@@ -1600,7 +1624,6 @@
           "entries": [
             "unresolved:questpc2:nobleman_outfits_quest"
           ],
-          "resolved_canonical": "oteryn:quest.nobleman_outfits_quest",
           "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-nobleman-story duration=44.661348814s success=false",
           "green": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-nobleman-story duration=82.309922214s success=true",
           "result": "1 passed;0 failed;0 ignored;82.31s;actualPostgreSQL18.6",
@@ -1620,7 +1643,10 @@
           "native_guards": "Source payment kind18 reuses complete carried coin proof, custody/order/epochs and fresh Character proof. Immutable Quest fee receipt FK/source price/policy validated in same transaction. Existing proof arms retained.",
           "commit": "33b640335",
           "push": "Fast-forward confirmed",
-          "verification": "All focused checks complete after immediate slice push. Previous disk-only integration failure recovered; no skipped/weakened tests."
+          "verification": "All focused checks complete after immediate slice push. Previous disk-only integration failure recovered; no skipped/weakened tests.",
+          "native_owner_canonical": "oteryn:quest.outfit_and_addon_quests",
+          "identity_resolution": "Dedicated catalogue identity exists;verified shared native state owner retained.",
+          "resolved_canonical": "oteryn:quest.nobleman_outfits_quest"
         },
         {
           "id": "L1-04B",
@@ -1668,7 +1694,9 @@
           ],
           "follow_on_verification": "COMPLETE:123content tests2.10s;5world tests49.53s;pin-check77bd6a93507af938959dc35150cc927abb487f43fbd842e9601c9c88dc5968dc",
           "commit": "7a25db767",
-          "push": "fast-forward confirmed"
+          "push": "fast-forward confirmed",
+          "native_owner_canonical": "oteryn:quest.outfit_and_addon_quests",
+          "identity_resolution": "L1 title alias retained;verified shared native owner."
         }
       ],
       "debug_evidence": [
@@ -2029,7 +2057,7 @@
       "unresolved:questpc2:norseman_outfits_quest",
       "oteryn:quest.the_ice_islands_quest"
     ],
-    "phase": "Norseman+Formorgar full-source PG RED72333 running before production bindings. Oriental all checks complete and pushed6ad33a4b1.",
+    "phase": "All3 L1-05 entries QUALIFIED;Norseman/Formorgar source slice immediately committing/pushing. Follow-on content/world/pin and source root-topic continuation review remain active.",
     "reuse_audit": "Refreshed questpc2..8 primary branches; no current matched entry QUALIFIED; no newer reward sex guard found. Existing immutable Character sex reader reused. Audit /tmp/qengine2-batch5-status-audit.log.",
     "red_command": "cargo test --locked -p oteryn-gameplay-dispatch qengine_l5_oriental -- --nocapture",
     "red_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-oriental-story duration=45.088365726s success=false",
@@ -2065,8 +2093,35 @@
         "follow_on_verification": "COMPLETE:123content tests2.15s;5world tests45.22s;pin-check81deec82ff426ee357fa1c79a01d4730c8a566cc70123136bb45c685080bb5d7",
         "commit": "6ad33a4b1",
         "push": "fast-forward confirmed"
+      },
+      {
+        "id": "L1-05B",
+        "status": "QUALIFIED",
+        "entries": [
+          "unresolved:questpc2:norseman_outfits_quest",
+          "oteryn:quest.the_ice_islands_quest"
+        ],
+        "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-norseman-story duration=45.551056868s success=false",
+        "green": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-norseman-story duration=79.824440352s success=true",
+        "result": "1passed;0failed;0ignored;79.82s;actualPostgreSQL18.6",
+        "scope": "Complete shared Norseman/Formorgar L1 outfit path:base exact frost charm7289x1 with four parentObelisks5/Questline39;5+10shards7290 and both reward conversations;no internal outfit-stage seeding;late missing item rolls back foreign stages;all3 foreign proofs share primary revisions/original owners;replay,3immutable account facts and ordinary final appearance pass.",
+        "checks": [
+          "18authoring tests6.272s;reproducers",
+          "fmt;check19.63s;3Rusttests1.24s",
+          "strict clippy44.94s",
+          "repo pin-refresh24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25"
+        ],
+        "follow_on_verification": "Pending content/world/pin after immediate green slice push."
       }
     ],
-    "norseman_source": "Hjaern.lua:107-155,189-197 sha2564e9e42e8daf616fe8c5ef71cfd0a4ac0ae0ae5d7bd786c80ccb2c26286d40466;7289 is frost charm (pinned Canary XML),not spirit container;exact take1 then5+10frostheartshards7290."
+    "norseman_source": "Hjaern.lua:107-155,189-197 sha2564e9e42e8daf616fe8c5ef71cfd0a4ac0ae0ae5d7bd786c80ccb2c26286d40466;7289 is frost charm (pinned Canary XML),not spirit container;exact take1 then5+10frostheartshards7290.",
+    "norseman_red": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-norseman-story duration=45.551056868s success=false",
+    "norseman_reuse_audit": "Primary questpc2..8 refreshed02:00UTC;no matched current entry QUALIFIED. Existing own-branch native participant engine6ad33a4b1 reused unchanged. Audit /tmp/qengine2-batch5-norseman-status-audit.log.",
+    "norseman_checks": [
+      "18authoring tests6.272s;source generation passed",
+      "cargo fmt --all --check;check19.63s;3Rust reward-callback unit tests",
+      "strict clippy44.94s passed;disk-only sandbox launch recovered by removing obsolete compiler snapshots",
+      "callback/placement reproduction;repo pin-refresh then PG GREEN60154 running"
+    ]
   }
 }

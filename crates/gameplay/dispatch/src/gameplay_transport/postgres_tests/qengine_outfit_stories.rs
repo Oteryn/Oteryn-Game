@@ -66,6 +66,13 @@ fn qengine_l5_oriental_female_complete_source_story() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-l5-oriental-story")
 }
 
+#[test]
+fn qengine_l5_norseman_and_formorgar_complete_outfit_story() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-l5-norseman-story")
+}
+
+const ICE_ISLANDS: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/";
+
 const ORC_POWDER: &str = "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder";
 
 const SHATTERED: &str = "oteryn:quest-progress/quest/u7_8/the_shattered_isles/";
@@ -378,6 +385,17 @@ pub(super) async fn exercise(
             ],
             150,
         ),
+        "qengine-rewards-l5-norseman-story" => (
+            "norseman",
+            &[
+                ("base", Some((7289, 1)), None, Some(0)),
+                ("first-shards", Some((7290, 5)), None, None),
+                ("first-reward", None, None, Some(1)),
+                ("second-shards", Some((7290, 10)), None, None),
+                ("second-reward", None, None, Some(2)),
+            ],
+            252,
+        ),
         _ => return Err("unknown outfit story".into()),
     };
     let all = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
@@ -472,6 +490,14 @@ pub(super) async fn exercise(
                     maximum: 5,
                 },
             ]
+        } else if family == "norseman" && *suffix == "base" {
+            (1..=4)
+                .map(|n| Requirement {
+                    track: format!("{ICE_ISLANDS}obelisk0{n}"),
+                    minimum: 5,
+                    maximum: 5,
+                })
+                .collect()
         } else if family == "oriental" && suffix.ends_with("first-start") {
             vec![Requirement {
                 track: ORC_POWDER.into(),
@@ -620,6 +646,10 @@ pub(super) async fn exercise(
         .collect()
     } else if family == "festive" {
         vec![(FEATHERS.into(), 1)]
+    } else if family == "norseman" {
+        std::iter::once((format!("{ICE_ISLANDS}questline"), 39))
+            .chain((1..=4).map(|n| (format!("{ICE_ISLANDS}obelisk0{n}"), 5)))
+            .collect()
     } else if family == "oriental" {
         vec![(ORC_POWDER.into(), 35)]
     } else if family == "pirate" {
@@ -914,6 +944,27 @@ pub(super) async fn exercise(
             owner
                 .refresh_quest_session(admitted.game_session_id, false)
                 .await;
+        }
+        if family == "norseman" && callback.key.ends_with("-base") {
+            let before = counts(h).await?;
+            let (result, _, _) =
+                super::qengine_rewards::wire_reward(owner, admitted, npc, callback, false).await?;
+            assert_eq!(
+                result,
+                NpcIntentDisposition::Rejected,
+                "missing frost charm refuses the entire cross-owner exchange"
+            );
+            assert_eq!(counts(h).await?, before);
+            let proofs: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_participants")
+                    .fetch_one(&h.pool)
+                    .await?;
+            assert_eq!(
+                proofs, 0,
+                "foreign quest effects roll back when the later item participant refuses"
+            );
+            let changed:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_tracks WHERE track_key IN('oteryn:quest-progress/quest/u8_0/the_ice_islands/norseman_outfit','oteryn:quest-progress/outfit_quest/default_start')").fetch_one(&h.pool).await?;
+            assert_eq!(changed, 0, "refusal cannot retain foreign source stages");
         }
         let needed: Vec<_> = callback.take.iter().chain(&callback.present).collect();
         let mut missing = false;
@@ -1223,6 +1274,21 @@ pub(super) async fn exercise(
     ));
     let root: (i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_account_appearance_unlocks WHERE unlock_key LIKE $1),(SELECT count(*) FROM game_account_appearance_unlock_receipts WHERE unlock_key LIKE $1)").bind(format!("oteryn:outfit.{}/quest-grant/%",family.replace('-',"_"))).fetch_one(&h.pool).await?;
     assert_eq!(root, (3, 3), "one base and two immutable addon facts");
+    if family == "norseman" {
+        let (stage,stage_owner): (i64,String) = sqlx::query_as("SELECT value,quest_key FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u8_0/the_ice_islands/norseman_outfit'").fetch_one(&h.pool).await?;
+        assert_eq!(stage, 3);
+        assert_eq!(stage_owner, "oteryn:quest.outfit_and_addon_quests");
+        let (questline,quest_owner):(i64,String) = sqlx::query_as("SELECT value,quest_key FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u8_0/the_ice_islands/questline'").fetch_one(&h.pool).await?;
+        assert_eq!(questline, 44);
+        assert_eq!(quest_owner, "oteryn:quest.the_ice_islands_quest");
+        let proofs:(i64,bool)=sqlx::query_as("SELECT count(*),bool_and(p.committed_character_revision=r.committed_character_revision) FROM game_quest_reward_participants p JOIN game_character_quest_receipts r USING(character_id,cause_id,cause_ordinal,transition_key)").fetch_one(&h.pool).await?;
+        assert_eq!(
+            proofs,
+            (3, true),
+            "all three cross-owner outfit rewards commit at their primary revisions,without replay repeats"
+        );
+    }
+
     if family == "oriental" {
         let (value, owner, same_revision): (i64,String,bool) = sqlx::query_as("SELECT t.value,t.quest_key,t.committed_character_revision=r.committed_character_revision FROM game_character_quest_tracks t JOIN game_quest_reward_participants p ON p.character_id=t.character_id AND p.quest_key=t.quest_key AND t.track_key=ANY(p.track_keys) JOIN game_character_quest_receipts r ON r.character_id=p.character_id AND r.cause_id=p.cause_id AND r.cause_ordinal=p.cause_ordinal AND r.transition_key=p.transition_key WHERE t.track_key='oteryn:quest-progress/quest/u7_8/oriental_outfits/oriental_door'").fetch_one(&h.pool).await?;
         assert_eq!(value, 1);

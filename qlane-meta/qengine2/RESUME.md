@@ -276,3 +276,34 @@ NorsemanPGRED72333 running /tmp/qengine2-batch5-norseman-red.log.
 7289 namecorrectedfromearliernote:sourceCanaryXMLidentifiesFROSTCHARM,19oz,
 questitemwithoutcharges/timer/fluid;physicaladmission straightforward. IDs/costs
 unchanged. Productionauthor script NOTapplied;waitactualREDfirst.
+
+Norseman/FormorgaractualPGRED45.551056868s missingl5-norseman-base.
+ProductionauthorAPPLIED5sourcebindings;2capturedOriginalOwners;NPC Hjaern
+placementselected;onlymissing7289frostcharmphysicalprofile. Registry/gen/checks
+next. Unit malformedparticipant test nowusesmaximum+1 ratherthanfixed2,so
+newGeneralmax3 case remainsactuallyinvalid. Contractnotes sourcefileline+SHA
+andcanonicalitemname correction recorded. No engine runtime change needed.
+
+Norsemanchecks18Python6.272s,check19.63s,3Rusttests,clippy44.94s PASS.
+Diskfilledwhileclippycompleted;sandboxcouldnotstartcachecleanup. Escalated
+cache-onlycleanupapproved/recovered6.5GiB;no source/evidence deleted.
+60154 reproducers->pinrefresh->PGGREEN /tmp/qengine2-batch5-norseman-green.log.
+Metadataidentityclarification:dedicatedPirate/NorsemanquestURIspellings were
+logicaltitlelabels,notadmittednativequestrecords. VerifiedGeneralowner now
+recorded;originalLANEtitlekeys/counts retained. Norseman follows same General
+outfitowner plus IceIslands progressowner. No runtime or finishedbehavior redo.
+
+Identitylookupconfirmed:dedicatedNoblemanrecordDOESexist,restoredcorrect
+resolvedcanonical;NativeGeneralstateownerrecordedseparately. Pirate/Norseman
+aretitlepathswithoutdedicatedrecords;no fabricatednewruntimequestIDs.
+
+Norseman+FormorgarL1-05B QUALIFIED actualPG79.824440352s,1passed,0failed,
+0ignored. Exactfrostcharm1/shards5+10;lateitemrefusalrollsbackforeignstages;
+all3crossownerproofs/sameR/originalowners;replay,3immutablefacts,normalappearance
+PASS. Counts15/66qualified,51remaining. Immediategreencommit/pushnow.
+Checks18Python6.272s,check19.63s,3Rust1.24s,clippy44.94s,fmt,repro,
+pinrefresh24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25.
+Follow-oncontent/world/pinpending. One sourceflow follow-up: Hjaern firstreward
+leaves topic3;root shardkeyword should also be admitted there atQuestline42
+(current offers requirefreshroot0). Add finite root offers at0/3/4 with exact
+phaseguards and authoring flowcheck;do not weaken fresh-stage cost guards.

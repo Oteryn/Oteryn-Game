@@ -1780,6 +1780,249 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l5-norseman-base",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "npc": "oteryn:npc.hjaern",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 39,
+          "maximum": 39,
+          "set": 40
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission12",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/yakchal_door",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7289",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.norseman",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hjaern.lua:sha256:4e9e42e8daf616fe8c5ef71cfd0a4ac0ae0ae5d7bd786c80ccb2c26286d40466"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/obelisk01",
+          "minimum": 5,
+          "maximum": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/obelisk02",
+          "minimum": 5,
+          "maximum": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/obelisk03",
+          "minimum": 5,
+          "maximum": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/obelisk04",
+          "minimum": 5,
+          "maximum": 5
+        }
+      ],
+      "participants": [
+        {
+          "quest": "oteryn:quest.outfit_and_addon_quests",
+          "storage": [
+            {
+              "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/norseman_outfit",
+              "minimum": 0,
+              "maximum": 3,
+              "set": 1
+            },
+            {
+              "track": "oteryn:quest-progress/outfit_quest/default_start",
+              "minimum": -1,
+              "maximum": 1,
+              "set": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l5-norseman-first-reward",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "npc": "oteryn:npc.hjaern",
+      "keywords": [
+        "reward"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 41,
+          "maximum": 41,
+          "set": 42
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.norseman",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hjaern.lua:sha256:4e9e42e8daf616fe8c5ef71cfd0a4ac0ae0ae5d7bd786c80ccb2c26286d40466"
+      ],
+      "participants": [
+        {
+          "quest": "oteryn:quest.outfit_and_addon_quests",
+          "storage": [
+            {
+              "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/norseman_outfit",
+              "minimum": 0,
+              "maximum": 3,
+              "set": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l5-norseman-first-shards",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "npc": "oteryn:npc.hjaern",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 40,
+          "maximum": 40,
+          "set": 41
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7290",
+          "count": 5
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hjaern.lua:sha256:4e9e42e8daf616fe8c5ef71cfd0a4ac0ae0ae5d7bd786c80ccb2c26286d40466"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l5-norseman-second-reward",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "npc": "oteryn:npc.hjaern",
+      "keywords": [
+        "reward"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 43,
+          "maximum": 43,
+          "set": 44
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.norseman",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hjaern.lua:sha256:4e9e42e8daf616fe8c5ef71cfd0a4ac0ae0ae5d7bd786c80ccb2c26286d40466"
+      ],
+      "participants": [
+        {
+          "quest": "oteryn:quest.outfit_and_addon_quests",
+          "storage": [
+            {
+              "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/norseman_outfit",
+              "minimum": 0,
+              "maximum": 3,
+              "set": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l5-norseman-second-shards",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "npc": "oteryn:npc.hjaern",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 42,
+          "maximum": 42,
+          "set": 43
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7290",
+          "count": 10
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hjaern.lua:sha256:4e9e42e8daf616fe8c5ef71cfd0a4ac0ae0ae5d7bd786c80ccb2c26286d40466"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/l5-oriental-female-ape-fur",
       "quest": "oteryn:quest.outfit_and_addon_quests",
       "npc": "oteryn:npc.miraia",

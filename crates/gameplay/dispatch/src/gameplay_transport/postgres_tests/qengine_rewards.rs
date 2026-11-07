@@ -159,6 +159,7 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l4-royal-costume-base" => &["outfit", "yes", "armor"],
         "l4-royal-costume-shield" => &["outfit", "yes", "shield"],
         "l4-royal-costume-crown" => &["outfit", "yes", "crown"],
+        "l5-norseman-first-shards" | "l5-norseman-second-shards" => &["shard"],
         "l5-oriental-female-first-start" => &["outfit", "yes"],
         "l5-oriental-female-comb" => &["comb"],
         "l5-oriental-female-second-start" => &["task", "yes"],

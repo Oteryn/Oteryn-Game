@@ -425,7 +425,13 @@ mod tests {
                         .ok_or("array")?
                         .push(p);
                 }
-                _ => callback["participants"][0]["storage"][0]["minimum"] = 2.into(),
+                _ => {
+                    let maximum = callback["participants"][0]["storage"][0]["maximum"]
+                        .as_i64()
+                        .ok_or("maximum")?;
+                    callback["participants"][0]["storage"][0]["minimum"] =
+                        maximum.checked_add(1).ok_or("maximum overflow")?.into();
+                }
             }
             let doc = serde_json::json!({"schema":1,"callbacks":[callback]});
             assert!(
