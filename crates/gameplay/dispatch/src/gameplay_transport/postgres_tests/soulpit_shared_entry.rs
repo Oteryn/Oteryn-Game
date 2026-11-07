@@ -22,6 +22,8 @@ use crate::gameplay_transport::item_fence_of;
 
 #[path = "soulpit_shared_entry/native.rs"]
 mod native;
+#[path = "soulpit_shared_entry/staff.rs"]
+mod staff;
 
 pub(super) struct AdmittedSoulpit {
     pub(super) handoff_id: [u8; 16],
@@ -188,6 +190,15 @@ pub(super) async fn admit(
     deps: &Dependencies,
     evidence: &super::house_transfer::RecoverySource,
 ) -> TestResult<AdmittedSoulpit> {
+    admit_inner(h, deps, evidence, false).await
+}
+
+async fn admit_inner(
+    h: &Harness,
+    deps: &Dependencies,
+    evidence: &super::house_transfer::RecoverySource,
+    gm_case: bool,
+) -> TestResult<AdmittedSoulpit> {
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
@@ -345,6 +356,24 @@ pub(super) async fn admit(
         .spell_lane_permit()
         .await
         .ok_or("current source spell lane")?;
+    let _staff = if gm_case {
+        Some(
+            staff::GmProof {
+                h,
+                authority: &authority,
+                source,
+                group: &group,
+                entry: &entry,
+                owner: &owner,
+                permit: &permit,
+                native,
+            }
+            .verify()
+            .await?,
+        )
+    } else {
+        None
+    };
     assert_eq!(
         owner
             .enter(&authority, &h.node, group.clone())

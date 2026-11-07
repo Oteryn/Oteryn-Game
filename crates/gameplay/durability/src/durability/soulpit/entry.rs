@@ -122,7 +122,7 @@ pub(super) async fn write(
             // the trusted projection in this transaction; a captured hint cannot
             // grant an exemption or survive roster/activation revocation.
             game_master: root
-                .staff_group_in_transaction(&mut ***tx, facts[0].character)
+                .staff_group_in_transaction(tx, facts[0].character)
                 .await?
                 >= 4,
         });
