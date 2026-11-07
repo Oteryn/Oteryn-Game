@@ -1262,3 +1262,28 @@ Final `cargo check --workspace --all-targets --keep-going` PASS763.057s
 combined production46-case run and changed-crate clippy continue independently.
 Final architecture PASS10.600s, duplicate migrations PASS1.801s, registry
 fragments PASS0.176s. No pending test or lint is represented as passed here.
+
+## Completed validation of combined head3621b5ea5
+
+The previously pending runs completed: changed-crate clippy with warnings
+denied passed350.854s; final fmt passed14.719s; client8/8 passed27.619s runtime.
+The combined46-case production/mechanic run completed923.753s runtime:
+45passed, one inherited ENCX failure. Actual source-qualified Sugar Daddy
+Instance/personal-reward chain passed170.713s; scoped catalogue publication,
+replay/conflict/current-reader proof passed212.408s. Soul War terminal replay
+and taint/XP cases passed136.996s and153.267s respectively.
+
+The remaining failure is
+`primal_ordeal_postgres_qualified_production_room_is_reachable` (153.445s):
+`SourceHookUnavailable`, then missing production Primal catalogue row.
+ENCX7328791ae has the identical candidate and callback guard; existing ENCX
+notes already record this failure. The guard accepts only BossLeverOnDeath;
+Primal requires native owners for ThePrimalMenaceDeath,
+ThePrimeOrdealBossDeath and mType.onThink. A name-only whitelist would falsely
+qualify the encounter. W10 implementation remains ENCX-owned; no test or guard
+was weakened. Main integration and fresh generation/unit/PG checks remain
+pending under the owner's emergency publication exception.
+
+Emergency publication gate: fresh `cargo check --workspace --all-targets`
+passed (3m22s), and `cargo fmt --all --check` passed. Only this validation
+record changes; no mechanic, generated pin or test expectation changes.
