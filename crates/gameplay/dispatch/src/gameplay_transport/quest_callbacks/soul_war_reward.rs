@@ -201,6 +201,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             let request = RewardClaimMintRequest {
+                backpack_outputs: false,
                 command: CommandRef::new(command.game_session_id, id),
                 claim: TypedDefinitionRef {
                     family: "RewardClaim".into(),

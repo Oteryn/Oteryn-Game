@@ -265,6 +265,7 @@ async fn mint(
             .collect::<String>()
     );
     let request = RewardClaimMintRequest {
+        backpack_outputs: !reward.backpack_outputs.is_empty(),
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),
@@ -274,20 +275,23 @@ async fn mint(
         source_placement: key.into(),
         item: resolve(&reward.item)?,
         quantity: u32::from(reward.count),
-        contents: reward
-            .contents
-            .iter()
-            .map(|i| {
-                Ok(RewardClaimMintContent {
-                    item: resolve(&i.item)?,
-                    quantity: u32::from(i.count),
-                    key_number: None,
-                    text: None,
-                    fluid_subtype: None,
-                    charges_remaining: None,
-                })
+        contents: (if reward.backpack_outputs.is_empty() {
+            &reward.contents
+        } else {
+            &reward.backpack_outputs
+        })
+        .iter()
+        .map(|i| {
+            Ok(RewardClaimMintContent {
+                item: resolve(&i.item)?,
+                quantity: u32::from(i.count),
+                key_number: None,
+                text: None,
+                fluid_subtype: None,
+                charges_remaining: None,
             })
-            .collect::<std::result::Result<Vec<_>, DurabilityError>>()?,
+        })
+        .collect::<std::result::Result<Vec<_>, DurabilityError>>()?,
         root_text: None,
         root_fluid_subtype: None,
         root_charges_remaining: None,

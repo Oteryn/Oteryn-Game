@@ -71,3 +71,15 @@ backpack_outputs.rs capacity helper belong to next batch. Prepared API/contents/
 patch scripts under /tmp/questpc8-flat-mint-*.py; apply and inspect before use.
 Do not claim the draft MINT mode qualified. Fresh explicit-ref qengine2 head
 ebdad836a and all six other lane heads checked: no multi-output batch exists.
+
+Current green slice: chosen Giant Smithhammer PG PASS38.608864311s, after RED2.69s.
+Source lever remains separate. Central native chest32776,32253,z8 appearance2472
+ordinal1, no UID; southern approach, one native Giant Spider, hammer/talon/100gold.
+New backpack_outputs layout reuses MINT reservation, stable child IDs, one-item
+audits and exact deferred custody/source-plan proof. Legacy layout defaults
+false and retains its intent bindings. Capacity refusal/physical item-owner
+retry/replay passed. New custody qualifier admits3208 from pinned client/core
+facts without canonical mutation; accepted holds and stateful items refuse.
+See cloud-smith-cache-proof.json. Final changed-crate checks, legacy PG and
+review are pending, so keep authoring status until they finish. L7 remains17
+unqualified (Smith is verification pending). Do not discard any current files.

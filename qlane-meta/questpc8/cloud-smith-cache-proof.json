@@ -1,0 +1,45 @@
+{
+  "scope": "chosen Giant Smithhammer exploration/guardian/cache and reusable atomic backpack outputs",
+  "red": {
+    "test": "questpc8_smith_cache_native_guardian_and_atomic_outputs",
+    "duration_seconds": 2.69,
+    "marker": "POSTGRES_CASE_STARTED authored-smith-cache after PostgreSQL fixture initialization",
+    "failure": "missing callback"
+  },
+  "green": {
+    "duration_seconds": 38.608864311,
+    "passed": 1,
+    "marker": "POSTGRES_CASE_COMPLETED questpc8_smith_cache_native_guardian_and_atomic_outputs",
+    "postgres": "18.6 real native movement/death, world USE, Item MINT/transfer/drop and replay"
+  },
+  "coverage": [
+    "no quest counters or receipts seeded",
+    "pre-kill refusal",
+    "18 actual non-stackable inventory entries; three outputs refuse together",
+    "free one entry through existing item owner; exact hammer1/talon1/gold100",
+    "20 final backpack entries, durable completion, command replay and second-claim refusal"
+  ],
+  "checks": {
+    "four_crate_check": "passed66s before final app fixture adaptation",
+    "mint_unit": "1 passed; layout bound and root entry counted",
+    "custody_unit": "1 passed9.716s; canonical unchanged",
+    "schema_preflight": "actual PostgreSQL18.6 migration inside rolled-back transaction",
+    "regeneration": "repository register_spell_families40files passed"
+  },
+  "checks_pending": [
+    "final changed crate check including server",
+    "strict all-target/all-feature Clippy",
+    "legacy nested and atomic eleven-track PostgreSQL regressions",
+    "generator drift/pin refresh",
+    "independent review"
+  ],
+  "logs": {
+    "questpc8-smith-cache-red.log": "350f7ed51ba933c8edc934b597fed0150d9d319a90708e10488a8a408ec7ae0d",
+    "questpc8-smith-cache-green2.log": "79670f4b3d75ff9708af9fd00c800c33e3ae1c1f53f5f6afe722e0dd4e9474f0",
+    "questpc8-flat-mint-check.log": "417ff7ce10ed5b99156981b071bd74844fb90cc78648e0f476c43c4d7fb1022d",
+    "questpc8-flat-mint-unit.log": "38aaed145328843eebef08801f4dc1c8fbcb10ca3ebed79100b9b6d5c4582354",
+    "questpc8-smith-custody-unit2.log": "c810ad8b9545f823803abcd13bbb734a7f3dd40b312883158da47dc1e7f66f1f",
+    "questpc8-flat-mint-schema2.log": "510ce6d5a5e26c06aabf0de087eae450d7b961ad53056a018e865bd707d5332c",
+    "questpc8-smith-regenerate.log": "e17883c3b904492b5238996447f88597b8e4d46e6c883b4445ed5f1e756d83aa"
+  }
+}

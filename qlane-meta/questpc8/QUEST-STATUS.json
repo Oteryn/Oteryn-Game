@@ -1287,9 +1287,9 @@
     "status": "UNFINISHED",
     "disposition": "authoring",
     "qualified_elsewhere": [],
-    "mechanism": "asymmetric_map_effects_multi_actor_moves",
+    "mechanism": "native chosen exploration, captured Giant Spider death, exact central chest and atomic three-item backpack MINT",
     "blocker": {
-      "missing_piece": "The chosen explore -> Giant Spider kill -> cache -> completion programme has no lowered native stage graph. The source four-state lever is qualified separately; source rewards and this lever do not prove the chosen programme."
+      "missing_piece": "PG green38.609s; final static/regression checks and independent review in progress"
     },
     "round": "L7",
     "qualified_components": [
@@ -1304,7 +1304,8 @@
         "red_duration_seconds": 27.97,
         "red_failure": "open+absent lever revision advanced from 1 to 2"
       }
-    ]
+    ],
+    "proof": "cloud-smith-cache-proof.json"
   },
   {
     "canonical": "oteryn:quest.triangle_tower_quest",
