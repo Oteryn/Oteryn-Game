@@ -1,0 +1,10 @@
+{
+  "inputs_digest": "812bc7a38d156af63cec7344d7dc4f2bbb277d6f4603912f8f2a0d420a7ab5a7",
+  "pins": [
+    {
+      "digest": "2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968",
+      "previous": "2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968",
+      "world": "oteryn"
+    }
+  ]
+}

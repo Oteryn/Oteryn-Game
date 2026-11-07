@@ -1,3 +1,21 @@
+## All ten native source key doors GREEN — 2026-11-07
+Upper source doors3004-3008 now use exact pinned startup selectors. Original five
+capture rows and stock capture preserved. Actual PostgreSQL18.6 RED5/5 failures
+220.54s; GREEN5/5 passes232.77s, with server markers and six real framed USE
+commands per case. World pure units9/9, fmt, capture checks, world/dispatch
+all-target/all-feature check2m45s and strict Clippy3m02s PASS. Pins refreshed with
+unchanged world digest. Full evidence: cloud-draconia-upper-door-validation.json.
+Counts unchanged60QUALIFIED/117UNFINISHED/1excludedDawnportBLOCKED.
+
+NEXT: finish Draconia source access/party/NPC/container-stock route. Primary pinned
+container_misc.lua declares skeleton5972 at32794,31572,z7 containing key2969;
+MapContainersMisc loads before key actions, with fill-only-if-empty semantics.
+Native skeleton root exists but startup child is absent. This is shared container
+stock, requiring a generic owner; do not substitute a personal claim. Check other
+lane implementations before building it. Source loader recursively finds the key
+inside the container and stamps exact action3001. Continue remaining entries.
+Use sourceenv then CARGO_INCREMENTAL=0; push each green slice and at least30min.
+
 ## First five native source key doors GREEN — 2026-11-07
 Source doors3001/3002/3003 and both Hellgate3012 positions now acquire exact startup
 actions from pinned Lua/native capture. All are native locked appearance5097.

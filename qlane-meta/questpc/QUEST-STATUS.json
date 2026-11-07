@@ -8512,14 +8512,10 @@
   },
   "owner_execution_override": "Shared quest-engine, reward/binding, NPC, Item and callback features are owned here when needed. Check and reuse origin/claude/happy-davinci-ijz3wy-qengine2 first; historical outside-lane blockers are active implementation obligations, not final dispositions.",
   "latest_cloud_batch": {
-    "name": "Five exact native source key-door access entries",
-    "validation": "qlane-meta/questpc/cloud-draconia-door-validation.json",
-    "qualified_titles_added": 0,
-    "counts": {
-      "QUALIFIED": 60,
-      "UNFINISHED": 117,
-      "BLOCKED": 1
-    }
+    "slice": "draconia_upper_source_doors_3004_3008",
+    "result": "PASS",
+    "validation": "qlane-meta/questpc/cloud-draconia-upper-door-validation.json",
+    "qualified_titles_added": 0
   },
   "continuation": {
     "base": "9bf74b42d",
@@ -9137,9 +9133,9 @@
       "native_validation": "qlane-meta/questpc/cloud-native-key-validation.json"
     },
     "draconia_source_doors": {
-      "state": "first_five_native_access_entries_pg_green",
-      "validation": "qlane-meta/questpc/cloud-draconia-door-validation.json",
-      "next": "Remaining source doors3004-3008, same native5097 profile and generic owner; then complete source access/party/NPC/stock route."
+      "state": "all_ten_native_access_entries_pg_green",
+      "validation": "qlane-meta/questpc/cloud-draconia-upper-door-validation.json",
+      "next": "Complete native source access/party/NPC/container-stock route; no whole-title promotion."
     }
   },
   "cross_lane_qualified_elsewhere": {

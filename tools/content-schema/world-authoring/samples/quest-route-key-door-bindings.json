@@ -31,6 +31,20 @@
     {
       "attribute": "action",
       "item": 5097,
+      "map_path": "content/world/placements/region-z06-x128-y123.b3",
+      "map_sha256": "61e411ea20fbe4ad2dc7776d3660269691311d1d16fda7ad352570a07e0d3270",
+      "position": [
+        32794,
+        31582,
+        6
+      ],
+      "source_line": 41,
+      "storage_line": 340,
+      "value": 3005
+    },
+    {
+      "attribute": "action",
+      "item": 5097,
       "map_path": "content/world/placements/region-z07-x128-y123.b3",
       "map_sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d",
       "position": [
@@ -45,6 +59,48 @@
     {
       "attribute": "action",
       "item": 5097,
+      "map_path": "content/world/placements/region-z04-x128-y123.b3",
+      "map_sha256": "bc3fe240c9b0a376d3305112b5d3fbb87b1551d26de755653555e96914a04c77",
+      "position": [
+        32797,
+        31592,
+        4
+      ],
+      "source_line": 57,
+      "storage_line": 342,
+      "value": 3007
+    },
+    {
+      "attribute": "action",
+      "item": 5097,
+      "map_path": "content/world/placements/region-z01-x128-y123.b3",
+      "map_sha256": "7033df7782c8457f660a75405b016615a51c6f0613eb1b16b6f2eef6b488f505",
+      "position": [
+        32804,
+        31585,
+        1
+      ],
+      "source_line": 65,
+      "storage_line": 343,
+      "value": 3008
+    },
+    {
+      "attribute": "action",
+      "item": 5097,
+      "map_path": "content/world/placements/region-z06-x128-y123.b3",
+      "map_sha256": "61e411ea20fbe4ad2dc7776d3660269691311d1d16fda7ad352570a07e0d3270",
+      "position": [
+        32809,
+        31593,
+        6
+      ],
+      "source_line": 33,
+      "storage_line": 339,
+      "value": 3004
+    },
+    {
+      "attribute": "action",
+      "item": 5097,
       "map_path": "content/world/placements/region-z07-x128-y123.b3",
       "map_sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d",
       "position": [
@@ -55,6 +111,20 @@
       "source_line": 25,
       "storage_line": 338,
       "value": 3003
+    },
+    {
+      "attribute": "action",
+      "item": 5097,
+      "map_path": "content/world/placements/region-z06-x128-y123.b3",
+      "map_sha256": "61e411ea20fbe4ad2dc7776d3660269691311d1d16fda7ad352570a07e0d3270",
+      "position": [
+        32814,
+        31595,
+        6
+      ],
+      "source_line": 49,
+      "storage_line": 341,
+      "value": 3006
     },
     {
       "attribute": "action",
