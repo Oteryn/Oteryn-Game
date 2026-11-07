@@ -191,6 +191,9 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l7-assassin-yellow" => &["50 yellow cloth"],
         "l7-assassin-white" => &["50 white cloth"],
         "l7-assassin-yarn" => &["10 spools of yarn"],
+        "l10-golden-base" => &["outfit", "yes", "armor"],
+        "l10-golden-boots" => &["outfit", "yes", "boots"],
+        "l10-golden-helmet" => &["outfit", "yes", "helmet"],
         "l9-soil-guardian-base" => &["basic soil guardian outfit"],
         "l9-soil-guardian-first" => &["addition to the soil guardian outfit"],
         "l9-crystal-warlord-base" => &["basic crystal warlord outfit"],
@@ -708,7 +711,7 @@ pub(super) async fn exercise(
     if name.starts_with("qengine-rewards-l9-") {
         return super::qengine_voucher_stories::exercise(owner,admitted,h,name).await;
     }
-    if name.starts_with("qengine-rewards-l8-") || name.starts_with("qengine-rewards-l7-") || name.starts_with("qengine-rewards-l2-") || name.starts_with("qengine-rewards-l3-") || name.starts_with("qengine-rewards-l4-") || name.starts_with("qengine-rewards-l5-") || name.starts_with("qengine-rewards-l6-") {
+    if name.starts_with("qengine-rewards-l10-") || name.starts_with("qengine-rewards-l8-") || name.starts_with("qengine-rewards-l7-") || name.starts_with("qengine-rewards-l2-") || name.starts_with("qengine-rewards-l3-") || name.starts_with("qengine-rewards-l4-") || name.starts_with("qengine-rewards-l5-") || name.starts_with("qengine-rewards-l6-") {
         return super::qengine_outfit_stories::exercise(owner, admitted, h, authority, name).await;
     }
     if name == "qengine-rewards-l1-legacy-decaying" {

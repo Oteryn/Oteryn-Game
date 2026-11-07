@@ -14,6 +14,15 @@ class QuestRewards(unittest.TestCase):
         cls.author=json.loads(cls.outputs['content/cosmetics/outfits/authoring.json'])
         cls.schema=json.loads((q.ROOT/'tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json').read_text())
 
+    def test_l10_golden_chosen_prices_and_order(self):
+        rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
+        for suffix,before,after,bit,gold in [('base',0,1,0,100000),('boots',1,2,1,50000),('helmet',2,3,2,50000)]:
+            row=rows['l10-golden-'+suffix]
+            self.assertEqual(row['fee'],{'gold':gold,'include_bank':True})
+            self.assertEqual(row['outfit'],{'outfit':'oteryn:outfit.golden','addons':bit})
+            self.assertEqual([(r['minimum'],r['maximum'],r['set']) for r in row['storage']],[(before,before,after)])
+            self.assertFalse(row.get('requires_premium',False))
+
     def test_l9_repeatable_source_trades_and_canonical_item_grants(self):
         rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
         trade=rows['l9-afflicted-pouch']
@@ -210,7 +219,7 @@ class QuestRewards(unittest.TestCase):
         self.assertEqual(second['outfit']['addons'],2)
 
     def test_monetary_source_price_disallows_zero_or_double_coin_consumption(self):
-        source=next(c for c in self.callbacks['callbacks'] if c.get('fee'))
+        source=next(c for c in self.callbacks['callbacks'] if c['key']=='oteryn:quest-reward/l4-nobleman-first')
         for mutation in ('zero','double'):
             bad=copy.deepcopy(self.callbacks)
             callback=next(c for c in bad['callbacks'] if c['key']==source['key'])
@@ -244,9 +253,9 @@ class QuestRewards(unittest.TestCase):
 
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
-        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-'))},
+        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),56)
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),59)
         self.assertEqual(sum(c['outfit'] is None for c in callbacks),104)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))

@@ -115,3 +115,17 @@ Scope clarification for L1-09B: the selected Soil Guardian s7 and Crystal Warlor
 L1-09B package implementation preserves every one of the25 contiguous source intervals, their exact quantities, and the10001-point roll domain. The existing generic reward-bag consume/MINT owner executes the captured row. Existing richer potion/ammunition profiles are reused; only six missing physical custody profiles are added. Gnomally's source `supply` trade costs2 Minor Crystalline Tokens, gives15698, and is selected by normalized ephemeral topic105; its existing canonical parent is `oteryn:quest.bigfoot_s_burden_quest`.
 
 The PG acquisition witness uses the actual NPC-minted package UUID. Read-only evaluation finds a future ordinary CommandId with the rare outcome, and real harmless NPC commands advance admission to that ID. Neither the source item identity nor the production roll/probabilities is rewritten, and no command admission is skipped. The package is then consumed by ordinary USE; replay cannot consume or mint again.
+
+L1-10 Golden commission: the selected definition in
+content/quests/definitions/quests-00100-00199.json#/records/52/definition/oteryn_recipe/payload/recipe/stages
+explicitly chooses 100000 gold base, 50000 boots/gloves, then 50000 helmet,
+with no Premium requirement. Preserve those authored values and sequence instead
+of donor 500000000/250000000/250000000 and helmet-before-boots. Donor
+Crystal 9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d,
+data-global/npc/king_tibianus.lua:117-216, SHA256
+e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd,
+supplies King dialogue topics, paired looks1210/1211, addon1 boots and addon2
+helmet, existing GoldenOutfit storage, and carried-or-bank monetary semantics.
+The donor-only decoration kit is outside the selected outfit programme and is
+not an authored reward. Existing fee owner accepts equivalent coin denominations;
+no synthetic inventory grant or duplicate monetary owner is introduced.

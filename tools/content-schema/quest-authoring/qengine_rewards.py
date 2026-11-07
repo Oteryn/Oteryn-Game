@@ -32,7 +32,7 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar')]
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus')]
     paths += ['data-global/scripts/actions/valuables/random_items.lua',
               'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
@@ -748,6 +748,21 @@ def build():
             npc=callback['npc'].split('.')[-1];path='data-global/npc/'+npc+'.lua'
             lines='75-169' if npc=='gnomally' else '61-78'
             callback['sources']=[f'crystal:{PIN}:{path}:{lines}:sha256:{sha(inputs[path])}']
+    # Chosen Golden programme retains its authored prices and boots-first order.
+    golden='oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit'
+    for suffix,before,after,bit,gold,topic,word in [
+            ('base',0,1,0,100000,3,'armor'),
+            ('boots',1,2,1,50000,5,'boots'),
+            ('helmet',2,3,2,50000,4,'helmet')]:
+        guard=[storage(golden,before,after)]
+        add('l10-golden-'+suffix,'golden_outfits_quest','king_tibianus',['yes'],guard,
+            outfit=('golden',bit),topic=topic,next_topic=2,fee={'gold':gold,'include_bank':True})
+        callbacks[-1]['sources'].append('owner:chosen-golden:100000-50000-50000:boots-before-helmet')
+        offers.append({'npc':'oteryn:npc.king_tibianus','keywords':[word],'topic':2,'next_topic':topic,
+            'storage':guard,'reply':[f'The chosen commission costs {gold} gold. Do you agree?']})
+    for words,before,after in [(['outfit','addon'],0,1),(['yes'],1,2)]:
+        offers.append({'npc':'oteryn:npc.king_tibianus','keywords':words,'topic':before,'next_topic':after,
+            'storage':[],'reply':['Choose armor, boots or helmet for your golden commission.']})
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})

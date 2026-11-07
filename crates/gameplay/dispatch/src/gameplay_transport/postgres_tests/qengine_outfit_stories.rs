@@ -126,6 +126,11 @@ fn qengine_l3_dark_trails_base_and_glooth_addons_follow_live_votes() -> TestResu
 }
 
 #[test]
+fn qengine_l10_golden_complete_commission_story() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-l10-golden-story")
+}
+
+#[test]
 fn qengine_l4_nobleman_paid_outfit_story() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-l4-nobleman-story")
 }
@@ -250,7 +255,7 @@ async fn coin_worth(h: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce(sum(quantity * CASE definition_production_key WHEN 'oteryn:item.tibia.i3031' THEN 1 WHEN 'oteryn:item.tibia.i3035' THEN 100 WHEN 'oteryn:item.tibia.i3043' THEN 10000 END),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key IN('oteryn:item.tibia.i3031','oteryn:item.tibia.i3035','oteryn:item.tibia.i3043')").fetch_one(&h.pool).await?)
 }
 
-async fn commit_fixture(
+pub(super) async fn commit_fixture(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     key: &str,
@@ -288,7 +293,7 @@ async fn commit_fixture(
 
 // Supply real admitted stacks/instances into closed bags. Books, masks and
 // epaulettes are non-stackable; never fabricate illegal multi-quantity instances.
-async fn supply(
+pub(super) async fn supply(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     h: &Harness,
@@ -470,6 +475,15 @@ pub(super) async fn exercise(
                 ("second", None, None, Some(2)),
             ],
             618,
+        ),
+        "qengine-rewards-l10-golden-story" => (
+            "golden",
+            &[
+                ("base", None, None, Some(0)),
+                ("boots", None, None, Some(1)),
+                ("helmet", None, None, Some(2)),
+            ],
+            1211,
         ),
         "qengine-rewards-l4-nobleman-story" => (
             "nobleman",
@@ -722,7 +736,9 @@ pub(super) async fn exercise(
     let all = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
     let mut callbacks = Vec::new();
     for (suffix, take, present, addon) in steps {
-        let batch = if name.starts_with("qengine-rewards-l8-") {
+        let batch = if name.starts_with("qengine-rewards-l10-") {
+            "l10"
+        } else if name.starts_with("qengine-rewards-l8-") {
             "l8"
         } else if name.starts_with("qengine-rewards-l7-") {
             "l7"
@@ -842,6 +858,13 @@ pub(super) async fn exercise(
         }
         if family == "beggar" && *suffix == "first-start" {
             assert_eq!(callback.requires_outfits, vec!["oteryn:outfit.beggar"]);
+        }
+        if family == "golden" {
+            assert_eq!(
+                serde_json::to_value(&callback)?["fee"],
+                serde_json::json!({"gold": if *suffix == "base" {100000} else {50000}, "include_bank":true})
+            );
+            assert!(!callback.requires_premium);
         }
         if family == "nobleman" && addon.is_some() {
             let value = serde_json::to_value(&callback)?;
@@ -1924,6 +1947,10 @@ pub(super) async fn exercise(
         readonly.is_some(),
         "every independently verified source prerequisite has a stale-snapshot refusal proof"
     );
+    if family == "golden" {
+        let paid: (i64, i64) = sqlx::query_as("SELECT count(*),coalesce(sum(fee_gold_units),0)::bigint FROM game_item_fee_burns WHERE cause_kind=18").fetch_one(&h.pool).await?;
+        assert_eq!(paid, (3, 200000));
+    }
     if family == "nobleman" {
         let paid:(i64,i64,i64)=sqlx::query_as("SELECT count(*),coalesce(sum(fee_gold_units),0)::bigint,coalesce(sum(bank_debit_gold_units),0)::bigint FROM game_item_fee_burns WHERE cause_kind=18").fetch_one(&h.pool).await?;
         assert_eq!(

@@ -3,8 +3,8 @@
   "lifecycle": "AUTHORING; owner-authorized local commits and fast-forward pushes to claude/happy-davinci-ijz3wy-qengine2 after each green batch",
   "qualification_boundary": "Whole L1 entry, not an isolated seeded reward stage. No entry is promoted before all of its required stages and relevant PG cases pass.",
   "counts": {
-    "qualified": 27,
-    "unfinished": 39,
+    "qualified": 28,
+    "unfinished": 38,
     "blocked": 0
   },
   "quests": [
@@ -782,7 +782,7 @@
     {
       "canonical": "oteryn:quest.golden_outfits_quest",
       "title": "Golden Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc",
@@ -799,7 +799,15 @@
           ]
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "remaining_work": null,
+      "qualification": {
+        "scope": "Complete selected Golden base, boots/gloves, helmet paid NPC programme; ordinary appearance selection and literal replay",
+        "postgres_red": "/tmp/qengine2-batch10-golden-red.log; POSTGRES_CASE_COMPLETED duration=42.858537605s success=false missing source callback",
+        "postgres_green": "/tmp/qengine2-batch10-golden-green2-documents-red.log; Golden selected case POSTGRES_CASE_COMPLETED duration=85.508088831s success=true (two independent next-slice document RED cases remain intentionally failing)",
+        "source": "Crystal 9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d data-global/npc/king_tibianus.lua:117-216 SHA256 e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+        "chosen_adaptation": "100000/50000/50000, boots-before-helmet, no Premium; CONTRACT-NOTES.md",
+        "checks": "fmt; dispatch all-features check1m21s; all-targets/all-features clippy -D warnings1m28s and final23.40s; 25Python10.239s; generator and placement --check; pin-refresh24ab unchanged"
+      }
     },
     {
       "canonical": "oteryn:quest.grave_danger_quest",
