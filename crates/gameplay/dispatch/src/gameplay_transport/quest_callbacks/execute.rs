@@ -293,6 +293,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     permit,
                     context,
                     crate::durability::reward_claim_mint::QuestRewardAdmission {
+                        carried_use: None,
                         native,
                         weights: &weights,
                     },

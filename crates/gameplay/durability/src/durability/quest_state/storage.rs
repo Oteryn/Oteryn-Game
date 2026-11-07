@@ -1,6 +1,38 @@
 use super::*;
 
 impl DurabilityRoot {
+    /// Historical carried USE is answered only by the immutable consumed-instance
+    /// proof and its exact ingress; this never reacquires gameplay authority.
+    pub async fn reconcile_quest_carried_use(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character: CharacterId,
+        command: CommandRef,
+        intent: Vec<u8>,
+    ) -> Result<Option<bool>> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?.run(move |holder,deadline|Box::pin(async move {
+            let mut tx=begin_semantic_transaction(holder,deadline).await?;
+            assert_recovery_fence(&mut tx,&recovery).await?;
+            let rows=sqlx::query("SELECT c.proof,c.item_instance_id FROM game_quest_callback_consumptions c JOIN game_quest_reward_sources s USING(character_id,cause_id,cause_ordinal,transition_key) WHERE c.character_id=encode($1,'hex')::uuid AND c.cause_id=encode($2,'hex')::uuid AND c.cause_ordinal=$3::text::numeric AND s.plan ? 'carried_item' LIMIT 2")
+                .bind(character.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_all(&mut *tx).await?;
+            let answer=match rows.as_slice() {
+                []=>None,
+                [row]=>{
+                    let proof:serde_json::Value=serde_json::from_slice(&row.try_get::<Vec<u8>,_>("proof")?).map_err(|_|DurabilityError::InvalidStoredState)?;
+                    let use_:super::super::reward_claim_mint::QuestCarriedUse=serde_json::from_value(proof["carried_use"].clone()).map_err(|_|DurabilityError::InvalidStoredState)?;
+                    let source:sqlx::types::Uuid=row.try_get("item_instance_id")?;
+                    if use_.source!=*source.as_bytes() {return Err(DurabilityError::InvalidStoredState);}
+                    Some(use_.intent==intent)
+                },
+                _=>return Err(DurabilityError::InvalidStoredState),
+            };
+            commit_semantic_transaction(tx,deadline).await?;
+            Ok(Ok(answer))
+        })).await?
+    }
     /// Resolve an ambiguous quest commit by its receipt key. This proves only what committed and
     /// never reacquires gameplay authority.
     pub async fn reconcile_character_quest_transition(

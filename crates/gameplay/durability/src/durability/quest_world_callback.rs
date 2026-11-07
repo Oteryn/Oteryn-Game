@@ -140,6 +140,7 @@ pub(super) async fn consume_reward_inputs(
     fence: CurrentCharacterGameplayFence,
     request: &super::quest_state::QuestTransitionRequest,
     callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
+    carried_use: Option<&super::reward_claim_mint::QuestCarriedUse>,
 ) -> Result<bool, DurabilityError> {
     let super::quest_state::QuestCause::Command(command) = request.cause else {
         return Ok(false);
@@ -152,6 +153,16 @@ pub(super) async fn consume_reward_inputs(
         .collect();
     let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
         .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(&keys).fetch_all(&mut **tx).await?;
+    if let Some(use_) = carried_use {
+        let selected = sqlx::types::Uuid::from_bytes(use_.source).to_string();
+        if !rows.iter().any(|row| {
+            row.try_get::<&str, _>("item").ok() == Some(selected.as_str())
+                && row.try_get::<&str, _>("definition_production_key").ok()
+                    == callback.carried_item.as_deref()
+        }) {
+            return Ok(false);
+        }
+    }
     if rows.len() > 500 {
         return Ok(false);
     }
@@ -176,6 +187,16 @@ pub(super) async fn consume_reward_inputs(
         .collect();
     let mut inputs = Vec::new();
     for row in rows {
+        if carried_use.is_some_and(|use_| {
+            row.try_get::<&str, _>("item").ok()
+                != Some(
+                    sqlx::types::Uuid::from_bytes(use_.source)
+                        .to_string()
+                        .as_str(),
+                )
+        }) {
+            continue;
+        }
         let key: String = row.try_get("definition_production_key")?;
         let Some(required) = remaining.get_mut(key.as_str()) else {
             continue;
@@ -210,7 +231,12 @@ pub(super) async fn consume_reward_inputs(
         .fetch_one(&mut **tx)
         .await?;
     for input in inputs {
-        let proof=serde_json::to_vec(&serde_json::json!({"reward_callback":callback,"before":input.before,"location":input.location,"count":input.count})).map_err(|_|DurabilityError::InvalidStoredState)?;
+        let mut proof = serde_json::json!({"reward_callback":callback,"before":input.before,"location":input.location,"count":input.count});
+        if let Some(use_) = carried_use {
+            proof["carried_use"] =
+                serde_json::to_value(use_).map_err(|_| DurabilityError::InvalidStoredState)?;
+        }
+        let proof = serde_json::to_vec(&proof).map_err(|_| DurabilityError::InvalidStoredState)?;
         sqlx::query("INSERT INTO game_quest_callback_consumptions(transaction_id,item_instance_id,character_id,cause_id,cause_ordinal,transition_key,before_item,before_ground,quantity,proof,proof_sha256,before_location,location_kind) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6,$7,NULL,$8,$9,sha256($9),$10,$11)")
             .bind(&transaction).bind(&input.item).bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(&input.before).bind(i32::from(input.count)).bind(proof).bind(&input.location).bind(&input.kind).execute(&mut **tx).await?;
         apply_input(tx, &input, &transaction).await?;

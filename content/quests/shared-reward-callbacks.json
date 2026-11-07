@@ -744,6 +744,110 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/noodles-collar",
+      "quest": "oteryn:quest.authored.noodles_is_gone_mini_world_change",
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "noodles",
+        "collar",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/noodles/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i14156",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Take this collar. Find Noodles in the courtyard, use the collar on him, then report to me."
+      ],
+      "sources": [
+        "oteryn:selected-recipe:content/quests/definitions/quests-00300-00351.json:/records/22/definition:sha256:4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/noodles-recovered",
+      "quest": "oteryn:quest.authored.noodles_is_gone_mini_world_change",
+      "npc": "oteryn:npc.noodles",
+      "keywords": [
+        "collar"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/noodles/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i14156",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Noodles is safe. Report to King Tibianus."
+      ],
+      "sources": [
+        "oteryn:selected-recipe:content/quests/definitions/quests-00300-00351.json:/records/22/definition:sha256:4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a"
+      ],
+      "carried_item": "oteryn:item.tibia.i14156",
+      "carried_target_npc": true
+    },
+    {
+      "key": "oteryn:quest-reward/noodles-report",
+      "quest": "oteryn:quest.authored.noodles_is_gone_mini_world_change",
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "report",
+        "reward"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/noodles/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 5,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": "oteryn:achievement/dog_sitter",
+      "reply": [
+        "Noodles is safe. Here is your reward."
+      ],
+      "sources": [
+        "oteryn:selected-recipe:content/quests/definitions/quests-00300-00351.json:/records/22/definition:sha256:4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a"
+      ],
+      "experience": 1000,
+      "completes": true
+    },
+    {
       "key": "oteryn:quest-reward/outfox-helmet",
       "quest": "oteryn:quest.tibia_tales",
       "npc": "oteryn:npc.budrik",

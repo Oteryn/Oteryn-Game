@@ -126,7 +126,7 @@ mod grizzly;
 mod monk;
 pub(crate) mod quest;
 mod quest_gates;
-pub use quest::QuestRewardAdmission;
+pub use quest::{QuestCarriedUse, QuestRewardAdmission};
 mod soul_war;
 mod viola_book;
 

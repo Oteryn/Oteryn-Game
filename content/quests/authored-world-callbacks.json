@@ -710,6 +710,49 @@
         "oteryn:source-map:content/world/placements/region-z07-x129-y127.b3:sha256:3d8be37fc38619e95490267428993d658fac808cbd8eb64e82beb3f26d3108de"
       ],
       "premium_required": true
+    },
+    {
+      "key": "oteryn:quest-callback/authored-noodles-find",
+      "quest": "oteryn:quest.authored.noodles_is_gone_mini_world_change",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32313,
+          "y": 32178,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 464
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/noodles/stage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "oteryn-authored:selected-personal-permanent-courtyard-variant",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00300-00351.json:/records/22/definition:sha256:4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a",
+        "oteryn:source-map:content/world/placements/region-z06-x126-y125.b3:sha256:ade86a8e432522df4d30b1d8f56e8c6536a35c4e0664d426f4e895a2f80ddbfe"
+      ]
     }
   ]
 }

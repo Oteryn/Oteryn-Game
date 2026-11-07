@@ -951,6 +951,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return Ok(Some(outcome));
         }
         if let Some(outcome) = self
+            .use_carried_quest_item(actor, command, &intent, source)
+            .await?
+        {
+            return Ok(Some(outcome));
+        }
+        if let Some(outcome) = self
             .use_cosmetic_item_impl(actor, command, intent.clone(), source)
             .await?
         {

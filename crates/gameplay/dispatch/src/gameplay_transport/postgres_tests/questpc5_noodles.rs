@@ -54,7 +54,7 @@ async fn collar(
     admitted: &mut AdmittedSession,
     target: EntityRef,
 ) -> TestResult<UseDisposition> {
-    let reference = owner
+    let _reference = owner
         .active_generation
         .and_then(|g| g.native_gameplay())
         .and_then(|n| n.item_index())
@@ -65,7 +65,7 @@ async fn collar(
         .checked_sub(std::time::Duration::from_secs(2))
         .ok_or("clock")?;
     let intent = UseIntent {
-        target: UseTarget::ItemByDefinition(reference),
+        target: UseTarget::Item(std::num::NonZeroU64::new(3).ok_or("collar handle")?),
         use_with: Some(target),
         use_with_map_item: None,
         use_with_position: None,
@@ -90,7 +90,7 @@ pub(super) async fn exercise(
     assert_eq!(
         callbacks
             .iter()
-            .filter(|c| c.quest == "oteryn:quest.authored.noodles_is_gone")
+            .filter(|c| c.quest == "oteryn:quest.authored.noodles_is_gone_mini_world_change")
             .count(),
         3,
         "King collar, literal dog USE and report callbacks must exist"
@@ -210,7 +210,7 @@ pub(super) async fn exercise(
     assert_eq!(count(h, "oteryn:item.tibia.i3035").await?, 5);
     let achievements:i64=sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/dog_sitter'").fetch_one(&h.pool).await?;
     assert_eq!(achievements, 1);
-    let completed:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_states WHERE quest_key='oteryn:quest.authored.noodles_is_gone' AND completed_character_revision IS NOT NULL").fetch_one(&h.pool).await?;
+    let completed:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_states WHERE quest_key='oteryn:quest.authored.noodles_is_gone_mini_world_change' AND completed_character_revision IS NOT NULL").fetch_one(&h.pool).await?;
     assert_eq!(completed, 1);
     let consumed:i64=sqlx::query_scalar("SELECT count(*) FROM game_quest_callback_consumptions WHERE transition_key='oteryn:quest-reward/noodles-recovered' AND quantity=1 AND before_item->>'definition_production_key'='oteryn:item.tibia.i14156'").fetch_one(&h.pool).await?;
     assert_eq!(consumed, 1);

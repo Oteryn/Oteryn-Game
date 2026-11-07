@@ -63,6 +63,12 @@ pub struct RewardCallback {
     pub key: String,
     pub quest: String,
     pub npc: String,
+    /// Shared QENGINE2 selected-instance USE binding; never executable by NPC talk.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub carried_item: Option<String>,
+    /// USE must name this callback's live canonical NPC in immediate reach.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub carried_target_npc: bool,
     pub keywords: Vec<String>,
     pub topic: u16,
     pub next_topic: u16,
@@ -131,6 +137,16 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
             || !slug(&c.npc, "oteryn:npc.", b"_", 128)
+            || (c.carried_target_npc && c.carried_item.is_none())
+            || c.carried_item.as_ref().is_some_and(|key| {
+                c.take
+                    != [ItemAmount {
+                        item: key.clone(),
+                        count: 1,
+                    }]
+                    || c.storage.is_empty()
+                    || c.give.is_some()
+            })
             || c.storage.is_empty()
             || c.storage.len() > 8
             || tracks.len() != c.storage.len()
@@ -207,7 +223,7 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                 });
             }
         }
-        if callback.premium_required {
+        if callback.premium_required || callback.carried_item.is_some() {
             let digest: String =
                 Sha256::digest(serde_json::to_vec(&callback).map_err(|e| e.to_string())?)
                     .iter()
@@ -220,7 +236,7 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                     track: callback
                         .storage
                         .first()
-                        .ok_or("missing Premium progress guard")?
+                        .ok_or("missing reward progress guard")?
                         .track
                         .clone(),
                     from: QuestComparison::Any,

@@ -268,6 +268,9 @@ def build():
     nomads_callbacks, nomads_objects = nomads_programme.documents()
     authored_world['callbacks'].extend(nomads_callbacks)
     generated['content/quests/authored-world-objects.json'] = encoded(nomads_objects)
+    import noodles_programme
+    noodles_programme.extend_rewards(callbacks, greetings)
+    noodles_programme.extend_world(authored_world['callbacks'])
     authored_world['callbacks'].sort(key=lambda r:r['key'])
     generated['content/quests/authored-world-callbacks.json']=encoded(authored_world)
     callbacks.sort(key=lambda c:c['key'])
