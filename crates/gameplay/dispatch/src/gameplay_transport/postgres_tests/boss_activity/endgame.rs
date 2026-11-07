@@ -320,6 +320,8 @@ pub(super) async fn settle(
         );
     }
     let source_corpse = match case {
+        Case::SoulWarDefeat => Some("oteryn:item.tibia.i33867"),
+        Case::RottenBloodDefeat => Some("oteryn:item.tibia.i44012"),
         Case::PrimalDefeat => Some("oteryn:item.tibia.i39530"),
         _ => None,
     };

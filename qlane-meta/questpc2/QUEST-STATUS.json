@@ -1620,31 +1620,55 @@
   },
   "current_batch": {
     "state": "GREEN",
-    "kind": "remote integration and engine reuse",
-    "record": "qlane-meta/questpc2/BATCH-remote-integration-2026-11-07.json",
-    "whole_quests_newly_qualified": 0,
-    "external_dependencies_to_wait_for": []
+    "record": "BATCH-source-corpse-integration-2026-11-07.json",
+    "whole_quest_qualifications": 0
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
     "BATCH-instance-corpse-root-2026-11-06.json",
     "BATCH-native-corpse-binding-2026-11-07.json",
     "BATCH-corpse-authoring-tools-2026-11-07.json",
-    "BATCH-remote-integration-2026-11-07.json"
+    "BATCH-remote-integration-2026-11-07.json",
+    "BATCH-corpse-materializer-2026-11-07.json",
+    "BATCH-source-corpse-admission-2026-11-07.json",
+    "BATCH-source-corpse-integration-2026-11-07.json"
   ],
   "next_batch": {
     "state": "AUTHORING",
     "work_owner": "questpc2",
-    "task": "Use delivered authoring tools to admit Spite/Bakragore source corpse chains, wire materializer and positive declared-capacity loader, obtain native PG RED/GREEN; then source rooms/callbacks and whole quest batches. Primal canonical admission already complete: do not redo it.",
+    "task": "Integrate fetched inert group-authoring5c45cf2b7, preserve existing effects.encounter runtime owner, push FF; continue whole source quest lifecycles.",
     "external_dependencies_to_wait_for": []
   },
   "remote_publications_reused": {
-    "sha": "f9cc1e5508ce71e312bb4806047e6d2628254aed",
+    "sha": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
     "records": [
       "BATCH-instance-corpse-root-2026-11-06.json",
       "BATCH-native-corpse-binding-2026-11-07.json",
-      "BATCH-corpse-authoring-tools-2026-11-07.json"
+      "BATCH-corpse-authoring-tools-2026-11-07.json",
+      "BATCH-corpse-materializer-2026-11-07.json",
+      "BATCH-source-corpse-admission-2026-11-07.json"
     ],
     "primal_canonical_corpse_admission": "already complete; native spell-provider membership is not the admission authority"
+  },
+  "verification": {
+    "source_corpse_admission_2026_11_07": {
+      "record": "BATCH-source-corpse-admission-2026-11-07.json",
+      "postgres_cases_passed": 5,
+      "python_cases_passed": 17,
+      "whole_quest_qualifications": 0
+    },
+    "source_corpse_integration_2026_11_07": {
+      "record": "BATCH-source-corpse-integration-2026-11-07.json",
+      "postgres_cases_passed": 7,
+      "whole_quest_qualifications": 0
+    }
+  },
+  "engine_reuse_note": "qengine2@5a6de28c is already merged locally. effects.encounter and execute_quest_encounter/commit_quest_encounter_entry implement the exact four-player/six-demon atomic entry; do not create a second group_encounter engine. Existing PG entry evidence remains scoped entry evidence, not whole quest.",
+  "ownership_review": {
+    "worldchg_sha": "318ab59d200ad2030ca7c829566b88175cb7e2dc",
+    "wvar_sha": "da822d3e2cbf9fb12ccd7d7ad0b01e636d99de2f",
+    "wcontrib_sha": "c8a8d97cf0eb82228177b192f138afd8ca1757f3",
+    "wevents_sha": "4b08b4530574c98ada5798b795de7de62b1e5242",
+    "rule": "Skip world changes owned by these lanes; retain their historical source statuses without treating them as external blockers. Down the Drain is already QUALIFIED in wvar: docs/architecture/reviews/WORLDCHG-Q.md. No local whole-quest qualification inferred."
   }
 }

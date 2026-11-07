@@ -17,8 +17,7 @@ use super::{
 use crate::domain::bestiary::BestiaryRace;
 use crate::domain::bosstiary::{BosstiaryBoss, progress};
 use oteryn_gameplay_domain::domain::loot_data::{
-    GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, LootDefinitionRef, LootSelectionAlgorithm,
-    LootTableDefinition, LootTableEntry,
+    LootDefinitionRef, LootSelectionAlgorithm, LootTableDefinition, LootTableEntry,
 };
 
 pub const LOOT_TABLES_SCHEMA: &str = "OTERYN_NATIVE_LOOT_TABLES/v1";
@@ -60,8 +59,8 @@ pub enum NoSettlementReason {
     LootTableMissing,
     /// The creature profile names no corpse Item.
     CorpseItemMissing,
-    /// The corpse Item is not an admitted, materializable container of capacity 1 to
-    /// `GAMEITEM01-CORPSE-CONTAINER-ENTRIES`.
+    /// The corpse Item is not an admitted, materializable container with positive u16 capacity.
+    /// Declared slots are independent of the actual entry/loot-plan count budgets.
     CorpseItemInadmissible,
     /// A loot table entry names an Item that is not admitted and materializable.
     LootItemInadmissible,
@@ -87,6 +86,7 @@ impl NoSettlementReason {
 pub struct CreatureRewardTable {
     rows: HashMap<String, Result<Arc<CreatureRewardRow>, NoSettlementReason>>,
     bosses: HashMap<String, BosstiaryBoss>,
+    reward_boss_corpses: HashMap<String, Arc<CreatureRewardRow>>,
     forge_sliver: Option<LootDefinitionRef>,
     daily_boss_equipment: HashSet<String>,
     encounter_facts: BTreeMap<String, CreatureEncounterFacts>,
@@ -97,6 +97,12 @@ impl CreatureRewardTable {
     /// Native encounter facts, independent of ordinary corpse loot admission.
     pub fn encounter_facts(&self, creature: &str) -> Option<&CreatureEncounterFacts> {
         self.encounter_facts.get(creature)
+    }
+
+    /// Empty physical corpse admission for reward bosses, independent of private loot.
+    /// This never admits a personal reward table or an ordinary creature's loot.
+    pub fn reward_boss_corpse(&self, creature: &str) -> Option<Arc<CreatureRewardRow>> {
+        self.reward_boss_corpses.get(creature).cloned()
     }
 
     /// Mintable Item references already admitted by this generation's existing loot owner.
@@ -499,6 +505,29 @@ impl CreatureRewardTable {
                 (target.key.clone(), row)
             })
             .collect();
+        let reward_boss_corpses = creatures
+            .records
+            .iter()
+            .filter_map(|record| {
+                let ProjectV2AuthoringProfileData::Creature(profile) = &record.profile.data else {
+                    return None;
+                };
+                if !profile.details.as_ref()?.system_eligibility.reward_boss {
+                    return None;
+                }
+                let target = &record.profile.target;
+                // Require an explicit native binding even though physical reward-boss
+                // corpses never carry that binding's private loot.
+                bindings.get(target.key.as_str())?;
+                let race = races
+                    .get(&target.key)
+                    .filter(|race| race.definition_revision() == target.revision)
+                    .cloned();
+                let mut corpse = row(profile, None, &tables, &items, race).ok()?;
+                corpse.boss = boss_metadata(profile, &target.key);
+                Some((target.key.clone(), Arc::new(corpse)))
+            })
+            .collect();
         let bosses = creatures
             .records
             .iter()
@@ -576,6 +605,7 @@ impl CreatureRewardTable {
         Self {
             rows,
             bosses,
+            reward_boss_corpses,
             forge_sliver,
             daily_boss_equipment: HashSet::new(),
             encounter_facts,
@@ -614,9 +644,7 @@ fn row(
     let admitted = |item: &SectionRef| items.get(item).filter(|facts| facts.materializable);
     admitted(&corpse)
         .and_then(|facts| facts.container_capacity)
-        .filter(|capacity| {
-            (1..=GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX as u64).contains(&u64::from(*capacity))
-        })
+        .filter(|capacity| (1..=u32::from(u16::MAX)).contains(capacity))
         .ok_or(NoSettlementReason::CorpseItemInadmissible)?;
     let corpse_item = corpse.lower();
     let (loot_table_ref, loot_table) = match loot {

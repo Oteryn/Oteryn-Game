@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from item_taxonomy import build_taxonomy, legacy_profile, taxonomy_inputs
-from world_project_v2_to_tree import apply_primal_item_admissions, apply_summer_item_admissions, capability_relations
+from world_project_v2_to_tree import apply_encounter_corpse_admissions, apply_primal_item_admissions, apply_summer_item_admissions, capability_relations
 
 ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
@@ -738,6 +738,7 @@ def main() -> int:
     legacy_items = [row for row in reference["records"] if row["identity"]["family"] == "Item"]
     apply_summer_item_admissions(legacy_items, ROOT)
     apply_primal_item_admissions(legacy_items, ROOT)
+    apply_encounter_corpse_admissions(legacy_items, ROOT)
     from amber_item_semantics import apply_container_fact
     apply_container_fact(legacy_items, ROOT)
     # I19: the 72 source-qualified enchanting results now admit stacks/charges in the tree.

@@ -154,6 +154,14 @@ def apply_primal_item_admissions(definitions, root=ROOT):
     module.apply_admissions(definitions, root)
 
 
+def apply_encounter_corpse_admissions(definitions, root=ROOT):
+    spec = importlib.util.spec_from_file_location(
+        "encounter_corpse_items", root / "tools/content-schema/native-gameplay/encounter_corpse_items.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.apply_admissions(definitions, root)
+
+
 def main() -> int:
     # D1093: canonical cosmetics are tree-first. Validate before writing any derived output;
     # historical identity-only Mount/Outfit packets are never reinterpreted as authored facts.
@@ -191,6 +199,7 @@ def main() -> int:
     apply_admissions(item_records, ROOT)
     apply_summer_item_admissions(item_records)
     apply_primal_item_admissions(item_records)
+    apply_encounter_corpse_admissions(item_records)
     from amber_item_semantics import apply_container_fact
     apply_container_fact(item_records, ROOT)
     from enchanting_item_profiles import apply_admissions as apply_enchanting_admissions

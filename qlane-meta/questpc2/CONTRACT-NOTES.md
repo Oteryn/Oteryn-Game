@@ -44,3 +44,13 @@ qualification. Continue owned missing mechanisms; no external engine deferral.
 - Filesystem recovery preserves source/PG and latest ready compiler outputs.
   Obsolete task incremental states may be archived and verified in /tmp before
   reclaiming their originals; never broadly clean or disable incremental builds.
+
+- Reward-boss physical corpse admission is a separate positive proof from
+  private reward-value admission. An explicit native creature/loot binding,
+  source reward-boss flag and admitted positive-capacity corpse are required.
+  An empty corpse row never admits missing loot Items, an ordinary creature,
+  or an empty fabricated personal chest. Full reward rows retain their strict
+  source table closure and the existing private contribution/settlement owner.
+- Canonical Item changes rebind the119 navigation taxonomy evidence hashes;
+  all12,252 targets and family profiles remain unchanged. Use the full tree
+  generator, then its native registration phase; never hand-edit those hashes.
