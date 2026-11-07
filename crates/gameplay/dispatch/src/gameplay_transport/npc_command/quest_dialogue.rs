@@ -356,6 +356,25 @@ pub(super) async fn apply(
             reply: step.reply.clone(),
         });
     }
+    let fee_payment = if oteryn_gameplay_quests::quest::reward_callbacks::load()
+        .ok()
+        .and_then(|callbacks| {
+            callbacks
+                .into_iter()
+                .find(|c| c.key == request.transition_key)
+        })
+        .is_some_and(|c| c.fee.is_some())
+    {
+        match super::endgame::prepare_reward_fee(admission, command, fence).await {
+            Ok(payment) => Some(payment),
+            Err(outcome) => {
+                finish(admission, command.game_session_id, false);
+                return *outcome;
+            }
+        }
+    } else {
+        None
+    };
     let outcome = if value_callback {
         let Some(permit) = physical.as_ref() else {
             finish(admission, command.game_session_id, false);
@@ -379,6 +398,7 @@ pub(super) async fn apply(
             std::sync::Arc::clone(catalogue),
             crate::durability::reward_claim_mint::QuestRewardAdmission {
                 permit,
+                fee_payment: fee_payment.as_ref(),
                 native,
                 weights: &weights,
             },

@@ -2,6 +2,16 @@
   "schema": 1,
   "npcs": [
     {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "greet": "Hum Humm! Welcume lil' |PLAYERNAME|.",
+      "farewell": "Good bye lil' one.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/a_sweaty_cyclops.lua#L329:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
       "npc": "oteryn:npc.a_wandering_soul",
       "greet": "Is that you...? No... it's not... she never woke up again... the pain... cursed... to wander... Leave me alone in my mourning...",
       "farewell": "Leave me alone in my mourning...",
@@ -46,6 +56,15 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/al_dee.lua:169:sha256:f736cca3c8ca404c402dc41d7062aff496dedf43ab3a8e104eaac424b4713097",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/al_dee.lua:167:sha256:f736cca3c8ca404c402dc41d7062aff496dedf43ab3a8e104eaac424b4713097",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/al_dee.lua:166:sha256:f736cca3c8ca404c402dc41d7062aff496dedf43ab3a8e104eaac424b4713097"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.altar",
+      "greet": "Kneel before the all-devouring power of blooded decay.",
+      "farewell": "Bye, |PLAYERNAME|.",
+      "walkaway": "Bye.",
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/altar.lua#L73:sha256:aba428a9619d2d0af8afa0b01b82b784e95f210d430576fe68e3a07f1a300c8c"
       ]
     },
     {

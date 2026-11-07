@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "source": {
+    "url": "https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/items/items.xml#L75956-L75963",
+    "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece"
+  },
+  "items": [
+    {
+      "id": 43854,
+      "name": "tainted heart",
+      "article": "a",
+      "plural": "tainted hearts",
+      "attributes": {
+        "primarytype": "creature products",
+        "weight": "100"
+      }
+    },
+    {
+      "id": 43855,
+      "name": "darklight heart",
+      "article": "a",
+      "plural": "darklight hearts",
+      "attributes": {
+        "primarytype": "creature products",
+        "weight": "100"
+      }
+    }
+  ]
+}

@@ -107,7 +107,7 @@ fn qengine_l1_legacy_decaying_entitlement_remains_selectable() -> TestResult {
     scenario("qengine-rewards-l1-legacy-decaying")
 }
 
-async fn talk(
+pub(super) async fn talk(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     npc: EntityRef,
@@ -189,7 +189,11 @@ async fn wire_grant(
     admitted: &mut AdmittedSession,
     npc: EntityRef,
     callback: &RewardCallback,
-) -> TestResult<(NpcIntentDisposition, Vec<oteryn_protocol_oteryn::appearance::Catalogue>, u64)> {
+) -> TestResult<(
+    NpcIntentDisposition,
+    Vec<oteryn_protocol_oteryn::appearance::Catalogue>,
+    u64,
+)> {
     wire_reward(owner, admitted, npc, callback, true).await
 }
 
@@ -239,7 +243,11 @@ pub(super) async fn wire_reward(
         })
         .collect::<TestResult<Vec<_>>>()?;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    let expected_outfit = if expect_outfit { callback.outfit.clone() } else { None };
+    let expected_outfit = if expect_outfit {
+        callback.outfit.clone()
+    } else {
+        None
+    };
     let peer = tokio::spawn(async move {
         let mut catalogues = Vec::new();
         let mut result = None;
@@ -634,19 +642,24 @@ pub(super) async fn exercise(
     if name == "qengine-rewards-l1-yalaharian-base-palimuth-villain" {
         // Palimuth's source completion at questline 52 does not test the side.
         // Keep the actual callback unchanged while arranging the opposite side.
-        setup.storage.retain(|state| !state.track.ends_with("/side_decision"));
+        setup
+            .storage
+            .retain(|state| !state.track.ends_with("/side_decision"));
         for state in &mut setup.storage {
             if state.track.ends_with("/door_to_reward") || state.track.ends_with("/mission10") {
                 state.minimum = -1;
             }
         }
-        setup.storage.push(oteryn_gameplay_quests::quest::world_callbacks::Storage {
-            track: "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision".into(),
-            minimum: 2,
-            maximum: 2,
-            set: 2,
-            preserve: true,
-        });
+        setup
+            .storage
+            .push(oteryn_gameplay_quests::quest::world_callbacks::Storage {
+                track: "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision"
+                    .into(),
+                minimum: 2,
+                maximum: 2,
+                set: 2,
+                preserve: true,
+            });
     }
     seed(owner, admitted, &setup, 9000).await?;
     let [npc] = super::classic_quests::install(owner, admitted, [callback.npc.as_str()]).await?;

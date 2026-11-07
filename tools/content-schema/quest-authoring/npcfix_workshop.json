@@ -1,0 +1,249 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/npcfix/altar-bag",
+      "quest": "oteryn:quest.blood_sacrifice",
+      "npc": "oteryn:npc.altar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/npcfix/altar/exchange",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i43855",
+          "count": 5
+        },
+        {
+          "item": "oteryn:item.tibia.i43854",
+          "count": 5
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i43895",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your sacrifice has been accepted, mortal. Embrace your reward!"
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/altar.lua#L73:sha256:aba428a9619d2d0af8afa0b01b82b784e95f210d430576fe68e3a07f1a300c8c"
+      ],
+      "fee": {
+        "gold": 50000000,
+        "include_bank": true
+      },
+      "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/npcfix/koshei-submit",
+      "quest": "oteryn:quest.koshei_the_deathless_quest",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 12,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/npcfix/koshei_amulet/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7528",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i7529",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i7530",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i7531",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Well, well. I do that! Big Ben makes li'l amulet unbroken with big hammer in big hands! No worry! Come back after sun hits the horizon 24 times and ask me for amulet."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/a_sweaty_cyclops.lua#L329:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ],
+      "fee": {
+        "gold": 5000,
+        "include_bank": true
+      },
+      "clocks": [
+        {
+          "track": "oteryn:quest-progress/npcfix/koshei_amulet/started_at",
+          "elapsed_seconds": null,
+          "set_now": true
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/npcfix/koshei-claim",
+      "quest": "oteryn:quest.koshei_the_deathless_quest",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "amulet"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/npcfix/koshei_amulet/stage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i7532",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ahh, li'l one wants amulet. Here! Have it! Mighty, mighty amulet li'l one has. Don't know what but mighty, mighty it is!!!"
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/a_sweaty_cyclops.lua#L293:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ],
+      "clocks": [
+        {
+          "track": "oteryn:quest-progress/npcfix/koshei_amulet/started_at",
+          "elapsed_seconds": 86400,
+          "set_now": false
+        }
+      ],
+      "cooldown_reply": [
+        "Big Ben still hammering! Come back in |REMAINING|!"
+      ]
+    }
+  ],
+  "offers": [
+    {
+      "npc": "oteryn:npc.altar",
+      "keywords": [
+        "kneel"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/npcfix/altar/exchange",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Prepare your offer and cling to the sanctitity of this place."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.altar",
+      "keywords": [
+        "offer"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/npcfix/altar/exchange",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Five tainted hearts and five darklight hearts drowned in a worldly wealth of 50000000 gold pieces for the righteous. Are you prepared?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.altar",
+      "keywords": [
+        "no"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/npcfix/altar/exchange",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Ok then not."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "amulet"
+      ],
+      "topic": 0,
+      "next_topic": 12,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/npcfix/koshei_amulet/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "reply": [
+        "Me can do unbroken but Big Ben want gold 5000 and all four pieces. Yes?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "amulet"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/npcfix/koshei_amulet/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Lil' one already has mighty amulet. Big Ben no make another!"
+      ]
+    }
+  ]
+}

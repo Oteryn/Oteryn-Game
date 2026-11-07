@@ -55,6 +55,13 @@ pub enum RewardReadiness {
     Ineligible,
 }
 
+/// Remaining time accompanies the existing readiness without granting mutation authority.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RewardClockReadiness {
+    pub readiness: RewardReadiness,
+    pub remaining_seconds: Option<i64>,
+}
+
 impl DurabilityRoot {
     /// Observe source storage and its cooldown together under the Character root lock.
     pub async fn read_quest_reward_readiness(
@@ -64,17 +71,50 @@ impl DurabilityRoot {
         catalogue: std::sync::Arc<QuestStateCatalogue>,
         transition_key: String,
     ) -> Result<RewardReadiness> {
+        self.read_quest_reward_clock_readiness(authority, fence, catalogue, transition_key)
+            .await
+            .map(|clock| clock.readiness)
+    }
+
+    /// A coherent source-clock observation for both repeat rewards and delayed crafts.
+    pub async fn read_quest_reward_clock_readiness(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        fence: CurrentCharacterGameplayFence,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+        transition_key: String,
+    ) -> Result<RewardClockReadiness> {
         let callback = oteryn_gameplay_quests::quest::reward_callbacks::load()
             .map_err(|_| CharacterProgressionError::InvalidInput)?
-            .into_iter().find(|callback| callback.key == transition_key && callback.cooldown.is_some())
+            .into_iter()
+            .find(|callback| {
+                callback.key == transition_key
+                    && callback
+                        .clock_effects()
+                        .any(|clock| clock.elapsed_seconds.is_some())
+            })
             .ok_or(CharacterProgressionError::InvalidInput)?;
-        let transition = catalogue.transition(&transition_key)
+        let transition = catalogue
+            .transition(&transition_key)
             .filter(|transition| transition.quest == callback.quest)
-            .ok_or(CharacterProgressionError::InvalidInput)?.clone();
-        let mut keys = transition.effects.iter().map(|effect| effect.track.clone())
-            .chain(callback.requires.iter().map(|required| required.track.clone())).collect::<Vec<_>>();
-        keys.sort_unstable(); keys.dedup();
-        let recovery = authority.record_for(self).map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+            .ok_or(CharacterProgressionError::InvalidInput)?
+            .clone();
+        let mut keys = transition
+            .effects
+            .iter()
+            .map(|effect| effect.track.clone())
+            .chain(
+                callback
+                    .requires
+                    .iter()
+                    .map(|required| required.track.clone()),
+            )
+            .collect::<Vec<_>>();
+        keys.sort_unstable();
+        keys.dedup();
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         self.try_issue_semantic_pass()?.run(move |holder,deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;
@@ -93,15 +133,23 @@ impl DurabilityRoot {
             let storage_ready=callback.storage.iter().all(|guard| catalogue.track(&guard.track).is_some_and(|track|
                 (guard.minimum..=guard.maximum).contains(&stored.get(&guard.track).copied().unwrap_or(track.initial))))
                 && callback.requires.iter().all(|required| required.holds(&catalogue,&stored));
+            let remaining_seconds=callback.clock_effects().filter_map(|clock| {
+                let seconds=clock.elapsed_seconds?;
+                let track=catalogue.track(&clock.track)?;
+                let value=stored.get(&clock.track).copied().unwrap_or(track.initial);
+                let remaining=i128::from(seconds)-(i128::from(now)-i128::from(value));
+                if remaining<=0 {return None;}
+                Some(i64::try_from(remaining).unwrap_or(i64::MAX))
+            }).max();
             let readiness=if !storage_ready { RewardReadiness::Ineligible } else {
                 match catalogue.evaluate(&transition,&stored,now) {
                     Ok(_) => RewardReadiness::Ready,
-                    Err(QuestRefusal::StageMismatch) => RewardReadiness::Cooldown,
+                    Err(QuestRefusal::StageMismatch) if remaining_seconds.is_some() => RewardReadiness::Cooldown,
                     Err(_) => RewardReadiness::Ineligible,
                 }
             };
             commit_semantic_transaction(tx,deadline).await?;
-            Ok(Ok(readiness))
+            Ok(Ok(RewardClockReadiness{readiness,remaining_seconds}))
         })).await?
     }
 }

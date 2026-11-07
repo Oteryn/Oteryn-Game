@@ -339,6 +339,55 @@
             }
           }
         },
+        "fee": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "gold",
+            "include_bank"
+          ],
+          "properties": {
+            "gold": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000000000
+            },
+            "include_bank": {
+              "type": "boolean"
+            }
+          }
+        },
+        "clocks": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "track",
+              "elapsed_seconds",
+              "set_now"
+            ],
+            "properties": {
+              "track": {
+                "type": "string",
+                "pattern": "^oteryn:",
+                "maxLength": 128
+              },
+              "elapsed_seconds": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 31536000
+              },
+              "set_now": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
         "cooldown_reply": {
           "type": "array",
           "maxItems": 8,

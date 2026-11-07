@@ -56,6 +56,17 @@ class ConvertPlacementsTest(unittest.TestCase):
                 checked.add(key.removeprefix('oteryn:npc.'))
         self.assertEqual(checked, names)
 
+    def test_workshop_anchors_keep_exact_captured_sources(self):
+        scope=json.loads(cp.SCOPE.read_text())
+        rows={r['npc']:r for r in scope['retail_placements']}
+        captures={r['identity']['key']:r for r in json.loads(cp.CANDIDATES.read_bytes())['candidates']}
+        for key in ('oteryn:npc.a_fading_memory','oteryn:npc.a_sweaty_cyclops'):
+            row=rows[key]
+            self.assertEqual(row['position'],captures[key]['placements'][0]['position'])
+            self.assertEqual(row['native_source']['sha256'],hashlib.sha256(cp.CANDIDATES.read_bytes()).hexdigest())
+        self.assertEqual(rows['oteryn:npc.a_sweaty_cyclops']['audited_roaming_position'], {'x':32697,'y':31674,'z':3})
+        self.assertEqual(rows['oteryn:npc.altar']['position'], captures['oteryn:npc.altar']['placements'][0]['position'])
+
     def test_three_endpoints_preserve_original_sources_and_stationary_policy(self):
         rows = {r['npc']: r for r in json.loads((cp.HERE / 'samples/npcfix-retail-placements.json').read_text())}
         scope = json.loads(cp.SCOPE.read_text())

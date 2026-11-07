@@ -74,7 +74,11 @@ pub(super) fn prepare(
                 if selected.next().is_some() {
                     return None;
                 }
-                if callback.cooldown.is_some() && !callback.cooldown_reply.is_empty() {
+                if callback
+                    .clock_effects()
+                    .any(|clock| clock.elapsed_seconds.is_some())
+                    && !callback.cooldown_reply.is_empty()
+                {
                     guard = Some((context.clone(), callback.clone()));
                 }
                 return Some(Choice {
@@ -120,18 +124,21 @@ pub(super) async fn apply(
     };
     let observed = admission
         .root
-        .read_quest_reward_readiness(
+        .read_quest_reward_clock_readiness(
             admission.character,
             fence,
             std::sync::Arc::clone(catalogue),
             callback.key.clone(),
         )
         .await;
-    match observed {
-        Ok(RewardReadiness::Ready) => {
+    let Ok(observed) = observed else {
+        return NpcTalkOutcome::only(NpcIntentDisposition::Rejected);
+    };
+    match observed.readiness {
+        RewardReadiness::Ready => {
             quest_dialogue::apply(admission, actor, command, intent, step.dialogue).await
         }
-        Ok(RewardReadiness::Cooldown) => {
+        RewardReadiness::Cooldown => {
             let runtime = admission.runtime.lock().await;
             let reply = quest_dialogue::prepare(
                 admission,
@@ -146,7 +153,7 @@ pub(super) async fn apply(
                     Some(Choice {
                         transition: None,
                         next_topic: Some(Topic::from(callback.next_topic)),
-                        reply: callback.cooldown_reply.clone(),
+                        reply: clock_reply(&callback.cooldown_reply, observed.remaining_seconds),
                     })
                 },
             );
@@ -160,4 +167,29 @@ pub(super) async fn apply(
         }
         _ => NpcTalkOutcome::only(NpcIntentDisposition::Rejected),
     }
+}
+
+fn clock_reply(lines: &[String], remaining: Option<i64>) -> Vec<String> {
+    let remaining = remaining.unwrap_or(0).max(0);
+    let hours = remaining / 3600;
+    let minutes = (remaining % 3600) / 60;
+    let mut parts = Vec::new();
+    if hours > 0 {
+        parts.push(format!("{hours} hour{}", if hours == 1 { "" } else { "s" }));
+    }
+    if minutes > 0 {
+        parts.push(format!(
+            "{minutes} minute{}",
+            if minutes == 1 { "" } else { "s" }
+        ));
+    }
+    let time = if parts.is_empty() {
+        "less than a minute".into()
+    } else {
+        parts.join(" and ")
+    };
+    lines
+        .iter()
+        .map(|line| line.replace("|REMAINING|", &time))
+        .collect()
 }

@@ -816,6 +816,9 @@ async fn wardrobe(
         topic: 0,
         next_topic: 0,
         storage: callback.storage.clone(),
+        clocks: vec![],
+        cooldown: None,
+        fee: None,
         requires: vec![],
         take: vec![],
         present: vec![],
@@ -824,9 +827,8 @@ async fn wardrobe(
         achievement: None,
         repeatable: false,
         achievement_once: false,
-        cooldown: None,
-        cooldown_reply: vec![],
         reply: vec![],
+        cooldown_reply: vec![],
         sources: vec![],
     };
     super::qengine_rewards::seed(owner, admitted, &seed, 9000).await?;

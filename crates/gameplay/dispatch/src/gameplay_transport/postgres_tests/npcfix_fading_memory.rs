@@ -135,9 +135,12 @@ fn scenario(npc: &str, key: &str, input: Option<u16>, output: u16) -> TestResult
                     let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
                     let result = slot.commit_quest_reward(owner.root, owner.character, owner.holder, fence,
                         QuestTransitionRequest { transition_key: key.into(), cause: QuestCause::Command(CommandRef::new(admitted.game_session_id, CommandId::new(39).map_err(debug)?)) },
-                        Arc::clone(&catalogue), crate::durability::reward_claim_mint::QuestRewardAdmission { permit: &permit, native, weights: &weights }).await.map_err(debug)?;
+                        Arc::clone(&catalogue), crate::durability::reward_claim_mint::QuestRewardAdmission { permit: &permit, native, weights: &weights, fee_payment: None }).await.map_err(debug)?;
                     assert!(matches!(result, crate::durability::quest_state::QuestTransitionOutcome::Refused(oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch)), "the durable owner independently refuses an early grant");
                 }
+                let refusal_clock = actual.effects.iter().find(|effect| effect.effect == QuestEffectKind::SetNow).ok_or("clock effect")?.track.as_str();
+                let clock_before_refusal: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
+                    .bind(fence.character_id.as_bytes().as_slice()).bind(refusal_clock).fetch_one(&h.pool).await?;
                 let refused = owner.npc_talk(deps.actor, UseCommand { game_session_id: admitted.game_session_id, command_id: 40, item_fence: Some(fence.item_fence()) }, NpcTalkIntent { npc_actor: actor, text: "awaken".into() }).await;
                 assert_eq!(refused.disposition, NpcIntentDisposition::Ok, "the source cooldown is a literal NPC response");
                 let cooldown_reply = "... I'm sorry... my tears are not ready yet... my soul needs time to grieve...";
@@ -147,6 +150,9 @@ fn scenario(npc: &str, key: &str, input: Option<u16>, output: u16) -> TestResult
                 let no_story = owner.npc_talk(deps.actor, UseCommand { game_session_id: admitted.game_session_id, command_id: 41, item_fence: Some(fresh.item_fence()) }, NpcTalkIntent { npc_actor: actor, text: "awaken".into() }).await;
                 assert!(!no_story.conversation.is_some_and(|reply| reply.lines == [cooldown_reply]), "cooldown refusal resets the topic to zero");
                 assert_eq!(count(&h, output).await?, 1);
+                let clock_after_refusal: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
+                    .bind(fence.character_id.as_bytes().as_slice()).bind(refusal_clock).fetch_one(&h.pool).await?;
+                assert_eq!(clock_after_refusal,clock_before_refusal,"literal refusal never restarts the cooldown");
                 // The typed fixture transition advances only the source clock fact.
                 let fence = owner.current_quest_fence(admitted.game_session_id).await.map_err(|()| "fence")?.ok_or("fence")?;
                 let advanced = h.root.commit_character_quest_transition(&authority, &h.node, fence, QuestTransitionRequest {
