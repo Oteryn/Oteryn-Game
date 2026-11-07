@@ -247,7 +247,9 @@
       "source_current_branch": "origin/claude/happy-davinci-ijz3wy-questpc8@4724cec37",
       "shared_migration": "1300_questpc8_reward_backpack_outputs.sql",
       "red_log": "/tmp/questpc5-backpack-outputs-red.log",
-      "whole_recipe_qualified": false
+      "whole_recipe_qualified": false,
+      "integration_state": "COMPILES_PG_FACTORY_RED_INVALID_STORED_STATE_51_32S",
+      "integration_red_log": "/tmp/questpc5-backpack-outputs-green.log"
     }
   },
   {

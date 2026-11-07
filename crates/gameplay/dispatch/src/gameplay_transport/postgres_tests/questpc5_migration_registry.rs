@@ -121,6 +121,12 @@ fn questpc5_registered_migration_numbers_checksums_and_canonical_guards() -> Tes
                     "../../../../../../apps/game-server/migrations/1272_fathers_burden_xp_guard.sql"
                 ),
             ),
+            (
+                1300,
+                include_str!(
+                    "../../../../../../apps/game-server/migrations/1300_questpc8_reward_backpack_outputs.sql"
+                ),
+            ),
         ];
         for (version, sql) in expected {
             let (success, checksum): (bool, Vec<u8>) =

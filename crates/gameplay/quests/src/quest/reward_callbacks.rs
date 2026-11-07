@@ -23,6 +23,8 @@ pub struct ItemReward {
     pub count: u16,
     #[serde(default)]
     pub contents: Vec<ItemAmount>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub backpack_outputs: Vec<ItemAmount>,
 }
 
 /// Shared bounded item shape used by NPC and literal world reward participants.
@@ -33,6 +35,12 @@ pub(crate) fn valid_item_reward(reward: &ItemReward) -> bool {
             && (1..=100).contains(&count)
     };
     valid(&reward.item, reward.count)
+        && (reward.contents.is_empty() || reward.backpack_outputs.is_empty())
+        && reward.backpack_outputs.len() <= 19
+        && reward
+            .backpack_outputs
+            .iter()
+            .all(|item| valid(&item.item, item.count))
         && reward.contents.len() <= 20
         && (reward.contents.is_empty() || reward.count == 1)
         && reward

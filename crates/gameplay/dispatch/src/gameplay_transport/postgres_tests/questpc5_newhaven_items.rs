@@ -132,6 +132,7 @@ fn questpc5_newhaven_required_item_admission() -> TestResult {
                 .map_err(super::fixture::debug)?;
             for (index, item) in [52732, 3572, 51977].into_iter().enumerate() {
                 let request = crate::durability::reward_claim_mint::RewardClaimMintRequest {
+                    backpack_outputs: false,
                     command: crate::foundation::CommandRef::new(
                         fence.game_session_id,
                         crate::foundation::CommandId::new(100 + index as u64)

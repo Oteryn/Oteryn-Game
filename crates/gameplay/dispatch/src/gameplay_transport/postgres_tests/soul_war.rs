@@ -1367,6 +1367,7 @@ async fn reward_delivery(
     };
     let backpack = generation_item_facts(native, &bag_definition).map_err(debug)?;
     let mut request = RewardClaimMintRequest {
+        backpack_outputs: false,
         command: CommandRef::new(session, CommandId::new(601).map_err(debug)?),
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),

@@ -804,6 +804,7 @@ fn chest(
     quantity: u32,
 ) -> RewardClaimMintRequest {
     RewardClaimMintRequest {
+        backpack_outputs: false,
         command,
         claim: definition("RewardClaim", claim_key),
         source_placement: "fixture:placement.chest".into(),
