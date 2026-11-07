@@ -108,6 +108,57 @@ const CASES: &[Case] = &[
         goal_ground: 423,
         before: 0,
     },
+    Case {
+        suffix: "vashresamun-specific",
+        trigger: Position {
+            x: 33194,
+            y: 32666,
+            floor: -15,
+        },
+        ground: 423,
+        start_ground: 417,
+        goal: Position {
+            x: 33194,
+            y: 32665,
+            floor: -15,
+        },
+        goal_ground: 423,
+        before: 0,
+    },
+    Case {
+        suffix: "vashresamun-specific-preserve",
+        trigger: Position {
+            x: 33194,
+            y: 32666,
+            floor: -15,
+        },
+        ground: 423,
+        start_ground: 417,
+        goal: Position {
+            x: 33194,
+            y: 32665,
+            floor: -15,
+        },
+        goal_ground: 423,
+        before: 3,
+    },
+    Case {
+        suffix: "vashresamun-room",
+        trigger: Position {
+            x: 33128,
+            y: 32657,
+            floor: -15,
+        },
+        ground: 460,
+        start_ground: 454,
+        goal: Position {
+            x: 33129,
+            y: 32657,
+            floor: -15,
+        },
+        goal_ground: 459,
+        before: 1,
+    },
 ];
 fn spec(name: &str) -> TestResult<Case> {
     CASES
@@ -127,7 +178,12 @@ pub(super) fn callback(name: &str) -> TestResult<Callback> {
     let c = spec(name)?;
     oteryn_gameplay_quests::quest::world_callbacks::load()?
         .into_iter()
-        .find(|v| v.key.ends_with(&format!("/ancient-tombs-{}", c.suffix)))
+        .find(|v| {
+            v.key.ends_with(&format!(
+                "/ancient-tombs-{}",
+                c.suffix.strip_suffix("-preserve").unwrap_or(c.suffix)
+            ))
+        })
         .ok_or_else(|| "source room callback".into())
 }
 fn run(name: &'static str) -> TestResult {
@@ -175,10 +231,30 @@ fn l6_native_room_rahemos_room() -> TestResult {
     run("l6-native-room-rahemos-room")
 }
 
+#[test]
+fn l6_native_room_vashresamun_specific() -> TestResult {
+    run("l6-native-room-vashresamun-specific")
+}
+#[test]
+fn l6_native_room_vashresamun_specific_preserve() -> TestResult {
+    run("l6-native-room-vashresamun-specific-preserve")
+}
+#[test]
+fn l6_native_room_vashresamun_room() -> TestResult {
+    run("l6-native-room-vashresamun-room")
+}
+
 type RegionSource = (&'static [u8], (u8, u16, u16));
 fn region(p: Position) -> TestResult<RegionSource> {
     let path = (p.floor, p.x / 256, p.y / 256);
     match path {
+        (-15, 129, 127) => Ok((
+            include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../content/world/placements/region-z15-x129-y127.b3"
+            )),
+            (15, 129, 127),
+        )),
         (-13, 129, 127) => Ok((
             include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),

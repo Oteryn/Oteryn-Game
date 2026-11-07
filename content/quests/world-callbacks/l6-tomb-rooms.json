@@ -270,6 +270,96 @@
       "effects": {
         "teleport_effect": 11
       }
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-vashresamun-specific",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 40090,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33194,
+        "y": 32665,
+        "floor": -15
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/default_start",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/vashresamuns_treasure",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_vashresamun_specific.lua:9"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-vashresamun-room",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 40091,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33129,
+        "y": 32657,
+        "floor": -15
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/default_start",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/vashresamuns_treasure",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 3,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_vashresamun_room.lua:9"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
     }
   ]
 }

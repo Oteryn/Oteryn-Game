@@ -7144,6 +7144,37 @@
         "sha": "d34807f5bd234ee8318e57ba454ba39be0df113d",
         "result": "No QENGINE2 0999-1006 or QBASE1200-1205 migrations integrated; no conditional merge needed."
       }
+    },
+    "vashresamun_room_batch_24": {
+      "status": "COMPILED_RED_WIP_CHECKPOINT",
+      "previous_pushed_head": "60d485d5b",
+      "scope": "Two missing DefaultStart-gated room consumers, three native cases for advancement, legal higher-state preservation, refusal and replay.",
+      "source": {
+        "retained_commit": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "primary_frozen_commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "specific_sha256": "81d75a2f98abfdbcac445a7c406e51189884591cd4e0d2341eff98508e510773",
+        "room_sha256": "c26bf00558dc35c87c4b84aa449c22cee9a3fefe71ec39992884706507d7c622",
+        "lines": "9-17; UID registration at file end"
+      },
+      "native_region": {
+        "file": "content/world/placements/region-z15-x129-y127.b3",
+        "sha256": "f45775e6b1f4018f1e25fce404c915066f0b1dc887ca4f5c87e6e6d2a813c864"
+      },
+      "decision": "Author exact bare-floor entry counterparts neighboring literal source goals; preserve original geometry and attrs. Native wooden floor454/460/459 is identified by pinned XML. Reuse existing monotone effects and exact native selector; no new engine abstraction/schema.",
+      "red_log": "/tmp/questpc4-vash-rooms-red.log",
+      "red_session": 16586,
+      "next_sql": 1259,
+      "whole_entries_remaining": 17,
+      "red": {
+        "postgres_version": "18.6",
+        "marker": "POSTGRES_DATABASE_READY l6_native_room",
+        "cases": 2,
+        "seconds": 57.67,
+        "compiled": "4m45s",
+        "actual": "Unbound native STEP lands on trigger instead of restoring approach for missing DefaultStart",
+        "expected": "Restore exact approach, cue11 and no Quest writes",
+        "log": "/tmp/questpc4-vash-rooms-red.log"
+      }
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",
