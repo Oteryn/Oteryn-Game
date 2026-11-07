@@ -556,6 +556,666 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-09",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.zizzle",
+          "name": "Zizzle",
+          "expected": {
+            "x": 33103,
+            "y": 31120,
+            "floor": -12
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.zlak",
+          "name": "Zlak",
+          "expected": {
+            "x": 33082,
+            "y": 31220,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.zumtah",
+          "name": "Zumtah",
+          "expected": {
+            "x": 33362,
+            "y": 31207,
+            "floor": -8
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.zurak",
+          "name": "Zurak",
+          "expected": {
+            "x": 33158,
+            "y": 31225,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.maelyrra",
+          "name": "Maelyrra",
+          "expected": {
+            "x": 33484,
+            "y": 32237,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.captain_jack_rat",
+          "name": "Captain Jack Rat",
+          "expected": {
+            "x": 33792,
+            "y": 31384,
+            "floor": -6
+          },
+          "before": null
+        }
+      ]
+    },
+    {
+      "id": "retail-population-qualification-10",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.yonan",
+          "name": "Yonan",
+          "expected": {
+            "x": 33922,
+            "y": 31513,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.etzel",
+          "name": "Etzel",
+          "expected": {
+            "x": 32626,
+            "y": 31917,
+            "floor": -5
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.lukosch",
+          "name": "Lukosch",
+          "expected": {
+            "x": 32618,
+            "y": 31947,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.maryza",
+          "name": "Maryza",
+          "expected": {
+            "x": 32634,
+            "y": 31889,
+            "floor": -9
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.melfar",
+          "name": "Melfar",
+          "expected": {
+            "x": 32523,
+            "y": 31966,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.nezil",
+          "name": "Nezil",
+          "expected": {
+            "x": 32661,
+            "y": 31912,
+            "floor": -9
+          },
+          "before": null
+        }
+      ]
+    },
+    {
+      "id": "retail-population-qualification-11",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.pydar",
+          "name": "Pydar",
+          "expected": {
+            "x": 32655,
+            "y": 31893,
+            "floor": -11
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.shortsighted_dwarf",
+          "name": "Shortsighted Dwarf",
+          "expected": {
+            "x": 32679,
+            "y": 31953,
+            "floor": -12
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.sigurd",
+          "name": "Sigurd",
+          "expected": {
+            "x": 32626,
+            "y": 31923,
+            "floor": -5
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.tezila",
+          "name": "Tezila",
+          "expected": {
+            "x": 32657,
+            "y": 31922,
+            "floor": -9
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.tulf",
+          "name": "Tulf",
+          "expected": {
+            "x": 32586,
+            "y": 31928,
+            "floor": -3
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.xelvar",
+          "name": "Xelvar",
+          "expected": {
+            "x": 32622,
+            "y": 31861,
+            "floor": -11
+          },
+          "before": null
+        }
+      ]
+    },
+    {
+      "id": "retail-population-qualification-12",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.chantalle",
+          "name": "Chantalle",
+          "expected": {
+            "x": 32363,
+            "y": 32791,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.charlotta",
+          "name": "Charlotta",
+          "expected": {
+            "x": 32269,
+            "y": 32841,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.chondur",
+          "name": "Chondur",
+          "expected": {
+            "x": 32360,
+            "y": 32549,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.duncan",
+          "name": "Duncan",
+          "expected": {
+            "x": 32336,
+            "y": 32610,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.eleonore",
+          "name": "Eleonore",
+          "expected": {
+            "x": 32332,
+            "y": 32764,
+            "floor": -5
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.marina",
+          "name": "Marina",
+          "expected": {
+            "x": 32329,
+            "y": 32528,
+            "floor": -7
+          },
+          "before": null
+        }
+      ]
+    },
+    {
+      "id": "retail-population-qualification-13",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.amra",
+          "name": "Amra",
+          "expected": {
+            "x": 33800,
+            "y": 32755,
+            "floor": -5
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.asphota",
+          "name": "Asphota",
+          "expected": {
+            "x": 33778,
+            "y": 32844,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.captain_corsarah",
+          "name": "Captain Corsarah",
+          "expected": {
+            "x": 34010,
+            "y": 32475,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.giri",
+          "name": "Giri",
+          "expected": {
+            "x": 33820,
+            "y": 32768,
+            "floor": -4
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.haani",
+          "name": "Haani",
+          "expected": {
+            "x": 33811,
+            "y": 32772,
+            "floor": -4
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.isika",
+          "name": "Isika",
+          "expected": {
+            "x": 33773,
+            "y": 32840,
+            "floor": -6
+          },
+          "before": null
+        }
+      ]
+    },
+    {
+      "id": "retail-population-qualification-14",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.nipuna",
+          "name": "Nipuna",
+          "expected": {
+            "x": 33778,
+            "y": 32837,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.pescadu",
+          "name": "Pescadu",
+          "expected": {
+            "x": 34021,
+            "y": 32505,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.ziyad",
+          "name": "Ziyad",
+          "expected": {
+            "x": 33804,
+            "y": 32769,
+            "floor": -2
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.charles",
+          "name": "Charles",
+          "expected": {
+            "x": 32529,
+            "y": 32785,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.a_beggar",
+          "name": "A Beggar",
+          "expected": {
+            "x": 33594,
+            "y": 31957,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.chavis",
+          "name": "Chavis",
+          "expected": {
+            "x": 33547,
+            "y": 31948,
+            "floor": -7
+          },
+          "before": null
+        }
+      ]
+    },
+    {
+      "id": "retail-population-qualification-15",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.eathar",
+          "name": "Eathar",
+          "expected": {
+            "x": 33536,
+            "y": 31948,
+            "floor": -13
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.edmund",
+          "name": "Edmund",
+          "expected": {
+            "x": 33624,
+            "y": 31894,
+            "floor": -4
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.elbert",
+          "name": "Elbert",
+          "expected": {
+            "x": 33585,
+            "y": 31988,
+            "floor": -12
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.elliott",
+          "name": "Elliott",
+          "expected": {
+            "x": 33570,
+            "y": 31908,
+            "floor": -8
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.emily",
+          "name": "Emily",
+          "expected": {
+            "x": 33612,
+            "y": 31886,
+            "floor": -5
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.fillias",
+          "name": "Fillias",
+          "expected": {
+            "x": 33573,
+            "y": 31926,
+            "floor": -7
+          },
+          "before": null
+        }
+      ]
+    },
+    {
+      "id": "retail-population-qualification-16",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.graham",
+          "name": "Graham",
+          "expected": {
+            "x": 33611,
+            "y": 31887,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.guide_kunibert",
+          "name": "Guide Kunibert",
+          "expected": {
+            "x": 33493,
+            "y": 31983,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.hexel",
+          "name": "Hexel",
+          "expected": {
+            "x": 33558,
+            "y": 31945,
+            "floor": -14
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.jossel",
+          "name": "Jossel",
+          "expected": {
+            "x": 33566,
+            "y": 31948,
+            "floor": -13
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.klesar",
+          "name": "Klesar",
+          "expected": {
+            "x": 33542,
+            "y": 31947,
+            "floor": -14
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.kromrek",
+          "name": "Kromrek",
+          "expected": {
+            "x": 33554,
+            "y": 31966,
+            "floor": -13
+          },
+          "before": null
+        }
+      ]
+    },
+    {
+      "id": "retail-population-qualification-17",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.maro",
+          "name": "Maro",
+          "expected": {
+            "x": 33622,
+            "y": 31883,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.marvin",
+          "name": "Marvin",
+          "expected": {
+            "x": 33662,
+            "y": 31878,
+            "floor": -5
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.nicholas",
+          "name": "Nicholas",
+          "expected": {
+            "x": 33640,
+            "y": 31898,
+            "floor": -5
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.normod",
+          "name": "Normod",
+          "expected": {
+            "x": 33550,
+            "y": 31939,
+            "floor": -14
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.peremin",
+          "name": "Peremin",
+          "expected": {
+            "x": 33550,
+            "y": 31963,
+            "floor": -14
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.baltim",
+          "name": "Baltim",
+          "expected": {
+            "x": 32346,
+            "y": 31323,
+            "floor": -6
+          },
+          "before": null
+        }
+      ]
+    },
+    {
+      "id": "additional-postal-qualification-18",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "Verified published pre-NPCFIX33-placement baseline absence. Existing authored source placement retained; service coverage adds five actors without changing the original13-case fixture.",
+      "cases": [
+        {
+          "npc": "oteryn:npc.olrik",
+          "name": "Olrik",
+          "expected": {
+            "x": 32675,
+            "y": 31698,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.chemar",
+          "name": "Chemar",
+          "expected": {
+            "x": 33269,
+            "y": 32438,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.chrystal",
+          "name": "Chrystal",
+          "expected": {
+            "x": 33174,
+            "y": 31811,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.fyodor",
+          "name": "Fyodor",
+          "expected": {
+            "x": 33639,
+            "y": 31898,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.nelly",
+          "name": "Nelly",
+          "expected": {
+            "x": 32308,
+            "y": 31134,
+            "floor": -7
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }
