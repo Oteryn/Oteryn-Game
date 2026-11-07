@@ -1532,7 +1532,7 @@
     "blocker": {
       "kind": "active_implementation",
       "owner": "questpc8",
-      "missing_piece": "Active implementation: focused native supply MINT/custody regression is building against the current tree; source-backed oil17513, kit17514 and grind stone17617 need native admission through the existing callback reward owner. Nine source machine selectors and three existing NPC placement candidates have been resolved. Finish supplies, sequential circuit, captured five-kill credit and72000-second repeat proof here.",
+      "missing_piece": "Compiling native-supply test is PostgreSQL RED37.99s: missing native Item facts for17513,17514,17617 prevent the existing MINT/carry owner from admitting the supplies. Source qualification helper already succeeds for all three. Add the prepared construction-job callback and regenerate native profiles; then complete the nine native machine matches, Scott/Frank hand-ins, five native deaths and72000-second daily repeat.",
       "evidence": [
         "qlane-meta/questpc8/CONTRACT-NOTES.md",
         "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc8_venore_supplies.rs"

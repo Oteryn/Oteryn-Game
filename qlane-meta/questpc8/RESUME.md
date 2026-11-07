@@ -1,3 +1,13 @@
+# Compiling Venore supply checkpoint: actual PG RED37.99s
+
+The new focused test compiled (test build5m48s), initialized PostgreSQL, and
+failed37.99s later at supply native admission. It calls the existing MINT/carry
+owner; no quest progress is seeded and no guard has been weakened. Exact log
+is recorded in venore-supplies-red.json. All three source qualification probes
+succeed. Next: add the prepared native construction-job callback, regenerate
+profiles and run this same test GREEN. Then finish the full native circuit.
+19of23remain QUALIFIED; four remain. This is WIP, not Venore qualification.
+
 # Venore native supply regression in progress
 
 19of23active L7entries remain QUALIFIED; four remain. Mystery qualification

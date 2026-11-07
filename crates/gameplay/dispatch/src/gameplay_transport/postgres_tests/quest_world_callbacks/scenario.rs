@@ -30,6 +30,7 @@ fn scenario_case(
             | "authored-mystery-assembly"
             | "authored-mystery-geometry"
             | "authored-static-constructors"
+            | "authored-venore-supplies"
             | "catalogue-npc-father"
             | "fathers-burden-handins"
             | "catalogue-npc-hero"
@@ -394,6 +395,13 @@ fn scenario_case(
                 &mut admitted,
                 &h,
                 &authority,
+            )
+            .await?;
+        } else if name == "authored-venore-supplies" {
+            super::super::questpc8_venore_supplies::exercise_supplies(
+                &mut owner,
+                &mut admitted,
+                &h,
             )
             .await?;
         } else if name == "authored-static-constructors" {
