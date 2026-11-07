@@ -427,8 +427,15 @@ impl NpcRuleCatalog {
         RUNTIME
             .get_or_init(|| {
                 let mut catalogue = Self::load_embedded()?;
+                let supplemental = Self::from_json_documents(&[include_str!(
+                    "../../../../../content/dialogues/quest-rules-supplemental/draconia.json"
+                )])?;
+                catalogue.programs.extend(supplemental.programs);
+                validate::catalogue(&catalogue)?;
                 catalogue.programs.retain(|p| {
                     p.document.program_key.as_deref() == Some(hidden_threats::PROGRAM)
+                        || p.document.program_key.as_deref()
+                            == Some("oteryn:quest-npc-program.draconia")
                         || matches!(
                             p.document.quest.as_str(),
                             "oteryn:quest.a_father_s_burden_quest"
@@ -666,3 +673,22 @@ pub fn legacy_defaults<'a>(
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod draconia_source_tests {
+    use super::*;
+    const DATA: &str =
+        include_str!("../../../../../content/dialogues/quest-rules-supplemental/draconia.json");
+    #[test]
+    fn draconia_programme_rejects_source_substitution() -> Result<(), String> {
+        NpcRuleCatalog::from_json_documents(&[DATA]).map_err(|e| format!("{e:?}"))?;
+        assert!(
+            NpcRuleCatalog::from_json_documents(&[&DATA.replace(
+                "85016cc08856f49d94c507f43bc84f54801d3a2844946ae391015a0d8c84a052",
+                "0000000000000000000000000000000000000000000000000000000000000000"
+            )])
+            .is_err()
+        );
+        Ok(())
+    }
+}

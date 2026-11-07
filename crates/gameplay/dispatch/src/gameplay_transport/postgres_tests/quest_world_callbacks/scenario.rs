@@ -42,21 +42,23 @@ fn scenario_case(
     let object_mutation = name.starts_with("object-mutation-");
     let mintwallin = name == "mintwallin-source";
     let monk = name.starts_with("monk-guidance");
-    let classic_npc = matches!(
-        name,
-        "catalogue-npc"
-            | "catalogue-npc-father"
-            | "fathers-burden-handins"
-            | "hunting-for-tokens"
-            | "marlin-trophy-exchange"
-            | "catalogue-npc-hero"
-            | "catalogue-npc-legacy"
-            | "catalogue-npc-scoped"
-            | "classic-quests-npc"
-            | "classic-rottin-disrepair"
-            | "threatened-dreams-npc"
-            | "conditional-quest-greetings"
-    );
+    let dragonlord = name.starts_with("draconia-dragonlord-");
+    let classic_npc = dragonlord
+        || matches!(
+            name,
+            "catalogue-npc"
+                | "catalogue-npc-father"
+                | "fathers-burden-handins"
+                | "hunting-for-tokens"
+                | "marlin-trophy-exchange"
+                | "catalogue-npc-hero"
+                | "catalogue-npc-legacy"
+                | "catalogue-npc-scoped"
+                | "classic-quests-npc"
+                | "classic-rottin-disrepair"
+                | "threatened-dreams-npc"
+                | "conditional-quest-greetings"
+        );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
     let mut callback = callback(
@@ -684,6 +686,15 @@ fn scenario_case(
         } else if name == "marlin-trophy-exchange" {
             super::super::marlin_trophy::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
+        } else if dragonlord {
+            super::super::draconia_dragonlord::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                name,
+            )
+            .await?;
         } else if matches!(
             name,
             "catalogue-npc-father" | "catalogue-npc-legacy" | "fathers-burden-handins"

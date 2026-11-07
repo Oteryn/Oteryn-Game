@@ -1,3 +1,25 @@
+GREEN integration: fed544841 Dragonlord greeting exchange and45th NPC placement merged with156de0c70 Corym doors/Draconia routes. Combined fmt/check/strict clippy, exact catalogue history, greeting/custody units, generation and pins passed. Parent real-PG proofs retained; all44 prior placements unchanged. Evidence: cloud-hidden-dragonlord-integration-validation.json. Next: draft room scene/tests enter real PostgreSQL RED before generic source-room implementation.
+
+## Dragonlord slice GREEN — 2026-11-07
+Source-bound greeting uses existing generic atomic item-exchange owner: one3723
+consumed, one3206 granted, exact Dragonfetish!=1 guard, flag1, immediate focus end.
+Three actual PostgreSQL18.6 cases GREEN: exchange/replay/refusal85.158147972s,
+missing83.808583294s, corrected rollback/recovery/retry86.056034007s; selected
+255.022765273s. Original combined2pass/1failed recovery probe retained honestly;
+no rollback assertions removed. Exact source hash+greeting identity/hash units2/2.
+Final strict Clippy/check, fmt, generation/pins PASS. Existing frozen cohorts and
+owners unchanged; separate runtime programme and closed greeting admission.
+Reviewed native NPC32796,31558,z2,45 placements; pinbb0700fefb815beadb1a64e5b1ae0a46d2183197c4aeb56875902f2effe59a0c.
+Evidence cloud-dragonlord-validation.json; review no remaining findings.
+Counts60QUALIFIED/117UNFINISHED/1excludedDawnportBLOCKED; no whole-title promotion.
+
+NEXT level25 source door32804,31583,z2 action1025,5102->5103. Existing generic
+level-door owner already interprets25. Source verified offline; plan
+/tmp/questpc-level-door-next-plan.md. Add exact native source capsule and missing
+profiles with existing tooling; focused PG RED/GREEN levels24/25/26, no bypass.
+Then reuse freshqpc6 exact paid-key owner for Elathriel5000->copper2970 action3012;
+then generic shared skeleton5972 containerstock key3001. Own every missing feature.
+
 GREEN integration: Corym retained-key door batch099836485 plus Draconia route b37aa848a. Combined fmt/check/strict clippy, source-binding/history units, source generation/tree, pins and actual PostgreSQL WorksDoor01 saved-definition regression passed. Evidence: cloud-hidden-doors-integration-validation.json. Both parents retained; no whole-title promotion. Next: native NPC door composition and reusable Cave Spider timed-room admission, four creature spawns and cleanup.
 
 Next room implementation source check: Canary04b83b51 tile.cpp1685–1704 runs native teleport before STEP_IN on the original tile; movement.cpp290 binds that original tile position. Preserve the native first-entry teleport to33056/32004/z11 and route the original entrance event using the final fenced actor snapshot. Second entry33039/32103/z12 lies inside occupancy bounds and counts its own entrant. Source: https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/items/tile.cpp#L1685-L1704 . Draft normalized room facts and implementation notes are in /tmp/questpc-hidden-room-capsule-draft.json and /tmp/questpc-hidden-room-implementation-plan.md; temporary source originals must not be committed. Runtime positions use legacy positive floors; native callback/map positions use signed negative floors.

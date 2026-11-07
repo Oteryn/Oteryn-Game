@@ -1,0 +1,50 @@
+{
+  "status": "GREEN",
+  "local": "156de0c70ffa72d139e73a93f44e3dbf9ce2db5b",
+  "incoming": "fed5448412536587ab43b10a01447cf7164c5127",
+  "logs": {
+    "fmt": {
+      "path": "qlane-meta/questpc/cloud-hidden-dragonlord-integration-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "check": {
+      "path": "qlane-meta/questpc/cloud-hidden-dragonlord-integration-check.log",
+      "sha256": "fb7a124d5fd551b4668d0993c43d3b0c8accb1c3c7bdf305c04c8a4c63818dfe"
+    },
+    "clippy": {
+      "path": "qlane-meta/questpc/cloud-hidden-dragonlord-integration-clippy.log",
+      "sha256": "906e4c5de4e3bcf1fc5790dd3bfad95e2949523a0190b7e340f756d212029fc3"
+    },
+    "history": {
+      "path": "qlane-meta/questpc/cloud-hidden-dragonlord-integration-history.log",
+      "sha256": "bcad96e945956397cd47ca6e34e84b4ff67fb291fbbdd5594bf81e7874e80dff"
+    },
+    "greetings": {
+      "path": "qlane-meta/questpc/cloud-hidden-dragonlord-integration-greetings.log",
+      "sha256": "73ab9df0a5292134148305b3f2c7a39c9646c8634bb44dc4453fe087444beaed"
+    },
+    "custody": {
+      "path": "qlane-meta/questpc/cloud-hidden-dragonlord-integration-custody.log",
+      "sha256": "93de994e9b9b99120a385e02646fa35e7f2501ed2eaeca6299a1fb70c08febe2"
+    },
+    "generation": {
+      "path": "qlane-meta/questpc/cloud-hidden-dragonlord-integration-generation.log",
+      "sha256": "988e0ecef29170bd6a646f9dd75f57337716e3f0321f72f3c00f18e8694b0a69"
+    },
+    "pin": {
+      "path": "qlane-meta/questpc/cloud-hidden-dragonlord-integration-pin.log",
+      "sha256": "d0d78d90551a13cb624416f7c64480ac9d54029ac21c2d099ed08df8e4718a63"
+    }
+  },
+  "parent_postgres": [
+    "qlane-meta/questpc/cloud-hidden-doors-integration-validation.json",
+    "qlane-meta/questpc/cloud-dragonlord-validation.json"
+  ],
+  "pg_boundary": "No new entry qualification in this merge. Preserve actual parent PostgreSQL18.6 GREEN proofs: Corym49.643924516s plus Dragonlord three selected cases255.022765273s, and their original RED evidence. This integration reruns changed-crate strict checks, exact saved-definition/history, both greeting cohorts, source custody/generation and updated45-NPC world pins.",
+  "placements": {
+    "before": 44,
+    "after": 45,
+    "all_prior_rows_exactly_preserved": true
+  },
+  "review": "Three isolated source greeting documents; original base and Corym custody parsers unchanged. Supplemental programme retains source guards, durable plain-item owner and receipt. All incoming quest state fields preserved; no test weakened or removed."
+}

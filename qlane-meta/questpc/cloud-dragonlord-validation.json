@@ -1,0 +1,101 @@
+{
+  "scope": "Source-bound Draconia Dragonlord greeting exchange through production transport and generic durable item exchange",
+  "red": "cloud-dragonlord-red-validation.json",
+  "green_cases": [
+    {
+      "case": "draconia-dragonlord-exchange",
+      "duration_seconds": 85.158147972,
+      "postgres": "18.6",
+      "result": "GREEN"
+    },
+    {
+      "case": "draconia-dragonlord-missing",
+      "duration_seconds": 83.808583294,
+      "postgres": "18.6",
+      "result": "GREEN"
+    },
+    {
+      "case": "draconia-dragonlord-rollback",
+      "duration_seconds": 86.056034007,
+      "postgres": "18.6",
+      "result": "GREEN"
+    }
+  ],
+  "qualified_cases": 3,
+  "selected_duration_seconds": 255.022765273,
+  "raw_runs": [
+    {
+      "log": "cloud-dragonlord-green.log",
+      "passed": 2,
+      "failed": 1,
+      "duration_seconds": 252.59,
+      "failure": "Rollback and final-write arrival assertions passed; fresh retry incorrectly preceded pending unknown recovery."
+    },
+    {
+      "log": "cloud-dragonlord-rollback-green.log",
+      "passed": 1,
+      "failed": 0,
+      "duration_seconds": 86.06,
+      "correction": "Added existing resume_npc_bank recovery before fresh retry; all rollback assertions retained."
+    }
+  ],
+  "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/an_old_dragon_lord.lua",
+  "source_sha256": "85016cc08856f49d94c507f43bc84f54801d3a2844946ae391015a0d8c84a052",
+  "native_placement": {
+    "x": 32796,
+    "y": 31558,
+    "legacy_z": 2,
+    "cohort_size": 45,
+    "boundary": "Reviewed native placement generated separately; PG probe uses controlled NPC scene."
+  },
+  "pin": "bb0700fefb815beadb1a64e5b1ae0a46d2183197c4aeb56875902f2effe59a0c",
+  "checks": {
+    "initial_check": "PASS 1m55s",
+    "initial_strict_clippy": "PASS 3m27s",
+    "source_substitution_units": "PASS 2/2",
+    "generation": "PASS",
+    "fmt": "PASS",
+    "final_check": "PASS 3m 47s",
+    "final_strict_clippy": "PASS 7m 22s"
+  },
+  "logs": [
+    {
+      "path": "qlane-meta/questpc/cloud-dragonlord-green.log",
+      "sha256": "13f814bdf4f28c3190376b1f64c70dae330fa55371df09817a4e5c6e69bd7627"
+    },
+    {
+      "path": "qlane-meta/questpc/cloud-dragonlord-rollback-green.log",
+      "sha256": "2422295b4e2a6fc79269bb7c77020b393f757b16261f743bc6e0f3dc70110413"
+    },
+    {
+      "path": "qlane-meta/questpc/cloud-dragonlord-unit-quests.log",
+      "sha256": "c885e98d425e43b5f29534c2db7c9afea7dc1d11b28bb0e83b4d630483741149"
+    },
+    {
+      "path": "qlane-meta/questpc/cloud-dragonlord-unit-npc.log",
+      "sha256": "dd0d46f228e6f72fe046f6006e57d6a20892c5c62b64151dd15688f99852666f"
+    },
+    {
+      "path": "qlane-meta/questpc/cloud-dragonlord-check.log",
+      "sha256": "939f5935eb9b5953d2da0e9f5578f827331d672462c800e1b2e36a590e86a69a"
+    },
+    {
+      "path": "qlane-meta/questpc/cloud-dragonlord-clippy.log",
+      "sha256": "bd5f513a2b80a9a61e257b7724d8c95cd7a12326c35325c2ea94974bb2995290"
+    },
+    {
+      "path": "qlane-meta/questpc/cloud-dragonlord-pins.log",
+      "sha256": "086da691525c3c4c76a0f5b1866c08dcbff1d3db672b065723649ac188c21be2"
+    },
+    {
+      "path": "qlane-meta/questpc/cloud-dragonlord-final-check.log",
+      "sha256": "a03a03cd1e5e47b24a66c5c9924ab2450a0f96d2b86f05cab940a62e4cffd1c6"
+    },
+    {
+      "path": "qlane-meta/questpc/cloud-dragonlord-final-clippy.log",
+      "sha256": "06a72adbde405c0f189023cf0394c8bfbd92f3481a5a38d2f4e8ac5479672a85"
+    }
+  ],
+  "whole_title_promoted": false,
+  "review": "PASS: no remaining findings; original failed recovery probe retained and corrected through production recovery API."
+}
