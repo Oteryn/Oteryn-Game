@@ -383,3 +383,13 @@ no production migration or whole-quest qualification is claimed in AUTHORING.
 Generic arbitrary Command/CreatureDeath UUIDs must not create these counters.
 Fresh qengine2@5a6de28c1 had no native-goal transaction helper to reuse. Existing
 incoming six exact-origin goals and ordinary corpse/loot closure are retained.
+
+The first composition reached PG RED82.90s: `game_character_quest_receipt_guard`
+rejected an intermediate receipt after two Quest writes advanced the same
+Character twice. Migration0056 also uniquely constrains both original and
+committed revision. Preserve these guards. One native death must compose its
+same-quest eligible native goal/objective effects into one bounded revision
+receipt, binding the ordered closed component plan. No extra receipt per
+component is required. The added counter proof now asserts actual native
+counter1 and same-XP xmin; every original objective receipt/phase/replay
+assertion is retained. Run this refined case RED before the combined fix.

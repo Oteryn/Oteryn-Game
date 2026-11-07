@@ -1,6 +1,6 @@
 {
   "batch_id": "native-goals-atomic-2026-11-07",
-  "state": "WIP_PG_RED_MULTI_RECEIPT_REVISION_GUARD",
+  "state": "GREEN_COMPOSITION_SLICE",
   "lifecycle": "AUTHORING",
   "base_sha": "5a26f9a0e",
   "scope": "Six exact-origin native defender goals reuse sealed native XP/Quest transaction; whole Elvenbane remains unfinished.",
@@ -22,8 +22,9 @@
     "head_check_seconds": 143
   },
   "pending": [
-    "Refine new exact-origin assertion to actual counter1 and same-XP xmin; preserve all original objective receipt/phase/replay assertions. Run actual PG RED before fix.",
-    "Compose native goals/objectives in one bounded Character-revision receipt; PG GREEN then changed-crate checks and push."
+    "Add focused stale-captured eligibility/retry PostgreSQL proof and close any terminal replay gap without granting capped progress.",
+    "Activate exact goal cohort from earned actual basement landing; source-wire six-defender combat, atomic seven-item treasure/replay and source exit/journal.",
+    "Continue remaining27 owned unfinished entries; no final while scope remains."
   ],
   "implementation": [
     "Capture sealed native death and immutable source origin with original coherent snapshot.",
@@ -39,5 +40,6 @@
     "log": "/tmp/questpc2-exact-goal-atomic-memory-recovered-pg.log",
     "error": "quest receipt is not at the current Character root revision",
     "finding": "Two native quest writes advance one Character twice; SQL permits one receipt per revision and requires final root revision. Compose bounded effects once; retain guards."
-  }
+  },
+  "resolution_batch": "BATCH-native-objective-composition-2026-11-07.json"
 }

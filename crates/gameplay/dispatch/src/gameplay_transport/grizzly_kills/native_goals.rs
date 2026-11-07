@@ -81,51 +81,31 @@ pub(super) fn freeze(
     })
 }
 
-pub(in crate::gameplay_transport) async fn apply_in_transaction(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    node: &crate::durability::runtime_scope_assignment::NodeIncarnationProof,
+pub(in crate::gameplay_transport) fn requests(
     entry: &PendingKillSettlement,
-    participants: &[(
-        crate::durability::character_progression::CurrentCharacterGameplayFence,
-        bool,
-    )],
-    catalogue: Option<&oteryn_gameplay_quests::quest::QuestStateCatalogue>,
-) -> Result<Vec<crate::durability::quest_state::CommittedQuestTransition>, CharacterProgressionError>
-{
-    let mut receipts = Vec::new();
+) -> Result<
+    Vec<(
+        &str,
+        &crate::durability::quest_state::kill_objectives::NativeObjectiveDeath,
+    )>,
+    CharacterProgressionError,
+> {
     let Some(recipient) = entry.grizzly.as_ref().and_then(|f| f.native_goals.as_ref()) else {
-        return Ok(receipts);
+        return Ok(Vec::new());
     };
-    if entry.facts.principal.actor != recipient.actor {
+    let principal = entry.facts.principal;
+    if principal.actor != recipient.actor
+        || principal.session != recipient.session
+        || principal.character.as_bytes() != &recipient.character
+        || principal.lease_generation != recipient.lease_generation
+    {
         return Err(CharacterProgressionError::AuthorityRejected);
     }
-    let fence = participants
+    Ok(recipient
+        .goals
         .iter()
-        .find_map(|(fence, damaged)| {
-            (*damaged
-                && fence.character_id.as_bytes() == &recipient.character
-                && fence.game_session_id == recipient.session
-                && fence.character_lease_generation == recipient.lease_generation)
-                .then_some(*fence)
-        })
-        .ok_or(CharacterProgressionError::AuthorityRejected)?;
-    let catalogue = catalogue.ok_or(CharacterProgressionError::InvalidInput)?;
-    for goal in &recipient.goals {
-        if let Some(receipt) =
-            crate::durability::quest_state::kill_objectives::apply_in_transaction(
-                tx,
-                node,
-                fence,
-                goal,
-                &recipient.source,
-                catalogue,
-            )
-            .await?
-        {
-            receipts.push(receipt);
-        }
-    }
-    Ok(receipts)
+        .map(|goal| (goal.as_str(), &recipient.source))
+        .collect())
 }
 
 pub(in crate::gameplay_transport) fn session(

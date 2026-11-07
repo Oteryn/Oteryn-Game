@@ -1,30 +1,39 @@
-# Registry1240–1244 and atomicity continuation
+# Active r2: combined native XP/Quest slice GREEN, continue
 
-Owner migration registry applied: lane SQL files1240_al_dee_item_exchange,
-1241_uzgod_obsidian_knife_exchange,1242_seymour_present_exchange,
-1243_native_encounter_progression_scope,1244_instance_corpse_mint. Each SQL
-SHA256 unchanged by git mv; all active file references updated. QENGINE20999
-byte-identical to source5a6de28c1, no variant; no QBASE files in this branch.
-Dynamic sqlx migration diagnostic read current directory and applied fresh
-PostgreSQL180006 GREEN3.352s, repo duplicate staged-tree check PASS, fmt,
-check13.73s, pin refresh/check PASS. Clippy all-target/all-feature -Dwarnings GREEN35.17s in
-/tmp/questpc2-migration-registry-clippy.log. Renumber slice green; push now.
+Latest BATCH-native-objective-composition-2026-11-07.json: PostgreSQL180006
+refined RED73.89s (two-receipt revision guard) -> GREEN78.10s/171ms marker.
+XP, original objective receipt and exact native counter1 share same transaction;
+replay stable. Old objective receipt/phase/replay asserts unchanged; new counter
+proof follows actual one-receipt-per-revision schema. Composite owner validates
+all sealed sources then merges bounded compatible same-quest effects and writes
+one receipt/revision. Single-component binding preserved; all SQL guards intact.
+Authorityguard PG GREEN4.61s; exact-origin2cases GREEN82.78s. Check37.12s,
+alltarget/allfeatureclippy-Dwarnings42.40s, fmt PASS. Four focused PGcases;
+no full suites. No content/pin inputs changed in this Rust-only slice.
 
-AtomicityWIPa6e69c429 compiled after cache recovery (3m54s), actualPG RED82.90s:
-Postgres error quest receipt is not at the current Character root revision.
-Existing SQL requires ONE quest receipt per Character revision. Native goal
-and existing objective currently use two writes. Fix composition generically
-into one bounded receipt; do not relax database guards or old test assertions.
-Refine the newly added exact-origin test to assert actual counter1 and its
-same XP xmin rather than assume a second separate receipt; rerun that actual
-PG RED before implementation and GREEN after. Existing objective receipt and
-phase/replay checks remain unchanged. Authorityguard GREEN5.77s and incoming
-exact-origin2cases GREEN85.11s. Clippy for a6 code PASS144s; check143s PASS.
-ResourceOOM19/kill8 was overcome by cold rebuilding one native cache; no
-profile flags/large suite/credential reads. Current native READY/exe live;
-/tmp/questpc2-exact-goal-* records archive/restoration/retirement precisely.
-Do not restore retired pre-fix cache archive. Next keep Rust stable during
-heavy compilation, prune only superseded completed/inactive/failed caches.
+NEXT IMMEDIATELY: focused stale-captured eligibility/retry PG proof. If all
+components have already capped/advanced by settlement, ensure a durable terminal
+no-grant outcome supports XP receipt replay; do not relax fresh-grant audit,
+SQL revision guards or old assertions. Then activate exact goals from actual
+source basement landing (currently53 rather than incoming41 route), real-wire
+Dragon+five defenders, atomic seven physical rewards and source exit/journal.
+Whole Elvenbane remains unfinished; continue remaining27. Push every green
+step and at least15minutes. Latest native READY/exe live; compiled with1240–44.
+Resourcecache prunes/restorations are in /tmp/questpc2-native-batch-* ledgers.
+Native and durability have multiple completed READY after build; retain newest
+only before another heavy compile. Inactive clippy/check archives are under
+/workspace/oteryn-env/retained-cache-archives/*native-batch-before-red.tar.gz.
+Latest RED executable archive questpc2-native-batch-refined-red-executable.gz;
+older positive atomic three-case archive retained; old combat exes retired.
+
+Migration registry slice f7aec72892d43debf7c3d8a491002eddbe8026b3 pushed:
+1240_al_dee_item_exchange.sql,1241_uzgod_obsidian_knife_exchange.sql,
+1242_seymour_present_exchange.sql,1243_native_encounter_progression_scope.sql,
+1244_instance_corpse_mint.sql. Exact SQL SHA256 unchanged; active references
+updated, duplicate/PG dynamic current-directory3.352s/fmt/check13.73s/
+clippy35.17s/pins PASS. QENGINE0999 identical source5a6de28c1; no QBASE files.
+Use1245–1249 for any further lane-only SQL. Never reuse main<=0998/1095,
+QENGINE0999–1006 or other lanes. Father11-track write remains indivisible.
 
 Branch claude/happy-davinci-ijz3wy-questpc2; AUTHORING. Owned29:
 2QUALIFIED (Desert/Annihilator),27UNFINISHED,6world titles SKIPPED_OTHER_LANE

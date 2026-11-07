@@ -184,45 +184,40 @@ pub(super) async fn apply_in_transaction(
     catalogue: Option<&oteryn_gameplay_quests::quest::QuestStateCatalogue>,
 ) -> Result<Vec<crate::durability::quest_state::CommittedQuestTransition>, CharacterProgressionError>
 {
-    let mut committed = super::grizzly_kills::native_goals::apply_in_transaction(
-        tx,
-        node,
-        entry,
-        participants,
-        catalogue,
-    )
-    .await?;
-    let Some(captured) = &entry.objectives else {
-        return Ok(committed);
-    };
-    for objective in captured.iter() {
-        let snapshot = &objective.snapshot;
-        let fence = participants
-            .iter()
-            .find_map(|(fence, damaged)| {
-                (*damaged
-                    && fence.character_id.as_bytes() == &snapshot.character
-                    && fence.game_session_id == snapshot.session
-                    && fence.character_lease_generation == snapshot.lease)
-                    .then_some(*fence)
-            })
-            .ok_or(CharacterProgressionError::AuthorityRejected)?;
-        let catalogue = catalogue.ok_or(CharacterProgressionError::InvalidInput)?;
-        if let Some(receipt) =
-            crate::durability::quest_state::kill_objectives::apply_in_transaction(
-                tx,
-                node,
-                fence,
-                objective.transition,
-                &objective.source,
-                catalogue,
-            )
-            .await?
-        {
-            committed.push(receipt);
+    let principal = entry.facts.principal;
+    let mut requests = super::grizzly_kills::native_goals::requests(entry)?;
+    if let Some(captured) = &entry.objectives {
+        for objective in captured.iter() {
+            let snapshot = &objective.snapshot;
+            if snapshot.actor != principal.actor
+                || snapshot.session != principal.session
+                || snapshot.character != *principal.character.as_bytes()
+                || snapshot.lease != principal.lease_generation
+            {
+                return Err(CharacterProgressionError::AuthorityRejected);
+            }
+            requests.push((objective.transition, &objective.source));
         }
     }
-    Ok(committed)
+    if requests.is_empty() {
+        return Ok(Vec::new());
+    }
+    let fence = participants
+        .iter()
+        .find_map(|(fence, damaged)| {
+            (*damaged
+                && fence.character_id.as_bytes() == principal.character.as_bytes()
+                && fence.game_session_id == principal.session
+                && fence.character_lease_generation == principal.lease_generation)
+                .then_some(*fence)
+        })
+        .ok_or(CharacterProgressionError::AuthorityRejected)?;
+    let catalogue = catalogue.ok_or(CharacterProgressionError::InvalidInput)?;
+    let receipt = crate::durability::quest_state::kill_objectives::apply_batch_in_transaction(
+        tx, node, fence, &requests, catalogue,
+    )
+    .await?;
+    Ok(receipt.into_iter().collect())
 }
 
 /// Publish only after the enclosing XP/Quest transaction commits, while the

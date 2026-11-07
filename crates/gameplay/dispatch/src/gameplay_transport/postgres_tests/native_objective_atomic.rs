@@ -259,13 +259,13 @@ pub(super) async fn scenario(
         same_transaction,
         "native objective and XP cannot have a crash gap"
     );
-    let native_same_transaction: Option<bool> = sqlx::query_scalar("SELECT d.xmin=q.xmin FROM game_party_kill_xp_receipts d JOIN game_character_quest_receipts q ON q.character_id=d.principal_id WHERE d.death_key=$1 AND q.transition_key=$2")
+    let native_same_transaction: Option<bool> = sqlx::query_scalar("SELECT d.xmin=t.xmin AND t.value=1 FROM game_party_kill_xp_receipts d JOIN game_character_quest_tracks t ON t.character_id=d.principal_id WHERE d.death_key=$1 AND t.track_key=$2")
         .bind(crate::durability::party_kill_xp::encode_death_key(entry.facts.death))
-        .bind(&native_goal.key).fetch_optional(pool).await?;
+        .bind(&native_goal.counter).fetch_optional(pool).await?;
     assert_eq!(
         native_same_transaction,
         Some(true),
-        "exact-origin goal must commit with XP before any deferred queue drain"
+        "exact-origin counter1 must commit with XP before any deferred queue drain"
     );
     eprintln!(
         "NATIVE_OBJECTIVE_ATOMIC POSTGRES_CASE_COMPLETED source_dragon=1 replay=stable same_xact=true elapsed_ms={}",

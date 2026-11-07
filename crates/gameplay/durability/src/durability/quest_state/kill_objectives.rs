@@ -151,13 +151,74 @@ pub async fn apply_in_transaction(
     source: &NativeObjectiveDeath,
     catalogue: &QuestStateCatalogue,
 ) -> Result<Option<CommittedQuestTransition>> {
+    apply_batch_in_transaction(tx, node, fence, &[(transition_key, source)], catalogue).await
+}
+
+/// Same-death, same-quest descendants share one bounded Quest receipt/revision.
+/// The primary key and original binding remain unchanged for a single component.
+/// A composite binding seals every sorted, closed component and native proof.
+pub async fn apply_batch_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    node: &NodeIncarnationProof,
+    fence: CurrentCharacterGameplayFence,
+    requests: &[(&str, &NativeObjectiveDeath)],
+    catalogue: &QuestStateCatalogue,
+) -> Result<Option<CommittedQuestTransition>> {
+    let limit = oteryn_gameplay_quests::quest::QUESTSTATE0_RL_02;
+    if requests.is_empty() || requests.len() > limit {
+        return Err(CharacterProgressionError::InvalidInput);
+    }
+    let mut components = requests.to_vec();
+    components.sort_unstable_by_key(|(key, _)| *key);
+    if components.windows(2).any(|pair| pair[0].0 == pair[1].0) {
+        return Err(CharacterProgressionError::InvalidInput);
+    }
+    let &(transition_key, source) = components
+        .first()
+        .ok_or(CharacterProgressionError::InvalidInput)?;
     let rule = Binding::resolve(transition_key)?;
+    let mut rules = Vec::new();
+    let mut transitions = Vec::new();
+    for (key, proof) in &components {
+        let component = Binding::resolve(key)?;
+        let transition = catalogue
+            .transition(key)
+            .ok_or(CharacterProgressionError::InvalidInput)?;
+        if component.quest() != rule.quest()
+            || transition.quest != rule.quest()
+            || transition.experience.is_some()
+            || transition.completes
+            || proof.death != source.death
+            || proof.character != fence.character_id
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        rules.push(component);
+        transitions.push(transition);
+    }
     let request = QuestTransitionRequest {
         transition_key: transition_key.into(),
         cause: QuestCause::CreatureDeath(source.occurrence()?),
     };
     let mut binding = request_binding(fence.character_id, &request);
     source.bind(&mut binding)?;
+    if components.len() > 1 {
+        let mut hash = Sha256::new()
+            .chain_update(b"oteryn:quest-native-components:v1")
+            .chain_update(binding);
+        for (key, proof) in &components {
+            let component_request = QuestTransitionRequest {
+                transition_key: (*key).into(),
+                cause: request.cause,
+            };
+            let mut component_binding = request_binding(fence.character_id, &component_request);
+            proof.bind(&mut component_binding)?;
+            hash.update((key.len() as u64).to_be_bytes());
+            hash.update(key.as_bytes());
+            hash.update(component_binding);
+        }
+        binding[1..].copy_from_slice(&hash.finalize());
+    }
     lock_receipt_key(tx, fence.character_id, &request).await?;
     if let Some(row) = load_receipt(tx, fence.character_id, &request).await? {
         if row
@@ -176,8 +237,10 @@ pub async fn apply_in_transaction(
         CharacterRevision::new(numeric_u64(&row, "character_revision")?)
             .map_err(|_| DurabilityError::InvalidStoredState)?;
     let root = assert_gameplay_fence(tx, &current, node).await??;
-    if !authorize(tx, &current, &request, &rule, source).await? {
-        return Err(CharacterProgressionError::AuthorityRejected);
+    for ((_, proof), component) in components.iter().zip(&rules) {
+        if !authorize(tx, &current, &request, component, proof).await? {
+            return Err(CharacterProgressionError::AuthorityRejected);
+        }
     }
     let progression = sqlx::query("SELECT character_revision::text, level, total_experience, profile_revision, ruleset_revision, content_revision, simulation_revision, evidence_revision, declaration_revision, policy_revision, reward_revision FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await.map_err(DurabilityError::from)?;
@@ -207,16 +270,17 @@ pub async fn apply_in_transaction(
     let pin: String = state
         .try_get("pinned_content_revision")
         .map_err(DurabilityError::from)?;
-    let transition = catalogue
-        .transition(transition_key)
+    let transition = *transitions
+        .first()
         .ok_or(CharacterProgressionError::InvalidInput)?;
-    if transition.quest != rule.quest() || transition.experience.is_some() || transition.completes {
-        return Err(CharacterProgressionError::InvalidInput);
-    }
-    let mut keys: Vec<&str> = transition
-        .effects
+    let mut keys: Vec<&str> = transitions
         .iter()
-        .map(|effect| effect.track.as_str())
+        .flat_map(|transition| {
+            transition
+                .effects
+                .iter()
+                .map(|effect| effect.track.as_str())
+        })
         .collect();
     keys.sort_unstable();
     keys.dedup();
@@ -242,12 +306,36 @@ pub async fn apply_in_transaction(
             .fetch_one(&mut **tx)
             .await
             .map_err(DurabilityError::from)?;
-    let changes = match catalogue.evaluate(transition, &stored, now) {
-        Ok(changes) => changes,
-        Err(QuestRefusal::StageMismatch | QuestRefusal::OutOfRange) => return Ok(None),
-        Err(_) => return Err(CharacterProgressionError::InvalidInput),
-    };
-    if !capacity::tracks_fit(tx, fence.character_id, &keys, rows.len()).await? {
+    let mut merged: BTreeMap<String, QuestTrackChange> = BTreeMap::new();
+    for component in &transitions {
+        let evaluated = match catalogue.evaluate(component, &stored, now) {
+            Ok(changes) => changes,
+            Err(QuestRefusal::StageMismatch | QuestRefusal::OutOfRange) => continue,
+            Err(_) => return Err(CharacterProgressionError::InvalidInput),
+        };
+        for change in evaluated {
+            if let Some(previous) = merged.get(&change.track) {
+                if previous.before != change.before || previous.after != change.after {
+                    return Err(CharacterProgressionError::InvalidInput);
+                }
+            } else {
+                merged.insert(change.track.clone(), change);
+            }
+        }
+    }
+    if merged.is_empty() {
+        return Ok(None);
+    }
+    if merged.len() > limit {
+        return Err(CharacterProgressionError::InvalidInput);
+    }
+    let changes: Vec<_> = merged.into_values().collect();
+    let changed_keys: Vec<_> = changes.iter().map(|change| change.track.as_str()).collect();
+    let present = changes
+        .iter()
+        .filter(|change| stored.contains_key(&change.track))
+        .count();
+    if !capacity::tracks_fit(tx, fence.character_id, &changed_keys, present).await? {
         return Err(CharacterProgressionError::InvalidInput);
     }
     super::persist::persist(
