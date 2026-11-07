@@ -344,3 +344,42 @@ paths before using those unrelated executables. Current ledgers are
 /tmp/questpc2-demon-verification-executable-retention.json.
 Next: finish Item/loot regeneration, scoped PG, checks and push runtime slice,
 then earned chest/source exit/sealed reentry. Counts remain0/35.
+
+2026-11-07 06:41 UTC native combat slice GREEN: record
+BATCH-annihilator-native-combat-2026-11-07.json. Actual PostgreSQL180006
+ran97.37s (native compile2m10s): four genuine Fresh/D88 players enter the
+actual captured map; two original full-health8200 demons die through native
+attacks/AI, real corpse+loot drains commit, player crosses exact source
+cells33223/33224,31659,z13. Source actors are retained before AI movement.
+Normal Knight equipment and real carried/consumed health potions; D88's
+finite level2000 policy, no fake stats/forced kills/progress flags.
+
+Three generic data fixes:28 missing shield kinds (all other facts unchanged),
+source demon corpse decay chain5995/4097/4098/4099, and11 canonical loot
+custody admissions. Git/source-bound overlay refresh preserves unrelated
+selected facts and only explicitly qualifies exact captured portable core
+custody. Tool tests19 cases pass; simulation15 cases/776 creatures; registration
+write/check42 files; scoped check3.52s, clippy19.13s all targets/features-Dwarnings,
+cargo fmt plus explicit build-mounted combat-module rustfmt, governance,
+whitespace and World pin-check pass. World unchangeda0846ee7...edc20c.
+Derived Prey counts154->153 follow its existing >7-entry admitted-table rule
+when ordinary Demon becomes settleable; do not weaken the model or pin counts.
+
+Current cache state: latest native READY is live on RAM-backed/tmp, successful
+old metadata has been retired (do not restore it). Current check/clippy caches
+restored from /tmp/questpc2-moving-ai-verification-cache-retention.json;
+Native durability has its newer completed cache, do not overwrite with the
+older archive. Inactive verification executables remain losslessly compressed
+with original symlinks; restore /tmp/questpc2-demon-verification-executable-retention.json
+before using them. Before another changed native build, retain current completed
+caches, place its large READY dep/query metadata on disk with byte verification,
+and leave enough room for native CGUs/linking. Never run pin compilation in
+parallel with native compilation/PG/clippy. No broad clean or setting change.
+
+NEXT immediately after push: continue the same Annihilator route from actual
+x33224,y31659,z13 through reward-room native door5107 at33225, physical source
+chests UID6085-6088, shared claim/replay, source exit1949 at33236,31655 to
+33213,31671 and claimed-door/sealed re-entry. Existing target/use helpers can
+be shared test-only. No invented six-kill storage or escape timer. Preserve
+Desert source party rite907bdacd9, its separate continuation and all earlier
+commits. Counts remain0 qualified/35 unfinished; continue, no external wait.

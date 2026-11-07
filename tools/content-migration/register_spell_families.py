@@ -409,6 +409,10 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     # Shop/chest admission adds ranged Items after the earlier owner overlays.
     # Complete their existing source authoring too before pinning the provider.
     ranged_item_profiles.apply_native(root, generated)
+    # A known shield in the first hand must not hide the equipped melee weapon.
+    # Complete only unknown kinds from agreeing admitted taxonomy and pinned XML.
+    import hand_weapon_kinds
+    hand_weapon_kinds.apply_native(root, generated, spell_import.canonical_bytes)
     # Later admitted creature overlays (for example forge eligibility) change
     # Creature roots. Bind executable closures only after those policies settle.
     from bind_monster_source_definitions import bind_definitions

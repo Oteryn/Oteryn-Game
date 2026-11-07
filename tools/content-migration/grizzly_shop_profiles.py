@@ -162,11 +162,12 @@ def capture(source_root, root=ROOT):
             'canonical_inputs': inputs, 'records': records, 'rejected': rejected}
 
 
-def refresh_canonical_inputs(base_ref='HEAD', root=ROOT):
-    """Rebind shard hashes only when every selected shop definition is unchanged.
+def refresh_canonical_inputs(base_ref='HEAD', root=ROOT, qualify_custody=False):
+    """Rebind unchanged selected definitions or explicitly qualified custody facts.
 
     The retained descriptor must match an actual Git base blob; a changed shop
-    fact still requires full source qualification. No profile or rejection changes.
+    fact still requires source qualification. The opt-in custody path compares
+    the exact unchanged, Git-bound source profile; no profile/rejection changes.
     """
     overlay = json.loads((root / PATH).read_bytes())
     keys, catalogue_sha = selected(root)
@@ -206,8 +207,34 @@ def refresh_canonical_inputs(base_ref='HEAD', root=ROOT):
         if hashlib.sha256(before).hexdigest() != expected[path]:
             raise ValueError('GRIZZLY_SHOP_CANONICAL_BASE_DRIFT')
         current = current_path.read_bytes()
-        if selected_definitions(before) != selected_definitions(current):
-            raise ValueError('GRIZZLY_SHOP_SELECTED_CANONICAL_DRIFT')
+        selected_before = selected_definitions(before)
+        selected_current = selected_definitions(current)
+        if selected_before != selected_current:
+            if qualify_custody:
+                # Explicitly qualify only additive custody facts already owned by
+                # the unchanged, Git-base-bound shop source capture. Combat,
+                # physical, charge and all other canonical facts still must match.
+                profiles = {r['production_definition']['production_key']: r
+                            for r in overlay['records']}
+                selected_before = json.loads(json.dumps(selected_before))
+                for key, definition in selected_before.items():
+                    if key not in profiles or definition == selected_current.get(key):
+                        continue
+                    profile = profiles[key]
+                    if (not profile['admission']['materializable']
+                            or profile['admission']['legal_destinations'] != ['CharacterInventory', 'Ground']):
+                        raise ValueError('GRIZZLY_SHOP_CUSTODY_CONFLICT')
+                    for group in ('stack', 'container'):
+                        if known_conflict(definition['semantics'][group], profile['semantics'][group]):
+                            raise ValueError('GRIZZLY_SHOP_CUSTODY_CONFLICT')
+                        definition['semantics'][group] = accepted_first(
+                            definition['semantics'][group], profile['semantics'][group])
+                    if definition['stack_class'] not in ('Unknown', profile['admission']['stack_class']):
+                        raise ValueError('GRIZZLY_SHOP_CUSTODY_CONFLICT')
+                    definition['stack_class'] = profile['admission']['stack_class']
+                    definition['materializable'] = profile['admission']['materializable']
+            if selected_before != selected_current:
+                raise ValueError('GRIZZLY_SHOP_SELECTED_CANONICAL_DRIFT')
         descriptor['sha256'] = hashlib.sha256(current).hexdigest()
     return overlay
 
@@ -256,9 +283,10 @@ if __name__ == '__main__':
     mode.add_argument('--source-root', type=Path)
     mode.add_argument('--refresh-canonical-inputs', action='store_true')
     parser.add_argument('--base-ref', default='HEAD')
+    parser.add_argument('--qualify-custody-inputs', action='store_true')
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
-    raw = encode(refresh_canonical_inputs(args.base_ref) if args.refresh_canonical_inputs
+    raw = encode(refresh_canonical_inputs(args.base_ref, qualify_custody=args.qualify_custody_inputs) if args.refresh_canonical_inputs
                  else capture(args.source_root))
     target = ROOT / PATH
     if args.check:

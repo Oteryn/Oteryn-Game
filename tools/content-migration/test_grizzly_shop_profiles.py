@@ -13,6 +13,48 @@ import grizzly_shop_profiles as tool
 
 
 class GrizzlyShopProfiles(unittest.TestCase):
+    def test_custody_qualification_requires_exact_retained_profile_and_preserves_other_facts(self):
+        key = 'oteryn:item.tibia.i7393'
+        profile = next(r for r in self.packet['records']
+                       if r['production_definition']['production_key'] == key)
+        definition = {'identity': {'key': key}, 'materializable': False,
+                      'stack_class': 'Unknown', 'semantics': {
+                          'physical': copy.deepcopy(profile['semantics']['physical']),
+                          'stack': {'state': 'UNKNOWN'}, 'container': {'state': 'UNKNOWN'}}}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            relative = 'content/items/definitions/items-00000-00499.json'
+            shard = root / relative
+            shard.parent.mkdir(parents=True)
+            shard.write_text(json.dumps({'records': [{'definition': definition}]}))
+            packet = {'catalogue': {'path': tool.CATALOGUE, 'sha256': 'catalogue'},
+                      'canonical_inputs': [{'path': relative,
+                                            'sha256': hashlib.sha256(shard.read_bytes()).hexdigest()}],
+                      'records': [profile], 'rejected': []}
+            path = root / tool.PATH
+            path.parent.mkdir(parents=True)
+            path.write_text(json.dumps(packet))
+            git = ['git', '-C', str(root)]
+            subprocess.run(git + ['init', '-q'], check=True, capture_output=True)
+            subprocess.run(git + ['add', '.'], check=True, capture_output=True)
+            subprocess.run(git + ['-c', 'user.name=fixture', '-c', 'user.email=fixture@example.invalid',
+                                 '-c', 'commit.gpgsign=false', 'commit', '-qm', 'source base'],
+                           check=True, capture_output=True)
+            definition['materializable'] = profile['admission']['materializable']
+            definition['stack_class'] = profile['admission']['stack_class']
+            for group in ('stack', 'container'):
+                definition['semantics'][group] = copy.deepcopy(profile['semantics'][group])
+            with mock.patch.object(tool, 'selected', return_value=({key}, 'catalogue')):
+                shard.write_text(json.dumps({'records': [{'definition': definition}]}))
+                with self.assertRaisesRegex(ValueError, 'SELECTED_CANONICAL_DRIFT'):
+                    tool.refresh_canonical_inputs(root=root)
+                refreshed = tool.refresh_canonical_inputs(root=root, qualify_custody=True)
+                self.assertEqual(refreshed['records'], packet['records'])
+                definition['semantics']['physical']['value']['weight']['value'] += 1
+                shard.write_text(json.dumps({'records': [{'definition': definition}]}))
+                with self.assertRaisesRegex(ValueError, 'SELECTED_CANONICAL_DRIFT'):
+                    tool.refresh_canonical_inputs(root=root, qualify_custody=True)
+
     def test_hash_refresh_requires_unchanged_shop_facts_and_an_exact_git_base(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

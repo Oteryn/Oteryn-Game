@@ -9,10 +9,19 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 #[test]
 fn annihilator_source_route_genuine_party_entry() -> TestResult {
+    run(false)
+}
+
+#[test]
+fn annihilator_source_route_native_combat_clearance() -> TestResult {
+    run(true)
+}
+
+fn run(combat: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+    super::kill_reward_e2e::scenario_thread::run_async(async move |admin| {
         let started = std::time::Instant::now();
         let h =
             crate::bestiary_postgres_harness::Harness::create(admin, "annihilator_route", false)
@@ -33,17 +42,19 @@ fn annihilator_source_route_genuine_party_entry() -> TestResult {
                 .fetch_one(&h.pool)
                 .await?;
         let mut currents = Vec::new();
+        let mut operations = Vec::new();
         for index in 0..4_u8 {
-            currents.push(
-                crate::world_party_runtime_postgres_cases::committed_fresh_player(
+            let (current, operation) =
+                crate::world_party_runtime_postgres_cases::committed_fresh_player_with_operation(
                     &h,
                     60 + index,
                     80 + index,
                     70 + index,
                     now,
                 )
-                .await?,
-            );
+                .await?;
+            currents.push(current);
+            operations.push(operation);
         }
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -150,6 +161,9 @@ fn annihilator_source_route_genuine_party_entry() -> TestResult {
             );
         let mut pending =
             vec![oteryn_protocol_oteryn::world_object::CAPABILITY_WORLD_INTERACTION_V1];
+        if combat {
+            pending.push(oteryn_protocol_oteryn::attack::CAPABILITY_ATTACK_V1);
+        }
         let mut supported = std::collections::BTreeSet::new();
         while let Some(id) = pending.pop() {
             if supported.insert(id)
@@ -171,7 +185,17 @@ fn annihilator_source_route_genuine_party_entry() -> TestResult {
         for (index, member) in admitted.iter_mut().enumerate() {
             member.continuity.selected_capabilities = selected;
             owner.admit_progression_session(member).await;
-            level(&owner, *member, 100, 180 + u8::try_from(index)?).await?;
+            let source_level = if combat { 2000 } else { 100 };
+            level(&owner, *member, source_level, 180 + u8::try_from(index)?).await?;
+            if combat {
+                super::party_xp::initialize_build(
+                    &owner,
+                    member.game_session_id,
+                    "knight",
+                    220 + u8::try_from(index)?,
+                )
+                .await?;
+            }
             let fence = owner
                 .current_quest_fence(member.game_session_id)
                 .await
@@ -195,7 +219,35 @@ fn annihilator_source_route_genuine_party_entry() -> TestResult {
                 } => facts,
                 _ => return Err("durable cast facts unavailable".into()),
             };
-            assert_eq!(facts.level, 100);
+            assert_eq!(facts.level, source_level);
+            if combat {
+                let native = generation.native_gameplay().ok_or("native")?;
+                owner
+                    .root
+                    .initialize_admission_equipment(
+                        owner.character,
+                        owner.holder,
+                        &fence.item_fence(),
+                        native.source_digest(),
+                        &operations[index],
+                    )
+                    .await
+                    .map_err(debug)?;
+            }
+            let build = owner
+                .root
+                .read_character_build_state(owner.character, fence.character_id)
+                .await
+                .map_err(debug)?;
+            if combat {
+                super::annihilator_combat::prepare_supplies(&owner, member, &build, index == 0)
+                    .await?;
+            }
+            let stamina = owner
+                .root
+                .read_hunting_stamina(owner.character, fence.character_id)
+                .await
+                .map_err(debug)?;
             let monk = owner
                 .load_monk_state(fence.character_id)
                 .await
@@ -217,6 +269,29 @@ fn annihilator_source_route_genuine_party_entry() -> TestResult {
                     )
                     .is_some()
             );
+            let mut states = owner.states.spell_states.lock().await;
+            let actor = member.runtime_actor.ok_or("actor")?;
+            assert!(states.load_owned_build(&runtime, actor, member.game_session_id, &build));
+            states.load_stamina_at(
+                &runtime,
+                actor,
+                member.game_session_id,
+                stamina,
+                owner.owner_now().get(),
+            );
+            if combat {
+                states
+                    .get_mut(&runtime, actor, member.game_session_id)
+                    .ok_or("state")?
+                    .enable_owned_training(
+                        &build,
+                        generation
+                            .native_gameplay()
+                            .and_then(|n| n.training_formula())
+                            .ok_or("training")?,
+                    )
+                    .map_err(debug)?;
+            }
         }
 
         use crate::map::boot::BundleCollisionIndexExt;
@@ -259,6 +334,9 @@ fn annihilator_source_route_genuine_party_entry() -> TestResult {
         }
         assert_eq!(runtime.visible_entities().creatures.len(), 6);
         drop(runtime);
+        if combat {
+            super::annihilator_combat::clear_corridor(&mut owner, &mut admitted[0]).await?;
+        }
         eprintln!(
             "ANNIHILATOR_ROUTE POSTGRES_CASE_COMPLETED members=4 creatures=6 elapsed_ms={}",
             started.elapsed().as_millis()
@@ -281,7 +359,7 @@ fn target(map: &crate::map::boot::BundleMap, x: u16, y: u16) -> TestResult<World
     })
 }
 
-async fn step(
+pub(super) async fn step(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     member: &mut AdmittedSession,
     direction: oteryn_protocol_oteryn::world_spatial::StepDirection,

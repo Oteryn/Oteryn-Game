@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "3be5cd734a3bd089da5b49dfeef3aa93bd139ebfaeb9ad43beadee68457871c4",
+  "input_sha256": "aedaef3ed81ea8044c1c3105c3562f6c1739a9c23913783483accd00b644ddc5",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -2046,7 +2046,6 @@
     "oteryn:creature.deepsea_blood_crab",
     "oteryn:creature.deepworm",
     "oteryn:creature.defiler",
-    "oteryn:creature.demon",
     "oteryn:creature.demon_outcast",
     "oteryn:creature.demon_parrot",
     "oteryn:creature.demon_skeleton",
@@ -2823,7 +2822,6 @@
     "oteryn:creature.deepsea_blood_crab",
     "oteryn:creature.deepworm",
     "oteryn:creature.defiler",
-    "oteryn:creature.demon",
     "oteryn:creature.demon_outcast",
     "oteryn:creature.demon_parrot",
     "oteryn:creature.demon_skeleton",

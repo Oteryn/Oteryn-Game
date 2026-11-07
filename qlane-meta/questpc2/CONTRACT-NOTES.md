@@ -176,3 +176,19 @@ qualification. Continue owned missing mechanisms; no external engine deferral.
   Reuse pinned client2dfa943b...dae7e2 and existing source binding importer
   for stack/container; retain all canonical physical/combat/charge facts.
   No loot probability, corpse capacity or reward budget is changed.
+
+- Derived Prey model effect: admitting the real Demon loot closure makes the
+  ordinary Demon reward table settleable too. Existing qualified_catalogue
+  in crates/gameplay/dispatch/examples/prey_time_sim.rs:490-511 excludes
+  admitted tables with more than7 entries, so its available/unsettleable
+  tier4 counts both drop154->153. This is the unchanged model's bounded
+  catalogue policy, not a change to quest loot odds or budgets. Keep the
+  repository simulation's actual outputs; do not hand-pin prior counts.
+
+- Actual PG180006 ran102.96s after Item closure: the first native lethal
+  corpse/loot drain committed and its real eastward movement returned Moved.
+  The next failure was a fixture lookup for the second actor at its old tile.
+  Native AI may move source actors. Retain both exact actor identities and
+  their full-health snapshots at source entry before combat, then require
+  native lethal/reward drains for those same actors and exact cleared-tile
+  movement. Do not disable AI, replace actors or substitute progress flags.

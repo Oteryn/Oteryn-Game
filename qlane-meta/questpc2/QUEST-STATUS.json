@@ -590,7 +590,7 @@
       "title": "The Annihilator Quest",
       "mechanism": "encounter_party_admission_settlement",
       "status": "UNFINISHED",
-      "blocker": "Source entry door, actual captured map walk, exact four-person lever and native entry now composed with genuine Fresh/D88 facts and PG verified. Continue actual native combat clearance, earned reward, exit and sealed re-entry; no invented escape timer or all-six-kill storage.",
+      "blocker": "Actual source entry and two-source-actor native combat/corpse/loot clearance are PG verified. Whole earned chest selection, actual escape and claimed-door/sealed re-entry continuation is next.",
       "source_lane_checks": [
         {
           "lane": "questpc4",
@@ -1647,32 +1647,41 @@
     }
   },
   "current_batch": {
-    "id": "desert-party-rite-mechanism-2026-11-07",
-    "state": "GREEN",
-    "last_green_commit": "853614652",
-    "scope": [
-      "Reusable exact party transfer and all-member fences",
-      "Atomic source altar-stack consumption and replay",
-      "Four normalized source scenery profiles",
-      "UID30030 source binding and production bundle lookup reuse"
-    ],
-    "whole_quest_qualifications": 0,
-    "red": {
-      "postgres_version": 180006,
-      "missing_callback_test_seconds": 3.64,
-      "source_map_item_reference_test_seconds": 56.01,
-      "overstrict_fixture_lookup_test_seconds": 56.2,
-      "fresh_fixture_pending_unavailable_test_seconds": 56.49
-    },
-    "next": "Continue source Desert level gate and both earned chests; exact native charge projection from questpc4, native route and replay proof.",
+    "state": "GREEN_MECHANISM_SLICE",
+    "record": "BATCH-annihilator-native-combat-2026-11-07.json",
     "postgres_green": {
-      "server_version_num": 180006,
-      "test_runtime_seconds": 61.9,
-      "command_seconds": 137.783,
-      "passed": 1,
-      "marker": "DESERT_PARTY_RITE POSTGRES_CASE_COMPLETED"
+      "postgres_log": "/tmp/questpc2-moving-ai-native-pg.log",
+      "server_version": 180006,
+      "postgres_cases": 1,
+      "duration_seconds": 97.37,
+      "build_seconds": 130,
+      "marker": "ANNIHILATOR_COMBAT native_corridor_kills=2 source_ai_thinks=active; ANNIHILATOR_ROUTE POSTGRES_CASE_COMPLETED members=4 creatures=6 elapsed_ms=97085",
+      "check_log": "/tmp/questpc2-moving-ai-final-check.log",
+      "check_seconds": 3.52,
+      "clippy_log": "/tmp/questpc2-moving-ai-final-clippy.log",
+      "clippy_seconds": 19.13,
+      "clippy_scope": "dispatch all targets/all features -D warnings",
+      "fmt_log": "/tmp/questpc2-moving-ai-final-fmt.log",
+      "fmt_scope": "cargo fmt --check plus explicit rustfmt check of build-mounted combat module",
+      "python_cases": 19,
+      "python_logs": [
+        "/tmp/questpc2-demon-shield-python.log",
+        "/tmp/questpc2-demon-loot-python-final.log",
+        "/tmp/questpc2-demon-grizzly-python-final.log",
+        "/tmp/questpc2-demon-overlay-python-final.log"
+      ],
+      "registration_log": "/tmp/questpc2-demon-loot-registration.log",
+      "registration_files": 42,
+      "prey_simulation_log": "/tmp/questpc2-demon-loot-prey-qualified.log",
+      "prey_cases": 15,
+      "prey_creatures": 776,
+      "pin_log": "/tmp/questpc2-demon-loot-pin-check-alone.log",
+      "world_digest": "a0846ee7757ee5301aa17dbbda2dbf5aaaacc9bf6e80c73ed027d7b2d7edc20c",
+      "world_bytes": 31101122,
+      "governance_log": "/tmp/questpc2-moving-ai-final-governance.log",
+      "skipped_postgres_results_accepted": false
     },
-    "record": "BATCH-desert-party-rite-mechanism-2026-11-07.json"
+    "whole_quest_qualifications": 0
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
@@ -1690,12 +1699,13 @@
     "BATCH-annihilator-startup-selectors-2026-11-07.json",
     "BATCH-door-startup-integration-2026-11-07.json",
     "BATCH-annihilator-native-source-entry-2026-11-07.json",
-    "BATCH-desert-party-rite-mechanism-2026-11-07.json"
+    "BATCH-desert-party-rite-mechanism-2026-11-07.json",
+    "BATCH-annihilator-native-combat-2026-11-07.json"
   ],
   "next_batch": {
     "state": "AUTHORING",
     "work_owner": "questpc2",
-    "task": "Compose source Desert level20 gate, four-party rite and both physical earned chest rewards. Reuse questpc4 exact charged-Item projection only for owned desert2; preserve all other lane ownership. Qualify whole source path with real PostgreSQL proof and continue all owned entries.",
+    "task": "Continue same route through actual source reward-room door, physical shared-claim chest selection/replay, actual exit and claimed-door/sealed re-entry; preserve incoming Desert party rite and continue all35 owned entries.",
     "external_dependencies_to_wait_for": []
   },
   "remote_publications_reused": {
@@ -1737,6 +1747,12 @@
       "postgres_cases_passed": 3,
       "python_cases_passed": 14,
       "whole_quest_qualifications": 0
+    },
+    "annihilator_native_combat_2026_11_07": {
+      "record": "BATCH-annihilator-native-combat-2026-11-07.json",
+      "postgres_cases_passed": 1,
+      "python_cases_passed": 19,
+      "whole_quest_qualifications": 0
     }
   },
   "engine_reuse_note": "qengine2@5a6de28c is already merged locally. effects.encounter and execute_quest_encounter/commit_quest_encounter_entry implement the exact four-player/six-demon atomic entry; do not create a second group_encounter engine. Existing PG entry evidence remains scoped entry evidence, not whole quest.",
@@ -1768,7 +1784,7 @@
     "superseded_by_verified_entry_slice": "BATCH-annihilator-native-source-entry-2026-11-07.json"
   },
   "combat_authoring_checkpoint": {
-    "state": "AUTHORING",
+    "state": "GREEN_MECHANISM_SLICE",
     "published_scope": "Verified source facts and resume state only; combat fixture remains local until PG green.",
     "base_green_sha": "381736fef",
     "postgres_red": [
@@ -1783,27 +1799,31 @@
         "failure": "After normal loadout/potion setup, fixed-pass health snapshot was full. Next measure damage before native AI healing instead of one later snapshot."
       }
     ],
-    "resource_recovery": "Second native compiler OOM recovered by byte-verified relocation of READY dep/query metadata to disk. Same source compiled2m55s; actual PG ran90.53s. Retain newest native READY. Current caches restored except inactive verification executables, losslessly archived with original symlinks; restore per /tmp/questpc2-demon-verification-executable-retention.json. Cache ledgers /tmp/questpc2-demon-current-cache-retention.json and /tmp/questpc2-demon-inactive-root-caches.json. Do not restore retired old metadata or prior superseded archives.",
+    "resource_recovery": "Compiler/check OOM and ENOSPC attempts are not passes. Retained byte-verified current caches, moved READY metadata to disk for successful native compilation, pruned only unlocked superseded READY/failed working state, retired metadata only after new READY completed. No broad clean, build-setting change or binary/reference-data commit. Heavy pin verification rerun alone succeeded.",
     "whole_quest_qualifications": 0,
     "next": "Complete native combat, earned chest, actual exit and sealed re-entry; no forced kills, fake stats, invulnerability, source health reduction or kill flag.",
     "latest_progress": {
-      "native_shield_kind_fix": "28 UNKNOWN hand kinds completed from35 agreeing admitted Shield taxonomies and pinned XML; all other fields byte-semantically unchanged, defense34 preserved over donor26.",
-      "tool_tests_passed": 4,
-      "world_pin": "a0846ee7757ee5301aa17dbbda2dbf5aaaacc9bf6e80c73ed027d7b2d7edc20c",
-      "registration_check": "PASS42 files",
-      "clippy_seconds": 42.99,
-      "postgres_red_seconds": 90.53,
+      "runtime_code_published": true,
+      "postgres_green_seconds": 97.37,
       "server_version": 180006,
-      "new_refusal": "Canonical demon corpse admission succeeds; lethal reward now refuses loot_item_inadmissible. Eleven source loot Items have existing canonical physical facts but incomplete stack/custody admission. Generic authoring added locally; source tool preservation/atomicity tests2 pass13.443s. Regeneration and focused PG retry pending.",
-      "runtime_code_published": false,
-      "check_seconds": 66.0,
-      "clippy_state": "Scoped retry after disk exhaustion is running; do not claim green."
-    }
+      "native_corridor_kills": 2,
+      "source_ai": "active",
+      "check_seconds": 3.52,
+      "clippy_seconds": 19.13,
+      "next": "earned chest, actual source exit, claimed-door/sealed re-entry"
+    },
+    "record": "BATCH-annihilator-native-combat-2026-11-07.json"
   },
   "assumptions": [
     {
       "batch": "desert-party-rite-mechanism-2026-11-07",
       "rule": "The internal rite occurrence track owns the existing immutable offering receipt; it is not donor storage or a reward/access gate. Repeated valid source rites remain allowed. Exact whole matching stacks retain the existing maximum100 consumption proof bound; blocked/PZ-invalid landings refuse before consumption. No minimum level or participant requirement for the initiating lever user is invented."
     }
-  ]
+  ],
+  "continuation_after_annihilator": {
+    "state": "AUTHORING",
+    "work_owner": "questpc2",
+    "task": "Compose source Desert level20 gate, four-party rite and both physical earned chest rewards. Reuse questpc4 exact charged-Item projection only for owned desert2; preserve all other lane ownership. Qualify whole source path with real PostgreSQL proof and continue all owned entries.",
+    "external_dependencies_to_wait_for": []
+  }
 }
