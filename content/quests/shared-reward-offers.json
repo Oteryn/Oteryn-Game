@@ -1439,6 +1439,60 @@
     {
       "npc": "oteryn:npc.costello",
       "keywords": [
+        "diary"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/diary",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Do you want me to inspect a diary?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/quest_log",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.costello",
+      "keywords": [
+        "fugio"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/diary",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Perhaps you are willing to investigate this matter?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/quest_log",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.costello",
+      "keywords": [
         "holy water"
       ],
       "topic": 0,
@@ -1494,6 +1548,46 @@
       ],
       "reply": [
         "Do you have the sedge hat with you?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dalbrect",
+      "keywords": [
+        "brooch"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/passage",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "What? You want me to examine a brooch?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dalbrect",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/passage",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Can it be? I recognize my family's arms! Please give that brooch to me."
       ]
     },
     {

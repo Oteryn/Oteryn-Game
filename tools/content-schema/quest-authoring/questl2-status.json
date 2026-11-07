@@ -1434,8 +1434,14 @@
     },
     {
       "title": "Hunt for the Sea Serpent",
-      "status": "PENDING",
-      "evidence": []
+      "status": "IN_PROGRESS",
+      "evidence": [],
+      "red": {
+        "postgres_version": "18.6",
+        "duration_seconds": 4.388214583,
+        "result": "Required source hand-in bindings absent",
+        "log": "/tmp/l2-passages-initial-red-pg2.log"
+      }
     },
     {
       "title": "Isle of Evil",
@@ -1449,8 +1455,14 @@
     },
     {
       "title": "Postman Missions",
-      "status": "PENDING",
-      "evidence": []
+      "status": "IN_PROGRESS",
+      "evidence": [],
+      "red": {
+        "postgres_version": "18.6",
+        "duration_seconds": 4.356458159,
+        "result": "Required source hand-in bindings absent",
+        "log": "/tmp/l2-passages-initial-red-pg2.log"
+      }
     },
     {
       "title": "The Repenters",
@@ -1459,23 +1471,67 @@
     },
     {
       "title": "Shattered Isles",
-      "status": "PENDING",
-      "evidence": []
+      "status": "IN_PROGRESS",
+      "evidence": [],
+      "red": {
+        "postgres_version": "18.6",
+        "duration_seconds": 4.56729268,
+        "result": "Required source hand-in bindings absent",
+        "log": "/tmp/l2-passages-initial-red-pg2.log"
+      }
     },
     {
       "title": "Thieves Guild",
-      "status": "PENDING",
-      "evidence": []
+      "status": "IN_PROGRESS",
+      "evidence": [],
+      "red": {
+        "postgres_version": "18.6",
+        "duration_seconds": 4.569859183,
+        "result": "Required source hand-in bindings absent",
+        "log": "/tmp/l2-passages-initial-red-pg2.log"
+      }
     },
     {
       "title": "White Raven Monastery",
-      "status": "PENDING",
-      "evidence": []
+      "status": "IN_PROGRESS",
+      "evidence": [],
+      "red": {
+        "postgres_version": "18.6",
+        "duration_seconds": 4.58115352,
+        "result": "Required source hand-in bindings absent",
+        "log": "/tmp/l2-passages-initial-red-pg2.log"
+      },
+      "native_red": {
+        "postgres_version": "18.6",
+        "duration_seconds": 86.141785805,
+        "nextest_duration_seconds": 91.801,
+        "actual": "NothingToUse",
+        "expected": "Committed",
+        "point": "Native Family Brooch chest USE at32248,31866,-8; source appearance2476 is present but its claim needs the startup binding",
+        "log": "/tmp/l2-white-raven-native-pg1.log"
+      }
     },
     {
       "title": "To Blind the Enemy",
-      "status": "PENDING",
-      "evidence": []
+      "status": "IN_PROGRESS",
+      "evidence": [],
+      "engine_request": {
+        "feature": "Carried quest-tool USE_WITH_MAP_ITEM with selected-instance proof, exact target item/action identity, atomic source spend and target removal/restoration",
+        "owner": "qengine2",
+        "where": "crates/gameplay/dispatch/src/gameplay_transport/cosmetic_item_use.rs",
+        "inspected_branch_head": "e5850715e",
+        "current_behavior": "use_carried_quest_item explicitly refuses use_with_map_item",
+        "source": {
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "file": "data-global/scripts/quests/to_blind_the_enemy_quest/mirror.lua",
+          "lines": "10-20",
+          "sha256": "3ee1f1a6843f6a71ef6c15c9e846fc8b36b5fe3d26c95966f34e875d1cb23c20",
+          "target_item": 132,
+          "target_action_id": 4001,
+          "carried_item": 3463,
+          "restoration_seconds": 60
+        }
+      }
     },
     {
       "title": "To Outfox a Fox",
@@ -3093,7 +3149,7 @@
       "scope": "Ten source priests, exact carried stake evidence and ordinary-fallback confirmation refusal; preserve all existing QENGINE2/L2 callbacks.",
       "fresh_postgres_green_seconds": 286.804990407
     },
-    "latest_qengine2_inspected": "5c01deabb33b448fe7de795a3f9271477af05ea6",
+    "latest_qengine2_inspected": "e5850715e",
     "latest_questpc3_inspected": "06d1bda324884db38eb4f46f1812274a159c7775"
   },
   "next_batch": {
@@ -3286,5 +3342,42 @@
       "duration_seconds": 106.118167266,
       "log": "/tmp/l2-tomes-xp-receipt-pg.log"
     }
+  },
+  "passage_batch": {
+    "entries": [
+      "White Raven Monastery",
+      "Shattered Isles",
+      "Hunt for the Sea Serpent",
+      "Postman Missions",
+      "Thieves Guild"
+    ],
+    "red": {
+      "passed": 0,
+      "failed": 5,
+      "duration_seconds": 13.56,
+      "postgres_version": "18.6",
+      "log": "/tmp/l2-passages-initial-red-pg2.log"
+    },
+    "current": "WIP: White Raven source callbacks and ten-gold route authored; full native journey RED at source Brooch chest NothingToUse. Other four journeys RED at missing bindings.",
+    "authoring_tests": {
+      "result": "PASS",
+      "tests": 23,
+      "duration_seconds": 53.309,
+      "log": "/tmp/l2-passages-authoring-tests.log"
+    },
+    "regeneration": {
+      "native": "/tmp/l2-passages-native-regeneration.log",
+      "npc_placements": "/tmp/l2-passages-npc-placement-regeneration.log"
+    },
+    "workspace_all_targets": {
+      "result": "PASS",
+      "duration_seconds": 385,
+      "log": "/tmp/l2-passages-workspace-check.log"
+    },
+    "fmt": {
+      "result": "PASS",
+      "log": "/tmp/l2-passages-independent-fmt.log"
+    },
+    "pin_refresh": "Running official tool; publish compiling WIP immediately under owner hard rule, refresh result follows separately."
   }
 }

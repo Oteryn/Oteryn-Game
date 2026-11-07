@@ -15,6 +15,23 @@ class LaneL2Rewards(unittest.TestCase):
             for c in json.loads(cls.outputs['content/quests/shared-reward-callbacks.json'])['callbacks']
         }
 
+    def test_white_raven_uses_real_brooch_diary_and_paid_friendship(self):
+        root = 'oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/'
+        brooch = self.callbacks['l2-white-raven-brooch']
+        self.assertEqual(brooch['take'], [{'item': 'oteryn:item.tibia.i3205', 'count': 1}])
+        self.assertEqual(brooch['topic'], 2)
+        self.assertEqual(brooch['storage'], [
+            {'track': root+'passage', 'minimum': 0, 'maximum': 1, 'set': 2},
+            {'track': root+'quest_log', 'minimum': 0, 'maximum': 0, 'set': 1}])
+        diary = self.callbacks['l2-white-raven-diary']
+        self.assertEqual(diary['take'], [{'item': 'oteryn:item.tibia.i3212', 'count': 1}])
+        self.assertEqual(diary['give']['item'], 'oteryn:item.tibia.i3214')
+        self.assertEqual(diary['requires'], [{'track': root+'quest_log', 'minimum': 1, 'maximum': 1}])
+        routes = json.loads((q.ROOT/'crates/gameplay/content/src/content/npc_catalogue/travel_routes.json').read_bytes())
+        route = next(r for r in routes if r['key'] == 'oteryn:service.travel.dalbrect/isle_of_kings')
+        self.assertEqual((route['price'], route['premium'], route['held']), (10, False, False))
+        self.assertEqual(route['quest_gate'], root+'quest_log')
+
     def test_cael_incremental_unlocks_costed_xp_and_real_portable_shop_kits(self):
         prefix='oteryn:quest-progress/quest/u8_54/the_new_frontier/'
         for number in range(1,13):

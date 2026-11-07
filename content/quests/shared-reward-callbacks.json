@@ -5676,6 +5676,131 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l2-white-raven-brooch",
+      "quest": "oteryn:quest.the_white_raven_monastery_quest",
+      "npc": "oteryn:npc.dalbrect",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/passage",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/quest_log",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3205",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you! I shall consider you my friend from now on! Just let me know if you {need} something!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dalbrect.lua:61-98:sha256:d190924b57571638bdd5b8a26444b773460b64eec318398e06cda53f96788e86"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-white-raven-catacombs",
+      "quest": "oteryn:quest.the_white_raven_monastery_quest",
+      "npc": "oteryn:npc.costello",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/diary",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you very much! From now on you may open the warded doors to the catacombs."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/costello.lua:52-84:sha256:c23199cb756541cd4972e8d156a69b722d775c6f71a05a9acd369b7744b9d5e8",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dalbrect.lua:97-98:sha256:d190924b57571638bdd5b8a26444b773460b64eec318398e06cda53f96788e86"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/quest_log",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-white-raven-diary",
+      "quest": "oteryn:quest.the_white_raven_monastery_quest",
+      "npc": "oteryn:npc.costello",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/diary",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3212",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3214",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You have done our order a great favour by giving this diary to me! Take this blessed Ankh."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/costello.lua:63-93:sha256:c23199cb756541cd4972e8d156a69b722d775c6f71a05a9acd369b7744b9d5e8"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/quest_log",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/l2-zalamon-tome",
       "quest": "oteryn:quest.children_of_the_revolution_quest",
       "npc": "oteryn:npc.zalamon",

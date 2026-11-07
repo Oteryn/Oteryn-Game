@@ -87,6 +87,13 @@ pub(crate) fn world(
             });
         }
     }
+    if name.ends_with("white-raven") {
+        data.manifest.palette.push(bundle::PaletteEntry {
+            id: 3, key: "oteryn:terrain.tibia.i2476".into(),
+            family: bundle::Family::Terrain,
+            terrain: Some(bundle::Terrain { kind: bundle::TerrainKind::Common, walkable: None, ground_speed: None }),
+        });
+    }
     let books = if name.ends_with("tomes") {
         let mut rows = oteryn_gameplay_quests::quest::world_callbacks::load()?
             .into_iter()
@@ -168,6 +175,10 @@ pub(crate) fn world(
             y: p.y,
             floor: p.floor,
         }
+    } else if name.ends_with("white-raven") {
+        patch(-8, 32245, 32251, 31864, 31869);
+        patch(-6, 32188, 32194, 31955, 31961);
+        Position { x: 32247, y: 31866, floor: -8 }
     } else if name.ends_with("alliance") {
         patch(-3, 33148, 33160, 31294, 31300);
         Position {
@@ -238,6 +249,10 @@ pub(crate) fn world(
                 depth: 0,
                 attrs: Default::default(),
             });
+    }
+    if name.ends_with("white-raven") {
+        cells.get_mut(&(-8,32248,31866)).ok_or("brooch source cell")?
+            .push(sector::Item { palette:3, depth:0, attrs:Default::default() });
     }
     if name.ends_with("alliance") {
         for (x, y, palette, action) in [(33154, 31297, 3, None), (33154, 31298, 4, Some(40030))] {

@@ -211,6 +211,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.dalbrect",
+      "greet": "Be greeted, traveller |PLAYERNAME|. Welcome to my {hut}.",
+      "farewell": "Good bye. You are welcome.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dalbrect.lua:186:sha256:d190924b57571638bdd5b8a26444b773460b64eec318398e06cda53f96788e86",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dalbrect.lua:187:sha256:d190924b57571638bdd5b8a26444b773460b64eec318398e06cda53f96788e86",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dalbrect.lua:188:sha256:d190924b57571638bdd5b8a26444b773460b64eec318398e06cda53f96788e86"
+      ]
+    },
+    {
       "npc": "oteryn:npc.dedoras",
       "greet": "Greetings seekers of knowledge. You seem to be just the person I'm {looking} for.",
       "farewell": "Good bye, |PLAYERNAME|.",

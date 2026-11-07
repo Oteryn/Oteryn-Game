@@ -116,6 +116,7 @@ fn scenario_case(
             | "qengine-rewards-l2-alliance"
             | "qengine-rewards-l2-tomes"
             | "qengine-rewards-l2-cartography"
+            | "qengine-rewards-l2-white-raven"
     ) {
         None
     } else {
@@ -159,6 +160,7 @@ fn scenario_case(
                     | "qengine-rewards-l2-alliance"
                     | "qengine-rewards-l2-tomes"
                     | "qengine-rewards-l2-cartography"
+                    | "qengine-rewards-l2-white-raven"
             ) =>
             {
                 super::super::qengine_rewards::questl2_delivery_journeys::world(

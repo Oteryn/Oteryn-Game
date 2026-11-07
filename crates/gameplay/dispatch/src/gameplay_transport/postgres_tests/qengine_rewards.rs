@@ -72,6 +72,7 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
             y: 32297,
             floor: -7,
         }),
+        "qengine-rewards-l2-white-raven" => Some(Position { x: 32248, y: 31866, floor: -8 }),
         _ => None,
     };
     let outcome = super::kill_reward_e2e::scenario_thread::run(name, move || {
@@ -246,6 +247,9 @@ pub(super) mod questl2_journeys;
 #[path = "qengine_rewards/questl2_knowledge_journeys.rs"]
 mod questl2_knowledge_journeys;
 
+#[path = "qengine_rewards/questl2_passages.rs"]
+mod questl2_passages;
+
 #[path = "qengine_rewards/questl2_shared_engine.rs"]
 mod questl2_shared_engine;
 
@@ -337,6 +341,9 @@ fn offer_words(key: &str) -> &'static [&'static str] {
     if key.ends_with("/l2-zalamon-tome") {
         return &["mission"];
     }
+    if key.ends_with("/l2-white-raven-brooch") { return &["brooch", "yes"]; }
+    if key.ends_with("/l2-white-raven-catacombs") { return &["fugio"]; }
+    if key.ends_with("/l2-white-raven-diary") { return &["diary"]; }
     if key.ends_with("/l2-steal-start")
         || key.ends_with("/l2-steal-return")
         || key.ends_with("/l2-troll-start")
@@ -951,6 +958,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-l2-white-raven" {
+        return questl2_passages::white_raven(owner, admitted, h).await;
+    }
     if matches!(
         name,
         "qengine-rewards-l2-regalia" | "qengine-rewards-l2-alliance" | "qengine-rewards-l2-tomes"
