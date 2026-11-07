@@ -854,3 +854,15 @@ passes after implementation; dispatch/server check passed in 19.62s. This is a
 compiling WIP: migration 1151 and focused PostgreSQL regressions still need to
 run. Native hook composition and physical Instance corpse custody remain
 unimplemented. No new command, capability or mechanic identifier is allocated.
+
+### Shared consumer checkpoint validation completed
+
+At `f8ed17e96`, migration 1151 applied successfully in both focused PostgreSQL
+scenarios. `soul_war_postgres_native_taints_xp_reset_and_replay` passed in 80.45s;
+`rotten_blood_postgres_native_chain_final_reward_replay_and_cleanse` passed in
+107.77s. Changed durability/dispatch/server crates passed clippy with warnings
+denied (2m40s); fmt and architecture passed. These are legacy Channel consumer
+regressions, not a positive Instance encounter-chain proof. The Rotten Blood
+case still explicitly preserves physical corpse refusals for unqualified bosses.
+A real tagged Instance death transaction and full production entry/fight/reward/
+exit remain to be demonstrated before either W10 or W11 is DONE.
