@@ -34,10 +34,10 @@
     "0999_quest_reward_callbacks.sql": "971451326e9473f01ab8587c18040f69d39740b6af944f62ac6b3df04ae9f294",
     "1000_quest_reward_payments.sql": "a041c1f4ad97c8642a81d0a06d2e834b10ae54a55bed7d93b98ec1141dbd9311"
   },
-  "validation": "in progress",
+  "validation": "PASS",
   "duplicate_check": {
     "script": ".claude/skills/oteryn-dev/scripts/dup-migrations.sh",
-    "target": "staged git tree",
+    "target": "HEAD after renumbering checkpoint; no duplicate migration numbers",
     "result": "PASS; no duplicate migration numbers"
   },
   "checkpoint": {
@@ -56,12 +56,155 @@
         "result": "PASS"
       }
     ],
-    "pending": [
-      "Father focused PG",
-      "cargo check",
-      "strict Clippy",
-      "repository pin refresh/check"
-    ],
-    "red_point": "No current migration failure; remaining validation is pending. Grimvale contact draft compile error remains isolated in /tmp and is not part of this commit."
-  }
+    "pending": [],
+    "red_point": "No migration failure; all requested registry gates passed."
+  },
+  "checks": [
+    {
+      "check": "grave-pg",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "questpc7_grave_whole_native_journey_and_reward",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "seconds": 57.167,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-migrations-grave-pg.log"
+    },
+    {
+      "check": "father-pg",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "fathers_burden_eight_handins_cape_experience_and_replay",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "seconds": 79.364,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-migrations-father-pg.log"
+    },
+    {
+      "check": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch"
+      ],
+      "seconds": 81.378,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-migrations-check.log"
+    },
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "seconds": 176.928,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-migrations-clippy.log"
+    },
+    {
+      "check": "pin-refresh",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--",
+        "pin-refresh",
+        "."
+      ],
+      "seconds": 116.809,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-migrations-pin-refresh.log"
+    },
+    {
+      "check": "pin-check",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--",
+        "pin-check",
+        ".",
+        "/tmp/questpc7-migrations-pin-check"
+      ],
+      "seconds": 125.417,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-migrations-pin-check.log"
+    },
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "seconds": 10.862,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-migrations-fmt.log"
+    }
+  ],
+  "postgres": [
+    {
+      "case": "Friends and Traders",
+      "version": "18.6",
+      "seconds": 79.821667304,
+      "checksum_migration": 1282
+    },
+    {
+      "case": "Grave Danger",
+      "version": "18.6",
+      "seconds": 56.906081085
+    },
+    {
+      "case": "Father\u2019s Burden",
+      "seconds": 79.053734315,
+      "scope": "Original eight hand-ins, one atomic eleven-track state write, cape, XP and replay."
+    }
+  ],
+  "final_migration_files": [
+    "0999_quest_reward_callbacks.sql",
+    "1000_quest_reward_payments.sql",
+    "1200_quest_finish.sql",
+    "1201_corruptor_lifecycle.sql",
+    "1202_questpc_npc_revision.sql",
+    "1203_questpc_viola.sql",
+    "1204_questpc_viola_book.sql",
+    "1205_fathers_burden_items.sql",
+    "1280_npc_quest_item_exchange.sql",
+    "1281_fathers_burden_xp_proof_name.sql",
+    "1282_quest_repeatable_exchanges.sql",
+    "1283_quest_world_item_rewards.sql",
+    "1284_quest_backpack_outputs.sql"
+  ]
 }

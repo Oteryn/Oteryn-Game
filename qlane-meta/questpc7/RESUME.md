@@ -1,3 +1,27 @@
+# Coordinator migration registry fully verified — 2026-11-07
+
+All thirteen git mv renames preserve SQL content exactly. QENGINE2 shared
+callbacks/payments are exact upstream0999/1000; QBASE1200–1205 are byte-identical
+to peer70a0d92af. Lane1280–1284 carries only our five additional migrations.
+All filename references are updated; existingSQL comment migration0969 remains
+unchanged as required by content-preserving QBASE renames.
+MIGRATION-REGISTRY-PROOF.json records every final filename and SHA256.
+Friends PG18.6 GREEN79.821667304s proves migration1282 exact source checksum;
+Grave PG18.6 GREEN56.906081085s proves the whole world route; Father's Burden
+GREEN79.053734315s preserves the atomic eleven-track write and eight hand-ins.
+Explicit Cargo check, strict all-target/all-feature Clippy, repository pin
+refresh/check, fmt and repository duplicate check all pass. Commit/push now.
+
+Seven ACTIVE entries remain; continue Grimvale immediately. Contact drafts
+are /tmp/questpc7-grimvale-pending, including scenario.patch and the corrected
+value(owner,admitted,track) call. The first attempt was compile-only, not PG RED.
+Peer authored placement helper/test source is preserved there. Adapt its recipe
+lookup to completion242 records without relabelling chosen cells as donor facts.
+Known item: native22082 is purple nightshade blossoms;22063/22064 are plants.
+Native silver22058,closed silvered trap22074,open trap22059 are retained script
+facts. Source rows/shas are /tmp/questpc7-grimvale-source-rows.json. Keep original
+world-change schedules out of this lane; selected recipe is personal and finite.
+
 # Migration registry compiling checkpoint — 2026-11-07
 
 Pushing numbered SQL now under the owner-authorized compiling WIP rule.
