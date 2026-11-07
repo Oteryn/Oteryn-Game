@@ -383,6 +383,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
+        if callback.effects.encounter.is_some() {
+            return self.execute_quest_encounter(
+                runtime,
+                states,
+                actor,
+                session,
+                map,
+                callback,
+                key,
+                expected_revision,
+                after,
+            );
+        }
         if let Some(plan) = party {
             return self.commit_party_transfer(
                 runtime,

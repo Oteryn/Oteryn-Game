@@ -1,372 +1,258 @@
-# OWNER REQUESTED COMPILING WIP CHECKPOINT; full46 test execution continues
+# GREEN main #3020 integration; publishing this merge
 
-Latest owner push-now instruction explicitly requests WIP if it compiles. All46
-crate test targets compiled successfully7m17s after fixing all5 diagonal match
-errors in qualification helpers (20exhaustive matcharms; existingcardinal paths
-unchanged). cargo fmt and staged/worktree diffchecks pass. This checkpoint isNOT
-full green. No qualification/count claims changed. Full10722test run (142binaries,
-44existingignored) remains active session77616, nextestPID425032,1testthread.
-Log /tmp/questpc2-main-dependent-nextest-full.log; report/run.json stillpending.
-Snapshot PG baseline DBnames /tmp/questpc2-full-run-initial-databases.txt captured
-before PG execution, PostgreSQL180006 verified; actual guild PG cases nowrunning.
+All39focused mechanics PASS390.313s, actualPG180006 observed+completed receipts.
+Elvenbane source treasure+earned exit+actual journal list/line PASS150.647s;
+Annihilator128.124s, Desert128.457s, native goals99.327s, Monk109.471s,
+XP/objective atomic84.188s, stale-capture82.298s, killobjective7.563s.
+NPC source conversation test PASS32.742s (all original assertions).
+Final workspace --all-targets PASS after NPC dedupe; changed31crate clippy
+--all-targets -Dwarnings PASS. Fmt/dup/diff checks PASS. Canonical regen/pin
+refresh completed via repo tooling; final staged pin-check PASS, digest
+ d65e38a4c120cfb927b5ee9915f7615ae1fd559fb2518f2f2312ccdf2362772e.
+Proof: BATCH-main-3020-integration-2026-11-07.json. Main0999–1008 byteexact,
+no1200–1205 copies. Own1240–1244. Commit owneridentity+requiredtrailers,
+fetchbranch, merge movement, fast-forwardpush immediately. No PR/main/rebase.
+Next: Elvenbane canonical authoring/native admission metadata reconciliation;
+actual production runtime+journal PG alreadygreen. Status still2QUALIFIED until
+that reconciliation; actual3inprogress Elvenbane/RottenBlood/SoulWar,24notstarted,
+6excludedothers. Earlier27inprogress count was overbroad; corrected ownerreply.
+Only5active-owned displaynames sent to coordinator for dedup. Await notification
+of not-started ownership transfers. No bigenginework: two ENGINE-REQUESTs already
+sent (arena sequencing; atomic creature capture). wpkg collectsbranch, no ownPR.
 
-Exact currentRED points: default capabilities end383,384,371 (mergeorderbug),
-strict protocol rejects invalid capabilityset across client/session; map placement
-index digest no longer matches pin; corpse bounded-container rejection fixture
-receives admitted row. Six authoring failures listed below remain. Collect ALL
-runtime failures, fixrootcauses together, rerunfull46set before next greenpush.
-No tests weakened/skipped/deleted. Canonical pipeline24checks:22pass, validator
-was killed during earlierOOM; test_world_project repeats variants34vs36failure.
-Repository-content5tests PASS53.02s. Worldpins alreadyregenerated/staged byrepo.
+# COLLECTOR19:17: wpkg collects green lane batches into ONE PR
 
-Capacity: NativewarmREADY is retained in/tmp symlink. Routinehelper
-/tmp/questpc2-retire-completed-incremental.py retires inactive completed incremental
-caches only (preserves testbinaries and active compiler). Root2.6GBfree/tmp4.8GB
-used; serial testprocesses small so far. Keep all142testbinaries until runends.
+Keep pushing only this lane branch; no PR. wpkg pulls5–8quest batches. Fix any
+collector failure list together in ownbranch and repush. Merge origin/main after
+coordinator says collector PR merged. Current mainmergeverification continues.
 
-# LIVE CORRECTION 16:39UTC: remote observed f304dda7c (ancestor); local7b009e1ee is NOT current remote
+# OWNER OVERRIDE19:16: shared engines now belong to qengine2
 
-Latest actual fetch confirms remote f304dda7cae995b1ef564e6997ea20fbeeb4d53e,
-ancestor of HEAD. Earlier resume claims that7b009 was pushed are not current remote
-state. Keep all local commits; eventual fast-forward push after full green remains
-required. No remote commits need merging as of16:31 fetch. Mainmerge in progress.
+New owner rule supersedes prior implement-all-shared-features instruction.
+Do not build big generic engines in this lane. Request missing generic features
+with ENGINE-REQUEST, then move to another owned quest. Only local helpers under
+~50lines in NEWfiles allowed going forward. Two requests already sent:
+- participant-bound arena fight sequencing/tier settlement: Barbarian Arena Quest;
+  crates/gameplay/encounters.
+- atomic tool consumption/live-creature capture/captured-item custody: Goblin
+  Merchant Quest; crates/gameplay/dispatch.
+Keep working Elvenbane completion using existing mechanisms. No expansion beyond
+packet. Push ready tested work now, then batches5–8 finishedquests. Coordinator
+opens PR/heavyCI. Merge main promptly on coordinator merge notice. Generate matrix,
+pins/derived files once immediately before batchpush; do not regen perquest.
+Current merge's canonical regen alreadycompleted before this rule; don't repeat.
+Nothing green enough for push yet: focus39 rerun compiling native dispatch,
+log/tmp/questpc2-3020-focused-green-nextest.log, session45566. Clippy52643 final and
+workspace7597 afterNPCdedupe queued. ExistingNPC conversation28062 queued.
+Last actualpush26e5a8f0b. After mandatoryGREEN commitmainmergeandpushimmediately.
 
-Full46 attempt1 OOM at239.638s (dispatch libtest + character_authority_postgres),
-logs /tmp/questpc2-main-dependent-nextest-attempt1-oom.log/json. NOT code blocker.
-Full same46 retry active session49192 using1buildjob/1testthread, PG enabled;
-/tmp/questpc2-main-dependent-nextest-full.log /run.json. Dispatch native testbinary
-compiled successfully (~6min), warmREADY retained via symlink target incremental/
-oteryn_gameplay_dispatch-1xzydsvq6pzum -> /tmp/questpc2-main-dispatch-native-incremental.
-Nativeexe hashfb0ad6bf75de749d ~1GB. Do not restore old pre-main caches.
-Root space recovered by retiring completed inactive incremental build caches;
-all testbinaries preserved. tmp4.8GB/rootfree7.1GB at16:39. BaselineOOM now30/13.
+# LIVE19:05: all focused failures collected and fixed; final rerun queued
 
-All29changed authoring scripts finished23PASS6FAIL; JSON results
-/tmp/questpc2-main-authoring-test-results.json. Failures: callback childcount139vs133;
-qengine effect validator lacks quest_completion; qengine cosmetics reproduction
-(mainnx5 catalogue vs quest source aliases); ledger disposition totals; native
-container derive71vs70; rejected variants34vs36. Need group with all Rust fullrun
-failures then fix together. Do not weaken tests; precise counts derive real output.
-Remaining canonical pipeline checks reached cargo content_world_project_repository
-(waiting buildlock), session82572. Independent world pinrefresh alreadyPASS.
+Focused catalogue-fix run finished39:37PASS2FAIL, runtime385.650s. Both failures
+are diagonal pacing receipt assertion: process rollout defaults off. Added explicit
+cfg(test) composed-owner receipt override; route fixtures set Some(true), production
+uses unchanged process switch. No assertion weakened. Main10migrations unchanged.
+RED log /tmp/questpc2-3020-focused-nextest.log. New fullsame39case rerun queued
+session45566 /tmp/questpc2-3020-focused-green-nextest.log, report
+/tmp/questpc2-3020-focused-green-run.json. Final all-target check24061 compiling;
+clippy retry4 session36204 queued /tmp/questpc2-3020-clippy-round4.log after
+removing one remaining orphandoc in worldquestcallbacks. Inspect ALLfailures.
+Canonical regeneration already COMPLETED. No full-suite run. Root5GBfree after
+retiring obsolete18:38 native incremental snapshot; keep18:56 warm snapshot.
+Push currentmainmerge immediately after finalmandatoryGREEN, thencontinue27.
 
-# LIVE: full46dependent nextest RUNNING with PG; do not push until grouped fixes/full rerun green
+# LIVE: main #3020 merge final verification
 
-/tmp/questpc2-main-dependent-nextest-full.log, run.json; runner session7352.
-World pin-refresh finished successfully, stage51524 done. Canonical tree PASS
-34111items,27616profiles,1282NPCs. Remaining repo checks session82572; changed
-authoring29scripts session42087 collect all failures. No code edits during full run.
-MainABI pre15:45 incremental caches retired (168dirs7.1GB) to free9GBroot;
-old archives moved /tmp/questpc2-pre-main-cache-archives preserving symlinks.
-No newOOM (21events/10kills baseline). Cargo fmt corrected mergedfixture.
+Last successful push26e5a8f0b; current uncommitted merge1ae39c7fb.
+Latest owner speed rule applies: own mechanics/actualPG only; workspace
+all-target check, changed-crate clippy, fmt, dup, canonical regeneration.
+Canonical regeneration COMPLETED, including stale NPC shard cleanup and pins:
+/tmp/questpc2-3020-final-regeneration.log. All main0999–1008 SQL byte-identical;
+no1200–1205 copies. Own1240–1244 retained. No full nextest running.
+Focused first run39cases:14PASS25FAIL, all same duplicate catalogue reward key.
+Removed second reward_callbacks::extend in quest loader, preserving main once
+and owned native/kill extensions. RED archived /tmp/red-catalogue-dup-questpc2-
+3020-focused-nextest.log. Focused rerun /tmp/questpc2-3020-focused-nextest.log,
+report /tmp/questpc2-3020-focused-run.json; must finish all39 and inspect failures.
+Disk exhaustion on rebuild recovered by retiring obsolete lane caches; jobs1.
+Clippy fixes removed orphan doc/allow and blank doc separator only. Retry3 log
+/tmp/questpc2-3020-clippy-round3.log. Final workspace check queued log
+/tmp/questpc2-3020-workspace-final.log. Previous all-target round3 GREEN171s.
+Do not repeat finished generation or launch full reverse-dependency nextest.
+After mandatory checks GREEN, record actualPG proof, commit with owner identity
+and trailers, sourceenv, fetch branch, merge movement, fast-forward push at once.
+Then continue remaining27 owned entries. No test weakening, no PR/main push.
 
-# CURRENT: origin/main bbb3e06d0 merge in progress; full46dependent nextest required before push
+# LIVE18:37: focused mechanic run compiling; workspace ALL TARGETS GREEN
 
-Owner new standing rule overrides old no-full-suite rule: derive every touched
-crate's normal reverse dependencies with cargo tree, run cargo nextest forALL
-withPG, collectALL failures (--no-fail-fast), fixrootcauses together, rerunfullset,
-thenONEpush. Automatic push-now reminder was explicitly retracted whilefullrun
-pending. Merge origin/main atleasteveryfewhours; do not push incomplete fulltestset.
+Mainmerge1ae remains uncommitted; lastpush26e5a8f0b. Latest speed rule ONLY own
+mechanic/PG, workspace --all-targets, changed-crate clippy, fmt, dup and regen.
+Workspace all-target check GREEN round3,171s after two merge fixture issues:
+QuestWorldContext.party requires Vec::new(); byte-identical duplicated NPCtest
+was deduplicated with every assertion retained. Logs
+/tmp/questpc2-3020-workspace-all-targets-round3.log. Normal31check passed31.37s.
+Own12author scripts:11PASS; container-count57->58 exact merge-union drift fixed,
+13container tests nowPASS4.091s. OriginalRED preserved. Fmt+dup+diffchecks PASS.
+No full nextest running. Focused own run session60417, log
+/tmp/questpc2-3020-focused-nextest.log; script/tmp/questpc2-run-focused-3020.py
+selects8own PGcases and focused quest/world/corpse units,5packages,4testthreads,
+1buildjob. Success output retained for PG markers/durations. Native coldlibtest
+compile currently~4m36s/9.7GBRSS,no newOOM (baseline30events13kills). Clippy31
+changed crates queued session58514 /tmp/questpc2-3020-clippy.log. Must be GREEN.
+Generator mainstage finished, fulltree validation passed. Stale oldNPC37shard
+beside main56shard caused NPC_PLACEMENT_STRAY_FILE; ran repo convert_placements
+(default cleans stale outputs), --check and materializedtreevalidatorPASS. Added
+converter to normal regen pipeline beforematerialization. Resume remaining checks
+and finalpin via/tmp/questpc2-3020-finish-regeneration.py, active session94929,
+log/tmp/questpc2-3020-final-regeneration.log; currently waiting cargo lock for
+content_world_project_repository, then stage and pin-refresh. Do not repeat
+10+minute completed tree/prey/materialization stages. Oldgenerator session52259
+endedfailure; sourceproof/log/tmp/questpc2-3020-regeneration-round2.log retained.
+Focused PG started only after all content generation complete, immutable sources.
+Watch rootdisk:~5GBfree, tmp2GBused. Helperretire-completed-incremental excludes
+activecompiler and preserves binaries ifcapacityneeded. No binaries committed.
+After allGREEN update status/resume with actual PGproof, commit asowner+trailers,
+fetchownbranch+merge movement, push fast-forward immediately. No PR/main/rebase.
+Continue remaining27owned entries afterpush; no finalsummary while scope remains.
 
-HEAD/remote7b009e1ee; git merge --no-commit --no-ff origin/main has MERGE_HEAD
-bbb3e06d0 and unresolvedgeneratedfile stages. ManualRust/Python conflicts resolved
-combining bothbranches (CreationFixture + starter-awarefixtures, cosmeticrebind+
-newtry_activate_input, party/encounterhandlers, both Nativeadmission overlays).
-World materializer completed. Canonical tree continuation active, prey simulation completed;
-log /tmp/questpc2-main-merge-tree-resume.log. Continue remaining repo authoring/check/pin
-stages via /tmp/questpc2-resume-merge-regeneration.py after tree generator succeeds.
-Full46 runner still pending coherent content. Cosmetics conflict currently incoming:
-main nx5 keys and lane quest source keys both need preservation, collect full failures
-then fix reusable qengine_rewards overlay rather than discard either catalogue.
-SourceUID pre-step needed temporary identity-merged RewardClaimvariants preserving
-bothlanes beforeauthoringregeneration; stagedthatfile. Coverage mergedbyidentity
-actualcounts336total=28qualified+283supported-unqualified+25notplayable; ledger283.
-Pending regeneratedcounter tests mayneedexactunioncounts (variants71, source
-containerderive70) checkedagainstactualoutputs, neverweaken/skips.
-Conditionpotionpacket has only shared canonical_inputhash conflict; aftercanonical
-Itemregeneration requalifyselecteddefs unchanged before repinning. Main'sitemhold_q
-and ourencounterlootoverlay bothretained. Qengine rewarditem overlay also retained.
+# CURRENT OWNER OVERRIDE: speed-first; NO full reverse-dependency nextest
 
-Latest focusedfullroutePG133.72s actually proves zero andpartial3claim refusals,
-all4source treasures+atomiccontents/replay, ownphase4/canonicalexit. Last exacterror
-journalunavailable: ComposedTestOwner.quest_log_content=None. Productionloader
-apps/game-server/src/node/quest_log_content.rs uses
-quest::log::loader::load_embedded_quest_log(&lowered), QuestLogLines::new.
-NeedfixfixtureandrealvisibleElvenbanejournal AFTERcollectingfullfailures; existing
-logloaderonlysourcequests+Monkjournal, own authoredElvenbane likelyneedscodebuilt
-journal (reuse Monkpattern), then actual QUEST_LOG list/line projection assertion.
-Do not qualifywhole beforethatproof/fulltests. Currentcounts2qualified27unfinished.
+Latest owner replaces prior full46 test rule. Before push ONLY own mechanic tests
+RED/GREEN incl actual PG marker+duration, cargo check --workspace --all-targets,
+clippy changed crates, fmt, duplicate migrations, repo pin/generated regeneration.
+Finish current main1ae merge and push immediately after those checks. CI full
+results arrive from owner; fix all together in one push. No fullrun active.
+Normal31crate cargo check passed31.37s; warning was duplicated reward callback
+preparation, old duplicate block now removed retaining main's prepare/checks.
+Canonical regen round2 active session52259, log
+/tmp/questpc2-3020-regeneration-round2.log, materializer runtimePID450846. Do NOT
+repeat finished materialization stages if later generator check fails; resume repo
+stages appropriately. Need full workspace all-target check after regeneration,
+focused ownPG (Elvenbane full route+journal and relevant earned/source regressions),
+clippy31changed crates, fmt, dupcheck, commit required trailers, fetch+merge+push.
+Last successful push26e5a8f0b. Owner ETA said30-40min around17:48.
 
-Fulltestset/tmp/questpc2-main-dependent-test-set.json =30touched46dependents;
-/tmp/questpc2-run-dependent-tests.py prepared (sourceenvbeforelaunch), logs/report
-/tmp/questpc2-main-dependent-nextest-full.log and run.json. Notstarteduntilmerge
-contentcoherent. FullrunmustincludePGenv, usesCARGO_BUILD_JOBS=2/testthreads2.
+# LIVE: merge main1ae39c7fb (#3020) in progress; do not push until prevention rule green
 
-Diskfull duringmaterializer solved byretiring133superseded/failedcache entries,
-keepnewestREADY percrate. Recovered6.3GBroot7.3GBtmp. No fullclean/testsweakened.
-CurrentnormalMainlibraries rebuilt underchangedTokio/CargoLock, oldtestABI obsolete.
-Allpre-main retained-cache-archives/questpc2-* retired; oldcache-latest.json points
-atretiredarchives, DONOTrestore. Nativepre-main libtestcache archivedthenretired;
-latest fullroutepreMain exe retained/tmp/questpc2-pre-main-full-route-executable.gz.
-Audits/tmp/questpc2-main-merge-cache-retention.json and
-/tmp/questpc2-main-merge-capacity-recovery.json. Exactfull-disks builderrors were
-No space left on device, fixedresourcesandcontinued. No blockers/stop/final.
+Owner corrected registry: Main owns0999-1008 (QBASE folded into1006-1008),
+NO1200-1205 on main. Branch has no1200 copies. Own1240-1244 unchanged;
+1245-1249 free. Duplicate migration check passed after merge. Preserve main SQL
+bytes. Latest actual successful push26e5a8f0b (compiling WIP) before newmain.
+Current MERGE_HEAD1ae39c7fb9bef09c3cd50d16410374f4134b1676, uncommitted.
+Author/committer blakinio75369544+blakinio@users.noreply.github.com plus required
+Co-Authored-By and Claude-Session trailers from owner. Sourceenv before fetch/push.
+Fetch ownbranch before push, merge any movement, never force/rebase/main/PR.
+Latest owner explicitly requests ONEpush after full prevention validation; continue
+owned scope afterward. No agents. ReasoningMEDIUM. No credentials/test weakening.
 
-# WIP zero-claim guard proven, corrected safe landing compiles: push/rerunPG
+## Immediate active work
 
-Actual PG180006109.45s /tmp/questpc2-completion-full-green-pg.log: Native6
-route then zero-claim return rejects completion (nativephase0/own3 asserted).
-Re-ascent reaches3 but flatpath tofirstchest picks down-stair88,43; actual4
-vsplanned3 assertion correctly fails. Driver now realEast to89,42,z3 before
-flatsearch, exactposition asserted. All movement/combat/claim guards retained.
-Core3crate alltarget/allfeatureclippy PASS149s; correcteddriver clippy21.76s.
-Cold new-layout native compile4m38s PASS,noOOM after verifiedoldREADYarchive.
-Push compiling checkpoint now (<15min), then fullcase zero/partial3/all4
-claim finish/journal PG. Still no wholequalification; owned27remain.
-NativeABI is now warm currentlayout; precompletion oldcache archive canretire
-onlyafter newREADYproof, ledger /tmp/questpc2-completion-native-abi-cache-retention.json.
-Current nativeexe is latest109.45sRED; hold/park before warmcompile tofree
-inactiveclippy RAM/linkspace. Latest oldbaseline binary retained in
-retained-cache-archives/questpc2-completion-before-native-abi-executable.gz.
-No source/native generator inputs changed by landingdriverfix.
+Canonical regen /tmp/questpc2-3020-regeneration.log stopped on duplicate entity
+method inserted by additive merge driver. Those and five other duplicated shared
+methods were resolved with main authoritative APIs, preserving distinct lane
+extensions. Initial31crate check exposed duplicatedeffects module; fixed. Round2
+exposed duplicatequest module/re-export and duplicate reward_admission parameter;
+fixed, and all8 quest-inner call argument lists now exactly main. Round3 active
+session60500 /tmp/questpc2-3020-check-round3.log. Poll it, collect ALL errors,
+fix grouped integration issues, then rerun canonical regeneration with JOBS1:
+python3 tools/content-migration/regenerate_content.py --resolve
+(use /workspace/oteryn-env/env.sh). Native cache pre3020 is obsolete; retired.
+Generator previous session55898 ended failure, not active. Rust fmt parsed after
+shared-copy cleanup. Need final fmt/check/clippy -D warnings on31changed crates.
+No hand edits .github/workflows/tools/repository; incoming main changes preserved.
 
-# WIP generic completion compiles: push, then full negative/positive PG
+Authoritative shared files added on both sides listed
+/tmp/questpc2-3020-shared-added-paths.txt. They cannot be insert-concatenated!
+Main shared reward code/captures/schema/tests used, including44 additional Item
+proofs. Main qengine_access kept with tiny hook into newquestpc2_access.py for
+owned rewarddoor/Desert rite/Elvenbane callbacks and pinned verifier functions.
+Three lane-only source/rejection tests relocated intact to
+test_questpc2_effect_authoring.py; main's tests retained. Main worldeffects merged
+against original sharedbe6db5edd retaining quest_completion, party_transfer,
+reward_door. No duplicate implementations. Helper scripts in/tmp document edits.
+Main NPCscope53 includes all36old NPCs; selected cells unchanged. Main access
+binder retained incl syntheticcapture handling, with own sourceUID30030 added.
+Main access tests retained. Two conflicting B3regions proven identical geometry,
+only lane source-backed UIDs5001,6085-6088 and doorAID1100 differ; kept HEAD
+regions/index/summary with those attributes. All17 changedindexrows correspond
+lane chest/access overlays; repo chest check passed35attributes, access checkPASS.
+Never change geometry or fake health/kill credit to make route pass.
 
-Canonical source return32597,31642,z7 succeeds; actualPG104.46s exact RED
-ownphase3 expected4 after Native6/four source treasures/replay/atomic contents/
-native exit. Log /tmp/questpc2-treasure-canonical-exit-red-pg.log.
-Implemented CallbackEffects.quest_completion with bounded unique claimed_reward
-identities. Generic quest writer reads durable once claims under same fenced
-transaction after original receipt recovery and before consumption; Nativephase
-0->1 plus6preserve counters plusown3->4 = one8track write, completes=true.
-Completion requires terminal advancing storage; bad/duplicate/>8keys rejected.
-Actual corpus citation fixed; parser accepts exact Elvenbane9f5/path/lines/SHA,
-corrupt citation still rejected. Pure unitPASS. Three changed cratescheckPASS.
-qengine_access write/check + Native43write/check PASS; no Nativeprofile/World
-input changes since verifiedc700 pin. New fullcase tests zero andpartial3
-claims cannot close eitherphase, reascends actual source route, thenall4claims
-must finishphase4/completed journal. Compile+PG/final clippy remainpending.
-Push compiling checkpoint now per15min cadence, continue no final. Owned27
-wholeunfinished. Medium reasoning perowner. Generic requires no newmigration.
+## Known failures fixed before next full run (validation still required)
 
-# WIP four source claims/atomic bags proven PG100.40s; exit endpoint RED
+Old mainbbb3 full run compiled all46 targets7m17s, then owner requested immediate
+main1ae merge. Interrupted old run (not full success):1189/10722tests run,
+1137pass,51functionalFAIL,1SIGINTcase,44existingignored. Logs preserved under
+/tmp/questpc2-before-3020-questpc2-main-dependent-nextest-*.
+29authoring scripts ran23pass6fail, original outputs preserved
+/tmp/questpc2-authoring-before-fixes/. Do not overwrite proof or claim qualification.
+Known roots:
+- Default client caps ended383,384,371 -> strict invalid capabilityset (33direct
+  failures,12more admission failures likelysame). Moved371 before381; no codec
+  validation relaxed.
+- Client placement index pin stale (5related failures). Extended repo generator
+  repin_rust_inventory() to refresh only clientassets World pin from real index.
+  Must regenerate through that tool, never hand-rehash tracked pins.
+- Corpse rejection test rightly refused31: restored creature_reward::row ceiling
+  to1..=30 per existing Decision20 tests, not u16::MAX. Tests untouched.
+- Authoring completion effect unknown: quest_batch4 validates bounded distinct
+  claim keys and advancing nonreversible phase with no incompatible reward/operation.
+  Main effect tests4PASS8.026s and owned3PASS7.751s afterextension.
+- Ledger only disposition_totals drift; verified generated claims exactly equal
+  every existing record; ran existing repo generator. Validator now283PASS.
+- Merge union exact countpins updated from actual RED outputs: chest children139
+  (was133), native container derives71(was70), rejected variants34(was36).
+  All rejection/materialization assertions retained; need rerun full authoring.
+- Main qengine_rewards.py regenerated its authoritative updated cosmetics/grants;
+  do not recreate old competing cosmetic catalogue.
 
-Log /tmp/questpc2-treasure-uids-green-pg.log: Native6; all four actual chests;
-literal command replay and fresh once refusal; four physical roots; five
-nested children/custody samexmin as each root receipt; native descent3->4->5
-->6->7 PASS. Current exact RED no source walk from32593,31644,z7 to proposed
-south-east endpoint32599,31652. Push compiling sourceUID checkpoint now.
-Next change exit endpoint to EXISTING canonical elvenbane-return-after-defenders
-marker32597,31642,z7 (qengine_access/elvenbane_access), run PG; then phase4 and
-journalcompletion must be implemented generically. Don't guess/bypass geometry.
-Existing generic quest_chest_bindings tool extended exact accepted pair for
-current committed corpus9f5 chestSHA0ca1 + startupSHA897c; unchanged doorLEVEL
-SHAd886. Old captures remainaccepted as-is. Four-claim cohort generated by
-tool, overlays onlyUID6253..6256. Preservation /tmp/questpc2-elvenbane-uid-preservation.json;
-no other tile attributes/geometry changed. Source14tests RED1.480->GREEN1.582s,
-apply/check35attributes PASS; repo pinrefresh/check PASS worldc700212c39ed833e72e73f579cab6f35a625a6de7a7d0a488b895acf43ef7701.
-No new migrations; owned27remainwholeunfinished. Medium effort perowner.
+## Elvenbane finishing slice (not yet QUALIFIED)
 
-# WIP whole-route test compiles; source first chest actual PG95.95s RED
+Whole route PG133.72s beforemain proved Native6 realwire kills, own counters1/1/1/2,
+all4source claims+filled bags/root/child same-tx custody/replay, zero/partial3claim
+completion refusal, canonicalexit32597,31642,z7, ownphase4. Exact final RED was
+journal unavailable (fixture had quest_log_content=None). Log
+/tmp/questpc2-completion-safe-landing-green-pg.log. Keep all those assertions.
+Now authored kill_objectives::journal(), loaded alongside Monk journal; fixture
+loads real QuestLogLines and selects capability16 for ElvenbaneComplete. Fullroute
+now additionally sends actual command22 list+line over productionconnection and
+asserts completed Elvenbane listentry, completed line, all5missions done and return
+text. Code added but not yet compiled/tested after3020merge.
+Test: gameplay_transport::monk_save::postgres_tests::elvenbane_treasure::
+elvenbane_source_treasure_exit_and_journal_via_wire (actual path may wrapped).
+Need PG RED->GREEN proof with marker+duration, no 0.00 skip. No whole qualification
+until journal fullsource route and fulldependent set are green; canonical recipe
+metadata still waiting may need proper authoring update, not paper qualification.
 
-New elvenbane_treasure::elvenbane_source_treasure_exit_and_journal_via_wire
-runs inherited full earned Native6 route, then four physical chest claims,
-replay/once, four root+five nested items samexmin, actual inverse native stairs
-exit to32599,31652,z7, ownphase4/completed journal requirements. Actual
-PG18000695.95s stops at firstbp1 USE: NothingToUse expectedCommitted.
-Log /tmp/questpc2-treasure-source-corrected-red-pg.log. Compiles91s; initial
-floori16/i8 compile assertion fixed by exact widening, notPGproof.
-Push compiling checkpoint now, then reuse existing generic
- tools/content-schema/world-authoring/quest_chest_bindings.py
-Its docs explicitly allow lane-specific source captures. Raw B3 chest attrs
-None; strict binder correctly requiresUID+position+appearance. Do not weaken
-binder or invent virtual source facts. Existing tool pins old201189 chestSHA
-7c3a..., current corpus9f5 chestSHA0ca1... has exact same four source claims;
-extend accepted exact source-pair validation generically if needed, keeping
-old captures as-is. Check actual level/startup file pins from corpus; source
-capture validates physical rewards before restoring metadata. Then pin tools/
-focused PG. Whole quest/owned27 remainunfinished; no final/end.
+All2qualified/27unfinished/6otherlane skips remain unchanged. Follow LANE-L3,
+QSPLIT-PLAN and ownership, not other lanes/worldchange scopes. Next after full
+Elvenbane proof: continue remaining owned entries, do not end with summary.
+Important sourcefacts/contracts and previous finished mechanics remain in
+CONTRACT-NOTES.md and BATCH*.json, old commits retained, do not redo them.
+Source chest corpus9f5a72... chest.lua2551-2580 sha0ca1a7ad... exactly4claims:
+bp1/bp2(container2853 with3/2children), shield3425,morningstar3282;9physicalitems
+in4roots+5children, not7roots. Stair re-ascent requires East89,42,z3 after ladder;
+flatBFS must not walk on down stair88,43. Source sixactor/player heights/XP untouched.
+Generic completion guards durable exact once-claim identities in same transaction;
+callback binding serializes fullcallback, preserves fences/replay. NativeXP and own
+kill objectives stay one revision/physical transaction; stale deaths read-only no
+regrant, callbacks immediately update copy+capture caches. All proven tests retained.
 
-# GREEN six source defenders: push, then four source treasures/exit/journal
+## Prevention set / resources
 
-Actual PG180006 GREEN94.83s (route18508ms), log
-/tmp/questpc2-carpet-upper-six-green-pg.log. All six exact-origin credits and
-own upper counters1/1/1/2 asserted after actual wire combat/nativeXP drain.
-Original source basement/poison/ladder/stairs preserved; no fakeHP/flags/damage.
-Native9red-carpet profiles fix reachability, 3629existing unchanged ->3638;
-source5tests RED12.202s->GREEN12.977s, Native43write+43check PASS.
-Check18.84s, final alltargets/allfeatures clippy40.71s, fmt/duplicates PASS.
-Repo isolated pin-refresh/check PASS, world56275a3ba06db4611a016821d1c0194c261e320ef983fcb215631911b56bc306.
-Batch BATCH-native-carpet-reachability-2026-11-07.json. Whole Elvenbane still
-UNFINISHED; owned27remain, no final/end. Push green slice now, then add actual
-four source chest claims/replay/capacity, exit and journal case RED. Existing
-native filled-container MINT/once receipts support source bags2853; don't
-invent seven sibling roots. Inspect real source UID composition if claims
-fail to bind (raw B3 decode showed chest attrsNone, existing binder expects
-exact UID+position+appearance). Reuse source facts/tooling, no geometry edits.
-Fix own inherited chest.lua citations to real committed corpus when touching
-reward/source callback data. Check QENGINE/other lanes first for any missing
-shared mechanism; fresh QENGINE remains5a6de28c1 (only0999), no deferred owner.
-
-# WIP exact carpet source facts generated/compiled: push, then pins and PG
-
-Root reachability witness PG134.10s player32589,31642,z3 vs SkeletonEast
-32592,31644,z3, chaseNone. Nine exact static carpet profiles2572-2580 added
-through existing source_gate_item_profiles importer, no geometry/wall changes.
-Native43write+43check PASS. Source5cases RED12.202s ->GREEN12.977s.
-All3629existing profiles unchanged, exactly9added=3638 (scratch preservation
-JSON /tmp/questpc2-carpet-profile-preservation.json). Check18.84s and fmt PASS.
-Current files compile; world pin-refresh/check and post-profile full6 PG/final
-clippy pending, do not call whole quest qualified. Push this WIP checkpoint
-now (15min cadence), then isolated repo pin-refresh/check and focused6case.
-Native/cache exe is latest pre-carpet diagnostic RED; inactivecheck cache
-restored, clippy archived. Park check before memory-heavy pin generation.
-Last positive generic callback/sourceDragon slice9aec13e43 pushed; upper
-traversal WIPa93f449e7 pushed~14:28UTC. Owned27remain, do not endturn.
-
-# WIP upper traversal compiles; actual PG137.73s floor3 combat RED
-
-Source ladder USE and native stairs both succeed. Real combats advance through
-floor4 and first floor3 target, then a floor3 defender stays720HP through512
-passes with bound target. Exact failure actual wire attacks must kill full-health
-source defender. Log /tmp/questpc2-upper-six-corrected-green-pg.log. All assertions
-retained; no direct damage/progress. Check13.91s, clippy37.47s, compile79s PASS.
-Push compiling WIP now, then bounded diagnostics: actual current positions,
-immutable source origin, chase result and weapon/physical immunity if needed.
-Original all-six RED88.70s expected1vs6 remains. Wholequest notqualified.
-
-# Active upper six-defender wire continuation after pushed9aec13e43
-
-New focused all-six case actual PG180006 RED88.70s: nativecredit1 expected6.
-Added source ladder at32593,31643,z5 ordinaryUSE from93,44; floor4 two
-source-origin actors; normal stairs at32588,31643,z4 tofloor3 three source
-actors. Same chase/attack/nativeXP helper, require allsixnativecredits plus
-own four recipe counters1/1/1/2. No direct damage/progress writes.
-First green compile E0599 MapFacts missing import fixed (not PG proof).
-Corrected focused run /tmp/questpc2-upper-six-corrected-green-pg.log pending.
-Next finish scoped check/clippy/fmt, update proof/push before15min deadline
-(lastpush~14:17UTC). Then four existing source chest claims/exit/journal.
-Fresh QENGINE2 fetch still5a6de28c1, only0999 in reserved0999–1006. Reuseas-is.
-Whole quest and owned27 stillUNFINISHED, do not end turn.
-
-# GREEN callback/native capture slice: push now, then five upper defenders
-
-Final guarded Dragon + real Monk shrine PG180006 PASS2cases189.21s, log
-/tmp/questpc2-callback-copy-final-two-pg.log. Earlier actual RED89.39s ->
-GREEN88.91s; check19.24s, clippy(alltargets/allfeatures -Dwarnings)58.11s,
-fmt and duplicate-migration HEAD PASS. No content/pin input changes.
-Batch BATCH-callback-native-capture-2026-11-07.json. Whole quest UNFINISHED.
-Next add focused six-defender wire route RED, climb native ladder/stairs and
-fight five actual source upper actors with same driver; then four source
-chest claims (including two filled containers), exit and journal. Do not
-invent seven sibling roots. Keep exact native-goal and own phase assertions.
-
-# Current: actual source Dragon wire combat PG GREEN88.91s; final checks
-
-Fix generic callback publication: all callbacks apply committed delta immediately,
-refresh Grizzly/native-goal and own objective snapshots under held runtime;
-retain60second recovery cadence and revision-gap fail-closed. Skip applying an
-older/equal receipt over newer coherent copy. No fixture HP/damage/progress writes.
-Actual RED89.39s ownphase2/noDragon -> GREEN88.91s ownphase3/Dragon1; explicit
-native lethal queue assertion. Check19.24s, alltargets/allfeatures clippy58.11s.
-Final guarded-source Dragon + existing Monk regression running in
-/tmp/questpc2-callback-copy-final-two-pg.log. Complete/record/push immediately,
-then five upper native defenders and four real source chest claims/exit/journal.
-Whole Elvenbane remains UNFINISHED; owned27 remain. Migration1240–44 unchanged.
-
-# Current: normal chase driver compiles; actual PG89.39s progress RED
-
-Wire fixture now calls chase_step_now before swings, matching production scheduler.
-The 300HP stall is gone; exact RED moved to final SQL: native Dragon track absent,
-ownphase2 expected3. Check actual dead snapshot versus swallowed snapshot error,
-then sealed kill queue/XP settlement. No assertions relaxed. Log
-/tmp/questpc2-elvenbane-chase-pg.log; compile79s, PG180006.
-Health jump3600 is consistent with real Forge population owner (forge_creature.rs),
-not evidence of fake monster state. Log current max/forge if needed.
-
-# Active r2: source6 activated, wire combat actual RED133.84s
-
-Source-native fixture baseline PG180006 RED75.32s (0runtime actors, expected6).
-Added normal BundleWorld.activation_spawns and begin/realize window before Fresh
-players, projected from6exact unmodified source declarations. Check42.05s PASS;
-new native binary compiles. Actual next PG133.84s: all6sources + whole earned
-exploration pass; wire attacks decrease Dragon but stall300HP. First exchange
-shows3600HP vsinitialmax1000. Preserve full-health/killed/damage/ordinary drain/
-nativecounter1/ownphase3 assertions. No direct damage/HP/flags in test.
-
-IMMEDIATE diagnose current player/creature positions, target/chase/AI state and
-health owner. ComposedTestOwner builds fresh ChannelSessionStates::default, so
-initial guessed stale Dependencies monster state is NOT proven. Add bounded
-diagnostics; inspect real owner, fix generic/caller ifneeded. SourceGoalData6
-normal stats/policies and immutable spawn origins retained. No weakening.
-Primary log /tmp/questpc2-elvenbane-native-wire-green-pg.log; initial actualRED
-/tmp/questpc2-elvenbane-native-wire-corrected-red-pg.log. Wire helper code in
-elvenbane_combat.rs; shared protocol command/heal reused from annihilator_combat.
-
-Reference reward investigation: cached/tmp donor manifest is older crystalserver
-revision9f5a72c64; its chest.lua SHA0ca1a7... has exact same tower loot at2553–2580:
-MorningStar3282 chest90,47; shield3425 chest91,47; source container2853 at88,45
-with237/3147/3059 and container2853 at88,44 with3028x2/3031x100. Current authored
-sources cite crystal201189 and SHA7c3a...; read CURRENT tar corpus manifest before
-changing citations (cached manifest may predate incoming handoff). Need real
-source container facts before inventing 7-root MINT mechanism; existing filled
-container owner may suffice for four native claims. Whole quest notqualified.
-
-Last source activation/selector fullygreen5346b5b3f pushed. New stage WIP only;
-source/genericQuest runtime unchanged beyond previouslypublishedhelper. Commit
-and push compiling current slice now, next target10min not15. Sourceenv before
-allgitfetch/push for auth. No final while owned27 remain. Native/current READY
-live, inactive clippy/check archived per cache index; prune superseded READY
-before nextcompile; no source mutation midbuild. Range1240–44 unchanged.
-
-Branch claude/happy-davinci-ijz3wy-questpc2; AUTHORING. Owned29:
-2QUALIFIED (Desert/Annihilator),27UNFINISHED,6world titles SKIPPED_OTHER_LANE
-per WORLD-OWNERSHIP-SKIPS.json. Do not count skips as local qualifications.
-No final while27remain; owner now requires push every green step and at
-least15minutes, and compiling WIP may be published with exact red/pending point.
-
-Latest batch BATCH-elvenbane-exploration-ladder-2026-11-07.json: actualPG18.6
-GREEN88.74s/10498ms subcase, genuine Fresh source map, literal movement:
-basement visit, original ladder stale refusal/ascent/full-position replay,
-source courtyard/central stairs, poison crossing, Dragon-floor phase2.
-Native ladder generic class-based adapter reuses movement proof/PZ/collision/
-occupancy/stair cooldown, rechecks target visibility/version after asyncPVP.
-Six source static profiles1626/1627/1634/1635/1948/21935 added;3623incoming
-profiles all retained. Source geometry/wall flags/default-unknown untouched.
-Source4tests RED9.544s->GREEN9.318s; scoped regeneration43write+43check.
-Pacing required both13and371 (fixture originally omitted13); retain receipt
-assertion, run with OTERYN_STEP_WAIT_RECEIPTS=1.
-
-Merged incoming3718cc196 through3862d47bd, preserving all earlier commits.
-Incoming exact-origin six-goal/ordinary corpse+loot mechanism is verified,
-not whole quest; reuse it. IncomingSourceWorld6exclusions reduce ownedscope.
-Fresh merged PG guard5.19s, defender2cases84.39s, atomicXP/objective77.97s
-(shared xmin+replay) all GREEN. Check4crates64s, alltarget/allfeatureclippy
--Dwarnings146s, fmt PASS. No full workspace/PG suites.
-
-Final earned Annihilator PG GREEN107.70s, marker107185ms. Merged pin-refresh
-/check PASS, world32170e60e0f946dd1ba74dc68e45399579b85e66e819259a7adfef3bc5ad8502.
-Source slice9ccbd3285 is pushed; final evidence is recorded in the batch JSON.
-Then full Elvenbane: actual source basement activation of existing exact-goal
-cohort, real-client Dragon+five defenders, seven-item physical atomic treasure
-(Spellbook3059 documented choice), once/replay/exit/journal; qualify whole.
-Incoming native-goal settlement was separate beforeXP; current WIP composes
-with the existing sealed native XP transaction before activating full route. Do not
-record an external dependency or stop; shared mechanisms are our job.
-After Elvenbane continue remaining owned entries, respecting QSPLIT/user
-exclusions and Father11atomic/grants-exact-match rules.
-
-Source env /workspace/oteryn-env/env.sh (never print credentials). Latest actual
-PG exe/current native READY live. OOM was solved by reducing RAM-backed stale
-caches; linker disk fail cleaned exact temporary CGUs+tmp after READY proof.
-Neither build failure is PG RED. Current positive older atomic exe archived
-/tmp/questpc2-atomic-green-executable-retention.json. Old pre-r2 native cache
-retired; current cache cold rebuilt+linked successfully. Retention/retirement
-ledgers /tmp/questpc2-r2-*; do not restore retired archives. Currentclippy and
-check caches restored; prune only superseded completed READY with no active
-compiler. Heavy native compiler/clippy/pin work sequential where needed.
-No profile changes/broad clean. Work stash before-r2-integration retained.
-
-Commit owner blakinio <75369544+blakinio@users.noreply.github.com>, required
-Claude trailers. Before EVERYpush fetch exact own branch, merge remote if
-moved; neverforce/rebase/main/PR. No independent readiness/qualification claim.
+/tmp/questpc2-3020-dependent-test-set.json =31changed46normalreverse dependents,
+derived by exact cargo tree -i ... -e normal --workspace --prefix none for each.
+No new dependents beyond previous46. Must run ALL with nextest+PG --no-fail-fast,
+collect all failures, groupedfixes, rerunFULLset, then ONEpush. Need prepare new
+runner/log filenames3020; old /tmp/questpc2-run-dependent-tests.py reads oldspec.
+Author rerun helper reads original29script list withoutMERGE_HEAD dependency;
+add newtest_questpc2_effect_authoring.py to the next authoring run.
+Use buildjobs1: initial2job builds OOMed; no blocker. BaselineOOMevents30/kills13.
+Oldpre3020 156test executables13.78GB and warmNative2.8GB cache retired afteroldrun
+stopped, audit/tmp/questpc2-3020-capacity-reset.json. Root15GBfree/tmp2GBused at17:32.
+Never restore old cache archives, allpreMainABIobsolete. No active oldnextest.
+Helper/tmp/questpc2-retire-completed-incremental.py retires only inactive completed
+incremental caches (preserves binaries/activecompiler). Retain current binaries
+until fullrun ends. Sourceenv exposes PG180006, do not print/readcredentials.
+Oldrun DBbaseline/tmp/questpc2-full-run-initial-databases.txt captured before PG;
+only retire THISlane's idle old databases when needed, never active/otherlane DBs.

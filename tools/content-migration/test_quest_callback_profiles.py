@@ -227,7 +227,7 @@ class QuestCallbackProfiles(unittest.TestCase):
         # the existing canonical root and fourth child were already in this closure.
         self.assertTrue({'oteryn:item.tibia.i3084', 'oteryn:item.tibia.i3098',
                          'oteryn:item.tibia.i3077'} <= expected)
-        self.assertEqual(len(expected), 133)
+        self.assertEqual(len(expected), 139)
         for key in expected:
             row = rows[key]
             self.assertTrue(row['admission']['materializable'], key)

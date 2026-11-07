@@ -1422,6 +1422,7 @@ pub fn record_creature_kill(
             if boss.is_none()
                 && (top.present().is_none()
                     || !(super::grizzly_kills::tracks_creature(&creature)
+                        || oteryn_gameplay_quests::quest::native_kills::tracks_creature(&creature)
                         || tracks_native_progression(&creature)))
             {
                 refuse(reason.as_str(), &creature);

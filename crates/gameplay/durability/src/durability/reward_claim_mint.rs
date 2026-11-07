@@ -121,7 +121,10 @@ mod claimed;
 mod grizzly;
 mod monk;
 pub(crate) mod quest;
-pub use quest::QuestRewardAdmission;
+mod quest_participants;
+mod quest_actor_conditions;
+pub use quest_actor_conditions::QuestActorConditionProof;
+pub use quest::{QuestCarriedUse, QuestRewardAdmission, QuestRewardFeePayment};
 mod soul_war;
 mod tibiadrome;
 

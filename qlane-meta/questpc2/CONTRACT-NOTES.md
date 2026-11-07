@@ -558,3 +558,11 @@ eitherphase. Driver re-ascent landed88,42,z3 then flatpath chose down-stair
 East step to89,42,z3 before flatsearch, matching previouslyobserved source
 room approach. No geometry/guard/health/damage changes. Threecrateclippy149s
 and driverclippy21.76s PASS; full partial/all-claim finish proof stillpending.
+
+## Main #3020 composed receipt fixture configuration
+
+The diagonal route assertions require actual pacing receipts, whose production
+rollout switch defaults off (connection/authority.rs:429). Their fixture now
+explicitly selects receipts through a cfg(test) composed-owner override. This
+leaves the process default and negotiated capability requirements unchanged and
+retains the nonzero, three-source-beat assertions for every diagonal.

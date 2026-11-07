@@ -146,7 +146,7 @@ class CanonicalVariantTests(unittest.TestCase):
             self.assertEqual(placement['root']['key'], f'oteryn:item.tibia.i{root}')
             self.assertEqual([(r['item']['key'], r['count']) for r in placement['contents']],
                              [(f'oteryn:item.tibia.i{i}', 1) for i in items])
-        self.assertEqual(len(errors), 36)
+        self.assertEqual(len(errors), 34)
         self.assertTrue(all(e['code'] == 'REWARD_CLAIM_NATIVE_LOWERING_NOT_IMPLEMENTED' and e['pending'] for e in errors))
 
     def test_committed_family_reproduces_with_separate_holds(self):

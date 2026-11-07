@@ -18900,7 +18900,11 @@
   },
   "denominator": 283,
   "disposition_totals": {
-    "blocked": 283
+    "blocked": {
+      "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING": 283
+    },
+    "scenario": 0,
+    "test": 0
   },
   "schema_version": 1,
   "source_revisions": {

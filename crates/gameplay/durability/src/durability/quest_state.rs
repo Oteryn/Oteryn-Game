@@ -546,6 +546,7 @@ mod hero_of_bounac;
 pub mod kill_objectives;
 mod persist;
 mod planegazer_finale;
+pub mod native_kills;
 pub mod rotten_blood;
 pub mod rotten_blood_access;
 pub mod soul_war;

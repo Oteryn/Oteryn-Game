@@ -5,6 +5,14 @@ use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    fn step_wait_receipts(&self) -> bool {
+        #[cfg(test)]
+        if let Some(enabled) = self.test_step_wait_receipts {
+            return enabled;
+        }
+        crate::gameplay_transport::world_spatial::step_wait_receipts_enabled()
+    }
+
     async fn staff_refresh(&self, admitted: AdmittedSession) -> bool {
         self.refresh_staff(admitted).await
     }
@@ -927,6 +935,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
         if let Some(outcome) = self
             .use_reward_bag_intent(actor, command, &intent, source)
+            .await?
+        {
+            return Ok(Some(outcome));
+        }
+        if let Some(outcome) = self
+            .use_carried_quest_item(actor, command, &intent, source)
             .await?
         {
             return Ok(Some(outcome));

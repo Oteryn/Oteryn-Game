@@ -384,7 +384,7 @@
       "title": "Elvenbane Quest",
       "mechanism": "native_source_origin_personal_kill_goals",
       "status": "UNFINISHED",
-      "blocker": "Full earned source basement/poison/ladder/stairs/six native wire kills GREEN94.83s, native6 and own four counter caps asserted. Nine exact nonblocking carpet profiles added; old3629 unchanged; Native43 generation, pins/check/clippy/fmt green. Remaining four source treasure claims (two filled containers), once/replay/capacity, exit and journal.",
+      "blocker": "Full source route, six native wire kills, four treasure roots/two filled bags/five nested children, replay, earned exit and actual journal list/line are PG GREEN150.647s. Remaining canonical authoring/native-admission metadata reconciliation; no missing engine feature.",
       "source_lane_checks": [
         {
           "lane": "questpc",
@@ -428,7 +428,8 @@
         ],
         "world_digest": "56275a3ba06db4611a016821d1c0194c261e320ef983fcb215631911b56bc306",
         "batch": "BATCH-native-carpet-reachability-2026-11-07.json"
-      }
+      },
+      "runtime_pg_proof": "BATCH-main-3020-integration-2026-11-07.json"
     },
     {
       "canonical": "oteryn:quest.forgotten_knowledge_quest",
@@ -1775,7 +1776,8 @@
     "BATCH-annihilator-native-combat-2026-11-07.json",
     "BATCH-desert-source-gate-and-earned-rewards-2026-11-07.json",
     "BATCH-annihilator-complete-source-route-2026-11-07.json",
-    "BATCH-native-kill-objective-guards-2026-11-07.json"
+    "BATCH-native-kill-objective-guards-2026-11-07.json",
+    "BATCH-main-3020-integration-2026-11-07.json"
   ],
   "next_batch": {
     "quest": "oteryn:quest.authored.elvenbane_quest",
@@ -2195,30 +2197,60 @@
     "push_policy": "one push after full dependent failure collection/grouped fixes and green full rerun; auto push reminder retracted"
   },
   "current_validation": {
-    "main_merge": "bbb3e06d04875fc1e63f024b853194f7580cc875",
-    "state": "compiling WIP checkpoint requested by latest owner reminder; full46 test execution continues, not green",
-    "postgres_required": true,
-    "dependent_crates": 46,
-    "push_policy": "one push after full dependent set passes; automatic push reminder retracted while run pending",
-    "logs": [
-      "/tmp/questpc2-main-merge-tree-resume.log",
-      "/tmp/questpc2-main-merge-remaining-regeneration.log",
-      "/tmp/questpc2-main-dependent-nextest-full.log"
+    "policy": "Owner speed rule: focused own mechanic PostgreSQL tests, workspace all-target check, changed-crate clippy, fmt, duplicate migrations, canonical regeneration; CI owns full suites.",
+    "merge_main": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+    "last_pushed_head": "26e5a8f0b",
+    "regeneration": "GREEN: canonical regeneration and pin refresh completed with repository tooling.",
+    "migrations": "Main 0999-1008 retained byte-for-byte; no 1200-1205 copies; owned 1240-1244.",
+    "focused_red": "Catalogue-fix run completed 39:37 pass, 2 fail; both diagonal receipt assertions lacked explicit fixture rollout selection. Added cfg(test) receipt configuration; no assertions changed.",
+    "focused_rerun": "GREEN: 39/39,390.313s; actual PostgreSQL180006 markers and completion receipts retained in BATCH-main-3020-integration-2026-11-07.json.",
+    "workspace_all_targets": "GREEN final post-NPC source check, exit0,14m29s including cargo lock wait; /tmp/questpc2-3020-workspace-after-npc.log.",
+    "clippy": "GREEN: all31changed crates/all-targets, -D warnings; exit0.",
+    "proof_logs": [
+      "/tmp/red-catalogue-dup-questpc2-3020-focused-nextest.log",
+      "/tmp/questpc2-3020-focused-nextest.log",
+      "/tmp/questpc2-3020-workspace-final.log",
+      "/tmp/questpc2-3020-clippy-round3.log",
+      "/tmp/questpc2-3020-final-regeneration.log"
     ],
-    "last_observed_remote": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
-    "local_head": "7b009e1ee306111a230be0b56c511de47c000f80",
-    "build_jobs": 1,
-    "test_threads": 1,
-    "build_result": "all46 test targets compiled in 7m17s after 5 diagonal match fixes",
-    "tests_scheduled": 10722,
-    "existing_ignored_tests": 44,
-    "observed_runtime_failures": 51,
-    "exact_red_points": [
-      "default client capability set ends ...383,384,371: strict ascending codec rejects handshakes",
-      "client placement index sha256 does not match pinned world digest",
-      "corpse_must_be_an_admitted_materializable_bounded_container accepts a fixture expected rejected",
-      "six authoring-script failures recorded in resume; Elvenbane journal unavailable in focused PG proof"
+    "npc_regression": "GREEN: qengine_reward_npcs_open_only_source_conversations,32.742s,1/1; /tmp/questpc2-3020-npc-focused.log.",
+    "pin_check": "GREEN: final staged tree, repository release compiler; input digest d65e38a4c120cfb927b5ee9915f7615ae1fd559fb2518f2f2312ccdf2362772e.",
+    "state": "ALL_REQUIRED_CHECKS_GREEN_READY_TO_PUBLISH"
+  },
+  "engine_requests": [
+    {
+      "feature": "participant-bound arena fight sequencing and tier settlement",
+      "quests": [
+        "Barbarian Arena Quest"
+      ],
+      "where": "crates/gameplay/encounters",
+      "status": "REQUESTED_FROM_QENGINE2",
+      "owner_rule": "2026-11-07 shared engine ownership override"
+    },
+    {
+      "feature": "atomic tool consumption, live-creature capture and captured-item custody",
+      "quests": [
+        "Goblin Merchant Quest"
+      ],
+      "where": "crates/gameplay/dispatch",
+      "status": "REQUESTED_FROM_QENGINE2",
+      "owner_rule": "2026-11-07 shared engine ownership override"
+    }
+  ],
+  "active_owned_work": {
+    "display_names": [
+      "The Annihilator Quest",
+      "The Desert Dungeon Quest",
+      "Elvenbane Quest",
+      "Rotten Blood Quest",
+      "Soul War Quest"
     ],
-    "updated_utc": "2026-11-07T16:55:16.239379+00:00"
+    "done_pushed": 2,
+    "in_progress": 3,
+    "not_started_owned": 24,
+    "excluded_other_lane": 6,
+    "packet_total": 35,
+    "dedup_reply": "2026-11-07 owner urgent dedup check: only these five actually started; await coordinator reassignment of remaining packet entries.",
+    "count_correction": "Earlier QCOUNT grouped all 27 unfinished authoring records as IN PROGRESS; actual quest implementation started is 3, with 24 owned entries not started."
   }
 }

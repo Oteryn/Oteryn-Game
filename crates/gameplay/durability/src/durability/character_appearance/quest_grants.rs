@@ -27,7 +27,7 @@ pub(crate) async fn grant_callback_outfit(
         if addon != 0 && reward.addons & (1 << (addon - 1)) == 0 {
             continue;
         }
-        let key = format!("{}/quest-grant/{addon}", reward.outfit);
+        let key = reward.grant_key(addon);
         let owned:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_account_appearance_unlocks WHERE account_id=$1 AND unlock_key=$2)").bind(account).bind(&key).fetch_one(&mut **tx).await?;
         if owned {
             continue;
@@ -48,6 +48,9 @@ pub(crate) async fn grant_callback_outfit(
     }
     Ok(granted)
 }
+
+/// The canonical mapping was checked against the current native generation before
+/// entering this transaction. All selected bits and the base share the quest receipt.
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum QuestOutfitGrant {

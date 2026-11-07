@@ -510,7 +510,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .collect::<Vec<_>>();
         // Ambiguous content never chooses one action by incidental registration order.
         let [(callback, key)] = selected.as_slice() else {
-            if selected.is_empty() {
+            if selected.is_empty() && trigger == Trigger::StepIn {
                 return self
                     .step_daily_world_gate(permit, actor, session, origin, entered)
                     .await;

@@ -809,6 +809,10 @@ async fn wardrobe(
         .clone()
         .ok_or("wardrobe outfit")?;
     let seed = RewardCallback {
+        carried_item: None,
+        minimum_level: None,
+        requires_addons: vec![],
+        forbids_outfits: vec![],
         key: callback.key.clone(),
         quest: callback.quest.clone(),
         npc: "oteryn:npc.fixture".into(),
@@ -816,11 +820,23 @@ async fn wardrobe(
         topic: 0,
         next_topic: 0,
         storage: callback.storage.clone(),
+        requires: vec![],
+        participants: vec![],
+        state_ops: vec![],
+        requires_premium: false,
+        requires_outfits: vec![],
+        requires_actor_conditions: vec![],
+        forbids_addons: vec![],
+        creation_sex: None,
         take: vec![],
+        fee: None,
         present: vec![],
         give: None,
         outfit: Some(reward.clone()),
+        outfits: vec![],
+        exact_take: false,
         achievement: None,
+        achievement_progress: vec![],
         reply: vec![],
         sources: vec![],
     };
@@ -863,12 +879,12 @@ async fn wardrobe(
             ),
             placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
             reset_epoch: owner.reset_epoch,
+            party: Vec::new(),
             actor_placement: actor.placement_identity(),
             movement_revision: runtime
                 .read_actor_position(actor)
                 .map_err(debug)?
                 .revision(),
-            party: Vec::new(),
         }
     };
     let session = admitted.game_session_id;

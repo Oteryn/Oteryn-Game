@@ -1170,9 +1170,13 @@ def build(
 
     quest_door_bindings.overlay_outputs(out)
     import quest_access_bindings
-    import quest_chest_bindings
 
-    quest_access_bindings.overlay_outputs(out)
+    # Synthetic maps carry their own startup capture with their source blobs.
+    # Real builds default to the complete committed donor capture.
+    quest_access_bindings.overlay_outputs(
+        out, capture_bytes=blobs.get(quest_access_bindings.CAPTURE)
+    )
+    import quest_chest_bindings
     quest_chest_bindings.overlay_outputs(out)
     return out
 

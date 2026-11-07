@@ -176,10 +176,71 @@ pub(super) async fn complete(
             .is_some_and(|state| state.completed),
         "actual admitted journal copy must show Elvenbane completed"
     );
+    journal_via_wire(owner, member).await?;
     eprintln!(
         "ELVENBANE_TREASURE POSTGRES_CASE_COMPLETED roots=4 containers=2 nested_children=5 once_replay=proven exit=earned journal=completed elapsed_ms={}",
         started.elapsed().as_millis()
     );
+    Ok(())
+}
+
+async fn journal_via_wire(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    member: &AdmittedSession,
+) -> TestResult {
+    use oteryn_protocol_oteryn::quest_log::{
+        QuestLogQuery, QuestLogView, decode_quest_log, encode_quest_log_query,
+    };
+    use oteryn_protocol_oteryn::{MessageType, decode_state_delta, decode_wire_envelope};
+    let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(debug)?;
+    let loaded = oteryn_gameplay_quests::quest::log::loader::load_embedded_quest_log(&lowered)?;
+    let quest_index = u32::try_from(
+        loaded.content.active().quests().iter()
+            .position(|quest| quest.key == rules::QUEST).ok_or("Elvenbane journal entry")?,
+    )?;
+    let mut framed = Vec::new();
+    for (offset, query) in [QuestLogQuery::List, QuestLogQuery::Quest { quest_index }]
+        .into_iter().enumerate()
+    {
+        let payload = encode_quest_log_query(&query).map_err(debug)?;
+        let command = oteryn_protocol_oteryn::encode_client_command(
+            1,
+            &oteryn_protocol_oteryn::ClientCommandValue {
+                command_id: member.continuity.next_command_id
+                    .checked_add(u64::try_from(offset)?).ok_or("journal command overflow")?,
+                command_type: 22,
+                payload: &payload,
+            },
+        ).map_err(debug)?;
+        framed.extend(u32::try_from(command.len())?.to_be_bytes());
+        framed.extend(command);
+    }
+    let (_, output) = super::weather_wire::fixture_access::serve_input(owner, *member, &framed).await?;
+    let mut reader = output.as_slice();
+    let mut views = Vec::new();
+    let mut accepted = 0;
+    while !reader.is_empty() {
+        let frame = crate::gameplay_transport::tcp_tls::read_frame(&mut reader).await?;
+        let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+        if envelope.message_type() == MessageType::CommandResult {
+            let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload()).map_err(debug)?;
+            assert_eq!(result.status, oteryn_protocol_oteryn::CommandStatus::Accepted);
+            accepted += 1;
+        } else if envelope.message_type() == MessageType::StateDelta {
+            let delta = decode_state_delta(envelope.payload()).map_err(debug)?;
+            if delta.domain_id == 16 {
+                views.push(decode_quest_log(delta.payload).map_err(debug)?.view);
+            }
+        }
+    }
+    assert_eq!(accepted, 2, "actual list and quest-line wire queries must be accepted");
+    assert!(views.iter().any(|view| matches!(view, Some(QuestLogView::List(quests))
+        if quests.iter().any(|quest| quest.quest_index == quest_index && quest.completed))));
+    assert!(views.iter().any(|view| matches!(view, Some(QuestLogView::Line(line))
+        if line.quest_index == quest_index && line.completed && line.missions.len() == 5
+            && line.missions.iter().all(|mission| mission.done)
+            && line.missions.iter().any(|mission| mission.text.contains("returned from the fortress")))));
     Ok(())
 }
 

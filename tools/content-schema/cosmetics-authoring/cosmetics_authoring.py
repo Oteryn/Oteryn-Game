@@ -144,7 +144,17 @@ def validate(authoring):
             outfit = outfits.get(target["outfit_key"])
             valid = outfit is not None and (target["kind"] == "Outfit"
                     or target["addon"] <= outfit["addon_count"])
-        if not valid:
+        aliases = mapping.get("outfit_aliases", [])
+        if aliases and target["kind"] == "Mount":
+            raise ValueError("mount grant cannot have outfit aliases")
+        for key in aliases:
+            alias = outfits.get(key)
+            original = outfits.get(target.get("outfit_key"))
+            if (alias is None or original is None or key == original["key"]
+                    or any(alias[sex] != original[sex] for sex in ("female", "male"))
+                    or (target["kind"] == "Addon" and target["addon"] > alias["addon_count"])):
+                raise ValueError("cosmetics alias must retain exact source looks and addon")
+        if not valid or (mapping.get("sex") is not None and target["kind"] == "Mount"):
             raise ValueError("unknown cosmetics grant target")
     for sex in ["female", "male"]:
         fallback = document["fallbacks"][sex]
@@ -253,9 +263,9 @@ def build(authoring, manifest_path: Path) -> bytes:
     return result
 
 
-def provisioning_input(authoring_path: Path, manifest_path: Path, output_path: Path):
+def provisioning_input(authoring_path: Path, manifest_path: Path, output_path: Path, *, authoring_bytes=None):
     """Pin maintained source inputs; derive the large validated section only in memory."""
-    authoring = read(authoring_path)
+    authoring = read(authoring_path) if authoring_bytes is None else authoring_bytes
     section = build(parse(authoring), manifest_path)
     relative = lambda path: Path(os.path.relpath(path, output_path.parent)).as_posix()
     return canonical({

@@ -184,6 +184,7 @@ pub(super) fn scenario(earned: bool) -> TestResult {
         }
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
+        owner.test_step_wait_receipts = Some(true);
         owner.evidence = &evidence.evidence;
         owner.movement_cells = &cells;
         owner.quest_catalogue = Some(std::sync::Arc::new(

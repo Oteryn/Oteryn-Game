@@ -59,7 +59,7 @@ pub enum NoSettlementReason {
     LootTableMissing,
     /// The creature profile names no corpse Item.
     CorpseItemMissing,
-    /// The corpse Item is not an admitted, materializable container with positive u16 capacity.
+    /// The corpse Item is not an admitted, materializable container with capacity in 1..=30.
     /// Declared slots are independent of the actual entry/loot-plan count budgets.
     CorpseItemInadmissible,
     /// A loot table entry names an Item that is not admitted and materializable.
@@ -644,7 +644,7 @@ fn row(
     let admitted = |item: &SectionRef| items.get(item).filter(|facts| facts.materializable);
     admitted(&corpse)
         .and_then(|facts| facts.container_capacity)
-        .filter(|capacity| (1..=u32::from(u16::MAX)).contains(capacity))
+        .filter(|capacity| (1..=30).contains(capacity))
         .ok_or(NoSettlementReason::CorpseItemInadmissible)?;
     let corpse_item = corpse.lower();
     let (loot_table_ref, loot_table) = match loot {

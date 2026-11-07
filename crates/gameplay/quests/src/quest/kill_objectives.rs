@@ -9,6 +9,50 @@ use super::{
 pub const QUEST: &str = "oteryn:quest.authored.elvenbane_quest";
 pub const PHASE: &str = "oteryn:quest-progress/elvenbane/phase";
 
+/// Player-visible progress for the earned source route and its terminal receipt.
+pub(super) fn journal() -> super::log::QuestLogQuest {
+    use super::log::{JournalText, QuestJournal, QuestLogKind, QuestLogMission, QuestLogQuest};
+    let mut missions = vec![QuestLogMission {
+        name: "Elvenbane".into(),
+        track: PHASE.into(),
+        start_value: 0,
+        end_value: 4,
+        journal: QuestJournal::PerStage(std::collections::BTreeMap::from([
+            (0, JournalText::Text("Find the entrance beneath Elvenbane.".into())),
+            (1, JournalText::Text("You entered the basement. Cross the poison chamber and reach the dragon.".into())),
+            (2, JournalText::Text("You crossed the poison chamber. Defeat the dragon and climb the fortress.".into())),
+            (3, JournalText::Text("You defeated the dragon. Defeat the upper guards, recover all four treasures, and return from the fortress.".into())),
+            (4, JournalText::Text("You defeated the guards, recovered all four treasures, and returned from the fortress.".into())),
+        ])),
+    }];
+    for (objective, name) in OBJECTIVES.iter().skip(1).zip([
+        "Orc Shaman",
+        "Minotaur Mage",
+        "Elf Arcanist",
+        "Demon Skeletons",
+    ]) {
+        if let Some((track, maximum)) = objective.counter {
+            missions.push(QuestLogMission {
+                name: format!("Upper guards: {name}"),
+                track: track.into(),
+                start_value: 1,
+                end_value: maximum,
+                journal: QuestJournal::Fixed(JournalText::Text(format!(
+                    "Defeat the {name} guarding the upper fortress."
+                ))),
+            });
+        }
+    }
+    QuestLogQuest {
+        key: QUEST.into(),
+        kind: QuestLogKind::Storyline,
+        shown_in_quest_log: true,
+        start: Some((PHASE.into(), 1)),
+        hide_when_completed: false,
+        missions,
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct KillObjective {
     pub transition: &'static str,

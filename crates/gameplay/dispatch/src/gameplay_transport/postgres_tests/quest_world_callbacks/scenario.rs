@@ -77,7 +77,12 @@ fn scenario_case(
     let world = world(&callback, trigger)?;
     run(async |admin| {
         let h = if qengine_reward || outfit_world {
-            Harness::create_quest_reward(admin, "quest_rewards", !name.ends_with("pirate")).await
+            Harness::create_quest_reward(
+                admin,
+                "quest_rewards",
+                !name.ends_with("pirate") && !name.contains("-male-"),
+            )
+            .await
         } else {
             Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false).await
         }
@@ -144,7 +149,9 @@ fn scenario_case(
             1,
             1,
             "runtime-scope-assignment:1",
-            if classic_npc {
+            if name.starts_with("qengine-rewards-l12-") {
+                128
+            } else if classic_npc {
                 5
             } else if monk {
                 4
@@ -168,7 +175,38 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
+        let premium = if name.contains("l6-beggar-")
+            || name.contains("l7-knight-")
+            || name.contains("l8-")
+            || name.contains("l9-")
+            || name.contains("l10-documents-")
+            || name.contains("l11-")
+            || name.contains("l12-")
+        {
+            use crate::gameplay_transport::spell_premium_coordinator::{
+                SpellPremiumCoordinator, purchase_fixture,
+            };
+            let (consumer, clock, activation, _) =
+                purchase_fixture::current(super::super::fixture::id(40));
+            h.root
+                .latch_premium_activation(
+                    &activation.activation_id,
+                    activation.switch_over_us,
+                    activation.switch_over_us + 60_000_000,
+                )
+                .await
+                .map_err(debug)?;
+            Some(SpellPremiumCoordinator::new(
+                consumer,
+                Some(clock),
+                Some(activation),
+                Some(h.root.clone()),
+            ))
+        } else {
+            None
+        };
         let mut owner = deps.owner(&h, &authority);
+        owner.premium_coordinator = premium.as_ref();
         owner.active_generation = Some(generation);
         owner.movement_cells = &cells;
         owner.quest_catalogue = Some(std::sync::Arc::new(

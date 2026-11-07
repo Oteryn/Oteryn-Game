@@ -228,8 +228,25 @@ def validate_native(callback, context):
 def validate_effects(callback, context):
     """The optional Channel effects share the Rust world_callbacks closed shape."""
     effects = callback.get('effects', {})
-    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter', 'outfit_reward', 'reward_door', 'party_transfer'}
+    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter', 'outfit_reward', 'reward_door', 'party_transfer', 'quest_completion'}
     fields(effects, set(), allowed, context + ': effects')
+    completion = effects.get('quest_completion')
+    if completion is not None:
+        fields(completion, set(), {'claimed_rewards'}, context + ': completion')
+        claims = completion.get('claimed_rewards', [])
+        require(isinstance(claims, list) and len(claims) <= 8
+                and all(isinstance(key, str) and valid_key(key)
+                        and key.startswith('oteryn:reward-claim.') for key in claims)
+                and len(set(claims)) == len(claims), context + ': completion claims')
+        require(callback['storage'] and any(
+                    not storage.get('preserve', False)
+                    and not storage['minimum'] <= storage['set'] <= storage['maximum']
+                    for storage in callback['storage'])
+                and not callback['reversible'] and callback.get('native_rule') is None
+                and callback.get('monk_reward') is None
+                and all(effects.get(field) is None for field in (
+                    'portals', 'item_cycle', 'encounter', 'reward_door',
+                    'party_transfer', 'outfit_reward')), context + ': incompatible completion')
     outfit = effects.get('outfit_reward')
     if outfit is not None:
         fields(outfit, {'outfit','addons'}, {'outfit','addons'}, context + ': outfit reward')

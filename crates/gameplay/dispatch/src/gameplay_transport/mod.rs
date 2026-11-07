@@ -151,6 +151,7 @@ mod pvp_live;
 mod quest_admission;
 mod quest_callbacks;
 mod quest_kill_objectives;
+mod quest_kills;
 mod quest_log_source;
 mod raid_live;
 mod raid_live_world;
@@ -585,6 +586,9 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     /// Origin of the owner clock cooldowns are measured on: process-local and monotonic, never a
     /// client or wall-clock time (spell cast §2).
     pub clock_origin: std::time::Instant,
+    /// Explicit receipt rollout configuration for isolated composed-owner fixtures.
+    #[cfg(test)]
+    pub test_step_wait_receipts: Option<bool>,
     pub states: std::sync::Arc<channel_states::ChannelSessionStates>,
     /// Exact native owners retained for committed activity entry, return and recovery.
     pub activity_runtimes: std::sync::Arc<activity_runtime::ActivityRuntimeRegistry<'a>>,

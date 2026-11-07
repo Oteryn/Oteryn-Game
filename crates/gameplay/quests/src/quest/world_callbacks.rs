@@ -248,6 +248,8 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
                     || source.starts_with("canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:")
                     || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
+                    || (callback.effects.outfit_reward.is_some()
+                        && source.starts_with("crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:"))
                     || (callback.quest == super::kill_objectives::QUEST
                         && source == "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:2551-2580#sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca")
                     || (callback.effects.outfit_reward.is_some()

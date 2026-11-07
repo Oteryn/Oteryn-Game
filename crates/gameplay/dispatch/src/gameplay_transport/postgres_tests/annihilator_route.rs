@@ -266,19 +266,25 @@ fn run(route: Route) -> TestResult {
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner_from(&h.root, &h.node, &authority);
         owner.active_generation = Some(generation);
+        owner.test_step_wait_receipts = Some(true);
         owner.movement_cells = &cells;
-        owner.quest_catalogue = Some(std::sync::Arc::new(
-            oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
-                .map_err(debug)?
-                .catalogue()
-                .clone(),
-        ));
+        let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(debug)?;
+        let journal = oteryn_gameplay_quests::quest::log::loader::load_embedded_quest_log(&lowered)?;
+        owner.quest_log_content = Some(
+            crate::gameplay_transport::quest_log::QuestLogLines::new(journal.content)
+                .ok_or("journal line bounds")?,
+        );
+        owner.quest_catalogue = Some(std::sync::Arc::new(lowered.catalogue().clone()));
         let offered =
             crate::gameplay_transport::connection::FreshAdmissionAuthority::offered_capabilities(
                 &owner,
             );
         let mut pending =
             vec![oteryn_protocol_oteryn::world_object::CAPABILITY_WORLD_INTERACTION_V1];
+        if matches!(route, Route::ElvenbaneComplete) {
+            pending.push(oteryn_protocol_oteryn::quest_log::CAPABILITY_QUEST_LOG_V1);
+        }
         if combat {
             pending.push(oteryn_protocol_oteryn::attack::CAPABILITY_ATTACK_V1);
         }
