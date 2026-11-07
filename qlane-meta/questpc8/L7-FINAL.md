@@ -1,3 +1,8 @@
+Voodoo chosen programme now QUALIFIED: PG RED2.85s/GREEN40.271014027s,
+exact native two-box grants, final checks/strict Clippy/fmt/generator/pins passed.
+Ten of23 L7 entries QUALIFIED,13 remain. Current QUEST-STATUS.json supersedes
+the historical run below. See cloud-voodoo-proof.json.
+
 Kormarak chosen programme now QUALIFIED: PG RED2.52s/GREEN36.476644642s,
 final check/strict Clippy/fmt/40-file drift/pin refresh passed. Nine of23 L7
 entries QUALIFIED,14 remain. See current QUEST-STATUS.json and cloud-kormarak-proof.json.

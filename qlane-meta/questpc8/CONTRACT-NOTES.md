@@ -114,3 +114,19 @@ Native Mastermind candidate box32216,31168,z11 appearance2473 ordinal1 has no
 UID. The second cache was not identified in the bounded scan; choose/document
 a conservative native cache when implementing that entry, rather than prolonging
 this investigation. Chosen: https://tibia.fandom.com/index.php?curid=18595&oldid=289008
+
+Mastermind conservative restoration decision: retain the actual Formorgar box
+at32216,31168,z11, appearance2473 ordinal1, no UID. The second historical box
+is absent in the bounded retained-map scan. Bind its concealed fire-side cache
+to the retained unlit campfire32216,31172,z11, appearance2001 ordinal1, no UID.
+This is an explicitly authored cache alias; it does not assert that the source
+campfire was a reward box. Leave its appearance/light state intact. Separate
+route thresholds32216,31170 and32215,31172,z11 preserve the ordered two-route,
+two-cache graph. Verified bare native approach cells32215,31170;32216,31170;
+32216,31169;32216,31171;32216,31172;32215,31172 avoid the nearby troughs.
+Premium gates both route advancement and grants. First cache selects potion7440x1
+and perch7159x1; final cache selects potion7440x1, trout7158x2 and consolidated
+201gold3031 as100+100+1 bounded outputs. Avoiding Nightmares remains advice,
+not a kill requirement. No new world object, fake UID, charge or duration state.
+Chosen base: https://tibia.fandom.com/index.php?curid=17060&oldid=842378
+Chosen route: https://tibia.fandom.com/index.php?curid=18595&oldid=289008

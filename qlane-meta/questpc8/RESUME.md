@@ -1,5 +1,22 @@
 # questpc8 — AUTHORING
 
+Voodoo QUALIFIED: PG RED2.85s/GREEN40.271014027s. Three native Witch deaths,
+both retained boxes, king doll3209 and unlit wand3046, exact completion/replay.
+One new native custody profile3209; no existing profiles changed/removed.
+Final check80s, strict Clippy195s, fmt,40-file generator drift and pin-refresh
+passed. See cloud-voodoo-proof.json. Push this slice immediately.
+Next Mastermind scaffold /tmp/questpc8-mastermind-scaffold.py is prepared but
+NOT applied. It changes only fixture/mount/test files; apply after Voodoo push,
+format, run questpc8_mastermind_two_native_caches_premium_and_exact_201_gold
+RED before adding callback records. Exact conservative campfire-cache choice
+and verified native approach cells are documented in CONTRACT-NOTES.md.
+After Mastermind, Life Ring source bridge must compose scene edits and actor
+movement atomically. Fresh refs searched: qengine2 0cf799d19; questpc2 97c922c33;
+questpc3 c2e4b0940; questpc4 83b747db6; questpc5 168396478; questpc6 f91534062;
+questpc7 1b2190942. No quest-callback relocation implementation found in those
+Quest/dispatch/world callback paths. Reuse existing scene/runtime movement
+owners and implement the composition here; do not wait on another lane.
+
 Kormarak QUALIFIED: PG RED2.52s, required authored-provenance marker repair
 and unit passed, GREEN36.476644642s. Native body ordinal2, two exploration
 milestones, actual spawned Demon Skeleton and exact four rewards/replay.
@@ -23,10 +40,10 @@ blakinio <75369544+blakinio@users.noreply.github.com>; required Claude coauthor 
 session trailers still apply. Never main/force/PR. Push each green slice and at
 least every30minutes. Earlier publication bans and /home/mole paths are obsolete.
 
-Scope: LANE-L7.json,23 entries. Nine QUALIFIED: Killing in the Name of,
-Braindeath, Tinder Box, Mintwallin, Giant Smithhammer and Kormarak here; Triangle Tower, Waterfall and Vampire
+Scope: LANE-L7.json,23 entries. Ten QUALIFIED: Killing in the Name of,
+Braindeath, Tinder Box, Mintwallin, Giant Smithhammer, Kormarak and Voodoo here; Triangle Tower, Waterfall and Vampire
 Shield elsewhere. Smith guardian PG and final checks are green;
-14 entries remain. Non-L7 historical rows are not scope.
+13 entries remain. Non-L7 historical rows are not scope.
 Exclusions Dawnport, W14/P23/X01-X06; Father's eleven-track acceptance remains
 one atomic write, grants charge only on an exact match. No binaries/reference
 copies, workflows or tools/repository edits. No full workspace/PG/nextest runs.
@@ -53,7 +70,7 @@ A prior automatic merge9bfdafcfc used the repository's default author; retain
 published history. Local identity was corrected. New merges must use explicit
 attributed commits and trailers, never a silent default merge commit.
 
-Next: Voodoo Doll and Mastermind Potion. Do not spend over ten minutes
+Next: Mastermind Potion and Life Ring. Do not spend over ten minutes
 on one fact. Document conservative authored choices in CONTRACT-NOTES.md.
 Kormarak actual dead human32342,32125,z10 appearance4240 ordinal2, no UID, was
 verified in retained B3. Four items3359/3354/3276/3287 already have admitted native

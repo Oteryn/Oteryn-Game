@@ -50,6 +50,19 @@ pub(super) fn source_world_rectangle_with_prefix(
     west: u16,
     prefix: &[u16],
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_rectangle_with_prefix_rows(chest, choices, appearance, height, west, prefix, &[chest.1])
+}
+
+/// Several native cache rows may share the same appearance and column.
+pub(super) fn source_world_rectangle_with_prefix_rows(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16)],
+    appearance: u16,
+    height: u16,
+    west: u16,
+    prefix: &[u16],
+    rows: &[u16],
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
@@ -112,7 +125,7 @@ pub(super) fn source_world_rectangle_with_prefix(
                 zones: Vec::new(),
                 items: if let Some((_, unique)) = choices
                     .iter()
-                    .find(|(placed, _)| *placed == x && y == chest.1)
+                    .find(|(placed, _)| *placed == x && rows.contains(&y))
                 {
                     std::iter::once(ground())
                         .chain(prefix.iter().enumerate().map(|(index, _)| sector::Item {
