@@ -1573,6 +1573,63 @@
       "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at 0fc546da09e407e4d346cab34c89c355f1005f2b; details in verification_components.latest_checked_source. Source identity checked before each slice",
       "test_code_commit": "0fc546da09e407e4d346cab34c89c355f1005f2b",
       "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
+    },
+    {
+      "name": "retail-travel-and-placement-qualification-24",
+      "state": "QUALIFIED",
+      "entries": [
+        "Captain Seahorse",
+        "Captain Max",
+        "Tarak (Inner)",
+        "Tarak (Sunken)"
+      ],
+      "scope": "Existing authored retail placements with exact native identity plus matching previously green PostgreSQL travel components; full source repair declarations were independently checked by the content catalogue test.",
+      "travel_component": {
+        "state": "QUALIFIED_COMPONENTS",
+        "source": "e2615554b; production source identical through current data-only slices",
+        "test": "npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
+        "duration_seconds": 127.59,
+        "marker": "POSTGRES_STARTED TRAVEL npc_paid_travel",
+        "routes": [
+          "captain_bluebear yalahar fare=200 arrival=(32816, 31272, 6)",
+          "captain_fearless yalahar fare=185 arrival=(32816, 31272, 6)",
+          "captain_greyhound yalahar fare=185 arrival=(32816, 31272, 6)",
+          "captain_max calassa fare=200 arrival=(31911, 32710, 6)",
+          "captain_max yalahar fare=400 arrival=(32804, 31270, 6)",
+          "captain_sinbeard yalahar fare=230 arrival=(32816, 31272, 6)",
+          "captain_seahorse oramond fare=200 arrival=(33479, 31985, 7)",
+          "charles liberty_bay fare=50 arrival=(32285, 32892, 6)",
+          "jack_fate goroma fare=0 arrival=(32161, 32558, 6)",
+          "karith ab'dendriel fare=160 arrival=(32734, 31668, 6)",
+          "captain_waverider peg leg fare=50 arrival=(32346, 32625, 7)",
+          "captain_waverider passage fare=200 arrival=(32131, 32913, 7)",
+          "captain_jack_rat safe fare=0 arrival=(33839, 31222, 5)",
+          "captain_seahorse venore fare=40 arrival=(32954, 32022, 6)",
+          "petros ankrahmun fare=100 arrival=(33092, 32883, 6)",
+          "petros issavi fare=130 arrival=(33902, 31462, 6)",
+          "tarak_inner monument tower fare=50 arrival=(32939, 31182, 7)",
+          "tarak_sunken passage fare=0 arrival=(32916, 31199, 7)"
+        ],
+        "log": "/tmp/npcfix-evidence/npcfix-existing-travel-proof.log",
+        "log_sha256": "134394de26bd32fd1daaa24345b7fad0294d26f4af5b1ce66f9089dd3941e507",
+        "scope": "Existing generic travel real-command coverage, durable fare/arrival/replay and refusal assertions. No extra availability, destination or physical source-cell qualification inferred."
+      },
+      "identity_note": "Tarak location qualifiers are audit labels. Both exact display_name source fields require Tarak; the PG native assertion retains that literal.",
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 47.16,
+        "log": "/tmp/npcfix-evidence/retail-travel-and-placement-qualification-24-red.log",
+        "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
+      },
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 134.5,
+        "log": "/tmp/npcfix-evidence/retail-travel-and-placement-qualification-24-green.log",
+        "cumulative_cases": 140
+      },
+      "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at 0fc546da09e407e4d346cab34c89c355f1005f2b; details in verification_components.latest_checked_source. Source identity checked before each slice",
+      "test_code_commit": "7a0d7c335f0404915a92497b8c74f0b567422967",
+      "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
     }
   ],
   "incoming_six_cells": {
@@ -1925,112 +1982,67 @@
     }
   },
   "active_batch": {
-    "name": "retail-service-and-placement-qualification-23",
+    "name": "retail-travel-and-placement-qualification-24",
     "state": "QUALIFIED",
     "entries": [
-      "Benjamin",
-      "Robson",
-      "A Ghostly Guardian",
-      "Romella",
-      "Pugwah"
+      "Captain Seahorse",
+      "Captain Max",
+      "Tarak (Inner)",
+      "Tarak (Sunken)"
     ],
-    "scope": "Existing authored retail placements with exact native identity plus matching previously green PostgreSQL service components; full source repair declarations were independently checked by the content catalogue test.",
-    "service_component": {
+    "scope": "Existing authored retail placements with exact native identity plus matching previously green PostgreSQL travel components; full source repair declarations were independently checked by the content catalogue test.",
+    "travel_component": {
       "state": "QUALIFIED_COMPONENTS",
-      "npc_keys": [
-        "oteryn:npc.benjamin",
-        "oteryn:npc.liane",
-        "oteryn:npc.ray",
-        "oteryn:npc.robson",
-        "oteryn:npc.alesar",
-        "oteryn:npc.nah_bob",
-        "oteryn:npc.rashid",
-        "oteryn:npc.kasmir",
-        "oteryn:npc.albinius",
-        "oteryn:npc.a_ghostly_guardian",
-        "oteryn:npc.flint",
-        "oteryn:npc.romella",
-        "oteryn:npc.pugwah"
+      "source": "e2615554b; production source identical through current data-only slices",
+      "test": "npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
+      "duration_seconds": 127.59,
+      "marker": "POSTGRES_STARTED TRAVEL npc_paid_travel",
+      "routes": [
+        "captain_bluebear yalahar fare=200 arrival=(32816, 31272, 6)",
+        "captain_fearless yalahar fare=185 arrival=(32816, 31272, 6)",
+        "captain_greyhound yalahar fare=185 arrival=(32816, 31272, 6)",
+        "captain_max calassa fare=200 arrival=(31911, 32710, 6)",
+        "captain_max yalahar fare=400 arrival=(32804, 31270, 6)",
+        "captain_sinbeard yalahar fare=230 arrival=(32816, 31272, 6)",
+        "captain_seahorse oramond fare=200 arrival=(33479, 31985, 7)",
+        "charles liberty_bay fare=50 arrival=(32285, 32892, 6)",
+        "jack_fate goroma fare=0 arrival=(32161, 32558, 6)",
+        "karith ab'dendriel fare=160 arrival=(32734, 31668, 6)",
+        "captain_waverider peg leg fare=50 arrival=(32346, 32625, 7)",
+        "captain_waverider passage fare=200 arrival=(32131, 32913, 7)",
+        "captain_jack_rat safe fare=0 arrival=(33839, 31222, 5)",
+        "captain_seahorse venore fare=40 arrival=(32954, 32022, 6)",
+        "petros ankrahmun fare=100 arrival=(33092, 32883, 6)",
+        "petros issavi fare=130 arrival=(33902, 31462, 6)",
+        "tarak_inner monument tower fare=50 arrival=(32939, 31182, 7)",
+        "tarak_sunken passage fare=0 arrival=(32916, 31199, 7)"
       ],
-      "test": "npcfix_postgres_dispatch_services_and_replay",
-      "postgres_markers": 13,
-      "duration_seconds": 941.85,
-      "log": "/tmp/npcfix-evidence/npcfix-existing-service-proof.log",
-      "log_sha256": "bb1cf3cbbfe2212db5b479c842d792a063562dfa2e4a31fd5b93006e0e5fbc9c",
-      "binary_source": "9fd5ca426",
-      "scope": "Native command/ordinary chat, shop windows, durable trades, quest/rank restrictions, default charge/state purchases, healing and exact replay as asserted by the existing thirteen-case fixture. Physical cell qualification remains separate.",
-      "source_reuse": "Original13 keys and every assertion retained; only suite parameterization and three exact item+Buy-side selector strengthenings. Core NPC trade/service paths unchanged. New5 postal cases PASS456.20s verifies the shared strengthened postal branch. New quest-only1146/1147 validated independently upstream; no original migrations rewritten.",
-      "additional_travel_component": {
-        "state": "QUALIFIED_COMPONENTS",
-        "source": "e2615554b; production source identical through current data-only slices",
-        "test": "npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
-        "duration_seconds": 127.59,
-        "marker": "POSTGRES_STARTED TRAVEL npc_paid_travel",
-        "routes": [
-          "captain_bluebear yalahar fare=200 arrival=(32816, 31272, 6)",
-          "captain_fearless yalahar fare=185 arrival=(32816, 31272, 6)",
-          "captain_greyhound yalahar fare=185 arrival=(32816, 31272, 6)",
-          "captain_max calassa fare=200 arrival=(31911, 32710, 6)",
-          "captain_max yalahar fare=400 arrival=(32804, 31270, 6)",
-          "captain_sinbeard yalahar fare=230 arrival=(32816, 31272, 6)",
-          "captain_seahorse oramond fare=200 arrival=(33479, 31985, 7)",
-          "charles liberty_bay fare=50 arrival=(32285, 32892, 6)",
-          "jack_fate goroma fare=0 arrival=(32161, 32558, 6)",
-          "karith ab'dendriel fare=160 arrival=(32734, 31668, 6)",
-          "captain_waverider peg leg fare=50 arrival=(32346, 32625, 7)",
-          "captain_waverider passage fare=200 arrival=(32131, 32913, 7)",
-          "captain_jack_rat safe fare=0 arrival=(33839, 31222, 5)",
-          "captain_seahorse venore fare=40 arrival=(32954, 32022, 6)",
-          "petros ankrahmun fare=100 arrival=(33092, 32883, 6)",
-          "petros issavi fare=130 arrival=(33902, 31462, 6)",
-          "tarak_inner monument tower fare=50 arrival=(32939, 31182, 7)",
-          "tarak_sunken passage fare=0 arrival=(32916, 31199, 7)"
-        ],
-        "log": "/tmp/npcfix-evidence/npcfix-existing-travel-proof.log",
-        "log_sha256": "134394de26bd32fd1daaa24345b7fad0294d26f4af5b1ce66f9089dd3941e507",
-        "scope": "Existing generic travel real-command coverage, durable fare/arrival/replay and refusal assertions. No extra availability, destination or physical source-cell qualification inferred."
-      },
-      "source_comparison": {
-        "source_commit": "0fd218694172109f2e2fb90835c6efd78029f468",
-        "source_path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_postage.rs",
-        "original_case_count": 13,
-        "original_keys_preserved": true,
-        "all_original_assertions_preserved": true,
-        "normalized_body_identical": true,
-        "normalization": "Only remove the new parcel/letter reference lookup and reverse three strict identity+Buy-side predicate additions. Every other original scenario byte retained.",
-        "selector_strengthening": "Nelly has other merchandise at postal prices; both parcel price lookups and discounted letter assertion now also require the exact item reference and Buy side.",
-        "compiled_fixture_sha256": "80f76d0edc15c3addf86bba5ecff73b069d985c689a3a45196f0aefe3a39d83b",
-        "scenario_body_sha256": "ae300b429fae797bd98e4084785b02853908564494c80d93f22fa07119c656ae",
-        "new_case_keys": [
-          "olrik",
-          "chemar",
-          "chrystal",
-          "fyodor",
-          "nelly"
-        ]
-      }
+      "log": "/tmp/npcfix-evidence/npcfix-existing-travel-proof.log",
+      "log_sha256": "134394de26bd32fd1daaa24345b7fad0294d26f4af5b1ce66f9089dd3941e507",
+      "scope": "Existing generic travel real-command coverage, durable fare/arrival/replay and refusal assertions. No extra availability, destination or physical source-cell qualification inferred."
     },
+    "identity_note": "Tarak location qualifiers are audit labels. Both exact display_name source fields require Tarak; the PG native assertion retains that literal.",
     "red": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 47.22,
-      "log": "/tmp/npcfix-evidence/retail-service-and-placement-qualification-23-red.log",
+      "seconds": 47.16,
+      "log": "/tmp/npcfix-evidence/retail-travel-and-placement-qualification-24-red.log",
       "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
     },
     "green": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 104.81,
-      "log": "/tmp/npcfix-evidence/retail-service-and-placement-qualification-23-green.log",
-      "cumulative_cases": 136
+      "seconds": 134.5,
+      "log": "/tmp/npcfix-evidence/retail-travel-and-placement-qualification-24-green.log",
+      "cumulative_cases": 140
     },
     "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at 0fc546da09e407e4d346cab34c89c355f1005f2b; details in verification_components.latest_checked_source. Source identity checked before each slice",
-    "test_code_commit": "0fc546da09e407e4d346cab34c89c355f1005f2b",
+    "test_code_commit": "7a0d7c335f0404915a92497b8c74f0b567422967",
     "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
   },
   "counts": {
     "PENDING": 16,
-    "QUALIFIED": 147,
+    "QUALIFIED": 151,
     "EXCLUDED": 24,
-    "AUTHORED; QUALIFICATION PENDING": 130,
+    "AUTHORED; QUALIFICATION PENDING": 126,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
   },
@@ -2587,8 +2599,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored. Enable Venore40 with carried scarab-cheese guard.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/56; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:811",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-travel-and-placement-qualification-24",
+        "postgres_red_seconds": 47.16,
+        "postgres_green_seconds": 134.5,
+        "scope": "Existing authored retail placements with exact native identity plus matching previously green PostgreSQL travel components; full source repair declarations were independently checked by the content catalogue test."
+      }
     },
     {
       "npc": "Chief Grarkharok",
@@ -3733,8 +3751,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored. Yalahar400 route with started-Yalahar quest gate; correct scene identities; no Postman discount.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/54; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:625; content/services/travel/travel-00000-00058.json:1#/records/12",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-travel-and-placement-qualification-24",
+        "postgres_red_seconds": 47.16,
+        "postgres_green_seconds": 134.5,
+        "scope": "Existing authored retail placements with exact native identity plus matching previously green PostgreSQL travel components; full source repair declarations were independently checked by the content catalogue test."
+      }
     },
     {
       "npc": "Captain Waverider",
@@ -5958,8 +5982,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored. Monument Tower50 route; passage/trip keyword aliases; displayed name Tarak.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/302; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:2596; content/services/travel/travel-00000-00058.json:1#/records/50",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-travel-and-placement-qualification-24",
+        "postgres_red_seconds": 47.16,
+        "postgres_green_seconds": 134.5,
+        "scope": "Existing authored retail placements with exact native identity plus matching previously green PostgreSQL travel components; full source repair declarations were independently checked by the content catalogue test."
+      }
     },
     {
       "npc": "Tarak (Sunken)",
@@ -5967,8 +5997,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored. Free return passage; displayed name Tarak.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/303; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:2609; content/services/travel/travel-00000-00058.json:1#/records/51",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-travel-and-placement-qualification-24",
+        "postgres_red_seconds": 47.16,
+        "postgres_green_seconds": 134.5,
+        "scope": "Existing authored retail placements with exact native identity plus matching previously green PostgreSQL travel components; full source repair declarations were independently checked by the content catalogue test."
+      }
     },
     {
       "npc": "Xorlosh",
