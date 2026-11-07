@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "scope": "Reusable native USE of source dropdown435, including the Devil Helmet pressure-created grate; whole Devil field/combat route remains active.",
+  "source": {
+    "url": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data/scripts/actions/items/ladder_up.lua",
+    "sha256": "730bc7664484e953b6efc3c8faeba9936d355c5cdde91d1f3e0686f714f4df13",
+    "rule": "435 uses item x/y, source z+1; current PZ lock rejects a protected destination."
+  },
+  "postgres": {
+    "filter": "questpc5_devil_projected_grate_native_use",
+    "red_seconds": 54.16,
+    "red_marker_seconds": 54.154389131,
+    "red_error": "NothingToUse instead of Committed for actual map-added435 USE",
+    "green_seconds": 55.98,
+    "green_marker_seconds": 55.976120714,
+    "marker": "POSTGRES_CASE_COMPLETED devil-helmet-pressure success=true",
+    "assertions": [
+      "second actual player steps onto source plate while the USE actor is at remote435",
+      "exact landing32482,32170,z15",
+      "out-of-reach refusal preserves position",
+      "same command replay preserves exact committed movement snapshot",
+      "plate holder retirement removes435; stale identity refuses without movement",
+      "original create/remove/creature/relocation/retirement/idempotence assertions retained",
+      "quest state and durable quest receipts unchanged"
+    ]
+  },
+  "runtime": "Ordinary item USE lane/gate and current durable inventory fence, current composed map identity, player control/trade guards, native sealed landing/occupancy/PZ proof and standard special-movement/underwater staging. No quest, reward or inventory mutation.",
+  "checks": {
+    "cargo_fmt": "PASS",
+    "cargo_check_dispatch": "PASS19.72s",
+    "strict_clippy_dispatch_all_targets_all_features": "PASS62s",
+    "world_inputs": "unchanged; retained pin-check digest3fe4f02d9c01f2933270d2871b6f20095341a22c5a180dabbf93dfc27e5523f9"
+  }
+}

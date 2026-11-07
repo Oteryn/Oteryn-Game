@@ -278,6 +278,16 @@ fn world_remote(
         let mut extra = required.positions.clone();
         extra.extend(required.eject);
         extra.extend(callback.occupancy_items.iter().map(|i| i.position));
+        extra.extend(
+            callback
+                .occupancy_items
+                .iter()
+                .filter(|i| i.appearance == 435)
+                .map(|i| Position {
+                    floor: i.position.floor - 1,
+                    ..i.position
+                }),
+        );
         for p in extra {
             for x in p.x - 2..=p.x + 2 {
                 for y in p.y - 1..=p.y + 1 {

@@ -9,6 +9,8 @@ pub(super) mod drome_cube;
 #[path = "item_use_gourmet.rs"]
 pub(super) mod gourmet;
 
+mod map_utility;
+
 use std::num::NonZeroU32;
 use std::time::Duration;
 
@@ -451,6 +453,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read_item_use_inventory(self.character, self.holder, fence)
             .await
             .map_err(|_| UseDisposition::Rejected)?;
+        if let UseSource::Handle(key @ (ItemKey::MapAdded(_) | ItemKey::MapBase { .. })) = source {
+            return Ok(self.use_map_utility(&permit, actor, command, key).await);
+        }
         let source = match source {
             UseSource::Handle(ItemKey::Instance(id)) => id,
             UseSource::Handle(_) => return Err(UseDisposition::NothingToUse),

@@ -447,7 +447,7 @@
     "title": "Devil Helmet Quest",
     "mechanism": "paired_portals_stepout_remote_predicates",
     "status": "UNFINISHED",
-    "blocker": "Active whole-route composition: source prerequisites/eligibility, native combat and all exact acquisitions. Pressure and exact source key-door mechanisms are delivered and PG-green.",
+    "blocker": "Active whole-route composition: actual static2123 removal with Destroy Field3148 and exact source1Dragon/3MinotaurGuards combat. All five acquisitions, keyed/level access, player pressure and native projected-grate435 USE are delivered with real PG proof.",
     "from_lanes": [
       "questpc",
       "questpc6"
@@ -487,10 +487,18 @@
         "duration_seconds": 82.96,
         "scope": "Five exact Devil Helmet acquisitions: keys3610/3667 and three once treasures. Whole utility/grate/combat route remains active.",
         "proof": "cloud-devil-source-acquisitions-proof.json"
+      },
+      {
+        "filter": "questpc5_devil_projected_grate_native_use",
+        "result": "PASS",
+        "duration_seconds": 55.98,
+        "scope": "Actual second-player-held pressure-created435 native USE, exact descent, replay, reach refusal and stale identity; whole field/combat remains active.",
+        "proof": "cloud-devil-grate-proof.json"
       }
     ],
     "source_key_access_evidence": "cloud-helmet-source-keys-proof.json",
-    "source_level_access_evidence": "cloud-helmet-levels-proof.json"
+    "source_level_access_evidence": "cloud-helmet-levels-proof.json",
+    "source_grate_use_evidence": "cloud-devil-grate-proof.json"
   },
   {
     "canonical": "oteryn:quest.formogar_mine_hoist",

@@ -315,6 +315,7 @@ pub(super) async fn exercise(
             map.facts.movement_items(at).is_empty(),
             "forced relocation cleans up without StepOut"
         );
+        projected_grate_use(owner, admitted, actor, trigger, at).await?;
         tokio::time::sleep(std::time::Duration::from_millis(210)).await;
         super::qengine_access::step(owner, admitted, 4, StepDirection::East).await?;
         assert_eq!(map.facts.movement_items(at).len(), 1);
@@ -349,4 +350,194 @@ pub(super) async fn exercise(
         receipts
     );
     Ok(())
+}
+
+async fn projected_grate_use(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    actor: ExactActorRef,
+    trigger: Position,
+    at: crate::map::overlay::TilePos,
+) -> TestResult {
+    let map = owner.bundle_map().ok_or("map")?;
+    let grate = Position {
+        x: at.x,
+        y: at.y,
+        floor: at.floor,
+    };
+    super::quest_catalogue_chests::relocate_source_actor(owner, admitted, actor, grate).await?;
+    let partner = {
+        let mut runtime = owner.runtime.lock().await;
+        let from = Position {
+            x: trigger.x - 1,
+            ..trigger
+        };
+        let (partner, session) = admit_player(&mut runtime, 97, from)?;
+        let expected = runtime.read_actor_position(partner).map_err(debug)?;
+        let closed = crate::map::floor::BundleDoors(map.facts.doors());
+        let proof = crate::map::floor::prepare_bundle_step(
+            &runtime,
+            owner.movement_cells,
+            partner,
+            session,
+            expected,
+            crate::movement::CardinalStep::East,
+            false,
+            &closed,
+        )
+        .map_err(debug)?;
+        runtime.commit_source_step(proof).map_err(debug)?;
+        partner
+    };
+    refresh(owner, admitted.game_session_id).await?;
+    let entry = map
+        .facts
+        .movement_items(at)
+        .into_iter()
+        .next()
+        .ok_or("created grate")?;
+    let crate::map::view::EntrySource::Added(id) = entry.source else {
+        return Err("owned grate identity".into());
+    };
+    let command = crate::gameplay_transport::connection::UseCommand {
+        game_session_id: admitted.game_session_id,
+        command_id: 9001,
+        item_fence: admitted.item_fence,
+    };
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+    let key = crate::gameplay_transport::item_view::ItemKey::MapAdded(id.get());
+    let far = Position {
+        x: grate.x + 2,
+        ..grate
+    };
+    super::quest_catalogue_chests::relocate_source_actor(owner, admitted, actor, far).await?;
+    let refused = owner
+        .use_backpack_item(
+            actor,
+            crate::gameplay_transport::connection::UseCommand {
+                command_id: 9000,
+                ..command
+            },
+            key,
+        )
+        .await;
+    assert_eq!(refused.disposition, UseDisposition::TooFar);
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        super::quest_world_callbacks::local(far)
+    );
+    super::quest_catalogue_chests::relocate_source_actor(owner, admitted, actor, grate).await?;
+    let outcome = owner
+        .use_backpack_item(
+            actor,
+            command,
+            crate::gameplay_transport::item_view::ItemKey::MapAdded(id.get()),
+        )
+        .await;
+    assert_eq!(
+        outcome.disposition,
+        oteryn_protocol_oteryn::world_object::UseDisposition::Committed,
+        "native USE of source projected grate"
+    );
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        super::quest_world_callbacks::local(Position {
+            floor: grate.floor - 1,
+            ..grate
+        })
+    );
+    let landed = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?;
+    assert_eq!(
+        owner
+            .use_backpack_item(actor, command, key)
+            .await
+            .disposition,
+        UseDisposition::Committed
+    );
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?,
+        landed,
+        "replay does not descend twice"
+    );
+    owner
+        .runtime
+        .lock()
+        .await
+        .remove_test_actor(partner)
+        .map_err(debug)?;
+    refresh(owner, admitted.game_session_id).await?;
+    assert!(map.facts.movement_items(at).is_empty());
+    assert_eq!(
+        owner
+            .use_backpack_item(
+                actor,
+                crate::gameplay_transport::connection::UseCommand {
+                    command_id: 9002,
+                    ..command
+                },
+                key
+            )
+            .await
+            .disposition,
+        UseDisposition::StaleState,
+        "removed projected identity cannot move a player"
+    );
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?,
+        landed
+    );
+
+    super::quest_catalogue_chests::relocate_source_actor(
+        owner,
+        admitted,
+        actor,
+        Position {
+            x: trigger.x - 1,
+            ..trigger
+        },
+    )
+    .await?;
+    Ok(())
+}
+
+#[test]
+fn questpc5_devil_projected_grate_native_use() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::qengine_access::scenario(
+        "devil-helmet-pressure",
+        Position {
+            x: 32468,
+            y: 32119,
+            floor: -14,
+        },
+    )
 }
