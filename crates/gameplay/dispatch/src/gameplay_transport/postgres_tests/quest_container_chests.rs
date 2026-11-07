@@ -14,6 +14,7 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 #[derive(Clone, Copy)]
 enum Case {
+    BeginningCoat,
     Bear,
     Key,
     Choice,
@@ -39,6 +40,22 @@ fn execute(case: Case, marker: &'static str) -> TestResult {
         .map_err(|_| "reward container scenario panicked")??;
     println!("{marker} POSTGRES_CASE_COMPLETED");
     Ok(())
+}
+
+#[test]
+fn questpc3_beginning_coat_chest_mints_once_and_drains_obligation() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("QUESTPC3_BEGINNING_COAT_CHEST POSTGRES_SKIPPED no_admin_url");
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result = execute(Case::BeginningCoat, "QUESTPC3_BEGINNING_COAT_CHEST");
+    eprintln!(
+        "QUESTPC3_BEGINNING_COAT_CHEST POSTGRES_CASE_COMPLETED duration_ms={} success={}",
+        started.elapsed().as_millis(),
+        result.is_ok()
+    );
+    result
 }
 
 #[test]
@@ -103,6 +120,13 @@ fn definition(key: &str) -> TypedDefinitionRef {
 
 fn scenario(case: Case) -> TestResult {
     let (claim, chest, unique, root_key, expected) = match case {
+        Case::BeginningCoat => (
+            "oteryn:reward-claim.kv.beginning_coat",
+            (32032, 32276, -5),
+            50080,
+            "oteryn:item.tibia.i3562",
+            vec![],
+        ),
         Case::DemonBoots => (
             "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots",
             (33313, 31574, -15),
@@ -213,6 +237,7 @@ fn scenario(case: Case) -> TestResult {
             let appearance = match case {
                 Case::Text | Case::RootText => 4240,
                 Case::CrystalKey => 2474,
+                Case::BeginningCoat => 7757,
                 _ => 2472,
             };
             source_world(chest, unique, appearance, 0)?
@@ -221,6 +246,11 @@ fn scenario(case: Case) -> TestResult {
             world.base().as_ref(),
             &|_| true,
         )?;
+        if matches!(case, Case::BeginningCoat) {
+            eprintln!(
+                "QUESTPC3_BEGINNING_COAT_CHEST POSTGRES_ASSERTION_REACHED source_uid=50080 appearance=7757"
+            );
+        }
         assert!(
             report.served.iter().any(|row| row.key.as_str() == claim),
             "source claim did not bind"
@@ -492,7 +522,20 @@ fn scenario(case: Case) -> TestResult {
                 owner.active_generation = Some(generation);
                 owner.movement_cells = &cells;
                 owner.admit_progression_session(&mut admitted).await;
+                if matches!(case, Case::BeginningCoat) {
+                    owner.quest_catalogue = Some(std::sync::Arc::new(
+                        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state(
+                            "content-1",
+                        )
+                        .map_err(debug)?
+                        .catalogue()
+                        .clone(),
+                    ));
+                }
                 deps.initialize(&owner).await;
+                if matches!(case, Case::BeginningCoat) {
+                    owner.admit_quest_session(&admitted).await;
+                }
                 if cold_replay {
                     assert_eq!(
                         wire_use_targets(&owner, admitted, &[(1, &target)]).await?,
@@ -511,6 +554,36 @@ fn scenario(case: Case) -> TestResult {
                             (CommandStatus::DuplicateReplay, UseDisposition::Committed),
                             (CommandStatus::Accepted, UseDisposition::NothingToUse),
                         ]
+                    );
+                }
+                if matches!(case, Case::BeginningCoat) {
+                    owner
+                        .refresh_quest_session(admitted.game_session_id, false)
+                        .await;
+                    let progress = harness
+                        .root
+                        .read_character_quest_state(&authority, fence.character_id)
+                        .await
+                        .map_err(debug)?;
+                    assert_eq!(
+                        progress
+                            .tracks()
+                            .get(oteryn_gameplay_quests::quest::beginning::GREET)
+                            .copied(),
+                        Some(3)
+                    );
+                    let journal =
+                        "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log";
+                    assert_eq!(
+                        progress.tracks().get(journal).copied().unwrap_or(0),
+                        0,
+                        "source chest does not write log3"
+                    );
+                    let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1")
+                        .bind("oteryn:quest-transition/kv/beginning_coat/chest").fetch_one(&harness.pool).await?;
+                    assert_eq!(
+                        receipts, 1,
+                        "cold replay cannot duplicate the source chest milestone"
                     );
                 }
                 let bag = harness

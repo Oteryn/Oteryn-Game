@@ -851,112 +851,99 @@
       }
     ],
     "current_batch": {
-      "id": "equipment-feyrist-native-merge",
-      "phase": "GREEN; commit and fast-forward publication now",
-      "local_green": "cc773c1f7e55b999141f53ea08f6c4c2144e0c87",
-      "incoming": "0874c26945d3680a96bee9c38027e75c97063688",
-      "scope": "Retain canonical equipment/level admission and qualified tutorial source rewards; add all incoming map/final physical contracts, native light/teeth/bag admissions and3NPCplacements. Preserve existing source profiles and regenerate derived witnesses only through tools.",
-      "push_retry": "Prior push rejected non-fast-forward when remote moved to0874c26945d3680a96bee9c38027e75c97063688; committed localGREENcc773c1f7 and continuing merge, never force.",
-      "whole_entry_status": "Four owned whole quests remain IN_PROGRESS; no new whole qualification inferred from component tests.",
+      "id": "beginning-coat-chest-01",
+      "phase": "GREEN; commit and fast-forward push now",
+      "scope": "Source UID50080 sturdy chest7757 at32032/32276/5 -> one coat3562 once + existing Quest obligation to SantiagoGreet3; preserve journal and prove cold replay",
+      "red_log": "/tmp/questpc3-beginning-coat-chest-red.log",
+      "reuse": "Existing once RewardClaim MINT, chest-to-Quest PENDING obligations and Beginning catalogue extension; no new persistence writer",
+      "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L3540-L3543 sha256=7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4; questSystem1.lua:166-171 sourceGreet3/noLog3; Santiago expectscoat3562",
+      "assumption": "Chest table pilot omitted this container; NPC expects a coat and supplies one replacement. Unless nested map contents are recovered, conservative authored chest reward is exactly one coat; no extra container/rewards/XP.",
+      "whole_entry_status": "Beginning remainsIN_PROGRESS. Fourownedwholequestsremain; no engine deferral.",
+      "red": {
+        "log": "/tmp/questpc3-beginning-coat-chest-red.log",
+        "sha256": "257a9f31a729bdf159f1f645df4198d5f245cac9c24b365fca6dc7b679cce019",
+        "proof": "0passed/1failed52.72s; sourceUID50080/appearance7757 assertion marker andPOSTGRES_CASE_COMPLETED52717ms success=false; sourceclaimdidnotbind"
+      },
+      "transition_key": "oteryn:quest-transition/kv/beginning_coat/chest",
+      "implementation": "Existing generic once-MINT+PENDING quest obligation; source-authored claim through strict witness/Item checks, explicit closed native chest-key set added to existing exact binding validation, Beginning Greet-only transition; no new writer or schema migration.",
       "checks": {
-        "callback_units": {
-          "log": "/tmp/questpc3-equipment-feyrist-callback-units.log",
-          "sha256": "0c719a1cb4499e24a1f99012223f9dab5e476ec6fb61aad2074384252484823a",
-          "proof": "4passed1.16s"
+        "units": {
+          "log": "/tmp/questpc3-beginning-coat-chest-units.log",
+          "sha256": "a992fcd2a1d9d198bccec298d94be8ce3ebf7c0d9a4222ae10d3d34ad46e56a7",
+          "proof": "2Beginningunits1.14sPASS; Greet3only/noXP/completion"
         },
-        "profile_units": {
-          "log": "/tmp/questpc3-equipment-feyrist-profile-units.log",
-          "sha256": "abe62e1bfdb32d371db07d05633b21e35c7090931f18fd393e3c81729d511a75",
-          "proof": "15passed107.605s"
+        "authoring": {
+          "log": "/tmp/questpc3-beginning-coat-chest-authoring.log",
+          "sha256": "f695280765f6d2c3fbb8d6f205b3f64b2cb455e42b4ee7c6717f3c35a465b8ec",
+          "proof": "content regenerated anddriftcheckPASS"
         },
-        "authoring_units": {
-          "log": "/tmp/questpc3-equipment-feyrist-authoring-units.log",
-          "sha256": "be5a698653d422ef28ac0350a91ad1a92bba609cca3f9dbdde6be9f7365b5295",
-          "proof": "9passed10.677s"
+        "authoring-units": {
+          "log": "/tmp/questpc3-beginning-coat-chest-authoring-units.log",
+          "sha256": "e93c4c76ea0abaa4a6e604c76014ca04cfbb744656154db4488d59ffe60d83df",
+          "proof": "5scriptedchesttests10.839sPASS; sourceUID andnonadmittedrewardnegativeguards"
         },
-        "artifact": {
-          "log": "/tmp/questpc3-equipment-feyrist-artifact.log",
-          "sha256": "4b30bf3d13eb5d6f829af6e75a464a175f8b3bf695d2cdf687ab1c24b9b5f03d",
-          "proof": "loot_tables_sha25611cc1a947d5a6212570fb26ab2ea3126634831144650edcd6d50c80ed2fbde13"
-        },
-        "prey": {
-          "log": "/tmp/questpc3-equipment-feyrist-prey.log",
-          "sha256": "6b1e3b867fe26cdfe7bd93144c23fb3ed2a8745df77e9b4b636b7666d77c795e",
-          "proof": "PREY_DIFF_SIMULATION_COMPLETED cases15 creatures776;4derivedoutputs"
+        "reward-authoring-tests": {
+          "log": "/tmp/questpc3-beginning-coat-chest-reward-authoring-tests.log",
+          "sha256": "e9e9c13548b4906d5a1f55df9f15f7b8558394892647996fc5cb2ad96eae2569",
+          "proof": "27rewardauthoringtestsPASS; exactcomplete3chestbindings"
         },
         "native": {
-          "log": "/tmp/questpc3-equipment-feyrist-native.log",
+          "log": "/tmp/questpc3-beginning-coat-chest-native.log",
           "sha256": "b9cfaee5c12a30f2088b432476ec22d3e5d21fdd0776edd716d8812480dce754",
-          "proof": "41providers regenerated/check PASS"
+          "proof": "41nativeprovidersregen/checkPASS"
         },
         "fmt": {
-          "log": "/tmp/questpc3-equipment-feyrist-fmt.log",
+          "log": "/tmp/questpc3-beginning-coat-chest-fmt.log",
           "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "proof": "cargo fmt --all -- --check PASS"
+          "proof": "cargo fmt --all -- --checkPASS; mountedfile explicitlyrustfmt"
         },
         "check": {
-          "log": "/tmp/questpc3-equipment-feyrist-check.log",
-          "sha256": "9b713b70c51dc12f9ff4540f5bc2590bcc77af65d89b41f6a50a29fdae77156a",
-          "proof": "3changedcrates/allfeatures PASS1m27s"
+          "log": "/tmp/questpc3-beginning-coat-chest-check.log",
+          "sha256": "e86650095c7eaa5130566e1a0e10eb84c8acbe7bb62f3d250484cdb11ba366dd",
+          "proof": "dispatch/questsallfeaturesPASS30.20s"
         },
         "clippy": {
-          "log": "/tmp/questpc3-equipment-feyrist-clippy.log",
-          "sha256": "1f583e3046c77a3694e22279b8d68a3bd1892f13e875e79b6a1fbbbf226292f1",
-          "proof": "3changedcrates/allfeatures/alltargets -Dwarnings PASS1m32s"
+          "log": "/tmp/questpc3-beginning-coat-chest-clippy.log",
+          "sha256": "e60c3219a82165c2150b287e88d37f45821d84f57c407f8b029cc9215fdf33c5",
+          "proof": "dispatch/questsallfeatures/alltargets-DwarningsPASS1m18s"
+        },
+        "postgres_green": {
+          "log": "/tmp/questpc3-beginning-coat-chest-green.log",
+          "sha256": "012031d9804e272dbe4634fb7bb10495ad1e52ac6961ed6000c98a66ad9fc149",
+          "proof": "1passed72.27s; UID50080appearance7757 actualnativeUSE; POSTGRES_CASE_COMPLETED72265ms success=true; onecoat, Greet3only, onequestreceipt acrosscoldreplay"
         },
         "pin_refresh": {
-          "log": "/tmp/questpc3-equipment-feyrist-pin-refresh.log",
-          "sha256": "fd8258813be5ad9b7efcbcbb79140dfcf18695ddc0b90a021fe44b95ed234dff",
-          "proof": "inputs5a0915065c781aeb38945b17a04b119c4283268873432abb9e2f02aeee431fd3/world5feab142eb4a4387acf986fec44841e269c58848c4188160871945936863c973"
+          "log": "/tmp/questpc3-beginning-coat-chest-pin-refresh.log",
+          "sha256": "d442ba19bfb7360132754de3f94abab1e3170f9b38f71f65bf0bb381ae2b33d9",
+          "proof": "Repo tool PASS; world/inputdigest unchanged5a0915065c781aeb38945b17a04b119c4283268873432abb9e2f02aeee431fd3 /5feab142eb4a4387acf986fec44841e269c58848c4188160871945936863c973"
         },
-        "gear_pg": {
-          "log": "/tmp/questpc3-equipment-feyrist-gear-pg.log",
-          "sha256": "41a0b17e6eb57417ff02ad007d0efc44d6ec6f1c7be0e626e6916e9e419b2276",
-          "proof": "1passed145.67s; POSTGRES_CASE_COMPLETED145668ms success=true"
-        },
-        "maps_pg": {
-          "log": "/tmp/questpc3-equipment-feyrist-maps-pg.log",
-          "sha256": "9dcfe59c24199b9e87a274f961e91e5ba842355d76d64783bc4a40d51f39b53b",
-          "proof": "1passed155.16s; POSTGRES_CASE_COMPLETED155156ms;4exactphysicalexchanges/receipts"
-        },
-        "final_pg": {
-          "log": "/tmp/questpc3-equipment-feyrist-final-pg.log",
-          "sha256": "839c0b83c0828267d05c54ca339b4754a07e76fd7d626ffaca82eecb57c12ce8",
-          "proof": "1passed186.72s; POSTGRES_CASE_COMPLETED186717ms;flower/herb/carried/bagcontracts/4receipts"
+        "rapier": {
+          "log": "/tmp/questpc3-beginning-coat-chest-rapier.log",
+          "sha256": "bb21beb4abef66cea8c28e7ffe522144c2f251fc3f37aa3f38602e58fa98a490",
+          "proof": "1passed50.64s; actualPGcompletion50634ms; existingonceclaimandreplay unchanged"
         },
         "content": {
-          "log": "/tmp/questpc3-equipment-feyrist-content.log",
-          "sha256": "d87fc8b4ff7ff0b1133150744665206cdddd592b1ff1562ec491d049389e94c0",
-          "proof": "123passed3.23s"
-        },
-        "pin_check": {
-          "log": "/tmp/questpc3-equipment-feyrist-pin-check.log",
-          "sha256": "220fe5d906fb52704760ccea1ccf29f3b65b95210e9536028b4fec60fd17bf40",
-          "proof": "inputs5a0915065c781aeb38945b17a04b119c4283268873432abb9e2f02aeee431fd3/world5feab142eb4a4387acf986fec44841e269c58848c4188160871945936863c973/31102319bytes"
+          "log": "/tmp/questpc3-beginning-coat-chest-content.log",
+          "sha256": "6eb51641cc29b53a6a36d873c0d2f8b56d8fc282fa2b38732a6850719ddeae9e",
+          "proof": "123passed4.47s"
         },
         "repository": {
-          "log": "/tmp/questpc3-equipment-feyrist-repository.log",
-          "sha256": "21b18291dc6f8e298f180ec2c6cb3ae553232508c2b0848ccda6057b02e823f1",
-          "proof": "5passed68.16s"
+          "log": "/tmp/questpc3-beginning-coat-chest-repository.log",
+          "sha256": "517cd4721f01ad115eadd20973f59904a9750ce8a6074024fd6dd8a2a5946597",
+          "proof": "5passed75.84s"
+        },
+        "pin-check": {
+          "log": "/tmp/questpc3-beginning-coat-chest-pin-check.log",
+          "sha256": "220fe5d906fb52704760ccea1ccf29f3b65b95210e9536028b4fec60fd17bf40",
+          "proof": "PASSinputs5a0915065c781aeb38945b17a04b119c4283268873432abb9e2f02aeee431fd3/world5feab142eb4a4387acf986fec44841e269c58848c4188160871945936863c973/31102319bytes"
         }
       },
       "running": {
-        "pg_then_content_repository": 18307,
-        "final_pin_check": 15973,
-        "capacity_watcher": 96709
+        "rapier_content_repository": 9217,
+        "pin_check": 12503
       },
-      "profile_refresh": "Verified unchanged selected/rejected Item rows and profile terms; Grizzly baseMERGE_HEAD0874c2694, condition-potion baseHEADcc773c1f7; no source producer bypass.",
-      "capacity_recovery": {
-        "failed_compile_logs": [
-          "/tmp/questpc3-equipment-feyrist-gear-compile-space-failure.log",
-          "/tmp/questpc3-equipment-feyrist-maps-compile-space-failure.log",
-          "/tmp/questpc3-equipment-feyrist-final-compile-space-failure.log"
-        ],
-        "error": "No space left on device while creating Rust temp/incremental session directories; no PG case executed in those attempts.",
-        "action": "No active Rust/Cargo builders; exclusive per-session locks; removed older inactive alternate incremental snapshots of content/durability while retaining newest two alternate profiles and current PG namespace. Source, PostgreSQL, flags/profiles/jobs unchanged. Actual free-space gain4411MiB; 6.5GiB free before retry.",
-        "retry": "Single normal-profile --no-run build succeeded48.24s; then3actual focusedPG commands running. Build-only is not claimed asPGproof."
-      },
-      "review": "Read strict combined admission union, all unchanged conflicting Item weights, retained source observation guards, disjoint NPC producer prefixes, both new physical PG contracts and generated input witnesses. All three PG cases, 4callbackunits,15profiles,9authoring,actual15case/776creatureprey,check/strictClippy3crates,123content,5repository andpinchecks pass; no blocking finding."
+      "authoring_correction": "First witness scan assumed every pilot entry hasposition; some omitted entries do not. Restrict exact position match via get(), retain uniqueUID/position strictchecks; finalauthoring/contenttestsallPASS. Firsterrorlog preserved.",
+      "review": "Read source witness checks, exact lower/native transition binding set, native greeting-only effect, once-MINT/obligation/replay assertions and unchanged prior recipes. All required checks GREEN. Conservative onecoat assumption explicit; no additionalcontainer/XP/journal/completion. No blocking finding."
     },
     "effective_entries": [
       "oteryn:quest.the_beginning_quest",
@@ -2443,7 +2430,7 @@
       "wvar": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
     },
     "shared_feature_owner": "questpc3: reuse existing implementations; implement every remaining engine, binding, NPC, Item and world-mechanic gap locally. No external dependency wait.",
-    "updated_at": "2026-11-07T05:11:22.694593+00:00",
+    "updated_at": "2026-11-07T05:32:38.835341+00:00",
     "publication_native_counters_01": {
       "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
       "pushed": true,
@@ -2550,47 +2537,118 @@
       }
     },
     "previous_batch": {
-      "id": "beginning-equipment-level-merge",
-      "phase": "GREEN; merge commit and fast-forward push now",
-      "local_green": "a2a210aeb1a1b9f02f6aeb502ea169c23fd0420c",
-      "incoming": "6bbb82ebebb296eb09bc5d125856ae33e6cda054",
-      "scope": "Combine occupied durable slots/value-free repeated checks with upstream advisory and locked-progression minimum levels. Preserve both legacy-compatible binding domains. Add omitted minimum_level authoring schema/docs; assert combined gate binding and reject0. No world/content data delta beyond localGREEN batch.",
-      "whole_entry_qualifications": "No new whole qualification. Four owned whole quests remain; Pilgrimage and Stampede remain qualified.",
+      "id": "equipment-feyrist-native-merge",
+      "phase": "GREEN; commit and fast-forward publication now",
+      "local_green": "cc773c1f7e55b999141f53ea08f6c4c2144e0c87",
+      "incoming": "0874c26945d3680a96bee9c38027e75c97063688",
+      "scope": "Retain canonical equipment/level admission and qualified tutorial source rewards; add all incoming map/final physical contracts, native light/teeth/bag admissions and3NPCplacements. Preserve existing source profiles and regenerate derived witnesses only through tools.",
+      "push_retry": "Prior push rejected non-fast-forward when remote moved to0874c26945d3680a96bee9c38027e75c97063688; committed localGREENcc773c1f7 and continuing merge, never force.",
+      "whole_entry_status": "Four owned whole quests remain IN_PROGRESS; no new whole qualification inferred from component tests.",
       "checks": {
+        "callback_units": {
+          "log": "/tmp/questpc3-equipment-feyrist-callback-units.log",
+          "sha256": "0c719a1cb4499e24a1f99012223f9dab5e476ec6fb61aad2074384252484823a",
+          "proof": "4passed1.16s"
+        },
+        "profile_units": {
+          "log": "/tmp/questpc3-equipment-feyrist-profile-units.log",
+          "sha256": "abe62e1bfdb32d371db07d05633b21e35c7090931f18fd393e3c81729d511a75",
+          "proof": "15passed107.605s"
+        },
+        "authoring_units": {
+          "log": "/tmp/questpc3-equipment-feyrist-authoring-units.log",
+          "sha256": "be5a698653d422ef28ac0350a91ad1a92bba609cca3f9dbdde6be9f7365b5295",
+          "proof": "9passed10.677s"
+        },
+        "artifact": {
+          "log": "/tmp/questpc3-equipment-feyrist-artifact.log",
+          "sha256": "4b30bf3d13eb5d6f829af6e75a464a175f8b3bf695d2cdf687ab1c24b9b5f03d",
+          "proof": "loot_tables_sha25611cc1a947d5a6212570fb26ab2ea3126634831144650edcd6d50c80ed2fbde13"
+        },
+        "prey": {
+          "log": "/tmp/questpc3-equipment-feyrist-prey.log",
+          "sha256": "6b1e3b867fe26cdfe7bd93144c23fb3ed2a8745df77e9b4b636b7666d77c795e",
+          "proof": "PREY_DIFF_SIMULATION_COMPLETED cases15 creatures776;4derivedoutputs"
+        },
+        "native": {
+          "log": "/tmp/questpc3-equipment-feyrist-native.log",
+          "sha256": "b9cfaee5c12a30f2088b432476ec22d3e5d21fdd0776edd716d8812480dce754",
+          "proof": "41providers regenerated/check PASS"
+        },
         "fmt": {
-          "log": "/tmp/questpc3-equipment-level-merge-fmt.log",
+          "log": "/tmp/questpc3-equipment-feyrist-fmt.log",
           "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "proof": "cargo fmt --all -- --check PASS"
         },
         "check": {
-          "log": "/tmp/questpc3-equipment-level-merge-check.log",
-          "sha256": "2fbad735835e435480b94555eaeaa06d9e4b945ba9024ade36a3e180d1fe36b6",
-          "proof": "all3changedcrates/allfeatures PASS24.43s"
+          "log": "/tmp/questpc3-equipment-feyrist-check.log",
+          "sha256": "9b713b70c51dc12f9ff4540f5bc2590bcc77af65d89b41f6a50a29fdae77156a",
+          "proof": "3changedcrates/allfeatures PASS1m27s"
         },
         "clippy": {
-          "log": "/tmp/questpc3-equipment-level-merge-clippy.log",
-          "sha256": "89f581ed654b77febcc2138fdee534c3ff7ef149c3506ceb45fe206b487094ba",
-          "proof": "all3changedcrates/allfeatures/alltargets -Dwarnings PASS1m17s"
+          "log": "/tmp/questpc3-equipment-feyrist-clippy.log",
+          "sha256": "1f583e3046c77a3694e22279b8d68a3bd1892f13e875e79b6a1fbbbf226292f1",
+          "proof": "3changedcrates/allfeatures/alltargets -Dwarnings PASS1m32s"
         },
-        "units": {
-          "log": "/tmp/questpc3-equipment-level-merge-units.log",
-          "sha256": "c4058c0551d424a106bb46bda8377faf00da970680f303cb141de2079abe6a4c",
-          "proof": "4callbackunits1.19s PASS includinglegacyandcombinedgatebinding"
+        "pin_refresh": {
+          "log": "/tmp/questpc3-equipment-feyrist-pin-refresh.log",
+          "sha256": "fd8258813be5ad9b7efcbcbb79140dfcf18695ddc0b90a021fe44b95ed234dff",
+          "proof": "inputs5a0915065c781aeb38945b17a04b119c4283268873432abb9e2f02aeee431fd3/world5feab142eb4a4387acf986fec44841e269c58848c4188160871945936863c973"
         },
-        "postgres": {
-          "log": "/tmp/questpc3-equipment-level-merge-pg.log",
-          "sha256": "d79e9db1822afea736959e4babbb5e5c9c7d56c2f6b9f5b50a05eef669719181",
-          "proof": "1passed91.14s, POSTGRES_CASE_COMPLETED91139ms success=true; nativeclothing/return/onceclubgatecomposition"
+        "gear_pg": {
+          "log": "/tmp/questpc3-equipment-feyrist-gear-pg.log",
+          "sha256": "41a0b17e6eb57417ff02ad007d0efc44d6ec6f1c7be0e626e6916e9e419b2276",
+          "proof": "1passed145.67s; POSTGRES_CASE_COMPLETED145668ms success=true"
+        },
+        "maps_pg": {
+          "log": "/tmp/questpc3-equipment-feyrist-maps-pg.log",
+          "sha256": "9dcfe59c24199b9e87a274f961e91e5ba842355d76d64783bc4a40d51f39b53b",
+          "proof": "1passed155.16s; POSTGRES_CASE_COMPLETED155156ms;4exactphysicalexchanges/receipts"
+        },
+        "final_pg": {
+          "log": "/tmp/questpc3-equipment-feyrist-final-pg.log",
+          "sha256": "839c0b83c0828267d05c54ca339b4754a07e76fd7d626ffaca82eecb57c12ce8",
+          "proof": "1passed186.72s; POSTGRES_CASE_COMPLETED186717ms;flower/herb/carried/bagcontracts/4receipts"
+        },
+        "content": {
+          "log": "/tmp/questpc3-equipment-feyrist-content.log",
+          "sha256": "d87fc8b4ff7ff0b1133150744665206cdddd592b1ff1562ec491d049389e94c0",
+          "proof": "123passed3.23s"
+        },
+        "pin_check": {
+          "log": "/tmp/questpc3-equipment-feyrist-pin-check.log",
+          "sha256": "220fe5d906fb52704760ccea1ccf29f3b65b95210e9536028b4fec60fd17bf40",
+          "proof": "inputs5a0915065c781aeb38945b17a04b119c4283268873432abb9e2f02aeee431fd3/world5feab142eb4a4387acf986fec44841e269c58848c4188160871945936863c973/31102319bytes"
+        },
+        "repository": {
+          "log": "/tmp/questpc3-equipment-feyrist-repository.log",
+          "sha256": "21b18291dc6f8e298f180ec2c6cb3ae553232508c2b0848ccda6057b02e823f1",
+          "proof": "5passed68.16s"
         }
       },
-      "retained_data_proofs": "Incoming changes only Rust/metadata; local additions only schema/docs. No content/world JSON changed relative to localGREENa2a210aeb. Retain validated content123,repository5,profiles15 andpinA9/world084e8 from that exact data tree.",
-      "review": "Conflicts resolved preserving both optional default-compatible hash extensions, all item/slot/value-free guards, current-level advisory selection and independently locked SQL level check. Schema/docs now declare minimum_level. No blocking finding."
+      "running": {
+        "pg_then_content_repository": 18307,
+        "final_pin_check": 15973,
+        "capacity_watcher": 96709
+      },
+      "profile_refresh": "Verified unchanged selected/rejected Item rows and profile terms; Grizzly baseMERGE_HEAD0874c2694, condition-potion baseHEADcc773c1f7; no source producer bypass.",
+      "capacity_recovery": {
+        "failed_compile_logs": [
+          "/tmp/questpc3-equipment-feyrist-gear-compile-space-failure.log",
+          "/tmp/questpc3-equipment-feyrist-maps-compile-space-failure.log",
+          "/tmp/questpc3-equipment-feyrist-final-compile-space-failure.log"
+        ],
+        "error": "No space left on device while creating Rust temp/incremental session directories; no PG case executed in those attempts.",
+        "action": "No active Rust/Cargo builders; exclusive per-session locks; removed older inactive alternate incremental snapshots of content/durability while retaining newest two alternate profiles and current PG namespace. Source, PostgreSQL, flags/profiles/jobs unchanged. Actual free-space gain4411MiB; 6.5GiB free before retry.",
+        "retry": "Single normal-profile --no-run build succeeded48.24s; then3actual focusedPG commands running. Build-only is not claimed asPGproof."
+      },
+      "review": "Read strict combined admission union, all unchanged conflicting Item weights, retained source observation guards, disjoint NPC producer prefixes, both new physical PG contracts and generated input witnesses. All three PG cases, 4callbackunits,15profiles,9authoring,actual15case/776creatureprey,check/strictClippy3crates,123content,5repository andpinchecks pass; no blocking finding."
     },
     "previous_publication": {
-      "head": "0746ef43c530dfe9c9f460a7b802872793bec675",
+      "head": "456ea0def29aea5299e78f9d2e2b3e9a05336de5",
       "pushed": true,
       "remote_verified": true,
-      "batch": "corpse-pilgrimage-threatened-merge"
+      "batch": "equipment-feyrist-native-merge"
     },
     "integrating_remote_batch": {
       "commit": "73a106fc5035885a844c81e8618900f80c028116",
@@ -3234,6 +3292,101 @@
           "retry": "Single normal-profile --no-run build succeeded48.24s; then3actual focusedPG commands running. Build-only is not claimed asPGproof."
         },
         "review": "Read strict combined admission union, all unchanged conflicting Item weights, retained source observation guards, disjoint NPC producer prefixes, both new physical PG contracts and generated input witnesses. All three PG cases, 4callbackunits,15profiles,9authoring,actual15case/776creatureprey,check/strictClippy3crates,123content,5repository andpinchecks pass; no blocking finding."
+      },
+      "beginning-coat-chest-01": {
+        "id": "beginning-coat-chest-01",
+        "phase": "GREEN; commit and fast-forward push now",
+        "scope": "Source UID50080 sturdy chest7757 at32032/32276/5 -> one coat3562 once + existing Quest obligation to SantiagoGreet3; preserve journal and prove cold replay",
+        "red_log": "/tmp/questpc3-beginning-coat-chest-red.log",
+        "reuse": "Existing once RewardClaim MINT, chest-to-Quest PENDING obligations and Beginning catalogue extension; no new persistence writer",
+        "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L3540-L3543 sha256=7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4; questSystem1.lua:166-171 sourceGreet3/noLog3; Santiago expectscoat3562",
+        "assumption": "Chest table pilot omitted this container; NPC expects a coat and supplies one replacement. Unless nested map contents are recovered, conservative authored chest reward is exactly one coat; no extra container/rewards/XP.",
+        "whole_entry_status": "Beginning remainsIN_PROGRESS. Fourownedwholequestsremain; no engine deferral.",
+        "red": {
+          "log": "/tmp/questpc3-beginning-coat-chest-red.log",
+          "sha256": "257a9f31a729bdf159f1f645df4198d5f245cac9c24b365fca6dc7b679cce019",
+          "proof": "0passed/1failed52.72s; sourceUID50080/appearance7757 assertion marker andPOSTGRES_CASE_COMPLETED52717ms success=false; sourceclaimdidnotbind"
+        },
+        "transition_key": "oteryn:quest-transition/kv/beginning_coat/chest",
+        "implementation": "Existing generic once-MINT+PENDING quest obligation; source-authored claim through strict witness/Item checks, explicit closed native chest-key set added to existing exact binding validation, Beginning Greet-only transition; no new writer or schema migration.",
+        "checks": {
+          "units": {
+            "log": "/tmp/questpc3-beginning-coat-chest-units.log",
+            "sha256": "a992fcd2a1d9d198bccec298d94be8ce3ebf7c0d9a4222ae10d3d34ad46e56a7",
+            "proof": "2Beginningunits1.14sPASS; Greet3only/noXP/completion"
+          },
+          "authoring": {
+            "log": "/tmp/questpc3-beginning-coat-chest-authoring.log",
+            "sha256": "f695280765f6d2c3fbb8d6f205b3f64b2cb455e42b4ee7c6717f3c35a465b8ec",
+            "proof": "content regenerated anddriftcheckPASS"
+          },
+          "authoring-units": {
+            "log": "/tmp/questpc3-beginning-coat-chest-authoring-units.log",
+            "sha256": "e93c4c76ea0abaa4a6e604c76014ca04cfbb744656154db4488d59ffe60d83df",
+            "proof": "5scriptedchesttests10.839sPASS; sourceUID andnonadmittedrewardnegativeguards"
+          },
+          "reward-authoring-tests": {
+            "log": "/tmp/questpc3-beginning-coat-chest-reward-authoring-tests.log",
+            "sha256": "e9e9c13548b4906d5a1f55df9f15f7b8558394892647996fc5cb2ad96eae2569",
+            "proof": "27rewardauthoringtestsPASS; exactcomplete3chestbindings"
+          },
+          "native": {
+            "log": "/tmp/questpc3-beginning-coat-chest-native.log",
+            "sha256": "b9cfaee5c12a30f2088b432476ec22d3e5d21fdd0776edd716d8812480dce754",
+            "proof": "41nativeprovidersregen/checkPASS"
+          },
+          "fmt": {
+            "log": "/tmp/questpc3-beginning-coat-chest-fmt.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "proof": "cargo fmt --all -- --checkPASS; mountedfile explicitlyrustfmt"
+          },
+          "check": {
+            "log": "/tmp/questpc3-beginning-coat-chest-check.log",
+            "sha256": "e86650095c7eaa5130566e1a0e10eb84c8acbe7bb62f3d250484cdb11ba366dd",
+            "proof": "dispatch/questsallfeaturesPASS30.20s"
+          },
+          "clippy": {
+            "log": "/tmp/questpc3-beginning-coat-chest-clippy.log",
+            "sha256": "e60c3219a82165c2150b287e88d37f45821d84f57c407f8b029cc9215fdf33c5",
+            "proof": "dispatch/questsallfeatures/alltargets-DwarningsPASS1m18s"
+          },
+          "postgres_green": {
+            "log": "/tmp/questpc3-beginning-coat-chest-green.log",
+            "sha256": "012031d9804e272dbe4634fb7bb10495ad1e52ac6961ed6000c98a66ad9fc149",
+            "proof": "1passed72.27s; UID50080appearance7757 actualnativeUSE; POSTGRES_CASE_COMPLETED72265ms success=true; onecoat, Greet3only, onequestreceipt acrosscoldreplay"
+          },
+          "pin_refresh": {
+            "log": "/tmp/questpc3-beginning-coat-chest-pin-refresh.log",
+            "sha256": "d442ba19bfb7360132754de3f94abab1e3170f9b38f71f65bf0bb381ae2b33d9",
+            "proof": "Repo tool PASS; world/inputdigest unchanged5a0915065c781aeb38945b17a04b119c4283268873432abb9e2f02aeee431fd3 /5feab142eb4a4387acf986fec44841e269c58848c4188160871945936863c973"
+          },
+          "rapier": {
+            "log": "/tmp/questpc3-beginning-coat-chest-rapier.log",
+            "sha256": "bb21beb4abef66cea8c28e7ffe522144c2f251fc3f37aa3f38602e58fa98a490",
+            "proof": "1passed50.64s; actualPGcompletion50634ms; existingonceclaimandreplay unchanged"
+          },
+          "content": {
+            "log": "/tmp/questpc3-beginning-coat-chest-content.log",
+            "sha256": "6eb51641cc29b53a6a36d873c0d2f8b56d8fc282fa2b38732a6850719ddeae9e",
+            "proof": "123passed4.47s"
+          },
+          "repository": {
+            "log": "/tmp/questpc3-beginning-coat-chest-repository.log",
+            "sha256": "517cd4721f01ad115eadd20973f59904a9750ce8a6074024fd6dd8a2a5946597",
+            "proof": "5passed75.84s"
+          },
+          "pin-check": {
+            "log": "/tmp/questpc3-beginning-coat-chest-pin-check.log",
+            "sha256": "220fe5d906fb52704760ccea1ccf29f3b65b95210e9536028b4fec60fd17bf40",
+            "proof": "PASSinputs5a0915065c781aeb38945b17a04b119c4283268873432abb9e2f02aeee431fd3/world5feab142eb4a4387acf986fec44841e269c58848c4188160871945936863c973/31102319bytes"
+          }
+        },
+        "running": {
+          "rapier_content_repository": 9217,
+          "pin_check": 12503
+        },
+        "authoring_correction": "First witness scan assumed every pilot entry hasposition; some omitted entries do not. Restrict exact position match via get(), retain uniqueUID/position strictchecks; finalauthoring/contenttestsallPASS. Firsterrorlog preserved.",
+        "review": "Read source witness checks, exact lower/native transition binding set, native greeting-only effect, once-MINT/obligation/replay assertions and unchanged prior recipes. All required checks GREEN. Conservative onecoat assumption explicit; no additionalcontainer/XP/journal/completion. No blocking finding."
       }
     },
     "completed_batches": [
@@ -3778,22 +3931,11 @@
       }
     },
     "next_batch_preparation": {
-      "id": "beginning-equipment-club-01",
-      "scope": "Source clothing checks at greet3/4 and one club grant; reusable occupied-slot predicates and explicitly value-free repeatable checks, current transaction fenced. Chest/ground delivery/vitals/trade remain subsequent owned mechanisms.",
-      "test_draft": "/tmp/questpc3-next-equipment-test.py",
-      "implementation_draft": "/tmp/questpc3-next-equipment-production.py",
-      "reused": "Existing carried presence and native reward MINT/custody; equipment writers already serialize under Character root. No occupied-slot predicate found in refreshed qengine2/PC2/PC4\u20138/L2 callbacks.",
-      "dependency_heads": {
-        "qengine2": "0cf799d197e3d09cab984c5d68ad6633f7f96e66",
-        "questpc2": "97c922c33db60f315e95a9cbe5057078b7ec2c48",
-        "questpc4": "83b747db65a5852d8aaa990e31299b6491f2d7dd",
-        "questpc5": "093df171c805649461470d7d6c0f2e5130e7e3ca",
-        "questpc6": "f9153406218caeb0b42dd2888d67f2a79f0b8ff0",
-        "questpc7": "136d3e35a4af616053648cb23bfcd7ff3d71496f",
-        "questpc8": "76000980a05ad9a79fa69d5f0f87c2c4910ac965",
-        "questl2": "79fd117c3ba61ef0dc22a107aabf23f2dd9b5daa"
-      },
-      "draft_status": "Consumed and superseded: DO NOT REAPPLY either /tmp patch script. Final source uses durableTORSO2 and legacy-compatible digest, not the original draft."
+      "id": "beginning-damage-lesson-01",
+      "scope": "SourceSantiago9->10/log8 and20physicalHP loss; reuseexistingnormal health/condition owner, retainedcause/receipt lifecycle, death/mana-shield rules; no directSQLhealthwriter",
+      "source": "Crystal201189f santiago.lua:180-188; addHealth(-20,COMBAT_PHYSICALDAMAGE)",
+      "existing_mechanism": "crates/gameplay/spell/src/spell/actor_conditions/item_actions.rs:33 stage_item_health_loss; novelty_item_owner.rs retained successor/receipt/death preparation and spell-idle/lifecycle patterns; quest_dialogue.rs committed/unknown/replay handling",
+      "required": "First refreshrelevantqengine/otherlaneheads/reuse, addrealNPCPGREDthenimplementgenericcallbackeffect; proveonce/replay/lost-ack andsourceprogress withnormalHPowner. OtherBeginningworlddelivery/trade/door remainowned, notblocked."
     },
     "remote_qualified_pending_integration": {
       "head": "4c1c920f2",

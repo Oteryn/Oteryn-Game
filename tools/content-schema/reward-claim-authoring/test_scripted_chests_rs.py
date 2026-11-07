@@ -5,6 +5,35 @@ import reward_claim_authoring as authoring
 
 
 class ScriptedChestTests(unittest.TestCase):
+    def test_beginning_coat_has_source_uid_once_reward_and_native_obligation(self):
+        records = authoring.scripted_chests_rs.derive(
+            authoring.load_json(authoring.ROOT / authoring.MANIFEST_REL),
+            authoring.load_items(), authoring.build_records)
+        claim = next(row['definition'] for row in records
+                     if row['definition']['identity']['key'] == 'oteryn:reward-claim.kv.beginning_coat')
+        self.assertEqual(claim['claim'], {'per': 'character', 'repeat': {'kind': 'once'}})
+        self.assertEqual(claim['placements'], [{
+            'appearance_tibia_id': 7757,
+            'quest_transition': 'oteryn:quest-transition/kv/beginning_coat/chest',
+            'source_binding': {'legacy_unique_ids': [{'server': 'crystalserver', 'unique_id': 50080}],
+                               'project_position': {'x': 32032, 'y': 32276, 'z': 5}},
+            'reward': {'items': [{'item': authoring.item_ref('oteryn:item.tibia.i3562'), 'count': 1}]},
+        }])
+
+    def test_beginning_coat_rejects_bad_source_uid_and_unadmitted_reward(self):
+        import copy
+        manifest = authoring.load_json(authoring.ROOT / authoring.MANIFEST_REL)
+        items = authoring.load_items()
+        bad = copy.deepcopy(manifest)
+        witness = next(row for row in bad['entries'] if row.get('position') == [32032, 32276, 5])
+        witness['sources'][0]['uid'] = 50081
+        with self.assertRaisesRegex(ValueError, 'UID/position witness'):
+            authoring.scripted_chests_rs.derive(bad, items, authoring.build_records)
+        bad_items = copy.deepcopy(items)
+        bad_items['oteryn:item.tibia.i3562']['materializable'] = False
+        with self.assertRaisesRegex(ValueError, 'not admitted'):
+            authoring.scripted_chests_rs.derive(manifest, bad_items, authoring.build_records)
+
     def test_small_sapphire_preserves_all_four_rewards_and_both_book_texts(self):
         records = authoring.scripted_chests_rs.derive(
             authoring.load_json(authoring.ROOT / authoring.MANIFEST_REL),

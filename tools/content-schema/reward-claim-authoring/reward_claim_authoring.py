@@ -277,13 +277,13 @@ def legacy_uid_checks(records: list) -> list[dict]:
 
 
 def chest_transitions() -> set[str]:
-    """The keys of the chest transitions the QuestState lowering constructed."""
+    """Closed keys of lowered and explicitly declared native chest transitions."""
     return {
         t["key"]
         for quest in load_json(ROOT / QUEST_STATE_REL)["quests"]
         for t in quest["transitions"]
         if t["source"]["owner"] == "chest"
-    }
+    } | scripted_chests_rs.native_chest_transitions()
 
 
 def build_records(claims: list, manifest: dict, items: dict,
@@ -556,7 +556,7 @@ def committed_errors() -> list[str]:
         errors.append('variant legacy UID diagnostics are missing or stale')
     bound = {p["quest_transition"] for r in records for p in r["definition"]["placements"] if "quest_transition" in p}
     if bound != chest_transitions():
-        errors.append("placement quest_transition keys differ from the chest transitions of quest-state.json")
+        errors.append("placement quest_transition keys differ from the declared lowered/native chest transitions")
     if len(records) != index["record_count"]:
         errors.append(
             f"index record_count {index['record_count']} != {len(records)} records"
