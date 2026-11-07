@@ -1,4 +1,6 @@
 //! Physical tutorial rewards and XP share the real NPC/Quest transaction.
+#[path = "questpc3_beginning_rewards/lost_coat.rs"]
+mod lost_coat;
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};

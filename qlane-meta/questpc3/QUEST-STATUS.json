@@ -5156,17 +5156,26 @@
     },
     "current_batch": {
       "batch": "beginning_world_18",
-      "phase": "Active: inspect exact owned donor bridge/log8 and five ground-wood/cart interactions; author focused3\u20136-entry native PG RED before production changes",
+      "phase": "Compiling native lost-coat test checkpoint; realPG18.6 running, source zero-owned coat grant not implemented yet",
       "entries": [
-        "Beginning bridge/log8 interaction",
-        "Beginning ground-wood/cart source1",
-        "Beginning ground-wood/cart source2",
-        "Beginning ground-wood/cart source3",
-        "Beginning ground-wood/cart source4",
-        "Beginning ground-wood/cart source5"
+        "missing owned coat produces source3562 replacement without greeting advance",
+        "owned coat prevents duplicate and exact source reply replays",
+        "physical loss through item owner earns another replacement"
       ],
       "requirements": "Retain all qualified Santiago/Zirella/Carlos/coat chest/equipment/health/food sale/report work. Implement actual world interactions and lost-coat replacement, then full native Beginning journey to whole-quest QUALIFIED. Missing reusable mechanisms remain our job.",
-      "previous_qualified": "threatened_feathers_17"
+      "previous_qualified": "threatened_feathers_17",
+      "active_slice": "Santiago missing-coat replacement before remaining bridge/tree/cart world flow",
+      "source": {
+        "file": "data-global/npc/santiago.lua:145-160",
+        "blob": "c55210f3b5ccaa5437f8f22148c91b5134f52880",
+        "sha256": "e83d14b26fb9e6bca12cd3ec50abe34daaeb56f2719b5a1dee3d8efc4402a1bd"
+      },
+      "latest_checks": {
+        "test_compile": "PASS5m00s",
+        "postgres": "running18.6, no qualification claimed yet",
+        "red_point": "source topic2 zero-owned coat branch has no replacement callback; present-only clothing check rejects it"
+      },
+      "migration_range_request": "Asked coordinator for additional questpc3 range (suggest1350\u20131359);1220\u20131229 fully used. Continue Rust/native PG work; no out-of-range migration authored."
     },
     "diagnosis": {
       "log": "/tmp/questpc3-counter-diagnosis.log",
