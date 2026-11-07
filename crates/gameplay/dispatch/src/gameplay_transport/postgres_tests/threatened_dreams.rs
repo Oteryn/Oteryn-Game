@@ -1,6 +1,8 @@
 //! Source NPC decisions through the actual dispatch trait and fenced QuestState writer.
 //! The story test follows source NPC writes. Inventory cases seed only preceding story
 //! requirements and demand actual physical hand-ins, rewards and receipts through dispatch.
+#[path = "threatened_dreams/final_reward.rs"]
+mod final_reward;
 #[path = "threatened_dreams/inventory.rs"]
 mod inventory;
 #[path = "threatened_dreams/maps.rs"]

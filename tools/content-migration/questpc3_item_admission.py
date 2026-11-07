@@ -85,7 +85,9 @@ def apply_admissions(definitions):
     # Retained Crystal NPC sources: aurita.lua:81-88, taegen.lua:174-188,
     # valindara.lua:75-90 at tree9f5a72c6. Existing canonical physical and
     # nonstacking facts are complete; preserve all other semantics verbatim.
-    for ident, weight in ((25731, 1200), (25733, 1200), (25779, 400)):
+    for ident, weight in ((25731, 1200), (25733, 1200), (25779, 400),
+                          (25730, 200), (25732, 200), (25734, 200),
+                          (25780, 800), (25782, 10)):
         key = f'oteryn:item.tibia.i{ident}'
         candidates = [row for row in definitions if row['identity']['key'] == key]
         if len(candidates) != 1:
@@ -99,6 +101,8 @@ def apply_admissions(definitions):
                 or (reward['materializable'], reward['stack_class']) not in
                    ((False, 'Unknown'), (True, 'NonStackable'))):
             raise ValueError(f'Threatened reward core facts changed: {key}')
+        if ident == 25780 and reward['semantics']['container'] != known({'capacity': known(24)}):
+            raise ValueError('Threatened blossom bag capacity changed')
         reward['materializable'] = True
         reward['stack_class'] = 'NonStackable'
 
@@ -119,6 +123,8 @@ def apply_admissions(definitions):
         22052: (160, True, '87237a4b313c69127bc8351f060e5d25582fc89ce8985f8d1db32df67bd2329c'),
         22649: (200, False, '3bb14ba4447e0cbc00897bd0f256c30be60638bed08579ec6eb98f0d37be81c1'),
         5893: (500, True, 'eaaabb6611f391323ddd23141a18992e2d9abf0718e005ea28447de562500344'),
+        # Retained Raven Herb page57403/rev1115118, exact1oz portable plant.
+        5953: (100, True, 'bcdfc8af1914aa157665ddfa477c2e0d8bb81ed3b670bc324b2f066134692125'),
     }
     source = Path(__file__).resolve().parents[2] / 'imports/tibiawiki/facts/items-stats.json'
     observations = json.loads(source.read_bytes())['records']

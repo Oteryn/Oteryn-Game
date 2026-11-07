@@ -850,7 +850,7 @@
         "sha256": "c172ebab19214e792f141fc1c38ef9f78b4cf3c508949bdb67d7a5a827533e2b"
       }
     ],
-    "current_batch": "threatened_maps_05: Tooth Fairy gifts, milk-tooth map, six-species achievement, Tired Tree map",
+    "current_batch": "threatened_final_06: Taegen flower/herb, Maelyrra held lights and exact-zero final bag",
     "tutorial_corpse_publication": {
       "id": "corpse-pilgrimage-threatened-merge",
       "phase": "GREEN; commit and fast-forward publication next",
@@ -2350,7 +2350,8 @@
         "fmt": "PASS cargo fmt --all --check final",
         "derived": "Repo loot refresh4entries, prey simulation15cases776creatures, regenerated4derivedfiles, native manifest15referencesverified; no full test suite",
         "fixture": "Prior level50 staged only at CharacterRevision1 before quest receipts. During negative case durable29 refuses against actor50, then exact prior level restored. No quest reward or success is seeded.",
-        "scope": "Four source exchanges complete; whole Threatened Dreams remains IN_PROGRESS. Continue source hand-ins/light/barrier/final reward and optional tails; no global completion here."
+        "scope": "Four source exchanges complete; whole Threatened Dreams remains IN_PROGRESS. Continue source hand-ins/light/barrier/final reward and optional tails; no global completion here.",
+        "published": "a58ff449e"
       },
       "reward_minimum_level_foundation_05a": {
         "status": "PUBLISHED_FOUNDATION",
@@ -2363,6 +2364,35 @@
         "commit": "add7faf92",
         "merged_pushed": "6bbb82ebe",
         "postgres_duration_ms": 125358
+      },
+      "threatened_final_06": {
+        "status": "GREEN",
+        "postgres": "RUNNING /tmp/questpc3-threatened-final-red-fixed-comparison.log; first attempt only wrong Equal enum spelling, not RED",
+        "unit_red": "2tests0.124s fail missing4callbacks and6portableoperand admissions; /tmp/questpc3-threatened-final-authoring-red.log",
+        "fixture_scope": "Prior story COUPLE2/JOURNAL2/NM6/charged counters5; actual physical hand-ins and held evidence/refusals. A fixture transition supplies prior fifteen-source repair completion only after final refusal; it never grants bag/NM8. Actual world repair still required in later batch.",
+        "source": "Exact retained Lua replies/citations; flower+Journal4 atomic; herb ->couple4/topic3; carried charged vessels never consumed; bag requires three exact zero guards; all callbacks preserve optional tails/global completion false",
+        "postgres_red": {
+          "duration_ms": 107649,
+          "log": "/tmp/questpc3-threatened-final-red-fixed-comparison.log",
+          "marker": "THREATENED_FINAL POSTGRES_ASSERTION_REACHED flower=false herb=false carried=false bag=false receipts=0"
+        },
+        "postgres_green": {
+          "duration_ms": 123978,
+          "log": "/tmp/questpc3-threatened-final-green.log",
+          "marker": "THREATENED_FINAL POSTGRES_ASSERTION_REACHED flower=true herb=true carried=true bag=true receipts=4",
+          "success": true
+        },
+        "unit": "PASS9authoring/admission tests19.887s;15native profile tests167.323s;8placement tests0.545s",
+        "check": "PASS dispatch allfeatures/tests1m14s /tmp/questpc3-threatened-final-check.log",
+        "clippy": "PASS dispatch allfeatures/alltargets -Dwarnings5m07s including test build-lock wait /tmp/questpc3-threatened-final-clippy.log",
+        "fmt": "PASS final cargo fmt --all --check",
+        "native": "PASS registration41files;6added policies,0existing changed/removed; loot hash unchanged, no new simulation needed",
+        "pins": {
+          "world": "5feab142eb4a4387acf986fec44841e269c58848c4188160871945936863c973",
+          "log": "/tmp/questpc3-threatened-final-pins.log"
+        },
+        "placements": "56NPCs57records0held; new Maelyrra from existing source candidate",
+        "next": "Implement actual light gathering, fifteen unique barrier sources, remaining animal/stone interactions and whole source journey before whole-quest qualification."
       }
     },
     "source_corrections": [
