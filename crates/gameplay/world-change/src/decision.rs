@@ -80,25 +80,26 @@ mod tests {
     use super::*;
 
     #[test]
-    fn persisted_native_decisions_round_trip_without_redrawing() {
+    fn persisted_native_decisions_round_trip_without_redrawing() -> Result<(), String> {
         for epoch in 1..=64 {
             for (month, day) in [(1, 1), (6, 13), (6, 14), (12, 31)] {
                 let original = crate::daily::roll_calendar(&[42; 16], epoch, month, day);
                 let captured = NativeDecision::capture(&original);
-                let bytes = serde_json::to_vec(&captured).expect("encode decision");
+                let bytes = serde_json::to_vec(&captured).map_err(|error| format!("{error:?}"))?;
                 let decoded: NativeDecision =
-                    serde_json::from_slice(&bytes).expect("decode decision");
-                let restored = decoded.restore().expect("restore decision");
+                    serde_json::from_slice(&bytes).map_err(|error| format!("{error:?}"))?;
+                let restored = decoded.restore().map_err(|error| format!("{error:?}"))?;
                 assert_eq!(NativeDecision::capture(&restored), captured);
             }
         }
+        Ok(())
     }
 
     #[test]
-    fn persisted_native_decisions_reject_invalid_bindings() {
+    fn persisted_native_decisions_reject_invalid_bindings() -> Result<(), String> {
         let original = crate::daily::roll_calendar(&[42; 16], 1, 6, 13);
-        let valid =
-            serde_json::to_value(NativeDecision::capture(&original)).expect("encode decision");
+        let valid = serde_json::to_value(NativeDecision::capture(&original))
+            .map_err(|error| format!("{error:?}"))?;
         for (field, value) in [
             ("epoch", serde_json::json!(0)),
             ("fury_exit", serde_json::json!("unregistered-layer")),
@@ -109,7 +110,7 @@ mod tests {
             let mut corrupted = valid.clone();
             corrupted[field] = value;
             let decoded: NativeDecision =
-                serde_json::from_value(corrupted).expect("structurally valid corruption");
+                serde_json::from_value(corrupted).map_err(|error| format!("{error:?}"))?;
             assert_eq!(
                 decoded.restore().err(),
                 Some(crate::rules::RuleError::NativeBinding),
@@ -119,5 +120,6 @@ mod tests {
         let mut unknown = valid;
         unknown["future_field"] = serde_json::json!(true);
         assert!(serde_json::from_value::<NativeDecision>(unknown).is_err());
+        Ok(())
     }
 }

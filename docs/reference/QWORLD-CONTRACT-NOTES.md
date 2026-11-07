@@ -764,3 +764,9 @@ and rejecting zero epochs, unknown Fury/ Nightmares layers, mismatched Fury
 entrances, invalid trader values and unknown payload fields. Both cases passed
 in 0.01 seconds (build 1.13 seconds); world-change test-target Clippy with
 `-D warnings` and focused formatting passed. Production behavior is unchanged.
+Correction to the preceding checkpoint: inspection after its push showed that
+test-target Clippy had failed on five expect calls and items below the daily test
+module; the shell had continued to later successful commands. Replaced the calls
+with error propagation and moved the existing helper definitions above the test
+module. The fail-fast rerun passed Clippy `-D warnings` in 0.54 seconds, both
+recovery tests in 0.02 seconds, formatting and whitespace checks.
