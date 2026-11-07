@@ -21,7 +21,8 @@ fn questpc5_real_world_startup_selectors_reach_postgres() -> TestResult {
             started.elapsed()
         );
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let project = source::project_regions(&root, &[(125, 121), (125, 122), (125, 126)])?;
+        let project =
+            source::project_regions(&root, &[(125, 121), (125, 122), (125, 126), (129, 128)])?;
         let (registry, palette) = source::registry(&root, &project)?;
         let compiled = compile::compile(
             &compile::Input {
@@ -67,6 +68,35 @@ fn questpc5_real_world_startup_selectors_reach_postgres() -> TestResult {
                 matches[0].attrs.unique,
                 Some(unique),
                 "startup selector at {x},{y},{floor}"
+            );
+        }
+        let version: String = sqlx::query_scalar("SHOW server_version")
+            .fetch_one(&h.pool)
+            .await?;
+        eprintln!("POSTGRES_SERVER_VERSION {version}");
+        for (x, y, floor, appearance, action) in [
+            (33151, 32861, -7, 2928, 5632),
+            (33152, 32866, -8, 2772, 5633),
+        ] {
+            let objects: Vec<_> = data
+                .sectors
+                .iter()
+                .filter(|s| s.floor == floor)
+                .flat_map(|s| &s.tiles)
+                .filter(|t| (t.x, t.y) == (x, y))
+                .flat_map(|t| &t.items)
+                .filter(|i| {
+                    i.depth == 0
+                        && data.manifest.palette[i.palette as usize]
+                            .key
+                            .ends_with(&format!(".i{appearance}"))
+                })
+                .collect();
+            assert_eq!(objects.len(), 1, "one retained Serpentine mechanism");
+            assert_eq!(
+                objects[0].attrs.action,
+                Some(action),
+                "Serpentine source action at {x},{y},{floor}"
             );
         }
         h.cleanup().await?;

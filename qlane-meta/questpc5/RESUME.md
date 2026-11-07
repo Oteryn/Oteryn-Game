@@ -1,3 +1,7 @@
+## Serpentine binding regression — 2026-11-07 15:31 UTC
+
+Noodles qualification b98b02eeb is confirmed pushed. Serpentine Python regression RED on missing torch2928/AID5632; dispatch test compiled successfully4m31s and reproduced missing torch AID5632 on PG18.6 in40.05s (server marker in log). Exact five bindings and source hashes recorded in CONTRACT-NOTES.md. No product fix applied yet. Pearl has existing once-only claim UID6184; use it rather than parallel reward MINT. Selected finite personal trial and source pot-conditioned forcefields remain active work. Count11QUALIFIED/12remaining.
+
 ## Noodles QUALIFIED — 2026-11-07 15:20 UTC
 
 WholePG18.6 GREEN94.317145358s; actualsourceKing→nativecollar14156→exploreSTEP→publishedliveNoodlesUSE→Kingreport1000XP/5Platinum/DogSitter/completiononce. WrongNPCaftereligible/outofreach/inputandXP/rewardrepeat/frozenrawingresschecksallPASS. Fixtureusesfreshpublishedhandlesafterreconnect, actualtotal_experiencecolumn; noassertionweakened. Noquest/rewardseeds. SharedQengine2selected-instance/proof/reconcilecode97cb9db791482391e77049c8a27fefd659003669reused; canonical1005unchanged; no newmigration. Nativecollar1.10oz EXACTretainedXML, nofallback. Rust3+Python11, cargo check, strictClippyalltargets/features2m55s, fullfmt, bothgeneratorchecks, Worldpincheck e68caf65219557465f2102bfe55dcbf34ba037f9b483cedd9f3cb22b8c7c68b8allPASS. Proofcloud-noodles-whole-proof.json. MarkedQUALIFIEDcount11/12remaining. Product6bbdd150cwaspushed. Commit/pushqualificationnowthencontinue.

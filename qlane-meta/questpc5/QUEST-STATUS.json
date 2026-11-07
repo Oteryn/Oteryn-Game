@@ -739,6 +739,18 @@
     "canonical_location": {
       "path": "content/quests/definitions/quests-00200-00299.json",
       "pointer": "/records/0/definition"
+    },
+    "active_step": {
+      "kind": "source-binding-regression",
+      "state": "PG_RED_REPRODUCED",
+      "test": "questpc5_real_world_startup_selectors_reach_postgres",
+      "log": "/tmp/questpc5-serpentine-startup-red.log",
+      "python_red": "/tmp/questpc5-serpentine-bindings-python-red.log",
+      "source_contract": "CONTRACT-NOTES.md#serpentine-source-binding-restoration-2026-11-07",
+      "next": "Restore five exact source startup bindings, regenerate World pins, then qualify personal trial and pot-conditioned transport without a parallel pearl grant.",
+      "duration_seconds": 40.05,
+      "postgres_version": "18.6",
+      "failure": "retained torch at33151,32861,-7 has action None; expected Some(5632)"
     }
   },
   {
