@@ -355,7 +355,7 @@
     "qualified_elsewhere_candidate": "qengine2 proves Wayfarer Outfits Quest QUALIFIED. Reuse its Cranky Lizard Crone callbacks and run affected integration PG before recording native NPC qualification."
   },
   "recovered_from": "95accb923",
-  "next_batch": "Continue remaining owned entries immediately; preserve all cumulative PG cases. No final turn until all owned scope qualified and pushed.",
+  "next_batch": "Continue existing service/travel component actors, then remaining pure placements and source-backed native/profile/mechanism repairs. No final turn while owned entries remain.",
   "batches": [
     {
       "name": "atomic quest/NPC state prerequisite",
@@ -1207,7 +1207,7 @@
     },
     {
       "name": "additional-postal-qualification-18",
-      "state": "QUALIFIED_COMPONENTS",
+      "state": "QUALIFIED",
       "entries": [
         "Olrik",
         "Chemar",
@@ -1215,22 +1215,54 @@
         "Fyodor",
         "Nelly"
       ],
-      "scope": "Actual canonical map admission, native actor coordinates/floor and exact names only. Postal command qualification continues in this session; no whole-entry qualification inferred.",
+      "scope": "Audited actual source-cell admission and exact native actor identities plus real command postal windows, ordinary parcel purchase, completed Postman discount, current locked-rank refusal and exact replay. Existing source repair catalogue proof retains Letter8/5 and Parcel15/10 declarations.",
       "red": {
-        "seconds": 47.59,
-        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
         "log": "/tmp/npcfix-evidence/additional-postal-placement-red.log",
-        "sha256": "bcd0e5bdec6fe3a56ef505552e9b6a84f324b85f717bc6f84bdedbf3806fe825"
+        "duration_seconds": 47.59,
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "log_sha256": "bcd0e5bdec6fe3a56ef505552e9b6a84f324b85f717bc6f84bdedbf3806fe825"
       },
       "green": {
-        "seconds": 105.34,
-        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
         "log": "/tmp/npcfix-evidence/additional-postal-placement-green.log",
-        "sha256": "5ebf883f76abc0e17889f4a11a40701af500d47a10fc62415409439a2b64d97b"
+        "duration_seconds": 105.34,
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "log_sha256": "5ebf883f76abc0e17889f4a11a40701af500d47a10fc62415409439a2b64d97b"
       },
-      "cumulative_cases": 107,
-      "checks": "fmt PASS. No Rust or production content in this component commit; reuse source-equivalent prior check/clippy proof. Physical fixture and production inputs unchanged.",
-      "postal_continuation": "New five-case test RED505.72s at Nelly: price-only fixture lookup selected other same-price merchandise. Strengthen selectors to exact item, side and price; keep every rank/replay assertion and rerun all five. Uncommitted Rust test stays out of this green physical component."
+      "postal_services": {
+        "log": "/tmp/npcfix-evidence/additional-postal-services-green.log",
+        "duration_seconds": 456.2,
+        "marker": "POSTGRES_STARTED NPCFIX postage olrik",
+        "log_sha256": "0fad1fcea2b2c9a7060e44a6b4b5de8b9c141f7184aa059a3fcd689cf14acf5a"
+      },
+      "source_comparison": {
+        "source_commit": "0fd218694172109f2e2fb90835c6efd78029f468",
+        "source_path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_postage.rs",
+        "original_case_count": 13,
+        "original_keys_preserved": true,
+        "all_original_assertions_preserved": true,
+        "normalized_body_identical": true,
+        "normalization": "Only remove the new parcel/letter reference lookup and reverse three strict identity+Buy-side predicate additions. Every other original scenario byte retained.",
+        "selector_strengthening": "Nelly has other merchandise at postal prices; both parcel price lookups and discounted letter assertion now also require the exact item reference and Buy side.",
+        "compiled_fixture_sha256": "80f76d0edc15c3addf86bba5ecff73b069d985c689a3a45196f0aefe3a39d83b",
+        "scenario_body_sha256": "ae300b429fae797bd98e4084785b02853908564494c80d93f22fa07119c656ae",
+        "new_case_keys": [
+          "olrik",
+          "chemar",
+          "chrystal",
+          "fyodor",
+          "nelly"
+        ]
+      },
+      "postal_fixture_red": {
+        "log": "/tmp/npcfix-evidence/additional-postal-services-red.log",
+        "duration_seconds": 505.72,
+        "marker": "POSTGRES_STARTED NPCFIX postage nelly",
+        "log_sha256": "5a344f6e003ce7c26017fb1aaa83f5fcb03bead8a1933ca622076b3fc230a8ac"
+      },
+      "checks": "Workspace fmt PASS; changed dispatch all-target/all-feature check PASS and strict clippy -D warnings PASS. Original13 keys and assertions retained; suite parameterization adds five NPCs and postal selectors require exact item identity, Buy side and price. No production, content-provider or pin changes.",
+      "merged_engine_equivalence": "Published production source exactly matches upstream green4d34d0efd. All NPC trade/service/talk paths and both postal item profiles unchanged; forward1146/1147 modify quest RewardClaim proofs only. Own five-case PG456.20s retained; fresh merged check/clippy validates the new engine API with the unpublished postal test.",
+      "physical_binary_reuse": "Placement fixture and every production input byte-identical to the previously compiled source; only the unrelated postal test scenario changed. The five postal command cases use the freshly compiled test binary.",
+      "cumulative_physical_cases": 107
     },
     {
       "name": "retail-population-qualification-19",
@@ -1448,6 +1480,40 @@
         "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_postage.rs",
         "qlane-meta/npcfix/CONTRACT-NOTES.md"
       ]
+    },
+    "additional_postal": {
+      "npc_keys": [
+        "oteryn:npc.olrik",
+        "oteryn:npc.chemar",
+        "oteryn:npc.chrystal",
+        "oteryn:npc.fyodor",
+        "oteryn:npc.nelly"
+      ],
+      "proof": {
+        "log": "/tmp/npcfix-evidence/additional-postal-services-green.log",
+        "duration_seconds": 456.2,
+        "marker": "POSTGRES_STARTED NPCFIX postage olrik",
+        "log_sha256": "0fad1fcea2b2c9a7060e44a6b4b5de8b9c141f7184aa059a3fcd689cf14acf5a"
+      },
+      "source_comparison": {
+        "source_commit": "0fd218694172109f2e2fb90835c6efd78029f468",
+        "source_path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_postage.rs",
+        "original_case_count": 13,
+        "original_keys_preserved": true,
+        "all_original_assertions_preserved": true,
+        "normalized_body_identical": true,
+        "normalization": "Only remove the new parcel/letter reference lookup and reverse three strict identity+Buy-side predicate additions. Every other original scenario byte retained.",
+        "selector_strengthening": "Nelly has other merchandise at postal prices; both parcel price lookups and discounted letter assertion now also require the exact item reference and Buy side.",
+        "compiled_fixture_sha256": "80f76d0edc15c3addf86bba5ecff73b069d985c689a3a45196f0aefe3a39d83b",
+        "scenario_body_sha256": "ae300b429fae797bd98e4084785b02853908564494c80d93f22fa07119c656ae",
+        "new_case_keys": [
+          "olrik",
+          "chemar",
+          "chrystal",
+          "fyodor",
+          "nelly"
+        ]
+      }
     }
   },
   "parallel_batches": {
@@ -1620,37 +1686,68 @@
     }
   },
   "active_batch": {
-    "name": "retail-population-qualification-21",
+    "name": "additional-postal-qualification-18",
     "state": "QUALIFIED",
     "entries": [
-      "Romir",
-      "Sinatuki",
-      "Sirik",
-      "Thorwulf",
-      "Zora",
-      "Dorian"
+      "Olrik",
+      "Chemar",
+      "Chrystal",
+      "Fyodor",
+      "Nelly"
     ],
-    "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed.",
+    "scope": "Audited actual source-cell admission and exact native actor identities plus real command postal windows, ordinary parcel purchase, completed Postman discount, current locked-rank refusal and exact replay. Existing source repair catalogue proof retains Letter8/5 and Parcel15/10 declarations.",
     "red": {
+      "log": "/tmp/npcfix-evidence/additional-postal-placement-red.log",
+      "duration_seconds": 47.59,
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 58.08,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-21-red.log",
-      "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
+      "log_sha256": "bcd0e5bdec6fe3a56ef505552e9b6a84f324b85f717bc6f84bdedbf3806fe825"
     },
     "green": {
+      "log": "/tmp/npcfix-evidence/additional-postal-placement-green.log",
+      "duration_seconds": 105.34,
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 110.33,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-21-green.log",
-      "cumulative_cases": 125
+      "log_sha256": "5ebf883f76abc0e17889f4a11a40701af500d47a10fc62415409439a2b64d97b"
     },
-    "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at ea3e1300f12deb5913f1edd1d4a2b9ae3b4c86dc; details in verification_components.latest_checked_source. Source identity checked before each slice",
-    "test_code_commit": "ea3e1300f12deb5913f1edd1d4a2b9ae3b4c86dc",
-    "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
+    "postal_services": {
+      "log": "/tmp/npcfix-evidence/additional-postal-services-green.log",
+      "duration_seconds": 456.2,
+      "marker": "POSTGRES_STARTED NPCFIX postage olrik",
+      "log_sha256": "0fad1fcea2b2c9a7060e44a6b4b5de8b9c141f7184aa059a3fcd689cf14acf5a"
+    },
+    "source_comparison": {
+      "source_commit": "0fd218694172109f2e2fb90835c6efd78029f468",
+      "source_path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_postage.rs",
+      "original_case_count": 13,
+      "original_keys_preserved": true,
+      "all_original_assertions_preserved": true,
+      "normalized_body_identical": true,
+      "normalization": "Only remove the new parcel/letter reference lookup and reverse three strict identity+Buy-side predicate additions. Every other original scenario byte retained.",
+      "selector_strengthening": "Nelly has other merchandise at postal prices; both parcel price lookups and discounted letter assertion now also require the exact item reference and Buy side.",
+      "compiled_fixture_sha256": "80f76d0edc15c3addf86bba5ecff73b069d985c689a3a45196f0aefe3a39d83b",
+      "scenario_body_sha256": "ae300b429fae797bd98e4084785b02853908564494c80d93f22fa07119c656ae",
+      "new_case_keys": [
+        "olrik",
+        "chemar",
+        "chrystal",
+        "fyodor",
+        "nelly"
+      ]
+    },
+    "postal_fixture_red": {
+      "log": "/tmp/npcfix-evidence/additional-postal-services-red.log",
+      "duration_seconds": 505.72,
+      "marker": "POSTGRES_STARTED NPCFIX postage nelly",
+      "log_sha256": "5a344f6e003ce7c26017fb1aaa83f5fcb03bead8a1933ca622076b3fc230a8ac"
+    },
+    "checks": "Workspace fmt PASS; changed dispatch all-target/all-feature check PASS and strict clippy -D warnings PASS. Original13 keys and assertions retained; suite parameterization adds five NPCs and postal selectors require exact item identity, Buy side and price. No production, content-provider or pin changes.",
+    "merged_engine_equivalence": "Published production source exactly matches upstream green4d34d0efd. All NPC trade/service/talk paths and both postal item profiles unchanged; forward1146/1147 modify quest RewardClaim proofs only. Own five-case PG456.20s retained; fresh merged check/clippy validates the new engine API with the unpublished postal test.",
+    "physical_binary_reuse": "Placement fixture and every production input byte-identical to the previously compiled source; only the unrelated postal test scenario changed. The five postal command cases use the freshly compiled test binary.",
+    "cumulative_physical_cases": 107
   },
   "counts": {
     "PENDING": 16,
-    "QUALIFIED": 131,
-    "AUTHORED; QUALIFICATION PENDING": 146,
+    "QUALIFIED": 136,
+    "AUTHORED; QUALIFICATION PENDING": 141,
     "EXCLUDED": 24,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
@@ -1712,8 +1809,8 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/251; content/services/trade/trade-00000-00326.json:1#/records/221",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING",
+      "test": "npcfix_fading_and_retained_placements_postgres; npcfix_postgres_additional_postal_services_and_replay; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "QUALIFIED",
       "qualification_components": {
         "physical": {
           "seconds": 105.34,
@@ -1721,6 +1818,13 @@
           "log": "/tmp/npcfix-evidence/additional-postal-placement-green.log",
           "sha256": "5ebf883f76abc0e17889f4a11a40701af500d47a10fc62415409439a2b64d97b"
         }
+      },
+      "qualification": {
+        "batch": "additional-postal-qualification-18",
+        "scope": "Audited actual source-cell admission and exact native actor identities plus real command postal windows, ordinary parcel purchase, completed Postman discount, current locked-rank refusal and exact replay. Existing source repair catalogue proof retains Letter8/5 and Parcel15/10 declarations.",
+        "postgres_red_seconds": 47.59,
+        "postgres_physical_green_seconds": 105.34,
+        "postgres_service_green_seconds": 456.2
       }
     },
     {
@@ -1908,8 +2012,8 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/66; content/services/trade/trade-00000-00326.json:1#/records/60",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING",
+      "test": "npcfix_fading_and_retained_placements_postgres; npcfix_postgres_additional_postal_services_and_replay; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "QUALIFIED",
       "physical_admission": {
         "state": "QUALIFIED",
         "postgres": "same six-NPC test,106.18s",
@@ -1922,6 +2026,13 @@
           "log": "/tmp/npcfix-evidence/additional-postal-placement-green.log",
           "sha256": "5ebf883f76abc0e17889f4a11a40701af500d47a10fc62415409439a2b64d97b"
         }
+      },
+      "qualification": {
+        "batch": "additional-postal-qualification-18",
+        "scope": "Audited actual source-cell admission and exact native actor identities plus real command postal windows, ordinary parcel purchase, completed Postman discount, current locked-rank refusal and exact replay. Existing source repair catalogue proof retains Letter8/5 and Parcel15/10 declarations.",
+        "postgres_red_seconds": 47.59,
+        "postgres_physical_green_seconds": 105.34,
+        "postgres_service_green_seconds": 456.2
       }
     },
     {
@@ -2200,8 +2311,8 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/70; content/services/trade/trade-00000-00326.json:1#/records/64",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING",
+      "test": "npcfix_fading_and_retained_placements_postgres; npcfix_postgres_additional_postal_services_and_replay; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "QUALIFIED",
       "qualification_components": {
         "physical": {
           "seconds": 105.34,
@@ -2209,6 +2320,13 @@
           "log": "/tmp/npcfix-evidence/additional-postal-placement-green.log",
           "sha256": "5ebf883f76abc0e17889f4a11a40701af500d47a10fc62415409439a2b64d97b"
         }
+      },
+      "qualification": {
+        "batch": "additional-postal-qualification-18",
+        "scope": "Audited actual source-cell admission and exact native actor identities plus real command postal windows, ordinary parcel purchase, completed Postman discount, current locked-rank refusal and exact replay. Existing source repair catalogue proof retains Letter8/5 and Parcel15/10 declarations.",
+        "postgres_red_seconds": 47.59,
+        "postgres_physical_green_seconds": 105.34,
+        "postgres_service_green_seconds": 456.2
       }
     },
     {
@@ -3894,8 +4012,8 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/125; content/services/trade/trade-00000-00326.json:1#/records/111",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING",
+      "test": "npcfix_fading_and_retained_placements_postgres; npcfix_postgres_additional_postal_services_and_replay; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "QUALIFIED",
       "qualification_components": {
         "physical": {
           "seconds": 105.34,
@@ -3903,6 +4021,13 @@
           "log": "/tmp/npcfix-evidence/additional-postal-placement-green.log",
           "sha256": "5ebf883f76abc0e17889f4a11a40701af500d47a10fc62415409439a2b64d97b"
         }
+      },
+      "qualification": {
+        "batch": "additional-postal-qualification-18",
+        "scope": "Audited actual source-cell admission and exact native actor identities plus real command postal windows, ordinary parcel purchase, completed Postman discount, current locked-rank refusal and exact replay. Existing source repair catalogue proof retains Letter8/5 and Parcel15/10 declarations.",
+        "postgres_red_seconds": 47.59,
+        "postgres_physical_green_seconds": 105.34,
+        "postgres_service_green_seconds": 456.2
       }
     },
     {
@@ -4446,8 +4571,8 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/236; content/services/trade/trade-00000-00326.json:1#/records/209",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING",
+      "test": "npcfix_fading_and_retained_placements_postgres; npcfix_postgres_additional_postal_services_and_replay; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "QUALIFIED",
       "qualification_components": {
         "physical": {
           "seconds": 105.34,
@@ -4455,6 +4580,13 @@
           "log": "/tmp/npcfix-evidence/additional-postal-placement-green.log",
           "sha256": "5ebf883f76abc0e17889f4a11a40701af500d47a10fc62415409439a2b64d97b"
         }
+      },
+      "qualification": {
+        "batch": "additional-postal-qualification-18",
+        "scope": "Audited actual source-cell admission and exact native actor identities plus real command postal windows, ordinary parcel purchase, completed Postman discount, current locked-rank refusal and exact replay. Existing source repair catalogue proof retains Letter8/5 and Parcel15/10 declarations.",
+        "postgres_red_seconds": 47.59,
+        "postgres_physical_green_seconds": 105.34,
+        "postgres_service_green_seconds": 456.2
       }
     },
     {

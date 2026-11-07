@@ -207,3 +207,7 @@ Reconciliation source review complete: production apps/crates/content bytes exac
 Pushed-ready retail-population-qualification-20: Hawkyr, Janz, Kjesse, Lurik, Nor, Robert. Actual PG historical RED47.89s/current GREEN100.33s, marker present; cumulative native placement/identity assertions retained. fmt PASS; unchanged Rust check/clippy proof reused from e2615554b. No production changes; prior authored repair now qualified. Continue immediately.
 
 Pushed-ready retail-population-qualification-21: Romir, Sinatuki, Sirik, Thorwulf, Zora, Dorian. Actual PG historical RED58.08s/current GREEN110.33s, marker present; cumulative native placement/identity assertions retained. fmt PASS; unchanged Rust check/clippy proof reused from e2615554b. No production changes; prior authored repair now qualified. Continue immediately.
+
+## Five additional postal actors qualified
+
+Olrik, Chemar, Chrystal, Fyodor, Nelly: actual PG historical placement RED47.59s and current physical GREEN105.34s; freshly compiled real postal command GREEN456.20s with all five DB markers. Existing thirteen keys and all rank/replay assertions retained; exact-item/side/price selectors fix the Nelly collision exposed by the initial real PG RED505.72s. Added focused five-case entrypoint. Dispatch all-target/all-feature check and strict Clippy plus fmt PASS; no production/provider/pin changes. Counts recomputed from all entries. Continue service/travel physical component slices, then remaining native/profile/shared-feature repairs; push each green batch.
