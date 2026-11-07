@@ -448,6 +448,52 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/exchange-cyclops-soul-orbs",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 9,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5944",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i6528",
+        "count": 100,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Cling clang!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:197:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ],
+      "repeatable": true,
+      "bulk": {
+        "item": "oteryn:item.tibia.i5944",
+        "output": "oteryn:item.tibia.i6528",
+        "base": 100,
+        "bonus": 100,
+        "chance_percent": 1
+      }
     }
   ],
   "offers": [
@@ -744,6 +790,27 @@
       ],
       "reply": [
         "Want to make gear wheel from iron ore?"
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "soul orb"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Me can make nasty bolt from soul orbs. Trade all?"
       ],
       "any_topic": true
     }

@@ -1040,6 +1040,27 @@
       "any_topic": true
     },
     {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "soul orb"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Me can make nasty bolt from soul orbs. Trade all?"
+      ],
+      "any_topic": true
+    },
+    {
       "npc": "oteryn:npc.a_fading_memory",
       "keywords": [
         "kala"

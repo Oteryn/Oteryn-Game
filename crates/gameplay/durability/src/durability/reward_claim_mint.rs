@@ -115,11 +115,13 @@ use sha2::{Digest, Sha256};
 use sqlx::Row;
 
 mod arena;
+mod backpack_outputs;
 pub mod boss_reward;
 mod contents;
 mod grizzly;
 mod monk;
 pub(crate) mod quest;
+mod quest_bulk;
 pub use quest::{QuestRewardAdmission, QuestRewardFeePayment};
 mod soul_war;
 mod tibiadrome;
@@ -174,6 +176,8 @@ pub struct RewardClaimMintRequest {
     pub quantity: u32,
     /// The exact complete container contents. No child is dropped on refusal.
     pub contents: Vec<RewardClaimMintContent>,
+    /// Place additional outputs directly in the main backpack, rather than inside the root.
+    pub backpack_outputs: bool,
     /// Immutable source-authored text on the top-level reward.
     pub root_text: Option<String>,
     /// Facts of the equipped main backpack's definition.
@@ -1238,11 +1242,11 @@ async fn apply_claim(
            character_id, claim_family, claim_production_key, claim_revision_ref, \
            intent_binding, transaction_id, event_id, item_instance_id, quantity, \
            destination_parent_item_instance_id, destination_ordinal, occurred_at, \
-           envelope_sha256, committed_at, contents_capacity, contents_plan, root_text) \
+           envelope_sha256, committed_at, contents_capacity, contents_plan, root_text, backpack_outputs) \
          VALUES (encode($1,'hex')::uuid, $2::text::numeric(20,0), encode($3,'hex')::uuid, \
            $4, $5, $6, $7, encode($8,'hex')::uuid, encode($9,'hex')::uuid, \
            encode($10,'hex')::uuid, $11, encode($12,'hex')::uuid, $13::text::numeric(20,0), \
-           $14, $15, $16, $17, $18, $19)",
+           $14, $15, $16, $17, $18, $19, $20)",
     )
     .bind(command.game_session_id().as_bytes().as_slice())
     .bind(command.command_id().get().to_string())
@@ -1263,6 +1267,7 @@ async fn apply_claim(
     .bind(contents::capacity(request))
     .bind(sqlx::types::Json(contents::plan(request, reservation)))
     .bind(&request.root_text)
+    .bind(request.backpack_outputs)
     .execute(&mut **tx)
     .await?;
     if let Some(number) = request.key_number {
@@ -1338,7 +1343,7 @@ async fn load_reservation(
     Ok(sqlx::query(
         "SELECT intent_binding, character_id::text, world_id::text, channel_id::text, \
                 transaction_id::text, event_id::text, item_instance_id::text, occurred_at, \
-                work_units_used, contents_capacity, contents_plan, root_text \
+                work_units_used, contents_capacity, contents_plan, root_text, backpack_outputs \
            FROM game_reward_claim_mint_reservations \
           WHERE game_session_id = encode($1,'hex')::uuid \
             AND command_id = $2::text::numeric(20,0)",
@@ -1377,11 +1382,11 @@ async fn insert_reservation(
         "INSERT INTO game_reward_claim_mint_reservations(game_session_id, command_id, \
            character_id, world_id, channel_id, claim_family, claim_production_key, \
            claim_revision_ref, intent_binding, transaction_id, event_id, item_instance_id, \
-           occurred_at, work_units_used, reserved_at, contents_capacity, contents_plan, root_text) \
+           occurred_at, work_units_used, reserved_at, contents_capacity, contents_plan, root_text, backpack_outputs) \
          VALUES (encode($1,'hex')::uuid, $2::text::numeric(20,0), encode($3,'hex')::uuid, \
            encode($4,'hex')::uuid, encode($5,'hex')::uuid, $6, $7, $8, $9, \
            encode($10,'hex')::uuid, encode($11,'hex')::uuid, encode($12,'hex')::uuid, $13, 0, \
-           floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $14, $15, $16)",
+           floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $14, $15, $16, $17)",
     )
     .bind(request.command.game_session_id().as_bytes().as_slice())
     .bind(request.command.command_id().get().to_string())
@@ -1399,6 +1404,7 @@ async fn insert_reservation(
     .bind(contents::capacity(request))
     .bind(sqlx::types::Json(contents::plan(request, reservation)))
     .bind(&request.root_text)
+    .bind(request.backpack_outputs)
     .execute(&mut **tx)
     .await?;
     Ok(())
@@ -1593,6 +1599,9 @@ fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -
                 push_text(&mut canonical, text.as_bytes()).map_err(from_transfer_input)?;
             }
         }
+    }
+    if request.backpack_outputs {
+        canonical.push(0x42);
     }
     if let Some(text) = &request.root_text {
         canonical.push(0x54);
@@ -1818,6 +1827,7 @@ mod tests {
     fn request(achievement: Option<(&str, AchievementCatalogueLookup)>) -> RewardClaimMintRequest {
         use crate::foundation::{CommandId, GameSessionId};
         RewardClaimMintRequest {
+            backpack_outputs: false,
             command: CommandRef::new(
                 GameSessionId::decode(&id(50)).expect("session"),
                 CommandId::new(7).expect("command"),
@@ -1849,6 +1859,7 @@ mod tests {
     fn the_quest_transition_is_validated_and_bound_into_the_intent() {
         const TRANSITION: &str = "oteryn:quest-transition/test.chest";
         let with = |transition: Option<&str>, achievement| RewardClaimMintRequest {
+            backpack_outputs: false,
             quest_transition: transition.map(Into::into),
             ..request(achievement)
         };
@@ -1885,6 +1896,7 @@ mod tests {
     #[test]
     fn the_key_number_is_validated_and_bound_into_the_intent() {
         let key = |number: Option<u16>| RewardClaimMintRequest {
+            backpack_outputs: false,
             item: facts("fixture:b3.key", ItemStackClass::NonStackable),
             quantity: 1,
             key_number: number,
@@ -1895,14 +1907,17 @@ mod tests {
         let refused = [
             key(Some(0)),
             RewardClaimMintRequest {
+                backpack_outputs: false,
                 quantity: 2,
                 ..key(Some(10))
             },
             RewardClaimMintRequest {
+                backpack_outputs: false,
                 item: facts("fixture:b3.coin", COIN),
                 ..key(Some(10))
             },
             RewardClaimMintRequest {
+                backpack_outputs: false,
                 item: backpack_facts(8),
                 ..key(Some(10))
             },
@@ -1918,6 +1933,7 @@ mod tests {
         let bind =
             |request: &RewardClaimMintRequest| intent_binding(request, character).expect("binding");
         let with_quest = |number| RewardClaimMintRequest {
+            backpack_outputs: false,
             quest_transition: Some("oteryn:quest-transition/test.chest".into()),
             ..key(number)
         };
@@ -2176,6 +2192,38 @@ mod tests {
                 .expect("grant")
                 .source,
             grant.source
+        );
+    }
+    #[test]
+    fn backpack_output_layout_is_bound_and_counts_the_root_entry() {
+        let mut nested = request(None);
+        let child = RewardClaimMintContent {
+            item: nested.item.clone(),
+            quantity: 3,
+            key_number: None,
+            text: None,
+        };
+        nested.item = nested.backpack.clone();
+        nested.quantity = 1;
+        nested.contents = vec![child];
+        assert!(contents::validate(&nested).is_ok());
+        let mut flat = nested.clone();
+        flat.backpack_outputs = true;
+        assert!(contents::validate(&flat).is_ok());
+        let character = CharacterId::from_bytes(id(41)).expect("character");
+        assert_ne!(
+            intent_binding(&nested, character).expect("nested binding"),
+            intent_binding(&flat, character).expect("backpack binding")
+        );
+        flat.backpack.container_capacity = Some(1);
+        assert!(
+            contents::validate(&flat).is_err(),
+            "the root also needs a free entry"
+        );
+        flat.contents.clear();
+        assert!(
+            contents::validate(&flat).is_err(),
+            "a layout flag cannot describe an empty plan"
         );
     }
 }

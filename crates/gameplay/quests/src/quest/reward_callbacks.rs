@@ -39,6 +39,8 @@ pub struct ItemReward {
     pub decay: Option<RewardDecay>,
     #[serde(default)]
     pub contents: Vec<ItemAmount>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub backpack_outputs: Vec<ItemAmount>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -47,6 +49,17 @@ pub struct OutfitReward {
     pub outfit: String,
     /// Base entitlement is always included. Bits 1 and 2 earn the respective addons.
     pub addons: u8,
+}
+
+/// Trade every carried matching input, rolling once per input on the server.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct BulkExchange {
+    pub item: String,
+    pub output: String,
+    pub base: u16,
+    pub bonus: u16,
+    pub chance_percent: u8,
 }
 
 /// Exact source price; only the durable fee owner may consume the funds.
@@ -110,6 +123,8 @@ pub struct RewardCallback {
     pub take: Vec<ItemAmount>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fee: Option<MonetaryFee>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bulk: Option<BulkExchange>,
     /// Carried evidence checked under the same locks, without consuming it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub present: Vec<ItemAmount>,
@@ -268,6 +283,29 @@ fn parse_document(text: &str) -> Result<Document, String> {
             || c.present
                 .iter()
                 .any(|s| !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0)
+            || c.bulk.as_ref().is_some_and(|bulk| {
+                !item(&bulk.item, 1)
+                    || !item(&bulk.output, bulk.base)
+                    || bulk.item == bulk.output
+                    || bulk.bonus == 0
+                    || !(1..=100).contains(&bulk.chance_percent)
+                    || !c.repeatable
+                    || c.take.len() != 1
+                    || c.take
+                        .first()
+                        .is_none_or(|take| take.item != bulk.item || take.count != 1)
+                    || c.give.as_ref().is_none_or(|give| {
+                        give.item != bulk.output
+                            || give.count != bulk.base
+                            || !give.contents.is_empty()
+                            || !give.backpack_outputs.is_empty()
+                            || give.decay.is_some()
+                    })
+                    || c.fee.is_some()
+                    || !c.present.is_empty()
+                    || c.outfit.is_some()
+                    || c.achievement.is_some()
+            })
             || c.fee.as_ref().is_some_and(|fee| {
                 fee.gold == 0
                     || fee.gold > 1_000_000_000_000
@@ -290,6 +328,7 @@ fn parse_document(text: &str) -> Result<Document, String> {
                     || r.decay.as_ref().is_some_and(|decay| {
                         r.count != 1
                             || decay.duration_millis == 0
+                            || !r.backpack_outputs.is_empty()
                             || decay.target.as_ref().is_some_and(|target| {
                                 target.family != "Item"
                                     || !slug(&target.key, "oteryn:item.", b"._/:-", 256)
@@ -297,6 +336,9 @@ fn parse_document(text: &str) -> Result<Document, String> {
                                     || target.revision.len() > 128
                             })
                     })
+                    || (!r.contents.is_empty() && !r.backpack_outputs.is_empty())
+                    || r.backpack_outputs.len() > 19
+                    || r.backpack_outputs.iter().any(|s| !item(&s.item, s.count))
                     || r.contents.len() > 20
                     || r.contents.iter().any(|s| !item(&s.item, s.count))
             })

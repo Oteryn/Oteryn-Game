@@ -1,83 +1,139 @@
 {
-  "npcfix_active_workshop": {
-    "entries": [
-      "A Fading Memory",
-      "Altar",
-      "A Sweaty Cyclops"
-    ],
-    "local_source_commit": "d1ab73204",
-    "merging_with": "43c59ddb9; ownership checkpointf6ab31acd",
-    "state": "COMBINED_SOURCE_GREEN; REVIEW_PENDING",
-    "work": "Incoming cooldown source and malformed-clock PG are retained. Generic bank+item atomic payments, delayed craft clocks, fresh database-time literal wait replies, and strict real map actors already locally validated. Incoming1144 unchanged; workshop extension1145. Fading physical32952,31440,3 already implemented and PG-qualified in main checkout; avoid duplicate Fading physical/UI work. Other entries remain active. Latest43c59ddb9 literal UI delivery acknowledged and will be reused in main; avoid duplicate Fading UI/physical work.",
-    "local_proof": "PG6/183.57s plus funded missing parts96.27s and existing bank96.20s; quest261/fee43/NPC25; fmt/check/clippy and pins. Combined quest263 and native42 reproduction now pass; combined PG8/check/clippy running.",
-    "normal_profile": "This checkout retained normal unoptimized+debuginfo profiles and existing env.sh. Only stopped-build incremental caches were removed."
-  },
-  "active_batch": {
-    "name": "retail-population-qualification-19",
-    "state": "QUALIFIED",
-    "entries": [
-      "Bertha",
-      "Captain Breezelda",
-      "Captain Haba",
-      "Dankwart",
-      "Freezhild",
-      "Fynn"
-    ],
-    "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed.",
-    "red": {
-      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 46.17,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-19-red.log",
-      "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
-    },
-    "green": {
-      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 112.11,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-19-green.log",
-      "cumulative_cases": 113
-    },
-    "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at e2615554b49b114273c24e6c2c4cba6b781ade47; details in verification_components.latest_checked_source. Source identity checked before each slice",
-    "test_code_commit": "f2d6f7bbb2cf3918921c9147e5370e0465f8caf2",
-    "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
-  },
-  "active_smithing_batch": {
-    "state": "GREEN; committing and pushing",
-    "entries": [
-      "royal steel",
-      "draconian steel",
-      "hell steel",
-      "crude iron",
-      "molten gold",
-      "gear wheel"
-    ],
-    "red": "1 actual PostgreSQL case FAILED 96.09s; POSTGRES_STARTED and POSTGRES_CASE_COMPLETED, missing-input response used ordinary fallback instead of the smithing writer",
-    "engine_reuse": "Refreshed qengine2 36927f208 and questl2 d8a87d717; no bulk/random exchange support found. Reuse current atomic exact carried-cost rewards and native deadlines for fixed exchanges. Generic any-topic offer roots do not relax reward confirmation topics.",
-    "source": "https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/a_sweaty_cyclops.lua; sha256 bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a",
-    "profiles": "Only new3560 and12804; all prior native profiles structurally unchanged. Reuse11 existing profiles. Molten gold keeps source36000s decay.",
-    "remaining": "Soul orb bulk+random mechanism remains immediate active work; do not qualify whole Sweaty early.",
-    "reuse": {
-      "source_commit": "cbf052888 / latest questl2 d8a87d717",
-      "production_callbacks": "All eight canonical exchange-cyclops-* declarations reused verbatim; no duplicate NPCFIX callback identities",
-      "donor_proof": "L2 real PostgreSQL18.6 fixed source journey81.552406996s; new3560 and12804 native profiles structurally identical to L2",
-      "integration": "Initial combined PG8 PASS292.15s including two cycles of all six recipes and both exact10h deadlines; canonical-key integration PG and existing delayed amulet rerunning, then strict Rust checks"
-    },
-    "validation": {
-      "name": "npcfix-fixed-smithing-l2-integration",
-      "state": "GREEN",
-      "entries": [
-        "royal steel",
-        "draconian steel",
-        "hell steel",
-        "crude iron",
-        "molten gold",
-        "gear wheel"
+  "concurrent_cooldown_status": {
+    "schema": 1,
+    "branch": "claude/happy-davinci-ijz3wy-npcfix",
+    "recovered_from": "95accb923",
+    "note": "Original entry-level lane state is absent from available history. Recovered NPC audit rows preserve unfinished work; no prior authored row has been requalified without fresh evidence.",
+    "owner_constraints": {
+      "excluded": [
+        "Dawnport",
+        "OT-only W14",
+        "P23",
+        "X01-X06"
       ],
-      "reuse": "Eight existing canonical L2 exchange-cyclops-* callbacks, source cbf052888 / branch d8a87d717; no duplicate authored receipt identities. Native3560 and12804 identical to L2; all earlier profiles unchanged.",
-      "red": "Actual PG1 FAILED96.09s, start/completion markers, ordinary missing-cost fallback instead of fenced smithing callback.",
-      "green": "Combined workshop/physical PG8 PASS292.15s. Canonical L2 key integration smithing PG1 PASS104.01s; delayed amulet PG1 PASS92.45s. Real PostgreSQL markers and nonzero durations in retained logs.",
-      "checks": "Quest263 PASS11.39s; authoring12 PASS7.486s; profile8 PASS29.306s; native42 regeneration/check PASS; fmt/diff PASS; check all-target/all-feature59.70s; strict clippy all-target/all-feature1m19s; pin-check568fe0d9753bba3d73f38b4ae884063d2d543b866e337a6f0aab6fd9cc72ec9a PASS.",
-      "source_behavior": "Friendship start writes both source tracks atomically; three separate bast skirts unlock four friend-gated trades; melting and gear wheel ungated. All six repeat, inexact confirmation keeps inputs, missing inputs refuse, two molten gold rewards have exact original10h deadlines. Any-topic source keyword roots never widen reward confirmation topics.",
-      "remaining": "Whole Sweaty not qualified early: soul-orb bulk/random trade and source failure replies/topic resets remain immediate active work. Prior workshop independent review unavailable due401 authentication; not a generic engine deferral."
+      "other_lane_world_changes": "skip -worldchg/-wvar/-wcontrib/-wevents",
+      "fathers_burden": "11-track acceptance is one atomic write",
+      "grants": "charge only on an exact match",
+      "publication": "commit as blakinio with required trailers; fetch and fast-forward push each green batch; no main, force push or PR"
+    },
+    "next_batch": "Continue owned state/reward/access NPC entries using delivered core and any newer lane work; Fading Memory needs the existing SetNow/ElapsedAtLeast timer composed into shared rewards. Do not redo now-qualified physical entries.",
+    "shared_engine_lookup": {
+      "owner_rule": "Shared engine features are this lane’s responsibility when required. Never leave an entry unfinished for missing engine support.",
+      "qengine2": {
+        "head": "9d3c3869f",
+        "found": [
+          "atomic NPC take/give/present callbacks",
+          "outfit and achievement grants",
+          "conversation offers",
+          "native reward item profiles"
+        ],
+        "action": "Merge/reuse after committing the current green caller batch; do not author a second inventory grant engine."
+      },
+      "questl2": {
+        "head": "7e16b64ee",
+        "found": [
+          "16-track shared reward capacity",
+          "PG atomic eleven-track proof",
+          "explicit costed repeatable item exchange with occurrence mint keys and exact replay"
+        ],
+        "action": "Reuse reward-plan/schema capacity extensions; both implementations use the same core bound."
+      },
+      "questpc6": {
+        "head": "be812420e3c20d9dd8ae6c3c23a9c4acb942ceda",
+        "found": [
+          "SET_IF conditional reset",
+          "authored failure landing"
+        ],
+        "action": "Reuse only where an owned NPC entry needs these mechanisms."
+      },
+      "world_lanes": "Fetched worldchg, wvar, wevents and wcontrib. HEAD trees contain no QUEST-STATUS/RESUME. Earlier seven world-NPC ownership assumptions are withdrawn pending exact allocation/binding proof; entries are active again.",
+      "qualified_elsewhere_candidate": "qengine2 proves Wayfarer Outfits Quest QUALIFIED. Reuse its Cranky Lizard Crone callbacks and run affected integration PG before recording native NPC qualification."
+    },
+    "active_batch": {
+      "name": "native physical endpoints for three remaining NPCs",
+      "entries": [
+        "A Wandering Soul",
+        "Doctor Marrow",
+        "Goldro"
+      ],
+      "state": "GREEN",
+      "session": 19401,
+      "command": "cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib npcfix_endpoint_postgres_ -- --nocapture",
+      "log": "/tmp/npcfix-evidence/endpoint-red.log",
+      "scope": "Actual canonical compiler admission, native-to-runtime placement and exact displayed identity; Wandering exchange component already PG-qualified in pushed batch3. Doctor and Goldro audit entries concern physical identity/placement, not wholesale implementation of every donor quest.",
+      "source_rules": {
+        "Wandering": "Delivered npc-anchors command selects32915,31489,7 within captured radius2; original32914,31490,7 retained.",
+        "Doctor": "Use primary audited Wiki34009,32643,6 when strictly admitted; preserve all old conflict observations. Donor is stationary radius0, so do not claim relocation within its donor radius.",
+        "Goldro": "Strictly admitted34055,32504,7 is one cell from donor34055,32503,7, within source radius1 (Crystal00ce goldro.lua:11 sha394da3c41a2e81fb8b2cb5ee637a95e4bb50393de1069a338452a1ab89ab15f8)."
+      },
+      "constraint": "No production authoring data changed before actual PG RED; no map admission guard weakened.",
+      "red": "3 failed28.51s; all three DB markers and per-case durations26.329s/26.470s/28.505s. Doctor absent; Goldro/Wandering BlockSolid.",
+      "green": "3 passed84.05s; all DB/completion markers. Doctor76.162s, Goldro84.016s, Wandering84.049s. Exact canonical-to-runtime actor identities, coordinates and floor conversion.",
+      "authoring": "12 passed; all previous assertions retained and added source-preservation/stationary-policy checks.",
+      "pin": "PASS refreshed and independently checked ddaa993dfb6776971ed3f521d770142e52ea01b451bf0373f894d2d1d1353a3a",
+      "implementation": "Source-backed authoring changes only: Wandering within captured radius2; Goldro within immutable donor radius1; Doctor uses strictly admitted primary audited Wiki cell, preserving all three alternate observations and stationary radius0 evidence. Original compiler guards unchanged.",
+      "check": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 15s",
+      "clippy": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 24s",
+      "fmt": "PASS cargo fmt --all and explicit mounted-file rustfmt",
+      "push": "Commit and fast-forward push follows; fetch/merge any remote movement."
+    },
+    "continuation_merge": {
+      "note": "Preserved both histories; incoming state callers retained. Redundant npc_state catalogue compiler removed in consolidation. Superseded local caller draft remains stashed and must not be applied.",
+      "local_green_commit": "604b1b670",
+      "caller_draft": "Preserved in git stash; superseded by remote implementation, not part of publication."
+    },
+    "active_reward_delivery": {
+      "entries": [
+        "Al Dee",
+        "A Wandering Soul",
+        "A Weakened Forest Fury"
+      ],
+      "state": "IMPLEMENTED_FINAL_VALIDATION",
+      "source_delivery": "pending green batch checks; no new NPC qualification claimed in this metadata checkpoint",
+      "evidence": "ACTIVE-REWARD-DELIVERY.md",
+      "upstream_to_merge": "2a871a435",
+      "avoid_duplicate_work": true
+    },
+    "incoming_source_authoring": {
+      "head": "0cbb57db2ec4b2729eb4a8bab78204ed3f4ee8d6",
+      "note": "Preserved planner and inactive Fading Memory-only authoring. Current live callbacks remain qengine source compositions; cooldown runtime integration follows after physical admission batch."
+    },
+    "parallel_batches": {
+      "fading_runtime": {
+        "state": "QUALIFIED_COMPONENT",
+        "base": "7178e767e",
+        "scope": "Generic declared source clock and DB-backed free repeats; Fading story/item8746; preserve incoming expiry and achievement-once engine.",
+        "red": "POSTGRES_STARTED a_fading_memory; callback missing8.18s; subsequent old-base SQL occurrence failure112.67s resolved by reuse.",
+        "unit": "7 passed1.25s",
+        "authoring": "5 standalone and12 shared producer tests pass; strict foreign temporal/achievement preservation",
+        "sql": "1144 extends incoming latest proof; keep1142/1143 intact",
+        "logs": "/tmp/npcfix-evidence/fading-port-{green,check,clippy}.log",
+        "next": "Actual PG GREEN, final gates, immediate push; then finish Fading real placement and literal cooldown refusal in independent physical batch. Do not duplicate active Wandering/Doctor/Goldro.",
+        "green": {
+          "marker": "POSTGRES_STARTED NPCFIX reward a_fading_memory",
+          "duration_seconds": 113.9,
+          "result": "Exact source topics/keyword; initial gift; early DB-time refusal despite advanced conversation clock; second post-expiry gift; malformed clock plan refuses with complete item+clock rollback",
+          "log": "/tmp/npcfix-evidence/fading-port-green.log"
+        },
+        "checks": {
+          "quest_units": "7 passed1.25s",
+          "authoring": "5 owned+12 shared pass; strict original recipes/pins retained",
+          "native": "PASS42-file generation and reproduction",
+          "fmt": "PASS all workspace and both mounted test files",
+          "check": "PASS changed packages all targets/features6m47s",
+          "clippy": "PASS same targets/features -D warnings7m54s",
+          "integration": "123 passed6.25s",
+          "repository": "5 passed; see /tmp/npcfix-evidence/fading-content-repository.log",
+          "pin_check": "PASS d622a839c5638cfdf3d3f81fa696f8cbe6ddab7152f3d8816e0705f8bceabd4a",
+          "self_review": "No findings; declared clocks bounded/owned, missing facts fail closed, same-transaction elapsed/timestamp proof, exact MINT, paid/achievement/deadline arms preserved, no binaries/workflow/repository-tool edits."
+        },
+        "scope_limit": "Reward and reusable clock participant qualified. Whole Fading NPC still requires real placement and literal cooldown refusal/topic reset.",
+        "merged_validation": {
+          "physical_delivery": "5e463759f",
+          "pin_check": "PASS ddaa993dfb6776971ed3f521d770142e52ea01b451bf0373f894d2d1d1353a3a",
+          "note": "Merge preserved both source/qualification histories; only independent physical-placement data and metadata changed from the validated runtime component."
+        }
+      }
     }
   },
   "concurrent_literal_ui_status": {
@@ -252,6 +308,54 @@
       "normal_profile": "This checkout retained normal unoptimized+debuginfo profiles and existing env.sh. Only stopped-build incremental caches were removed."
     }
   },
+  "incoming_cooldown_delivery": {},
+  "note": "Original entry-level lane state is absent from available history. Recovered NPC audit rows preserve unfinished work; no prior authored row has been requalified without fresh evidence.",
+  "owner_constraints": {
+    "excluded": [
+      "Dawnport",
+      "OT-only W14",
+      "P23",
+      "X01-X06"
+    ],
+    "other_lane_world_changes": "skip -worldchg/-wvar/-wcontrib/-wevents",
+    "fathers_burden": "11-track acceptance is one atomic write",
+    "grants": "charge only on an exact match",
+    "publication": "commit as blakinio with required trailers; fetch and fast-forward push each green batch; no main, force push or PR"
+  },
+  "shared_engine_lookup": {
+    "owner_rule": "Shared engine features are this lane’s responsibility when required. Never leave an entry unfinished for missing engine support.",
+    "qengine2": {
+      "head": "9d3c3869f",
+      "found": [
+        "atomic NPC take/give/present callbacks",
+        "outfit and achievement grants",
+        "conversation offers",
+        "native reward item profiles"
+      ],
+      "action": "Merge/reuse after committing the current green caller batch; do not author a second inventory grant engine."
+    },
+    "questl2": {
+      "head": "7e16b64ee",
+      "found": [
+        "16-track shared reward capacity",
+        "PG atomic eleven-track proof",
+        "explicit costed repeatable item exchange with occurrence mint keys and exact replay"
+      ],
+      "action": "Reuse reward-plan/schema capacity extensions; both implementations use the same core bound."
+    },
+    "questpc6": {
+      "head": "be812420e3c20d9dd8ae6c3c23a9c4acb942ceda",
+      "found": [
+        "SET_IF conditional reset",
+        "authored failure landing"
+      ],
+      "action": "Reuse only where an owned NPC entry needs these mechanisms."
+    },
+    "world_lanes": "Fetched worldchg, wvar, wevents and wcontrib. HEAD trees contain no QUEST-STATUS/RESUME. Earlier seven world-NPC ownership assumptions are withdrawn pending exact allocation/binding proof; entries are active again.",
+    "qualified_elsewhere_candidate": "qengine2 proves Wayfarer Outfits Quest QUALIFIED. Reuse its Cranky Lizard Crone callbacks and run affected integration PG before recording native NPC qualification."
+  },
+  "recovered_from": "95accb923",
+  "next_batch": "Run changed-source fmt/check/strict clippy and targeted PG proof; publish green reconciliation and actor19 immediately. Continue every owned entry.",
   "batches": [
     {
       "name": "atomic quest/NPC state prerequisite",
@@ -1155,21 +1259,140 @@
       "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at e2615554b49b114273c24e6c2c4cba6b781ade47; details in verification_components.latest_checked_source. Source identity checked before each slice",
       "test_code_commit": "f2d6f7bbb2cf3918921c9147e5370e0465f8caf2",
       "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
+    },
+    {
+      "name": "npcfix-native-bulk-integration",
+      "state": "GREEN",
+      "scope": [
+        "atomic native peer outputs",
+        "all-carried source bulk exchange",
+        "existing paid reward compatibility",
+        "Father11 atomicity"
+      ],
+      "red": "Real PG95.56852851s:2orbs retained after exactyes. Integration92.28s retained unknown-lifetime refusal; no guard relaxed.",
+      "green": {
+        "bulk": "1 PASS97.976031242s, actual POSTGRES_STARTED/COMPLETED; all2 inputs consumed, inexact yes preserves both, independently rolled exact bolt quantity",
+        "native_outputs": "1 PASS4.698335393s, PostgreSQL18.6/server_version_num180006 marker; atomic peer placements, audits, capacity refusal and replay retained",
+        "paid_compatibility": "Altar1 PASS115.184269421s, actual PG markers; fee and exact whole-cost atomicity intact",
+        "father_atomicity": "1 PASS22.89s, actual PG starts for normal/stage mismatch/out-of-range; atomic11 tracks, replay and rollback retained"
+      },
+      "checks": "PASS cargo fmt all; check5 changed crates alltargets/allfeatures2m34s; clippy same-Dwarnings5m17s; quest263/12.34s; MINTunit10, including layout hash and root-entry bounds; authoring13/7.819s; profile9/20.352s; native42 and pin-check568fe0...",
+      "upstream": "96d03398f/fef3715a8; original PC8 eb196696c generic output owner. Only required engine and source NPC bindings reused.",
+      "migrations": "Forward1146/1147, published1144/1145 unchanged; local required physical permit and native temporal checks preserved.",
+      "remaining": "Continue source refusal-topic parity immediately before whole Sweaty qualification. No shared-feature deferral."
     }
   ],
-  "active_reward_delivery": {
-    "entries": [
-      "Al Dee",
-      "A Wandering Soul",
-      "A Weakened Forest Fury"
+  "incoming_six_cells": {
+    "head": "8a7b65dc2",
+    "qualified": [
+      "A Fading Memory",
+      "Dream Butterfly",
+      "Edgar-Ellen",
+      "Jack The Worker",
+      "Nemal",
+      "Ocelus"
     ],
-    "state": "IMPLEMENTED_FINAL_VALIDATION",
-    "source_delivery": "pending green batch checks; no new NPC qualification claimed in this metadata checkpoint",
-    "evidence": "ACTIVE-REWARD-DELIVERY.md",
-    "upstream_to_merge": "2a871a435",
-    "avoid_duplicate_work": true
+    "proof": "Incoming actual PG6 actor proof91.16s, retained all identity/placement assertions; canonical Edgar name only,15 passive profiles added with canonical custody facts retained. Preserve publication and do not redo finished work."
   },
-  "incoming_cooldown_delivery": {},
+  "active_bulk_batch": {
+    "state": "GREEN; commit and fast-forward publication",
+    "red": "PostgreSQL case npcfix-reward-workshop-soul-orbs FAILED95.56852851s; exact yes left2 orbs instead of0. POSTGRES_STARTED and POSTGRES_CASE_COMPLETED retained in soul-orbs-red-retry.log. Prior No space left build did not execute tests and is not RED proof.",
+    "reuse": "Latest L2 fef3715a8 qualifies complete Exchange Quests, normal and1% bonus outcomes PG94.770336667s. Reuse96d03398f backpack outputs (originalPC8 eb196696c) and fef3715a8 bulk resolver/retained draws; no second random or value owner.",
+    "compatibility": "Forward1146/1147 because published1144/1145 already own cooldown/workshop clocks here. Preserve local required SpellLanePermit, native generation weights, fee+clock proof, full absolute deadlines, original effect16 bound/Father11 atomicity. Unrepresented upstream fluid/charge/experience fields are not imported as partial mechanisms.",
+    "next": "Finish bounded constructors/schema adapter; targeted native bulk PG and inherited native peer output proof, existing affected reward paths, fmt/check/clippy, regenerate via tooling, commit+FFpush. Recheck source failure UI against ownership before expanding beyond audited scope.",
+    "postgres_green": {
+      "bulk": "1 PASS97.976031242s, actual POSTGRES_STARTED/COMPLETED; all2 inputs consumed, inexact yes preserves both, independently rolled exact bolt quantity",
+      "native_outputs": "1 PASS4.698335393s, PostgreSQL18.6/server_version_num180006 marker; atomic peer placements, audits, capacity refusal and replay retained",
+      "paid_compatibility": "Altar1 PASS115.184269421s, actual PG markers; fee and exact whole-cost atomicity intact",
+      "father_atomicity": "1 PASS22.89s, actual PG starts for normal/stage mismatch/out-of-range; atomic11 tracks, replay and rollback retained"
+    },
+    "item_fact_qualification": {
+      "item": 6528,
+      "source": "imports/canary/items-xml/items.xml:17979; sha2561cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+      "delta": "Only temporal UNKNOWN -> NOT_APPLICABLE. Every other semantic group byte-structure unchanged. Source equipment pattern unknown-field refinement is checked memberwise with fixed identity/order and concrete facts before retaining the original pattern; known conflicts still rejected.",
+      "tests": "Authoring13 PASS7.819s; profile9 PASS20.352s, including exact known equipment conflict refusal. Native42 regenerated/check PASS; independent pin-check568fe0... PASS."
+    },
+    "checks": "PASS cargo fmt all; check5 changed crates alltargets/allfeatures2m34s; clippy same-Dwarnings5m17s; quest263/12.34s; MINTunit10, including layout hash and root-entry bounds; authoring13/7.819s; profile9/20.352s; native42 and pin-check568fe0..."
+  },
+  "schema": 1,
+  "verification_components": {
+    "npcfix_services": {
+      "state": "QUALIFIED_COMPONENTS",
+      "npc_keys": [
+        "oteryn:npc.benjamin",
+        "oteryn:npc.liane",
+        "oteryn:npc.ray",
+        "oteryn:npc.robson",
+        "oteryn:npc.alesar",
+        "oteryn:npc.nah_bob",
+        "oteryn:npc.rashid",
+        "oteryn:npc.kasmir",
+        "oteryn:npc.albinius",
+        "oteryn:npc.a_ghostly_guardian",
+        "oteryn:npc.flint",
+        "oteryn:npc.romella",
+        "oteryn:npc.pugwah"
+      ],
+      "test": "npcfix_postgres_dispatch_services_and_replay",
+      "postgres_markers": 13,
+      "duration_seconds": 941.85,
+      "log": "/tmp/npcfix-evidence/npcfix-existing-service-proof.log",
+      "log_sha256": "bb1cf3cbbfe2212db5b479c842d792a063562dfa2e4a31fd5b93006e0e5fbc9c",
+      "binary_source": "9fd5ca426",
+      "scope": "Native command/ordinary chat, shop windows, durable trades, quest/rank restrictions, default charge/state purchases, healing and exact replay as asserted by the existing thirteen-case fixture. Physical cell qualification remains separate.",
+      "source_reuse": "Relevant fixture/service/trade implementation and migrations byte-identical to current HEAD; unrelated smithing offer restart does not alter these paths.",
+      "additional_travel_component": {
+        "state": "QUALIFIED_COMPONENTS",
+        "source": "e2615554b; production source identical through current data-only slices",
+        "test": "npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
+        "duration_seconds": 127.59,
+        "marker": "POSTGRES_STARTED TRAVEL npc_paid_travel",
+        "routes": [
+          "captain_bluebear yalahar fare=200 arrival=(32816, 31272, 6)",
+          "captain_fearless yalahar fare=185 arrival=(32816, 31272, 6)",
+          "captain_greyhound yalahar fare=185 arrival=(32816, 31272, 6)",
+          "captain_max calassa fare=200 arrival=(31911, 32710, 6)",
+          "captain_max yalahar fare=400 arrival=(32804, 31270, 6)",
+          "captain_sinbeard yalahar fare=230 arrival=(32816, 31272, 6)",
+          "captain_seahorse oramond fare=200 arrival=(33479, 31985, 7)",
+          "charles liberty_bay fare=50 arrival=(32285, 32892, 6)",
+          "jack_fate goroma fare=0 arrival=(32161, 32558, 6)",
+          "karith ab'dendriel fare=160 arrival=(32734, 31668, 6)",
+          "captain_waverider peg leg fare=50 arrival=(32346, 32625, 7)",
+          "captain_waverider passage fare=200 arrival=(32131, 32913, 7)",
+          "captain_jack_rat safe fare=0 arrival=(33839, 31222, 5)",
+          "captain_seahorse venore fare=40 arrival=(32954, 32022, 6)",
+          "petros ankrahmun fare=100 arrival=(33092, 32883, 6)",
+          "petros issavi fare=130 arrival=(33902, 31462, 6)",
+          "tarak_inner monument tower fare=50 arrival=(32939, 31182, 7)",
+          "tarak_sunken passage fare=0 arrival=(32916, 31199, 7)"
+        ],
+        "log": "/tmp/npcfix-evidence/npcfix-existing-travel-proof.log",
+        "log_sha256": "134394de26bd32fd1daaa24345b7fad0294d26f4af5b1ce66f9089dd3941e507",
+        "scope": "Existing generic travel real-command coverage, durable fare/arrival/replay and refusal assertions. No extra availability, destination or physical source-cell qualification inferred."
+      }
+    },
+    "physical_merged_smithing": {
+      "source": "e2615554b",
+      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+      "seconds": 80.51,
+      "cumulative_cases": 54,
+      "log": "/tmp/npcfix-evidence/retail-09-smithing-merged-green.log",
+      "scope": "Freshly compiled exact merged source; all54 physical/native assertions passed."
+    },
+    "latest_checked_source": {
+      "source_commit": "e2615554b49b114273c24e6c2c4cba6b781ade47",
+      "parity_report": "/tmp/npcfix-evidence/current-held-npc-parity.json",
+      "check": "Published source all-target/all-feature check59.70s; source-equivalent runtime unchanged through current HEAD.",
+      "clippy": "Published source strict all-target/all-feature clippy1m19s.",
+      "scope": "Only published runtime and unchanged physical fixture for data-only actor slices. Unpublished postal test and its contract note are explicitly excluded from these commits; their own checks continue independently.",
+      "physical_latest_green": "Actual PG107 cases105.34s; additional-postal-placement-green.log",
+      "unpublished_allowed_paths": [
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_postage.rs",
+        "qlane-meta/npcfix/CONTRACT-NOTES.md"
+      ]
+    }
+  },
   "parallel_batches": {
     "fading_runtime": {
       "state": "QUALIFIED_COMPONENT",
@@ -1265,158 +1488,29 @@
       "next": "Push immediately, then continue existing placement-only rows in3-6-entry historical RED/current GREEN batches; retain all cumulative assertions."
     }
   },
-  "incoming_six_cells": {
-    "head": "8a7b65dc2",
-    "qualified": [
+  "npcfix_active_workshop": {
+    "entries": [
       "A Fading Memory",
-      "Dream Butterfly",
-      "Edgar-Ellen",
-      "Jack The Worker",
-      "Nemal",
-      "Ocelus"
+      "Altar",
+      "A Sweaty Cyclops"
     ],
-    "proof": "Incoming actual PG6 actor proof91.16s, retained all identity/placement assertions; canonical Edgar name only,15 passive profiles added with canonical custody facts retained. Preserve publication and do not redo finished work."
+    "local_source_commit": "d1ab73204",
+    "merging_with": "43c59ddb9; ownership checkpointf6ab31acd",
+    "state": "COMBINED_SOURCE_GREEN; REVIEW_PENDING",
+    "work": "Incoming cooldown source and malformed-clock PG are retained. Generic bank+item atomic payments, delayed craft clocks, fresh database-time literal wait replies, and strict real map actors already locally validated. Incoming1144 unchanged; workshop extension1145. Fading physical32952,31440,3 already implemented and PG-qualified in main checkout; avoid duplicate Fading physical/UI work. Other entries remain active. Latest43c59ddb9 literal UI delivery acknowledged and will be reused in main; avoid duplicate Fading UI/physical work.",
+    "local_proof": "PG6/183.57s plus funded missing parts96.27s and existing bank96.20s; quest261/fee43/NPC25; fmt/check/clippy and pins. Combined quest263 and native42 reproduction now pass; combined PG8/check/clippy running.",
+    "normal_profile": "This checkout retained normal unoptimized+debuginfo profiles and existing env.sh. Only stopped-build incremental caches were removed."
   },
-  "schema": 1,
-  "branch": "claude/happy-davinci-ijz3wy-npcfix",
-  "note": "Original entry-level lane state is absent from available history. Recovered NPC audit rows preserve unfinished work; no prior authored row has been requalified without fresh evidence.",
-  "concurrent_cooldown_status": {
-    "schema": 1,
-    "branch": "claude/happy-davinci-ijz3wy-npcfix",
-    "recovered_from": "95accb923",
-    "note": "Original entry-level lane state is absent from available history. Recovered NPC audit rows preserve unfinished work; no prior authored row has been requalified without fresh evidence.",
-    "owner_constraints": {
-      "excluded": [
-        "Dawnport",
-        "OT-only W14",
-        "P23",
-        "X01-X06"
-      ],
-      "other_lane_world_changes": "skip -worldchg/-wvar/-wcontrib/-wevents",
-      "fathers_burden": "11-track acceptance is one atomic write",
-      "grants": "charge only on an exact match",
-      "publication": "commit as blakinio with required trailers; fetch and fast-forward push each green batch; no main, force push or PR"
-    },
-    "next_batch": "Continue owned state/reward/access NPC entries using delivered core and any newer lane work; Fading Memory needs the existing SetNow/ElapsedAtLeast timer composed into shared rewards. Do not redo now-qualified physical entries.",
-    "shared_engine_lookup": {
-      "owner_rule": "Shared engine features are this lane’s responsibility when required. Never leave an entry unfinished for missing engine support.",
-      "qengine2": {
-        "head": "9d3c3869f",
-        "found": [
-          "atomic NPC take/give/present callbacks",
-          "outfit and achievement grants",
-          "conversation offers",
-          "native reward item profiles"
-        ],
-        "action": "Merge/reuse after committing the current green caller batch; do not author a second inventory grant engine."
-      },
-      "questl2": {
-        "head": "7e16b64ee",
-        "found": [
-          "16-track shared reward capacity",
-          "PG atomic eleven-track proof",
-          "explicit costed repeatable item exchange with occurrence mint keys and exact replay"
-        ],
-        "action": "Reuse reward-plan/schema capacity extensions; both implementations use the same core bound."
-      },
-      "questpc6": {
-        "head": "be812420e3c20d9dd8ae6c3c23a9c4acb942ceda",
-        "found": [
-          "SET_IF conditional reset",
-          "authored failure landing"
-        ],
-        "action": "Reuse only where an owned NPC entry needs these mechanisms."
-      },
-      "world_lanes": "Fetched worldchg, wvar, wevents and wcontrib. HEAD trees contain no QUEST-STATUS/RESUME. Earlier seven world-NPC ownership assumptions are withdrawn pending exact allocation/binding proof; entries are active again.",
-      "qualified_elsewhere_candidate": "qengine2 proves Wayfarer Outfits Quest QUALIFIED. Reuse its Cranky Lizard Crone callbacks and run affected integration PG before recording native NPC qualification."
-    },
-    "active_batch": {
-      "name": "native physical endpoints for three remaining NPCs",
-      "entries": [
-        "A Wandering Soul",
-        "Doctor Marrow",
-        "Goldro"
-      ],
-      "state": "GREEN",
-      "session": 19401,
-      "command": "cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib npcfix_endpoint_postgres_ -- --nocapture",
-      "log": "/tmp/npcfix-evidence/endpoint-red.log",
-      "scope": "Actual canonical compiler admission, native-to-runtime placement and exact displayed identity; Wandering exchange component already PG-qualified in pushed batch3. Doctor and Goldro audit entries concern physical identity/placement, not wholesale implementation of every donor quest.",
-      "source_rules": {
-        "Wandering": "Delivered npc-anchors command selects32915,31489,7 within captured radius2; original32914,31490,7 retained.",
-        "Doctor": "Use primary audited Wiki34009,32643,6 when strictly admitted; preserve all old conflict observations. Donor is stationary radius0, so do not claim relocation within its donor radius.",
-        "Goldro": "Strictly admitted34055,32504,7 is one cell from donor34055,32503,7, within source radius1 (Crystal00ce goldro.lua:11 sha394da3c41a2e81fb8b2cb5ee637a95e4bb50393de1069a338452a1ab89ab15f8)."
-      },
-      "constraint": "No production authoring data changed before actual PG RED; no map admission guard weakened.",
-      "red": "3 failed28.51s; all three DB markers and per-case durations26.329s/26.470s/28.505s. Doctor absent; Goldro/Wandering BlockSolid.",
-      "green": "3 passed84.05s; all DB/completion markers. Doctor76.162s, Goldro84.016s, Wandering84.049s. Exact canonical-to-runtime actor identities, coordinates and floor conversion.",
-      "authoring": "12 passed; all previous assertions retained and added source-preservation/stationary-policy checks.",
-      "pin": "PASS refreshed and independently checked ddaa993dfb6776971ed3f521d770142e52ea01b451bf0373f894d2d1d1353a3a",
-      "implementation": "Source-backed authoring changes only: Wandering within captured radius2; Goldro within immutable donor radius1; Doctor uses strictly admitted primary audited Wiki cell, preserving all three alternate observations and stationary radius0 evidence. Original compiler guards unchanged.",
-      "check": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 15s",
-      "clippy": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 24s",
-      "fmt": "PASS cargo fmt --all and explicit mounted-file rustfmt",
-      "push": "Commit and fast-forward push follows; fetch/merge any remote movement."
-    },
-    "continuation_merge": {
-      "note": "Preserved both histories; incoming state callers retained. Redundant npc_state catalogue compiler removed in consolidation. Superseded local caller draft remains stashed and must not be applied.",
-      "local_green_commit": "604b1b670",
-      "caller_draft": "Preserved in git stash; superseded by remote implementation, not part of publication."
-    },
-    "active_reward_delivery": {
-      "entries": [
-        "Al Dee",
-        "A Wandering Soul",
-        "A Weakened Forest Fury"
-      ],
-      "state": "IMPLEMENTED_FINAL_VALIDATION",
-      "source_delivery": "pending green batch checks; no new NPC qualification claimed in this metadata checkpoint",
-      "evidence": "ACTIVE-REWARD-DELIVERY.md",
-      "upstream_to_merge": "2a871a435",
-      "avoid_duplicate_work": true
-    },
-    "incoming_source_authoring": {
-      "head": "0cbb57db2ec4b2729eb4a8bab78204ed3f4ee8d6",
-      "note": "Preserved planner and inactive Fading Memory-only authoring. Current live callbacks remain qengine source compositions; cooldown runtime integration follows after physical admission batch."
-    },
-    "parallel_batches": {
-      "fading_runtime": {
-        "state": "QUALIFIED_COMPONENT",
-        "base": "7178e767e",
-        "scope": "Generic declared source clock and DB-backed free repeats; Fading story/item8746; preserve incoming expiry and achievement-once engine.",
-        "red": "POSTGRES_STARTED a_fading_memory; callback missing8.18s; subsequent old-base SQL occurrence failure112.67s resolved by reuse.",
-        "unit": "7 passed1.25s",
-        "authoring": "5 standalone and12 shared producer tests pass; strict foreign temporal/achievement preservation",
-        "sql": "1144 extends incoming latest proof; keep1142/1143 intact",
-        "logs": "/tmp/npcfix-evidence/fading-port-{green,check,clippy}.log",
-        "next": "Actual PG GREEN, final gates, immediate push; then finish Fading real placement and literal cooldown refusal in independent physical batch. Do not duplicate active Wandering/Doctor/Goldro.",
-        "green": {
-          "marker": "POSTGRES_STARTED NPCFIX reward a_fading_memory",
-          "duration_seconds": 113.9,
-          "result": "Exact source topics/keyword; initial gift; early DB-time refusal despite advanced conversation clock; second post-expiry gift; malformed clock plan refuses with complete item+clock rollback",
-          "log": "/tmp/npcfix-evidence/fading-port-green.log"
-        },
-        "checks": {
-          "quest_units": "7 passed1.25s",
-          "authoring": "5 owned+12 shared pass; strict original recipes/pins retained",
-          "native": "PASS42-file generation and reproduction",
-          "fmt": "PASS all workspace and both mounted test files",
-          "check": "PASS changed packages all targets/features6m47s",
-          "clippy": "PASS same targets/features -D warnings7m54s",
-          "integration": "123 passed6.25s",
-          "repository": "5 passed; see /tmp/npcfix-evidence/fading-content-repository.log",
-          "pin_check": "PASS d622a839c5638cfdf3d3f81fa696f8cbe6ddab7152f3d8816e0705f8bceabd4a",
-          "self_review": "No findings; declared clocks bounded/owned, missing facts fail closed, same-transaction elapsed/timestamp proof, exact MINT, paid/achievement/deadline arms preserved, no binaries/workflow/repository-tool edits."
-        },
-        "scope_limit": "Reward and reusable clock participant qualified. Whole Fading NPC still requires real placement and literal cooldown refusal/topic reset.",
-        "merged_validation": {
-          "physical_delivery": "5e463759f",
-          "pin_check": "PASS ddaa993dfb6776971ed3f521d770142e52ea01b451bf0373f894d2d1d1353a3a",
-          "note": "Merge preserved both source/qualification histories; only independent physical-placement data and metadata changed from the validated runtime component."
-        }
-      }
-    }
+  "continuation_merge": {
+    "state": "MERGED_SOURCE_REVALIDATION_ACTIVE",
+    "incoming": "4d34d0efd61a86036688129af45ddeed4bf9f3ba",
+    "placement_batch": "retail-population-qualification-19; actual PG RED46.17s/current113 actor GREEN112.11s",
+    "postal_component": "All5 revised exact-item cases PASS456.20s; source compare retains every original assertion. Unpublished test remains outside this source merge until its fresh checks pass.",
+    "scope_review": "Reuse incoming generic native backpack peer outputs, immutable bulk draw plan and source Cyclops composition. Both forward migrations1146/1147 retain1144/1145. All prior qualifications, current evidence pointers and both branch histories retained.",
+    "integration_note": "Concurrent merge changed social constructor before clippy rebuilt durability metadata: E0560 backpack_outputs. Complete source already contains the field. Refresh focused merged-source checks and PG; never weaken assertions.",
+    "next": "Run changed-source fmt/check/strict clippy and targeted PG proof; publish green reconciliation and actor19 immediately. Continue every owned entry."
   },
+  "last_publication": "Merge latest green placement qualifications with canonical L2 fixed smithing integration; fast-forward push in progress.",
   "independent_workshop_review": {
     "candidate": "3787a419a",
     "state": "Not reviewed: reviewer authentication unavailable; local work continues",
@@ -1425,27 +1519,122 @@
     "log": "/tmp/npcfix-evidence/workshop-review-public-run.log",
     "credentials": "No credentials inspected or repaired; do not retry reviewer until owner reconnects authentication."
   },
-  "continuation_merge": {
-    "state": "GREEN_INDEPENDENT_SCOPES",
-    "incoming": "b25b5b8ca1bff2185792222ff9b3603ba086f027",
-    "our_placement_batch": "retail-population-qualification-09; actual PG54 actors78.54s",
-    "scope_review": "Incoming runtime delta is Offer.any_topic for non-reward offer roots; reward confirmation topic and exact keyword selection remain unchanged. NPC placement/runtime entity code and World pin are unchanged. New profiles only3560/12804; old profiles unchanged. Reuse upstream canonical smithing PG104.01s/delayed92.45s, check59.70s and strict clippy1m19s; preserve current actor proof.",
-    "next": "Push merged green evidence immediately, then continue independent placement rows. Workshop owner retains soul-orb/refusal/review scope."
+  "active_smithing_batch": {
+    "state": "GREEN; committing and pushing",
+    "entries": [
+      "royal steel",
+      "draconian steel",
+      "hell steel",
+      "crude iron",
+      "molten gold",
+      "gear wheel"
+    ],
+    "red": "1 actual PostgreSQL case FAILED 96.09s; POSTGRES_STARTED and POSTGRES_CASE_COMPLETED, missing-input response used ordinary fallback instead of the smithing writer",
+    "engine_reuse": "Refreshed qengine2 36927f208 and questl2 d8a87d717; no bulk/random exchange support found. Reuse current atomic exact carried-cost rewards and native deadlines for fixed exchanges. Generic any-topic offer roots do not relax reward confirmation topics.",
+    "source": "https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/a_sweaty_cyclops.lua; sha256 bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a",
+    "profiles": "Only new3560 and12804; all prior native profiles structurally unchanged. Reuse11 existing profiles. Molten gold keeps source36000s decay.",
+    "remaining": "Soul orb bulk+random mechanism remains immediate active work; do not qualify whole Sweaty early.",
+    "reuse": {
+      "source_commit": "cbf052888 / latest questl2 d8a87d717",
+      "production_callbacks": "All eight canonical exchange-cyclops-* declarations reused verbatim; no duplicate NPCFIX callback identities",
+      "donor_proof": "L2 real PostgreSQL18.6 fixed source journey81.552406996s; new3560 and12804 native profiles structurally identical to L2",
+      "integration": "Initial combined PG8 PASS292.15s including two cycles of all six recipes and both exact10h deadlines; canonical-key integration PG and existing delayed amulet rerunning, then strict Rust checks"
+    },
+    "validation": {
+      "name": "npcfix-fixed-smithing-l2-integration",
+      "state": "GREEN",
+      "entries": [
+        "royal steel",
+        "draconian steel",
+        "hell steel",
+        "crude iron",
+        "molten gold",
+        "gear wheel"
+      ],
+      "reuse": "Eight existing canonical L2 exchange-cyclops-* callbacks, source cbf052888 / branch d8a87d717; no duplicate authored receipt identities. Native3560 and12804 identical to L2; all earlier profiles unchanged.",
+      "red": "Actual PG1 FAILED96.09s, start/completion markers, ordinary missing-cost fallback instead of fenced smithing callback.",
+      "green": "Combined workshop/physical PG8 PASS292.15s. Canonical L2 key integration smithing PG1 PASS104.01s; delayed amulet PG1 PASS92.45s. Real PostgreSQL markers and nonzero durations in retained logs.",
+      "checks": "Quest263 PASS11.39s; authoring12 PASS7.486s; profile8 PASS29.306s; native42 regeneration/check PASS; fmt/diff PASS; check all-target/all-feature59.70s; strict clippy all-target/all-feature1m19s; pin-check568fe0d9753bba3d73f38b4ae884063d2d543b866e337a6f0aab6fd9cc72ec9a PASS.",
+      "source_behavior": "Friendship start writes both source tracks atomically; three separate bast skirts unlock four friend-gated trades; melting and gear wheel ungated. All six repeat, inexact confirmation keeps inputs, missing inputs refuse, two molten gold rewards have exact original10h deadlines. Any-topic source keyword roots never widen reward confirmation topics.",
+      "remaining": "Whole Sweaty not qualified early: soul-orb bulk/random trade and source failure replies/topic resets remain immediate active work. Prior workshop independent review unavailable due401 authentication; not a generic engine deferral."
+    }
   },
-  "next_batch": "Continue remaining owned entries immediately; preserve all cumulative PG cases. No final turn until all owned scope qualified and pushed.",
-  "workshop_merged_validation": {
-    "state": "GREEN; source publication; independent review follows",
-    "postgres": "workshop-readiness-pg.log: 7 PASS/221.52s; workshop-readiness-incoming-pg.log: 1 PASS/96.56s; start/completion markers retained",
-    "rust": "263 quest tests; all-target/all-feature check 5m53s and strict clippy 5m05s; workshop Rust unchanged by six-cell merge",
-    "content": "native-only 42 outputs regenerated and checked; authoring12 and profile8 tests PASS; existing profiles structurally unchanged,15 incoming passive profiles added",
-    "pin": "568fe0d9753bba3d73f38b4ae884063d2d543b866e337a6f0aab6fd9cc72ec9a; pin-check PASS",
-    "scope": "Preserve six incoming qualifications. Altar final review pending; Sweaty smithing continues immediately."
+  "active_batch": {
+    "state": "QUALIFIED",
+    "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed.",
+    "merge_plan": "Preserve concurrent locked cooldown and malformed-clock tests, reuse its declared-track support, retain local generic paid hand-ins, delayed clocks, fresh literal wait replies and strict physical admission. Resolve duplicate1144 by forward-numbered workshop extension. Revalidate merged source before push.",
+    "log": "/tmp/npcfix-evidence/workshop-red.log",
+    "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring.",
+    "red": {
+      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+      "markers": 3,
+      "individual_seconds": [
+        105.5747,
+        113.1198,
+        116.3945
+      ],
+      "duration_seconds": 116.4,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-19-red.log",
+      "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "seconds": 46.17,
+      "result": "3 failed; NoConversation at actual hi"
+    },
+    "remote": "803a33d3923bbd9756cf3c1733ec63420da1e54f",
+    "remaining": "Sweaty amulet component fully validated; remaining smithing exchanges stay active next, no whole NPC qualification yet. Fading/Altar exact audited scope implemented; final reviewed qualification metadata follows.",
+    "progress": "Generic fee+bounded DB clock effects and forward completion proof implemented. Native anchors strict-admitted for all3. Fresh read-only DB-clock refusal replies now retain source Fading reset and Sweaty remaining-time text. Fading source guard corrected from prototype0..1 to source-1..1. Current final PG rebuild64170; previous stale compile interrupted after self-review corrections, not a PG result. Latest Python5 and qengine12 passed; unit261 pass before last dialogue-only additions, rerunning. Sweaty remaining smithing exchanges stay active after amulet slice, never mark whole NPC qualified early.",
+    "latest_pg": {
+      "log": "/tmp/npcfix-evidence/workshop-green-final.log",
+      "result": "3 physical passed;3 composition fixtures failed;181.46s",
+      "physical_durations_seconds": {
+        "fading": 79.3093,
+        "altar": 88.4055,
+        "sweaty": 74.3037
+      },
+      "repairs": "Fixed test-only clock catalogue to install one stable set of receipt transitions before any write. Source monetary fees retain bank V1 refusal; tests now explicitly check V1 then activate existing V2 switch before bank success. Six-case rerun83195 executing; separate funded-missing-parts regression added, needs compile/run aftercurrent."
+    },
+    "name": "retail-population-qualification-19",
+    "generic_reuse": "Applied33b640335 fee source selectively, retained physical permit; added bounded clocks using existing SetNow/ElapsedAtLeast and same transaction Quest receipt. Forward1144 preserves fee proof after1142 replacement. Production/PG GREEN still pending.",
+    "implementation": "Reuse published readiness owner and cooldown_reply field; extend remaining-time advice for delayed crafts. Remove duplicate clock reader/post-refusal code. Keep all published direct-owner/literal-reset/malformed-clock assertions plus unchanged-clock probe; preserve1144 and extend1145.",
+    "reuse": "Reuse incoming six-cell qualifications and exact-before name authoring. Combine passive-cell source attributes with local8 workshop profiles; retain both fact proofs and every existing known custody field.",
+    "implementation_order": "Actual PG RED first, then generic fee/time participant support, then the three source compositions. Extend final tests to full payment, cooldown and delayed claim semantics; initial red probes missing conversations.",
+    "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at e2615554b49b114273c24e6c2c4cba6b781ade47; details in verification_components.latest_checked_source. Source identity checked before each slice",
+    "test_code_commit": "f2d6f7bbb2cf3918921c9147e5370e0465f8caf2",
+    "entries": [
+      "Bertha",
+      "Captain Breezelda",
+      "Captain Haba",
+      "Dankwart",
+      "Freezhild",
+      "Fynn"
+    ],
+    "sources": {
+      "new_heart_facts": "https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/items/items.xml#L75956-L75963 sha256:13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
+      "retained_bag_profile": "Existing admitted i43895 profile retained; do not replace existing accepted facts with conflicting XML weight."
+    },
+    "green": {
+      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+      "seconds": 112.11,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-19-green.log",
+      "cumulative_cases": 113
+    },
+    "proof": {
+      "red": "3 actual PG failures116.40s;3 DB markers",
+      "green": "7 actual PG cases221.52s, all starts/completions; preserved incoming full clock/rollback PG1/96.56s",
+      "units": "quest263/11.67s; unchanged fee43/0.14s and NPC25/204.84s retained within scope",
+      "authoring": "12 shared tests11.125s +6 profile/overlay tests19.182s +13 placement tests; native42 regenerate/check",
+      "repository": "5 passed132.15s; unchanged repository test executable on final checkout inputs",
+      "check": "quests/durability/dispatch all-target/all-feature5m53s",
+      "clippy": "same three crates all targets/features -D warnings5m05s",
+      "pin": "d5f29ca31b87bc3a949017a6d7a2c18f3f9612f0629f9fe49943596a4c2bc0a1; independent pin-check PASS",
+      "fmt": "PASS"
+    },
+    "incoming": "8a7b65dc2",
+    "assumptions": [
+      "Charges and input consumption are atomic with successful admission. Normalize donor Sweaty bug that removes5000 before checking all pieces: missing pieces never charge.",
+      "Doctor/Wandering/Goldro batch4 is pushed and qualified; do not redo."
+    ],
+    "session": 31487
   },
-  "incoming_source_authoring": {
-    "head": "0cbb57db2ec4b2729eb4a8bab78204ed3f4ee8d6",
-    "note": "Preserved planner and inactive Fading Memory-only authoring. Current live callbacks remain qengine source compositions; cooldown runtime integration follows after physical admission batch."
-  },
-  "last_publication": "Merge latest green placement qualifications with canonical L2 fixed smithing integration; fast-forward push in progress.",
   "counts": {
     "PENDING": 16,
     "QUALIFIED": 119,
@@ -1453,6 +1642,10 @@
     "EXCLUDED": 24,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
+  },
+  "incoming_source_authoring": {
+    "head": "0cbb57db2ec4b2729eb4a8bab78204ed3f4ee8d6",
+    "note": "Preserved planner and inactive Fading Memory-only authoring. Current live callbacks remain qengine source compositions; cooldown runtime integration follows after physical admission batch."
   },
   "entries": [
     {
@@ -5250,127 +5443,25 @@
       "status": "AUTHORED; QUALIFICATION PENDING"
     }
   ],
-  "recovered_from": "95accb923",
-  "owner_constraints": {
-    "excluded": [
-      "Dawnport",
-      "OT-only W14",
-      "P23",
-      "X01-X06"
+  "active_reward_delivery": {
+    "entries": [
+      "Al Dee",
+      "A Wandering Soul",
+      "A Weakened Forest Fury"
     ],
-    "other_lane_world_changes": "skip -worldchg/-wvar/-wcontrib/-wevents",
-    "fathers_burden": "11-track acceptance is one atomic write",
-    "grants": "charge only on an exact match",
-    "publication": "commit as blakinio with required trailers; fetch and fast-forward push each green batch; no main, force push or PR"
+    "state": "IMPLEMENTED_FINAL_VALIDATION",
+    "source_delivery": "pending green batch checks; no new NPC qualification claimed in this metadata checkpoint",
+    "evidence": "ACTIVE-REWARD-DELIVERY.md",
+    "upstream_to_merge": "2a871a435",
+    "avoid_duplicate_work": true
   },
-  "shared_engine_lookup": {
-    "owner_rule": "Shared engine features are this lane’s responsibility when required. Never leave an entry unfinished for missing engine support.",
-    "qengine2": {
-      "head": "9d3c3869f",
-      "found": [
-        "atomic NPC take/give/present callbacks",
-        "outfit and achievement grants",
-        "conversation offers",
-        "native reward item profiles"
-      ],
-      "action": "Merge/reuse after committing the current green caller batch; do not author a second inventory grant engine."
-    },
-    "questl2": {
-      "head": "7e16b64ee",
-      "found": [
-        "16-track shared reward capacity",
-        "PG atomic eleven-track proof",
-        "explicit costed repeatable item exchange with occurrence mint keys and exact replay"
-      ],
-      "action": "Reuse reward-plan/schema capacity extensions; both implementations use the same core bound."
-    },
-    "questpc6": {
-      "head": "be812420e3c20d9dd8ae6c3c23a9c4acb942ceda",
-      "found": [
-        "SET_IF conditional reset",
-        "authored failure landing"
-      ],
-      "action": "Reuse only where an owned NPC entry needs these mechanisms."
-    },
-    "world_lanes": "Fetched worldchg, wvar, wevents and wcontrib. HEAD trees contain no QUEST-STATUS/RESUME. Earlier seven world-NPC ownership assumptions are withdrawn pending exact allocation/binding proof; entries are active again.",
-    "qualified_elsewhere_candidate": "qengine2 proves Wayfarer Outfits Quest QUALIFIED. Reuse its Cranky Lizard Crone callbacks and run affected integration PG before recording native NPC qualification."
+  "workshop_merged_validation": {
+    "state": "GREEN; source publication; independent review follows",
+    "postgres": "workshop-readiness-pg.log: 7 PASS/221.52s; workshop-readiness-incoming-pg.log: 1 PASS/96.56s; start/completion markers retained",
+    "rust": "263 quest tests; all-target/all-feature check 5m53s and strict clippy 5m05s; workshop Rust unchanged by six-cell merge",
+    "content": "native-only 42 outputs regenerated and checked; authoring12 and profile8 tests PASS; existing profiles structurally unchanged,15 incoming passive profiles added",
+    "pin": "568fe0d9753bba3d73f38b4ae884063d2d543b866e337a6f0aab6fd9cc72ec9a; pin-check PASS",
+    "scope": "Preserve six incoming qualifications. Altar final review pending; Sweaty smithing continues immediately."
   },
-  "verification_components": {
-    "npcfix_services": {
-      "state": "QUALIFIED_COMPONENTS",
-      "npc_keys": [
-        "oteryn:npc.benjamin",
-        "oteryn:npc.liane",
-        "oteryn:npc.ray",
-        "oteryn:npc.robson",
-        "oteryn:npc.alesar",
-        "oteryn:npc.nah_bob",
-        "oteryn:npc.rashid",
-        "oteryn:npc.kasmir",
-        "oteryn:npc.albinius",
-        "oteryn:npc.a_ghostly_guardian",
-        "oteryn:npc.flint",
-        "oteryn:npc.romella",
-        "oteryn:npc.pugwah"
-      ],
-      "test": "npcfix_postgres_dispatch_services_and_replay",
-      "postgres_markers": 13,
-      "duration_seconds": 941.85,
-      "log": "/tmp/npcfix-evidence/npcfix-existing-service-proof.log",
-      "log_sha256": "bb1cf3cbbfe2212db5b479c842d792a063562dfa2e4a31fd5b93006e0e5fbc9c",
-      "binary_source": "9fd5ca426",
-      "scope": "Native command/ordinary chat, shop windows, durable trades, quest/rank restrictions, default charge/state purchases, healing and exact replay as asserted by the existing thirteen-case fixture. Physical cell qualification remains separate.",
-      "source_reuse": "Relevant fixture/service/trade implementation and migrations byte-identical to current HEAD; unrelated smithing offer restart does not alter these paths.",
-      "additional_travel_component": {
-        "state": "QUALIFIED_COMPONENTS",
-        "source": "e2615554b; production source identical through current data-only slices",
-        "test": "npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
-        "duration_seconds": 127.59,
-        "marker": "POSTGRES_STARTED TRAVEL npc_paid_travel",
-        "routes": [
-          "captain_bluebear yalahar fare=200 arrival=(32816, 31272, 6)",
-          "captain_fearless yalahar fare=185 arrival=(32816, 31272, 6)",
-          "captain_greyhound yalahar fare=185 arrival=(32816, 31272, 6)",
-          "captain_max calassa fare=200 arrival=(31911, 32710, 6)",
-          "captain_max yalahar fare=400 arrival=(32804, 31270, 6)",
-          "captain_sinbeard yalahar fare=230 arrival=(32816, 31272, 6)",
-          "captain_seahorse oramond fare=200 arrival=(33479, 31985, 7)",
-          "charles liberty_bay fare=50 arrival=(32285, 32892, 6)",
-          "jack_fate goroma fare=0 arrival=(32161, 32558, 6)",
-          "karith ab'dendriel fare=160 arrival=(32734, 31668, 6)",
-          "captain_waverider peg leg fare=50 arrival=(32346, 32625, 7)",
-          "captain_waverider passage fare=200 arrival=(32131, 32913, 7)",
-          "captain_jack_rat safe fare=0 arrival=(33839, 31222, 5)",
-          "captain_seahorse venore fare=40 arrival=(32954, 32022, 6)",
-          "petros ankrahmun fare=100 arrival=(33092, 32883, 6)",
-          "petros issavi fare=130 arrival=(33902, 31462, 6)",
-          "tarak_inner monument tower fare=50 arrival=(32939, 31182, 7)",
-          "tarak_sunken passage fare=0 arrival=(32916, 31199, 7)"
-        ],
-        "log": "/tmp/npcfix-evidence/npcfix-existing-travel-proof.log",
-        "log_sha256": "134394de26bd32fd1daaa24345b7fad0294d26f4af5b1ce66f9089dd3941e507",
-        "scope": "Existing generic travel real-command coverage, durable fare/arrival/replay and refusal assertions. No extra availability, destination or physical source-cell qualification inferred."
-      }
-    },
-    "physical_merged_smithing": {
-      "source": "e2615554b",
-      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 80.51,
-      "cumulative_cases": 54,
-      "log": "/tmp/npcfix-evidence/retail-09-smithing-merged-green.log",
-      "scope": "Freshly compiled exact merged source; all54 physical/native assertions passed."
-    },
-    "latest_checked_source": {
-      "source_commit": "e2615554b49b114273c24e6c2c4cba6b781ade47",
-      "parity_report": "/tmp/npcfix-evidence/current-held-npc-parity.json",
-      "check": "Published source all-target/all-feature check59.70s; source-equivalent runtime unchanged through current HEAD.",
-      "clippy": "Published source strict all-target/all-feature clippy1m19s.",
-      "scope": "Only published runtime and unchanged physical fixture for data-only actor slices. Unpublished postal test and its contract note are explicitly excluded from these commits; their own checks continue independently.",
-      "physical_latest_green": "Actual PG107 cases105.34s; additional-postal-placement-green.log",
-      "unpublished_allowed_paths": [
-        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_postage.rs",
-        "qlane-meta/npcfix/CONTRACT-NOTES.md"
-      ]
-    }
-  }
+  "branch": "claude/happy-davinci-ijz3wy-npcfix"
 }

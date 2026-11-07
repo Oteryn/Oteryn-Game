@@ -109,6 +109,13 @@ pub(crate) async fn apply(
     {
         return Ok(false);
     }
+    let resolved = if callback.bulk.is_some() {
+        let Some(resolved) = super::quest_bulk::resolve(tx, fence, callback, admission.native).await? else {
+            return Ok(false);
+        };
+        Some(resolved)
+    } else { None };
+    let callback = resolved.as_ref().map(|(callback, _)| callback).unwrap_or(callback);
     if let Some(fee) = &callback.fee {
         use crate::durability::item_fee_burn::{FeeBurnCause, FeeBurnRequest, FeeBurnError, burn_quest_reward_fee_in_transaction};
         let Some(payment) = admission.fee_payment else { return Ok(false); };
@@ -184,8 +191,12 @@ pub(crate) async fn apply(
             .await?
             .map_err(|_| DurabilityError::InvalidStoredState)?;
     }
+    let mut source_plan = serde_json::to_value(callback).map_err(|_| DurabilityError::InvalidStoredState)?;
+    if let Some((_, draw)) = &resolved {
+        source_plan["bulk_result"] = serde_json::to_value(draw).map_err(|_| DurabilityError::InvalidStoredState)?;
+    }
     sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,CASE WHEN $6::bytea IS NULL THEN NULL ELSE encode($6,'hex')::uuid END,$7)")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(serde_json::to_value(callback).map_err(|_|DurabilityError::InvalidStoredState)?).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
+        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(source_plan).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
     Ok(true)
 }
 
@@ -290,11 +301,13 @@ async fn mint(
         || reward
             .contents
             .iter()
+            .chain(&reward.backpack_outputs)
             .any(|item| !matches!(temporal(&item.item), Ok(None)))
     {
         return Ok(None);
     }
     let request = RewardClaimMintRequest {
+        backpack_outputs: !reward.backpack_outputs.is_empty(),
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),
@@ -304,8 +317,7 @@ async fn mint(
         source_placement: callback.key.clone(),
         item: resolve(&reward.item)?,
         quantity: u32::from(reward.count),
-        contents: reward
-            .contents
+        contents: (if reward.backpack_outputs.is_empty() { &reward.contents } else { &reward.backpack_outputs })
             .iter()
             .map(|i| {
                 Ok(RewardClaimMintContent {

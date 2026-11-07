@@ -819,6 +819,7 @@ async fn wardrobe(
         clocks: vec![],
         cooldown: None,
         fee: None,
+        bulk: None,
         requires: vec![],
         take: vec![],
         present: vec![],

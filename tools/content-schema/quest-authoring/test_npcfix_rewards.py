@@ -67,6 +67,18 @@ class NpcfixRewardProfiles(unittest.TestCase):
             items.admit(q.ROOT, outputs, items.PROFILE, 'content/spells.manifest.json',
                         native.provider_order, q.encoded)
 
+    def test_lifetime_enrichment_never_changes_known_equipment_patterns(self):
+        outputs = dict(self.outputs)
+        profiles = json.loads(outputs[items.PROFILE])
+        bolt = next(row for row in profiles['records']
+                    if row['production_definition']['production_key'] == 'oteryn:item.tibia.i6528')
+        self.assertEqual(bolt['semantics']['temporal'], {'state': 'NOT_APPLICABLE'})
+        bolt['semantics']['equipment']['value']['patterns']['value'][0]['primary_slot']['value'] = 'HEAD'
+        outputs[items.PROFILE] = q.encoded(profiles)
+        with self.assertRaisesRegex(ValueError, 'QENGINE_REWARD_ITEM_NATIVE_CONFLICT'):
+            items.admit(q.ROOT, outputs, items.PROFILE, 'content/spells.manifest.json',
+                        native.provider_order, q.encoded)
+
     def test_passive_cell_profile_preserves_canonical_weight_and_source_entry(self):
         packet = json.loads(self.outputs[items.PROOF])
         stone = next(row for row in packet['records']
