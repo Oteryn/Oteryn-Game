@@ -71,3 +71,5 @@ objects, occurrences, equipment, health lessons and wood delivery still need
 their own executable bindings and PostgreSQL evidence. The reused optional item, outfit and achievement owners
 are available to subsequent source compositions; no unconfigured reward is
 inferred from dialogue text.
+
+Offer producers use `shared_reward_offers.replace_npc_offers` to replace their own NPC rows in place, preserving every foreign row and its relative order. Regenerating one NPC must not move its group behind another producer and create alternating `--check` drift.

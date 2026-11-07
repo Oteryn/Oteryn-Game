@@ -8,7 +8,8 @@ class CarlosLessons(unittest.TestCase):
     def test_five_source_milestones_are_once_only_and_grant_no_items(self):
         callbacks = authoring.documents()['content/quests/shared-reward-callbacks.json']['callbacks']
         rows = [row for row in callbacks if row['key'].startswith(authoring.PREFIX)
-                and row['key'] != authoring.PREFIX + 'food-evidence']
+                and row['key'] != authoring.PREFIX + 'food-evidence'
+                and not row['key'].startswith(authoring.PREFIX + 'report-')]
         self.assertEqual(len(rows), 5)
         expected = {'greet': (-1, 0, 1, 0, 1), 'outfit-lesson': (1, 1, 2, 1, 0),
                     'favor': (2, 2, 3, 2, 3), 'hunt': (3, 3, 4, 3, 4),
@@ -28,16 +29,16 @@ class CarlosLessons(unittest.TestCase):
     def test_return_greetings_only_check_committed_progress(self):
         offers = authoring.documents()['content/quests/shared-reward-offers.json']['offers']
         rows = [row for row in offers if row['npc'] == authoring.NPC]
-        self.assertEqual(len(rows), 6)
-        self.assertEqual([row['next_topic'] for row in rows], [1, 2, 3, 4, 5, 6])
-        for stage, row in enumerate(rows, 1):
+        self.assertEqual(len(rows), 7)
+        self.assertEqual([row['next_topic'] for row in rows], [1, 2, 3, 4, 5, 6, 0])
+        for stage, row in zip([1, 2, 3, 4, 5, 6, 8], rows):
             self.assertEqual(row['storage'], [authoring.storage(authoring.GREET, stage, stage, stage)])
             self.assertEqual(row['topic'], 0)
 
     def test_food_evidence_accepts_meat_or_ham_without_a_hand_in(self):
         callbacks = authoring.documents()['content/quests/shared-reward-callbacks.json']['callbacks']
         owned = [row for row in callbacks if row['key'].startswith(authoring.PREFIX)]
-        self.assertEqual(len(owned), 6)
+        self.assertEqual(len(owned), 8)
         row = next(row for row in owned if row['key'] == authoring.PREFIX + 'food-evidence')
         self.assertEqual((row['topic'], row['next_topic']), (5, 6))
         self.assertEqual(row['present_any'], [{'item': 'oteryn:item.tibia.i3577', 'count': 1},
@@ -57,6 +58,20 @@ class CarlosLessons(unittest.TestCase):
         self.assertEqual(row['items'], ['oteryn:item.tibia.i3577', 'oteryn:item.tibia.i3582'])
         self.assertEqual(row['storage'][0], authoring.storage(authoring.GREET, 6, 6, 7))
         self.assertTrue(all(condition['preserve'] for condition in row['storage'][1:]))
+
+    def test_post_sale_reports_and_final_return_greeting_match_source(self):
+        callbacks = authoring.documents()['content/quests/shared-reward-callbacks.json']['callbacks']
+        rows = [row for row in callbacks if row['key'].startswith(authoring.PREFIX + 'report-')]
+        self.assertEqual(len(rows), 2)
+        self.assertEqual({row['key'].removeprefix(authoring.PREFIX): row['topic'] for row in rows}, {'report-ready': 6, 'report-greeting': 0})
+        for row in rows:
+            self.assertEqual(row['next_topic'], 0)
+            self.assertEqual(row['storage'], [authoring.storage(authoring.GREET, 7, 7, 8), authoring.storage(authoring.LOG, 6, 6, 7)])
+            self.assertEqual(row['take'], [])
+            for field in ['give', 'outfit', 'achievement', 'experience', 'health_loss']:
+                self.assertIsNone(row.get(field))
+            self.assertFalse(row.get('completes', False))
+            self.assertTrue(all(source.startswith(authoring.SOURCE + '#L') for source in row['sources']))
 
     def test_other_lane_and_npc_records_are_preserved(self):
         for relative, document in authoring.documents().items():

@@ -247,6 +247,82 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/questpc3/beginning-carlos/report-greeting",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.carlos",
+      "keywords": [
+        "hi",
+        "hello",
+        "greetings"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_quest_log",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Welcome back, |PLAYERNAME|. That is how trading works. You are ready to cross the bridge to Rookgaard. Take care!"
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/carlos.lua#L114-L119"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/beginning-carlos/report-ready",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.carlos",
+      "keywords": [
+        "ready",
+        "yes",
+        "ok"
+      ],
+      "topic": 6,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_quest_log",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "That is how trading works. You are ready to cross the bridge to Rookgaard. Follow the path to the northwest. Good luck, |PLAYERNAME|!"
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/carlos.lua#L205-L218"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/questpc3/beginning/club-grant",
       "quest": "oteryn:quest.the_beginning_quest",
       "npc": "oteryn:npc.santiago",
