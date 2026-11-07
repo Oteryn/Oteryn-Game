@@ -350,10 +350,10 @@
     "final_pg_log": "/tmp/npcfix-evidence/refusal-final-paid-clock-pg.log"
   },
   "counts": {
-    "QUALIFIED": 242,
+    "QUALIFIED": 244,
     "EXCLUDED": 24,
     "PENDING": 7,
-    "AUTHORED; QUALIFICATION PENDING": 44,
+    "AUTHORED; QUALIFICATION PENDING": 42,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
   },
@@ -1820,7 +1820,14 @@
       "work": "Retail placement authored. Add seven candy buyback offers, including Pastry Dragon95000.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/313; content/services/trade/trade-00000-00326.json:1#/records/291",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "status": "AUTHORED; QUALIFICATION PENDING",
+      "physical_proof": {
+        "batch": "npcfix-reviewed-ground-cells-42",
+        "red_seconds": 94.0,
+        "green_seconds": 149.47,
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "scope": "Exact audited cell and name; candy buyback service remains open."
+      }
     },
     {
       "npc": "Alyxo",
@@ -2348,8 +2355,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/181",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "npcfix-reviewed-ground-cells-42",
+        "postgres_red_seconds": 94.0,
+        "postgres_green_seconds": 149.47,
+        "scope": "Exact audited native cell/name; official ground/passive facts admitted through existing strict source guards."
+      }
     },
     {
       "npc": "Marina",
@@ -2570,8 +2583,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/178",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "npcfix-reviewed-ground-cells-42",
+        "postgres_red_seconds": 94.0,
+        "postgres_green_seconds": 149.47,
+        "scope": "Exact audited native cell/name; official ground/passive facts admitted through existing strict source guards."
+      }
     },
     {
       "npc": "Kaumudi",
@@ -7293,6 +7312,55 @@
         },
         "native_provider": "All3627 prior native profiles unchanged; fluid canonical facts only2 Item fields and3 offers; full other record arrays retained (taxonomy119 canonical provenance hashes refreshed)."
       }
+    },
+    {
+      "name": "npcfix-reviewed-ground-cells-42",
+      "state": "QUALIFIED_PHYSICAL_COMPONENTS",
+      "entries": [
+        "Javala",
+        "John The Carpenter",
+        "Toffee"
+      ],
+      "source_commit": "f87861eab9ba7d889a0bbe5f495237b45190214d",
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 94.0,
+        "log": "/tmp/npcfix-evidence/ground-three-pg-red.log",
+        "sha256": "0d0572b33f877997fbf019229d9848a856b4d1b1510adccfd1972b9194391abe"
+      },
+      "scope": "Javala and John complete physical-only entries; Toffee physical component retained pending separate candy service proof. No NPC coordinate/name or prior case changes.",
+      "next": "Reuse strict Summer appearance-only producer for53254/35700/44783; retain exact cells. Anaztassja has five anchors and will be handled as a complete separate multi-anchor slice; do not drop the two deeper anchors.",
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 149.47,
+        "log": "/tmp/npcfix-evidence/ground-three-pg-green.log"
+      },
+      "preservation": {
+        "native_existing_preserved": 3627,
+        "native_added": [
+          "oteryn:item.tibia.i27976"
+        ],
+        "terrain_existing_preserved": 8615,
+        "terrain_added": [
+          "oteryn:terrain.tibia.i35700",
+          "oteryn:terrain.tibia.i44783",
+          "oteryn:terrain.tibia.i53254"
+        ]
+      },
+      "checks": "PASS: actual PG RED94.00s/GREEN149.47s;12 ground regression tests38.518s;9 ownership/custody tests52.639s; native42 generation/reproduction; py_compile; cargo fmt; independent regenerated pin check. No Rust changes; all five-crate check/strict Clippy proofs remain source-equivalent.",
+      "pin": {
+        "inputs_digest": "7bb59fd64cfbdbb7be90b582568f2619b2c55138b87ae82a0479dd06bbf4f946",
+        "pins": [
+          {
+            "bytes": 31822062,
+            "digest": "1004d644ff8f4081f71ae1ea7545282187c3369dd36a86203b07b314818843d1",
+            "world": "oteryn"
+          }
+        ]
+      },
+      "rust_source_snapshot": "89e78174f9cd845e8e64130ba549352dd70eaa07",
+      "cumulative_native_actors": 233,
+      "cumulative_npcs": 232
     }
   ],
   "shared_engine_lookup": {
@@ -8323,7 +8391,7 @@
   ],
   "active_ground_work": {
     "name": "npcfix-reviewed-ground-cells-42",
-    "state": "COMPILES; POSTGRES_GREEN; INDEPENDENT_PIN_AND_FMT_RUNNING",
+    "state": "QUALIFIED_PHYSICAL_COMPONENTS",
     "entries": [
       "Javala",
       "John The Carpenter",
@@ -8355,6 +8423,19 @@
         "oteryn:terrain.tibia.i53254"
       ]
     },
-    "checks": "12 ground tests PASS38.518s;9 profile guard tests PASS52.639s; native42 generation/reproduction PASS; Python compile PASS; no changed Rust crate; full prior changed-crate check/strict Clippy retained; current fmt and independent regenerated pin check running."
+    "checks": "PASS: actual PG RED94.00s/GREEN149.47s;12 ground regression tests38.518s;9 ownership/custody tests52.639s; native42 generation/reproduction; py_compile; cargo fmt; independent regenerated pin check. No Rust changes; all five-crate check/strict Clippy proofs remain source-equivalent.",
+    "pin": {
+      "inputs_digest": "7bb59fd64cfbdbb7be90b582568f2619b2c55138b87ae82a0479dd06bbf4f946",
+      "pins": [
+        {
+          "bytes": 31822062,
+          "digest": "1004d644ff8f4081f71ae1ea7545282187c3369dd36a86203b07b314818843d1",
+          "world": "oteryn"
+        }
+      ]
+    },
+    "rust_source_snapshot": "89e78174f9cd845e8e64130ba549352dd70eaa07",
+    "cumulative_native_actors": 233,
+    "cumulative_npcs": 232
   }
 }
