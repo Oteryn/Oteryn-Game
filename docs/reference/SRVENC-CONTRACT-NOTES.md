@@ -1021,3 +1021,13 @@ issues in source helpers (identity conversions and large tuple annotation);
 those are corrected without suppressions. Final Clippy rerun follows the
 remaining genuine-custody auction fixture qualification. Source production
 Sugar/publication PostgreSQL GREEN remains151.794s/177.012s unchanged.
+
+## SRVENC core package validation GREEN
+
+Complete selected library suites for Content, World, WorldBundle, Entities,
+Combat and Spell:1163 tests PASS629.921s (717.523s including build), no failures;
+existing runner exclusions were unchanged. No tests were disabled or weakened.
+This covers the admitted source corpus, Item/Creature identity and provenance,
+Instance isolation, physical projection, native combat and player effects.
+The source boss/physical reward PostgreSQL evidence recorded above remains
+GREEN; remaining final checks concern Drome custody/Highscores integration.
