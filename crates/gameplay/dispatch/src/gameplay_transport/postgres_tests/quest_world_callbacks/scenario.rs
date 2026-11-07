@@ -23,7 +23,15 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let monk = name.starts_with("monk-guidance");
-    let classic_npc = matches!(name, "nx6-wayfarer" | "classic-quests-npc" | "classic-rottin-disrepair" | "threatened-dreams-npc" | "conditional-quest-greetings");
+    let classic_npc = matches!(
+        name,
+        "nx6-wayfarer"
+            | "classic-quests-npc"
+            | "classic-rottin-disrepair"
+            | "threatened-dreams-npc"
+            | "conditional-quest-greetings"
+            | "quest-l4-beginning"
+    );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
     let mut callback = callback(if classic_npc {
@@ -95,7 +103,13 @@ fn scenario_case(
             1,
             1,
             "runtime-scope-assignment:1",
-            if classic_npc { 5 } else if monk { 4 } else { 2 },
+            if classic_npc {
+                5
+            } else if monk {
+                4
+            } else {
+                2
+            },
             pin,
         )
         .map_err(debug)?;
@@ -190,15 +204,48 @@ fn scenario_case(
         } else if name == "nx6-wayfarer" {
             super::super::nx6_wayfarer::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if name == "conditional-quest-greetings" {
-            super::super::conditional_quest_greetings::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+            super::super::conditional_quest_greetings::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+            )
+            .await?;
+        } else if name == "quest-l4-beginning" {
+            super::super::quest_l4_beginning::exercise(&mut owner, &mut admitted, &h, &authority)
+                .await?;
         } else if name == "threatened-dreams-npc" {
-            super::super::threatened_dreams::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+            super::super::threatened_dreams::exercise(&mut owner, &mut admitted, &h, &authority)
+                .await?;
         } else if name == "classic-rottin-disrepair" {
-            super::super::classic_quests::exercise_rottin(&mut owner, &mut admitted, &h, &authority).await?;
+            super::super::classic_quests::exercise_rottin(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+            )
+            .await?;
         } else if classic_npc {
-            super::super::classic_quests::exercise(&mut owner, &mut admitted, &h, &authority).await?;
-        } else if matches!(name, "outlaw-camp-entrance" | "banshees-first-seal-return" | "banshees-second-seal" | "banshees-final-battle-exit") {
-            super::super::classic_quests::exercise_step(&mut owner, &mut admitted, &h, &authority, &world, &callback, trigger, origin).await?;
+            super::super::classic_quests::exercise(&mut owner, &mut admitted, &h, &authority)
+                .await?;
+        } else if matches!(
+            name,
+            "outlaw-camp-entrance"
+                | "banshees-first-seal-return"
+                | "banshees-second-seal"
+                | "banshees-final-battle-exit"
+        ) {
+            super::super::classic_quests::exercise_step(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                &world,
+                &callback,
+                trigger,
+                origin,
+            )
+            .await?;
         } else if monk {
             super::super::monk_shrines::exercise(
                 &mut owner,
@@ -224,7 +271,12 @@ fn scenario_case(
             .await?;
         } else if name == "gravedigger-tears" {
             super::multi_stack_handin::exercise(
-                &mut owner, &mut admitted, &h, fence, &callback, trigger,
+                &mut owner,
+                &mut admitted,
+                &h,
+                fence,
+                &callback,
+                trigger,
             )
             .await?;
         } else if callback.item_on_target.is_some()
@@ -297,9 +349,27 @@ fn scenario_case(
                 .map_err(debug)?;
             assert_eq!(copy.tracks().get(&callback.storage[0].track), Some(&1));
         } else if name == "lions-rock-inner-sanctum-entry" {
-            super::lions_rock::exercise(&mut owner, &mut admitted, &h, &authority, fence, &callback, origin).await?;
+            super::lions_rock::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                fence,
+                &callback,
+                origin,
+            )
+            .await?;
         } else if name == "unnatural-selection-dance-2" {
-            super::unnatural_selection::exercise(&mut owner, &mut admitted, &h, &authority, fence, &callback, trigger).await?;
+            super::unnatural_selection::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                fence,
+                &callback,
+                trigger,
+            )
+            .await?;
         } else if name == "liquid-black-shortcut" {
             // The source shortcut has no text. Exercise the generic authored refusal message
             // without changing that source binding in production content.

@@ -20,7 +20,7 @@
       ],
       "status": "IN_PROGRESS",
       "implementation_owner": "questpc3",
-      "next_actions": "Implement Santiago/Carlos/Zirella progression, native source occurrence conditions, physical leg/wood hand-ins and coupled rewards. Author all required bindings here. Deaths alone cannot substitute for physical hand-in."
+      "next_actions": "Three-leg/100XP hand-in, native fish and Zirella50XP rewards implemented with PG proof; greeting/shared scalar program and source fallback implemented. Complete occurrences, chest/equipment/health/cart/wood/Carlos mechanisms; whole quest remains in progress."
     },
     {
       "canonical": "oteryn:quest.the_first_dragon_quest",
@@ -872,7 +872,11 @@
       },
       "proof_pending": [],
       "proof": "checks.tutorial_rewards_01",
-      "publication": "Commit green slice, merge remote025936c3d8b4ff07d6cb57d60c0c8afb23a6cd7e, validate combined source, fast-forward push."
+      "publication": {
+        "local_commit": "023219279",
+        "integration_remote": "025936c3d8b4ff07d6cb57d60c0c8afb23a6cd7e",
+        "status": "Both green commits and remote greeting source integrated; merge commit and metadata-only b7f update are being published."
+      }
     },
     "effective_entries": [
       "oteryn:quest.the_beginning_quest",
@@ -1389,6 +1393,110 @@
           "tools/content-schema/quest-authoring/shared-reward-callbacks.md": "12e360527059858e0e9e2e39e6e78d20feb8dfb7b54f21c50951e2c4db2288d1",
           "tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json": "a3a426042d92ab96b8c044de0f49d5b9012167baa6aba4fa16fdced014ac1929"
         }
+      },
+      "beginning_greet_01": {
+        "red": {
+          "log": "/tmp/questpc3-beginning-greet-red.log",
+          "sha256": "5bf159af34940e8e69507519a5f2481e87cfc7abac86036ec1d1f702421493f2",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 5m 34s",
+            "  left: NoConversation",
+            "QUEST_L4_BEGINNING POSTGRES_CASE_COMPLETED duration_ms=123336 success=false",
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2551 filtered out; finished in 123.34s"
+          ]
+        },
+        "green": {
+          "log": "/tmp/questpc3-beginning-greet-green.log",
+          "sha256": "54c0a625dcf782efc58da62c4ab5cc85d5b13e0baee882eeb25d5007b575c044",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 27s",
+            "QUEST_L4_BEGINNING POSTGRES_ASSERTION_REACHED greeting_value=1",
+            "QUEST_L4_BEGINNING POSTGRES_CASE_COMPLETED duration_ms=115161 success=true",
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2551 filtered out; finished in 115.16s"
+          ]
+        },
+        "unit": {
+          "log": "/tmp/questpc3-beginning-greet-units.log",
+          "sha256": "c093aa6ff27e8fcc37807ff1a7f6cc8aea7fd5bfcf33a74568fbeef49faa2bfa",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.30s",
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 256 filtered out; finished in 1.07s"
+          ]
+        },
+        "cargo_check": {
+          "log": "/tmp/questpc3-beginning-greet-check.log",
+          "sha256": "09122be9cc97c421e1a39967cb101ae1d0337c243e63d3cc048d1f318af6cd23",
+          "evidence": [
+            "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 36.68s"
+          ]
+        },
+        "clippy": {
+          "status": "GREEN_PRE_MERGE",
+          "log": "/tmp/questpc3-beginning-greet-clippy.log",
+          "duration": "1m38s"
+        },
+        "review": "Reviewed full owned diff: source NPC identity, native production route, current-context and session fencing, one atomic source write, repeat guard, source templates and catalogue revision; no value grant or fee in this slice. No schema or generated content inputs changed.",
+        "merged_check": {
+          "status": "GREEN",
+          "log": "/tmp/questpc3-greeting-merge-check.log",
+          "sha256": "5cdf72c9ca247d5cdbd09c2131bee71c9a2dbaeed508c65800af67df701b77f7",
+          "duration": "2m42s"
+        }
+      },
+      "tutorial_rewards_merge": {
+        "logs": {
+          "check": {
+            "path": "/tmp/questpc3-rewards-merge-check.log",
+            "sha256": "3cc72549b67aea380fcf1ceef8d6c95562a39436ac7338debbe3960a6296d04d"
+          },
+          "clippy": {
+            "path": "/tmp/questpc3-rewards-merge-clippy.log",
+            "sha256": "72b713c284507d9c2a0157aeb02b2f7f7c5bb1e59ba40d292602c3fea51c4de1"
+          },
+          "start_unit": {
+            "path": "/tmp/questpc3-rewards-merge-start-unit.log",
+            "sha256": "118e7d5a3baad9a09a4f796b92ba3e0ddb01a0338428259d46907c961d2d45f5"
+          },
+          "parser": {
+            "path": "/tmp/questpc3-rewards-merge-parser.log",
+            "sha256": "cb0ecc657b0d5b10dcd84c1034f1cbba2a68ffc4795101e2aee096a492447264"
+          },
+          "greeting_pg": {
+            "path": "/tmp/questpc3-rewards-merge-greeting-pg.log",
+            "sha256": "9ef9a791842b0843d2284523726425ced2ea542b5aebae68e3ee5bca7af3ee51"
+          },
+          "dialogue_pg": {
+            "path": "/tmp/questpc3-rewards-merge-dialogue-pg.log",
+            "sha256": "6b4efa23174c7bb5154d05c2c29453bac830ebcccb6d7e589f4bb5508f0c3c67"
+          },
+          "rewards_pg": {
+            "path": "/tmp/questpc3-rewards-merge-rewards-pg.log",
+            "sha256": "532294c42ef8349f6c8326f50749c4a57778d4f3875e739be21748879235ff77"
+          }
+        },
+        "results": {
+          "check": "PASS4crates/all features",
+          "clippy": "PASS4crates/all features/all targets -D warnings",
+          "start_unit": 1,
+          "parser": 1,
+          "postgres": "18.6 no selected skips",
+          "greeting_pg_seconds": 130.44,
+          "greeting_complete_ms": 130437,
+          "dialogue_pg_seconds": 117.08,
+          "dialogue_complete_ms": 117080,
+          "rewards_pg_seconds": 101.3,
+          "rewards_complete_ms": 101296
+        },
+        "source_sha256": {
+          "crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs": "2b8e8a8f29244c15b8882db8e0a2ca377785f5590d1eac6a648c8da1b39d136d",
+          "crates/gameplay/dispatch/src/gameplay_transport/npc_command/beginning.rs": "db86defa1109e1b13ec9ef300ed2d0cf36d0eaeb15b46b6d0830b33a1ef5fd23",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_l4_beginning.rs": "6fa82dfec605cc4a19e10d7598213b804ca113d6d67117f6e967fffe3310e824",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs": "c1964a6d0452defa639345a704216078c61973ac9e948eaecf19004e2829f1d5",
+          "crates/gameplay/npc/src/npc_talk.rs": "a69856e346c6140665d6fd7f6feddf74da13a568c9cc51504f7957dd67b87fc1",
+          "crates/gameplay/quests/src/quest/beginning.rs": "76874f67910a0712269e253c100dd645a11afc89ac8560705627c699551598e1",
+          "crates/gameplay/quests/src/quest/loader.rs": "b7ffac34197442b75912f2b3d05f0eb5a51aa7720bd0580c0dd485b281b632f1",
+          "crates/gameplay/quests/src/quest/mod.rs": "ed1a016dea2c235271e3e6601e088ea770d67fa151e148f4734eb1683b205a1f"
+        }
       }
     },
     "source_corrections": [
@@ -1416,7 +1524,7 @@
       "wvar": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
     },
     "shared_feature_owner": "questpc3: reuse existing implementations; implement every remaining engine, binding, NPC, Item and world-mechanic gap locally. No external dependency wait.",
-    "updated_at": "2026-11-07T00:52:44.265647+00:00",
+    "updated_at": "2026-11-07T01:08:59.158161+00:00",
     "publication_native_counters_01": {
       "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
       "pushed": true,
@@ -1598,6 +1706,120 @@
           "integrated_remote": "73a106fc5035885a844c81e8618900f80c028116"
         },
         "environment_recovery": "Content repository linker hit signal7/bus error with137MB free. Removed only obsolete unlocked incremental snapshots, retained newest caches and all build settings; retry5tests passed84.49s."
+      }
+    },
+    "completed_batches": [
+      {
+        "id": "sum-guards-01",
+        "status": "PUBLISHED at 73a106fc5035885a844c81e8618900f80c028116; all selected verification completed",
+        "entries": [
+          "oteryn:quest.threatened_dreams_quest"
+        ],
+        "mechanism": "Reusable bounded sum guard; atomic Maelyrra kill report through existing quest writer and NPC selector",
+        "whole_entry_qualifications": 0,
+        "publication": {
+          "commit": "73a106fc5035885a844c81e8618900f80c028116",
+          "remote_verified": true
+        }
+      },
+      {
+        "id": "npc-programs-01",
+        "phase": "GREEN",
+        "scope": "Selectively reused qengine2 NPC reward engine; six Santiago source callbacks and return greetings. Whole Beginning remains in progress.",
+        "red": {
+          "path": "/tmp/questpc3-npc-greet-red-positioned.log",
+          "failure": "NoConversation versus Ok",
+          "postgres_marker_ms": 86938,
+          "duration_seconds": 87.08
+        },
+        "first_green": {
+          "path": "/tmp/questpc3-npc-greet-green.log",
+          "scope": "Initial atomic source greeting and regreet only",
+          "postgres_marker_ms": 90144,
+          "completed_ms": 90482
+        },
+        "fixture_correction": "Expanded scenario initially installed prerequisite transitions after initial receipt; definition-hash pin correctly refused. Install fixture catalogue before first receipt; retain immutable definition guard. This fixture failure is not missing-mechanism RED evidence.",
+        "reuse_source": "origin/claude/happy-davinci-ijz3wy-qengine2 be6db5edd^..5a6de28c1; NPC-only composition. Existing multi-stack world inputs, Rookgaard messages and native counters retained. No unrelated outfit/world data or world binaries imported.",
+        "proof": "checks.npc_programs_01",
+        "publication": {
+          "mode": "commit and fast-forward push immediately after metadata update",
+          "parent": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
+          "branch": "claude/happy-davinci-ijz3wy-questpc3",
+          "local_commit": "a4f1f4a21"
+        },
+        "environment_recovery": "Content repository linker hit signal7/bus error with137MB free. Removed only obsolete unlocked incremental snapshots, retained newest caches and all build settings; retry5tests passed84.49s."
+      }
+    ],
+    "remote_integrations": {
+      "025936c3d": {
+        "commit": "025936c3d8b4ff07d6cb57d60c0c8afb23a6cd7e",
+        "batch": {
+          "id": "beginning-greet-01",
+          "status": "PG, unit and cargo check GREEN; immediate publication with Clippy running under owner cadence",
+          "entries": [
+            "oteryn:quest.the_beginning_quest"
+          ],
+          "mechanism": "Native Santiago greeting and atomic source quest/greeting flags using existing common NPC executor",
+          "whole_entry_qualifications": 0,
+          "source": "Crystal 9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/santiago.lua:63-73,250-251; SHA256 e83d14b26fb9e6bca12cd3ec50abe34daaeb56f2719b5a1dee3d8efc4402a1bd in retained corpus.tar.gz",
+          "clippy": "GREEN on pre-merge slice, 1m38s",
+          "integration": {
+            "incoming": "9d3330e59a1ce0f3de439d27f26ad760fb5dbe72",
+            "status": "Combined cargo check GREEN (2m42s); focused composition PG validation pending after immediate owner-authorized push",
+            "rule": "Shared reward callback precedes state-only tutorial fallback; preserve both NPC template flags, walkaway behavior and all catalogue revision material. Own greeting receipt test now asserts the integrated shared callback key."
+          }
+        },
+        "status": "GREEN combined check/strict Clippy, unit/parser and3focusedPG cases; source merged without conflict.",
+        "proof": {
+          "red": {
+            "log": "/tmp/questpc3-beginning-greet-red.log",
+            "sha256": "5bf159af34940e8e69507519a5f2481e87cfc7abac86036ec1d1f702421493f2",
+            "evidence": [
+              "    Finished `test` profile [unoptimized + debuginfo] target(s) in 5m 34s",
+              "  left: NoConversation",
+              "QUEST_L4_BEGINNING POSTGRES_CASE_COMPLETED duration_ms=123336 success=false",
+              "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2551 filtered out; finished in 123.34s"
+            ]
+          },
+          "green": {
+            "log": "/tmp/questpc3-beginning-greet-green.log",
+            "sha256": "54c0a625dcf782efc58da62c4ab5cc85d5b13e0baee882eeb25d5007b575c044",
+            "evidence": [
+              "    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 27s",
+              "QUEST_L4_BEGINNING POSTGRES_ASSERTION_REACHED greeting_value=1",
+              "QUEST_L4_BEGINNING POSTGRES_CASE_COMPLETED duration_ms=115161 success=true",
+              "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2551 filtered out; finished in 115.16s"
+            ]
+          },
+          "unit": {
+            "log": "/tmp/questpc3-beginning-greet-units.log",
+            "sha256": "c093aa6ff27e8fcc37807ff1a7f6cc8aea7fd5bfcf33a74568fbeef49faa2bfa",
+            "evidence": [
+              "    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.30s",
+              "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 256 filtered out; finished in 1.07s"
+            ]
+          },
+          "cargo_check": {
+            "log": "/tmp/questpc3-beginning-greet-check.log",
+            "sha256": "09122be9cc97c421e1a39967cb101ae1d0337c243e63d3cc048d1f318af6cd23",
+            "evidence": [
+              "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 36.68s"
+            ]
+          },
+          "clippy": {
+            "status": "GREEN_PRE_MERGE",
+            "log": "/tmp/questpc3-beginning-greet-clippy.log",
+            "duration": "1m38s"
+          },
+          "review": "Reviewed full owned diff: source NPC identity, native production route, current-context and session fencing, one atomic source write, repeat guard, source templates and catalogue revision; no value grant or fee in this slice. No schema or generated content inputs changed.",
+          "merged_check": {
+            "status": "GREEN",
+            "log": "/tmp/questpc3-greeting-merge-check.log",
+            "sha256": "5cdf72c9ca247d5cdbd09c2131bee71c9a2dbaeed508c65800af67df701b77f7",
+            "duration": "2m42s"
+          }
+        },
+        "combined_proof": "checks.tutorial_rewards_merge"
       }
     }
   }
