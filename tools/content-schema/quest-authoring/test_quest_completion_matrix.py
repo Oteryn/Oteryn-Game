@@ -33,6 +33,12 @@ class QuestCompletionMatrixTest(unittest.TestCase):
                 self.assertEqual(set(row["reward_claim_owner"]["claim_keys"]),
                                  {c["claim_key"] for c in packet["cases"] if c["wiki_title"] == row["wiki_title"]})
 
+    def test_purple_tome_all_three_claims_have_runtime_proof(self):
+        row = next(row for row in self.result["records"] if row["wiki_title"] == "Purple Tome Quest")
+        self.assertEqual("REWARD_CLAIM_USE_VERIFIED", row["implementation_state"])
+        self.assertEqual(3, len(row["reward_claim_owner"]["claim_keys"]))
+        self.assertTrue(all(d["runtime_enabled"] for d in row["canonical"]))
+
     def test_matrix_never_claims_playability(self):
         self.assertEqual(0, self.result["summary"]["playable_verified"])
         self.assertTrue(all(row["playable_verification"] == "NOT_ASSESSED"

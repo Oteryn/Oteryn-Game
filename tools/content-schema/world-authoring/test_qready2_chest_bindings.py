@@ -11,9 +11,10 @@ class Qready2ChestBindingsTest(unittest.TestCase):
     def test_capture_matches_owned_canonical_rewards(self):
         self.assertEqual((qready2.ROOT / qready2.CAPTURE).read_bytes(), qready2.capture())
         rows = json.loads(qready2.capture())['bindings']
-        self.assertEqual(21, len(rows))
-        self.assertFalse(any('knight_outfits' in row['claim'] or 'purpletome' in row['claim']
+        self.assertEqual(24, len(rows))
+        self.assertFalse(any('knight_outfits' in row['claim']
                              for row in rows))
+        self.assertEqual(3, sum('purpletome' in row['claim'] for row in rows))
 
     def test_every_runtime_tile_has_exact_source_uid_and_appearance(self):
         index = json.loads((qready2.ROOT / access.INDEX).read_bytes())

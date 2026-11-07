@@ -1,4 +1,4 @@
-"""Native custody for the three missing QREADY2 reward Items; no new semantics.
+"""Native custody for the six missing QREADY2 reward Items; no new semantics.
 
 Reuse quest_callback_profiles' canonical admission and exact Crystal binding
 checks, as used by the older QUESTPC catalogue qualification. All other reward
@@ -6,12 +6,13 @@ Items in this lane already belong to the active provider.
 """
 import json
 
-IDS = (21982, 3310, 3587)
+IDS = (21982, 2822, 2823, 2848, 3310, 3587)
 PACKET = 'tools/content-schema/quest-authoring/samples/completion-matrix/qready2-cases.json'
+PURPLE = 'tools/content-schema/quest-authoring/samples/completion-matrix/qready2-purple-cases.json'
 
 
 def keys(root):
-    claims = {case['claim_key'] for case in json.loads((root / PACKET).read_bytes())['cases']}
+    claims = {case['claim_key'] for path in (PACKET, PURPLE) for case in json.loads((root / path).read_bytes())['cases']}
     rewards = set()
     index = json.loads((root / 'content/interactions/reward_claims/index.json').read_bytes())
     for path in index['shards']:

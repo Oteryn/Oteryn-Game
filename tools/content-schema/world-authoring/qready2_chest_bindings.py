@@ -8,10 +8,11 @@ import quest_access_bindings as access
 ROOT = Path(__file__).resolve().parents[3]
 CAPTURE = 'tools/content-schema/world-authoring/samples/qready2-chest-bindings.json'
 PACKET = 'tools/content-schema/quest-authoring/samples/completion-matrix/qready2-cases.json'
+PURPLE = 'tools/content-schema/quest-authoring/samples/completion-matrix/qready2-purple-cases.json'
 
 
 def capture(root=ROOT):
-    keys = {c['claim_key'] for c in json.loads((root / PACKET).read_bytes())['cases']}
+    keys = {c['claim_key'] for path in (PACKET, PURPLE) for c in json.loads((root / path).read_bytes())['cases']}
     index = json.loads((root / 'content/interactions/reward_claims/index.json').read_bytes())
     bindings = []
     for path in index['shards']:

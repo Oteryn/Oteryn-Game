@@ -44,8 +44,9 @@ def import_log(root, packet, log, batch=None):
     claims = load_reward_claims(root)
     source = root / packet['test_file']
     text = log.read_text()
-    if not re.search(r'test result: ok\. 21 passed; 0 failed;', text):
-        raise ValueError('Expected all 21 QREADY2 PostgreSQL cases to pass')
+    count = len(packet['cases'])
+    if not re.search(rf'test result: ok\. {count} passed; 0 failed;', text):
+        raise ValueError(f'Expected all {count} QREADY2 PostgreSQL cases to pass')
     cases = []
     titles = list(dict.fromkeys(case['wiki_title'] for case in packet['cases']))
     selected = titles if batch is None else titles[([0, 6, 12][batch-1]):([6, 12, 17][batch-1])]
