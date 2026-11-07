@@ -459,8 +459,9 @@ object equivalence claims. The accepted item constructor roles retain the
 previously documented50336..50338ordinal mapping and50335plain statue reward.
 Collection is sequential and once-only; crystal exploration precedes assembly.
 Every effect requires CurrentPremium. Assembly consumes all three distinct
-carried fragments in the existing locked BURN/MINT transaction. Input sets are
-bounded to8distinct definitions,1..100units each; each quantity must be available
+carried fragments in the existing locked BURN/MINT transaction. Extra carried-input lists are
+bounded to8distinct definitions in addition to the existing scalar tool, with
+1..100units each; each quantity must be available
 in one live instance, matching the existing scalar input's custody semantics.
 
 The full PG test uses bounded real B3 patches, original registry/native physics
@@ -507,3 +508,12 @@ Only plain consumed tools may accompany a world item reward; reusable tools,
 input replacements and target replacements stay refused for that combination.
 The ground tile is the native contextual crafting target; the rock border is
 not claimed as a source crystal object or required as a client-selectable item.
+
+The complete chosen route now passes initialized PostgreSQL in111.881352291s.
+Final assembly previously reached the deferred reward guard with an empty
+plan.take list and was rejected as "quest reward consumed an unauthored input".
+The existing give_world owner now records every declared consumed scalar/extra
+input in that list. The exact-count/extra-input SQL guard is unchanged. This
+binds the combined BURN/MINT proof without a second inventory writer or schema
+exception. Standalone corrected Lai access passes PG71.970482066s; all final
+strict/generated checks are recorded in mystery-route-validation.json.

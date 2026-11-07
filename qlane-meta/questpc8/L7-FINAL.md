@@ -1,3 +1,8 @@
+Current checkpoint:19/23active L7entries QUALIFIED,4remain. Mystery of the
+Valley now passes its complete finite chosen native route and atomic crafting
+on initialized PostgreSQL. See mystery-route-validation.json and current
+QUEST-STATUS.json/RESUME.md. This continuation is not the final lane state.
+
 Current checkpoint:18/23 active L7 entries QUALIFIED (15 here,3 elsewhere).
 Trader,Treasure,Anniversary,Library full chosen routes now pass initialized
 PostgreSQL; strict checks/generated content/world pins pass. Five programmes

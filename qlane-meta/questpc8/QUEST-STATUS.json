@@ -1282,31 +1282,19 @@
     "title": "Mystery of the Valley Quest",
     "canonical": "oteryn:quest.authored.mystery_of_the_valley_quest",
     "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/18/definition",
-    "status": "UNFINISHED",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
-      "stage": "s2",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
+      "stage": null,
+      "native_dispatch_binding": "authored-mystery-inukaya/muggy-plains/kilmaresh/crystal/assembly",
+      "runtime_enabled": true
     },
-    "blocker": {
-      "kind": "active_implementation",
-      "owner": "questpc8",
-      "missing_piece": "Fix the existing world reward proof take list, rerun full native PG GREEN and strict checks; compiling WIP is published, not qualified."
-    },
-    "first_unqualified_stage": {
-      "key": "s2",
-      "kind": "collect",
-      "objective": "Odszukaj \u015bwi\u0105tyni\u0119 Inukayi i odbierz pierwszy fragment statuy.",
-      "targets": [
-        "Fragment of a Statue (1st)",
-        "Inukaya Shrine"
-      ]
-    },
-    "disposition": "authoring",
-    "qualified_elsewhere": [],
-    "mechanism": "native_reward_source_placement",
+    "blocker": null,
+    "first_unqualified_stage": null,
+    "disposition": "qualified-here",
+    "qualified_elsewhere": false,
+    "mechanism": "Receipt-backed Lai access, native landmark collections/exploration and atomic three-fragment contextual crafting",
     "round": "L7",
     "qualified_components": [
       {
@@ -1341,16 +1329,15 @@
         "scope": "Regression coverage for existing first-party constructor reuse only; no new gameplay qualification",
         "proof": "constructor-reuse-validation.json",
         "python_tests": 3
+      },
+      {
+        "scope": "Complete native chosen programme and corrected Cure the Dogs access gate",
+        "proof": "mystery-route-validation.json",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_mystery_assembly_consumes_all_three_or_none duration=111.881352291s",
+        "duration_seconds": 111.881352291
       }
     ],
-    "authoring_checkpoint": {
-      "proof": "mystery-native-authoring-checkpoint.json",
-      "runtime_changes_published": true,
-      "next": "Full native route GREEN is building with source-verified access gate, three collection callbacks, crystal STEP and atomic contextual assembly.",
-      "convergence": "Incoming four-route qualification retained:18of23,5remain. Local source-native geometry work is stashed for selective reuse; compare upstream97cb9db79 carried USE before restoring any generic input implementation.",
-      "access_regression": "mystery-access-authoring-checkpoint.json",
-      "exact_red_point": "Full native route reaches assembly; PostgreSQL rejects game_quest_reward_sources because give_world hardcodes an empty take list despite three consumed authored inputs. Preserve the guard and populate the proof from the callback."
-    }
+    "qualification_scope": "Complete finite chosen Oteryn recipe with explicit native landmark bindings; mystery-route-validation.json"
   },
   {
     "canonical": "oteryn:quest.giant_smithhammer_quest",

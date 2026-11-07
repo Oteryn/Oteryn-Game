@@ -245,8 +245,20 @@ pub(crate) async fn give_world(
     else {
         return Ok(false);
     };
+    // The existing deferred reward guard reconciles every BURN against this
+    // authored cost list. Retain both scalar tools and bounded extra inputs.
+    let mut take = callback.effects.carried_inputs.clone();
+    if let Some(input) = &callback.item_on_target {
+        take.push(
+            oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
+                item: input.item.clone(),
+                count: input.count,
+            },
+        );
+    }
+    take.sort_by(|left, right| left.item.cmp(&right.item));
     let plan = serde_json::json!({"key": callback.key, "quest": callback.quest,
-        "storage": callback.storage, "take": [], "present": [], "give": reward,
+        "storage": callback.storage, "take": take, "present": [], "give": reward,
         "outfit": null, "world_callback": callback});
     sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,encode($6,'hex')::uuid,ARRAY[]::text[])")
         .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice())

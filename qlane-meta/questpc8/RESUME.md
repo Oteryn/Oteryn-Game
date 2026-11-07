@@ -1,3 +1,26 @@
+# Mystery of the Valley QUALIFIED —19of23,4remain
+
+Complete chosen native progression passes actual PostgreSQL in111.881352291s:
+mandatory Lai introduction with source-verified dog-sled access, sequential
+three-fragment collection, crystal STEP, missing-third/Premium refusal, all-or-
+none BURN/MINT, exactly one plain guardian statue, completion and cold replay.
+Standalone introduction regression GREEN71.970482066s follows actual RED74.08s.
+No Mystery progress or items are inserted by SQL. Native source geometry is
+retained; regional arrival is explicit fixture setup, not quest travel.
+
+Five schema/tool units, three constructor/reuse tests, default check, strict
+changed-crate Clippy, fmt,41file native generation/drift and pin refresh/check
+pass. Existing native Item profiles are byte-identical. See
+mystery-route-validation.json and CONTRACT-NOTES for the exact authored native
+landmarks and upstream single-document-owner comparison. Incoming four-route
+qualifications remain intact. The old isolated fixture attempts are historical
+failures, not qualifications; their database/ingress guards were retained.
+
+Continue immediately with Colours,Venore Daily,Winterlight and Wrath. Check the
+remote before new shared work, merge/reuse incoming implementations, and push
+each green slice. Retain the Palimuth greeting follow-up before lane closeout.
+Do not end the session while four entries remain.
+
 # Compiling WIP published — exact assembly proof RED
 
 18of23active entries remain QUALIFIED,5remain. Full Mystery native route now
