@@ -383,3 +383,37 @@ chests UID6085-6088, shared claim/replay, source exit1949 at33236,31655 to
 be shared test-only. No invented six-kill storage or escape timer. Preserve
 Desert source party rite907bdacd9, its separate continuation and all earlier
 commits. Counts remain0 qualified/35 unfinished; continue, no external wait.
+
+2026-11-07 07:11 UTC full-route checkpoint (source/resume only): published
+66caf4fd0 remains the green combat baseline. New Route::Complete fixture
+starts four actual Fresh players at source33213,31671,z13 and exercises
+outer expertise gate, original encounter/combat, actual armor chest3388,
+same-command replay, another source choice, source exit, claimed-door refusal
+and spent lever. New files/changes remain LOCAL pending GREEN. Type check
+passed2m35s. Actual PG180006 RED74.12s: source expertise gate5111 returned
+NothingToUse, as expected for its missing native profile. Existing generic
+DoorBook already supports5111/5112, action-level predicate and close-on-step-off.
+Source_gate_item_profiles.py uses pinned XML14552-14559/client/exact bindings
+for two ground-only profiles; preserves any known canonical facts. Both
+source/preservation tests pass4.403s. Canonical records are identity-only.
+Local registration hook added; write/check is running in session15835,
+log /tmp/questpc2-complete-gate-registration.log. Do not regenerate loot tables
+or run Prey simulation unless registration reports its model actually stale.
+Next: after registration PASS, run the unchanged full-route executable against
+current manifest (fixture reads it at runtime) for GREEN; source gate USE uses
+existing native toggle then real WALK through its opening. Fix actual failures
+without bypasses; pin refresh/check with repo tooling, scoped checks, push.
+
+Resource recovery now requires low RAM-backed baseline (<2GiB) before native
+compile. Retry compiled2m48s with native READY metadata on disk; failed OOM
+attempts are not PG evidence. Latest retained cache ledgers:
+/tmp/questpc2-complete-native-memory-retention.json (five caches on disk),
+/tmp/questpc2-complete-verification-cache-retention.json (current check/clippy),
+/tmp/questpc2-complete-native-metadata-relocation.json (old native metadata;
+retire only after a newer READY completes),
+/tmp/questpc2-complete-green-exe-retention.json (verified green66caf4fd0 exe).
+Current native READY is live and succeeded; prune only unlocked old READY and
+retire old metadata after confirming its newest snapshot. Restore appropriate
+current check/clippy and root caches before those checks; do not overwrite
+newer native durability READY with old archive. Heavy checks run sequentially.
+Counts remain0/35; no whole quest qualification from this checkpoint.

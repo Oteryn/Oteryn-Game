@@ -1825,5 +1825,29 @@
     "work_owner": "questpc2",
     "task": "Compose source Desert level20 gate, four-party rite and both physical earned chest rewards. Reuse questpc4 exact charged-Item projection only for owned desert2; preserve all other lane ownership. Qualify whole source path with real PostgreSQL proof and continue all owned entries.",
     "external_dependencies_to_wait_for": []
+  },
+  "full_route_authoring_checkpoint": {
+    "state": "AUTHORING",
+    "published_scope": "Verified source facts and resume state only; new full-route fixture and gate profiles remain local pending PostgreSQL GREEN.",
+    "base_green_sha": "66caf4fd072fe280e18038bf32cdbae42d6c066f",
+    "postgres_red": {
+      "server_version": 180006,
+      "duration_seconds": 74.12,
+      "log": "/tmp/questpc2-complete-native-memory-red-pg.log",
+      "failure": "Full source route starts at33213,31671,z13; expertise gate5111 returned NothingToUse instead of Committed."
+    },
+    "source_admission": "Pinned XML/client/exact bindings qualify5111/5112 ground-only doors; existing generic DoorBook already owns the pair and placed level predicate. Two provider preservation/source tests pass4.403s. Hook added locally; registration write/check running.",
+    "full_route_steps": [
+      "four genuine players cross actual outer gate",
+      "source reward door and staging",
+      "source lever/native full-health combat",
+      "source3388 physical chest and same-command replay",
+      "second source choice shares once-claim",
+      "source exit teleport to33213,31671,13",
+      "claimed-door refusal and spent lever reset state"
+    ],
+    "type_check_seconds": 155,
+    "resource_state": "Low-memory retry compiled2m48s; after retaining verified current cache archives on disk and reducing RAM-backed baseline below2GiB. Current native READY live on /tmp; old metadata remains on disk until retired after newest READY. Latest ledgers /tmp/questpc2-complete-native-memory-retention.json, /tmp/questpc2-complete-verification-cache-retention.json, /tmp/questpc2-complete-native-metadata-relocation.json. Positive66caf4fd0 combat executable retained gzip with SHA proof in /tmp/questpc2-complete-green-exe-retention.json. No source/settings/tests weakened.",
+    "next": "Finish registration, run exact full-route PG against regenerated data, fix actual owner refusals, checks, publish runtime slice; qualify whole Annihilator only after actual reward/escape/re-entry proof. Continue all remaining entries."
   }
 }

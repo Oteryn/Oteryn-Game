@@ -192,3 +192,17 @@ qualification. Continue owned missing mechanisms; no external engine deferral.
   their full-health snapshots at source entry before combat, then require
   native lethal/reward drains for those same actors and exact cleared-tile
   movement. Do not disable AI, replace actors or substitute progress flags.
+
+- Full Annihilator route begins at the actual exit/approach33213,31671,z13.
+  Existing native DoorBook already owns expertise pair5111/5112, per-placement
+  level action interpretation and step-off close (map/door_registry.rs:278-290;
+  map/facts.rs:221-267). Its accepted USE contract toggles; real native WALK
+  crosses the opening. Do not invent another door or bypass this owner.
+  Source imports/canary/items-xml/items.xml:14552-14559, SHA256
+  1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2,
+  declares Door class and levelDoor base1000. Existing canonical identities
+  have no semantic body and no native profiles. Reuse pinned client/source
+  importer and exact bindings for ground-only profiles; retain every known
+  canonical fact, allocate no identity, and keep source geometry/action ids.
+  Fresh qengine2 a0100244c and questpc4 5ea9e52be retain the generic predicate
+  but provide no5111/5112 admission to reuse.
