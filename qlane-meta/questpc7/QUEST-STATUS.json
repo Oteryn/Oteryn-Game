@@ -34,6 +34,11 @@
       ],
       "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
       "source_recipe_requirement": "The Sweaty Cyclops/Marina/Quentin exchanges require consumption of the exact carried inputs, output minting and quest progress under one receipt and Character fence."
+    },
+    "implementation_progress": {
+      "state": "selected route and counted service mechanisms implemented; final validation running",
+      "proof": "qlane-meta/questpc7/FRIENDS-PG-PROOF.json",
+      "remaining": "Finish final checksum-bound PG case and strict/content/world/pin checks; no ownership or missing-engine deferral"
     }
   },
   {

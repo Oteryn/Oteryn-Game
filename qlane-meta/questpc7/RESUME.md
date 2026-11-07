@@ -1,3 +1,29 @@
+# Friends validation checkpoint — 2026-11-07
+
+Golden remains QUALIFIED and pushed in4fe93b0cf plus pin companionff6ed7aeb.
+Friends and Traders is ACTIVE with all selected callbacks and13 NPC placements
+implemented in the checkout.14 authoring tests and3 counter units pass.
+Counter PG RED74.691s; intermediate runs proved first counter1, then both
+steel exchanges. Full route not yet qualified: first the imported once-only
+MINT claim needed a command-scoped counted-service identity (implemented),
+then the fixture needed one bounded placement table for all13 NPCs (fixed).
+Migration1100 binds the exact same-transaction Add(1), counter bound and
+command-scoped MINT identity. Original one-shot claim identities are unchanged.
+
+A disk-full compilation failure required deleting inactive compiler caches.
+No source, evidence or active PG cache was removed. Final PG is rebuilding in
+session59987, /tmp/questpc7-friends-green-recovered.log; the test additionally
+compares applied migration1100 SHA384 with final source bytes. No more source
+edits during this build unless a real failure requires them.
+
+The earlier tail script stopped on world-test compilation disk-full. Its123
+content cases passed; rerun failed world5, final strict Clippy, explicit check,
+pin-refresh/check and fmt after focused PG. Restage regenerated metadata and
+both world pin and deployment companion. No full suite. Mechanism regression:
+retain the existing Sam backpack PG case for the ordinary MINT proof arm.
+All product changes remain uncommitted until GREEN. This checkpoint retains
+verified evidence and the22 ACTIVE ledger count under the30-minute push rule.
+
 Pin companion follow-up: the same successful repo pin-refresh also updated
 preprod-topology.toml map_revision/world_bundle.digest. Both equal the checked
 8d0063eb...d2c762 pin; this generated companion is committed separately.
