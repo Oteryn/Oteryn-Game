@@ -1757,10 +1757,11 @@
     }
   },
   "current_batch": {
-    "id": "main-qworld-2026-11-07",
-    "state": "GREEN_READY_TO_PUBLISH",
-    "record": "BATCH-main-qworld-2026-11-07.json",
-    "previous_pushed_head": "3af2d830b70fd900407387ff921c78d6a3f544a0"
+    "name": "PREPUSH-2 main f641d8d6c integration",
+    "state": "WIP_TESTS_PENDING",
+    "scope": "Preserve main NPC and ground-write owners, source-bound Soul item admissions, and lane native quest branches; regenerate central evidence.",
+    "red": "Main NPC caller still supplies three arguments to five-argument apply_input (E0061).",
+    "repair": "New small NPC carried-input wrapper requires fenced NpcItemPermit and rejects ground; existing spell wrapper retains channel permit before common mutation."
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
@@ -2214,14 +2215,66 @@
     "push_policy": "one push after full dependent failure collection/grouped fixes and green full rerun; auto push reminder retracted"
   },
   "current_validation": {
-    "state": "ALL_REQUIRED_CHECKS_GREEN_READY_TO_PUBLISH",
-    "main_sha": "1138720b1",
-    "conflicts_resolved": 2,
-    "constructor_repairs": "New optional world_change=None in owned constructors; no behavior or assertion changes.",
-    "workspace_all_targets": "PASS exit0,2m09s",
-    "fmt": "PASS exit0",
-    "policy": "Latest owner compile+fmt hard push rule.",
-    "last_pushed_head": "3af2d830b70fd900407387ff921c78d6a3f544a0"
+    "batch": "PREPUSH-2 main integration compiling checkpoint",
+    "main": "f641d8d6c1b7b800db28103f9a5f4e48972d051d",
+    "state": "WIP_TESTS_PENDING",
+    "qualified_quests_added": 0,
+    "checks": {
+      "cargo check --workspace --all-targets": {
+        "result": "PASS",
+        "duration": "4m14s",
+        "log": "/tmp/questpc2-prepush2-final-workspace-check.log"
+      },
+      "cargo fmt --all --check": "PASS",
+      "cargo clippy --locked -p oteryn-gameplay-durability --all-targets -- -D warnings": {
+        "result": "PASS",
+        "duration": "5m21s including build-lock wait"
+      },
+      "duplicate_migrations_staged_tree": "PASS",
+      "world_pin_refresh": "PASS unchanged aa3dab1114ad6ab7036761f91334d66b343b67c22d3f424b27a66f7cfac54341",
+      "world_pin_check": "PASS",
+      "item_mount_equivalence": "PASS 34111 Items/252 Mounts",
+      "content_tree": "PASS 97/97",
+      "source_item_test": "PASS 1.315s",
+      "source_entry_test": "PASS 1.563s"
+    },
+    "generation": [
+      "canonical tree and native providers",
+      "registered authoring tools",
+      "Rust inventory pins",
+      "item audit tags and wire fixture",
+      "quest binding evidence including NPC dialogue links",
+      "completion matrix",
+      "Grizzly room evidence",
+      "World pins"
+    ],
+    "world_decision": "No incoming World inputs or generator changes; retain unchanged committed World package through documented native-only regeneration path. Redundant reconstruction stopped before copying outputs.",
+    "unit_run": {
+      "state": "RUNNING --no-fail-fast",
+      "packages": [
+        "oteryn-gameplay-content",
+        "oteryn-gameplay-durability",
+        "oteryn-gameplay-npc",
+        "oteryn-gameplay-quests"
+      ],
+      "selected": 1326,
+      "known_failures": [
+        "oteryn-gameplay-content content::native_gameplay::test_support::activation_fixture::reward_boss_test_fixture_preserves_source_loot_and_production_unavailability",
+        "oteryn-gameplay-content content::native_gameplay::tests::reward_boss_empty_corpse_does_not_admit_missing_private_loot"
+      ],
+      "log": "/tmp/questpc2-prepush2-owner-unit-tests.log"
+    },
+    "own_postgres": {
+      "state": "PENDING; queued compilation paused to prioritize required final check and cadence push; no skipped PG case counted as a pass",
+      "cases": [
+        "elvenbane_source_treasure_exit_and_journal_via_wire",
+        "l3_instance_endgame_soul_war_native_death_progresses_once",
+        "l3_instance_endgame_rotten_blood_native_death_progresses_once",
+        "catalogue_npc_source_acceptance_is_atomic_and_replay_bound",
+        "catalogue_npc_general_xp_handin_runs_in_real_dispatch"
+      ]
+    },
+    "publication_authority": "PREPUSH-2 cadence exception: publish after steps 1,2,4 while step 3 remains pending. This is a compiling WIP, not a green mechanic or new qualification."
   },
   "engine_requests": [
     {
@@ -2296,5 +2349,14 @@
     "packet_total": 35,
     "dedup_reply": "2026-11-07 owner urgent dedup check: only these five actually started; await coordinator reassignment of remaining packet entries.",
     "count_correction": "Earlier QCOUNT grouped all 27 unfinished authoring records as IN PROGRESS; actual quest implementation started is 3, with 24 owned entries not started."
+  },
+  "prepush_policy": "PREPUSH-2: fetch and merge main; regenerate derived files with repository tooling; changed-crate units plus own PG cases; workspace all-target check and fmt. Unit tests may remain pending at cadence deadline after generation and compile checks pass.",
+  "ownership_decision": {
+    "decision": "Retain original packet ownership until the coordinator explicitly transfers named quests. Before each new quest, compare current lane branches and reuse existing work; do not duplicate other lanes.",
+    "reason": "Owner now authorizes deciding open questions; no transfer list has been supplied.",
+    "active_quests": [
+      "Rotten Blood Quest",
+      "Soul War Quest"
+    ]
   }
 }

@@ -29,7 +29,7 @@ fn scenario_case(
     let classic_npc = qengine_reward
         || matches!(
             name,
-            "nx6-wayfarer"
+            "catalogue-npc" | "catalogue-npc-end" | "catalogue-npc-calendar" | "catalogue-npc-xp" | "nx6-wayfarer"
                 | "classic-quests-npc"
                 | "classic-rottin-disrepair"
                 | "threatened-dreams-npc"
@@ -273,6 +273,14 @@ fn scenario_case(
         owner.admit_quest_session(&admitted).await;
         if elvenbane {
             super::super::elvenbane_native_goals::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "catalogue-npc-xp" {
+            super::super::npc_program::exercise_xp(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name == "catalogue-npc-calendar" {
+            super::super::npc_program::exercise_calendar(&mut owner, &mut admitted, &h).await?;
+        } else if name == "catalogue-npc-end" {
+            super::super::npc_program::exercise_end(&mut owner, &mut admitted).await?;
+        } else if name == "catalogue-npc" {
+            super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if outfit_world {
             super::super::qengine_access::exercise(
                 &mut owner,

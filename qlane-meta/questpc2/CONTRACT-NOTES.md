@@ -633,3 +633,25 @@ committedHEAD and proving selected shop/potion records unchanged. This avoids
 a stale historical rebind base while preserving both original equality checks.
 The source generation model was replayed:15cases/776creatures. Unchanged World
 geometry was reused; registered native/authoring stages completed.
+
+
+## PREPUSH-2 main NPC/ground-write integration
+
+Decision: retain packet ownership until the coordinator transfers named quests;
+compare current other-lane branches before starting another quest. qready1 and
+qready2 have new commits; qbind1/2 and qdata1-8 still point to main 1ae39c7f.
+QENGINE2 c7b6297fc still admits only BossLeverOnDeath in activity_template.rs;
+the existing Soul War/Rotten Blood engine requests therefore remain applicable.
+
+Main f641d8d6c contains an E0061 compile failure: consume_npc_inputs calls
+apply_input with three arguments after MAINRED1107B added SpellLanePermit and
+CurrentCharacterGameplayFence. NPC hand-ins already receive their own
+NpcItemPermit, constructed in quest_state/npc_program/items.rs:41 after the
+NPC owner performs current equipment admission (npc_program.rs:313).
+Do not invent a spell permit for that owner. The small new
+quest_world_callback_npc_input.rs wrapper requires the real NPC permit and
+refuses ground through the carried-only location query. The existing spell
+wrapper retains its exact channel check. Both call the unchanged SQL mutation
+body. The regression covers all four admitted carried location kinds and the
+ground refusal; the real NPC XP hand-in remains the integration proof target.
+No migrations, quantities, receipt assertions or production guards are weakened.

@@ -1,3 +1,42 @@
+# Compiling PREPUSH-2 checkpoint, tests still running
+
+Main f641d8d6c integrated; merge conflicts resolved preserving both lanes.
+Workspace all-target check PASS4m14s, fmt PASS, durability clippy PASS5m21s
+(including lock wait), staged-tree migration duplicate check PASS, pin-refresh
+and pin-check PASS, Item/Mount equivalence and materialized tree PASS.
+All applicable generated evidence regenerated with repository tools.
+World generator/data unchanged in incoming main; documented native-only path
+reuses committed World package. No manual pins and no new migrations.
+
+The four-crate unit run is still running --no-fail-fast (1326 selected).
+Known failures so far: reward_boss_test_fixture_preserves_source_loot_and_production_unavailability
+(Apprentice Sheng: LootItemInadmissible), and
+reward_boss_empty_corpse_does_not_admit_missing_private_loot (native_gameplay.rs:3147).
+Collect every failure, group root causes, then fix together and rerun.
+No tests weakened, skipped or deleted. This checkpoint is WIP, not green.
+Own five PG cases pending; paused queued native compilation to prioritize the
+mandatory final check. Restart them after pushing this compiling checkpoint.
+PREPUSH-2 explicitly permits publication after steps1,2,4 at the cadence limit
+while step3 remains pending. No additional whole quest is qualified.
+Proof: BATCH-prepush2-main-checkpoint-2026-11-07.json.
+
+# PREPUSH-2 main integration in progress
+
+Previous push: 48b3a3764073598a69f90fc9b1f25d85154faa1f.
+Merging main f641d8d6c (QNPCFX and MAINRED1107B). Preserve both source NPC
+branches, Elvenbane fixture branch, and both generator checks. Main itself
+contains E0061: its NPC caller was not updated for the spell-only input permit.
+Small new carried-input wrapper preserves the NPC owner permit, refuses ground,
+and shares the unchanged mutation body with the spell-authorized caller.
+
+Ownership decision: original packet remains authoritative until named transfers
+arrive; check current other-lane branches before new work and reuse overlap.
+Only Soul War/Rotten Blood are active; three quests remain qualified.
+PREPUSH-2 governs every future push. Run central generation, changed-crate unit
+tests and own real PG cases, workspace all-target check and fmt. If the cadence
+requires publishing while unit tests remain pending, list them explicitly.
+Do not claim new whole-quest qualification from source preparation alone.
+
 # GREEN21:17: publishing main1138720b1 merge
 
 Lastpush3af2d830b70fd900407387ff921c78d6a3f544a0, completed31SoulWarcanonical

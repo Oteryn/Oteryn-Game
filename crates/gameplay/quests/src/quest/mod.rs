@@ -37,7 +37,6 @@ pub mod monk_shrines;
 pub mod native_kill_goals;
 pub mod native_kills;
 pub mod native_rules;
-#[cfg(test)]
 pub mod npc_rules;
 pub mod planegazer_finale;
 mod quests_2_focus;
@@ -280,6 +279,14 @@ pub struct QuestStateCatalogue {
     tracks: BTreeMap<String, QuestTrack>,
     transitions: BTreeMap<String, QuestTransition>,
     hashes: BTreeMap<String, [u8; 32]>,
+    npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
+    predecessors: BTreeMap<String, Vec<NpcDefinitionPredecessor>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct NpcDefinitionPredecessor {
+    hash: [u8; 32],
+    defaults: BTreeMap<String, i64>,
 }
 
 impl QuestStateCatalogue {
@@ -395,6 +402,8 @@ impl QuestStateCatalogue {
             tracks: track_map,
             transitions: transition_map,
             hashes,
+            npc_legacy: BTreeMap::new(),
+            predecessors: BTreeMap::new(),
         })
     }
 

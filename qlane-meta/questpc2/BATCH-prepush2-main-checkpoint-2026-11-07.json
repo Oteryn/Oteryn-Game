@@ -1,0 +1,62 @@
+{
+  "batch": "PREPUSH-2 main integration compiling checkpoint",
+  "main": "f641d8d6c1b7b800db28103f9a5f4e48972d051d",
+  "state": "WIP_TESTS_PENDING",
+  "qualified_quests_added": 0,
+  "checks": {
+    "cargo check --workspace --all-targets": {
+      "result": "PASS",
+      "duration": "4m14s",
+      "log": "/tmp/questpc2-prepush2-final-workspace-check.log"
+    },
+    "cargo fmt --all --check": "PASS",
+    "cargo clippy --locked -p oteryn-gameplay-durability --all-targets -- -D warnings": {
+      "result": "PASS",
+      "duration": "5m21s including build-lock wait"
+    },
+    "duplicate_migrations_staged_tree": "PASS",
+    "world_pin_refresh": "PASS unchanged aa3dab1114ad6ab7036761f91334d66b343b67c22d3f424b27a66f7cfac54341",
+    "world_pin_check": "PASS",
+    "item_mount_equivalence": "PASS 34111 Items/252 Mounts",
+    "content_tree": "PASS 97/97",
+    "source_item_test": "PASS 1.315s",
+    "source_entry_test": "PASS 1.563s"
+  },
+  "generation": [
+    "canonical tree and native providers",
+    "registered authoring tools",
+    "Rust inventory pins",
+    "item audit tags and wire fixture",
+    "quest binding evidence including NPC dialogue links",
+    "completion matrix",
+    "Grizzly room evidence",
+    "World pins"
+  ],
+  "world_decision": "No incoming World inputs or generator changes; retain unchanged committed World package through documented native-only regeneration path. Redundant reconstruction stopped before copying outputs.",
+  "unit_run": {
+    "state": "RUNNING --no-fail-fast",
+    "packages": [
+      "oteryn-gameplay-content",
+      "oteryn-gameplay-durability",
+      "oteryn-gameplay-npc",
+      "oteryn-gameplay-quests"
+    ],
+    "selected": 1326,
+    "known_failures": [
+      "oteryn-gameplay-content content::native_gameplay::test_support::activation_fixture::reward_boss_test_fixture_preserves_source_loot_and_production_unavailability",
+      "oteryn-gameplay-content content::native_gameplay::tests::reward_boss_empty_corpse_does_not_admit_missing_private_loot"
+    ],
+    "log": "/tmp/questpc2-prepush2-owner-unit-tests.log"
+  },
+  "own_postgres": {
+    "state": "PENDING; queued compilation paused to prioritize required final check and cadence push; no skipped PG case counted as a pass",
+    "cases": [
+      "elvenbane_source_treasure_exit_and_journal_via_wire",
+      "l3_instance_endgame_soul_war_native_death_progresses_once",
+      "l3_instance_endgame_rotten_blood_native_death_progresses_once",
+      "catalogue_npc_source_acceptance_is_atomic_and_replay_bound",
+      "catalogue_npc_general_xp_handin_runs_in_real_dispatch"
+    ]
+  },
+  "publication_authority": "PREPUSH-2 cadence exception: publish after steps 1,2,4 while step 3 remains pending. This is a compiling WIP, not a green mechanic or new qualification."
+}
