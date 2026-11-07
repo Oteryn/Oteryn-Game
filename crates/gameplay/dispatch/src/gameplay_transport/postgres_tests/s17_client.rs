@@ -21,6 +21,20 @@ fn s17a_client_start_stop_dispatch_commits_audit_and_rejects_stale_revision() ->
                     Harness::create_with_admission_seed(admin, "s17_client_control", true, false)
                         .await?;
                 prepare_current_session(&h).await?;
+                // Like node/serve.rs::maintain: long-lived workers need ongoing
+                // holder upkeep, rather than the one-shot helper of ordinary cases.
+                let upkeep_root = h.root.clone();
+                let upkeep = tokio::spawn(async move {
+                    let mut cadence = tokio::time::interval(std::time::Duration::from_millis(10));
+                    loop {
+                        cadence.tick().await;
+                        if upkeep_root.has_ready_demand()
+                            && upkeep_root.maintain_ready_once().await.is_err()
+                        {
+                            upkeep_root.request_ready();
+                        }
+                    }
+                });
                 let result = async {
                     let seal = h.recovery.seal_current().map_err(debug)?;
                     let authority = h
@@ -216,6 +230,7 @@ fn s17a_client_start_stop_dispatch_commits_audit_and_rejects_stale_revision() ->
                     Ok::<(), Box<dyn std::error::Error>>(())
                 }
                 .await;
+                upkeep.abort();
                 h.cleanup().await?;
                 result
             })
