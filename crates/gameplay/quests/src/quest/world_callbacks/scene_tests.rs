@@ -99,3 +99,39 @@ fn scene_relocations_reject_unedited_duplicate_and_changed_landings() -> Result<
     }
     Ok(())
 }
+
+#[test]
+fn authored_scene_progress_and_evacuation_keep_other_effect_guards() -> Result<(), String> {
+    let callbacks = load()?;
+    let bridge = callbacks
+        .iter()
+        .find(|c| c.key == "oteryn:quest-callback/authored-torch-lever-32098")
+        .ok_or("torch scene")?;
+    assert!(!bridge.storage.is_empty());
+    let scene = bridge.effects.scene.as_ref().ok_or("scene")?;
+    assert!(scene.evacuate_open.is_empty());
+    assert_eq!(scene.evacuate_close.len(), 3);
+    let value = serde_json::to_value(bridge).map_err(|e| e.to_string())?;
+    let document =
+        |c: serde_json::Value| serde_json::json!({"schema":1,"callbacks":[c]}).to_string();
+    assert!(parse_with_provenance(&document(value.clone()), true).is_ok());
+    for case in 0..5 {
+        let mut bad = value.clone();
+        let scene = &mut bad["effects"]["scene"];
+        match case {
+            0 => scene["evacuate_close"][0]["players_to"]["floor"] = (-11).into(),
+            1 => scene["evacuate_close"][0]["players_to"] = scene["close"][0]["position"].clone(),
+            2 => scene["evacuate_close"][1] = scene["evacuate_close"][0].clone(),
+            3 => scene["evacuate_close"][0]["all"] = false.into(),
+            _ => {
+                bad["effects"]["scene"] = serde_json::Value::Null;
+                bad["effects"]["item_cycle"] = serde_json::json!({"position":{"x":32099,"y":32205,"floor":-8},"remove":352,"create":5770});
+            }
+        }
+        assert!(
+            parse_with_provenance(&document(bad), true).is_err(),
+            "invalid bounded scene {case}"
+        );
+    }
+    Ok(())
+}

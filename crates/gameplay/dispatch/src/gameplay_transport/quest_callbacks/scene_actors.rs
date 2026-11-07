@@ -1,6 +1,5 @@
 use super::*;
-use crate::foundation::SourceSceneMove;
-use crate::map::floor::PreparedSceneRelocations;
+use crate::map::floor::{PreparedSceneRelocations, SceneEvacuation, prepare_source_scene};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) fn prepare_quest_scene_moves<'a>(
@@ -9,55 +8,56 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         states: &ChannelSpellStates,
         map: &'a BundleMap,
         callback: &Callback,
+        close: bool,
     ) -> Result<Option<PreparedSceneRelocations<'a>>, UseDisposition> {
-        let Some(scene) = callback
-            .effects
-            .scene
-            .as_ref()
-            .filter(|scene| !scene.relocations.is_empty())
-        else {
+        let Some(scene) = callback.effects.scene.as_ref() else {
             return Ok(None);
         };
-        let actors = runtime
-            .positioned_actor_census()
-            .map_err(|_| UseDisposition::Rejected)?;
-        let mut moves = Vec::new();
-        let mut sessions = Vec::new();
-        for (actor, _, session) in actors {
-            let expected = runtime
-                .read_actor_position(actor)
-                .map_err(|_| UseDisposition::Rejected)?;
-            let Some(relocation) = scene.relocations.iter().find(|relocation| {
-                relocation
-                    .from
-                    .iter()
-                    .any(|position| local(*position) == expected.position())
-            }) else {
-                continue;
-            };
-            if states.is_dead(actor) || moves.len() == 32 {
-                return Err(UseDisposition::Rejected);
-            }
-            moves.push(SourceSceneMove {
-                actor,
-                expected,
-                destination: local(relocation.to),
-            });
-            sessions.push(session);
+        let mut sources = scene
+            .relocations
+            .iter()
+            .flat_map(|m| {
+                m.from.iter().map(|from| SceneEvacuation {
+                    from: local(*from),
+                    players_to: local(m.to),
+                    creatures_to: local(m.to),
+                    all: true,
+                })
+            })
+            .collect::<Vec<_>>();
+        sources.extend(
+            (if close {
+                &scene.evacuate_close
+            } else {
+                &scene.evacuate_open
+            })
+            .iter()
+            .map(|m| SceneEvacuation {
+                from: local(m.from),
+                players_to: local(m.players_to),
+                creatures_to: local(m.creatures_to),
+                all: m.all,
+            }),
+        );
+        if sources.is_empty() {
+            return Ok(None);
         }
-        crate::map::floor::prepare_scene_relocations(
-            runtime,
-            self.movement_cells,
-            map,
-            moves,
-            sessions,
-        )
-        .map(Some)
-        .map_err(|error| {
-            #[cfg(test)]
-            eprintln!("QUEST_SCENE_WORLD_REFUSED {error:?}");
-            let _ = error;
-            UseDisposition::NotPossible
-        })
+        if scene
+            .relocations
+            .iter()
+            .any(|m| map.facts.house_tile(tile(m.to)))
+        {
+            return Err(UseDisposition::Rejected);
+        }
+        let proof = prepare_source_scene(runtime, self.movement_cells, sources, map.facts.doors())
+            .map_err(|_| UseDisposition::NotPossible)?;
+        if proof.observations().iter().any(|(actor, session, _)| {
+            session.is_some_and(|session| {
+                states.is_dead(*actor) || !states.spell_idle(runtime, *actor, session)
+            })
+        }) {
+            return Err(UseDisposition::NotPossible);
+        }
+        Ok(Some(proof))
     }
 }

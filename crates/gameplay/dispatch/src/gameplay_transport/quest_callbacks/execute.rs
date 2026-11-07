@@ -181,14 +181,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let closed = crate::map::floor::BundleDoors(map.facts.doors());
         let blocked = super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
-        let scene_moves = match self.prepare_quest_scene_moves(runtime, states, map, callback) {
-            Ok(proof) => proof,
-            Err(disposition) => {
-                #[cfg(test)]
-                eprintln!("QUEST_SCENE_REFUSED prepare close={close} result={disposition:?}");
-                return disposition;
-            }
-        };
+        let scene_moves =
+            match self.prepare_quest_scene_moves(runtime, states, map, callback, close) {
+                Ok(proof) => proof,
+                Err(disposition) => {
+                    #[cfg(test)]
+                    eprintln!("QUEST_SCENE_REFUSED prepare close={close} result={disposition:?}");
+                    return disposition;
+                }
+            };
         let scene_observations = scene_moves
             .as_ref()
             .map(|proof| proof.observations())

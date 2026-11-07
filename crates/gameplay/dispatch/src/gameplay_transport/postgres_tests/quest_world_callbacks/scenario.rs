@@ -78,7 +78,11 @@ fn scenario_case(
         if stateless_destination.is_some() {
             assert_eq!(callback.selector.position, Some(trigger));
         }
-        let world = if name == "authored-life-ring-entry" {
+        let world = if name == "authored-magic-sword" {
+            super::super::questpc8_magic_sword::world()?
+        } else if name == "authored-torch" {
+            super::super::questpc8_bridge_routes::torch_world()?
+        } else if name == "authored-life-ring-entry" {
             super::super::questpc8_life_ring::world()?
         } else if name == "authored-life-ring-bridge" {
             super::super::questpc8_life_ring_bridge::world()?
@@ -150,6 +154,10 @@ fn scenario_case(
             // These two cases keep five source NPCs and one player alive.
             if matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped") {
                 6
+            } else if name == "authored-magic-sword" {
+                9
+            } else if name == "authored-torch" {
+                3
             } else if classic_npc {
                 5
             } else if monk {
@@ -262,7 +270,12 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if name == "authored-life-ring-entry" {
+        if name == "authored-magic-sword" {
+            super::super::questpc8_magic_sword::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-torch" {
+            super::super::questpc8_bridge_routes::exercise_torch(&mut owner, &mut admitted, &h)
+                .await?;
+        } else if name == "authored-life-ring-entry" {
             super::super::questpc8_life_ring::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "authored-life-ring-bridge" {
             super::super::questpc8_life_ring_bridge::exercise(&mut owner, &mut admitted).await?;

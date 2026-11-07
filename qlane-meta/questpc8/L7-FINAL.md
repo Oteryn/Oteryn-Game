@@ -1,3 +1,10 @@
+Magic Sword and Torch now QUALIFIED; Life Ring shared-engine convergence passes.
+14of23activeL7entries QUALIFIED (11here,3elsewhere),9remain; this is an ongoing
+owner continuation, not the final lane state. Full RED/GREEN, strict checks,
+generated content and pin reproducibility evidence are in magic-sword-validation.json
+and bridge-routes-validation.json. Current QUEST-STATUS.json/RESUME.md supersede
+historical reports below.
+
 Life Ring full chosen programme now QUALIFIED. Twelve of23 L7 entries
 QUALIFIED,11 remain. Current QUEST-STATUS.json and RESUME.md supersede the
 historical reports below. See cloud-life-ring-programme-proof.json and the

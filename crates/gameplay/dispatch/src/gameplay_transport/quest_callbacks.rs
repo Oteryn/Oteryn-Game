@@ -10,6 +10,7 @@ mod execute;
 mod rewards;
 mod scene;
 mod scene_actors;
+mod scene_items;
 mod soul_war_reward;
 
 use super::paced_movement::underwater_drown::underwater;
@@ -430,6 +431,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 None
             };
+            if !self.prepare_scene_items(&permit, actor, command, map, callback, resolved.placement_key, target.expected_revision, fence).await {
+                return UseDisposition::Rejected;
+            }
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
             let Ok(expected) = runtime.read_actor_position(actor) else {

@@ -1,3 +1,45 @@
+# Green Magic Sword / Torch / Life Ring convergence batch
+
+14of23activeL7entries are QUALIFIED:11here,3elsewhere;9remain. Magic Sword
+and Torch are newly QUALIFIED. Life Ring805a06141was reused and its original
+programme/bridge revalidated without duplicate quest bodies or position writers.
+
+Real PostgreSQL: Magic Sword55.179386705s; Life Ring programme29.656667393s;
+Life Ring bridge26.246171919s; Torch64.347335102s. Guardian regressions:
+Kormarak2PASS51.58s,Smith25.799716816s. Map pickup/epoch regressions5PASS122.12s.
+Four scene carrier units include NPC rollback/identity; world census unit2.71s;
+three schema units and reusable-tool unit pass (pure units, not PG).
+
+Check, strict Clippy on five changed crates/all targets, fmt, native generator
+40files and pin-refresh/pin-check pass. Only native3389added; zero existing
+profile changes/removals. World digest remains eef8f279e03d6ca5944d1ea5986b7364d95e1f82eba36f8c30a8db2be1af4012.
+See magic-sword-validation.json and bridge-routes-validation.json for failures,
+source mappings and proof hashes. Commit/push this green batch, then continue.
+
+Remaining: Mystery of the Valley, Colours of Magic, Secret Library, Travelling
+Trader, Tibia Anniversary, Treasure Island, Venore Daily Tasks, Winterlight
+Solstice, Wrath of the Emperor. Check latest qengine2 before new generic work;
+reuse its available features. No shared-feature waiting or final freeze.
+
+Previous checkpoint follows for provenance; current status above supersedes it.
+
+# Active Magic Sword / Torch shared-engine convergence
+
+Current head805a06141 includes the committed Life Ring route and bridge. Preserve
+its reusable-tool field and394native hole; discard the superseded unpublished
+local Life Ring body. No duplicate quest callbacks or position writers remain.
+The existing32actor scene commit owner is being extended for NPCs, complete
+source-census revalidation and phase-specific/creature destinations. Torch uses
+the existing map MINT/item-loop owners for source items. All earlier actor/map
+rollback, housing, PZ, floor-change, current-control and spell fences are retained.
+
+Magic Sword PG PASS52.588449733s before convergence; Torch PG PASS64.007400863s
+before convergence. Earlier paired RED3.78s and intermediate fixture failures
+remain recorded honestly in bridge-routes-validation.json. Native generator
+--check PASS40files; only3389was newly admitted by the existing custody qualifier.
+Latest merged-code PG, strict checks, pins and commit/push are pending.
+Counts:9here+3elsewhere,11remaining until this batch finishes. No final freeze.
+
 # Current Life Ring programme — QUALIFIED
 
 Full chosen exploration/pick/native floor descent/cache route passes actual

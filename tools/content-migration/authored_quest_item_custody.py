@@ -62,3 +62,44 @@ def qualify(root, definition, xml_raw):
                                    else copy.deepcopy(definition['semantics'][group]))
     return source.bind_profiles({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': [row]},
                                 index, {item_id})['records'][0]
+
+
+def reuse_existing(definition, record, bindings):
+    """Validate custody already qualified by an earlier native provider; change nothing.
+
+    Stateful source Items still cannot enter through qualify(). Reusing a native
+    admission preserves its existing timed/use owner and every accepted hold.
+    """
+    identity = definition['identity']
+    expected = {'family': identity['family'], 'production_key': identity['key'],
+                'revision_ref': identity['revision']}
+    matches = [binding for binding in bindings if binding['target'] == identity]
+    if (record['production_definition'] != expected or len(matches) != 1
+            or matches[0]['disposition'] != 'EXACT'
+            or record['production_binding'] != matches[0]):
+        raise ValueError('AUTHORED_CUSTODY_EXISTING_IDENTITY')
+    admission = record['admission']
+    if (not admission['materializable']
+            or admission['legal_destinations'] != ['CharacterInventory', 'Ground']
+            or admission['stack_class'] not in ('NonStackable', 'StackCapable')):
+        raise ValueError('AUTHORED_CUSTODY_EXISTING_ADMISSION')
+    semantics = record['semantics']
+    physical = semantics['physical'].get('value', {})
+    weight = physical.get('weight', {})
+    if (semantics['physical'].get('state') != 'KNOWN'
+            or any(physical.get(field) != {'state': 'KNOWN', 'value': True}
+                   for field in ('movable', 'pickupable'))
+            or weight.get('state') != 'KNOWN' or type(weight.get('value')) is not int
+            or not 0 <= weight['value'] <= 0xffffffff):
+        raise ValueError('AUTHORED_CUSTODY_EXISTING_PHYSICAL')
+    stack = semantics['stack']
+    stackable = admission['stack_class'] == 'StackCapable'
+    if (stack.get('state') != 'KNOWN'
+            or stack.get('value', {}).get('stackable') != {'state': 'KNOWN', 'value': stackable}
+            or (stackable and (stack['value']['stack_max'].get('state') != 'KNOWN'
+                or type(stack['value']['stack_max'].get('value')) is not int
+                or not 1 <= stack['value']['stack_max']['value'] <= 100))):
+        raise ValueError('AUTHORED_CUSTODY_EXISTING_STACK')
+    for group in ('physical', 'stack', 'container'):
+        if grizzly.known_conflict(definition['semantics'][group], semantics[group]):
+            raise ValueError('AUTHORED_CUSTODY_EXISTING_CANONICAL_' + group.upper())

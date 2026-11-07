@@ -12,6 +12,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(None);
         };
         let edits = if close { &scene.close } else { &scene.open };
+        let evacuations = if close {
+            &scene.evacuate_close
+        } else {
+            &scene.evacuate_open
+        };
+        if evacuations.iter().any(|m| {
+            [m.from, m.players_to, m.creatures_to]
+                .into_iter()
+                .any(|position| map.facts.house_tile(tile(position)))
+        }) {
+            return Err(UseDisposition::Rejected);
+        }
         let mut mutations = Vec::new();
         for edit in edits {
             let at = tile(edit.position);
@@ -60,6 +72,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .ok_or(UseDisposition::Rejected)
                 })
                 .transpose()?;
+            // Restoring a removed source object retains its placement identity and
+            // revision; it does not manufacture another overlay object on every toggle.
+            if source.is_none()
+                && edit.remove.is_none()
+                && let (Some(facts), Some(passable)) = (created, edit.passable)
+            {
+                let mut hidden = base
+                    .ids()
+                    .iter()
+                    .zip(base.depths())
+                    .filter(|(_, depth)| **depth == 0)
+                    .enumerate()
+                    .filter_map(|(ordinal, (id, _))| {
+                        let ordinal = u8::try_from(ordinal).ok()?;
+                        let key = placement_key(at, ordinal)?;
+                        let original = map.facts.base_entry(at, ordinal, *id)?;
+                        (original.appearance_id == facts.appearance_id
+                            && map.facts.base_hidden(key))
+                        .then_some((key, map.facts.object_revision(key)))
+                    });
+                if let Some((key, revision)) = hidden.next() {
+                    if hidden.next().is_some() {
+                        return Err(UseDisposition::Rejected);
+                    }
+                    mutations.push(QuestSceneMutation::Restore {
+                        key,
+                        revision,
+                        facts,
+                        passable,
+                    });
+                    continue;
+                }
+            }
             mutations.push(match (source, created, edit.passable) {
                 (Some((key, revision)), Some(facts), Some(passable)) => {
                     QuestSceneMutation::Replace {

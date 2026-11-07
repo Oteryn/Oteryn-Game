@@ -692,6 +692,12 @@ impl BundleFacts {
 /// A fully resolved edit; only the projection owner can publish these together.
 #[derive(Clone, Debug)]
 pub enum QuestSceneMutation {
+    Restore {
+        key: u64,
+        revision: u64,
+        facts: EntryFacts,
+        passable: bool,
+    },
     Remove {
         key: u64,
         revision: u64,
@@ -719,7 +725,7 @@ fn project_scene(
         return false;
     }
     for edit in edits {
-        if matches!(edit, QuestSceneMutation::Create { facts, .. } | QuestSceneMutation::Replace { facts, .. } if facts.pickupable)
+        if matches!(edit, QuestSceneMutation::Create { facts, .. } | QuestSceneMutation::Replace { facts, .. } | QuestSceneMutation::Restore { facts, .. } if facts.pickupable)
         {
             return false;
         }
@@ -734,9 +740,30 @@ fn project_scene(
         }
     }
     for edit in edits {
+        if let QuestSceneMutation::Restore { key, revision, .. } = edit
+            && (*key == owner
+                || *revision == u64::MAX
+                || !states.hidden.contains(key)
+                || states.changed.get(key).map_or(0, |(current, _)| *current) != *revision)
+        {
+            return false;
+        }
+    }
+    for edit in edits {
         match edit {
+            QuestSceneMutation::Restore {
+                key,
+                revision,
+                facts,
+                passable,
+            } => {
+                states.hidden.remove(key);
+                states.changed.insert(*key, (revision + 1, *facts));
+                states.passable.insert(*key, *passable);
+            }
             QuestSceneMutation::Remove { key, .. } => {
                 states.hidden.insert(*key);
+                states.passable.remove(key);
             }
             QuestSceneMutation::Replace {
                 key,

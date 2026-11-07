@@ -25,6 +25,15 @@ pub struct SceneRelocation {
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
+pub struct SceneEvacuation {
+    pub from: Position,
+    pub players_to: Position,
+    pub creatures_to: Position,
+    pub all: bool,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct SceneEdits {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub relocations: Vec<SceneRelocation>,
@@ -32,6 +41,13 @@ pub struct SceneEdits {
     pub close: Vec<SceneEdit>,
     #[serde(default)]
     pub remove_self: bool,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub evacuate_open: Vec<SceneEvacuation>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub evacuate_close: Vec<SceneEvacuation>,
+    /// Move movable ground custody through the existing item-loop/MINT owners on close.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub relocate_items_close: bool,
 }
 
 pub(super) fn valid_scene(callback: &Callback, scene: &SceneEdits) -> bool {
@@ -39,7 +55,7 @@ pub(super) fn valid_scene(callback: &Callback, scene: &SceneEdits) -> bool {
         edits.len() <= MAX_SCENE_EDITS
             && edits
                 .iter()
-                .map(|edit| edit.position)
+                .map(|edit| (edit.position, edit.remove))
                 .collect::<BTreeSet<_>>()
                 .len()
                 == edits.len()
@@ -52,6 +68,16 @@ pub(super) fn valid_scene(callback: &Callback, scene: &SceneEdits) -> bool {
                     && (edit.remove.is_none() || edit.remove != edit.create)
                     && edit.create.is_some() == edit.passable.is_some()
                     && (!edit.allow_missing || edit.remove.is_some())
+            })
+    };
+    let valid_evacuation = |moves: &[SceneEvacuation], edits: &[SceneEdit]| {
+        moves.len() <= 8
+            && moves.iter().map(|m| m.from).collect::<BTreeSet<_>>().len() == moves.len()
+            && moves.iter().all(|m| {
+                edits.iter().any(|e| e.position == m.from)
+                    && [m.players_to, m.creatures_to].into_iter().all(|to| {
+                        to.floor == m.from.floor && !edits.iter().any(|e| e.position == to)
+                    })
             })
     };
     let origins: Vec<_> = scene
@@ -78,7 +104,6 @@ pub(super) fn valid_scene(callback: &Callback, scene: &SceneEdits) -> bool {
         });
     callback.trigger == Trigger::Use
         && callback.lever.is_some()
-        && callback.storage.is_empty()
         && callback.passages.is_empty()
         && callback.teleport.is_none()
         && callback.offerings.is_empty()
@@ -97,6 +122,12 @@ pub(super) fn valid_scene(callback: &Callback, scene: &SceneEdits) -> bool {
         && (!scene.remove_self || (!callback.reversible && scene.close.is_empty()))
         && (!callback.reversible || !scene.close.is_empty())
         && relocation_valid
+        && (scene.relocations.is_empty()
+            || (scene.evacuate_open.is_empty() && scene.evacuate_close.is_empty()))
         && valid(&scene.open)
         && valid(&scene.close)
+        && valid_evacuation(&scene.evacuate_open, &scene.open)
+        && valid_evacuation(&scene.evacuate_close, &scene.close)
+        && (!scene.relocate_items_close
+            || (!scene.evacuate_close.is_empty() && scene.evacuate_close.iter().all(|m| m.all)))
 }

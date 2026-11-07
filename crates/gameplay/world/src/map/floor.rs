@@ -29,6 +29,8 @@
 
 use super::floor_catalogue::{OBJECT, TERRAIN};
 mod house;
+mod source_scene;
+pub use source_scene::{SceneEvacuation, SourceSceneRelocation, prepare_source_scene};
 mod quest_callback;
 mod quest_callback_scene;
 mod rope;
@@ -602,6 +604,12 @@ impl crate::foundation::SourceStepCommitProof for BundleStepProof<'_> {
             CardinalStep::West => MovementFacing::West,
         };
         (self.actor, self.expected, self.destination, facing)
+    }
+}
+
+impl CellBlocker for crate::map::door::DoorBook {
+    fn blocks(&self, cell: LogicalCell) -> bool {
+        BundleDoors(self).blocks(cell)
     }
 }
 

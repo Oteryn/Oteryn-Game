@@ -112,6 +112,120 @@
         },
         "respawn_ms": 90000
       }
+    },
+    {
+      "key": "oteryn:quest-death/authored-magic-sword-upper",
+      "quest": "oteryn:quest.authored.magic_sword_quest",
+      "creature": "oteryn:creature.demon",
+      "stage": "oteryn:quest-progress/chosen/magic_sword/stage",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/chosen/magic_sword/upper",
+      "required": 2,
+      "minimum": {
+        "x": 32569,
+        "y": 32194,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 32582,
+        "y": 32202,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 32572,
+          "y": 32196,
+          "floor": -14
+        },
+        "additional_positions": [
+          {
+            "x": 32578,
+            "y": 32196,
+            "floor": -14
+          }
+        ],
+        "respawn_ms": 90000
+      },
+      "sources": [
+        "oteryn-authored:chosen-recipe:magic-sword:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=95154&oldid=875253",
+        "https://tibia.fandom.com/index.php?curid=95159&oldid=1023479",
+        "Conservative archival restoration: native southern Mintwallin hole432/ladder1948, lower fire corridor and unbound two-chest bank32577/32578,32193,z15. Historical north/south roles map to the ordered western/eastern surviving caches. Existing Mad Mage and Ghoul Room claims unchanged; see qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/authored-magic-sword-lower",
+      "quest": "oteryn:quest.authored.magic_sword_quest",
+      "creature": "oteryn:creature.demon",
+      "stage": "oteryn:quest-progress/chosen/magic_sword/stage",
+      "stage_value": 2,
+      "counter": "oteryn:quest-progress/chosen/magic_sword/lower",
+      "required": 4,
+      "minimum": {
+        "x": 32576,
+        "y": 32190,
+        "floor": -15
+      },
+      "maximum": {
+        "x": 32581,
+        "y": 32196,
+        "floor": -15
+      },
+      "guardian": {
+        "position": {
+          "x": 32577,
+          "y": 32194,
+          "floor": -15
+        },
+        "additional_positions": [
+          {
+            "x": 32579,
+            "y": 32194,
+            "floor": -15
+          },
+          {
+            "x": 32577,
+            "y": 32195,
+            "floor": -15
+          },
+          {
+            "x": 32579,
+            "y": 32195,
+            "floor": -15
+          }
+        ],
+        "respawn_ms": 90000
+      },
+      "sources": [
+        "oteryn-authored:chosen-recipe:magic-sword:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=95154&oldid=875253",
+        "https://tibia.fandom.com/index.php?curid=95159&oldid=1023479",
+        "Conservative archival restoration: native southern Mintwallin hole432/ladder1948, lower fire corridor and unbound two-chest bank32577/32578,32193,z15. Historical north/south roles map to the ordered western/eastern surviving caches. Existing Mad Mage and Ghoul Room claims unchanged; see qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/authored-torch-rat",
+      "quest": "oteryn:quest.authored.torch_quest",
+      "creature": "oteryn:creature.rat",
+      "stage": "oteryn:quest-progress/chosen/torch/stage",
+      "stage_value": 2,
+      "counter": "oteryn:quest-progress/chosen/torch/kills",
+      "required": 1,
+      "minimum": {
+        "x": 32094,
+        "y": 32184,
+        "floor": -8
+      },
+      "maximum": {
+        "x": 32106,
+        "y": 32208,
+        "floor": -8
+      },
+      "sources": [
+        "oteryn-authored:chosen-recipe:torch:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=3397&oldid=425673",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/rookgaard_quests/actions_sewer_lever.lua"
+      ]
     }
   ]
 }

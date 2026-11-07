@@ -29,7 +29,7 @@ pub enum Trigger {
 }
 
 mod scene;
-pub use scene::{SceneEdit, SceneEdits, SceneRelocation};
+pub use scene::{SceneEdit, SceneEdits, SceneEvacuation, SceneRelocation};
 
 mod effects;
 pub use effects::{
@@ -931,3 +931,6 @@ mod reusable_tool_tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tool_tests;

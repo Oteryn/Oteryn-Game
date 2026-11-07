@@ -111,3 +111,72 @@ fn source_scene_batch_authorized_shared_landing_commits_all() {
     assert_eq!(world.read_actor_position(a), Ok(committed[0]));
     assert_eq!(world.read_actor_position(b), Ok(committed[1]));
 }
+
+#[test]
+fn source_scene_npc_rollback_preserves_identity_and_other_placement_of_same_key() {
+    use crate::runtime_actor_carrier::npc_actor::{NpcPlacement, NpcPlacementTable, NpcPlacements};
+    let mut world = runtime(2);
+    let actors = world
+        .place_npcs(
+            &NpcPlacementTable {
+                npcs: vec![NpcPlacements {
+                    key: "oteryn:npc.scene".into(),
+                    placements: vec![
+                        NpcPlacement {
+                            x: 10,
+                            y: 20,
+                            floor: -7,
+                            direction: MovementFacing::West,
+                        },
+                        NpcPlacement {
+                            x: 10,
+                            y: 24,
+                            floor: -7,
+                            direction: MovementFacing::North,
+                        },
+                    ],
+                }],
+            },
+            |_| true,
+            true,
+        )
+        .expect("native NPC slots")
+        .actors;
+    let actor = actors[0];
+    let other = actors[1];
+    let before = world
+        .read_scene_actor_position(actor)
+        .expect("NPC snapshot");
+    let other_before = world
+        .read_scene_actor_position(other)
+        .expect("other NPC snapshot");
+    let change = SourceSceneMove {
+        actor,
+        expected: before,
+        destination: MovementLocalPosition {
+            x: 12,
+            y: 20,
+            floor: 7,
+        },
+    };
+    assert!(
+        world
+            .commit_source_scene_relocations(SceneMoves(vec![change]), || false)
+            .is_err()
+    );
+    assert_eq!(world.read_scene_actor_position(actor), Ok(before));
+    let moved = world
+        .commit_source_scene_relocations(SceneMoves(vec![change]), || true)
+        .expect("one scene owner");
+    assert_eq!(moved[0].position(), change.destination);
+    assert_eq!(moved[0].facing(), before.facing());
+    assert_eq!(world.npc_key(actor), Some("oteryn:npc.scene"));
+    assert_eq!(world.read_scene_actor_position(other), Ok(other_before));
+    assert_eq!(
+        world
+            .scene_actor_census()
+            .expect("complete NPC census")
+            .len(),
+        2
+    );
+}

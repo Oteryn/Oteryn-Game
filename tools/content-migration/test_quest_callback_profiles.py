@@ -340,5 +340,39 @@ class QuestCallbackProfiles(unittest.TestCase):
             self.admit()
 
 
+
+class ExistingAuthoredCustody(unittest.TestCase):
+    def test_existing_torch_custody_is_reused_without_mutation(self):
+        import authored_quest_item_custody as custody
+        record = next(r for r in json.loads((ROOT / PROFILE).read_bytes())['records']
+                      if r['production_definition']['production_key'] == 'oteryn:item.tibia.i2920')
+        definition = next(r['definition']
+                          for path in (ROOT / 'content/items/definitions').glob('items-*.json')
+                          for r in json.loads(path.read_bytes())['records']
+                          if r['definition']['identity']['key'] == 'oteryn:item.tibia.i2920')
+        bindings = json.loads((ROOT / 'imports/crystalserver/bindings/items.json').read_bytes())['bindings']
+        before = copy.deepcopy(record)
+        custody.reuse_existing(definition, record, bindings)
+        self.assertEqual(record, before)
+        for case in range(7):
+            bad = copy.deepcopy(record)
+            if case == 0:
+                bad['production_definition']['revision_ref'] = 'definition-r2'
+            elif case == 1:
+                bad['production_binding']['disposition'] = 'UNKNOWN'
+            elif case == 2:
+                bad['admission']['materializable'] = False
+            elif case == 3:
+                bad['admission']['legal_destinations'] = ['Ground']
+            elif case == 4:
+                bad['semantics']['physical']['value']['pickupable']['value'] = False
+            elif case == 5:
+                bad['semantics']['stack']['value']['stackable']['value'] = True
+            else:
+                bad['semantics']['physical']['value']['weight']['value'] = -1
+            with self.subTest(case=case), self.assertRaises(ValueError):
+                custody.reuse_existing(definition, bad, bindings)
+
+
 if __name__ == '__main__':
     unittest.main()

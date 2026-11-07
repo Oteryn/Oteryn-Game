@@ -1021,29 +1021,25 @@
     "title": "Magic Sword Quest",
     "canonical": "oteryn:quest.authored.magic_sword_quest",
     "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/14/definition",
-    "status": "UNFINISHED",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
       "stage": "s1",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
+      "native_dispatch_binding": "gameplay_transport::quest_callbacks and native quest death objectives",
+      "runtime_enabled": true
     },
-    "blocker": {
-      "missing_piece": "The seven-stage chosen programme and two southern Mintwallin vault reward placements lack authored native bindings; the binder currently requires a Crystal UID."
-    },
-    "first_unqualified_stage": {
-      "key": "s1",
-      "kind": "explore",
-      "objective": "Find the southern Mintwallin vault entrance and climb to the upper demon chamber.",
-      "targets": [
-        "southern Mintwallin archival vault"
-      ]
-    },
-    "disposition": "authoring",
-    "qualified_elsewhere": [],
-    "mechanism": "native_reward_source_placement",
-    "round": "L7"
+    "blocker": null,
+    "first_unqualified_stage": null,
+    "disposition": "qualified-here",
+    "qualified_elsewhere": false,
+    "mechanism": "Native level100 admission, two/four conditional Demon groups, hole/passage and ordered exact dual-cache rewards",
+    "round": "L7",
+    "qualification_scope": "Complete finite chosen Oteryn recipe with retained native selectors and documented conservative source mappings; see magic-sword-validation.json",
+    "qualified_components": [
+      "Native level100 admission, two/four conditional Demon groups, hole/passage and ordered exact dual-cache rewards",
+      "Real PostgreSQL RED/GREEN; strict checks, generated content and pin reproducibility pass"
+    ]
   },
   {
     "title": "Make Believe Quest",
@@ -1485,28 +1481,18 @@
   {
     "canonical": "oteryn:quest.authored.torch_quest",
     "title": "Torch Quest",
-    "status": "UNFINISHED",
-    "disposition": "authoring",
-    "qualified_elsewhere": [],
-    "mechanism": "native_reward_source_placement",
-    "blocker": {
-      "missing_piece": "The five-stage restored Academy programme lacks an admitted lever selector and reward placement, plus full dispatch composition."
-    },
+    "status": "QUALIFIED",
+    "disposition": "qualified-here",
+    "qualified_elsewhere": false,
+    "mechanism": "Native academy levers, atomic phase-specific actor/NPC evacuation, source item relocation, Rat death and once-only unlit Torch",
+    "blocker": null,
     "round": "L7",
     "qualified_components": [
-      {
-        "batch": "native-authored-placement-prerequisite",
-        "scope": "reusable placement binding only; does not qualify this quest programme",
-        "test": "quest_authored_placement_without_legacy_uid_mints_once_and_replays",
-        "marker": "QUESTPC8_AUTHORED_PLACEMENT POSTGRES_CASE_COMPLETED",
-        "duration": "26.170233947s",
-        "red_duration_seconds": 23.62,
-        "red_failure": "authored selector without a source UID was not served",
-        "qengine2_checked": "5a6de28c1",
-        "qengine2_result": "no authored ordinal reward-claim selector present; reward/outfit components retained for subsequent reuse",
-        "green_log_sha256": "d4b2067afeec1f3c5e9a9414f370bf01533afff7ce17a089de57baf7e16c5dd1"
-      }
-    ]
+      "Native academy levers, atomic phase-specific actor/NPC evacuation, source item relocation, Rat death and once-only unlit Torch",
+      "Real PostgreSQL RED/GREEN; strict checks, generated content and pin reproducibility pass"
+    ],
+    "first_unqualified_stage": null,
+    "qualification_scope": "Complete finite chosen Oteryn recipe with retained native selectors and documented conservative source mappings; see bridge-routes-validation.json"
   },
   {
     "canonical": "oteryn:quest.vampire_shield_quest",

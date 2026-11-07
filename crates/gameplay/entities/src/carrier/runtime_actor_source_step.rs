@@ -83,6 +83,8 @@ impl ChannelRuntimeV1 {
         P: SourceSceneRelocationProof,
         F: FnOnce() -> bool,
     {
+        self.carrier.validate_current_continuity(&self.continuity)?;
+        self.owner_fence()?;
         proof.validate_current(self)?;
         let moves = proof.moves();
         if moves.len() > 32
@@ -114,6 +116,39 @@ impl ChannelRuntimeV1 {
                 let index = self
                     .carrier
                     .validate_ref(&self.continuity, change.actor.0)?;
+                if self
+                    .carrier
+                    .read_movement_position(&self.continuity, change.actor.0)?
+                    != change.expected
+                {
+                    return Err(CarrierError::PositionSnapshotMismatch);
+                }
+                if let Slot::NpcOccupied {
+                    position,
+                    hireling: None,
+                    ..
+                } = &mut self.carrier.slots[index]
+                {
+                    let revision = position
+                        .revision
+                        .checked_add(1)
+                        .ok_or(CarrierError::PositionRevisionExhausted)?;
+                    *position = VersionedPosition {
+                        position: LocalPosition {
+                            x: change.destination.x,
+                            y: change.destination.y,
+                            floor: change.destination.floor,
+                        },
+                        revision,
+                        last_translation_revision: revision,
+                        ..*position
+                    };
+                    result.push(MovementPositionSnapshot(PositionSnapshot {
+                        actor_ref: change.actor.0,
+                        version: *position,
+                    }));
+                    continue;
+                }
                 let mut committed = self.carrier.compare_commit_position(
                     &self.continuity,
                     change.expected.0,

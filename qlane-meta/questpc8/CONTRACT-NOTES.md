@@ -275,3 +275,29 @@ walkthrough's exact modern geometry is unknown; any selected restoration must
 be explicitly authored against actual placements, without fabricated source
 IDs or a claim of historical/source fidelity. Preserve real water/walls and
 use the existing native movement, passage and guardian owners in the proof.
+
+## Magic Sword / Torch convergence with committed Life Ring
+
+Life Ring805a06141 remains authoritative: native Pick tile355 at32437,32239,z10
+opens394, with the entry at32437,32238,z10, source rope spot386 below and native
+cache2469at32443,32238,z11. The earlier unpublished local432counterpart proposal
+was discarded during convergence. Its bridge retains the committed six4598water
+counterparts and legacy32actor shared landing. The reusable-tool field, original
+programme, rewards and full200charge necklace default remain unchanged.
+
+https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/thais_quest/actions_life_ring_lever.lua
+https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/startup/tables/tile_pick.lua
+
+Torch retains the closed native352/4611/352ground and4634/4636borders at
+32099..32101,32205,z8 and synchronized2772levers at32098/32104,32204,z8.
+Opening performs no evacuation; closing moves all players/NPCs to32102,32205,z8
+and creatures to32103,32205,z8. These routes extend the existing single scene
+commit owner, preserving its32actor bound, PZ/floor/housing restrictions and
+rollback. Complete source census checks and native NPC slots are now supported.
+Borders restore their original identities and revisions. Source items use the
+existing map MINT/item-loop receipts, sequentially as in Lua; ordinary item reach
+is unchanged and qualified script destinations are bounded to32cells on one floor.
+Torch grants one unlit2920after its native Rat death, with no lighting admission.
+Its existing physical custody profile is reused by exact definition/binding.
+
+https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/actions/rookgaard/sewer_lever.lua

@@ -241,16 +241,11 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         identity = definition['identity']
         if key in authored_keys and not definition['materializable'] and definition['stack_class'] == 'Unknown':
             import authored_quest_item_custody
-            profile = authored_quest_item_custody.qualify(root, definition, raw)
             if key in present:
-                if any(present[key][field] != profile[field] for field in
-                       ('production_definition', 'production_binding', 'admission')):
-                    raise ValueError('AUTHORED_CUSTODY_EXISTING_NATIVE_CONFLICT')
-                for group in ('physical', 'stack', 'container'):
-                    if authored_quest_item_custody.grizzly.known_conflict(present[key]['semantics'][group], profile['semantics'][group]):
-                        raise ValueError('AUTHORED_CUSTODY_EXISTING_CORE_CONFLICT')
-            else:
-                document['records'].append(profile)
+                authored_quest_item_custody.reuse_existing(definition, present[key], bindings)
+                continue
+            profile = authored_quest_item_custody.qualify(root, definition, raw)
+            document['records'].append(profile)
             continue
         matches = [binding for binding in bindings if binding['target'] == identity]
         if (not definition['materializable']

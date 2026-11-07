@@ -1134,6 +1134,866 @@
           ]
         }
       }
+    },
+    {
+      "quest": "oteryn:quest.authored.magic_sword_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:magic-sword:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=95154&oldid=875253",
+        "https://tibia.fandom.com/index.php?curid=95159&oldid=1023479",
+        "Conservative archival restoration: native southern Mintwallin hole432/ladder1948, lower fire corridor and unbound two-chest bank32577/32578,32193,z15. Historical north/south roles map to the ordered western/eastern surviving caches. Existing Mad Mage and Ghoul Room claims unchanged; see qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-magic-sword",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32575,
+          "y": 32197,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/upper",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "premium_required": false,
+      "completes": false,
+      "minimum_level": 100
+    },
+    {
+      "quest": "oteryn:quest.authored.magic_sword_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:magic-sword:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=95154&oldid=875253",
+        "https://tibia.fandom.com/index.php?curid=95159&oldid=1023479",
+        "Conservative archival restoration: native southern Mintwallin hole432/ladder1948, lower fire corridor and unbound two-chest bank32577/32578,32193,z15. Historical north/south roles map to the ordered western/eastern surviving caches. Existing Mad Mage and Ghoul Room claims unchanged; see qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-magic-sword-lower",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32578,
+          "y": 32196,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/upper",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/lower",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "premium_required": false,
+      "completes": false,
+      "minimum_level": 100
+    },
+    {
+      "quest": "oteryn:quest.authored.magic_sword_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:magic-sword:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=95154&oldid=875253",
+        "https://tibia.fandom.com/index.php?curid=95159&oldid=1023479",
+        "Conservative archival restoration: native southern Mintwallin hole432/ladder1948, lower fire corridor and unbound two-chest bank32577/32578,32193,z15. Historical north/south roles map to the ordered western/eastern surviving caches. Existing Mad Mage and Ghoul Room claims unchanged; see qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-magic-sword-north",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32577,
+          "y": 32193,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/upper",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/lower",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": true
+        }
+      ],
+      "premium_required": false,
+      "completes": false,
+      "minimum_level": 100,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i651",
+          "count": 1,
+          "contents": [],
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i3388",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i3389",
+              "count": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "quest": "oteryn:quest.authored.magic_sword_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:magic-sword:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=95154&oldid=875253",
+        "https://tibia.fandom.com/index.php?curid=95159&oldid=1023479",
+        "Conservative archival restoration: native southern Mintwallin hole432/ladder1948, lower fire corridor and unbound two-chest bank32577/32578,32193,z15. Historical north/south roles map to the ordered western/eastern surviving caches. Existing Mad Mage and Ghoul Room claims unchanged; see qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-magic-sword-south",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32578,
+          "y": 32193,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/upper",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/lower",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": true
+        }
+      ],
+      "premium_required": false,
+      "completes": true,
+      "minimum_level": 100,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3288",
+          "count": 1,
+          "contents": [],
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i3388",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i3389",
+              "count": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "quest": "oteryn:quest.authored.magic_sword_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 32578,
+            "y": 32197,
+            "floor": -15
+          },
+          "appearance": 1631,
+          "replacement": 1633
+        }
+      ],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:magic-sword:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=95154&oldid=875253",
+        "https://tibia.fandom.com/index.php?curid=95159&oldid=1023479",
+        "Conservative archival restoration: native southern Mintwallin hole432/ladder1948, lower fire corridor and unbound two-chest bank32577/32578,32193,z15. Historical north/south roles map to the ordered western/eastern surviving caches. Existing Mad Mage and Ghoul Room claims unchanged; see qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-magic-sword-passage",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32578,
+          "y": 32197,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 1631,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/stage",
+          "minimum": 1,
+          "maximum": 4,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/upper",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/passage",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "premium_required": false,
+      "completes": false,
+      "minimum_level": 100,
+      "effects": {
+        "transform": 1633
+      }
+    },
+    {
+      "quest": "oteryn:quest.authored.torch_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:torch:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=3397&oldid=425673",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/actions/rookgaard/sewer_lever.lua"
+      ],
+      "key": "oteryn:quest-callback/authored-torch",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32097,
+          "y": 32204,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/torch/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/torch/kills",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "premium_required": false,
+      "completes": false
+    },
+    {
+      "quest": "oteryn:quest.authored.torch_quest",
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:torch:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=3397&oldid=425673",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/actions/rookgaard/sewer_lever.lua"
+      ],
+      "key": "oteryn:quest-callback/authored-torch-lever-32098",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32098,
+          "y": 32204,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/torch/stage",
+          "minimum": 1,
+          "maximum": 2,
+          "set": 2
+        }
+      ],
+      "premium_required": false,
+      "completes": false,
+      "effects": {
+        "scene": {
+          "open": [
+            {
+              "position": {
+                "x": 32099,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 352,
+              "create": 5770,
+              "passable": true
+            },
+            {
+              "position": {
+                "x": 32099,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 4634,
+              "create": null,
+              "passable": null,
+              "allow_missing": true
+            },
+            {
+              "position": {
+                "x": 32100,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 4611,
+              "create": 5770,
+              "passable": true
+            },
+            {
+              "position": {
+                "x": 32101,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 352,
+              "create": 5770,
+              "passable": true
+            },
+            {
+              "position": {
+                "x": 32101,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 4636,
+              "create": null,
+              "passable": null,
+              "allow_missing": true
+            },
+            {
+              "position": {
+                "x": 32104,
+                "y": 32204,
+                "floor": -8
+              },
+              "remove": 2772,
+              "create": 2773,
+              "passable": false
+            }
+          ],
+          "close": [
+            {
+              "position": {
+                "x": 32099,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 5770,
+              "create": 352,
+              "passable": true
+            },
+            {
+              "position": {
+                "x": 32099,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": null,
+              "create": 4634,
+              "passable": false
+            },
+            {
+              "position": {
+                "x": 32100,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 5770,
+              "create": 4611,
+              "passable": false
+            },
+            {
+              "position": {
+                "x": 32101,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 5770,
+              "create": 352,
+              "passable": true
+            },
+            {
+              "position": {
+                "x": 32101,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": null,
+              "create": 4636,
+              "passable": false
+            },
+            {
+              "position": {
+                "x": 32104,
+                "y": 32204,
+                "floor": -8
+              },
+              "remove": 2773,
+              "create": 2772,
+              "passable": false
+            }
+          ],
+          "evacuate_close": [
+            {
+              "from": {
+                "x": 32099,
+                "y": 32205,
+                "floor": -8
+              },
+              "players_to": {
+                "x": 32102,
+                "y": 32205,
+                "floor": -8
+              },
+              "creatures_to": {
+                "x": 32103,
+                "y": 32205,
+                "floor": -8
+              },
+              "all": true
+            },
+            {
+              "from": {
+                "x": 32100,
+                "y": 32205,
+                "floor": -8
+              },
+              "players_to": {
+                "x": 32102,
+                "y": 32205,
+                "floor": -8
+              },
+              "creatures_to": {
+                "x": 32103,
+                "y": 32205,
+                "floor": -8
+              },
+              "all": true
+            },
+            {
+              "from": {
+                "x": 32101,
+                "y": 32205,
+                "floor": -8
+              },
+              "players_to": {
+                "x": 32102,
+                "y": 32205,
+                "floor": -8
+              },
+              "creatures_to": {
+                "x": 32103,
+                "y": 32205,
+                "floor": -8
+              },
+              "all": true
+            }
+          ],
+          "relocate_items_close": true
+        }
+      }
+    },
+    {
+      "quest": "oteryn:quest.authored.torch_quest",
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:torch:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=3397&oldid=425673",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/actions/rookgaard/sewer_lever.lua"
+      ],
+      "key": "oteryn:quest-callback/authored-torch-lever-32104",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32104,
+          "y": 32204,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/torch/stage",
+          "minimum": 1,
+          "maximum": 2,
+          "set": 2
+        }
+      ],
+      "premium_required": false,
+      "completes": false,
+      "effects": {
+        "scene": {
+          "open": [
+            {
+              "position": {
+                "x": 32099,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 352,
+              "create": 5770,
+              "passable": true
+            },
+            {
+              "position": {
+                "x": 32099,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 4634,
+              "create": null,
+              "passable": null,
+              "allow_missing": true
+            },
+            {
+              "position": {
+                "x": 32100,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 4611,
+              "create": 5770,
+              "passable": true
+            },
+            {
+              "position": {
+                "x": 32101,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 352,
+              "create": 5770,
+              "passable": true
+            },
+            {
+              "position": {
+                "x": 32101,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 4636,
+              "create": null,
+              "passable": null,
+              "allow_missing": true
+            },
+            {
+              "position": {
+                "x": 32098,
+                "y": 32204,
+                "floor": -8
+              },
+              "remove": 2772,
+              "create": 2773,
+              "passable": false
+            }
+          ],
+          "close": [
+            {
+              "position": {
+                "x": 32099,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 5770,
+              "create": 352,
+              "passable": true
+            },
+            {
+              "position": {
+                "x": 32099,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": null,
+              "create": 4634,
+              "passable": false
+            },
+            {
+              "position": {
+                "x": 32100,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 5770,
+              "create": 4611,
+              "passable": false
+            },
+            {
+              "position": {
+                "x": 32101,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 5770,
+              "create": 352,
+              "passable": true
+            },
+            {
+              "position": {
+                "x": 32101,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": null,
+              "create": 4636,
+              "passable": false
+            },
+            {
+              "position": {
+                "x": 32098,
+                "y": 32204,
+                "floor": -8
+              },
+              "remove": 2773,
+              "create": 2772,
+              "passable": false
+            }
+          ],
+          "evacuate_close": [
+            {
+              "from": {
+                "x": 32099,
+                "y": 32205,
+                "floor": -8
+              },
+              "players_to": {
+                "x": 32102,
+                "y": 32205,
+                "floor": -8
+              },
+              "creatures_to": {
+                "x": 32103,
+                "y": 32205,
+                "floor": -8
+              },
+              "all": true
+            },
+            {
+              "from": {
+                "x": 32100,
+                "y": 32205,
+                "floor": -8
+              },
+              "players_to": {
+                "x": 32102,
+                "y": 32205,
+                "floor": -8
+              },
+              "creatures_to": {
+                "x": 32103,
+                "y": 32205,
+                "floor": -8
+              },
+              "all": true
+            },
+            {
+              "from": {
+                "x": 32101,
+                "y": 32205,
+                "floor": -8
+              },
+              "players_to": {
+                "x": 32102,
+                "y": 32205,
+                "floor": -8
+              },
+              "creatures_to": {
+                "x": 32103,
+                "y": 32205,
+                "floor": -8
+              },
+              "all": true
+            }
+          ],
+          "relocate_items_close": true
+        }
+      }
+    },
+    {
+      "quest": "oteryn:quest.authored.torch_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:torch:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=3397&oldid=425673",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/actions/rookgaard/sewer_lever.lua"
+      ],
+      "key": "oteryn:quest-callback/authored-torch-cache",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32097,
+          "y": 32187,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2473,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/torch/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/torch/kills",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "premium_required": false,
+      "completes": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i2920",
+          "count": 1,
+          "contents": []
+        }
+      }
     }
   ]
 }

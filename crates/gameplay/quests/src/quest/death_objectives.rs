@@ -27,7 +27,30 @@ pub struct DeathObjective {
 #[serde(deny_unknown_fields)]
 pub struct GuardianSpawn {
     pub position: Position,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub additional_positions: Vec<Position>,
     pub respawn_ms: u32,
+}
+
+impl GuardianSpawn {
+    pub fn positions(&self) -> impl Iterator<Item = Position> + '_ {
+        std::iter::once(self.position).chain(self.additional_positions.iter().copied())
+    }
+
+    fn valid_for(&self, objective: &DeathObjective) -> bool {
+        self.additional_positions.len() <= 7
+            && (60_000..=3_600_000).contains(&self.respawn_ms)
+            && self.positions().collect::<BTreeSet<_>>().len()
+                == 1 + self.additional_positions.len()
+            && self.positions().all(|position| {
+                objective.matches(
+                    &objective.creature,
+                    i32::from(position.x),
+                    i32::from(position.y),
+                    -i16::from(position.floor),
+                )
+            })
+    }
 }
 
 impl DeathObjective {
@@ -89,15 +112,10 @@ pub fn load() -> Result<&'static [DeathObjective], String> {
                 || objective.maximum.y < objective.minimum.y
                 || objective.maximum.x - objective.minimum.x > 64
                 || objective.maximum.y - objective.minimum.y > 64
-                || objective.guardian.as_ref().is_some_and(|guardian| {
-                    !(60_000..=3_600_000).contains(&guardian.respawn_ms)
-                        || !objective.matches(
-                            &objective.creature,
-                            i32::from(guardian.position.x),
-                            i32::from(guardian.position.y),
-                            -i16::from(guardian.position.floor),
-                        )
-                })
+                || objective
+                    .guardian
+                    .as_ref()
+                    .is_some_and(|guardian| !guardian.valid_for(objective))
                 || objective.sources.is_empty()
                 || objective.sources.len() > 8
                 || objective
@@ -174,4 +192,68 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
     }
     QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
         .map_err(|e| format!("{e:?}"))
+}
+
+#[cfg(test)]
+mod guardian_tests {
+    use super::*;
+
+    #[test]
+    fn bounded_guardian_groups_reject_duplicate_foreign_and_outside_cells() -> Result<(), String> {
+        let objective: DeathObjective = serde_json::from_value(serde_json::json!({
+            "key":"oteryn:quest-death/test", "quest":"oteryn:quest.test",
+            "creature":"oteryn:creature.demon", "stage":"oteryn:stage",
+            "stage_value":1,"counter":"oteryn:counter","required":8,
+            "minimum":{"x":0,"y":0,"floor":-1},"maximum":{"x":10,"y":10,"floor":-1},
+            "sources":["oteryn-authored:test"],
+            "guardian":{"position":{"x":1,"y":1,"floor":-1},
+                "additional_positions":[{"x":2,"y":1,"floor":-1}],"respawn_ms":90000}
+        }))
+        .map_err(|e| e.to_string())?;
+        let mut guardian = objective.guardian.clone().ok_or("guardian")?;
+        assert!(guardian.valid_for(&objective));
+        guardian.additional_positions = (2..=8).map(|x| Position { x, y: 1, floor: -1 }).collect();
+        assert!(guardian.valid_for(&objective));
+        guardian.additional_positions.push(Position {
+            x: 9,
+            y: 1,
+            floor: -1,
+        });
+        assert!(!guardian.valid_for(&objective));
+        for position in [
+            guardian.position,
+            Position {
+                x: 11,
+                y: 1,
+                floor: -1,
+            },
+            Position {
+                x: 2,
+                y: 1,
+                floor: -2,
+            },
+        ] {
+            guardian.additional_positions = vec![position];
+            assert!(!guardian.valid_for(&objective));
+        }
+        guardian.additional_positions = vec![
+            Position {
+                x: 2,
+                y: 1,
+                floor: -1
+            };
+            2
+        ];
+        assert!(!guardian.valid_for(&objective));
+        guardian.additional_positions.clear();
+        assert!(guardian.valid_for(&objective));
+        assert!(
+            serde_json::to_value(&guardian)
+                .map_err(|e| e.to_string())?
+                .get("additional_positions")
+                .is_none(),
+            "old single-guardian definition hashes remain stable"
+        );
+        Ok(())
+    }
 }

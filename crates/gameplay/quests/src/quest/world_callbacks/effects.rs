@@ -147,7 +147,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
     if operations > 1
         || (operations > 0
             && (!lever
-                || !callback.storage.is_empty()
+                || (effects.scene.is_none() && !callback.storage.is_empty())
                 || !callback.passages.is_empty()
                 || callback.teleport.is_some()))
     {

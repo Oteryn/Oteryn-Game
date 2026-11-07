@@ -42,7 +42,10 @@ impl super::DurabilityRoot {
         let callback = oteryn_gameplay_quests::quest::world_callbacks::load()
             .map_err(|_| CharacterProgressionError::InvalidInput)?
             .into_iter()
-            .find(|callback| callback.key == callback_key && callback.is_read_only())
+            .find(|callback| {
+                callback.key == callback_key
+                    && (callback.is_read_only() || callback.effects.scene.is_some())
+            })
             .ok_or(CharacterProgressionError::InvalidInput)?;
         let recovery = authority
             .record_for(self)

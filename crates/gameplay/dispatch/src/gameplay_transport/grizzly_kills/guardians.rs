@@ -1,4 +1,4 @@
-//! One native world guardian slot per bounded authored objective, never per refresh.
+//! Bounded native world guardian groups, one stable slot per authored position.
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::foundation::MovementLocalPosition;
@@ -8,6 +8,7 @@ use oteryn_gameplay_quests::quest::death_objectives;
 #[derive(Debug)]
 pub(super) struct GuardianSlot {
     key: String,
+    ordinal: u8,
     actor: Option<ExactActorRef>,
     retry_at: u64,
 }
@@ -98,73 +99,80 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(guardian) = &objective.guardian else {
                 continue;
             };
-            let index = if let Some(index) = cache
-                .guardians
-                .iter()
-                .position(|slot| slot.key == objective.key)
-            {
-                index
-            } else {
-                if cache.guardians.len() >= 32 {
+            for (ordinal, position) in guardian.positions().enumerate() {
+                let Ok(ordinal) = u8::try_from(ordinal) else {
+                    continue;
+                };
+                let index = if let Some(index) = cache
+                    .guardians
+                    .iter()
+                    .position(|slot| slot.key == objective.key && slot.ordinal == ordinal)
+                {
+                    index
+                } else {
+                    if cache.guardians.len() >= 32 {
+                        continue;
+                    }
+                    cache.guardians.push(GuardianSlot {
+                        key: objective.key.clone(),
+                        ordinal,
+                        actor: None,
+                        retry_at: 0,
+                    });
+                    cache.guardians.len() - 1
+                };
+                let slot = &mut cache.guardians[index];
+                if slot.actor.is_some() || now < slot.retry_at {
                     continue;
                 }
-                cache.guardians.push(GuardianSlot {
-                    key: objective.key.clone(),
-                    actor: None,
-                    retry_at: 0,
-                });
-                cache.guardians.len() - 1
-            };
-            let slot = &mut cache.guardians[index];
-            if slot.actor.is_some() || now < slot.retry_at {
-                continue;
+                slot.retry_at = now.saturating_add(5_000_000);
+                let at = MovementLocalPosition {
+                    x: i32::from(position.x),
+                    y: i32::from(position.y),
+                    floor: -i16::from(position.floor),
+                };
+                let tile = TilePos {
+                    x: position.x,
+                    y: position.y,
+                    floor: position.floor,
+                };
+                if map.facts.house_tile(tile)
+                    || self.movement_cells.index().lookup(
+                        self.movement_cells.scope(),
+                        LogicalCell {
+                            x: at.x,
+                            y: at.y,
+                            z: i32::from(at.floor),
+                        },
+                    ) != Ok(CollisionClass::Walkable)
+                    || map
+                        .facts
+                        .quest_callback_blocked(map.overlay.base(), tile, false)
+                    || !runtime.positioned_melee_census().is_ok_and(|actors| {
+                        actors
+                            .iter()
+                            .all(|(_, position, _)| position.position() != at)
+                    })
+                {
+                    continue;
+                }
+                let Ok(policy) = runtime.companion_policy(&objective.creature) else {
+                    continue;
+                };
+                let health = policy.maximum_health;
+                let Ok(actor) = runtime.admit_encounter_actor(&objective.creature, health, at)
+                else {
+                    continue;
+                };
+                if runtime
+                    .install_creature_policy(actor, &objective.creature)
+                    .is_err()
+                {
+                    let _ = runtime.remove_encounter_actor(actor);
+                    continue;
+                }
+                slot.actor = Some(actor);
             }
-            slot.retry_at = now.saturating_add(5_000_000);
-            let at = MovementLocalPosition {
-                x: i32::from(guardian.position.x),
-                y: i32::from(guardian.position.y),
-                floor: -i16::from(guardian.position.floor),
-            };
-            let tile = TilePos {
-                x: guardian.position.x,
-                y: guardian.position.y,
-                floor: guardian.position.floor,
-            };
-            if map.facts.house_tile(tile)
-                || self.movement_cells.index().lookup(
-                    self.movement_cells.scope(),
-                    LogicalCell {
-                        x: at.x,
-                        y: at.y,
-                        z: i32::from(at.floor),
-                    },
-                ) != Ok(CollisionClass::Walkable)
-                || map
-                    .facts
-                    .quest_callback_blocked(map.overlay.base(), tile, false)
-                || !runtime.positioned_melee_census().is_ok_and(|actors| {
-                    actors
-                        .iter()
-                        .all(|(_, position, _)| position.position() != at)
-                })
-            {
-                continue;
-            }
-            let Ok(policy) = runtime.companion_policy(&objective.creature) else {
-                continue;
-            };
-            let health = policy.maximum_health;
-            let Ok(actor) = runtime.admit_encounter_actor(&objective.creature, health, at) else {
-                continue;
-            };
-            if runtime
-                .install_creature_policy(actor, &objective.creature)
-                .is_err()
-            {
-                let _ = runtime.remove_encounter_actor(actor);
-                continue;
-            }
-            slot.actor = Some(actor);
         }
         !requested.is_empty()
     }
@@ -174,14 +182,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         key: &str,
     ) -> Option<ExactActorRef> {
+        self.quest_guardians_for_test(key).await.into_iter().next()
+    }
+
+    #[cfg(test)]
+    pub(in crate::gameplay_transport) async fn quest_guardians_for_test(
+        &self,
+        key: &str,
+    ) -> Vec<ExactActorRef> {
         let runtime = self.runtime.lock().await;
         let attack = self.states.attack.lock().await;
-        let cache = attack.kills().1.lock().ok()?;
+        let Ok(cache) = attack.kills().1.lock() else {
+            return Vec::new();
+        };
         cache
             .guardians
             .iter()
-            .find(|slot| slot.key == key)
-            .and_then(|slot| slot.actor)
+            .filter(|slot| slot.key == key)
+            .filter_map(|slot| slot.actor)
             .filter(|actor| runtime.live_creature_health(*actor).is_some())
+            .collect()
     }
 }
