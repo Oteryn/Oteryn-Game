@@ -1,0 +1,115 @@
+{
+  "schema": 1,
+  "status": "QUALIFIED",
+  "scope": "Whole selected Power Ring Quest: same-character actual Ring and Bronze Amulet source claims, cold replay, exact full defaults, no parallel gold and once receipts.",
+  "red": {
+    "postgres_marker_seconds": 3.682791355,
+    "test_seconds": 3.72,
+    "observed_item": "oteryn:item.tibia.i3031",
+    "required_item": "oteryn:item.tibia.i3050"
+  },
+  "green": {
+    "filter": "questpc5_power_ring_complete_source_route",
+    "postgres_marker_seconds": 3.874631571,
+    "registration_seconds": 4.093602873,
+    "test_seconds": 62.27,
+    "actual_second_claim_and_defaults_program_seconds": 0.657042689,
+    "ring_item": 3050,
+    "ring_quantity": 1,
+    "amulet_item": 3056,
+    "amulet_quantity": 1,
+    "amulet_exact_default_charges": 200,
+    "active_ring_item": 3087,
+    "active_ring_duration_ms": 1800000,
+    "stop_duration_while_unequipped": true,
+    "explicit_partial_timer_charge_rows": 0,
+    "gold_grants": 0,
+    "once_receipts_per_source": 1,
+    "ring_cold_replay": true,
+    "amulet_second_use_refused": true
+  },
+  "native_selection": {
+    "profile": "native_selected_leaf_v1",
+    "schema": "OTERYN_NATIVE_SELECTED_LEAF/v1",
+    "claim": "oteryn:reward-claim.kv.powerring1",
+    "source_unique": 6151,
+    "source_position": [
+      32599,
+      31776,
+      -9
+    ],
+    "original_reward": {
+      "item": 3031,
+      "count": 1
+    },
+    "selected_reward": {
+      "item": 3050,
+      "count": 1
+    },
+    "rule": "Correct the donor ID/comment mismatch using the existing selected once recipe and exact pinned Wiki object identity. Preserve original data as evidence; never add a parallel grant.",
+    "producer": "tools/content-schema/reward-claim-authoring/selected_native_leaf.py",
+    "bounded_selections": 64,
+    "runtime": "Closed metadata validation delegates to the existing plain once parser/native Item admission/MINT owner; no new persistence mechanism."
+  },
+  "sources": {
+    "donor_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "donor_path": "data-global/startup/tables/chest.lua",
+    "donor_lines": "1755-1767",
+    "donor_sha256": "0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
+    "donor_fact": "1759:{3031,1} -- power ring;1766:{3056,200} -- bronze amulet",
+    "wiki_snapshot": "imports/tibiawiki/quest-reward-items/fandom-snapshot-r1.json",
+    "ring_pageid": 2184,
+    "ring_revid": 1205616,
+    "ring_wikitext_sha256": "3d73b74371a94193b8a4fdff3ec37bb79cb0dbf0254d3d0a603599d87f9639f0",
+    "ring_url": "https://tibia.fandom.com/index.php?curid=2184&oldid=1205616",
+    "amulet_pageid": 2466,
+    "amulet_revid": 1194240,
+    "amulet_url": "https://tibia.fandom.com/index.php?curid=2466&oldid=1194240"
+  },
+  "checks": {
+    "selected_source_python_tests": 2,
+    "source_authoring_check": 0,
+    "committed_source_errors": 0,
+    "world_reward_claims_rust_tests": 14,
+    "cargo_check_content_dispatch": 0,
+    "clippy_content_dispatch_all_targets_all_features_D_warnings": 0,
+    "cargo_and_mounted_fmt": 0,
+    "pin_refresh": 0,
+    "pin_check": 0
+  },
+  "world_digest": "264a3573a295a70bf5fe6dfaa2f41a82fdedd9f37c4d1116c6386a66b178d24d",
+  "logs": {
+    "red": {
+      "path": "/tmp/questpc5-power-ring-red.log",
+      "sha256": "260ea01c3b935b88038e85dac01eec6c9ad4b45c30ab0e68af69ea8095574d1b"
+    },
+    "green": {
+      "path": "/tmp/questpc5-power-ring-green3.log",
+      "sha256": "b8f3ce9f5da37a4828451dc18174c910b815072a9719024301827971d9faba8d"
+    },
+    "native_format_units": {
+      "path": "/tmp/questpc5-selected-leaf-unit2.log",
+      "sha256": "1791100bfce0ac76d81c784a311c162c2429d7c872b7e8f0109ad77dbdd18d05"
+    },
+    "all_claim_format_regression": {
+      "path": "/tmp/questpc5-selected-claims-regression.log",
+      "sha256": "42f50835c18092360ec43400bf31a40bb080936c601fcbcb6f7e86e909c10894"
+    },
+    "check": {
+      "path": "/tmp/questpc5-power-ring-check.log",
+      "sha256": "2a177392fe48a96609d88108131f9355f7121077aa50831da18283658200b16c"
+    },
+    "clippy": {
+      "path": "/tmp/questpc5-power-ring-clippy.log",
+      "sha256": "3785501e72be609642467186e385aeffb0e662e102a27c8ef327e590307a2999"
+    },
+    "pin_refresh": {
+      "path": "/tmp/questpc5-power-ring-pin-refresh.log",
+      "sha256": "ea726f4e37a3648676a6138e172d3d68b9e3c16443fbd92bc480962367df3310"
+    },
+    "pin_check": {
+      "path": "/tmp/questpc5-power-ring-pin-check.log",
+      "sha256": "eb610a21e71add9993a271671f69f76919decd6944295efaa8a2ca93548ae09b"
+    }
+  }
+}

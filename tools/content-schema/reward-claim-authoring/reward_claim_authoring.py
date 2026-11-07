@@ -548,13 +548,16 @@ def committed_errors() -> list[str]:
     from reward_claim_variant_authoring import PROFILE, stack_normalization_checks
     from reward_claim_variant_authoring import validate as validate_variants
     import native_source_leaf
-    plain = [r for r in records if r['definition'].get('definition_profile') not in (PROFILE, native_source_leaf.PROFILE)]
+    import selected_native_leaf
+    plain = [r for r in records if r['definition'].get('definition_profile') not in (PROFILE, native_source_leaf.PROFILE, selected_native_leaf.PROFILE)]
     variants = [r for r in records if r['definition'].get('definition_profile') == PROFILE]
     items = load_items()
     errors = validate(plain, items, index["source_checks"], source_claims)
     errors += validate_variants(variants, ROOT, items, stack_problem)
     errors += native_source_leaf.validate([r for r in records if
         r['definition'].get('definition_profile') == native_source_leaf.PROFILE], ROOT)
+    errors += selected_native_leaf.validate([r for r in records if
+        r['definition'].get('definition_profile') == selected_native_leaf.PROFILE], ROOT)
     if index.get('variant_source_checks') != legacy_uid_checks(records) + stack_normalization_checks():
         errors.append('variant legacy UID diagnostics are missing or stale')
     bound = {p["quest_transition"] for r in records for p in r["definition"]["placements"] if "quest_transition" in p}
@@ -578,6 +581,8 @@ def generate() -> dict[str, str]:
     errors = validate(records, items, source_checks, claims)
     if errors:
         raise ValueError("\n".join(errors))
+    import selected_native_leaf
+    selected_native_leaf.apply(records, ROOT, items)
     outputs = content_files(claims_bytes, records, source_checks)
     from reward_claim_variant_authoring import (
         derive,

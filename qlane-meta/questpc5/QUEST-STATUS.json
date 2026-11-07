@@ -255,18 +255,31 @@
     "canonical": "oteryn:quest.power_ring_quest",
     "title": "Power Ring Quest",
     "mechanism": "native_item_identity_charges_lifetime",
-    "status": "UNFINISHED",
-    "blocker": "Remaining source/route reconciliation: UID6151 is gold in both numeric donors and UID6152 disagrees with the selected recipe. Item3056 is now canonically and natively materializable at its exact full source default200 charges; preserve the donor identity and exact charge semantics when composing the route.",
+    "status": "QUALIFIED",
     "from_lanes": [
       "questpc2"
     ],
-    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "qualification_scope": "Whole chosen once recipe: actual6151 Ring3050 claim/cold replay and actual6152 Amulet3056, exact200-charge/30-minute active-ring defaults, no parallel gold and both once receipts.",
     "input_canonical": "unresolved:questpc2:power_ring_quest",
     "canonical_location": {
       "path": "content/quests/definitions/quests-00000-00099.json",
       "pointer": "/records/73/definition"
     },
-    "startup_binding_evidence": "cloud-startup-bindings-proof.json"
+    "startup_binding_evidence": "cloud-startup-bindings-proof.json",
+    "qualified_at": "2026-11-07",
+    "qualification_evidence": "cloud-power-ring-complete-proof.json",
+    "evidence": [
+      {
+        "filter": "questpc5_power_ring_complete_source_route",
+        "result": "PASS",
+        "duration_seconds": 62.27,
+        "postgres_marker_seconds": 3.874631571,
+        "proof": "cloud-power-ring-complete-proof.json"
+      }
+    ],
+    "assumptions": [
+      "The explicit native selection repairs source chest6151 item3031/comment power ring using the selected recipe and pinned Wiki item3050; original3031x1 remains visible in native_selection.original_reward. Never grant both."
+    ]
   },
   {
     "canonical": "oteryn:quest.present_quest",

@@ -7,6 +7,7 @@
 //! placements that did not bind and the records left out, so the caller can gate boot on it.
 
 mod native_state;
+mod selected_leaf;
 mod source_leaf;
 
 use crate::content::{
@@ -300,6 +301,10 @@ fn candidate(
         )
     ) {
         return Ok(Err(LeftOut::OwnerExcluded));
+    }
+    if definition.get("definition_profile").and_then(Value::as_str) == Some(selected_leaf::PROFILE)
+    {
+        return selected_leaf::candidate(definition, admitted);
     }
     if definition.get("definition_profile").and_then(Value::as_str) == Some(source_leaf::PROFILE) {
         return source_leaf::candidate(definition, admitted);

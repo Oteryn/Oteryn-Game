@@ -961,6 +961,7 @@ pub(super) fn catalogue_source_world_with_route(
     route: Option<super::quest_container_chests::SourceRoute>,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     let hoist = route == Some(super::quest_container_chests::SourceRoute::Hoist);
+    let power_ring = route == Some(super::quest_container_chests::SourceRoute::PowerRing);
     use oteryn_world_bundle::{bundle, sector};
     use std::collections::BTreeMap;
     let mut placements = Vec::new();
@@ -971,6 +972,8 @@ pub(super) fn catalogue_source_world_with_route(
             if definition["identity"]["key"] != chest.claim
                 && !(hoist
                     && definition["identity"]["key"] == super::questpc5_hoist_route::SKELETON_CLAIM)
+                && !(power_ring
+                    && definition["identity"]["key"] == "oteryn:reward-claim.kv.powerring2")
             {
                 continue;
             }
@@ -1275,6 +1278,30 @@ pub(super) fn present_route_cohort() -> TestResult {
         })?
         .join()
         .map_err(|_| "present route thread panicked")??;
+    Ok(())
+}
+
+pub(super) fn power_ring_route_cohort() -> TestResult {
+    let claim = super::questpc5_power_ring_route::RING_CLAIM;
+    let cases: Vec<_> = cases_including(|key| key == claim)?
+        .into_iter()
+        .filter(|c| c.claim == claim)
+        .collect();
+    assert_eq!(cases.len(), 1);
+    let case = cases.into_iter().next().ok_or("Power Ring source")?;
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(move || -> Result<(), String> {
+            let world = crate::foundation::WorldId::decode(&super::fixture::id(42))
+                .map_err(|e| format!("{e:?}"))?;
+            let activation =
+                super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")
+                    .map_err(|e| e.to_string())?;
+            super::quest_container_chests::power_ring_scenario(&case, &activation)
+                .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "Power Ring route thread panicked")??;
     Ok(())
 }
 

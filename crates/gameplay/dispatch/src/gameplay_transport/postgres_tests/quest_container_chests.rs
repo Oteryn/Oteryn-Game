@@ -16,6 +16,7 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 pub(super) enum SourceRoute {
     Hoist,
     Present,
+    PowerRing,
 }
 
 #[derive(Clone, Copy)]
@@ -875,6 +876,15 @@ fn scenario_case(
                             )
                             .await?
                         }
+                        SourceRoute::PowerRing => {
+                            super::questpc5_power_ring_route::exercise(
+                                &mut owner,
+                                &mut stream,
+                                &harness,
+                                deps.actor,
+                            )
+                            .await?
+                        }
                     }
                 }
             }
@@ -947,5 +957,18 @@ pub(super) fn present_scenario(
         Some(activation),
         None,
         Some(SourceRoute::Present),
+    )
+}
+
+pub(super) fn power_ring_scenario(
+    chest: &super::quest_catalogue_chests::CatalogueChest,
+    activation: &super::quest_catalogue_chests::CatalogueActivation,
+) -> TestResult {
+    scenario_case(
+        Case::Catalogue,
+        Some(chest),
+        Some(activation),
+        None,
+        Some(SourceRoute::PowerRing),
     )
 }
