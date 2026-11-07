@@ -28,6 +28,7 @@ pub enum Trigger {
     Use,
     StepIn,
     UseCarried,
+    UseCarriedOnTarget,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -148,29 +149,37 @@ pub fn load() -> Result<Vec<Callback>, String> {
 
 fn valid_carried(callback: &Callback) -> bool {
     let Some(rule) = &callback.carried_use else {
-        return callback.trigger != Trigger::UseCarried;
+        return !matches!(
+            callback.trigger,
+            Trigger::UseCarried | Trigger::UseCarriedOnTarget
+        );
     };
-    callback.trigger == Trigger::UseCarried
-        && rule.actor_region.valid()
+    matches!(
+        callback.trigger,
+        Trigger::UseCarried | Trigger::UseCarriedOnTarget
+    ) && rule.actor_region.valid()
         && rule.time_window.valid()
-        && callback.selector.position.is_none()
-        && callback.selector.unique.is_none()
-        && callback.selector.action.is_none()
-        && callback.selector.appearance.is_none()
+        && (callback.trigger == Trigger::UseCarriedOnTarget
+            || (callback.selector.position.is_none()
+                && callback.selector.unique.is_none()
+                && callback.selector.action.is_none()
+                && callback.selector.appearance.is_none()))
         && callback.lever.is_none()
         && !callback.reversible
         && callback.passages.is_empty()
         && callback.offerings.is_empty()
         && callback.teleport.is_none()
         && callback.native_rule.is_none()
+        && callback.experience.is_none()
+        && callback.monk_reward.is_none()
+        && !callback.return_on_failure
         && !callback.storage.is_empty()
         && callback.item_on_target.as_ref().is_some_and(|item| {
             item.count == 1
                 && item.target_replacement.is_none()
-                && item
-                    .replacement
-                    .as_ref()
-                    .is_some_and(|replacement| replacement != &item.item)
+                && item.replacement.as_ref().is_some_and(|replacement| {
+                    callback.trigger == Trigger::UseCarriedOnTarget || replacement != &item.item
+                })
         })
 }
 
@@ -235,7 +244,10 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 item.target_replacement == Some(0)
                     || (item.replacement.is_some() && item.count != 1)
                     || callback.storage.is_empty()
-                    || !matches!(callback.trigger, Trigger::Use | Trigger::UseCarried)
+                    || !matches!(
+                        callback.trigger,
+                        Trigger::Use | Trigger::UseCarried | Trigger::UseCarriedOnTarget
+                    )
                     || item.count == 0
                     || item.count > 100
                     || !super::valid_quest_key(&item.item)
@@ -301,7 +313,20 @@ fn extend_callbacks(
                     &callback.carried_use,
                 ))
                 .map_err(|error| error.to_string())?;
-                Ok::<[u8; 32], String>(Sha256::digest(bytes).into())
+                let mut digest = Sha256::new();
+                digest.update(bytes);
+                if callback.trigger == Trigger::UseCarriedOnTarget {
+                    digest.update(b"\0quest-carried-target-selector-v1\0");
+                    digest.update(
+                        serde_json::to_vec(&callback.selector)
+                            .map_err(|error| error.to_string())?,
+                    );
+                }
+                if let Some(level) = callback.minimum_level {
+                    digest.update(b"\0quest-carried-minimum-level-v1\0");
+                    digest.update(level.to_be_bytes());
+                }
+                Ok::<[u8; 32], String>(digest.finalize().into())
             })
             .transpose()?;
         for storage in &callback.storage {

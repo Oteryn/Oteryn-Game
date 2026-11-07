@@ -83,7 +83,7 @@ fn native(p: MovementLocalPosition) -> Option<TilePos> {
         floor: i8::try_from(p.floor).ok()?.checked_neg()?,
     })
 }
-fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
+pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
         return false;
     };
@@ -93,7 +93,8 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
             || selector.unique.is_some()
             || selector.action.is_some()
             || selector.appearance.is_some()
-            || ordinal == 0)
+            || ordinal == 0
+            || callback.trigger == Trigger::UseCarriedOnTarget)
         && map
             .facts
             .quest_callback_matches(key, selector.unique, selector.action, None)

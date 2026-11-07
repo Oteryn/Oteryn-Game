@@ -201,6 +201,18 @@ fn scenario(mode: Scenario) -> TestResult {
             Harness::create_with_admission_seed(admin, "questpc3_beginning_rewards", false, false)
                 .await?;
         prepare_current_session(&h).await?;
+        if matches!(mode, Scenario::CarlosSaleRecovery) {
+            let bound_guards: i64 = sqlx::query_scalar("SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname=current_schema() AND p.pronargs=0 AND p.proname IN ('game_character_quest_obligation_row_guard','game_character_quest_obligation_proven','game_character_quest_trade_receipt_proven') AND p.proconfig @> ARRAY[format('search_path=%I, pg_temp',current_schema())]")
+                .fetch_one(&h.pool).await?;
+            assert_eq!(
+                bound_guards, 3,
+                "all obligation guards retain their owning schema lookup boundary"
+            );
+            eprintln!(
+                "QUESTPC3_CARLOS_SALE POSTGRES_TRIGGER_SEARCH_PATH_PROVED functions={bound_guards}"
+            );
+        }
+
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root

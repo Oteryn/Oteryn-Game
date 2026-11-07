@@ -3,12 +3,21 @@ use super::{
     DurabilityError, character_progression::CurrentCharacterGameplayFence,
     spell_owner_commit::SpellLanePermit,
 };
-use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
+use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position, Trigger};
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CarriedTargetContext {
+    pub position: Position,
+    pub placement_key: u64,
+    pub object_revision: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CarriedUseContext {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target: Option<CarriedTargetContext>,
     pub source: [u8; 16],
     pub actor_position: Position,
     /// Recorded server input fact, never client-provided.
@@ -197,7 +206,18 @@ pub(super) async fn consume(
         else {
             return Ok(false);
         };
-        if carried.intent.is_empty()
+        let target_matches = match callback.trigger {
+            Trigger::UseCarried => carried.target.is_none(),
+            Trigger::UseCarriedOnTarget => carried.target.as_ref().is_some_and(|target| {
+                callback
+                    .selector
+                    .position
+                    .is_none_or(|position| position == target.position)
+            }),
+            _ => false,
+        };
+        if !target_matches
+            || carried.intent.is_empty()
             || carried.intent.len() > 32
             || !rule.actor_region.contains(carried.actor_position)
             || !rule.time_window.contains(minute)
@@ -572,5 +592,25 @@ impl super::DurabilityRoot {
             super::db::commit_semantic_transaction(tx, deadline).await?;
             Ok(outcome)
         })).await
+    }
+}
+
+#[cfg(test)]
+mod carried_context_tests {
+    use super::*;
+
+    #[test]
+    fn published_self_context_serialization_has_no_new_target_field()
+    -> Result<(), serde_json::Error> {
+        let historical = serde_json::json!({
+            "source": [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            "actor_position": {"x": 33518, "y": 32209, "floor": -7},
+            "recorded_utc_ms": 3_600_000,
+            "intent": [0,0,0,0,1]
+        });
+        let context: CarriedUseContext = serde_json::from_value(historical.clone())?;
+        assert!(context.target.is_none());
+        assert_eq!(serde_json::to_value(context)?, historical);
+        Ok(())
     }
 }

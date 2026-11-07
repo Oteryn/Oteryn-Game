@@ -55,6 +55,64 @@ pub struct CarriedUse {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use sha2::{Digest, Sha256};
+
+    fn definition(callback: super::super::Callback) -> Result<[u8; 32], String> {
+        let base = crate::quest::QuestStateCatalogue::new("binding-test", vec![], vec![])
+            .map_err(|error| format!("{error:?}"))?;
+        let quest = callback.quest.clone();
+        super::super::extend_callbacks(base, &[callback])?
+            .definition_hash(&quest)
+            .ok_or_else(|| "quest hash".into())
+    }
+
+    #[test]
+    fn published_self_use_binding_is_unchanged_and_target_terms_are_bound() -> Result<(), String> {
+        let rows = super::super::load()?;
+        let old = rows
+            .iter()
+            .find(|callback| callback.key.contains("/threatened-light/"))
+            .ok_or("self callback")?;
+        let legacy: [u8; 32] = Sha256::digest(
+            serde_json::to_vec(&(
+                &old.key,
+                &old.quest,
+                old.trigger,
+                &old.storage,
+                &old.item_on_target,
+                &old.carried_use,
+            ))
+            .map_err(|error| error.to_string())?,
+        )
+        .into();
+        let base = crate::quest::QuestStateCatalogue::new("binding-test", vec![], vec![])
+            .map_err(|error| format!("{error:?}"))?;
+        let book = super::super::extend_callbacks(base, std::slice::from_ref(old))?;
+        let transition = book.transition(&old.key).ok_or("self transition")?;
+        let mut bound = 0;
+        for effect in &transition.effects {
+            if let crate::quest::QuestEffectKind::SetWithBinding { binding, .. } = effect.effect {
+                assert_eq!(
+                    binding, legacy,
+                    "already published self-use receipts retain their definition encoding"
+                );
+                bound += 1;
+            }
+        }
+        assert!(bound > 0);
+        let target = rows
+            .into_iter()
+            .find(|callback| callback.trigger == super::super::Trigger::UseCarriedOnTarget)
+            .ok_or("target callback")?;
+        let original = definition(target.clone())?;
+        let mut other = target.clone();
+        other.selector.position.as_mut().ok_or("target position")?.x += 1;
+        assert_ne!(definition(other)?, original);
+        let mut level = target;
+        level.minimum_level = Some(30);
+        assert_ne!(definition(level)?, original);
+        Ok(())
+    }
     #[test]
     fn day_night_boundaries_and_midnight_are_exact() {
         let day = TimeWindow {

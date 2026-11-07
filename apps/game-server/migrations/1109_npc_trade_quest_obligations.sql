@@ -116,6 +116,21 @@ BEGIN
     RETURN NULL;
 END;
 $$;
+-- Preserve the existing schema-bound guard lookup policy after replacement and
+-- apply the same policy to the new receipt guard (0056 Quest owner convention).
+DO $$
+DECLARE
+    v_function TEXT;
+BEGIN
+    FOREACH v_function IN ARRAY ARRAY[
+        'game_character_quest_obligation_row_guard()',
+        'game_character_quest_obligation_proven()',
+        'game_character_quest_trade_receipt_proven()'
+    ] LOOP
+        EXECUTE format('ALTER FUNCTION %s SET search_path = %I, pg_temp', v_function, current_schema());
+    END LOOP;
+END $$;
+
 REVOKE ALL ON FUNCTION game_character_quest_trade_receipt_proven() FROM PUBLIC;
 CREATE CONSTRAINT TRIGGER game_character_quest_trade_receipt_proven
     AFTER INSERT ON game_character_quest_receipts DEFERRABLE INITIALLY DEFERRED
