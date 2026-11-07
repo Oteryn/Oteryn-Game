@@ -15,6 +15,25 @@ class LaneL2Rewards(unittest.TestCase):
             for c in json.loads(cls.outputs['content/quests/shared-reward-callbacks.json'])['callbacks']
         }
 
+    def test_draconia_greeting_matches_exact_source_payment_and_releases_focus(self):
+        donor = q.donor_inputs()['data-global/npc/an_old_dragon_lord.lua'].decode()
+        self.assertIn('player:removeItem(3723, 1)', donor)
+        self.assertIn('player:addItem(3206, 1)', donor)
+        actual = [c for c in self.callbacks.values()
+                  if c['npc'] == 'oteryn:npc.an_old_dragonlord']
+        self.assertEqual(len(actual), 2)
+        self.assertEqual([(c['storage'][0]['minimum'], c['storage'][0]['maximum'])
+                          for c in actual], [(-1, 0), (2, 9223372036854775807)])
+        for callback in actual:
+            self.assertTrue(callback['close_after'])
+            self.assertTrue(callback['repeatable'])
+            self.assertEqual(callback['take'], [{'item': 'oteryn:item.tibia.i3723', 'count': 1}])
+            self.assertEqual(callback['give'], {'item': 'oteryn:item.tibia.i3206', 'count': 1, 'contents': []})
+            self.assertEqual(callback['storage'][0]['set'], 1)
+            self.assertIn(callback['reply'][0], donor)
+            self.assertIn(callback['failure_reply'][0], donor)
+            self.assertIn(':sha256:85016cc08856f49d94c507f43bc84f54801d3a2844946ae391015a0d8c84a052', callback['sources'][0])
+
     def test_all_jorge_souvenirs_match_the_pinned_menu(self):
         donor = q.donor_inputs()['data-global/npc/jorge.lua'].decode()
         expected = {(name.lower(), int(item)) for name, item in

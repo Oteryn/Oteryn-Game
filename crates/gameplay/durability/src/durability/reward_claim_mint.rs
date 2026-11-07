@@ -124,7 +124,7 @@ mod fluid;
 mod grizzly;
 mod monk;
 pub(crate) mod quest;
-pub use quest::QuestRewardAdmission;
+pub use quest::{QuestRewardAdmission, QuestRewardFeePayment};
 mod soul_war;
 mod viola_book;
 mod tibiadrome;

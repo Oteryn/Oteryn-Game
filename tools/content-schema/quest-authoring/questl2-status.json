@@ -180,6 +180,56 @@
         "Omitted recovery preserves legacy behavior"
       ],
       "qualification_scope": "Shared engine mechanism only; no full quest qualification is inferred."
+    },
+    {
+      "name": "source-bound quest coin and eligible bank payments",
+      "status": "QUALIFIED",
+      "reuse": {
+        "commit": "33b640335",
+        "reviewed_head": "4ddf4bcff",
+        "migration": "1142_quest_reward_payments.sql",
+        "original_migration": "1000_quest_reward_payments.sql",
+        "source_red": "QENGINE2 L1-04A real PostgreSQL failure44.661348814s (missing first-start binding), recorded in qlane-meta/qengine2/QUEST-STATUS.json at4ddf4bcff"
+      },
+      "fresh_postgres_green": {
+        "test": "qengine_l4_nobleman_paid_outfit_story",
+        "seconds": 141.869044076,
+        "log": "/tmp/l2-close-fee-pg-green.log"
+      },
+      "proves": [
+        "Exact paid source story through production NPC wire commands",
+        "Native coin/change and eligible bank fee owner",
+        "Quest, fee, item and appearance participant proofs in one transaction",
+        "Refusal and exact-command replay retain atomicity"
+      ]
+    },
+    {
+      "name": "source conversation conclusion and refusal responses",
+      "status": "QUALIFIED",
+      "red": {
+        "passed": 0,
+        "failed": 1,
+        "seconds": 110.435,
+        "postgres_server": "18.6 (Debian 18.6-1.pgdg13+2)",
+        "log": "/tmp/l2-draconia-greeting-red.log",
+        "failure": "greeting reply missing",
+        "selected_skipped": 0
+      },
+      "fresh_postgres_green": {
+        "test": "questl2_draconia_greeting_item_lifecycle",
+        "seconds": 134.055955613,
+        "log": "/tmp/l2-close-fee-pg-green.log"
+      },
+      "proves": [
+        "A missing payment returns the source refusal without a receipt",
+        "Exactly one mushroom is consumed for one dragon fetish",
+        "Both success and refusal release NPC focus",
+        "An existing flag of one refuses without another payment"
+      ],
+      "source": "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/an_old_dragon_lord.lua:61-80:sha256:85016cc08856f49d94c507f43bc84f54801d3a2844946ae391015a0d8c84a052",
+      "implementation_guards": [
+        "Pending conclusion policy survives reconciliation and cannot close a newer context"
+      ]
     }
   ],
   "entries": [
@@ -261,7 +311,11 @@
     {
       "title": "Draconia",
       "status": "PENDING",
-      "evidence": []
+      "evidence": [],
+      "progress": {
+        "greeting_lifecycle": "PostgreSQL GREEN134.055955613s; exact payment, refusal, focus release and held-flag refusal",
+        "integration": "The remote branch66bea9a40 has published the full offering/alternative-exit journeys; merge and rerun them before push."
+      }
     },
     {
       "title": "Exchange Quests",
@@ -535,14 +589,16 @@
   ],
   "validation": {
     "quest_unit_tests": {
-      "passed": 272,
+      "passed": 273,
       "failed": 0,
-      "log": "/tmp/l2-foundation-merge-quest-units-final.log"
+      "seconds": 24.56,
+      "log": "/tmp/l2-close-fee-quest-units.log"
     },
     "reward_authoring_tests": {
-      "passed": 40,
+      "passed": 47,
       "failed": 0,
-      "log": "/tmp/l2-foundation-merge-rewards.log"
+      "seconds": 34.307,
+      "log": "/tmp/l2-close-fee-authoring-final2.log"
     },
     "l2_authoring_baseline": {
       "passed": 4,
@@ -572,20 +628,34 @@
       "open_pr_check": "next-free-numbers.py: no 1140-1149 claims",
       "numbers": [
         1140,
-        1141
-      ]
+        1141,
+        1142
+      ],
+      "latest_all_branch_check": {
+        "refs_checked": 80,
+        "free_before_fee_port": [
+          1142,
+          1143,
+          1144,
+          1145,
+          1146,
+          1147,
+          1148,
+          1149
+        ],
+        "evidence": "/tmp/l2-migration-range-current.json"
+      }
     },
     "world_pins": {
       "regenerated": true,
       "checked": true,
-      "digest": "03dc19c5c053c939e0f4ab40c9e353a6488e7e453c82255039df65391d9edf99",
-      "bytes": 31101986,
-      "reason": "Reused PC5 source programme/claim foundation while retaining QENGINE2 rewards, Jorge production placement, exact conditional writes and failure landings",
-      "tool": "regenerate_content.py --resolve --no-stage --skip-checks; world-bundle-compiler pin-check",
-      "log": "/tmp/l2-foundation-merge-pin-check.log",
-      "regeneration_log": "/tmp/l2-foundation-merge-regenerate.log"
+      "digest": "95a27e96102f561e9fba4843e3d8cd7026fc3bff78f44ab0cb5fe416da327942",
+      "bytes": 31102308,
+      "tool": "regenerate_content.py --resolve --no-stage --skip-checks; convert_placements.py; world-bundle-compiler pin-refresh and pin-check",
+      "regeneration_log": "/tmp/l2-close-fee-regenerate.log",
+      "pin_check_log": "/tmp/l2-close-fee-final-pin-check.log"
     },
-    "formatting": "cargo fmt --all --check passed after foundation merge",
+    "formatting": "cargo fmt --all --check passed; explicitly formatted auto-mounted PostgreSQL modules",
     "content_tests": {
       "integration_rest_content": 123,
       "content_world_project_repository": 5,
@@ -660,7 +730,9 @@
     },
     "npc_placement_tests": {
       "passed": 11,
-      "failed": 0
+      "failed": 0,
+      "seconds": 0.21,
+      "log": "/tmp/l2-close-fee-placements-final.log"
     },
     "build_resource_settings": {
       "incremental": false,
@@ -696,43 +768,38 @@
       "failed": 0
     },
     "latest_focused_postgres": {
-      "passed": 8,
+      "passed": 3,
       "failed": 0,
       "selected_skipped": 0,
-      "unselected": 2612,
-      "seconds": 485.917,
-      "log": "/tmp/l2-foundation-merge-pg.log",
+      "unselected": 2627,
+      "seconds": 247.537,
+      "log": "/tmp/l2-close-fee-pg-green.log",
       "postgres_server": "18.6 (Debian 18.6-1.pgdg13+2)",
-      "scenarios": [
-        "conditional failure landing",
-        "blocked conditional failure landing",
-        "atomic source acceptance and replay",
-        "eight Father hand-ins, cape, XP, replay",
-        "exact reset match",
-        "absent reset preservation",
-        "later reset preservation",
-        "paid repeat token exchange"
-      ],
-      "atomic_acceptance_seconds": 212.269035909,
-      "father_handins_seconds": 235.933230805,
-      "repeat_exchange_seconds": 134.911461154
+      "cases": [
+        {
+          "test": "questl2_draconia_greeting_item_lifecycle",
+          "seconds": 134.055955613
+        },
+        {
+          "test": "qengine_l4_nobleman_paid_outfit_story",
+          "seconds": 141.869044076
+        },
+        {
+          "test": "questl2_repeatable_token_exchange",
+          "seconds": 113.298902002
+        }
+      ]
     },
     "latest_clippy": {
       "packages": [
-        "oteryn-game-server",
-        "oteryn-gameplay-combat",
-        "oteryn-gameplay-content",
-        "oteryn-gameplay-dispatch",
-        "oteryn-gameplay-durability",
-        "oteryn-gameplay-encounters",
-        "oteryn-gameplay-npc",
         "oteryn-gameplay-quests",
-        "oteryn-gameplay-social"
+        "oteryn-gameplay-durability",
+        "oteryn-gameplay-dispatch"
       ],
       "all_targets": true,
       "deny_warnings": true,
       "exit_code": 0,
-      "log": "/tmp/l2-foundation-merge-clippy.log"
+      "log": "/tmp/l2-close-fee-clippy.log"
     },
     "verified_conditional_parent": {
       "commit": "ae8ae247a",
@@ -757,6 +824,20 @@
       "commit": "c48ad3674cfa7138f3b49c4b199b0916043b701a",
       "change": "Identical SetIf engine implementation and three PG regression tests; merge adds documentation and independent verification evidence only.",
       "validation": {}
+    },
+    "draconia_greeting_red": {
+      "passed": 0,
+      "failed": 1,
+      "seconds": 110.435,
+      "postgres_server": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "log": "/tmp/l2-draconia-greeting-red.log",
+      "failure": "greeting reply missing",
+      "selected_skipped": 0
+    },
+    "reward_reproducibility": {
+      "passed": true,
+      "tool": "qengine_rewards.py --check",
+      "log": "/tmp/l2-close-fee-reproduce.log"
     }
   },
   "cross_lane_inspection": {
@@ -796,6 +877,20 @@
       "passed": 4,
       "failed": 0,
       "qualification_scope": "Shared mechanisms only; no L2 entry becomes qualified from these primitive tests."
+    },
+    "native_payments_reuse": {
+      "source_commit": "33b640335",
+      "reviewed_head": "4ddf4bcff",
+      "implementation": "Reusable exact native coin/bank payment participant and cross-quest read-only prerequisites; retain L2 repeatability, conditional writes and shared sixteen-track cap.",
+      "migration": "1142_quest_reward_payments.sql, original1000 conflicts with imported corruptor lifecycle migration"
     }
+  },
+  "next_batch": {
+    "entries": [
+      "Sam's Old Backpack",
+      "To Outfox a Fox",
+      "Into The Bone Pit"
+    ],
+    "source_tracing": "Pinned NPC/startup sources and public quest_system2.lua resolve Sam door/chest/reward and Outfox door/helmet; generic doors already exist. Reuse them and compose complete journeys."
   }
 }

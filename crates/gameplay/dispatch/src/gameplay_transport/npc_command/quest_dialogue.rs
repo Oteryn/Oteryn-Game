@@ -80,6 +80,16 @@ pub(super) struct Step {
     next_topic: Option<Topic>,
     transition: Option<String>,
     reply: Vec<String>,
+    close_after: bool,
+    failure_reply: Vec<String>,
+}
+
+impl Step {
+    pub(super) fn conclusion(mut self, close_after: bool, failure_reply: Vec<String>) -> Self {
+        self.close_after = close_after;
+        self.failure_reply = failure_reply;
+        self
+    }
 }
 
 #[derive(Clone)]
@@ -91,6 +101,8 @@ struct Pending {
     context: Context,
     next_topic: Option<Topic>,
     reply: Vec<String>,
+    close_after: bool,
+    failure_reply: Vec<String>,
 }
 
 /// Bind a pure, source-backed selector to the actual current conversation.
@@ -130,6 +142,8 @@ pub(super) fn prepare(
         next_topic: choice.next_topic,
         transition: choice.transition,
         reply: choice.reply,
+        close_after: false,
+        failure_reply: Vec::new(),
     })
 }
 
@@ -192,6 +206,35 @@ fn publish_committed_reply(
     } else {
         NpcTalkOutcome::only(NpcIntentDisposition::Ok)
     }
+}
+
+fn conclude(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+    intent: &NpcTalkIntent,
+    expected: &Context,
+    close_after: bool,
+    mut outcome: NpcTalkOutcome,
+) -> NpcTalkOutcome {
+    if close_after
+        && !outcome.unknown
+        && outcome.conversation.is_some()
+        && let Some(mut closed) = super::end(&admission.states.chat, session, intent)
+    {
+        if let Some(conversation) = outcome.conversation.take() {
+            closed.lines = conversation.lines;
+        }
+        outcome.conversation = Some(closed);
+        if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
+            && let Some(state) = sessions.get_mut(&session)
+            && state.quest_dialogue.pending.is_none()
+            && state.quest_dialogue.context.as_ref() == Some(expected)
+        {
+            state.quest_dialogue.context = None;
+            state.quest_dialogue.topic = Topic::default();
+        }
+    }
+    outcome
 }
 
 fn finish(admission: &ComposedFreshAdmission<'_, '_, '_>, session: GameSessionId, committed: bool) {
@@ -262,8 +305,16 @@ pub(super) async fn apply(
         if state.pending.is_some() || state.topic(&step.context) != step.topic {
             return rejected();
         }
-        state.apply_topic(step.context, step.next_topic);
-        return rendered;
+        state.apply_topic(step.context.clone(), step.next_topic);
+        drop(sessions);
+        return conclude(
+            admission,
+            command.game_session_id,
+            &intent,
+            &step.context,
+            step.close_after,
+            rendered,
+        );
     };
     let (Some(item_fence), Ok(id), Some(catalogue)) = (
         command.item_fence,
@@ -335,11 +386,32 @@ pub(super) async fn apply(
             context: step.context.clone(),
             next_topic: step.next_topic,
             reply: step.reply.clone(),
+            close_after: step.close_after,
+            failure_reply: step.failure_reply.clone(),
         });
     }
     let value_callback = oteryn_gameplay_quests::quest::reward_callbacks::load()
         .ok()
         .is_some_and(|callbacks| callbacks.iter().any(|c| c.key == request.transition_key));
+    let fee_payment = if oteryn_gameplay_quests::quest::reward_callbacks::load()
+        .ok()
+        .and_then(|callbacks| {
+            callbacks
+                .into_iter()
+                .find(|c| c.key == request.transition_key)
+        })
+        .is_some_and(|c| c.fee.is_some())
+    {
+        match super::endgame::prepare_reward_fee(admission, command, fence).await {
+            Ok(payment) => Some(payment),
+            Err(outcome) => {
+                finish(admission, command.game_session_id, false);
+                return *outcome;
+            }
+        }
+    } else {
+        None
+    };
     let outcome = if value_callback {
         let Some(native) = admission
             .active_generation
@@ -360,6 +432,7 @@ pub(super) async fn apply(
             crate::durability::reward_claim_mint::QuestRewardAdmission {
                 native,
                 weights: &weights,
+                fee_payment: fee_payment.as_ref(),
             },
         )
         .await
@@ -399,7 +472,7 @@ pub(super) async fn apply(
                 .refresh_level_up_vitals(actor, command.game_session_id)
                 .await;
             let runtime = admission.runtime.lock().await;
-            publish_committed_reply(
+            let result = publish_committed_reply(
                 admission.states.npc_conversations.current_npc(
                     &admission.states.chat,
                     &runtime,
@@ -409,6 +482,14 @@ pub(super) async fn apply(
                 ),
                 &step.context,
                 rendered,
+            );
+            conclude(
+                admission,
+                command.game_session_id,
+                &intent,
+                &step.context,
+                step.close_after,
+                result,
             )
         }
         Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
@@ -416,7 +497,36 @@ pub(super) async fn apply(
         )) => unknown(),
         _ => {
             finish(admission, command.game_session_id, false);
-            rejected()
+            if !step.close_after && step.failure_reply.is_empty() {
+                return rejected();
+            }
+            let runtime = admission.runtime.lock().await;
+            if admission.states.npc_conversations.current_npc(
+                &admission.states.chat,
+                &runtime,
+                actor,
+                command.game_session_id,
+                &intent,
+            ) != Some(step.context.clone())
+            {
+                return rejected();
+            }
+            let mut refusal = reply(
+                &admission.states.chat,
+                command.game_session_id,
+                &step.context,
+                &intent,
+                step.failure_reply,
+            );
+            refusal.disposition = NpcIntentDisposition::Rejected;
+            conclude(
+                admission,
+                command.game_session_id,
+                &intent,
+                &step.context,
+                step.close_after,
+                refusal,
+            )
         }
     }
 }
@@ -472,7 +582,7 @@ pub(in crate::gameplay_transport) async fn resume(
                 );
                 rendered.inventory_changed = value_callback;
                 let runtime = admission.runtime.lock().await;
-                Some(publish_committed_reply(
+                let result = publish_committed_reply(
                     admission.states.npc_conversations.current_npc(
                         &admission.states.chat,
                         &runtime,
@@ -482,9 +592,47 @@ pub(in crate::gameplay_transport) async fn resume(
                     ),
                     &pending.context,
                     rendered,
+                );
+                Some(conclude(
+                    admission,
+                    command.game_session_id,
+                    &pending.intent,
+                    &pending.context,
+                    pending.close_after,
+                    result,
                 ))
             } else {
-                Some(NpcTalkOutcome::only(NpcIntentDisposition::Rejected))
+                let rejected = || NpcTalkOutcome::only(NpcIntentDisposition::Rejected);
+                if !pending.close_after && pending.failure_reply.is_empty() {
+                    return Some(rejected());
+                }
+                let runtime = admission.runtime.lock().await;
+                if admission.states.npc_conversations.current_npc(
+                    &admission.states.chat,
+                    &runtime,
+                    pending.actor,
+                    command.game_session_id,
+                    &pending.intent,
+                ) != Some(pending.context.clone())
+                {
+                    return Some(rejected());
+                }
+                let mut refusal = reply(
+                    &admission.states.chat,
+                    command.game_session_id,
+                    &pending.context,
+                    &pending.intent,
+                    pending.failure_reply,
+                );
+                refusal.disposition = NpcIntentDisposition::Rejected;
+                Some(conclude(
+                    admission,
+                    command.game_session_id,
+                    &pending.intent,
+                    &pending.context,
+                    pending.close_after,
+                    refusal,
+                ))
             }
         }
         Err(_) => Some(NpcTalkOutcome {

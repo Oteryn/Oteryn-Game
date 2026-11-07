@@ -16,7 +16,8 @@ import grizzly_shop_profiles as accepted
 sys.path.insert(0, str(ROOT / 'tools/content-schema/quest-authoring'))
 import questl2_rewards
 
-IDS = {133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701} | questl2_rewards.ITEMS
+IDS = {133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701,
+       6099, 6100, 6101, 6102, 6126, 12599, 12601, 12803, 22516, 22721, 28792, 28793} | questl2_rewards.ITEMS
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'

@@ -32,7 +32,8 @@ def sha(value):
 
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
-        'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari', *questl2_rewards.NPCS)]
+        'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', *questl2_rewards.NPCS)]
     paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua']
@@ -67,7 +68,8 @@ def build():
     groups = {}
     for row in xml:
         name = aliases.get(row.get('name'), row.get('name'))
-        if row.get('enabled') == 'yes' and row.get('from') != 'store':
+        # Owner-selected Royal Costume quest has a source NPC grant despite its XML store tag.
+        if row.get('enabled') == 'yes' and (row.get('from') != 'store' or name == 'Royal Costume'):
             groups.setdefault(name, {})[row.get('type')] = row.attrib
     appearance = ROOT / 'imports/cipsoft-appearances/outfits'
     manifest_raw = (appearance / 'manifest.json').read_bytes()
@@ -141,16 +143,23 @@ def build():
     def storage(track, before, after, maximum=None, preserve=False):
         return {'track': track, 'minimum': before, 'maximum': before if maximum is None else maximum,
                 'set': after, **({'preserve': True} if preserve else {})}
-    def add(name, quest, npc, keywords, states, take=(), give=None, outfit=None, topic=0, next_topic=0):
+    def add(name, quest, npc, keywords, states, take=(), give=None, outfit=None, topic=0, next_topic=0,
+            requires=(), present=(), achievement=None, fee=None):
         path = f'data-global/npc/{npc}.lua'
         callbacks.append({'key': 'oteryn:quest-reward/' + name, 'quest': 'oteryn:quest.' + quest,
             'npc': 'oteryn:npc.' + npc, 'keywords': keywords, 'topic': topic, 'next_topic': next_topic,
             'storage': states, 'take': [{'item': f'oteryn:item.tibia.i{i}', 'count': n} for i,n in take],
             'give': None if give is None else {'item': f'oteryn:item.tibia.i{give[0]}', 'count': give[1], 'contents': []},
             'outfit': None if outfit is None else {'outfit': 'oteryn:outfit.' + outfit[0], 'addons': outfit[1]},
-            'achievement': 'oteryn:achievement/backpack_tourist' if name == 'sam-backpack' else None,
+            'achievement': achievement or ('oteryn:achievement/backpack_tourist' if name == 'sam-backpack' else None),
             'reply': ['Thank you for your help.'],
             'sources': [f'crystal:{PIN}:{path}:sha256:{sha(inputs[path])}']})
+        if fee is not None:
+            callbacks[-1]['fee']=fee
+        if requires:
+            callbacks[-1]['requires']=list(requires)
+        if present:
+            callbacks[-1]['present']=[{'item':f'oteryn:item.tibia.i{i}','count':n} for i,n in present]
     prefix = 'oteryn:quest-progress/quest/'
     add('pirate-sabre', 'outfit_and_addon_quests', 'morgan', ['firebird'],
         [storage(prefix+'u7_8/pirate_outfits/pirate_sabre_addon',4,5)], outfit=('pirate',1))
@@ -221,20 +230,152 @@ def build():
         offers.append({'npc':'oteryn:npc.palimuth','keywords':['job','addon'],
             'topic':0,'next_topic':6,'storage':callbacks[-1]['storage'],
             'reply':['Did you bring me the vampiric crest?']})
+    # Parent prerequisites stay read-only and retain their original quest owner.
+    def requirement(track,value):
+        return {'track':track,'minimum':value,'maximum':value}
+    library=prefix+'u11_80/the_secret_library/'
+    library_ready=[storage(library+'library_permission',6,7),storage(library+'questlog',-1,1,1)]
+    for name,value in [('small_islands',4),('liquid_death',8),('asuras',7),('falcon_bastion',3),('darashia',9),('mo_ta',8)]:
+        library_ready.append(storage(library+name+'/questline',value,value,preserve=True))
+    add('l2-battle-mage-base','the_secret_library_quest','dedoras',['check'],library_ready,
+        outfit=('battle_mage',0),achievement='oteryn:achievement/battle_mage')
+    library_done=[requirement(library+'library_permission',7)]
+    for name,bit,item,count,words in [('book',1,28792,5,['book','books','sturdy books']),('epaulettes',2,28793,20,['epaulettes'])]:
+        add('l2-battle-mage-'+name,'battle_mage_outfits_quest','dedoras',words,
+            [storage(prefix+'u11_80/battle_mage_outfits/addon'+str(bit),-1,1,0)],
+            take=[(item,count)],outfit=('battle_mage',bit),topic=3,requires=library_done)
+    for word,topic,next_topic in [('addon',0,1),('yes',1,2),('yes',2,3)]:
+        offers.append({'npc':'oteryn:npc.dedoras','keywords':[word],'topic':topic,
+            'next_topic':next_topic,'storage':[],'requires':library_done,
+            'reply':['I need five sturdy books for the first addon or twenty epaulettes for the second.']})
+    feathers=prefix+'u11_02/the_first_dragon/feathers'
+    add('l2-festive-base','the_first_dragon_quest','the_first_dragon',['reward'],
+        [storage(feathers,1,2)],outfit=('festive',0))
+    festive_ready=[requirement(feathers,2)]
+    # Muriel's captured offers require the stage that only those offers initialize.
+    # Bootstrap with parent completion and retained matching evidence; only the
+    # subsequent exact hand-in consumes items and earns the addon.
+    offers.append({'npc':'oteryn:npc.muriel','keywords':['addons'],'topic':0,'next_topic':1,
+        'storage':[],'requires':festive_ready,'reply':['Choose the first or second addon.']})
+    for name,bit,item,count,choice,word in [('mask',1,25088,3,'first','mask'),('feather',2,25089,50,'second','feather')]:
+        track=prefix+'u11_02/festive_outfits/addon'+str(bit)
+        add('l2-festive-'+name+'-start','festive_outfits_quest','muriel',[choice],
+            [storage(track,-1,1,0)],topic=1,requires=festive_ready,present=[(item,count)])
+        add('l2-festive-'+name,'festive_outfits_quest','muriel',[word,word+'s'],
+            [storage(track,1,2)],take=[(item,count)],outfit=('festive',bit),requires=festive_ready)
+    elementalist=prefix+'u9_1/elementalist_outfits/'
+    add('l2-elementalist-start','elementalist_outfits_quest','broken_servant_sentry',['yes'],
+        [storage(elementalist+'outfit',-1,1,0),storage(elementalist+'questline',-1,1,1)],topic=2)
+    add('l2-elementalist-base','elementalist_outfits_quest','broken_servant_sentry',['yes'],
+        [storage(elementalist+'outfit',1,2)],take=[(12601,20)],outfit=('elementalist',0),topic=4)
+    for name,bit,item,words in [('cap',1,12599,['cap','mage']),('staff',2,12803,['staff','spike'])]:
+        add('l2-elementalist-'+name,'elementalist_outfits_quest','broken_servant_sentry',words,
+            [storage(elementalist+'outfit',2,2,preserve=True),
+             storage(elementalist+'addon'+str(bit),-1,1,0)],take=[(item,1)],outfit=('elementalist',bit))
+    for before,maximum,first,second in [(-1,0,1,2),(1,1,3,4)]:
+        guard=[storage(elementalist+'outfit',before,before,maximum,preserve=True)]
+        offers.append({'npc':'oteryn:npc.broken_servant_sentry','keywords':['slime','mould','fungus','sample'],
+            'topic':0,'next_topic':first,'storage':guard,'reply':['Did you bring samples for me to analyse?']})
+        offers.append({'npc':'oteryn:npc.broken_servant_sentry','keywords':['yes'],
+            'topic':first,'next_topic':second,'storage':guard,'reply':['Let me analyse the samples.']})
+    annihilator=prefix+'u7_24/the_annihilator/reward'
+    add('l3-demon-base','the_annihilator_quest','avar_tar',['base'],
+        [storage(annihilator,1,2)],outfit=('demon',0),topic=2)
+    for name,quest,track,before,after,bit in [
+        ('shield','demon_helmet_quest',prefix+'u6_4/demon_helmet/rewards/demon_helmet',1,2,1),
+        ('helmet','demon_oak',prefix+'u8_2/the_demon_oak/done',3,4,2)]:
+        add('l3-demon-'+name,quest,'avar_tar',[name],[storage(track,before,after)],
+            outfit=('demon',bit),topic=2,requires=[requirement(annihilator,2)])
+    for word,topic,next_topic in [('outfit',0,1),('yes',1,2)]:
+        offers.append({'npc':'oteryn:npc.avar_tar','keywords':[word],'topic':topic,
+            'next_topic':next_topic,'storage':[],'reply':['Choose the base, shield or helmet.']})
+    dark=prefix+'u10_50/dark_trails/'
+    votes=prefix+'u10_50/oramond_quest/voting_points'
+    glooth=prefix+'u10_50/glooth_engineer_outfits/'
+    add('l3-glooth-engineer-base','dark_trails_quest','ezebeth',['outfit'],
+        [storage(dark+'outfit',-1,1,0)],outfit=('glooth_engineer',0),
+        requires=[requirement(dark+'mission18',1)])
+    for suffix,bit,minimum,maximum,finished_second in [
+        ('second',2,6,2147483647,False),('first-low',1,3,5,False),('first-high',1,6,2147483647,True)]:
+        required=[requirement(dark+'outfit',1),{'track':votes,'minimum':minimum,'maximum':maximum}]
+        if finished_second:required.append(requirement(glooth+'addon2',1))
+        add('l3-glooth-engineer-'+suffix,'glooth_engineer_outfits_quest','ezebeth',['addon'],
+            [storage(glooth+'addon'+str(bit),-1,1,0)],outfit=('glooth_engineer',bit),requires=required)
+    declarations=[{'key':votes,'quest':'oteryn:quest.oramond_quest','initial':-1,'min':-1,'max':2147483647,
+        'sources':[f'crystal:{PIN}:data-global/npc/ezebeth.lua:93-103:sha256:{sha(inputs["data-global/npc/ezebeth.lua"])}']}]
+    noble=prefix+'u7_8/nobleman_outfits/'
+    first=noble+'nobleman_first_addon'
+    second=noble+'nobleman_second_addon'
+    for name,track,topic,pay_topic,bit,words in [('first',first,23,24,1,['dress','coat']),('second',second,29,30,2,['hat'])]:
+        parent=[] if bit==1 else [storage(first,2,2,preserve=True)]
+        add('l4-nobleman-'+name+'-start','nobleman_outfits_quest','irmana',['150000'],
+            parent+[storage(track,-1,1,0)],topic=topic)
+        add('l4-nobleman-'+name,'nobleman_outfits_quest','irmana',['yes'],
+            parent+[storage(track,1,2)],outfit=('nobleman',bit),topic=pay_topic,
+            fee={'gold':150000,'include_bank':False},achievement='oteryn:achievement/aristocrat' if bit==2 else None)
+        start_topic=19 if bit==1 else 25
+        guard=parent+[storage(track,-1,0,0,preserve=True)]
+        for keywords,before,after in [(['addon'],0,start_topic),(['yes'],start_topic,start_topic+1),
+            (words,start_topic+1,start_topic+2),(['yes'],start_topic+2,start_topic+3),(['yes'],start_topic+3,topic)]:
+            offers.append({'npc':'oteryn:npc.irmana','keywords':keywords,'topic':before,'next_topic':after,
+                'storage':guard,'reply':['The accessory costs 150000 gold carried with you.']})
+        offers.append({'npc':'oteryn:npc.irmana','keywords':['addon'],'topic':0,'next_topic':pay_topic,
+            'storage':parent+[storage(track,1,1,preserve=True)],'reply':['Are you here to collect your accessory for 150000 gold?']})
+    royal='oteryn:quest-progress/outfit_quest/royal_costume_outfit'
+    for name,before,after,silver,gold,bit,topic,word in [
+        ('base',-1,1,15000,12500,0,16,'armor'),('shield',1,2,7500,6250,1,17,'shield'),('crown',2,3,7500,6250,2,18,'crown')]:
+        guard=[storage(royal,before,after,0 if bit==0 else before)]
+        add('l4-royal-costume-'+name,'royal_costume_outfits_quest','percybald',['yes'],guard,
+            take=[(22516,silver),(22721,gold)],outfit=('royal_costume',bit),topic=topic,next_topic=15)
+        offers.append({'npc':'oteryn:npc.percybald','keywords':[word],'topic':15,'next_topic':topic,
+            'storage':guard,'reply':[f'The donation is {silver} silver tokens and {gold} gold tokens.']})
+    for words,before,after in [(['outfit','addon','royal'],0,14),(['yes'],14,15)]:
+        offers.append({'npc':'oteryn:npc.percybald','keywords':words,'topic':before,'next_topic':after,
+            'storage':[],'reply':['Choose armor, shield or crown for a token donation.']})
+    pirate=prefix+'u7_8/pirate_outfits/'
+    shattered=prefix+'u7_8/the_shattered_isles/'
+    pirate_owner='outfit_and_addon_quests'  # retain the admitted shared source track owner
+    add('l4-pirate-base',pirate_owner,'raymond_striker',['pirate outfit'],
+        [storage(pirate+'pirate_base_outfit',-1,1,0)],outfit=('pirate',0),requires=[
+            requirement(shattered+'access_to_laguna_island',1),requirement(shattered+'rays_mission4',5)])
+    sabre=pirate+'pirate_sabre_addon'
+    start=[storage(sabre,-1,1,0),storage('oteryn:quest-progress/outfit_quest/default_start',-1,1,1)]
+    add('l4-pirate-sabre-start',pirate_owner,'duncan',['yes'],start,topic=2)
+    for words,before,after in [(['task'],0,1),(['yes'],1,2)]:
+        offers.append({'npc':'oteryn:npc.duncan','keywords':words,'topic':before,'next_topic':after,
+            'storage':[storage(sabre,-1,0,0,preserve=True)],'reply':['Bring 100 eye patches, 100 peg legs and 100 hooks in that order.']})
+    for name,before,after,item,topic,word in [
+        ('eye-patches',1,2,6098,3,'eye patches'),('peg-legs',2,3,6126,4,'peg legs'),('hooks',3,4,6097,5,'hooks')]:
+        states=[storage(sabre,before,after)]
+        add('l4-pirate-'+name,pirate_owner,'duncan',['yes'],states,take=[(item,100)],topic=topic)
+        offers.append({'npc':'oteryn:npc.duncan','keywords':[word],'topic':0,'next_topic':topic,
+            'storage':states,'reply':['Have you gathered 100 '+word+'?']})
+    # Morgan's existing firebird callback owns the only sabre grant; do not duplicate it.
+    hat=pirate+'pirate_hat_addon'
+    hat_start=[storage(pirate+'pirate_base_outfit',1,1,preserve=True),storage(hat,-1,1,0)]
+    add('l4-pirate-hat-start',pirate_owner,'ariella',['yes'],hat_start,topic=4)
+    for words,before,after in [(['addon'],0,2),(['task'],2,3),(['yes'],3,4)]:
+        offers.append({'npc':'oteryn:npc.ariella','keywords':words,'topic':before,'next_topic':after,
+            'storage':hat_start,'reply':['Bring proof from the four pirate leaders.']})
+    add('l4-pirate-hat',pirate_owner,'ariella',['yes'],[storage(hat,1,2)],
+        take=[(6101,1),(6102,1),(6100,1),(6099,1)],outfit=('pirate',2),topic=5)
+    offers.append({'npc':'oteryn:npc.ariella','keywords':['task'],'topic':0,'next_topic':5,
+        'storage':[storage(hat,1,2)],'reply':['Did you bring the shirt, sabre, hat and eye patch?']})
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
-    validate_callbacks({'schema':1,'callbacks':callbacks})
+    validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
     native_cosmetics=cosmetics.build(author, appearance/'manifest.json')
     gameplay['schema']='OTERYN_NATIVE_GAMEPLAY_MANIFEST/v6'
     gameplay['cosmetics']={'path':'cosmetics/outfits/native-cosmetics.json','sha256':sha(native_cosmetics)}
     generated = {'content/cosmetics/outfits/authoring.json': encoded(author),
             'content/cosmetics/outfits/native-cosmetics.json': native_cosmetics,
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),
-            'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'callbacks':callbacks}),
+            'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
     greetings=[]
     for npc in sorted({c['npc'] for c in callbacks}):
-        path='data-global/npc/'+npc.removeprefix('oteryn:npc.')+'.lua'
+        slug = npc.removeprefix('oteryn:npc.')
+        path='data-global/npc/'+questl2_rewards.NPC_SOURCES.get(slug, slug)+'.lua'
         messages={}
         citations=[]
         for field,constant in [('greet','GREET'),('farewell','FAREWELL'),('walkaway','WALKAWAY')]:
@@ -288,20 +429,37 @@ def build():
 def validate_callbacks(document):
     schema=json.loads((ROOT/'tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json').read_bytes())
     Draft202012Validator(schema).validate(document)
+    declarations=document.get('tracks',[])
+    declared=set()
+    readonly={r['track'] for c in document['callbacks'] for r in c.get('requires',[])}
+    written={r['track'] for c in document['callbacks'] for r in c['storage']}
+    for track in declarations:
+        if (track['key'] in declared or not track['min']<=track['initial']<=track['max']
+            or track['key'] not in readonly or track['key'] in written):
+            raise ValueError('invalid reward prerequisite declaration '+track['key'])
+        declared.add(track['key'])
     keys=set()
     for callback in document['callbacks']:
         storage=callback['storage']
+        requires=callback.get('requires',[])
         if (callback['key'] in keys
             or len({s['track'] for s in storage})!=len(storage)
             or len({i['item'] for i in callback['take']})!=len(callback['take'])
             or len({i['item'] for i in callback.get('present',[])})!=len(callback.get('present',[]))
+            or (callback.get('fee') and any(i['item'] in ('oteryn:item.tibia.i3031','oteryn:item.tibia.i3035','oteryn:item.tibia.i3043') for i in callback['take']))
+            or len({r['track'] for r in requires})!=len(requires)
+            or {r['track'] for r in requires}&{s['track'] for s in storage}
+            or any(r['minimum']>r['maximum'] for r in requires)
             or any(s['minimum']>s['maximum'] for s in storage)
             or any(s.get('set_if') is not None and (not s['minimum']<=s['set_if']<=s['maximum'] or s.get('preserve',False)) for s in storage)
             or (not callback.get('repeatable',False)
                 and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
             or (callback.get('repeatable',False)
-                and (not callback['take'] or not callback['give']
+                and ((not callback['take'] and not callback.get('fee')) or not callback['give']
                      or callback['outfit'] or callback['achievement']))
+            or callback.get('minimum_level',1) < 1
+            or not 1 <= callback.get('experience',1) <= 100000000
+            or any(len(line.encode('utf-8'))>512 or any(ord(c)<32 or 127<=ord(c)<=159 for c in line) for line in callback.get('failure_reply',[]))
             or any(k!=k.lower() or not k.isascii() for k in callback['keywords'])
             or any(len(line.encode('utf-8'))>512 or any(ord(c)<32 or 127<=ord(c)<=159 for c in line) for line in callback['reply'])
             or any(len(source.encode('utf-8'))>1024 for source in callback['sources'])):

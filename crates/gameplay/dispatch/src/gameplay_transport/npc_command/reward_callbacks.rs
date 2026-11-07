@@ -20,7 +20,11 @@ struct Offer {
     topic: u16,
     next_topic: u16,
     storage: Vec<Storage>,
+    #[serde(default)]
+    requires: Vec<reward_callbacks::TrackRequirement>,
     reply: Vec<String>,
+    #[serde(default)]
+    close_after: bool,
 }
 
 pub(super) fn prepare(
@@ -35,10 +39,12 @@ pub(super) fn prepare(
         "../../../../../../content/quests/shared-reward-offers.json"
     ))
     .ok()?;
-    if offers.schema != 1 {
+    if offers.schema != 1 || offers.offers.iter().any(|o| o.requires.len() > 8) {
         return None;
     }
-    quest_dialogue::prepare(
+    let catalogue = admission.quest_catalogue.as_deref()?;
+    let mut conclusion = (false, Vec::new());
+    let step = quest_dialogue::prepare(
         admission,
         actor,
         command,
@@ -48,7 +54,10 @@ pub(super) fn prepare(
             let text = intent.text.trim().to_ascii_lowercase();
             let eligible = |storage: &[Storage]| {
                 storage.iter().all(|s| {
-                    (s.minimum..=s.maximum).contains(&tracks.get(&s.track).copied().unwrap_or(-1))
+                    catalogue.track(&s.track).is_some_and(|definition| {
+                        (s.minimum..=s.maximum)
+                            .contains(&tracks.get(&s.track).copied().unwrap_or(definition.initial))
+                    })
                 })
             };
             let mut selected = callbacks.iter().filter(|c| {
@@ -56,11 +65,13 @@ pub(super) fn prepare(
                     && c.topic == topic.number
                     && c.keywords.contains(&text)
                     && eligible(&c.storage)
+                    && c.requires.iter().all(|r| r.holds(catalogue, tracks))
             });
             if let Some(callback) = selected.next() {
                 if selected.next().is_some() {
                     return None;
                 }
+                conclusion = (callback.close_after, callback.failure_reply.clone());
                 return Some(Choice {
                     transition: Some(callback.key.clone()),
                     next_topic: Some(Topic::from(callback.next_topic)),
@@ -72,12 +83,15 @@ pub(super) fn prepare(
                     && c.topic == topic.number
                     && c.keywords.contains(&text)
                     && eligible(&c.storage)
+                    && c.requires.iter().all(|r| r.holds(catalogue, tracks))
             })?;
+            conclusion = (offer.close_after, Vec::new());
             Some(Choice {
                 transition: None,
                 next_topic: Some(Topic::from(offer.next_topic)),
                 reply: offer.reply.clone(),
             })
         },
-    )
+    );
+    step.map(|step| step.conclusion(conclusion.0, conclusion.1))
 }

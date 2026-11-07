@@ -44,10 +44,11 @@ class ConvertPlacementsTest(unittest.TestCase):
         expected = {
             'oteryn:npc.jorge': {'x': 32204, 'y': 32292, 'floor': 6},
             'oteryn:npc.tereban': {'x': 33170, 'y': 31807, 'floor': 6},
+            'oteryn:npc.an_old_dragonlord': {'x': 32796, 'y': 31558, 'floor': 2},
         }
         actual = [r['declaration'] for r in self.records
                   if r['declaration']['npc'] in expected]
-        self.assertEqual(len(actual), 2)
+        self.assertEqual(len(actual), 3)
         self.assertEqual({r['npc']: r['cell'] for r in actual}, expected)
         self.assertTrue(all(r['provenance'] for r in actual))
 

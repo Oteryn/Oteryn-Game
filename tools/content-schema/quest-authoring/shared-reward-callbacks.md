@@ -25,9 +25,14 @@ Each record has these fields:
 | `npc` | Canonical `oteryn:npc.<name>`, resolved through the current conversation. |
 | `keywords` | One to eight exact, trimmed, lowercase ASCII player messages. |
 | `topic`, `next_topic` | Current/committed conversation topic, unsigned 16-bit integers. |
-| `storage` | One to sixteen `{track, minimum, maximum, set, preserve?, set_if?}` predicates/effects. Bounds are inclusive; missing progress reads as `-1`. `preserve: true` keeps that predicate's value. A non-repeatable callback must change a value outside its accepted range. |
-| `repeatable` | Optional boolean, default false. Only explicit costed item exchanges may repeat: nonempty `take`, non-null `give`, no outfit or achievement. Each paid command has its own MINT claim identity; replay retains its original receipt. |
+| `storage` | One to sixteen `{track, minimum, maximum, set, preserve?, set_if?}` predicates/effects. Bounds are inclusive; missing progress reads the admitted track initial value. `preserve: true` keeps that predicate's value. A non-repeatable callback must change a value outside its accepted range. |
+| `repeatable` | Optional boolean, default false. Only explicit costed item exchanges may repeat: nonempty `take` or an explicit fee, non-null `give`, no outfit or achievement. Each paid command has its own MINT claim identity; replay retains its original receipt. |
 | `take` | Up to eight distinct `{item, count}` requirements, counts `1..65535`, aggregated across carried stacks, equipment and closed nested containers. Filled containers and items with keys, timers, text or imbuements refuse consumption. |
+| `fee` | Optional `{gold, include_bank}` source price (`1..1000000000000`). Uses the existing durable coin/change and eligible bank debit owner in the quest transaction; a recipe cannot also consume coin denominations through `take`. |
+| `requires` | Up to eight read-only parent quest track ranges. Their original quest retains ownership. The writer checks them under its root and sorted track locks. Explicit source track declarations can admit a prerequisite without inventing a completion write. |
+| `close_after` | Optional boolean. Concludes this conversation after a known success or refusal, including receipt reconciliation; it cannot close a newer conversation context. |
+| `failure_reply` | Optional source response lines on a known refused exchange. An uncertain transaction retains its pending receipt and response policy. |
+| `minimum_level`, `experience` | Optional positive level guard and quest XP reward. The level is rechecked under the character lock; XP uses the existing durable quest obligation and live refresh. |
 | `present` | Optional, up to eight distinct `{item,count}` carried requirements (`1..65535`). Uses the same bounded locked custody scan as `take`, including closed nested containers. It retains the original instances, quantities and receipts. |
 | `give` | Optional/null `{item, count, contents?}`: one native reward root, count `1..100`, optionally up to twenty `{item, count}` children in a container. Native stack/container and weight rules still apply. The equipped main backpack needs room after the hand-in. |
 | `outfit` | Optional/null `{outfit, addons}`. `outfit` is the canonical `oteryn:outfit.<name>`; `addons` is a bitmask `0..3`: base only `0`, first addon `1`, second addon `2`, both `3`. Base is always included. |
@@ -115,3 +120,19 @@ Donor justification: Crystal `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`,
 `53f3313e99fb541c3e016b5ac09a2e372c0ad8a382786ccd79db6bb40a700312`:
 the missing-offering branch uses its authored recovery point; the successful
 branch resets Dragonfetish only when its locked value is exactly one.
+
+Native payment and prerequisite composition reuses QENGINE2 commit
+`33b640335` (reviewed through `4ddf4bcff`). L2 migration 1142 retains the
+source migration's deferred participant proofs while avoiding its original
+1000 number, already used by the imported corruptor lifecycle migration.
+The complete published payment/outfit examples remain in the shared producer;
+L2 additions are composed through `questl2_rewards.py`.
+
+Draconia's dragon greeting exchanges one brown mushroom (3723) for one dragon
+fetish (3206), sets Dragonfetish to one, and always concludes focus. An existing
+value of one refuses without payment. The canonical NPC key
+`oteryn:npc.an_old_dragonlord` maps to donor file `an_old_dragon_lord.lua`;
+Crystal revision `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`, lines 61-80,
+SHA256 `85016cc08856f49d94c507f43bc84f54801d3a2844946ae391015a0d8c84a052`.
+The full Draconia qualification also requires the offering and alternative exit
+journeys; a greeting test alone does not qualify that entry.

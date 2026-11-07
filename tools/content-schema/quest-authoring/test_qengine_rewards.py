@@ -67,15 +67,88 @@ class QuestRewards(unittest.TestCase):
             with self.assertRaises(ValueError):
                 q.validate_callbacks(bad)
 
+    def test_readonly_prerequisites_reject_overlap_duplicates_and_inverted_bounds(self):
+        source=next(c for c in self.callbacks['callbacks'] if c.get('requires'))
+        for mutation in ('overlap','duplicate','inverted'):
+            bad=copy.deepcopy(self.callbacks)
+            callback=next(c for c in bad['callbacks'] if c['key']==source['key'])
+            if mutation=='overlap':
+                callback['requires'][0]['track']=callback['storage'][0]['track']
+            elif mutation=='duplicate':
+                callback['requires'].append(copy.deepcopy(callback['requires'][0]))
+            else:
+                callback['requires'][0]['maximum']=callback['requires'][0]['minimum']-1
+            with self.assertRaises(ValueError,msg=mutation):
+                q.validate_callbacks(bad)
+
+    def test_declared_parent_track_is_readonly_used_and_has_valid_initial(self):
+        for mutation in ('duplicate','inverted','unused','written'):
+            bad=copy.deepcopy(self.callbacks)
+            track=bad['tracks'][0]
+            if mutation=='duplicate': bad['tracks'].append(copy.deepcopy(track))
+            elif mutation=='inverted':track['initial']=track['max']+1
+            elif mutation=='unused':track['key']='oteryn:unused'
+            else:
+                source=next(c for c in bad['callbacks'] if any(r['track']==track['key'] for r in c.get('requires',[])))
+                other=next(c for c in bad['callbacks'] if c['key']!=source['key'] and not c.get('requires'))
+                other['storage'][0]['track']=track['key']
+            with self.assertRaises(ValueError,msg=mutation): q.validate_callbacks(bad)
+
+    def test_glooth_source_elif_awards_second_addon_first_at_six_votes(self):
+        callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}
+        low=callbacks['l3-glooth-engineer-first-low']
+        high=callbacks['l3-glooth-engineer-first-high']
+        second=callbacks['l3-glooth-engineer-second']
+        self.assertEqual((low['requires'][1]['minimum'],low['requires'][1]['maximum']),(3,5))
+        self.assertEqual(high['requires'][-1]['track'].split('/')[-1],'addon2')
+        self.assertEqual((high['requires'][-1]['minimum'],high['requires'][-1]['maximum']),(1,1))
+        self.assertEqual(second['requires'][1]['minimum'],6)
+        self.assertEqual(second['outfit']['addons'],2)
+
+    def test_monetary_source_price_disallows_zero_or_double_coin_consumption(self):
+        source=next(c for c in self.callbacks['callbacks'] if c.get('fee'))
+        for mutation in ('zero','double'):
+            bad=copy.deepcopy(self.callbacks)
+            callback=next(c for c in bad['callbacks'] if c['key']==source['key'])
+            if mutation=='zero':callback['fee']['gold']=0
+            else:callback['take']=[{'item':'oteryn:item.tibia.i3043','count':15}]
+            with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(bad)
+        self.assertEqual(source['fee'],{'gold':150000,'include_bank':False})
+
+    def test_royal_costume_quest_admits_only_its_source_store_tag_exception(self):
+        outfits={r['key']:r for r in self.author['document']['outfits']}
+        royal=outfits['oteryn:outfit.royal_costume']
+        self.assertEqual((royal['female']['id'],royal['male']['id'],royal['addon_count']),(1456,1457,2))
+        callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}
+        for name,silver,gold,bit in [('base',15000,12500,0),('shield',7500,6250,1),('crown',7500,6250,2)]:
+            c=callbacks['l4-royal-costume-'+name]
+            self.assertEqual(c['take'],[{'item':'oteryn:item.tibia.i22516','count':silver},{'item':'oteryn:item.tibia.i22721','count':gold}])
+            self.assertEqual(c['outfit']['addons'],bit)
+            self.assertEqual(c['present'] if 'present' in c else [],[])
+
+    def test_pirate_full_source_stages_retain_the_original_firebird_owner(self):
+        callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}
+        self.assertNotIn('l4-pirate-sabre',callbacks)
+        self.assertEqual(callbacks['pirate-sabre']['storage'][0]['minimum'],4)
+        for name,item,before,after in [('eye-patches',6098,1,2),('peg-legs',6126,2,3),('hooks',6097,3,4)]:
+            c=callbacks['l4-pirate-'+name]
+            self.assertEqual(c['take'],[{'item':f'oteryn:item.tibia.i{item}','count':100}])
+            self.assertEqual((c['storage'][0]['minimum'],c['storage'][0]['set']),(before,after))
+            self.assertEqual(c['quest'],'oteryn:quest.outfit_and_addon_quests')
+        self.assertEqual([r['item'] for r in callbacks['l4-pirate-hat']['take']],
+                         ['oteryn:item.tibia.i6101','oteryn:item.tibia.i6102','oteryn:item.tibia.i6100','oteryn:item.tibia.i6099'])
+
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
         original = {c['key'].split('/')[-1] for c in callbacks
-                    if not c['key'].split('/')[-1].startswith(('l1-', 'token-', 'ape-', 'thieves-'))
+                    if not c['key'].split('/')[-1].startswith(('l1-', 'l2-', 'l3-', 'l4-', 'token-', 'ape-', 'thieves-', 'draconia-'))
                     and c['key'].split('/')[-1] != 'sam-kroox'}
         self.assertEqual(original, {'pirate-sabre', 'knight-sword', 'deepling-helmet',
                                    'hallowed-holy-water', 'outfox-helmet', 'sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),11)
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),54)
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),34)
+        # Published QENGINE2 has13 non-outfit branches; L2 adds the pinned
+        # Jorge37, Ape6, Thieves7, Kroox1 and dragon2 source branches.
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),13 + 37 + 6 + 7 + 1 + 2)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 

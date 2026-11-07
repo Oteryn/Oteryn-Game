@@ -3,9 +3,10 @@ import hashlib
 import re
 
 
-NPCS = ('dorian', 'hairycles', 'jorge', 'kroox')
+NPCS = ('dorian', 'hairycles', 'jorge', 'kroox', 'an_old_dragon_lord')
+NPC_SOURCES = {'an_old_dragonlord': 'an_old_dragon_lord'}
 ITEMS = {
-    227, 4827, 4828, 4829, 4831, 4832, 7870, 7871, 7933,
+    227, 3206, 4827, 4828, 4829, 4831, 4832, 7870, 7871, 7933,
     7935, 7936, 19083, 19150, 19151, 19152, 19153, 19154, 19155,
     19156, 22026, 22027, 22028, 23676, 23677, 23678, 23679, 23680,
     23681, 23682, 23683, 25979, 25980, 25981, 25982, 28894, 28895,
@@ -22,7 +23,7 @@ def append(callbacks, offers, inputs, pin):
 
     def add(name, quest, npc, keywords, storage, reply, take=(), topic=0, offer=None,
             give=None, repeatable=False, source_text=None):
-        path = f'data-global/npc/{npc}.lua'
+        path = 'data-global/npc/' + NPC_SOURCES.get(npc, npc) + '.lua'
         callback = {
             'key': 'oteryn:quest-reward/' + name,
             'quest': 'oteryn:quest.' + quest, 'npc': 'oteryn:npc.' + npc,
@@ -79,6 +80,24 @@ def append(callbacks, offers, inputs, pin):
                     if f'name = "{name}", id = {item}' in text)
         callbacks[-1]['sources'].append(
             f'crystal:{pin}:data-global/npc/jorge.lua:{line}:sha256:{hashlib.sha256(inputs["data-global/npc/jorge.lua"]).hexdigest()}')
+
+    dragon = inputs['data-global/npc/an_old_dragon_lord.lua'].decode()
+    refusal = "AHHHH THE PAIN OF AGESSS! I NEED MUSSSSHRROOOMSSS TO EASSSE MY PAIN! BRRRING ME MUSHRRROOOMSSS!"
+    success = "AHHH MUSHRRROOOMSSS! NOW MY PAIN WILL BE EASSSED FOR A WHILE! TAKE THISS AND LEAVE THE DRAGONSSS' CEMETERY AT ONCE!"
+    track = 'oteryn:quest-progress/dragonfetish'
+    for suffix, minimum, maximum in [('initial', -1, 0), ('other', 2, 9223372036854775807)]:
+        add('draconia-fetish-' + suffix, 'draconia_quest', 'an_old_dragonlord',
+            ['hi', 'hello', 'hail'],
+            [{'track': track, 'minimum': minimum, 'maximum': maximum, 'set': 1}],
+            success, take=[(3723, 1)], give=(3206, 1), repeatable=True)
+        callbacks[-1].update(close_after=True, failure_reply=[refusal])
+    held = "LEAVE THE DRAGONS' CEMETERY AT ONCE!"
+    if held not in dragon or refusal not in dragon or 'player:removeItem(3723, 1)' not in dragon or 'player:addItem(3206, 1)' not in dragon:
+        raise ValueError('Draconia greeting recipe drift')
+    offers.append({'npc': 'oteryn:npc.an_old_dragonlord',
+                   'keywords': ['hi', 'hello', 'hail'], 'topic': 0, 'next_topic': 0,
+                   'storage': [{'track': track, 'minimum': 1, 'maximum': 1, 'set': 1}],
+                   'reply': [held], 'close_after': True})
 
     sam = 'u7_5/sams_old_backpack/'
     add('sam-kroox', 'sam_s_old_backpack_quest', 'kroox',

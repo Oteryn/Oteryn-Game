@@ -15,7 +15,7 @@ use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
-fn scenario(name: &'static str) -> TestResult {
+pub(super) fn scenario(name: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -150,6 +150,14 @@ fn questl2_token_menu_last_eleven() -> TestResult {
     scenario("qengine-rewards-l2-token-menu-2")
 }
 
+#[test]
+fn questl2_draconia_greeting_item_lifecycle() -> TestResult {
+    scenario("qengine-rewards-draconia-greeting")
+}
+
+#[path = "qengine_rewards/draconia.rs"]
+mod draconia;
+
 #[path = "qengine_rewards/atomic_tracks.rs"]
 mod atomic_tracks;
 #[path = "qengine_rewards/repeatable.rs"]
@@ -219,6 +227,22 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l1-yalaharian-sage" | "l1-yalaharian-villain" => &["addon"],
         "l1-warmaster-tribal" => &["tribal crest"],
         "l1-wayfarer-hat" => &["hat"],
+        "l2-battle-mage-book" | "l2-battle-mage-epaulettes" => &["addon", "yes", "yes"],
+        "l2-elementalist-start" | "l2-elementalist-base" => &["slime", "yes"],
+        "l2-festive-mask-start" | "l2-festive-feather-start" => &["addons"],
+        "l3-demon-base" | "l3-demon-shield" | "l3-demon-helmet" => &["outfit", "yes"],
+        "l4-nobleman-first-start" => &["addon", "yes", "dress", "yes", "yes"],
+        "l4-nobleman-second-start" => &["addon", "yes", "hat", "yes", "yes"],
+        "l4-nobleman-first" | "l4-nobleman-second" => &["addon"],
+        "l4-royal-costume-base" => &["outfit", "yes", "armor"],
+        "l4-royal-costume-shield" => &["outfit", "yes", "shield"],
+        "l4-royal-costume-crown" => &["outfit", "yes", "crown"],
+        "l4-pirate-sabre-start" => &["task", "yes"],
+        "l4-pirate-eye-patches" => &["eye patches"],
+        "l4-pirate-peg-legs" => &["peg legs"],
+        "l4-pirate-hooks" => &["hooks"],
+        "l4-pirate-hat-start" => &["addon", "task", "yes"],
+        "l4-pirate-hat" => &["task"],
         "hallowed-holy-water" => &["holy water"],
         "sam-backpack" => &["old backpack"],
         key if key.starts_with("token-") => &["souvenir"],
@@ -263,6 +287,20 @@ async fn wire_grant(
     Vec<oteryn_protocol_oteryn::appearance::Catalogue>,
     u64,
 )> {
+    wire_reward(owner, admitted, npc, callback, true).await
+}
+
+pub(super) async fn wire_reward(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    callback: &RewardCallback,
+    expect_outfit: bool,
+) -> TestResult<(
+    NpcIntentDisposition,
+    Vec<oteryn_protocol_oteryn::appearance::Catalogue>,
+    u64,
+)> {
     use crate::foundation::{MessageType, decode_wire_envelope};
     use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -298,7 +336,11 @@ async fn wire_grant(
         })
         .collect::<TestResult<Vec<_>>>()?;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    let expected_outfit = callback.outfit.clone();
+    let expected_outfit = if expect_outfit {
+        callback.outfit.clone()
+    } else {
+        None
+    };
     let peer = tokio::spawn(async move {
         let mut catalogues = Vec::new();
         let mut result = None;
@@ -520,7 +562,7 @@ async fn counts(h: &Harness) -> TestResult<(i64, i64, i64, i64)> {
     Ok(sqlx::query_as("SELECT (SELECT count(*) FROM game_quest_reward_sources),(SELECT count(*) FROM game_quest_callback_consumptions),(SELECT count(*) FROM game_reward_claim_mint_receipts),(SELECT count(*) FROM game_account_appearance_unlock_receipts)").fetch_one(&h.pool).await?)
 }
 
-async fn into_bag(
+pub(super) async fn into_bag(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     item: [u8; 16],
@@ -669,6 +711,21 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if [
+        "qengine-rewards-l2-battle-",
+        "qengine-rewards-l2-festive",
+        "qengine-rewards-l2-elementalist",
+        "qengine-rewards-l3-",
+        "qengine-rewards-l4-",
+    ]
+    .iter()
+    .any(|prefix| name.starts_with(prefix))
+    {
+        return super::qengine_outfit_stories::exercise(owner, admitted, h, authority, name).await;
+    }
+    if name == "qengine-rewards-draconia-greeting" {
+        return draconia::exercise(owner, admitted, h).await;
+    }
     if name == "qengine-rewards-l1-legacy-decaying" {
         return legacy_decaying(owner, admitted, h).await;
     }

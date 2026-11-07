@@ -17,6 +17,13 @@
       "items": {
         "$ref": "#/$defs/callback"
       }
+    },
+    "tracks": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "$ref": "#/$defs/trackDeclaration"
+      }
     }
   },
   "$defs": {
@@ -259,6 +266,38 @@
           "items": {
             "$ref": "#/$defs/input"
           }
+        },
+        "requires": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/requirement"
+          }
+        },
+        "fee": {
+          "$ref": "#/$defs/monetaryFee"
+        },
+        "close_after": {
+          "type": "boolean"
+        },
+        "failure_reply": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "minimum_level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "experience": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000000
         }
       }
     },
@@ -279,6 +318,96 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 65535
+        }
+      }
+    },
+    "requirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "track",
+        "minimum",
+        "maximum"
+      ],
+      "properties": {
+        "track": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^oteryn:[a-z0-9._/:-]+$"
+        },
+        "minimum": {
+          "type": "integer"
+        },
+        "maximum": {
+          "type": "integer"
+        }
+      }
+    },
+    "trackDeclaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "quest",
+        "initial",
+        "min",
+        "max",
+        "sources"
+      ],
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^oteryn:[a-z0-9._/:-]+$",
+          "maxLength": 128
+        },
+        "quest": {
+          "type": "string",
+          "pattern": "^oteryn:[a-z0-9._/:-]+$",
+          "maxLength": 128
+        },
+        "initial": {
+          "type": "integer",
+          "minimum": -9223372036854775808,
+          "maximum": 9223372036854775807
+        },
+        "min": {
+          "type": "integer",
+          "minimum": -9223372036854775808,
+          "maximum": 9223372036854775807
+        },
+        "max": {
+          "type": "integer",
+          "minimum": -9223372036854775808,
+          "maximum": 9223372036854775807
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          }
+        }
+      }
+    },
+    "monetaryFee": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gold",
+        "include_bank"
+      ],
+      "properties": {
+        "gold": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000000000
+        },
+        "include_bank": {
+          "type": "boolean"
         }
       }
     }
