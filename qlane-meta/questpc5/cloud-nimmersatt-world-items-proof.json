@@ -1,0 +1,52 @@
+{
+  "slice": "Reusable atomic world item rewards; Nimmersatt northern20-snowball supply component",
+  "whole_recipe_qualified": false,
+  "filter": "questpc5_nimmersatt_world_supply_mints_twenty_snowballs_with_one_quest_receipt",
+  "postgres_server": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red": {
+    "seconds": 53.552287386,
+    "failure": "missing Nimmersatt world MINT callback",
+    "log": "/tmp/questpc5-nimmersatt-world-items-red.log"
+  },
+  "green": {
+    "seconds": 55.312982382,
+    "component_seconds": 0.471756122,
+    "log": "/tmp/questpc5-nimmersatt-world-items-green.log"
+  },
+  "reuse": {
+    "commit": "d90c1bfa29fac954fbdd08e014a6473d4a33de96",
+    "lane": "questpc8",
+    "components": [
+      "World reward revision-sequencer participant",
+      "Admitted backpack MINT participant shared with NPC rewards",
+      "World Premium participant",
+      "Literal USE receipt binding in the existing complete-source trigger"
+    ],
+    "adaptation": "Append migration1006 rather than editing existing0999; preserve this lane native goals, minimum levels, claim gates and immediate committed-cache projection."
+  },
+  "coverage": [
+    "Actual protocol USE at source799 northern tile32232,31578,7",
+    "Exactly20 live native2992 quantity",
+    "One same-transaction world reward source record",
+    "Fresh second USE does not repeat the value grant",
+    "World item counts, trigger, item namespace and required progress bounded by closed authoring parser"
+  ],
+  "scope": "Mission acceptance is explicitly fixture-seeded only for this shared MINT component. Whole Nimmersatt requires actual Rascalio passage/Premium gates, twenty consumed snowballs with final wall breach and once44179 turn-in. Global raid/event scheduling remains outside this lane.",
+  "checks": {
+    "world_callback_rust_units": 22,
+    "npc_reward_rust_units": 2,
+    "nimmersatt_python_units": 2,
+    "legion_python_preservation_units": 5,
+    "generator_check": "PASS",
+    "fmt": "PASS",
+    "cargo_check": "PASS27.60s",
+    "strict_all_targets_all_features_clippy": "PASS152s",
+    "legacy_npc_regression": {
+      "result": "PASS",
+      "seconds": 92.398648215,
+      "log": "/tmp/questpc5-nimmersatt-world-items-legacy-npc.log"
+    },
+    "repository_pin_check": "PASS3492205b964d74c721dba0c3db3e7e8ca32647aae1c41d9837c34935f965293b"
+  },
+  "world_digest": "3492205b964d74c721dba0c3db3e7e8ca32647aae1c41d9837c34935f965293b"
+}

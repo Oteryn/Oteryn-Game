@@ -24,6 +24,22 @@ pub struct ItemReward {
     pub contents: Vec<ItemAmount>,
 }
 
+/// Shared bounded item shape used by NPC and literal world reward participants.
+pub(crate) fn valid_item_reward(reward: &ItemReward) -> bool {
+    let valid = |item: &str, count: u16| {
+        super::valid_quest_key(item)
+            && item.starts_with("oteryn:item.")
+            && (1..=100).contains(&count)
+    };
+    valid(&reward.item, reward.count)
+        && reward.contents.len() <= 20
+        && (reward.contents.is_empty() || reward.count == 1)
+        && reward
+            .contents
+            .iter()
+            .all(|item| valid(&item.item, item.count))
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct OutfitReward {

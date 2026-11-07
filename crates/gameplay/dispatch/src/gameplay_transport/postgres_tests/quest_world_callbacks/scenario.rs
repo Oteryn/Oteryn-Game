@@ -79,7 +79,9 @@ fn scenario_case(
     if stateless_destination.is_some() {
         assert_eq!(callback.selector.position, Some(trigger));
     }
-    let world = if name == "qengine-rewards-newhaven-legion-route" {
+    let world = if name == "qengine-rewards-nimmersatt-world-items" {
+        super::super::questpc5_nimmersatt_world_items::world()?
+    } else if name == "qengine-rewards-newhaven-legion-route" {
         super::super::questpc5_legion_route::world()?
     } else if name == "qengine-rewards-newhaven-legion-gates" {
         super::super::questpc5_legion_claim_gate::world()?
@@ -102,7 +104,7 @@ fn scenario_case(
             Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false).await
         }
         .map_err(|e| format!("callback harness: {e}"))?;
-        if name.starts_with("qengine-rewards-newhaven-") {
+        if name.starts_with("qengine-rewards-") {
             let version: String = sqlx::query_scalar("SHOW server_version")
                 .fetch_one(&h.pool)
                 .await?;

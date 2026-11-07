@@ -448,6 +448,7 @@ fn scenario_in_world(
                 offerings: vec![],
                 minimum_level: None,
                 completes: false,
+                premium_required: false,
                 movement_origins: Vec::new(),
                 required_claims: Vec::new(),
                 experience: None,

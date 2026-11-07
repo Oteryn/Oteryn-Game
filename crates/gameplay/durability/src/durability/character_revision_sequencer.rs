@@ -576,6 +576,45 @@ impl RevisionSlot {
         .await
     }
 
+    /// World rewards share the same revision slot, item owner and Premium fence.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "forwards the complete existing world and reward participants"
+    )]
+    pub async fn commit_world_reward<G: super::quest_state::grizzly::GrizzlyPremiumGate>(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        context: super::quest_world_callback::QuestWorldContext,
+        admission: super::reward_claim_mint::QuestRewardAdmission<'_>,
+        premium: &G,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_character_world_reward(
+                    authority,
+                    node,
+                    fence,
+                    request.clone(),
+                    std::sync::Arc::clone(&catalogue),
+                    permit,
+                    context.clone(),
+                    admission,
+                    premium,
+                )
+            },
+        )
+        .await
+    }
+
     /// The XP award of one pending quest XP obligation at the cursor (QUEST-GATE-0 §5.5), under
     /// the active progression `policy` (its `reward_revision`, never the quest content
     /// revision). The XP binding includes the revision, so a mismatch fails closed.

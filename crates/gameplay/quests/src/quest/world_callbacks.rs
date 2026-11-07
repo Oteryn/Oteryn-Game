@@ -154,6 +154,8 @@ pub struct Callback {
     /// Shared completion lowering reused from questpc8 d90c1bfa2.
     #[serde(default, skip_serializing_if = "is_false")]
     pub completes: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub premium_required: bool,
     /// Native movement origin, used with the selector's actual landing position.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub movement_origins: Vec<Position>,
@@ -257,7 +259,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || callback.required_claims.len() > MAX_EFFECTS
             || unique_claims.len() != callback.required_claims.len()
             || callback.required_claims.iter().any(|key| !key.starts_with("oteryn:reward-claim.") || !super::valid_quest_key(key))
-            || ((callback.completes || !callback.movement_origins.is_empty() || !callback.required_claims.is_empty())
+            || ((callback.completes || callback.premium_required || !callback.movement_origins.is_empty() || !callback.required_claims.is_empty())
                 && (callback.storage.is_empty() || callback.is_read_only() || callback.occupancy_driven))
             || !effects::valid(callback)
             || callback.remote_teleport.as_ref().is_some_and(|remote| {
@@ -433,6 +435,8 @@ fn extend_callbacks(
         // Reuse questpc8's immutable plan witness so admission predicates and
         // completion participate in the existing quest definition hash.
         if callback.completes
+            || callback.premium_required
+            || callback.effects.item_reward.is_some()
             || (callback.effects.portals.is_some() && !callback.storage.is_empty())
             || !callback.movement_origins.is_empty()
             || !callback.required_claims.is_empty()
@@ -1178,6 +1182,44 @@ mod authored_completion_tests {
             for key in ["completes", "movement_origins", "required_claims"] {
                 assert!(row.get(key).is_none(), "legacy plan gained {key}");
             }
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod world_item_reward_tests {
+    use super::*;
+    #[test]
+    fn world_item_rewards_require_bounded_use_and_a_real_progress_advance() -> Result<(), String> {
+        let row = load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-callback/authored-nimmersatt-snowbank")
+            .ok_or("snowbank")?;
+        let row = serde_json::to_value(row).map_err(|e| e.to_string())?;
+        let document = |row| serde_json::json!({"schema":1,"callbacks":[row]}).to_string();
+        assert_eq!(
+            parse_with_provenance(&document(row.clone()), true)?.len(),
+            1
+        );
+        for count in [0, 101] {
+            let mut bad = row.clone();
+            bad["effects"]["item_reward"]["count"] = count.into();
+            assert!(parse_with_provenance(&document(bad), true).is_err());
+        }
+        let mut bad = row.clone();
+        bad["trigger"] = "step_in".into();
+        assert!(parse_with_provenance(&document(bad), true).is_err());
+        let mut bad = row.clone();
+        bad["storage"] = serde_json::json!([]);
+        assert!(parse_with_provenance(&document(bad), true).is_err());
+        let mut bad = row;
+        bad["effects"]["item_reward"]["item"] = "canary:item.fake".into();
+        assert!(parse_with_provenance(&document(bad), true).is_err());
+        for legacy in parse(EMBEDDED)? {
+            let encoded = serde_json::to_value(legacy).map_err(|e| e.to_string())?;
+            assert!(encoded.get("premium_required").is_none());
+            assert!(encoded["effects"].get("item_reward").is_none());
         }
         Ok(())
     }

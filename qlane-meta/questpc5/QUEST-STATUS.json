@@ -146,7 +146,7 @@
     "title": "Nimmersatt's Lair",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "Remaining complete route: native Bottled Dragon Breath44179 admission and lava-wall encounter/action bindings. Owner follow-up authorizes documented conservative tuning if no numeric source rule exists; no owner fact is pending.",
+    "blocker": "Active implementation: the shared atomic world MINT participant and exact20 native snowball supply are PostgreSQL proven. Continue Rascalio personal passage/Premium gates, twenty-consumption wall counter with final projection, and once44179 hand-in; no owner fact or external engine delivery is pending.",
     "from_lanes": [
       "questpc2"
     ],
@@ -158,7 +158,13 @@
     },
     "research_evidence": [
       ".questpc5/l5-reference/research.json"
-    ]
+    ],
+    "world_item_reward_progress": {
+      "proof": "cloud-nimmersatt-world-items-proof.json",
+      "postgres_red_seconds": 53.552287386,
+      "postgres_green_seconds": 55.312982382,
+      "whole_recipe_qualified": false
+    }
   },
   {
     "canonical": "oteryn:quest.authored.nomads_land_quest",

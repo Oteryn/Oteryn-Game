@@ -116,8 +116,17 @@ pub(crate) async fn apply(
         .await?;
     }
     let minted = if let Some(reward) = &callback.give {
-        let Some(transaction) =
-            mint(tx, tuple, node, fence, command, callback, reward, admission).await?
+        let Some(transaction) = mint(
+            tx,
+            tuple,
+            node,
+            fence,
+            command,
+            &callback.key,
+            reward,
+            admission,
+        )
+        .await?
         else {
             return Ok(false);
         };
@@ -142,6 +151,52 @@ pub(crate) async fn apply(
     Ok(true)
 }
 
+/// Literal world USE borrows the same admitted backpack MINT as NPC exchanges.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "binds the original world occurrence to the shared MINT participants"
+)]
+pub(crate) async fn give_world(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    tuple: SelectedType2Tuple,
+    node: &NodeIncarnationProof,
+    fence: CurrentCharacterGameplayFence,
+    request: &QuestTransitionRequest,
+    callback: &oteryn_gameplay_quests::quest::world_callbacks::Callback,
+    admission: QuestRewardAdmission<'_>,
+) -> std::result::Result<bool, DurabilityError> {
+    let (super::super::quest_state::QuestCause::Use(command), Some(reward)) =
+        (request.cause, callback.effects.item_reward.as_ref())
+    else {
+        return Ok(false);
+    };
+    if admission.weights.generation_digest() != admission.native.source_digest() {
+        return Ok(false);
+    }
+    let Some(transaction) = mint(
+        tx,
+        tuple,
+        node,
+        fence,
+        command,
+        &callback.key,
+        reward,
+        admission,
+    )
+    .await?
+    else {
+        return Ok(false);
+    };
+    let plan = serde_json::json!({"key": callback.key, "quest": callback.quest,
+        "storage": callback.storage, "take": [], "present": [], "give": reward,
+        "outfit": null, "world_callback": callback});
+    sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,encode($6,'hex')::uuid,ARRAY[]::text[])")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice())
+        .bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(plan)
+        .bind(transaction.as_slice()).execute(&mut **tx).await?;
+    Ok(true)
+}
+
 #[allow(
     clippy::too_many_arguments,
     reason = "the existing MINT owner requires the same Quest, authority, content and request tuple"
@@ -152,7 +207,7 @@ async fn mint(
     node: &NodeIncarnationProof,
     fence: CurrentCharacterGameplayFence,
     command: CommandRef,
-    callback: &RewardCallback,
+    key: &str,
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::ItemReward,
     admission: QuestRewardAdmission<'_>,
 ) -> std::result::Result<Option<[u8; 16]>, DurabilityError> {
@@ -194,10 +249,10 @@ async fn mint(
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),
-            production_key: callback.key.clone(),
+            production_key: key.into(),
             revision_ref: content_revision.clone(),
         },
-        source_placement: callback.key.clone(),
+        source_placement: key.into(),
         item: resolve(&reward.item)?,
         quantity: u32::from(reward.count),
         contents: reward

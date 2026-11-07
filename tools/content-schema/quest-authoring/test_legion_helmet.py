@@ -33,7 +33,7 @@ class LegionContactsTests(unittest.TestCase):
         self.assertTrue(gate['sources'])
 
     def test_whole_route_has_exact_source_geometry_and_claim_gated_completion(self):
-        rows=json.loads(qengine_rewards.build()['content/quests/authored-world-callbacks.json'])['callbacks']
+        rows=[r for r in json.loads(qengine_rewards.build()['content/quests/authored-world-callbacks.json'])['callbacks'] if r['quest']=='oteryn:quest.newhaven_legion_helmet_quest']
         self.assertEqual(len(rows),3)
         by_name={r['key'].removeprefix('oteryn:quest-callback/authored-'):r for r in rows}
         self.assertEqual(set(by_name),{'legion-route-entry','legion-cave-entry','legion-cave-return'})

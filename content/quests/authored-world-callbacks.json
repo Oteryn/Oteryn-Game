@@ -290,6 +290,60 @@
         "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:0e9bf2893b18eb6bfc7914f1862f740daf775e6627d68d6a001ce637c7687f71"
       ],
       "minimum_level": 1
+    },
+    {
+      "key": "oteryn:quest-callback/authored-nimmersatt-snowbank",
+      "quest": "oteryn:quest.authored.nimmersatt_s_lair",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32232,
+          "y": 31578,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 799
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/nimmersatt/stage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/nimmersatt/wall_hits",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null,
+        "item_reward": {
+          "item": "oteryn:item.tibia.i2992",
+          "count": 20,
+          "contents": []
+        }
+      },
+      "sources": [
+        "oteryn-authored:selected-personal-programme:northern-supply-bundle",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00300-00351.json:/records/19/definition:sha256:4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a",
+        "oteryn:source-map:content/world/placements/region-z07-x125-y123.b3:sha256:c3b33f29be0264ac9e82205321606fd44cc69c627d584a2b65a27b4ddd83b2a4"
+      ]
     }
   ]
 }
