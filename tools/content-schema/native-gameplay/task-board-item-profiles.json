@@ -1886,7 +1886,7 @@
     {
       "key": "oteryn:item.tibia.i3306",
       "path": "content/items/definitions/items-20000-20499.json",
-      "definition_sha256": "5dcc49e4c60cc4a2d129a88130b20e7b3a7d900a24b23e2473141e4c68065995"
+      "definition_sha256": "8fd4ba32ff839c3b0f04b56fa7517ffce306f7b29a343bad5050eadfc4f96214"
     },
     {
       "key": "oteryn:item.tibia.i3307",
@@ -1941,7 +1941,7 @@
     {
       "key": "oteryn:item.tibia.i3364",
       "path": "content/items/definitions/items-20000-20499.json",
-      "definition_sha256": "4312070c8ec3f9e61823d44c7085091a878228f1ffce27b0128a3766300d12f4"
+      "definition_sha256": "f9809d8a0c1d75009582136b99ea4e969538dba949781ee0cf1134c78eb5c557"
     },
     {
       "key": "oteryn:item.tibia.i3371",

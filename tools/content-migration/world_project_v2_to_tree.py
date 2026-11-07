@@ -189,6 +189,8 @@ def main() -> int:
     # Accepted reward Item facts are tree-first; retain them across legacy regeneration.
     from quest_reward_item_semantics import apply_admissions
     apply_admissions(item_records, ROOT)
+    from quest_encounter_item_semantics import apply_admissions as apply_encounter_admissions
+    apply_encounter_admissions(item_records, ROOT)
     apply_summer_item_admissions(item_records)
     apply_primal_item_admissions(item_records)
     from amber_item_semantics import apply_container_fact

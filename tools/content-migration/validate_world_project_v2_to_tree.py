@@ -41,6 +41,10 @@ PROFICIENCY_BINDING_COUNT = 665  # ITEM-ADD-1 plus the admitted appearance-only 
 # RewardClaim likewise (tools/content-schema/reward-claim-authoring).
 REWARD_CLAIM_COUNT = len(json.loads(
     (ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"])
+# Exact native source leaves add identities beyond the historical chest census.
+sys.path.insert(0, str(ROOT / "tools/content-schema/reward-claim-authoring"))
+from native_source_leaf import inputs as native_source_leaf_inputs
+REWARD_CLAIM_COUNT += len(native_source_leaf_inputs(ROOT))
 # StarterKit likewise (tools/content-schema/starter-kit-authoring).
 STARTER_KIT_COUNT = 1
 SERVICE_FAMILY_COUNTS = {"Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 1, "Service.Promotion": 4, "Service.Blessing": 4}
@@ -674,6 +678,8 @@ def main() -> int:
     # Equivalence is protected legacy plus the accepted tree-first reward Item packet.
     from quest_reward_item_semantics import apply_admissions
     apply_admissions([row for row in reference["records"] if row["identity"]["family"] == "Item"], ROOT)
+    from quest_encounter_item_semantics import apply_admissions as apply_encounter_admissions
+    apply_encounter_admissions([row for row in reference["records"] if row["identity"]["family"] == "Item"], ROOT)
     declarations = load(LEGACY / "definitions" / "declarations.json")
     legacy_mount_declarations = [row for row in declarations["records"] if row.get("kind") == "Mount"]
     require(len(legacy_mount_declarations) == 252, "LEGACY_MOUNT_COUNT")
