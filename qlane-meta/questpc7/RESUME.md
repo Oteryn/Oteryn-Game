@@ -1,3 +1,18 @@
+# Forgotten whole native route GREEN — 2026-11-07 14:28 UTC
+
+Actual PG18.6 RED42.191567216s→GREEN88.533725484s. Source approach walk
+fix resolved CellOccupied without weakening the native guard. Exact tome
+MINT+take/replay, all6 terminal boss credits, physical egg, Ivalisse and actual
+father A Strange Chalice at retained cell, all6 source words and zzubaran,
+Premium refusals, completion/repeat and real Powerful Strike all pass. Heart
+is still incomplete in this scenario: Forgotten alone licenses the native
+service, consuming exact source ingredients/250000gold and writing72000000ms.
+All32 author tests pass. Push this GREEN slice immediately, then17 focused
+gates with /tmp/questpc7-forgotten-validation.py. Keep ACTIVE until all pass.
+Stage source before pin refresh. Five ACTIVE remain; continue Feaster after
+Forgotten qualification. Source Feaster facts are already verified in /tmp;
+never commit those raw donor extracts.
+
 # Forgotten compiling WIP checkpoint — 2026-11-07 14:23 UTC
 
 All32 author tests PASS41.970s. Source and full test compile (test build86s).

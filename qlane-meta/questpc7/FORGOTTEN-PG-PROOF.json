@@ -3,10 +3,9 @@
   "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
   "red_seconds": 42.191567216,
   "red_error": "whole selected Forgotten Knowledge route must exist: left0 right10 after SHOW server_version",
-  "green_seconds": null,
+  "green_seconds": 88.533725484,
   "pending": [
-    "whole native route PG GREEN",
-    "focused units/generators/check/strict Clippy/pins/content/world/fmt"
+    "17 focused regression/unit/generator/check/strict Clippy/pins/content/world/fmt gates"
   ],
   "scope": "Eleven chosen stages: exact physical Heavy Old Tome recovery/hand-in, six terminal native bosses, physical dragon egg, Ivalisse and six source A Strange Chalice dialogue steps, completion and actual native powerful learning.",
   "assumptions": [
@@ -29,5 +28,17 @@
     "count": 32,
     "seconds": 41.97,
     "result": "PASS"
-  }
+  },
+  "green_result": "PASS",
+  "scope_proved": [
+    "No subject quest/item/reward seeds; independent fenced ordinary service inputs only.",
+    "Valid source sword/materials/250000gold/shrine refuse unearned Powerful Strike without consuming anything.",
+    "Current Premium refusal before mission and completion.",
+    "One actual Heavy Old Tome recovered then consumed exactly once; no-item/repeat cannot advance or duplicate.",
+    "All six source terminal native bosses and frozen-once credit counters.",
+    "Existing physical dragon egg4839 selected USE and source Ivalisse/father contacts.",
+    "Actual A Strange Chalice at retained source cell: learned alone refuses, six ordered words supply zzubaran.",
+    "Selected completion and unchanged completion revision on repeat.",
+    "Heart remains incomplete; Forgotten independently licenses actual native Powerful Strike, burns exact materials and250000gold, persists72000000ms."
+  ]
 }

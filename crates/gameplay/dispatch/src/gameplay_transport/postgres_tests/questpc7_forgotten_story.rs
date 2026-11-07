@@ -232,6 +232,15 @@ pub(super) async fn exercise(
     super::questpc7_native_deaths::prepare_native_hunter(owner, a).await?;
     let rows = callbacks()?;
     assert_eq!(rows.len(), 11);
+    walk(
+        owner,
+        a,
+        callback(&rows, "energy-entry")?
+            .selector
+            .position
+            .ok_or("temple approach")?,
+    )
+    .await?;
     let mut selected = a.continuity.selected_capabilities.as_slice().to_vec();
     selected.extend([3, 4, 6, 11, 12, 14, 15, 18, CAPABILITY_IMBUE_V1]);
     selected.sort_unstable();
