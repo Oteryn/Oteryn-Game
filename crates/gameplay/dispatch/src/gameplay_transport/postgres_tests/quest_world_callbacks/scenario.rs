@@ -23,7 +23,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let monk = name.starts_with("monk-guidance");
-    let shared_rewards = name == "questpc7-tokens" || name == "questpc7-hidden-deaths" || name.starts_with("questpc7-outfits-") || name == "l1-warmaster-wardrobe" || name.starts_with("questpc7-eligibility-")
+    let shared_rewards = name == "questpc7-hoist-story" || name == "questpc7-tokens" || name == "questpc7-hidden-deaths" || name.starts_with("questpc7-outfits-") || name == "l1-warmaster-wardrobe" || name.starts_with("questpc7-eligibility-")
         || name.starts_with("qengine-rewards-")
         || name == "questpc7-golden"
         || name == "questpc7-friends";
@@ -44,7 +44,7 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if name == "questpc7-hidden-deaths" { "questpc7-hidden-entry" } else if name == "questpc7-outfits-formal" { "questpc7-formal-display" } else if name == "l1-warmaster-wardrobe" { name } else if classic_npc {
+    let mut callback = callback(if name == "questpc7-hoist-story" { "questpc7-hoist-entry" } else if name == "questpc7-hidden-deaths" { "questpc7-hidden-entry" } else if name == "questpc7-outfits-formal" { "questpc7-formal-display" } else if name == "l1-warmaster-wardrobe" { name } else if classic_npc {
         "behemoth"
     } else if rotten_purchase {
         "rotten-blood/sacrifice"
@@ -71,7 +71,20 @@ fn scenario_case(
     if stateless_destination.is_some() {
         assert_eq!(callback.selector.position, Some(trigger));
     }
-    let world = if name == "questpc7-outfits-formal" {
+    let world = if name == "questpc7-hoist-story" {
+        let mut objects=Vec::new();
+        for x in 32153..=32157 { for y in 31116..=31125 {
+            objects.push((Position{x,y,floor:-9},7066));
+        }}
+        objects.extend([
+            (Position{x:32154,y:31116,floor:-9},2472),
+            (Position{x:32156,y:31125,floor:-9},5772),
+            (Position{x:32157,y:31125,floor:-9},5770),
+            (Position{x:32157,y:31125,floor:-10},5770),
+            (Position{x:32156,y:31125,floor:-10},2773),
+        ]);
+        world_with_objects(&callback,trigger,&objects,&[2772])?
+    } else if name == "questpc7-outfits-formal" {
         // The fixture includes the same admitted entry appearance as the real palace.
         let mut physical = callback.clone();
         physical.passages.push(oteryn_gameplay_quests::quest::world_callbacks::Passage {
@@ -185,7 +198,7 @@ fn scenario_case(
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let eligibility_premium =
-            if (name.starts_with("questpc7-eligibility-") && !name.ends_with("no-premium")) || name.starts_with("questpc7-outfits-") {
+            if name == "questpc7-hoist-story" || (name.starts_with("questpc7-eligibility-") && !name.ends_with("no-premium")) || name.starts_with("questpc7-outfits-") {
                 use crate::gameplay_transport::spell_premium_coordinator::{
                     SpellPremiumCoordinator, purchase_fixture,
                 };
@@ -275,7 +288,9 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if name == "questpc7-tokens" {
+        if name == "questpc7-hoist-story" {
+            super::super::questpc7_hoist_story::exercise(&mut owner,&mut admitted,&h).await?;
+        } else if name == "questpc7-tokens" {
             super::super::questpc7_tokens::exercise(&mut owner,&mut admitted,&h).await?;
         } else if name == "questpc7-hidden-deaths" {
             super::super::questpc7_native_deaths::exercise(&mut owner, &mut admitted, &h).await?;

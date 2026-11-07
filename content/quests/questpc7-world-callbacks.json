@@ -134,6 +134,216 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/43/definition:sha256:7f0c08859e1316aac2df4fe457e746687b4c759a673d93332bbb0ebdbaf14e9e"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-hoist-entry",
+      "quest": "oteryn:quest.formogar_mine_hoist",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32154,
+          "y": 31118,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 7066
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/hoist/programme",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": [
+          "oteryn:quest.the_ice_islands_quest"
+        ]
+      },
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "Complete The Ice Islands Quest and follow the surveying route in order.",
+      "success_message": "You have found the old surveying route. Search the nearby chest for the hoist plan.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/46/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-hoist-plan",
+      "quest": "oteryn:quest.formogar_mine_hoist",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32154,
+          "y": 31116,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/hoist/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_chest",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "minimum_level": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": [
+          "oteryn:quest.the_ice_islands_quest"
+        ]
+      },
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "Complete The Ice Islands Quest and follow the surveying route in order.",
+      "success_message": "The recovered plan describes the hoist fittings. Examine them beside the platform.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/46/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-hoist-instructions",
+      "quest": "oteryn:quest.formogar_mine_hoist",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32156,
+          "y": 31125,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 5772
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/hoist/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_skeleton",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "minimum_level": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": [
+          "oteryn:quest.the_ice_islands_quest"
+        ]
+      },
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "Complete The Ice Islands Quest and follow the surveying route in order.",
+      "success_message": "The fittings match the plan. You understand the operating instructions. Enter the platform and set the lower lever.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/46/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-hoist-control",
+      "quest": "oteryn:quest.formogar_mine_hoist",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32156,
+          "y": 31125,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2773
+      },
+      "lever": [
+        2773,
+        2772
+      ],
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/hoist/programme",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_chest",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_skeleton",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "minimum_level": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": [
+          "oteryn:quest.the_ice_islands_quest"
+        ]
+      },
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "Complete The Ice Islands Quest and follow the surveying route in order.",
+      "success_message": "The hoist is ready. You have completed the surveying route.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/46/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50"
+      ],
+      "completes": true
     }
   ]
 }

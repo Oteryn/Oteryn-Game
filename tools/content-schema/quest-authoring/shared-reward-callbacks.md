@@ -100,3 +100,14 @@ prerequisite quests and explicit cosmetic ownership before committing any
 world effect. Legacy callers without Premium authority refuse Premium-gated
 callbacks. Canonical source citations include the definition path and SHA256;
 these describe selected Oteryn adaptations rather than donor script locations.
+
+World callbacks may declare `completes: true` only with a stateful, once-only
+progress write. The existing fenced writer commits completion with its receipt;
+read-only predicates cannot acquire completion or a generic mutation route.
+
+`native-world-callback-bindings.json` supplies bounded exact-selector aliases
+when a donor UID is absent from the admitted map. Every binding names a callback,
+its complete expected original UID selector, an explicit native position and
+appearance, and source evidence. Missing targets, changed original selectors,
+duplicates and malformed selectors fail the load. Only the selector and attached
+provenance change; quest guards, effects and transport remain unchanged.

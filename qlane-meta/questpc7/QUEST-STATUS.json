@@ -589,38 +589,10 @@
     "title": "Formorgar Mines Hoist Quest",
     "canonical": "oteryn:quest.formogar_mine_hoist",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/46/definition",
-    "status": "ACTIVE",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
-    "queued_stage_binding": {
-      "stage": "s1",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
-    },
-    "first_unqualified_stage": {
-      "key": "s1",
-      "kind": "explore",
-      "objective": "Enter Formorgar Mines and locate the old surveying route.",
-      "targets": [
-        "Formorgar Mines"
-      ]
-    },
     "owner": "questpc7",
-    "remaining_work": {
-      "kind": "lane_implementation_work",
-      "missing_piece": "Wire both instruction acquisitions into native USE and the existing fenced quest writer, then compose exploration, both instruction reads and hoist access in one quest-route PG proof. The inherited STEP/remote-lever mechanism now has a fresh executed PostgreSQL baseline.",
-      "evidence": [
-        "content/quests/definitions/quests-00100-00199.json:1#/records/46/definition",
-        "crates/gameplay/quests/src/quest/world_callbacks.rs:98",
-        "crates/gameplay/quests/src/quest/world_callbacks.rs:178",
-        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/other/others/quest_system2.lua#L285-L295"
-      ],
-      "attempts": [
-        "Read both exact donor movements_hoist.lua bodies from the pinned corpus and fresh Wiki instructions; checked the closed callback parser rather than promoting a fixed-destination approximation. Tested the two existing instruction-book claims separately.",
-        "Cloud continuation: all three hoist STEP cases executed against local PostgreSQL 18.6 (122.57s total). Confirmed UID20003 floor-plan writer from pinned Crystal source. GlacierChest/GlacierSkeleton rewards are distinct source storages and do not prove either hoist instruction flag."
-      ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
-    },
     "mechanism_proof": {
       "test": "questpc7_formorgar_hoist_read_only_step",
       "scope": "All three source STEP bindings; exact instruction values, destination selection from visible lever appearance, refusal return, and no quest/Character/map write during travel. Does not qualify instruction acquisition or the complete quest.",
@@ -644,19 +616,50 @@
       "log": "/tmp/questpc7-hoist-online.log",
       "validation_kind": "fresh baseline of inherited implementation; no new RED/GREEN implementation batch claimed"
     },
-    "current_batch": {
+    "qualification": {
+      "kind": "complete selected hoist knowledge/control programme with actual native selector bindings",
       "proof": "qlane-meta/questpc7/HOIST-STORY-PG-PROOF.json",
+      "test": "questpc7_hoist_full_knowledge_control_completion_and_native_binding",
+      "postgres": "18.6",
       "red_seconds": 41.109126339,
-      "mechanisms": [
-        "generic exact native world selector bindings",
-        "generic once-only world callback completion"
+      "green_seconds": 51.524086401,
+      "scope": [
+        "fresh subject programme; parent-only fenced prerequisite fixture",
+        "typed ownership of both legacy knowledge tracks",
+        "parent and fresh Current Premium refusal without progress",
+        "native chest/fitting USE acquires both instruction flags",
+        "durable read-only transport admission and destination checked",
+        "real native walking reaches position-bound drawbridge with no donor UID",
+        "legacy first-floor transport to lower control",
+        "control lever USE and durable quest completion",
+        "exact USE replay",
+        "parent completion revision remains unchanged"
       ],
       "assumptions": [
-        "Plan and instruction knowledge recovered from existing chest/fittings; legacy skeleton flag is knowledge, not a guessed Item identity.",
-        "Bind absent donor UIDs3059/3060/3061 to exact native platforms5770; preserve all legacy guards/effects."
+        "The chosen floor plan/instructions are learned knowledge flags, matching the existing hoist predicate; no unverified physical paper Item ID is invented.",
+        "Recover the plan from admitted chest2472 at32154,31116,-9, then read the admitted metal fittings5772 at32156,31125,-9. This is an explicit selected Oteryn acquisition adaptation, not a claim of original donor clue locations.",
+        "Complete at existing lower lever2773 at32156,31125,-10; transform it to2772 through existing lever projection. Preserve legacy remote/asymmetric effects.",
+        "Legacy skeleton/chest track names do not determine ownership; PG asserts both declared owners are the hoist quest.",
+        "The Ice Islands completion is a read-only prerequisite; only that foreign parent is arranged by the fenced fixture. No hoist state is seeded."
       ],
-      "checks": "Whole selected route PostgreSQL GREEN; retained and compiler/pin checks running.",
-      "green_seconds": 51.524086401
+      "bindings": [
+        "content/quests/questpc7-world-callbacks.json",
+        "content/quests/native-world-callback-bindings.json"
+      ],
+      "retained_transport": {
+        "floors": [
+          -9,
+          -10,
+          -11
+        ],
+        "seconds": [
+          47.368278739,
+          45.877307756,
+          47.095951736
+        ],
+        "result": "PASS",
+        "boundary": "Original read-only guards and asymmetric remote lever effects retained."
+      }
     }
   },
   {

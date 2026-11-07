@@ -275,7 +275,7 @@ impl DurabilityRoot {
                                 || c.monk_reward.is_some()
                                 || c.native_rule.is_some()
                                 || c.outfit_reward.is_some()
-                                || c.requirements.is_some())
+                                || c.requirements.is_some() || c.completes)
                     }))
         {
             return Err(CharacterProgressionError::InvalidInput);

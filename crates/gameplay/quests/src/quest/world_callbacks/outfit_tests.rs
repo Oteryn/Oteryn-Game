@@ -35,7 +35,7 @@ fn world_outfits_require_a_stateful_use_and_a_closed_target() -> Result<(), Stri
 fn world_requirements_reject_unbounded_and_read_only_authority() -> Result<(), String> {
     let source = include_str!("../../../../../../content/quests/questpc7-world-callbacks.json");
     let document: serde_json::Value = serde_json::from_str(source).map_err(|e| e.to_string())?;
-    assert_eq!(parse(source)?.len(), 3);
+    assert_eq!(parse(source)?.len(), 7);
     for case in 0..4 {
         let mut row = document["callbacks"][0].clone();
         match case {
@@ -52,5 +52,41 @@ fn world_requirements_reject_unbounded_and_read_only_authority() -> Result<(), S
             "case {case}"
         );
     }
+    Ok(())
+}
+
+#[test]
+fn world_completion_requires_a_once_only_write_and_refuses_read_only_gates() -> Result<(), String> {
+    let document: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/questpc7-world-callbacks.json"
+    ))
+    .map_err(|e| e.to_string())?;
+    let control = document["callbacks"]
+        .as_array()
+        .ok_or("callbacks")?
+        .iter()
+        .find(|c| c["key"] == "oteryn:quest-callback/questpc7-hoist-control")
+        .ok_or("control")?;
+    for case in 0..2 {
+        let mut bad = control.clone();
+        if case == 0 {
+            bad["storage"] = serde_json::json!([]);
+        } else {
+            for row in bad["storage"].as_array_mut().ok_or("storage")? {
+                row["preserve"] = true.into();
+            }
+        }
+        assert!(parse(&serde_json::json!({"schema":1,"callbacks":[bad]}).to_string()).is_err());
+    }
+    let mut source: serde_json::Value =
+        serde_json::from_str(EMBEDDED).map_err(|e| e.to_string())?;
+    let gate = source["callbacks"]
+        .as_array_mut()
+        .ok_or("callbacks")?
+        .iter_mut()
+        .find(|c| c["key"] == "oteryn:quest-callback/formogar-hoist-3059")
+        .ok_or("gate")?;
+    gate["completes"] = true.into();
+    assert!(parse(&source.to_string()).is_err());
     Ok(())
 }

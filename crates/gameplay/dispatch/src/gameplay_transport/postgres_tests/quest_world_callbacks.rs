@@ -214,11 +214,26 @@ pub(super) fn world(
     world_ordinal(callback, trigger, callback.selector.appearance.unwrap_or(100), 1)
 }
 
-fn world_ordinal(
+pub(super) fn world_with_objects(
+    callback: &Callback,
+    trigger: Position,
+    objects: &[(Position,u16)],
+    appearances: &[u16],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    world_with_extra(callback, trigger, callback.selector.appearance.unwrap_or(100), 1, objects, appearances)
+}
+
+fn world_ordinal(callback: &Callback, trigger: Position, appearance:u16, ordinal:u8) -> TestResult<crate::map::boot::BundleWorld> {
+    world_with_extra(callback,trigger,appearance,ordinal,&[],&[])
+}
+
+fn world_with_extra(
     callback: &Callback,
     trigger: Position,
     appearance: u16,
     ordinal: u8,
+    objects: &[(Position,u16)],
+    appearances: &[u16],
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
@@ -379,6 +394,24 @@ fn world_ordinal(
                 depth: 0,
                 attrs: Default::default(),
             });
+    }
+    // Explicit test objects add physical hit targets, without inventing donor attributes.
+    // Existing callers retain the original blocked-passage fixture behavior.
+    for appearance in objects.iter().map(|(_,id)|*id).chain(appearances.iter().copied()) {
+        let key=format!("oteryn:terrain.tibia.i{appearance}");
+        if !data.manifest.palette.iter().any(|entry|entry.key==key) {
+            let id=u32::try_from(data.manifest.palette.len())?;
+            data.manifest.palette.push(bundle::PaletteEntry {key,family:bundle::Family::Terrain,id,
+                terrain:Some(bundle::Terrain{kind:bundle::TerrainKind::Common,walkable:None,ground_speed:None})});
+        }
+    }
+    for (position,appearance) in objects {
+        let key=format!("oteryn:terrain.tibia.i{appearance}");
+        let palette=u32::try_from(data.manifest.palette.iter().position(|entry|entry.key==key).ok_or("palette")?)?;
+        let entries=cells.entry((position.floor,position.x,position.y)).or_default();
+        if !entries.iter().any(|entry|entry.palette==palette) {
+            entries.push(sector::Item{palette,depth:0,attrs:Default::default()});
+        }
     }
     let floors: std::collections::BTreeSet<_> = cells.keys().map(|(f, _, _)| *f).collect();
     data.manifest.world = bundle::Extent {

@@ -75,6 +75,7 @@ fn is_false(value: &bool) -> bool {
     !*value
 }
 
+mod bindings;
 mod native;
 use native::valid_native_callback;
 
@@ -143,6 +144,8 @@ pub struct Callback {
     pub outfit_reward: Option<super::reward_callbacks::OutfitReward>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub requirements: Option<super::reward_callbacks::RewardRequirements>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub completes: bool,
     pub sources: Vec<String>,
 }
 
@@ -171,6 +174,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/questpc7-world-callbacks.json"
     ))?);
     callbacks.retain(|callback| super::in_runtime_scope(&callback.quest));
+    bindings::apply(&mut callbacks)?;
     let keys: BTreeSet<_> = callbacks.iter().map(|callback| &callback.key).collect();
     if callbacks.len() >= MAX_CALLBACKS || keys.len() != callbacks.len() {
         return Err("callback bounds including Rotten Blood altar".into());
@@ -222,7 +226,14 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.native_rule.is_some()
                     || callback.outfit_reward.is_some()
                     || callback.requirements.is_some()
+                    || callback.completes
                     || callback.storage.iter().any(|storage| storage.preserve)))
+            || (callback.completes
+                && (callback.storage.is_empty()
+                    || callback.is_read_only()
+                    || callback.storage.iter().all(|s| {
+                        s.preserve || s.read_only || (s.minimum..=s.maximum).contains(&s.set)
+                    })))
             || callback.requirements.as_ref().is_some_and(|r| !r.valid())
             || callback.outfit_reward.as_ref().is_some_and(|reward| {
                 callback.trigger != Trigger::Use
@@ -394,7 +405,7 @@ fn extend_callbacks(
                     },
                 })
                 .collect(),
-            completes: false,
+            completes: callback.completes,
             experience: callback.experience,
         });
     }

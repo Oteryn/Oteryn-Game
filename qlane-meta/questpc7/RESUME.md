@@ -761,3 +761,23 @@ and read-only parent revision pass. Required matrix now starts via
 `/tmp/questpc7-hoist-story-validation.py`. Push metadata-only proof checkpoint
 to preserve cadence while source checks remain; keep ledger ACTIVE until all
 checks finish. Source remains reviewable in working tree.
+
+Hoist strict clippy GREEN128.974s; content compile then hit actual ENOSPC.
+Sandbox could not create/workspace/.git,so authorized unsandboxed cache cleanup
+verified all compilers idle and removed inactive incremental caches except
+focused PG dispatch.12GB free; no active cache deletion. Retain completed PG/
+unit/check/clippy results; current runner `/tmp/questpc7-hoist-story-content-tail.py`
+restarts only content and remaining world/pin/fmt checks. No test skipped.
+
+## Complete hoist programme and shared mechanisms fully GREEN
+
+Whole story PG18.6 RED41.109126339s -> GREEN51.524086401s; real UID-free
+positioned transport,knowledge acquisition,Current Premium/parent guards,
+control completion and exact replay. All3 retained floors47.368/45.877/47.096s
+preserve read-only/asymmetric behavior. Loader9/world19 units,authoring20,
+generator reproduction,check,strict clippy,content123/world5,pin refresh/check
+and fmt pass. Commit/push source immediately.13 ACTIVE whole quests remain.
+Continue source world item_reward/backpack outputs from peer questpc8 for
+Hidden Threats and other caches, preserving our NPC exchange/charges,fees,
+bounded repeat counters and Father11-track atomicity. No more hoist investigation.
+Hydra Egg must keep ordinary nest pickup/reset semantics,not a fake UID chest.

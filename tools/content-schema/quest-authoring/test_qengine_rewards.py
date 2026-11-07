@@ -68,6 +68,27 @@ class QuestRewards(unittest.TestCase):
         self.assertTrue(all(c['npc']=='oteryn:npc.jorge' for c in rows))
         self.assertEqual([c['storage'][0]['minimum'] for c in rows if c['completes']],[1])
 
+    def test_hoist_binds_real_native_objects_without_donor_uids(self):
+        callbacks=json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks']
+        rows=[c for c in callbacks if c['key'].startswith('oteryn:quest-callback/questpc7-hoist-')]
+        self.assertEqual(len(rows),4)
+        self.assertEqual(sum(c.get('completes',False) for c in rows),1)
+        bindings=json.loads(self.outputs['content/quests/native-world-callback-bindings.json'])['bindings']
+        self.assertEqual([b['expected']['unique'] for b in bindings],[3059,3060,3061])
+        codec=q.load_module('questpc7_hoist_test_codec','tools/content-schema/world-authoring/world_region_codec.py')
+        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette']
+        for floor in [9,10,11]:
+            region=codec.decode_region((q.ROOT/f'content/world/placements/region-z{floor:02}-x125-y121.b3').read_bytes())
+            tiles={(x,y):[(palette[p]['source_item_id'],attrs) for p,depth,attrs in entries if not depth]
+                   for _,cells in region[3] for x,y,_,_,_,entries in cells}
+            self.assertEqual(sum(i==5770 for i,_ in tiles[(32157,31125)]),1)
+            self.assertTrue(all(not (attrs or {}).get('unique') for _,attrs in tiles[(32157,31125)]))
+            for callback in rows:
+                position=callback['selector']['position']
+                if position['floor']==-floor:
+                    self.assertIn(callback['selector']['appearance'],[i for i,_ in tiles[(position['x'],position['y'])]])
+        self.assertTrue(all(c['requirements']['completed_quests']==['oteryn:quest.the_ice_islands_quest'] for c in rows))
+
     def test_cosmetics_revision_matches_the_character_gameplay_content(self):
         gameplay=json.loads(self.outputs['content/spells.manifest.json'])
         self.assertEqual(self.author['document']['content_revision'],
