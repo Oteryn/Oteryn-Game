@@ -43,6 +43,38 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/storkus.lua:99-199:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
       ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+      "quest": "oteryn:quest.nightmare_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 4,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_bone_master.lua:61-99:sha256:65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/knightwatch_tower_door",
+      "quest": "oteryn:quest.nightmare_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_bone_master.lua:61-99:sha256:65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest-document/brotherhood/follower",
+      "quest": "oteryn:quest.brotherhood_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:27-65:sha256:1e3d15bb73efa6f3b26bdd1d0882a579279c0cff39c2fb166d98d03b3ed6be16"
+      ]
     }
   ],
   "callbacks": [
@@ -1987,6 +2019,112 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rabaz.lua:165:sha256:b74ee3591cc967215c463d104d887ace6d448f3ea46d7521f0a0a264f5347643"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-carried-join",
+      "quest": "oteryn:quest.brotherhood_outfits_quest",
+      "npc": "oteryn:npc.the_bone_master",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i768",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": "oteryn:achievement/bone_brother",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_bone_master.lua:61-99:sha256:65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "participants": [
+        {
+          "quest": "oteryn:quest.nightmare_outfits_quest",
+          "storage": [
+            {
+              "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/knightwatch_tower_door",
+              "minimum": 0,
+              "maximum": 0,
+              "set": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-carried-use",
+      "quest": "oteryn:quest.brotherhood_outfits_quest",
+      "npc": "oteryn:npc.the_bone_master",
+      "keywords": [
+        "document follower"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 1,
+          "maximum": 4,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest-document/brotherhood/follower",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i768",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.brotherhood",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:27-65:sha256:1e3d15bb73efa6f3b26bdd1d0882a579279c0cff39c2fb166d98d03b3ed6be16"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "carried_item": "oteryn:item.tibia.i768",
+      "forbids_outfits": [
+        "oteryn:outfit.brotherhood"
       ]
     },
     {

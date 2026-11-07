@@ -16,6 +16,7 @@ import xml.etree.ElementTree as ET
 from jsonschema import Draft202012Validator
 import questl2_rewards
 import questl2_shared_engine
+import questl2_carried_use
 import questl2_vampire
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -36,7 +37,7 @@ def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
         'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', *questl2_rewards.NPCS)]
-    paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
+    paths += ['data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua']
     result = {}
@@ -365,6 +366,7 @@ def build():
         'storage':[storage(hat,1,2)],'reply':['Did you bring the shirt, sabre, hat and eye patch?']})
     questl2_shared_engine.append(add, storage, callbacks, offers, declarations, inputs, PIN, sha)
     questl2_vampire.append(callbacks, offers, declarations, inputs, PIN)
+    questl2_carried_use.append(add, storage, callbacks, offers, declarations, inputs, PIN)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
@@ -453,6 +455,8 @@ def validate_callbacks(document):
         declared.add(track['key'])
     keys=set()
     for callback in document['callbacks']:
+        if callback.get('carried_item') is not None and (callback['take'] != [{'item':callback['carried_item'],'count':1}] or not callback['storage'] or callback['give'] or callback.get('fee') or callback.get('bulk')):
+            raise ValueError('invalid selected carried quest input '+callback['key'])
         storage=callback['storage']
         requires=callback.get('requires',[])
         if (callback['key'] in keys

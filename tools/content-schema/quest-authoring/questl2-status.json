@@ -512,6 +512,40 @@
         "Exact Citizen base and both addon unlock keys"
       ],
       "eleven_track_regression_seconds": 45.13778713
+    },
+    {
+      "name": "native selected carried quest USE and exact ingress recovery",
+      "status": "QUALIFIED",
+      "migration": 1149,
+      "reused_engine_commit": "97cb9db79",
+      "postgres_test": "questl2_selected_carried_use_native_journey",
+      "postgres_version": "18.6",
+      "red": {
+        "duration_seconds": 2.848735053,
+        "result": "carried_item binding absent"
+      },
+      "green": {
+        "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-engine-carried",
+        "duration_seconds": 75.748456857,
+        "passed": 1,
+        "failed": 0
+      },
+      "proves": [
+        "NPC issues the actual source document from unstarted membership",
+        "NPC text cannot execute a carried USE callback",
+        "A missing selected UUID refuses without consuming either matching document",
+        "Native USE consumes exactly its selected instance",
+        "Exact literal USE replay preserves the original result",
+        "Immutable recovery rejects modified ingress bytes",
+        "Duplicate document survives after the outfit is owned",
+        "Native outfit grant has the exact source unlock key"
+      ],
+      "source": {
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "file": "data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua",
+        "lines": "27-65",
+        "sha256": "1e3d15bb73efa6f3b26bdd1d0882a579279c0cff39c2fb166d98d03b3ed6be16"
+      }
     }
   ],
   "entries": [
@@ -1241,12 +1275,12 @@
     "world_pins": {
       "regenerated": true,
       "checked": true,
-      "digest": "95adf4415a9986049ddbf99b042dc8a7df67ae72acbbdc8c547746e9f1e91c12",
-      "bytes": 31102582,
-      "reason": "Includes admitted Storkus placement for the full Vampire Hunter journey",
+      "digest": "9027a1839ba9ed7d4df66e05c4c85a9037dea932829a7e18a4e30b951d07da17",
+      "bytes": 31102605,
+      "reason": "Includes the source document issuing NPC in the shared carried-use proof",
       "tool": "convert_placements.py; regenerate_content.py --resolve --no-stage --skip-checks; world-bundle-compiler pin-check",
-      "log": "/tmp/l2-vampire-pin-check.log",
-      "regeneration_log": "/tmp/l2-vampire-pin-refresh.log",
+      "log": "/tmp/l2-carried-pin-check.log",
+      "regeneration_log": "/tmp/l2-carried-pin-refresh.log",
       "pin_check_log": "/tmp/l2-priests-merged-pin-check.log"
     },
     "formatting": "cargo fmt --all --check passed after priest-journey merge",
@@ -1818,6 +1852,17 @@
       "clippy_deny_warnings": true,
       "pin_refresh": "/tmp/l2-vampire-pin-refresh.log",
       "pin_check": "/tmp/l2-vampire-pin-check.log"
+    },
+    "carried_use_slice": {
+      "postgres_log": "/tmp/l2-carried-green5.log",
+      "clippy_log": "/tmp/l2-carried-clippy-last.log",
+      "clippy_all_targets": true,
+      "clippy_deny_warnings": true,
+      "authoring_passed": 25,
+      "placement_tests_passed": 11,
+      "migration_allocation": "1149 unused across all seventy freshly fetched remote heads",
+      "pin_refresh": "/tmp/l2-carried-pin-refresh.log",
+      "pin_check": "/tmp/l2-carried-pin-check.log"
     }
   },
   "cross_lane_inspection": {

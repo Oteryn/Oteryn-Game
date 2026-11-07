@@ -45,6 +45,15 @@ class QuestRewards(unittest.TestCase):
         self.assertEqual(tiers[-1]['achievement'],'oteryn:achievement/razing')
         self.assertEqual(tiers[-1]['storage'][-1]['set'],1)
 
+    def test_carried_use_rejects_wrong_input_and_duplicate_ownership_guards(self):
+        original=next(c for c in self.callbacks['callbacks'] if c.get('carried_item'))
+        for patch in [{'take':[]},{'take':[{'item':original['carried_item'],'count':2}]},{'fee':{'gold':1,'include_bank':False}},{'forbids_outfits':['oteryn:outfit.brotherhood','oteryn:outfit.brotherhood']}]:
+            document=copy.deepcopy(self.callbacks)
+            row=next(c for c in document['callbacks'] if c['key']==original['key'])
+            row.update(patch)
+            with self.assertRaises((ValueError, ValidationError)):
+                q.validate_callbacks(document)
+
     @classmethod
     def setUpClass(cls):
         cls.outputs=q.build()
@@ -187,10 +196,10 @@ class QuestRewards(unittest.TestCase):
                     and c['key'].split('/')[-1] != 'sam-kroox'}
         self.assertEqual(original, {'pirate-sabre', 'knight-sword', 'deepling-helmet',
                                    'hallowed-holy-water', 'outfox-helmet', 'outfox-start', 'sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),36)
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),37)
         # Published QENGINE2 has13 non-outfit branches; L2 adds the pinned
         # Jorge37, Ape6, Thieves7, Kroox1, dragon2 and Quentin/Gamon2 source branches.
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),13 + 37 + 6 + 7 + 1 + 2 + 2 + 10 + 26)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),13 + 37 + 6 + 7 + 1 + 2 + 2 + 10 + 27)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 

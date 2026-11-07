@@ -180,3 +180,23 @@ vampire hunter who has gathered numerous tokens. The final reward uses the
 existing atomic achievement obligation, not an independent script grant.
 The native access door is the existing action 41731/appearance 8259 at
 (32953,31460,9), bound by the source door-table owner to the same Door track.
+
+L2 selected carried USE reuses QENGINE2 `97cb9db79` through the existing
+quest/value transaction. The exact selected UUID must be in fenced carried
+custody; matching another instance of the same definition is insufficient.
+The consumption proof stores that UUID and the bounded, encoded USE ingress.
+Migration 1149 reuses the deferred same-transaction ingress proof; all seventy
+fetched remote heads were checked for number clashes before authoring.
+NPC selection excludes carried callbacks and NPC admissions supply no carried
+ingress. Recovery compares immutable bytes and never restores live authority.
+The reference journey uses Crystal9f `data-global/npc/the_bone_master.lua:61-99`,
+SHA256 `65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1`: join
+the Brotherhood, issue document 768, award Bone Brother, and set the foreign
+Knightwatch Tower door. Its document USE follows
+`data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:27-65`,
+SHA256 `1e3d15bb73efa6f3b26bdd1d0882a579279c0cff39c2fb166d98d03b3ed6be16`.
+Only an unowned base outfit consumes the selected document. Account grants are
+locked while checking negative ownership. A separate bounded claim preserves
+one-time document bookkeeping under the same quest transaction. This is a
+focused shared-mechanism proof; it does not qualify another lane's full outfit
+quest. The player starts with no Brotherhood quest progress or outfit grants.

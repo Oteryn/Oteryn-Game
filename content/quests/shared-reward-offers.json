@@ -2293,6 +2293,44 @@
       ]
     },
     {
+      "npc": "oteryn:npc.the_bone_master",
+      "keywords": [
+        "join"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Do you still want to join the Brotherhood?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.the_bone_master",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Do you still want to join the Brotherhood?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.tibra",
       "keywords": [
         "stake"

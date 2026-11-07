@@ -181,6 +181,9 @@ fn questl2_exchange_fixed_source_journey() -> TestResult {
 #[path = "qengine_rewards/questl2_botany.rs"]
 mod questl2_botany;
 
+#[path = "qengine_rewards/questl2_carried_use.rs"]
+mod questl2_carried_use;
+
 #[path = "qengine_rewards/questl2_journeys.rs"]
 pub(super) mod questl2_journeys;
 
@@ -269,6 +272,7 @@ async fn talk(
 }
 
 fn offer_words(key: &str) -> &'static [&'static str] {
+    if key.ends_with("/l2-carried-join") {return &["join", "yes"]; }
     if key.contains("/l2-vampire-tier-") {return &["vampire lord token"]; }
     match key.rsplit('/').next().unwrap_or(key) {
         "l2-botany-start" | "l2-botany-return" => &["mission"],
@@ -780,6 +784,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name=="qengine-rewards-l2-engine-carried" {
+        return questl2_carried_use::exercise(owner,admitted,h).await;
+    }
     if name=="qengine-rewards-l2-vampire" {
         return questl2_vampire::exercise(owner,admitted,h).await;
     }

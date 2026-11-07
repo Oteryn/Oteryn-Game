@@ -409,6 +409,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.the_bone_master",
+      "greet": "Welcome to my little realm.",
+      "farewell": "We will meet again.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_bone_master.lua:138:sha256:65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_bone_master.lua:139:sha256:65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
       "npc": "oteryn:npc.the_first_dragon",
       "greet": "Hello, my sparring buddy. We should have another fight sometimes. I think you may have earned a little reward.",
       "farewell": "Good bye, |PLAYERNAME|.",

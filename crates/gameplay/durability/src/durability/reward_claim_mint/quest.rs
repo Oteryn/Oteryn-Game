@@ -65,12 +65,18 @@ pub struct QuestRewardFeePayment {
     pub occurred_at_unix_ms: i64,
 }
 
+/// Exact selected carried instance and bounded native ingress persisted in its consumption proof.
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct QuestCarriedUse { pub source: [u8;16], pub intent: Vec<u8> }
+
 /// The runtime supplies its admitted generation and the normal wheel-aware capacity lookup.
 #[derive(Clone, Copy)]
 pub struct QuestRewardAdmission<'a> {
     pub native: &'a NativeGameplayState,
     pub weights: &'a dyn super::super::item_transfer::ItemWeightLookup,
     pub fee_payment: Option<&'a QuestRewardFeePayment>,
+    pub carried_use: Option<&'a QuestCarriedUse>,
 }
 
 #[allow(
@@ -92,6 +98,16 @@ pub(crate) async fn apply(
     let super::super::quest_state::QuestCause::Command(command) = request.cause else {
         return Ok(false);
     };
+    if callback.carried_item.is_some() != admission.carried_use.is_some()
+        || admission.carried_use.is_some_and(|u|u.source==[0;16] || u.intent.is_empty() || u.intent.len()>4096) { return Ok(false); }
+    if !callback.forbids_outfits.is_empty() {
+        let account:sqlx::types::Uuid=sqlx::query_scalar("SELECT account_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid").bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        super::super::character_appearance::lock_account_grants(tx,account).await?;
+        let Some(cosmetics)=admission.native.cosmetics() else {return Ok(false);};
+        for outfit in &callback.forbids_outfits {
+            if super::super::character_appearance::podium_cosmetic_owned(tx,fence.character_id,cosmetics,EarnedCosmetic::Outfit(outfit)).await? {return Ok(false);}
+        }
+    }
     if admission.weights.generation_digest() != admission.native.source_digest() {
         return Ok(false);
     }
@@ -143,7 +159,7 @@ pub(crate) async fn apply(
             .bind(&callback.key).bind(i64::try_from(fee.gold).map_err(|_|DurabilityError::InvalidStoredState)?)
             .bind(fee.include_bank).bind(committed.to_string()).execute(&mut **tx).await?;
     }
-    if !super::super::quest_world_callback::consume_reward_inputs(tx, fence, request, callback)
+    if !super::super::quest_world_callback::consume_reward_inputs(tx, fence, request, callback, admission.carried_use)
         .await?
     {
         return Ok(false);
