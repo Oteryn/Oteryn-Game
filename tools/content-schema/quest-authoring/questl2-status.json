@@ -313,6 +313,43 @@
         "be812420e3c20d9dd8ae6c3c23a9c4acb942ceda",
         "3bfd856061e5aa89668747ec7405af8c2b8cf7f5"
       ]
+    },
+    {
+      "name": "atomic native monetary fees for repeatable quest item issuance",
+      "status": "QUALIFIED",
+      "migration": 1142,
+      "reused_from": "33b640335067df5d5582460bf06ce818d39b9d4d",
+      "postgres_test": "questl2_paid_stake_fee_is_atomic_and_repeatable",
+      "postgres_version": "18.6",
+      "red": {
+        "marker": "POSTGRES_CASE_FAILED qengine-rewards-paid-stake",
+        "duration_seconds": 79.909239487,
+        "failure": "Quest fee transaction rejected without SQL fee/source admission"
+      },
+      "integration_red": {
+        "marker": "POSTGRES_CASE_FAILED qengine-rewards-paid-stake",
+        "duration_seconds": 76.259353117,
+        "failure": "Migration 1141 rejected a positive monetary fee as a repeatable cost"
+      },
+      "green": {
+        "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-paid-stake",
+        "duration_seconds": 76.849252968,
+        "passed": 1,
+        "failed": 0
+      },
+      "proves": [
+        "Quentin issues the stake mission without seeded quest progress",
+        "Unfunded purchase preserves mission progress and inventory",
+        "Two 5000-gold purchases produce exactly two wooden stakes and exact native change",
+        "Replayed confirmation does not charge or issue twice",
+        "Fee burns and immutable quest source receipts are committed together"
+      ],
+      "source": {
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "file": "data-global/npc/gamon.lua",
+        "lines": "59-71",
+        "sha256": "466de8702c51fc9c550f3f9f75e0301713eeec3a81bb8974fc848f10df5ead83"
+      }
     }
   ],
   "entries": [
@@ -731,14 +768,14 @@
     "quest_unit_tests": {
       "passed": 274,
       "failed": 0,
-      "seconds": 24.31,
-      "log": "/tmp/l2-draconia-merged-quest-units.log"
+      "seconds": 25.68,
+      "log": "/tmp/l2-paid-item-merged-quest-units2.log"
     },
     "reward_authoring_tests": {
-      "passed": 48,
+      "passed": 49,
       "failed": 0,
-      "seconds": 35.166,
-      "log": "/tmp/l2-draconia-merged-reward-tests.log"
+      "seconds": 33.893,
+      "log": "/tmp/l2-paid-item-merged-authoring3.log"
     },
     "l2_authoring_baseline": {
       "passed": 4,
@@ -789,13 +826,13 @@
     "world_pins": {
       "regenerated": true,
       "checked": true,
-      "digest": "95a27e96102f561e9fba4843e3d8cd7026fc3bff78f44ab0cb5fe416da327942",
-      "bytes": 31102308,
+      "digest": "e767dfedaaf8c4ebedf312af0640d11076e42d93943b5eb8111dbb79755dd5c8",
+      "bytes": 31102331,
       "tool": "convert_placements.py; regenerate_content.py --resolve --no-stage --skip-checks; world-bundle-compiler pin-check",
-      "regeneration_log": "/tmp/l2-draconia-merged-regenerate.log",
-      "pin_check_log": "/tmp/l2-draconia-merged-pin-check.log"
+      "regeneration_log": "/tmp/l2-paid-item-merged-regenerate.log",
+      "pin_check_log": "/tmp/l2-paid-item-merged-pin-check.log"
     },
-    "formatting": "cargo fmt --all --check passed after full Draconia/payment integration",
+    "formatting": "cargo fmt --all --check passed after paid item merge",
     "content_tests": {
       "integration_rest_content": 123,
       "content_world_project_repository": 5,
@@ -871,8 +908,8 @@
     "npc_placement_tests": {
       "passed": 11,
       "failed": 0,
-      "seconds": 0.327,
-      "log": "/tmp/l2-draconia-merged-placements.log"
+      "seconds": 0.624,
+      "log": "/tmp/l2-paid-item-merged-placements.log"
     },
     "build_resource_settings": {
       "incremental": false,
@@ -908,14 +945,27 @@
       "failed": 0
     },
     "latest_focused_postgres": {
-      "passed": 7,
+      "passed": 3,
       "failed": 0,
       "selected_skipped": 0,
-      "unselected": 2625,
-      "seconds": 483.562,
-      "log": "/tmp/l2-draconia-merged-pg.log",
+      "unselected": 2630,
+      "seconds": 278.56,
+      "log": "/tmp/l2-paid-item-merged-pg2.log",
       "postgres_server": "18.6 (Debian 18.6-1.pgdg13+2)",
-      "scope": "Both full Draconia exits, classic wall levers, source greeting conclusion, exact native payment story, paid token repeat and atomic Father acceptance/replay"
+      "cases": [
+        {
+          "test": "questl2_paid_stake_fee_is_atomic_and_repeatable",
+          "seconds": 135.396463616
+        },
+        {
+          "test": "qengine_l4_nobleman_paid_outfit_story",
+          "seconds": 142.950312301
+        },
+        {
+          "test": "questl2_draconia_greeting_item_lifecycle",
+          "seconds": 145.880280572
+        }
+      ]
     },
     "latest_clippy": {
       "packages": [
@@ -926,7 +976,8 @@
       "all_targets": true,
       "deny_warnings": true,
       "exit_code": 0,
-      "log": "/tmp/l2-draconia-merged-clippy.log"
+      "seconds": 463,
+      "log": "/tmp/l2-paid-item-merged-clippy.log"
     },
     "verified_conditional_parent": {
       "commit": "ae8ae247a",
@@ -962,13 +1013,21 @@
     "reward_reproducibility": {
       "passed": true,
       "tool": "qengine_rewards.py --check",
-      "log": "/tmp/l2-draconia-merged-reproduce.log"
+      "log": "/tmp/l2-paid-item-merged-reproduce.log"
     },
     "native_fetish_provider_tests": {
       "passed": 9,
       "failed": 0,
       "seconds": 7.096,
       "log": "/tmp/l2-draconia-merged-emperor-tests.log"
+    },
+    "full_draconia_merge_postgres": {
+      "passed": 7,
+      "failed": 0,
+      "selected_skipped": 0,
+      "unselected": 2625,
+      "seconds": 483.562,
+      "log": "/tmp/l2-draconia-merged-pg.log"
     }
   },
   "cross_lane_inspection": {
@@ -1040,6 +1099,11 @@
         "father_handins_seconds": 235.933230805,
         "repeat_exchange_seconds": 134.911461154
       }
+    },
+    "paid_item_remote_merge": {
+      "commit": "80f41c77e48645a0513f56aae2133d9554aefbd9",
+      "scope": "Keep published1142 bytes and its deferred paid-repeat cost proof, reuse Gamon paid stake issuance and full PostgreSQL case.",
+      "fresh_postgres_green_seconds": 135.396463616
     }
   },
   "next_batch": {

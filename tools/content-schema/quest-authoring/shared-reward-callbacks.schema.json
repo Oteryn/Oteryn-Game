@@ -410,6 +410,24 @@
           "type": "boolean"
         }
       }
+    },
+    "fee": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gold",
+        "include_bank"
+      ],
+      "properties": {
+        "gold": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000000000
+        },
+        "include_bank": {
+          "type": "boolean"
+        }
+      }
     }
   }
 }

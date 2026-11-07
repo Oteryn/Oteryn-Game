@@ -151,6 +151,14 @@ fn questl2_token_menu_last_eleven() -> TestResult {
 }
 
 #[test]
+fn questl2_paid_stake_fee_is_atomic_and_repeatable() -> TestResult {
+    scenario("qengine-rewards-paid-stake")
+}
+
+#[path = "qengine_rewards/paid_stake.rs"]
+mod paid_stake;
+
+#[test]
 fn questl2_draconia_greeting_item_lifecycle() -> TestResult {
     scenario("qengine-rewards-draconia-greeting")
 }
@@ -221,6 +229,7 @@ async fn talk(
 
 fn offer_words(key: &str) -> &'static [&'static str] {
     match key.rsplit('/').next().unwrap_or(key) {
+        "exchange-quentin-start" | "exchange-gamon-stake" => &["stake"],
         "knight-sword" => &["forge"],
         "l1-warmaster-crest" => &["crest"],
         "l1-wayfarer-cape" => &["cape"],
@@ -711,6 +720,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-paid-stake" {
+        return paid_stake::exercise(owner, admitted, h).await;
+    }
     if [
         "qengine-rewards-l2-battle-",
         "qengine-rewards-l2-festive",

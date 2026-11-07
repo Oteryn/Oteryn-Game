@@ -106,7 +106,8 @@ class QuestRewards(unittest.TestCase):
         self.assertEqual(second['outfit']['addons'],2)
 
     def test_monetary_source_price_disallows_zero_or_double_coin_consumption(self):
-        source=next(c for c in self.callbacks['callbacks'] if c.get('fee'))
+        source=next(c for c in self.callbacks['callbacks']
+                    if c['key']=='oteryn:quest-reward/l4-nobleman-first')
         for mutation in ('zero','double'):
             bad=copy.deepcopy(self.callbacks)
             callback=next(c for c in bad['callbacks'] if c['key']==source['key'])
@@ -141,14 +142,14 @@ class QuestRewards(unittest.TestCase):
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
         original = {c['key'].split('/')[-1] for c in callbacks
-                    if not c['key'].split('/')[-1].startswith(('l1-', 'l2-', 'l3-', 'l4-', 'token-', 'ape-', 'thieves-', 'draconia-'))
+                    if not c['key'].split('/')[-1].startswith(('l1-', 'l2-', 'l3-', 'l4-', 'token-', 'ape-', 'thieves-', 'draconia-', 'exchange-'))
                     and c['key'].split('/')[-1] != 'sam-kroox'}
         self.assertEqual(original, {'pirate-sabre', 'knight-sword', 'deepling-helmet',
                                    'hallowed-holy-water', 'outfox-helmet', 'sam-backpack'})
         self.assertEqual(sum(c['outfit'] is not None for c in callbacks),34)
         # Published QENGINE2 has13 non-outfit branches; L2 adds the pinned
-        # Jorge37, Ape6, Thieves7, Kroox1 and dragon2 source branches.
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),13 + 37 + 6 + 7 + 1 + 2)
+        # Jorge37, Ape6, Thieves7, Kroox1, dragon2 and Quentin/Gamon2 source branches.
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),13 + 37 + 6 + 7 + 1 + 2 + 2)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 
@@ -240,6 +241,30 @@ class QuestRewards(unittest.TestCase):
             matches = [r for r in rows if r['storage'][0]['minimum'] <= value <= r['storage'][0]['maximum']]
             self.assertEqual(len(matches), 0 if value == 1 else 1)
         self.assertEqual(q.questl2_rewards.source_path(rows[0]['npc']), 'data-global/npc/an_old_dragon_lord.lua')
+
+
+    def test_source_stake_price_composes_paid_repeat_without_a_token_cost(self):
+        row = next(c for c in self.callbacks['callbacks'] if c['key'].endswith('exchange-gamon-stake'))
+        self.assertEqual(row['fee'], {'gold': 5000, 'include_bank': True})
+        self.assertTrue(row['repeatable'])
+        self.assertEqual(row['take'], [])
+        self.assertEqual(row['give'], {'item': 'oteryn:item.tibia.i5941', 'count': 1, 'contents': []})
+        self.assertTrue(all(s['preserve'] for s in row['storage']))
+        q.validate_callbacks({'schema': 1, 'callbacks': [row]})
+        for edit in range(5):
+            bad = copy.deepcopy(row)
+            if edit == 0:
+                bad['fee']['gold'] = 0
+            elif edit == 1:
+                bad['fee']['gold'] = 1000000000001
+            elif edit == 2:
+                bad['fee']['include_bank'] = 'true'
+            elif edit == 3:
+                bad['take'] = [{'item': 'oteryn:item.tibia.i3031', 'count': 1}]
+            else:
+                bad.pop('fee')
+            with self.subTest(edit=edit), self.assertRaises((ValueError, ValidationError)):
+                q.validate_callbacks({'schema': 1, 'callbacks': [bad]})
 
 
 if __name__=='__main__':
