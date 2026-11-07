@@ -18,18 +18,41 @@ use std::sync::Arc;
 
 #[test]
 fn npcfix_postgres_dispatch_services_and_replay() -> TestResult {
+    postgres_services(&[
+        "benjamin",
+        "liane",
+        "ray",
+        "robson",
+        "alesar",
+        "nah_bob",
+        "rashid",
+        "kasmir",
+        "albinius",
+        "a_ghostly_guardian",
+        "flint",
+        "romella",
+        "pugwah",
+    ])
+}
+
+#[test]
+fn npcfix_postgres_additional_postal_services_and_replay() -> TestResult {
+    postgres_services(&["olrik", "chemar", "chrystal", "fyodor", "nelly"])
+}
+
+fn postgres_services(keys: &'static [&'static str]) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(move || scenario(keys).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "postal PostgreSQL thread panicked")??;
     Ok(())
 }
 
-fn scenario() -> TestResult {
+fn scenario(keys: &[&str]) -> TestResult {
     run(async |admin| {
         let catalogue = NpcDataCatalogue::load(
             std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
@@ -40,21 +63,7 @@ fn scenario() -> TestResult {
         let model = catalogue.service_model_for_project().map_err(debug)?;
         let book = Arc::new(NpcTalkBook::from_model(&model));
         let mut failures = Vec::new();
-        for key in [
-            "benjamin",
-            "liane",
-            "ray",
-            "robson",
-            "alesar",
-            "nah_bob",
-            "rashid",
-            "kasmir",
-            "albinius",
-            "a_ghostly_guardian",
-            "flint",
-            "romella",
-            "pugwah",
-        ] {
+        for &key in keys {
             reset();
             let h = Harness::create_with_admission_seed(
                 admin.clone(),
@@ -495,12 +504,28 @@ fn scenario() -> TestResult {
                     assert_eq!(count, if key == "alesar" { 2 } else { 1 }, "no second sale or replay mutation {key}");
                     return Ok(());
                 }
+                let item_index = active
+                    .native_gameplay()
+                    .and_then(|native| native.item_index())
+                    .ok_or("postal Item index")?;
+                let parcel = item_index
+                    .definition_ref("Item", "oteryn:item.tibia.i3503", "definition-r1")
+                    .ok_or("postal parcel reference")?
+                    .get();
+                let letter = item_index
+                    .definition_ref("Item", "oteryn:item.tibia.i3505", "definition-r1")
+                    .ok_or("postal letter reference")?
+                    .get();
                 let ordinary = window.ok_or("ordinary postal window")?;
                 let (_, revision) = ordinary.open.ok_or("open postal window")?;
                 let ordinary_index = ordinary
                     .offers
                     .iter()
-                    .position(|o| o.unit_price == 15)
+                    .position(|o| {
+                        o.item_definition_ref == parcel
+                            && o.side == NpcTradeSide::Buy
+                            && o.unit_price == 15
+                    })
                     .ok_or("parcel at 15")?;
                 let mut intent = NpcTradeIntent {
                     npc_actor: npc,
@@ -558,11 +583,19 @@ fn scenario() -> TestResult {
                 let index = fresh
                     .offers
                     .iter()
-                    .position(|o| o.unit_price == expected)
+                    .position(|o| {
+                        o.item_definition_ref == parcel
+                            && o.side == NpcTradeSide::Buy
+                            && o.unit_price == expected
+                    })
                     .ok_or("completed parcel price")?;
                 if key != "robson" {
                     assert!(
-                        fresh.offers.iter().any(|o| o.unit_price == 5),
+                        fresh.offers.iter().any(|o| {
+                            o.item_definition_ref == letter
+                                && o.side == NpcTradeSide::Buy
+                                && o.unit_price == 5
+                        }),
                         "completed letter price"
                     );
                 }
