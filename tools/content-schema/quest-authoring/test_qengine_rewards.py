@@ -44,6 +44,37 @@ class QuestRewards(unittest.TestCase):
         plume=next(c for c in self.callbacks['callbacks'] if c['key']=='oteryn:quest-reward/questpc7-formal-plume')
         self.assertEqual(plume['requirements']['owned_cosmetics'],[{'outfit':'oteryn:outfit.formal_dress','addons':2}])
 
+    def test_ferumbras_guardians_and_passages_use_native_clear_source_cells(self):
+        codec=q.load_module('questpc7_ferumbras_test_codec','tools/content-schema/world-authoring/world_region_codec.py')
+        import sys
+        sys.path.insert(0,str(q.ROOT/'tools/content-schema/native-gameplay'))
+        import build_source_item_profiles as source
+        client=q.ROOT/'content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat'
+        objects=source.engine_items.load_appearance_objects(client.read_bytes())
+        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette']
+        cache={}
+        def tile(p):
+            path=f'content/world/placements/region-z{-p["floor"]:02}-x{p["x"]//256}-y{p["y"]//256}.b3'
+            if path not in cache:
+                region=codec.decode_region((q.ROOT/path).read_bytes())
+                cache[path]={(x,y):(flags,house,entries) for _,cells in region[3] for x,y,flags,house,_,entries in cells}
+            return cache[path][(p['x'],p['y'])]
+        rows=[r for r in json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks'] if r['quest']=='oteryn:quest.ferumbras_ascension_quest']
+        self.assertEqual(len(rows),11)
+        for row in rows:
+            selector=row['selector'];flags,house,entries=tile(selector['position'])
+            self.assertEqual(house,0)
+            self.assertIn(selector['appearance'],[palette[i]['source_item_id'] for i,depth,_ in entries if depth==0])
+            self.assertLessEqual(len(row['storage']),8)
+        objectives=[r for r in json.loads(self.outputs['content/quests/questpc7-death-objectives.json'])['objectives'] if r['quest']=='oteryn:quest.ferumbras_ascension_quest']
+        self.assertEqual(len(objectives),8)
+        for objective in objectives:
+            flags,house,entries=tile(objective['guardian']['position'])
+            self.assertEqual((flags&1,house,len(entries)),(0,0,1))
+            client_flags=objects[palette[entries[0][0]]['source_item_id']]['flags']
+            self.assertTrue(client_flags.get('flags.bank'))
+            self.assertFalse(client_flags.get('flags.unpass',False))
+
     def test_hero_selected_bindings_exist_in_unchanged_source_map(self):
         rows=json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks']
         rows=[r for r in rows if r['quest']=='oteryn:quest.hero_of_rathleton_quest']

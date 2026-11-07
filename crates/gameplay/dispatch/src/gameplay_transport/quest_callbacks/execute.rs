@@ -294,6 +294,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await
             };
+            #[cfg(test)]
+            if let Err(error) = &outcome {
+                eprintln!(
+                    "QUEST_WORLD_POSTGRES_ERROR callback={} error={error:?}",
+                    callback.key
+                );
+            }
             let fresh = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));
             match outcome {
                 Ok(

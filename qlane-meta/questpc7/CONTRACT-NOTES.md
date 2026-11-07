@@ -385,3 +385,10 @@ The story now performs fenced pickup9, normal carried merge with the tenth
 essence, and fenced drop10 before ritual USE. Short9 refusal/non-consumption
 assertions remain; add one-live-stack and actual pickup/drop proof. No Ground
 consumer guard or SQL proof is weakened, and no new migration is needed.
+
+Combined reward diagnostic PG50.768375617s reports InvalidStoredState after
+all native stages and refusals pass. Exact cause: achievement source event IDs
+are bounded to64 bytes (gameplay/progression/src/account_achievement.rs:6,68),
+but the new world hook supplied raw serialized occurrence data. Hash that
+stable occurrence to32 bytes with existing SHA-256; retain the64-byte bound,
+existing NPC event bytes and all transaction/rollback guards unchanged.

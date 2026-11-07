@@ -35,7 +35,7 @@ fn world_outfits_require_a_stateful_use_and_a_closed_target() -> Result<(), Stri
 fn world_requirements_reject_unbounded_and_read_only_authority() -> Result<(), String> {
     let source = include_str!("../../../../../../content/quests/questpc7-world-callbacks.json");
     let document: serde_json::Value = serde_json::from_str(source).map_err(|e| e.to_string())?;
-    assert_eq!(parse(source)?.len(), 14);
+    assert_eq!(parse(source)?.len(), 25);
     for case in 0..4 {
         let mut row = document["callbacks"][0].clone();
         match case {
@@ -176,6 +176,67 @@ fn carried_source_requirements_reject_unbounded_and_ambiguous_inputs() -> Result
             parse(&serde_json::json!({"schema":1,"callbacks":[row]}).to_string()).is_err(),
             "case {case}"
         );
+    }
+    Ok(())
+}
+
+#[test]
+fn world_reward_bundle_is_explicit_atomic_and_once_only() -> Result<(), String> {
+    let document: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/questpc7-world-callbacks.json"
+    ))
+    .map_err(|e| e.to_string())?;
+    let mut row = document["callbacks"]
+        .as_array()
+        .ok_or("callbacks")?
+        .iter()
+        .find(|c| c["key"] == "oteryn:quest-callback/questpc7-hidden-valuables")
+        .ok_or("valuables")?
+        .clone();
+    row["outfit_reward"] = serde_json::json!({"outfit":"oteryn:outfit.rift_warrior","addons":3});
+    row["reward_bundle"] = true.into();
+    row["achievements"] = serde_json::json!(["oteryn:achievement/hat_hunter"]);
+    let encode =
+        |row: serde_json::Value| serde_json::json!({"schema":1,"callbacks":[row]}).to_string();
+    assert_eq!(
+        parse(&encode(row.clone()))?.len(),
+        1,
+        "explicit complete reward bundle is supported"
+    );
+    for case in 0..10 {
+        let mut bad = row.clone();
+        match case {
+            0 => bad["reward_bundle"] = false.into(),
+            1 => bad["completes"] = false.into(),
+            2 => bad["trigger"] = "step_in".into(),
+            3 => {
+                bad["achievements"] = serde_json::json!([
+                    "oteryn:achievement/hat_hunter",
+                    "oteryn:achievement/hat_hunter"
+                ])
+            }
+            4 => bad["achievements"] = serde_json::json!(["oteryn:achievement/BAD"]),
+            5 => {
+                bad["achievements"] = serde_json::json!(
+                    (0..9)
+                        .map(|n| format!("oteryn:achievement/test_{n}"))
+                        .collect::<Vec<_>>()
+                )
+            }
+            6 => bad["item_reward"] = serde_json::Value::Null,
+            7 => bad["outfit_reward"] = serde_json::Value::Null,
+            8 => {
+                for s in bad["storage"].as_array_mut().ok_or("storage")? {
+                    s["preserve"] = true.into();
+                }
+            }
+            _ => {
+                for s in bad["storage"].as_array_mut().ok_or("storage")? {
+                    s["read_only"] = true.into();
+                }
+            }
+        }
+        assert!(parse(&encode(bad)).is_err(), "case {case}");
     }
     Ok(())
 }

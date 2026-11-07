@@ -308,7 +308,7 @@ impl DurabilityRoot {
                                 || c.experience.is_some()
                                 || c.monk_reward.is_some()
                                 || c.native_rule.is_some()
-                                || c.outfit_reward.is_some() || c.item_reward.is_some()
+                                || c.outfit_reward.is_some() || c.item_reward.is_some() || c.reward_bundle || !c.achievements.is_empty()
                                 || c.requirements.is_some() || c.completes)
                     }))
         {
@@ -792,6 +792,19 @@ impl DurabilityRoot {
                             .map_err(|_| DurabilityError::InvalidStoredState)?;
                         super::super::character_appearance::grant_callback_outfit(
                             &mut tx, fence.character_id, &occurrence, reward).await?;
+                    }
+                    if let Some(world) = &callback
+                        && !world.achievements.is_empty()
+                    {
+                        let (cause, ordinal) = request.cause.key();
+                        let occurrence = serde_json::to_vec(&(cause, ordinal, &world.key))
+                            .map_err(|_| DurabilityError::InvalidStoredState)?;
+                        let occurrence = sha2::Sha256::digest(&occurrence);
+                        let keys: Vec<_> = world.achievements.iter().map(String::as_str).collect();
+                        super::super::account_achievement::grant_missing(
+                            &mut tx, fence.character_id, &keys,
+                            "oteryn:quest-world-reward", &occurrence,
+                        ).await?;
                     }
                     let committed_revision = root
                         .revision

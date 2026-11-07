@@ -370,7 +370,7 @@ fn scenario() -> TestResult {
             key: "oteryn:quest-callback/soul-war-final-reward".into(), quest: "oteryn:quest/soul-war".into(),
             trigger: Trigger::Use, selector: Selector { position: Some(trigger), unique: None, action: None, appearance: None },
             lever: None, reversible: false, passages: vec![], teleport: None, remote_teleport: None, outfit_reward: None,
-        item_reward: None,
+        item_reward: None, reward_bundle: false, achievements: vec![],
         activation: None, completes: false, requirements: None, storage: vec![],
             minimum_level: None, experience: None, monk_reward: None, offerings: vec![], item_on_target: None,
             return_on_failure: false, failure_message: None, success_message: None,

@@ -1023,3 +1023,49 @@ callback reconciliation). Add test-only root outcome diagnostic, preserve all
 assertions and fix the exact underlying error. New run green5.log is next.
 Keep ACTIVE. Push this truthful checkpoint before10:33UTC while diagnosing;
 no engine deferral or completion claim. Product staged/working locally.
+
+## Ferumbras full route/reward initial PG GREEN
+
+Actual PostgreSQL18.6 GREEN53.501737447s after stable32-byte achievement event
+fix. All8 native bosses, exact10 essence ritual, native passage destinations,
+freshPremium/full-backpack all-value refusals, food USE freeing a slot, atomic
+Silver5/fullRift/HatHunter/completion, and new-command refusal pass. No new
+migration or relaxed guard. Expanded exact native command replay plus actual
+appearance command selection now runs in ferumbras-final-green.log. Finish
+that run and14 focused validation gates, update proof/status, commit/push.
+No repeated source lookup or engine deferral;9 ACTIVE pending qualification.
+
+## Ferumbras full expanded native story GREEN
+
+PG18.6 finalGREEN52.479192159s includes exact native command replay and real
+appearance command selecting earned Rift Warrior with both addons. Initial
+GREEN53.501737447s also retained. All required story assertions pass, including
+whole-bundle Premium/capacity refusal.14 focused gates now run sequentially
+in /tmp/questpc7-ferumbras-validation.py (session65120), starting retained
+Hero PG. Source staged before pin tooling. Finish/check logs, fix any failures,
+mark QUALIFIED only after all14 pass, then commit/push immediately.9 ACTIVE.
+
+
+## Ferumbras whole selected native programme QUALIFIED
+
+Full expanded PG18.6 GREEN52.479192159s after RED41.469268453s; initial
+fullGREEN53.501737447s. Exact10 essence ritual through real pickup/merge/drop,
+eight native bosses and exact earned arena passages, freshPremium/full20-slot
+all-value refusal, native food USE freeing capacity, atomic Silver5/fullRift/
+HatHunter/completion, exact native command replay and ordinary appearance
+command selecting earned full Rift Warrior all pass. No quest-state seeds.
+Reusable opt-in world item/outfit bundle and bounded achievements reuse the
+existing fenced value writers. Old mixed fields without opt-in remain refused;
+source event32-byte hash meets existing64-byte bound; no migration, effect-
+bound increase or NPC event identity change. Silver22516 uses exact native
+physical qualifier. Fixture Ground MINT uses real content/frame bindings.
+All14 nonempty focused gates GREEN: retained Hero PG53.248291101s;
+loader9/world-callback22/author24/item3; both generators; check/strict clippy
+quests+durability+dispatch; repository pins; content123/world5; fmt. Type alias
+fix resolves strict test type-complexity lint without allowances or weakened
+assertions. Commit/push source now, then continue8 ACTIVE entries immediately.
+Fresh qengine2 check9c581fd10 adds no qualified overlap. Next bounded Grave
+Danger findings/explicit conservative coordinate rule are in
+/tmp/questpc7-grave-next-plan.txt. Do not repeat missing-coordinate lookup;
+owner says choose documented native placements and proceed. Other remaining
+recipes also need whole native routes. No ownership questions or deferrals.

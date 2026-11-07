@@ -430,7 +430,7 @@ fn scenario_in_world(
                 passages: vec![],
                 teleport: Some(position(destination)),
                 remote_teleport: None, outfit_reward: None,
-        item_reward: None,
+        item_reward: None, reward_bundle: false, achievements: vec![],
         activation: None, completes: false, requirements: None,
                 storage: if refused {
                     vec![Storage {

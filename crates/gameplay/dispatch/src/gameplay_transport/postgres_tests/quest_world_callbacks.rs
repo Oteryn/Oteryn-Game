@@ -57,8 +57,13 @@ pub(super) async fn input_item(
         production_key: offering.item.clone(),
         revision_ref: "definition-r1".into(),
     };
-    let facts = generation_item_facts(native, &definition).map_err(debug)?;
+    let facts = generation_item_facts(native, &definition).map_err(|error| format!("input item n={n} at line {}: {error:?}", line!()))?;
     let map = owner.bundle_map().ok_or("map")?;
+    let (digest, frame) = {
+        let runtime = owner.runtime.lock().await;
+        (runtime.content_pin().server_artifact_digest(),runtime.content_pin().frame_binding_digest())
+    };
+    let ground_revision=format!("sha256:{}",digest.iter().map(|b|format!("{b:02x}")).collect::<String>());
     let mut candidate = owner
         .root
         .freeze_item_mint(
@@ -90,8 +95,8 @@ pub(super) async fn input_item(
                         ),
                     corpse_ref: id(3).to_vec(),
                     map_revision: crate::map::overlay::map_revision(map.overlay.base()),
-                    content_revision: "content-1".into(),
-                    native_room_placement_context: vec![1],
+                    content_revision: ground_revision,
+                    native_room_placement_context: frame.to_vec(),
                 },
                 content_revision: "content-1".into(),
                 ruleset_revision: "ruleset-1".into(),
@@ -99,20 +104,20 @@ pub(super) async fn input_item(
             },
         )
         .await
-        .map_err(debug)?;
+        .map_err(|error| format!("input item n={n} at line {}: {error:?}", line!()))?;
     let permit = owner.spell_lane_permit().await.ok_or("lane")?;
     let ItemMintOutcome::Committed(item) = owner
         .root
         .commit_item_mint(&permit, owner.character, owner.holder, &mut candidate)
         .await
-        .map_err(debug)?
+        .map_err(|error| format!("input item n={n} at line {}: {error:?}", line!()))?
     else {
         return Err("mint".into());
     };
     let command = |offset| -> TestResult<_> {
         Ok(crate::foundation::CommandRef::new(
             fence.game_session_id,
-            crate::foundation::CommandId::new(1000 + n * 10 + offset).map_err(debug)?,
+            crate::foundation::CommandId::new(1000 + n * 10 + offset).map_err(|error| format!("input item n={n} at line {}: {error:?}", line!()))?,
         ))
     };
     let mut transfer = owner
@@ -136,7 +141,7 @@ pub(super) async fn input_item(
                             revision_ref: "definition-r1".into(),
                         },
                     )
-                    .map_err(debug)?,
+                    .map_err(|error| format!("input item n={n} at line {}: {error:?}", line!()))?,
                 ),
                 content_revision: "content-1".into(),
                 ruleset_revision: "ruleset-1".into(),
@@ -145,7 +150,7 @@ pub(super) async fn input_item(
             &NativeItemWeights(native),
         )
         .await
-        .map_err(debug)?;
+        .map_err(|error| format!("input item n={n} at line {}: {error:?}", line!()))?;
     owner
         .root
         .commit_item_transfer(
@@ -157,7 +162,7 @@ pub(super) async fn input_item(
             &NativeItemWeights(native),
         )
         .await
-        .map_err(debug)?;
+        .map_err(|error| format!("input item n={n} at line {}: {error:?}", line!()))?;
     if carried {
         return Ok(());
     }
@@ -202,7 +207,7 @@ pub(super) async fn input_item(
             },
         )
         .await
-        .map_err(debug)?;
+        .map_err(|error| format!("input item n={n} at line {}: {error:?}", line!()))?;
     assert!(moved.is_ok(), "drop: {moved:?}");
     Ok(())
 }

@@ -23,7 +23,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let monk = name.starts_with("monk-guidance");
-    let shared_rewards = name == "questpc7-hero" || name == "questpc7-hydra" || name == "questpc7-hoist-story" || name == "questpc7-tokens" || name.starts_with("questpc7-hidden-") || name.starts_with("questpc7-outfits-") || name == "l1-warmaster-wardrobe" || name.starts_with("questpc7-eligibility-")
+    let shared_rewards = name == "questpc7-ferumbras" || name == "questpc7-hero" || name == "questpc7-hydra" || name == "questpc7-hoist-story" || name == "questpc7-tokens" || name.starts_with("questpc7-hidden-") || name.starts_with("questpc7-outfits-") || name == "l1-warmaster-wardrobe" || name.starts_with("questpc7-eligibility-")
         || name.starts_with("qengine-rewards-")
         || name == "questpc7-golden"
         || name == "questpc7-friends";
@@ -44,7 +44,7 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if name == "questpc7-hero" { "questpc7-hero-entry" } else if name == "questpc7-hydra" { "questpc7-hydra-entry" } else if name == "questpc7-hoist-story" { "questpc7-hoist-entry" } else if name.starts_with("questpc7-hidden-") { "questpc7-hidden-entry" } else if name == "questpc7-outfits-formal" { "questpc7-formal-display" } else if name == "l1-warmaster-wardrobe" { name } else if classic_npc {
+    let mut callback = callback(if name == "questpc7-ferumbras" { "questpc7-ferumbras-entry" } else if name == "questpc7-hero" { "questpc7-hero-entry" } else if name == "questpc7-hydra" { "questpc7-hydra-entry" } else if name == "questpc7-hoist-story" { "questpc7-hoist-entry" } else if name.starts_with("questpc7-hidden-") { "questpc7-hidden-entry" } else if name == "questpc7-outfits-formal" { "questpc7-formal-display" } else if name == "l1-warmaster-wardrobe" { name } else if classic_npc {
         "behemoth"
     } else if rotten_purchase {
         "rotten-blood/sacrifice"
@@ -71,7 +71,9 @@ fn scenario_case(
     if stateless_destination.is_some() {
         assert_eq!(callback.selector.position, Some(trigger));
     }
-    let world = if name == "questpc7-hero" {
+    let world = if name == "questpc7-ferumbras" {
+        world_with_objects(&callback,trigger,&super::super::questpc7_ferumbras::objects(),&[])?
+    } else if name == "questpc7-hero" {
         world_with_objects(&callback,trigger,&[(Position{x:33567,y:31950,floor:-14},20476),(Position{x:33568,y:31951,floor:-14},20545),(Position{x:33571,y:31952,floor:-14},1855)],&[])?
     } else if name == "questpc7-hydra" {
         world_with_objects(&callback,trigger,&[(Position{x:33004,y:32664,floor:-3},1063)],&[])?
@@ -127,6 +129,7 @@ fn scenario_case(
 
         let initial_level: Option<u32> = match name {
             "questpc7-eligibility-high" => Some(1000),
+            "questpc7-ferumbras" => Some(150),
             "questpc7-outfits-formal" => Some(20),
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
             _ => None,
@@ -209,7 +212,7 @@ fn scenario_case(
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let eligibility_premium =
-            if name == "questpc7-hero" || name == "questpc7-hydra" || name == "questpc7-hoist-story" || (name.starts_with("questpc7-eligibility-") && !name.ends_with("no-premium")) || name.starts_with("questpc7-outfits-") {
+            if name == "questpc7-ferumbras" || name == "questpc7-hero" || name == "questpc7-hydra" || name == "questpc7-hoist-story" || (name.starts_with("questpc7-eligibility-") && !name.ends_with("no-premium")) || name.starts_with("questpc7-outfits-") {
                 use crate::gameplay_transport::spell_premium_coordinator::{
                     SpellPremiumCoordinator, purchase_fixture,
                 };
@@ -300,7 +303,9 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if name == "questpc7-hero" {
+        if name == "questpc7-ferumbras" {
+            super::super::questpc7_ferumbras::exercise(&mut owner,&mut admitted,&h).await?;
+        } else if name == "questpc7-hero" {
             super::super::questpc7_hero::exercise(&mut owner,&mut admitted,&h).await?;
         } else if name == "questpc7-hydra" {
             super::super::questpc7_hydra::exercise(&mut owner,&mut admitted,&h).await?;

@@ -36,6 +36,8 @@ pub(crate) fn altar_callback() -> super::world_callbacks::Callback {
             appearance: Some(SACRIFICIAL_PLATE_APPEARANCE) },
         lever: None, reversible: false, passages: Vec::new(), teleport: None, remote_teleport: None, outfit_reward: None,
         item_reward: None,
+        reward_bundle: false,
+        achievements: vec![],
         activation: None, completes: false, requirements: None,
         storage: vec![Storage { track: ACCESS_TRACK.into(), minimum: 0, maximum: 3, set: 1, preserve: false, read_only: false }],
         minimum_level: None, experience: None, monk_reward: None, offerings: Vec::new(),

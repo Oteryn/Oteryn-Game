@@ -144,6 +144,11 @@ pub struct Callback {
     pub outfit_reward: Option<super::reward_callbacks::OutfitReward>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_reward: Option<super::reward_callbacks::ItemReward>,
+    /// Explicit atomic item/outfit combination; legacy mixed fields remain invalid.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub reward_bundle: bool,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub achievements: Vec<String>,
     /// Route this overlay only during its declared phase; durable storage guards still authorize it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub activation: Option<super::reward_callbacks::TrackRequirement>,
@@ -253,13 +258,14 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     })
             })
             || callback.requirements.as_ref().is_some_and(|r| !r.valid())
+            || !rewards::valid(callback)
             || callback.item_reward.as_ref().is_some_and(|reward| {
                 !reward.valid()
                     || callback.trigger != Trigger::Use
                     || callback.storage.is_empty()
                     || callback.native_rule.is_some()
                     || callback.monk_reward.is_some()
-                    || callback.outfit_reward.is_some()
+                    || (callback.outfit_reward.is_some() && !callback.reward_bundle)
                     || callback.reversible
                     || callback.storage.iter().all(|s| {
                         s.preserve || s.read_only || (s.minimum..=s.maximum).contains(&s.set)
@@ -442,6 +448,8 @@ fn extend_callbacks(
     QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
         .map_err(|e| format!("{e:?}"))
 }
+
+mod rewards;
 
 #[cfg(test)]
 mod batch4_tests;

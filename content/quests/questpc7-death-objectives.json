@@ -175,6 +175,262 @@
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/58/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
         "content/world/placements/region-z14-x131-y124.b3:1#selected-physical-dungeon:sha256:b6ae40fc1bfe9a88169aa022cbffcdd04104b301d3b8d64aa6363b2a3547bd8a"
       ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-ferumbras-plagirath",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "creature": "oteryn:creature.plagirath",
+      "stage": "oteryn:quest-progress/questpc7/ferumbras/programme",
+      "stage_value": 2,
+      "counter": "oteryn:quest-progress/questpc7/ferumbras/seal_0",
+      "required": 1,
+      "minimum": {
+        "x": 33164,
+        "y": 31493,
+        "floor": -13
+      },
+      "maximum": {
+        "x": 33180,
+        "y": 31509,
+        "floor": -13
+      },
+      "guardian": {
+        "position": {
+          "x": 33172,
+          "y": 31501,
+          "floor": -13
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:7f0c08859e1316aac2df4fe457e746687b4c759a673d93332bbb0ebdbaf14e9e",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_plagirath.lua:1:sha256:b26bbfee0013e159760774af9491f6912442d862bc84e666fad66ff42fd013c8",
+        "content/world/placements/region-z13-x129-y123.b3:1:sha256:492e30364df41f2e39749c360722c83a18044315b013447ad9971cb1b5b2d61c"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-ferumbras-zamulosh",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "creature": "oteryn:creature.zamulosh",
+      "stage": "oteryn:quest-progress/questpc7/ferumbras/seal_0",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/ferumbras/seal_1",
+      "required": 1,
+      "minimum": {
+        "x": 33635,
+        "y": 32748,
+        "floor": -11
+      },
+      "maximum": {
+        "x": 33651,
+        "y": 32764,
+        "floor": -11
+      },
+      "guardian": {
+        "position": {
+          "x": 33643,
+          "y": 32756,
+          "floor": -11
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:7f0c08859e1316aac2df4fe457e746687b4c759a673d93332bbb0ebdbaf14e9e",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_zamulosh.lua:1:sha256:b1235772e4a7409b7c8d7c17609c6292b13b1b7597f460ef2a56c1523e56b278",
+        "content/world/placements/region-z11-x131-y127.b3:1:sha256:f109ef8bc953b434085af40fd03d4238ca8ae69d0f6cbc1470f036efdc2b90a9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-ferumbras-mazoran",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "creature": "oteryn:creature.mazoran",
+      "stage": "oteryn:quest-progress/questpc7/ferumbras/seal_1",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/ferumbras/seal_2",
+      "required": 1,
+      "minimum": {
+        "x": 33576,
+        "y": 32680,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 33592,
+        "y": 32696,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 33584,
+          "y": 32688,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:7f0c08859e1316aac2df4fe457e746687b4c759a673d93332bbb0ebdbaf14e9e",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_mazoran.lua:1:sha256:aa42e74df7fe8513799dc9dae7d8f1e0ae0e40be47a0218071b3ea4000ec48b3",
+        "content/world/placements/region-z14-x131-y127.b3:1:sha256:f1bf5ad6ab7f45a56a1a08b5152b6585f78687b356307d6265d1b8d935a5ddd3"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-ferumbras-razzagorn",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "creature": "oteryn:creature.razzagorn",
+      "stage": "oteryn:quest-progress/questpc7/ferumbras/seal_2",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/ferumbras/seal_3",
+      "required": 1,
+      "minimum": {
+        "x": 33414,
+        "y": 32457,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 33430,
+        "y": 32473,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 33422,
+          "y": 32465,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:7f0c08859e1316aac2df4fe457e746687b4c759a673d93332bbb0ebdbaf14e9e",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_razzagorn.lua:1:sha256:21faaf1355ff47db52995885a6d02d2da0174234b5320d75bc422a50fad8b0de",
+        "content/world/placements/region-z14-x130-y126.b3:1:sha256:be75ad3406f6c5058fa8dd6b62d2f3828cca8ffa6440523885ce48c70d96a549"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-ferumbras-ragiaz",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "creature": "oteryn:creature.ragiaz",
+      "stage": "oteryn:quest-progress/questpc7/ferumbras/seal_3",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/ferumbras/seal_4",
+      "required": 1,
+      "minimum": {
+        "x": 33473,
+        "y": 32328,
+        "floor": -13
+      },
+      "maximum": {
+        "x": 33489,
+        "y": 32344,
+        "floor": -13
+      },
+      "guardian": {
+        "position": {
+          "x": 33481,
+          "y": 32336,
+          "floor": -13
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:7f0c08859e1316aac2df4fe457e746687b4c759a673d93332bbb0ebdbaf14e9e",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_ragiaz.lua:1:sha256:3535982e927b467b0fbd399ef1d03fea1af6ca67ae8fc839a273b6e39c1f0a29",
+        "content/world/placements/region-z13-x130-y126.b3:1:sha256:a525ef0f1187968cf8e950c51437204cf49ba32b50136b43fd6507f6f5ce03db"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-ferumbras-tarbaz",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "creature": "oteryn:creature.tarbaz",
+      "stage": "oteryn:quest-progress/questpc7/ferumbras/seal_4",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/ferumbras/seal_5",
+      "required": 1,
+      "minimum": {
+        "x": 33451,
+        "y": 32836,
+        "floor": -11
+      },
+      "maximum": {
+        "x": 33467,
+        "y": 32852,
+        "floor": -11
+      },
+      "guardian": {
+        "position": {
+          "x": 33459,
+          "y": 32844,
+          "floor": -11
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:7f0c08859e1316aac2df4fe457e746687b4c759a673d93332bbb0ebdbaf14e9e",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_tarbaz.lua:1:sha256:f5f6e183c5b9059a1074a8a9e94b7fcc186d9c487d17b801a63cd6a51a7c3925",
+        "content/world/placements/region-z11-x130-y128.b3:1:sha256:40f496ecff1b96ad0ce31da3635d0c5d43283c6724a369ce9b50ddc62a99b67d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-ferumbras-shulgrax",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "creature": "oteryn:creature.shulgrax",
+      "stage": "oteryn:quest-progress/questpc7/ferumbras/seal_5",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/ferumbras/seal_6",
+      "required": 1,
+      "minimum": {
+        "x": 33477,
+        "y": 32778,
+        "floor": -13
+      },
+      "maximum": {
+        "x": 33493,
+        "y": 32794,
+        "floor": -13
+      },
+      "guardian": {
+        "position": {
+          "x": 33485,
+          "y": 32786,
+          "floor": -13
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:7f0c08859e1316aac2df4fe457e746687b4c759a673d93332bbb0ebdbaf14e9e",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_shulgrax.lua:1:sha256:caa78225a995594732f4371b1f54c6a39f5e459528c3c6d7964d620a090660d0",
+        "content/world/placements/region-z13-x130-y128.b3:1:sha256:ed2759cc06ee7a2ebcac399d3d9e520bfdc2403cb00d9c60348f109c8287ef87"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-ferumbras-ferumbras_mortal_shell",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "creature": "oteryn:creature.ferumbras_mortal_shell",
+      "stage": "oteryn:quest-progress/questpc7/ferumbras/seal_6",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/ferumbras/seal_7",
+      "required": 1,
+      "minimum": {
+        "x": 33384,
+        "y": 31465,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 33400,
+        "y": 31481,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 33392,
+          "y": 31473,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:7f0c08859e1316aac2df4fe457e746687b4c759a673d93332bbb0ebdbaf14e9e",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_ferumbras_lever.lua:1:sha256:da25bca87561d9f917f90ce7bc50c4e7fc7f0357e7146516a2713212057b18c2",
+        "content/world/placements/region-z14-x130-y122.b3:1:sha256:e4dcf7855b7d22e9d1464e8e7661399f9d4f933dcd516fdce363a9caca5ddc13"
+      ]
     }
   ]
 }

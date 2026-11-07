@@ -153,7 +153,7 @@
     "title": "Ferumbras' Ascension Quest",
     "canonical": "oteryn:quest.ferumbras_ascension_quest",
     "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/35/definition",
-    "status": "ACTIVE",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [
       {
@@ -202,60 +202,42 @@
         "log": ".questpc7/lane-rewards-pg.log:369"
       }
     ],
-    "queued_stage_binding": {
-      "stage": "s1",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
-    },
-    "first_unqualified_stage": {
-      "key": "s1",
-      "kind": "explore",
-      "objective": "Find the infernal entrance beneath Darashia.",
-      "targets": [
-        "Darashia infernal entrance"
-      ]
-    },
     "owner": "questpc7",
-    "remaining_work": {
-      "kind": "lane_implementation_work",
-      "missing_piece": "Rift Warrior Outfits: the reusable fenced NPC outfit/addon and account appearance mapping owner is implemented. Compose the full pinned route and exact owned NPC/physical/encounter bindings; implement remaining guard or currency mechanisms here and qualify the whole route with real PostgreSQL proof.",
-      "evidence": [
-        "content/quests/definitions/quests-00000-00099.json:1#/records/35/definition",
-        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
-        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
-      ],
-      "attempts": [
-        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
-      ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
-    },
     "shared_reward_mechanism": {
       "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
       "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
       "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
       "scope": "Generic owner only; not this quest's route qualification"
     },
-    "current_batch": {
-      "state": "Generic opt-in world reward bundle and achievements implemented; full native story running",
-      "postgres_red_seconds": 41.469268453,
-      "postgres_red_log": "/tmp/questpc7-ferumbras-red.log",
-      "unit_red": "unknown achievements field",
-      "unit_green": "22 world callback tests including new ten-case bundle guard test; all existing legacy refusals retained",
-      "mechanisms": "Reuses same-TX fenced account_achievement::grant_missing, existing item MINT and appearance writers. No new migration, generic-caller bypass or callback effect-bound increase.",
-      "expanded_red": [
-        {
-          "seconds": 44.343084621,
-          "reason": "fixture second offering MINT rejected"
-        },
-        {
-          "seconds": 43.456666898,
-          "reason": "diagnostic identifies input MINT; placeholder-vs-real ground binding mismatch proven at ground_cell_limit.rs:304-306; fixture corrected without changing owner guard"
-        },
-        {
-          "seconds": 44.125205511,
-          "reason": "two separate ground stacks do not satisfy one physical ten-essence offering; story now gathers via fenced pickup, ordinary carried merge, and drop10; all refusal assertions retained"
-        }
-      ]
+    "qualification": {
+      "kind": "whole selected native Ferumbras Ascension programme",
+      "test": "questpc7_ferumbras_full_native_seals_and_reward_bundle",
+      "proof": "qlane-meta/questpc7/FERUMBRAS-PG-PROOF.json",
+      "postgres": "18.6",
+      "red_seconds": 41.469268453,
+      "green_seconds": 52.479192159,
+      "scope": [
+        "fresh native level150/Premium subject; no quest-state seeds",
+        "zero/short9 ritual refusals with no charge; native pickup, carried merge and drop exact10",
+        "eight actual native species in source arenas, ordered by earned personal passages",
+        "duplicate lethal notifications/drains once; next guardian inactive before its passage",
+        "each actual native passage destination asserted",
+        "fresh Premium refusal grants none of tokens/outfit/achievement",
+        "full20-slot backpack refuses entire bundle with no source/progress/value output",
+        "real native food USE frees one slot before atomic final delivery",
+        "Silver22516x5, all3 native Rift Warrior grant facts, HatHunter and once-only completion",
+        "new command repeat grants no additional value",
+        "exact native command replay does not grant again",
+        "ordinary native appearance command selects earned full Rift Warrior"
+      ],
+      "boundary": "Complete selected finite Oteryn programme. Original raid/global/cooldown/party phases and ordinary corpse loot unchanged; ritual readiness is chosen milestone, not a claim of unsupported Godbreaker crafting.",
+      "generic_mechanisms": [
+        "explicit opt-in once-only completing world item/outfit bundle; legacy mixed field refusal remains",
+        "bounded unique world achievements reuse fenced grant_missing in same transaction; stable32-byte source event",
+        "exact existing item MINT/appearance/achievement owners retained; no migration needed",
+        "fixture Ground MINT now uses real content/frame metadata, preserving production compatibility guard"
+      ],
+      "validation": "14 focused gates GREEN; retained Hero PG53.248s, check/strict clippy3crates, repository generation/pins, content123/world5, fmt"
     }
   },
   {
