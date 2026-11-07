@@ -64,7 +64,7 @@ pub fn rules() -> &'static [TamingRule] {
     static RULES: OnceLock<Vec<TamingRule>> = OnceLock::new();
     RULES.get_or_init(|| {
         let Ok(rules): Result<Vec<TamingRule>, _> = serde_json::from_str(include_str!(
-            "../../../../../../content/cosmetics/taming.json"
+            "../../../../../../content/cosmetics/taming-native.json"
         )) else {
             return Vec::new();
         };
@@ -98,7 +98,7 @@ mod tests {
 
     #[test]
     fn mount_taming_bear_threshold_and_reference_effects() -> Result<(), &'static str> {
-        assert_eq!(rules().len(), 51);
+        assert_eq!(rules().len(), 50);
         let bear = rules()
             .iter()
             .find(|r| r.item_key == "oteryn:item.tibia.i5907")

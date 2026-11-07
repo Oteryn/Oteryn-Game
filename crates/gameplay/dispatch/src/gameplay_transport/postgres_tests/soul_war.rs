@@ -360,7 +360,18 @@ async fn terminal_decision(
         .bind(attempt.as_slice()).fetch_one(pool).await?)
 }
 
-fn scenario() -> TestResult {
+fn scenario() -> TestResult { scenario_with_outfit(false) }
+
+#[test]
+fn qengine_l13_revenant_parent_and_accessories() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
+    let started=std::time::Instant::now();
+    let result=super::kill_reward_e2e::scenario_thread::run("qengine-l13-revenant", || scenario_with_outfit(true));
+    eprintln!("POSTGRES_CASE_COMPLETED qengine-l13-revenant duration={:?} success={}",started.elapsed(),result.is_ok());
+    result
+}
+
+fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
     run(async |admin| {
         reset();
         use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position, Selector, Trigger};
@@ -374,7 +385,7 @@ fn scenario() -> TestResult {
             return_on_failure: false, failure_message: None, success_message: None,
             native_rule: None, effects: Default::default(), sources: vec![],
         }, trigger)?;
-        let h = Harness::create_with_admission_seed(admin, "soul_war_durable", false, false).await?;
+        let h = if qualify_outfit { Harness::create_quest_reward(admin,"soul_war_outfit",true).await? } else { Harness::create_with_admission_seed(admin, "soul_war_durable", false, false).await? };
         prepare_current_session(&h).await?;
         let mut deps = Dependencies::new()?;
         let seal = h.recovery.seal_current().map_err(debug)?;
@@ -397,7 +408,9 @@ fn scenario() -> TestResult {
             x:33619,y:31400,floor:10,
         }).map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
+        let premium = if qualify_outfit { Some(super::qengine_endgame_stories::current_premium(&h).await?) } else { None };
         let mut owner = deps.owner(&h, &authority);
+        owner.premium_coordinator = premium.as_ref();
         owner.active_generation = Some(generation);
         owner.movement_cells = &cells;
         owner.quest_catalogue = Some(std::sync::Arc::new(
@@ -562,6 +575,11 @@ fn scenario() -> TestResult {
         assert_eq!(outfit_rows, (1, 1), "repeated task report retains one source-qualified account entitlement and receipt");
         assert_eq!(h.root.pending_soul_war_reward(&authority, fence.character_id).await.map_err(debug)?, Some(pending.clone()));
         reward_delivery(&mut owner, &h, &mut admitted, &world, pending.item_source_id).await?;
+        if qualify_outfit {
+            admitted.runtime_actor=Some(deps.actor);
+            super::qengine_endgame_stories::accessories(&mut owner,&mut admitted,&h,&authority,"revenant").await?;
+            drop(owner); drop(authority); drop(seal); return h.cleanup().await;
+        }
 
         kill(&owner, &h.pool, session, 212, "oteryn:creature.goshnar_s_greed", true).await?;
         talk(&owner, deps.actor, session, npc, 506, "taints").await?;
@@ -635,6 +653,7 @@ async fn reward_delivery(
     };
     let backpack = generation_item_facts(native, &bag_definition).map_err(debug)?;
     let mut request = RewardClaimMintRequest {
+        additional_items: Vec::new(),
         command: CommandRef::new(session, CommandId::new(601).map_err(debug)?),
         claim: TypedDefinitionRef { family: "RewardClaim".into(), production_key: SOUL_WAR_REWARD_CLAIM.into(), revision_ref: SOUL_WAR_REWARD_REVISION.into() },
         source_placement: SOUL_WAR_REWARD_PLACEMENT.into(), item, quantity: 1, backpack,

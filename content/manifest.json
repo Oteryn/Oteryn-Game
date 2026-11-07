@@ -80,15 +80,15 @@
     },
     "Service.Bank": {
       "index": "content/services/bank/index.json",
-      "records": 2
+      "records": 1
     },
     "Service.Blessing": {
       "index": "content/services/blessings/index.json",
-      "records": 10
+      "records": 4
     },
     "Service.Promotion": {
       "index": "content/services/promotion/index.json",
-      "records": 7
+      "records": 4
     },
     "Service.Trade": {
       "index": "content/services/trade/index.json",
@@ -290,12 +290,6 @@
     },
     {
       "path": "content/cosmetics/mounts/mounts-00000-00251.json"
-    },
-    {
-      "path": "content/cosmetics/outfits/authoring.json"
-    },
-    {
-      "path": "content/cosmetics/outfits/native-cosmetics.json"
     },
     {
       "path": "content/craft/index.json"
@@ -610,9 +604,6 @@
       "path": "content/items/definitions/spell-native-profiles.json"
     },
     {
-      "path": "content/items/definitions/srx1-item-updates.json"
-    },
-    {
       "path": "content/items/definitions/starting-loadout-profiles.json"
     },
     {
@@ -730,13 +721,13 @@
       "path": "content/quests/definitions/quests-00300-00351.json"
     },
     {
-      "path": "content/services/bank/bank-00000-00001.json"
+      "path": "content/services/bank/bank-00000-00000.json"
     },
     {
       "path": "content/services/bank/index.json"
     },
     {
-      "path": "content/services/blessings/blessing-00000-00009.json"
+      "path": "content/services/blessings/blessing-00000-00003.json"
     },
     {
       "path": "content/services/blessings/index.json"
@@ -745,7 +736,7 @@
       "path": "content/services/promotion/index.json"
     },
     {
-      "path": "content/services/promotion/promotion-00000-00006.json"
+      "path": "content/services/promotion/promotion-00000-00003.json"
     },
     {
       "path": "content/services/trade/index.json"
@@ -850,9 +841,6 @@
       "path": "rulesets/progression/wheel-of-destiny/spell-profile.json"
     },
     {
-      "path": "tools/content-schema/native-gameplay/loot-tables.json"
-    },
-    {
       "path": "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
     }
   ],
@@ -939,7 +927,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "a051499f90d192d83f93cbeaed6efcaf45650b66ed261f661d5e9889aad9c149"
+          "sha256": "06b0bee295bf0d09d5b3c87827d66cc276771bc79a3c0a05cf8cfebf4c1282a5"
         },
         {
           "creates_canonical_identities": false,
@@ -1010,7 +998,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3667,
+          "record_count": 3612,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1018,12 +1006,12 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "5870eb6cfcdafa171c391ac5eee9a6128147c7ad0ee94396389df1c9947f083c"
+          "sha256": "4bc6e3880c69ae4d2926a0b689be12ce6f280619cc655da5b4d0104807a892c0"
         },
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/starting-loadout-profiles.json",
-          "record_count": 13,
+          "record_count": 8,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1031,7 +1019,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "08c7126b73447929016e33fac7140a7027e7f16152fcfb2d8b28e326329e714c"
+          "sha256": "20e098e915d0ff3e648cef2623a2d31ecbc21d824727a5557731d80c1abe98c9"
         }
       ],
       "Presentation": [
