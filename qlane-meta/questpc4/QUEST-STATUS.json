@@ -7146,7 +7146,7 @@
       }
     },
     "vashresamun_room_batch_24": {
-      "status": "COMPILED_RED_WIP_CHECKPOINT",
+      "status": "QUALIFIED_COMPONENT",
       "previous_pushed_head": "60d485d5b",
       "scope": "Two missing DefaultStart-gated room consumers, three native cases for advancement, legal higher-state preservation, refusal and replay.",
       "source": {
@@ -7174,6 +7174,46 @@
         "actual": "Unbound native STEP lands on trigger instead of restoring approach for missing DefaultStart",
         "expected": "Restore exact approach, cue11 and no Quest writes",
         "log": "/tmp/questpc4-vash-rooms-red.log"
+      },
+      "checkpoint_head": "1f940ceb6",
+      "implementation": "Two exact native floor selectors added after real PG RED; source DefaultStart, literal goals, RaiseTo1/3 and cue11 unchanged.",
+      "green_session": 16512,
+      "green_log": "/tmp/questpc4-vash-rooms-green.log",
+      "compiler_gates": "/tmp/questpc4-vash-rooms-gates.sh",
+      "green": {
+        "postgres_version": "18.6",
+        "cases": 3,
+        "seconds": 72.18,
+        "durations_seconds": [
+          70.324320148,
+          71.739131703,
+          72.175896322
+        ],
+        "marker": "POSTGRES_DATABASE_READY l6_native_room",
+        "log": "/tmp/questpc4-vash-rooms-green.log",
+        "morguthis_regression": {
+          "cases": 1,
+          "seconds": 70.084456964,
+          "postgres_version": "18.6",
+          "log": "/tmp/questpc4-vash-rooms-morguthis-regression.log"
+        }
+      },
+      "gates": {
+        "fmt": "PASS",
+        "check": "PASS 7m25s including lock wait",
+        "clippy": "PASS -D warnings 3m03s",
+        "metadata_units": "2 PASS 0.02s",
+        "frozen_hashes": "1 PASS 1.40s",
+        "admission_units": "3 PASS 0.03s",
+        "ancient_source_units": "5 PASS 2.75s",
+        "room_source_unit": "1 PASS 1.40s covering seven source entrances and legal3 preservation",
+        "duplicates": "PASS",
+        "diff": "PASS"
+      },
+      "main_registry_recheck": {
+        "sha": "d34807f5bd234ee8318e57ba454ba39be0df113d",
+        "checked_at": "2026-11-07 13:55 UTC",
+        "result": "QENGINE2 and QBASE registry files absent, conditional merge not yet applicable"
       }
     }
   },

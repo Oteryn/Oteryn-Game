@@ -279,7 +279,16 @@
         "position": null,
         "unique": 40090,
         "action": null,
-        "appearance": null
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33194,
+            "y": 32666,
+            "floor": -15
+          },
+          "ordinal": 0,
+          "appearance": 423
+        }
       },
       "lever": null,
       "reversible": false,
@@ -324,7 +333,16 @@
         "position": null,
         "unique": 40091,
         "action": null,
-        "appearance": null
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33128,
+            "y": 32657,
+            "floor": -15
+          },
+          "ordinal": 0,
+          "appearance": 460
+        }
       },
       "lever": null,
       "reversible": false,

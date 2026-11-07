@@ -16,6 +16,8 @@ fn room_entry_preserves_later_legal_progress_and_keeps_default_start_guard() -> 
         ("omruc-room", 40087, 2),
         ("rahemos-levers", 40088, 1),
         ("rahemos-room", 40089, 2),
+        ("vashresamun-specific", 40090, 1),
+        ("vashresamun-room", 40091, 3),
     ] {
         let callback = callbacks
             .iter()
@@ -29,7 +31,10 @@ fn room_entry_preserves_later_legal_progress_and_keeps_default_start_guard() -> 
         let transition = catalogue
             .transition(&callback.key)
             .ok_or("source transition")?;
-        for before in [-1, 0, 1, 2] {
+        for before in [-1, 0, 1, 2]
+            .into_iter()
+            .chain((state.maximum >= 3).then_some(3))
+        {
             let current = BTreeMap::from([
                 (format!("{prefix}default_start"), 1),
                 (state.track.clone(), before),
