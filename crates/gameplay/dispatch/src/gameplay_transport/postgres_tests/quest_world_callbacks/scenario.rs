@@ -76,7 +76,9 @@ fn scenario_case(
         if stateless_destination.is_some() {
             assert_eq!(callback.selector.position, Some(trigger));
         }
-        let world = if name == "authored-braindeath" {
+        let world = if let Some(route) = super::super::questpc8_retrieval_routes::route(name) {
+            super::super::questpc8_retrieval_routes::world(route)?
+        } else if name == "authored-braindeath" {
             super::super::quest_callbacks::source_world((32546, 31522, -11), 0, 1983, 0)?
         } else if name == "authored-smith-cache" {
             super::super::quest_callbacks::source_world_rectangle(
@@ -245,7 +247,9 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if name == "authored-braindeath" {
+        if let Some(route) = super::super::questpc8_retrieval_routes::route(name) {
+            super::super::questpc8_retrieval_routes::exercise(route, &mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-braindeath" {
             super::super::questpc8_authored_programmes::exercise_braindeath(
                 &mut owner,
                 &mut admitted,

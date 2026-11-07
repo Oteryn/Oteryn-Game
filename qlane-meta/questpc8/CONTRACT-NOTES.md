@@ -70,3 +70,57 @@ pinned Canary04b83b51 XML1cf2992c...; exact binding and accepted physical facts
 must agree, accepted holds refuse. The existing canonical record remains intact;
 this core admission does not infer equipment, weapon or use behavior.
 XML: https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/items/items.xml
+
+Chosen retrieval batch (Voodoo Doll, Mastermind Potion, Kormarak): all three
+retain their original canonical recipes and source records. New callbacks are
+explicit Oteryn bindings, not fabricated donor UIDs. Where historical landmarks
+could not be confirmed, the owner-authorized conservative rule is to use an
+existing native counterpart in the named area, retain every chosen event/count,
+and publish the difference here instead of claiming current source fidelity.
+
+Voodoo uses the native three-Witch room: spawns32747,31948 /32751,31948 /
+32752,31953,z9 and the two east-wall2473 boxes at32757,31953 and32757,31957,
+ordinal1 with no UIDs. Arrival32743,31950 is walkable351. The chosen two-box
+stage resolves north before south; the arrival message tells the player this.
+Three actual chamber Witch deaths are required. King doll resolves to3209 by
+its existing "little king" description, not the generic doll3002. Pinned XML
+confirms weight650 and ordinary custody; existing admission machinery supplies
+only native physical/stack facts and leaves canonical UNKNOWN facts intact.
+Magic Light Wand is the inactive3046, retaining its existing instance owner.
+Sources: https://tibia.fandom.com/index.php?curid=5235&oldid=749496 and
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml .
+
+Mastermind uses two actual Formorgar caches:32027,31104,z11 has6381 then2472
+(ordinal2);32216,31168,z11 has2473 (ordinal1). Neither retains a UID. Walkable
+approaches32028,31105 and32215,31169 bind the two exploration milestones.
+The historical fire landmark was not confirmed; the existing eastern cache is
+an explicitly conservative counterpart, not a claim that its grass mats are a
+fire. Preserve Premium and explore/use/explore/use/completion order. Give one
+7440 per cache, gold100 first and gold101 plus7159x1/7158x2 second, totaling the
+chosen7440x2/gold201/fish exactly. Gold101 is two legal stacks100+1. Existing
+atomic backpack outputs give no unselected bag. Source recipe:
+https://tibia.fandom.com/wiki/Mastermind_Potion_Quest/Spoiler (normal access
+returned402; the pinned recipe and committed geometry remain the evidence).
+
+Kormarak's historical wooden-coffin landmark was not located. Restore the
+chosen encounter at the existing Ancient Temple body32342,32125,z10,
+appearance4240 ordinal2 (1854 is before it). The ladder1948 approach at
+32354,32138 and the walkable chamber32340,32124 provide the two milestones.
+One ordinary native Demon Skeleton at the existing free351 cell32341,32124
+is an explicit authored restoration, with a chosen90-second world respawn.
+It is not attributed to donor spawn XML or a held boss. The bounded authored
+spawn supplement reuses the native world source/clock/compiler; existing source
+records are unchanged and the net addition is one source/point. Chamber death
+credit still requires the current chosen phase and captured present principal.
+Only after that death does the body give3359x1/3354x1/3276x1/3287x13 through one
+atomic multi-output occurrence and complete the quest. Sources:
+https://tibia.fandom.com/index.php?curid=38407&oldid=884223 and the same pinned
+Crystal items.xml (4240 is a dead human). No coffin, source spawn or extra bag
+is invented. These counterparts implement the selected Oteryn programme;
+full historical geography and unselected source branches are not certified.
+
+The PG retrieval harness keeps the approved native selectors/ordinals and
+provides neutral connecting floor for real STEP dispatch. It proves the quest
+and value path, not that its straight test corridors reproduce native terrain.
+Actual counterpart cells are checked against the committed map, and the native
+world compiler independently admits the added guardian placement.

@@ -1,32 +1,34 @@
-# Current completed native reward batch
+# Current completed three-route batch
 
-Mintwallin Cyclops and Giant Smithhammer are QUALIFIED in this lane. Mintwallin
-retains its original Ruby claim/once ledger through one approved native alias;
-its eleven-edit source scene was already PG-qualified. Smith's chosen native
-exploration/guardian/cache gives hammer1, Talon1 and gold100 through reusable
-atomic backpack outputs, with full-capacity refusal and replay. Both features
-survived the concurrent-head merge. Do not redo either programme.
+Voodoo Doll, Mastermind Potion and Kingdom of Kormarak are QUALIFIED here.
+PG RED3/3 missing callbacks after actual fixture initialization,5.81s; GREEN3/3
+in251.67s: Voodoo40.260110753s, Mastermind168.413264571s and Kormarak42.999984035s.
+Actual STEP/USE, native deaths, Premium, exact outputs, replay and cold quest
+copy are covered. Read retrieval-routes-validation.json and CONTRACT-NOTES.md
+for exact anchors and explicit conservative historical-landmark decisions.
+Do not redo these programmes or the five earlier qualified entries.
 
-Combined PG: Mintwallin25.03837681s, smith26.27184565s, nested bag25.879177332s,
-Father's exact atomic eleven-track acceptance47.156350738s and exact-charge
-chest29.083511268s. All-feature six-crate check, strict all-target/all-feature
-Clippy, fmt,16 profile units,40-file generator drift and pin refresh/check pass.
-World digest remains2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968.
-See native-alias-smith-merge-validation.json. An additional out-of-lane full
-Father eight-hand-in probe hit pre-existing missing native Item profiles; the
-exact before/after profile comparison is retained there, and no tests/guards
-were weakened. This is distinct from the required atomic write, which passed.
+Reusable authored ordinary guardian sources now lower through the existing
+world compiler/clock. Kormarak's actual compiled guardian is Demon Skeleton,
+32341,32124,-10, all-day,90000ms. Eleven converter tests,16 native item profile
+tests,17 world callback units,5 reward callback units, strict all-feature checks,
+all-target Clippy, fmt, generator drift and pin refresh/check pass. Native King
+doll3209 is the only new item profile; existing profiles and canonical facts stay
+unchanged. Final Clippy repair is a transparent fixture type alias only.
+World digest is now dd0a866904036a1823db30d042fcfd9eb4db89b21ad7ea93b1916cdc52265a04
+(inputs6448cbaad3e4614ed631ddf5a3ee700611ce843d3108aa7d130afd1ef6aeabe6,
+31101808bytes); repository tooling also updates the preprod topology pin.
+No binary or reference copy is committed. Concurrent NPC reward layout validator
+28f9a9252/merge89d5e1413 was fast-forwarded before GREEN; retain it.
 
-Counts:5 qualified here,3 elsewhere,15 remaining. Next chosen batch is Voodoo
-Doll, Mastermind Potion and Kormarak. Scratch drafts (not applied):
-/tmp/questpc8-retrieval-tests.rs, /tmp/questpc8-apply-retrieval-data.py and
-/tmp/questpc8-next-retrieval-batch.md. First add only test harness/mount data and
-run all three PG cases RED; then add callbacks/death objectives/item profiles.
-Kormarak also needs an explicitly authored native guardian counterpart: current
-map has body32342,32125,z10 (4240 ordinal2) but no confirmed source coffin/guardian
-there. Use a documented conservative chosen restoration; never label it donor
-fact. No reference copies or binaries. Final stable candidate review remains
-for the completed lane; current state is AUTHORING.
+Counts:8 qualified here,3 elsewhere,12 remaining. Continue L7 and keep fetching/
+merging before every push. AUTHORING continues; final stable-candidate independent
+review is still required after the remaining programmes are complete. Scratch
+research for Mystery of the Valley: GuardianStatue50335 and fragments50336/7/8
+exist canonically, pickupable/movable, but physical weights/stack admission are
+UNKNOWN and pinned XML omits them. Research existing factory-default source
+proofs before adding reusable plain item custody support; never invent IDs or
+silently promote canonical facts. Other remaining entries are still active work.
 
 # questpc8 — AUTHORING
 
@@ -37,8 +39,8 @@ to ten minutes; document conservative choices in CONTRACT-NOTES.md. Shared
 engine features belong to this lane. Earlier publication bans are superseded.
 
 Scope: LANE-L7.json,23 entries. Triangle Tower, Waterfall and Vampire Shield are
-QUALIFIED elsewhere. Killing in the Name of, Braindeath, Tinder Box, Mintwallin and Giant Smithhammer are QUALIFIED here;
-15 remain. Historical non-L7 rows are not additional scope. Preserve exclusions
+QUALIFIED elsewhere. Killing in the Name of, Braindeath, Tinder Box, Mintwallin, Giant Smithhammer, Voodoo Doll, Mastermind Potion and Kormarak are QUALIFIED here;
+12 remain. Historical non-L7 rows are not additional scope. Preserve exclusions
 Dawnport, W14/P23/X01-X06, atomic Father's Burden11-track write and exact charges.
 
 Pushed28a7715f7 after d90c1bfa2: Braindeath chosen exploration/native death/coffin

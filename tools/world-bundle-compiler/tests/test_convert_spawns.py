@@ -26,10 +26,23 @@ class ConvertSpawnsTest(unittest.TestCase):
         cls.held = json.loads(cs.HELD.read_text())["records"]
 
     def test_counts(self):
-        self.assertEqual(len(self.records), 54684)
-        self.assertEqual(sum(len(r["declaration"]["points"]) for r in self.records), 87812)
-        self.assertEqual(self.index["record_count"], 54684)
-        self.assertEqual(self.index["point_count"], 87812)
+        self.assertEqual(len(self.records), 54685)
+        self.assertEqual(sum(len(r["declaration"]["points"]) for r in self.records), 87813)
+        self.assertEqual(self.index["record_count"], 54685)
+        self.assertEqual(self.index["point_count"], 87813)
+
+    def test_authored_guardian_has_its_own_provenance_and_native_clock(self):
+        raw = self.files.get("spawns-authored-quests.json")
+        self.assertIsNotNone(raw, "chosen guardian is missing from native world conversion")
+        records = json.loads(raw)["records"]
+        self.assertEqual(len(records), 1)
+        guardian = records[0]["declaration"]
+        self.assertEqual(guardian["identity"]["key"], "oteryn:spawn.authored.questpc8_kormarak_guardian")
+        self.assertEqual(guardian["provenance"]["kind"], "oteryn-authored-chosen")
+        self.assertEqual(guardian["points"], [{"cell": {"x": 32341, "y": 32124, "floor": 10},
+                         "creature": "oteryn:creature.demon_skeleton", "direction": "south", "respawn_ms": 90000}])
+        held = json.loads(self.files["held-bosses.json"])["records"]
+        self.assertNotIn(guardian["identity"]["key"], {r["source"] for r in held})
 
     def test_provenance_is_crystalserver(self):
         self.assertEqual(self.index["source"]["source_key"], "oteryn:source.crystalserver")
@@ -96,6 +109,49 @@ class ConvertSpawnsTest(unittest.TestCase):
                   if point["creature"] == "oteryn:creature.heoni"]
         self.assertEqual(len(points), 1)
         self.assertEqual(points[0]["boss_policy"]["at_reset"]["chance"], {"numerator": 0, "denominator": 50})
+
+
+
+
+class AuthoredQuestSpawnsTest(unittest.TestCase):
+    def test_plain_guard_and_rejected_authority_or_geometry_changes(self):
+        import copy
+        import authored_quest_spawns as authored
+        document = json.loads(cs.AUTHORED.read_bytes())
+        creature = "oteryn:creature.demon_skeleton"
+        known = {creature}
+        parse = lambda value, reserved=set(), occupied=set(): authored.parse(
+            json.dumps(value).encode(), known, reserved, occupied)
+        self.assertEqual(len(parse(document)), 1)
+        point = document["records"][0]["declaration"]["points"][0]
+        cell = point["cell"]
+        with self.assertRaises(ValueError):
+            parse(document, reserved={creature})
+        with self.assertRaises(ValueError):
+            parse(document, occupied={(cell["x"], cell["y"], cell["floor"])})
+        for field, value in [("creature", "oteryn:creature.not_admitted"),
+                             ("direction", "up"), ("respawn_ms", True),
+                             ("respawn_ms", 0), ("respawn_ms", 86400001),
+                             ("boss_policy", {"at_reset": {}})]:
+            changed = copy.deepcopy(document)
+            changed["records"][0]["declaration"]["points"][0][field] = value
+            with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                parse(changed)
+        for field, value in [("x", -1), ("y", 65536), ("floor", 16), ("x", True)]:
+            changed = copy.deepcopy(document)
+            changed["records"][0]["declaration"]["points"][0]["cell"][field] = value
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                parse(changed)
+        changed = copy.deepcopy(document)
+        changed["records"].append(copy.deepcopy(changed["records"][0]))
+        with self.assertRaises(ValueError):
+            parse(changed)
+        changed = copy.deepcopy(document)
+        changed["records"][0]["declaration"]["identity"]["key"] = "oteryn:spawn.source_impersonation"
+        with self.assertRaises(ValueError):
+            parse(changed)
+        with self.assertRaises(ValueError):
+            parse([])
 
 
 if __name__ == "__main__":

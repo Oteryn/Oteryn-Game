@@ -291,6 +291,494 @@
           ]
         }
       }
+    },
+    {
+      "quest": "oteryn:quest.authored.voodoo_doll_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:voodoo:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=5234&oldid=1106155",
+        "https://tibia.fandom.com/index.php?curid=5235&oldid=749496",
+        "https://www.tibiawiki.com.br/index.php?curid=4566&oldid=416110",
+        "Chosen exact native anchors and conservative adaptations are documented in qlane-meta/questpc8/CONTRACT-NOTES.md; no startup UID is invented."
+      ],
+      "key": "oteryn:quest-callback/authored-voodoo",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32743,
+          "y": 31950,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/voodoo/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/voodoo/kills",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "premium_required": false,
+      "success_message": "Three witches guard the two boxes by the eastern wall. Search the northern box first."
+    },
+    {
+      "quest": "oteryn:quest.authored.voodoo_doll_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:voodoo:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=5234&oldid=1106155",
+        "https://tibia.fandom.com/index.php?curid=5235&oldid=749496",
+        "https://www.tibiawiki.com.br/index.php?curid=4566&oldid=416110",
+        "Chosen exact native anchors and conservative adaptations are documented in qlane-meta/questpc8/CONTRACT-NOTES.md; no startup UID is invented."
+      ],
+      "key": "oteryn:quest-callback/authored-voodoo-north",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32757,
+          "y": 31953,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2473,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/voodoo/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/voodoo/kills",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "premium_required": false,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3209",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "quest": "oteryn:quest.authored.voodoo_doll_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:voodoo:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=5234&oldid=1106155",
+        "https://tibia.fandom.com/index.php?curid=5235&oldid=749496",
+        "https://www.tibiawiki.com.br/index.php?curid=4566&oldid=416110",
+        "Chosen exact native anchors and conservative adaptations are documented in qlane-meta/questpc8/CONTRACT-NOTES.md; no startup UID is invented."
+      ],
+      "key": "oteryn:quest-callback/authored-voodoo-south",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32757,
+          "y": 31957,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2473,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/voodoo/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 4
+        }
+      ],
+      "premium_required": false,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3046",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "completes": true
+    },
+    {
+      "quest": "oteryn:quest.authored.mastermind_potion_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:mastermind:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=17060&oldid=842378",
+        "https://tibia.fandom.com/index.php?curid=18595&oldid=289008",
+        "Chosen exact native anchors and conservative adaptations are documented in qlane-meta/questpc8/CONTRACT-NOTES.md; no startup UID is invented."
+      ],
+      "key": "oteryn:quest-callback/authored-mastermind",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32028,
+          "y": 31105,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/mastermind/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "premium_required": true
+    },
+    {
+      "quest": "oteryn:quest.authored.mastermind_potion_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:mastermind:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=17060&oldid=842378",
+        "https://tibia.fandom.com/index.php?curid=18595&oldid=289008",
+        "Chosen exact native anchors and conservative adaptations are documented in qlane-meta/questpc8/CONTRACT-NOTES.md; no startup UID is invented."
+      ],
+      "key": "oteryn:quest-callback/authored-mastermind-first",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32027,
+          "y": 31104,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472,
+        "ordinal": 2
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/mastermind/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "premium_required": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i7440",
+          "count": 1,
+          "contents": [],
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i3031",
+              "count": 100
+            }
+          ]
+        }
+      },
+      "success_message": "Return toward the mine entrance, then follow the second route toward the fire."
+    },
+    {
+      "quest": "oteryn:quest.authored.mastermind_potion_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:mastermind:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=17060&oldid=842378",
+        "https://tibia.fandom.com/index.php?curid=18595&oldid=289008",
+        "Chosen exact native anchors and conservative adaptations are documented in qlane-meta/questpc8/CONTRACT-NOTES.md; no startup UID is invented."
+      ],
+      "key": "oteryn:quest-callback/authored-mastermind-second-route",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32215,
+          "y": 31169,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/mastermind/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "premium_required": true
+    },
+    {
+      "quest": "oteryn:quest.authored.mastermind_potion_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:mastermind:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=17060&oldid=842378",
+        "https://tibia.fandom.com/index.php?curid=18595&oldid=289008",
+        "Chosen exact native anchors and conservative adaptations are documented in qlane-meta/questpc8/CONTRACT-NOTES.md; no startup UID is invented."
+      ],
+      "key": "oteryn:quest-callback/authored-mastermind-second",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32216,
+          "y": 31168,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2473,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/mastermind/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "premium_required": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i7440",
+          "count": 1,
+          "contents": [],
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i3031",
+              "count": 100
+            },
+            {
+              "item": "oteryn:item.tibia.i3031",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i7159",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i7158",
+              "count": 2
+            }
+          ]
+        }
+      },
+      "completes": true
+    },
+    {
+      "quest": "oteryn:quest.authored.kingdom_of_kormarak_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:kormarak:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=56856&oldid=899526",
+        "https://tibia.fandom.com/index.php?curid=38407&oldid=884223",
+        "Chosen exact native anchors and conservative adaptations are documented in qlane-meta/questpc8/CONTRACT-NOTES.md; no startup UID is invented."
+      ],
+      "key": "oteryn:quest-callback/authored-kormarak",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32354,
+          "y": 32138,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/kormarak/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/kormarak/kills",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "premium_required": false,
+      "success_message": "Follow the northern ladder route to the old human remains. Defeat the demon skeleton guardian before searching the body."
+    },
+    {
+      "quest": "oteryn:quest.authored.kingdom_of_kormarak_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:kormarak:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=56856&oldid=899526",
+        "https://tibia.fandom.com/index.php?curid=38407&oldid=884223",
+        "Chosen exact native anchors and conservative adaptations are documented in qlane-meta/questpc8/CONTRACT-NOTES.md; no startup UID is invented."
+      ],
+      "key": "oteryn:quest-callback/authored-kormarak-ghoul-route",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32340,
+          "y": 32124,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/kormarak/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "premium_required": false
+    },
+    {
+      "quest": "oteryn:quest.authored.kingdom_of_kormarak_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:kormarak:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=56856&oldid=899526",
+        "https://tibia.fandom.com/index.php?curid=38407&oldid=884223",
+        "Chosen exact native anchors and conservative adaptations are documented in qlane-meta/questpc8/CONTRACT-NOTES.md; no startup UID is invented."
+      ],
+      "key": "oteryn:quest-callback/authored-kormarak-body",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32342,
+          "y": 32125,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4240,
+        "ordinal": 2
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/kormarak/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/kormarak/kills",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "premium_required": false,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3359",
+          "count": 1,
+          "contents": [],
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i3354",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i3276",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i3287",
+              "count": 13
+            }
+          ]
+        }
+      },
+      "completes": true
     }
   ]
 }

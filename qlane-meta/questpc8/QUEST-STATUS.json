@@ -429,29 +429,23 @@
     "title": "Kingdom of Kormarak Quest",
     "canonical": "oteryn:quest.authored.kingdom_of_kormarak_quest",
     "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/9/definition",
-    "status": "UNFINISHED",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
-    "queued_stage_binding": {
-      "stage": "s1",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
-    },
-    "blocker": {
-      "missing_piece": "The five-stage chosen programme and dead-human reward placement (Brass Armor, Brass Helmet, Hatchet, 13 Throwing Stars) lack an authored native binding; the binder currently requires a Crystal UID."
-    },
-    "first_unqualified_stage": {
-      "key": "s1",
-      "kind": "explore",
-      "objective": "Enter the Ancient Temple under Thais and follow the north ladder route.",
-      "targets": [
-        "Thais Ancient Temple"
-      ]
-    },
-    "disposition": "authoring",
+    "disposition": "qualified-current-lane",
     "qualified_elsewhere": [],
-    "mechanism": "native_reward_source_placement",
-    "round": "L7"
+    "mechanism": "native chosen stage graph, current-owner events and existing atomic reward owner",
+    "round": "L7",
+    "qualification_scope": "Complete selected once-only Oteryn programme at the documented native counterparts; canonical Source remains unchanged.",
+    "qualified_components": [
+      {
+        "scope": "Both native counterpart waypoints, actual native Demon Skeleton death, premature body refusal, exact3359x1/3354x1/3276x1/3287x13 atomic outputs, completion, replay and cold quest copy.",
+        "test": "questpc8_retrieval_kormarak_native_guardian_body_outputs_once",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_retrieval_kormarak",
+        "duration_seconds": 42.999984035,
+        "proof": "retrieval-routes-validation.json"
+      }
+    ]
   },
   {
     "title": "Kingsday Mini World Change",
@@ -1133,28 +1127,12 @@
     "title": "Mastermind Potion Quest",
     "canonical": "oteryn:quest.authored.mastermind_potion_quest",
     "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/16/definition",
-    "status": "UNFINISHED",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
-    "queued_stage_binding": {
-      "stage": "s1",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
-    },
-    "blocker": {
-      "missing_piece": "The five-stage chosen programme, two Formorgar caches and consolidated 201-gold reward lack authored native bindings; explicit authored ordinal binding is now supported, but the chosen placements and stage graph still require composition."
-    },
-    "first_unqualified_stage": {
-      "key": "s1",
-      "kind": "explore",
-      "objective": "Enter Formorgar Mines and descend the first marked route past the Nightmare floor.",
-      "targets": [
-        "Formorgar Mines first cache route"
-      ]
-    },
-    "disposition": "authoring",
+    "disposition": "qualified-current-lane",
     "qualified_elsewhere": [],
-    "mechanism": "native_reward_source_placement",
+    "mechanism": "native chosen stage graph, current-owner events and existing atomic reward owner",
     "round": "L7",
     "qualified_components": [
       {
@@ -1168,8 +1146,16 @@
         "qengine2_checked": "5a6de28c1",
         "qengine2_result": "no authored ordinal reward-claim selector present; reward/outfit components retained for subsequent reuse",
         "green_log_sha256": "d4b2067afeec1f3c5e9a9414f370bf01533afff7ce17a089de57baf7e16c5dd1"
+      },
+      {
+        "scope": "Premium refusal/admission, both native route anchors and cache ordinals, exact7440x2/gold201/7159x1/7158x2, legal gold stacks and no extra bag, replay and cold quest copy.",
+        "test": "questpc8_retrieval_mastermind_two_routes_exact_outputs_once",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_retrieval_mastermind",
+        "duration_seconds": 168.413264571,
+        "proof": "retrieval-routes-validation.json"
       }
-    ]
+    ],
+    "qualification_scope": "Complete selected once-only Oteryn programme at the documented native counterparts; canonical Source remains unchanged."
   },
   {
     "title": "Measuring Tibia Quest",
@@ -1488,13 +1474,10 @@
   {
     "canonical": "oteryn:quest.authored.voodoo_doll_quest",
     "title": "Voodoo Doll Quest",
-    "status": "UNFINISHED",
-    "disposition": "authoring",
+    "status": "QUALIFIED",
+    "disposition": "qualified-current-lane",
     "qualified_elsewhere": [],
-    "mechanism": "native_reward_source_placement",
-    "blocker": {
-      "missing_piece": "The four-stage chosen programme lacks swamp-box native selectors and complete kill/use/reward dispatch composition."
-    },
+    "mechanism": "native chosen stage graph, current-owner events and existing atomic reward owner",
     "round": "L7",
     "qualified_components": [
       {
@@ -1508,8 +1491,16 @@
         "qengine2_checked": "5a6de28c1",
         "qengine2_result": "no authored ordinal reward-claim selector present; reward/outfit components retained for subsequent reuse",
         "green_log_sha256": "d4b2067afeec1f3c5e9a9414f370bf01533afff7ce17a089de57baf7e16c5dd1"
+      },
+      {
+        "scope": "Three native chamber Witch deaths, both exact native boxes, King doll3209 and inactive wand3046, fresh/replayed claims and cold quest copy.",
+        "test": "questpc8_retrieval_voodoo_three_witches_both_boxes_once",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_retrieval_voodoo",
+        "duration_seconds": 40.260110753,
+        "proof": "retrieval-routes-validation.json"
       }
-    ]
+    ],
+    "qualification_scope": "Complete selected once-only Oteryn programme at the documented native counterparts; canonical Source remains unchanged."
   },
   {
     "canonical": "oteryn:quest.wrath_of_the_emperor_quest",

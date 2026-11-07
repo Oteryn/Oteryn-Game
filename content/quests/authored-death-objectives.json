@@ -47,6 +47,54 @@
         "https://tibia.fandom.com/index.php?curid=4377&oldid=748685",
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L1170; chosen consolidated cache, no retained UID."
       ]
+    },
+    {
+      "key": "oteryn:quest-death/authored-voodoo",
+      "quest": "oteryn:quest.authored.voodoo_doll_quest",
+      "creature": "oteryn:creature.witch",
+      "stage": "oteryn:quest-progress/chosen/voodoo/stage",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/chosen/voodoo/kills",
+      "required": 3,
+      "minimum": {
+        "x": 32740,
+        "y": 31943,
+        "floor": -9
+      },
+      "maximum": {
+        "x": 32758,
+        "y": 31959,
+        "floor": -9
+      },
+      "sources": [
+        "oteryn-authored:chosen-recipe:voodoo:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=5234&oldid=1106155",
+        "Conservative native chamber bounds in CONTRACT-NOTES.md; actual frozen native death and present principal only."
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/authored-kormarak",
+      "quest": "oteryn:quest.authored.kingdom_of_kormarak_quest",
+      "creature": "oteryn:creature.demon_skeleton",
+      "stage": "oteryn:quest-progress/chosen/kormarak/stage",
+      "stage_value": 2,
+      "counter": "oteryn:quest-progress/chosen/kormarak/kills",
+      "required": 1,
+      "minimum": {
+        "x": 32334,
+        "y": 32122,
+        "floor": -10
+      },
+      "maximum": {
+        "x": 32344,
+        "y": 32127,
+        "floor": -10
+      },
+      "sources": [
+        "oteryn-authored:chosen-recipe:kormarak:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=56856&oldid=899526",
+        "Conservative native chamber bounds in CONTRACT-NOTES.md; actual frozen native death and present principal only."
+      ]
     }
   ]
 }
