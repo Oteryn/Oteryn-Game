@@ -1,3 +1,24 @@
+# Source-verified access regression — full route GREEN building
+
+Actual PostgreSQL RED74.08s proved Lai accepted an incomplete dog cure. The
+local fix requires the source-backed Mission06>=8sled access checkpoint and
+Frontier Questline>=23escape checkpoint. Keep the new incomplete-cure refusal
+assertion; do not require unsupported Mission08>=2. See CONTRACT-NOTES and
+mystery-access-authoring-checkpoint.json. Historical component logs retain their
+original meaning and do not qualify the corrected full programme.
+
+The working tree now contains all four missing native callbacks and contextual
+assembly: first fragment through the existing scalar input owner, two through
+a bounded extra-input list, one plain statue MINT, one Type2 transaction.
+Five focused schema/tool tests pass; native regeneration41files and three
+constructor/reuse tests pass. Full native PG GREEN is building; default check,
+strict changed-crate Clippy, drift/pin checks are queued/running. No runtime
+qualification or publication is claimed by this documentation checkpoint.
+
+18of23active entries remain QUALIFIED,5remain. Finish and push the green
+Mystery slice immediately; continue Colours,Venore Daily,Winterlight,Wrath.
+Do not end the session. Preserve incoming four-route qualifications.
+
 # Incoming four-route convergence —18of23qualified,5remain
 
 Preserve incoming f767dfc42/e37a4befd/c606b2308: Trader, Treasure Island,

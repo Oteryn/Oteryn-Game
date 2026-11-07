@@ -452,7 +452,7 @@ landmarks, rather than inventing donor item IDs or legacy UIDs:
 | Muggy Plains fragment |33198,31184,6|0|469 plateau stair ground|
 | Kilmaresh fragment |33834,31697,6|0|4408 plateau ground|
 | Crystal exploration STEP |33080,32704,5|0|231 ground|
-| Assembly USE |33080,32705,5|1|4448 rock border|
+| Assembly contextual USE |33080,32704,5|0|231 ground|
 
 These are explicit first-party landmark bindings, not source shrine/crystal
 object equivalence claims. The accepted item constructor roles retain the
@@ -478,3 +478,32 @@ CharacterRevision and matching quest-receipt constraints. Those constraints
 remain intact. Inventory transfers do not advance CharacterRevision. The final
 route fixture must not insert Mystery tracks or items by SQL; its introduction,
 collection and exploration must produce the required legitimate receipts.
+
+## Verified access correction and input-owner comparison
+
+Canary Nilsor at
+https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/nilsor.lua
+sets Mission06=1when accepting the cure task and8after the seven ingredients.
+The associated reward grants sled access. Cross-check:
+https://www.tibiawiki.com.br/index.php?title=The_Ice_Islands_Quest&action=raw .
+The earlier Lai guard>=1was therefore too weak. Actual PostgreSQL RED74.08s
+accepted an incomplete cure after the other prerequisite was satisfied. The
+local correction requires Mission06>=8and keeps that negative test intact.
+
+For New Frontier, use the existing Questline>=23escape checkpoint: the pinned
+prison secret-door script writes23after the hidden note. Source:
+https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/the_new_frontier/action_prision_secret_door.lua .
+Do not replace it with an unsupported Mission08>=2guard: the accepted source
+catalogue contains only its inexact movement SET1transition, which stays
+Computed. Existing historical introduction receipts are not rewritten.
+
+Upstream97cb9db79carried document USE was checked. Its explicit schema permits
+exactly one consumed document, prohibits item rewards and lacks a location
+binding. It does not supply this multi-input contextual world action. Reuse the
+existing world input/BURN owner with a bounded extra-input list instead of
+introducing another inventory writer. Assembly uses existing item_on_target for
+50336and two extra inputs50337/50338, then the same transaction mints50335.
+Only plain consumed tools may accompany a world item reward; reusable tools,
+input replacements and target replacements stay refused for that combination.
+The ground tile is the native contextual crafting target; the rock border is
+not claimed as a source crystal object or required as a client-selectable item.

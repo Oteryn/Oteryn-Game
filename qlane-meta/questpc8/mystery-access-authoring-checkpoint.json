@@ -1,0 +1,15 @@
+{
+  "scope": "Authoring access-regression checkpoint; runtime correction and full route remain unqualified until GREEN.",
+  "base": "0ce2dbeef",
+  "postgres": true,
+  "red_duration_seconds": 74.08,
+  "failure": "Incomplete dog cure was accepted by Lai",
+  "log_sha256": "4936bf938448667a60bdab466b364f8930a39ee95974fd856922c3cc7d19182f",
+  "planned_correction": "Mission06>=8 and existing Frontier Questline>=23 checkpoint",
+  "upstream_checked": "97cb9db79: single-document/no-item-reward carried USE does not supply multi-input contextual world crafting",
+  "counts": {
+    "active": 23,
+    "qualified": 18,
+    "remaining": 5
+  }
+}

@@ -1351,8 +1351,9 @@
     "authoring_checkpoint": {
       "proof": "mystery-native-authoring-checkpoint.json",
       "runtime_changes_published": false,
-      "next": "Focused receipt-backed native route RED, then three shrine collection bindings and crystal STEP before assembly GREEN.",
-      "convergence": "Incoming four-route qualification retained:18of23,5remain. Local source-native geometry work is stashed for selective reuse; compare upstream97cb9db79 carried USE before restoring any generic input implementation."
+      "next": "Full native route GREEN is building with source-verified access gate, three collection callbacks, crystal STEP and atomic contextual assembly.",
+      "convergence": "Incoming four-route qualification retained:18of23,5remain. Local source-native geometry work is stashed for selective reuse; compare upstream97cb9db79 carried USE before restoring any generic input implementation.",
+      "access_regression": "mystery-access-authoring-checkpoint.json"
     }
   },
   {
