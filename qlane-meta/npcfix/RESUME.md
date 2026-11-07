@@ -317,3 +317,5 @@ Ahmet exact filled-container service QUALIFIED: fresh real PG RED139.14s -> GREE
 retail-population-qualification-37 QUALIFIED: Demonguard, Dustrunner, Eustacio, Frank The Plank, Frans, George The Boyscout. Actual PG RED160.83s -> GREEN138.19s. Every prior cumulative case retained; current production snapshot byte-identical to fully checked source. All strict/source/repository/pin gates PASS. Continue immediately.
 
 retail-population-qualification-38 QUALIFIED: Guide Elena, Jean Claude, Julian, Lightfoot, Livielle, Lorbas. Actual PG RED80.06s -> GREEN156.02s. Every prior cumulative case retained; current production snapshot byte-identical to fully checked source. All strict/source/repository/pin gates PASS. Continue immediately.
+
+retail-population-qualification-39 QUALIFIED: Maria, Nathaniel, Nelliem, Oldrak, Chuckles, Emperor Rehal. Actual PG RED76.14s -> GREEN171.02s. Every prior cumulative case retained; current production snapshot byte-identical to fully checked source. All strict/source/repository/pin gates PASS. Continue immediately.
