@@ -78,3 +78,7 @@ Run combined strict check/Clippy4crates, beginning atomic-start unit and callbac
 ## Combined rewards/greeting integration GREEN
 
 check/Clippy4crates all features/all targets passed; initial atomic-start unit1 and parser1 passed. PG incoming greeting130.44s/130437ms; six-dialogue117.08s/117080ms; three physical/XP rewards101.30s/101296ms. Exact merged source/log hashes checks.tutorial_rewards_merge. All source mechanisms integrate; no pending gameplay check. Commit this merge, then preserve remote b7f139977 metadata-only proof notes (no source/data changes) and push fast-forward. Prior content123/5 and pin proofs still apply. Five whole entries remain active.
+
+## Metadata proof update integrated
+
+Remote b7f1399770ea27b4232c973cb3c0dd3f19684c87 changes only qlane metadata and CONTRACT-NOTES; no Rust/content inputs. Its changed proof records are preserved in cloud_continuation.remote_metadata_proofs.b7f139977. Green source merge is8b4ef8e01, reward implementation023219279. Publish this metadata-only merge immediately; no additional gameplay run is needed for notes. Then begin the three-Cockroach occurrence bridge with new real PG RED. All other remaining tutorial mechanisms and the other4owned quests remain ours to implement; no final summary while any remain.

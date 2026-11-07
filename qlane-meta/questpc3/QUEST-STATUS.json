@@ -875,7 +875,7 @@
       "publication": {
         "local_commit": "023219279",
         "integration_remote": "025936c3d8b4ff07d6cb57d60c0c8afb23a6cd7e",
-        "status": "Both green commits and remote greeting source integrated; merge commit and metadata-only b7f update are being published."
+        "status": "GREEN source and metadata-only proof update merged; fast-forward push follows."
       }
     },
     "effective_entries": [
@@ -1524,7 +1524,7 @@
       "wvar": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
     },
     "shared_feature_owner": "questpc3: reuse existing implementations; implement every remaining engine, binding, NPC, Item and world-mechanic gap locally. No external dependency wait.",
-    "updated_at": "2026-11-07T01:08:59.158161+00:00",
+    "updated_at": "2026-11-07T01:09:24.158811+00:00",
     "publication_native_counters_01": {
       "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
       "pushed": true,
@@ -1820,6 +1820,128 @@
           }
         },
         "combined_proof": "checks.tutorial_rewards_merge"
+      }
+    },
+    "remote_metadata_proofs": {
+      "b7f139977": {
+        "commit": "b7f1399770ea27b4232c973cb3c0dd3f19684c87",
+        "checks": {
+          "sum_guards_01": {
+            "red": {
+              "log": "/tmp/questpc3-sum-red-fixture.log",
+              "sha256": "b1a339ad61fd98cc25c69f28cf07d3327acfb7959055bf9aa0a56dec51206549",
+              "evidence": [
+                "    Finished `test` profile [unoptimized + debuginfo] target(s) in 3m 15s",
+                "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=0 duration_ms=69020",
+                "  left: Refused(NotSupported)",
+                " right: Refused(StageMismatch)",
+                "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2550 filtered out; finished in 69.18s"
+              ]
+            },
+            "postgres_green": {
+              "log": "/tmp/questpc3-sum-green.log",
+              "sha256": "b3ed5119fb7a9ff94dd1bbc050a5fd5676befae4345e3b434e948b46ffa37ad2",
+              "evidence": [
+                "    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 55s",
+                "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=0 duration_ms=75422",
+                "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=1 duration_ms=75462",
+                "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=2 duration_ms=75607",
+                "QUEST_L4_SUM POSTGRES_CASE_COMPLETED duration_ms=75874 success=true",
+                "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2550 filtered out; finished in 75.88s"
+              ]
+            },
+            "sum_units": {
+              "log": "/tmp/questpc3-sum-units.log",
+              "sha256": "e1f4d887f0fd6b69ca7c859ece7f581e349e43227d95b0178fc5070a131d17bc",
+              "evidence": [
+                "    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.73s",
+                "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 254 filtered out; finished in 0.00s"
+              ]
+            },
+            "selector": {
+              "log": "/tmp/questpc3-sum-selector.log",
+              "sha256": "4f3f801307e2d138b9030eee34f941bace15eb7f1f5c318fa8e230094074ff45",
+              "evidence": [
+                "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.39s",
+                "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 255 filtered out; finished in 1.15s"
+              ]
+            },
+            "cargo_check": {
+              "log": "/tmp/questpc3-sum-check.log",
+              "sha256": "0816c5768e5ca62bb30038365b16b02f02c5973b7c2fb8ac59f21d27bd9eaf38",
+              "evidence": [
+                "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 19s"
+              ]
+            },
+            "clippy": {
+              "status": "GREEN",
+              "log": "/tmp/questpc3-sum-clippy.log",
+              "sha256": "84c66e967428e66a1618285f51c4c3f50efb6a5ec66d2819fdf23b718d58977b",
+              "evidence": [
+                "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7m 47s"
+              ]
+            },
+            "fmt": "cargo fmt --all and cargo fmt --all -- --check passed; auto-mounted test formatted explicitly with rustfmt --edition 2024",
+            "invalid_red_attempts": "Connection refused before local PostgreSQL startup, then MissingProgressionState before fixture generation admission; neither counted as RED. Valid RED reached SQL after 69020ms and returned NotSupported rather than StageMismatch.",
+            "source": "Crystal npc/maelyrra.lua:94-100, blob SHA256 16acd67b566785af18a6a5cfce6d03a7a41a9f66717596774a3c309eca0eea88; retained tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz#/source_records/492 and content/dialogues/quests-2/threatened-dreams-source.json (201189f871d23597b82caf88fd611454a2ddefb8); OTS_HYPOTHESIS_ONLY",
+            "core_regression": {
+              "status": "GREEN",
+              "log": "/tmp/questpc3-sum-core.log",
+              "sha256": "c5432e39623d708f4dc3caebe49c358704f74cf1d910baf020f4f8bd5fb3b1af",
+              "evidence": [
+                "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.59s",
+                "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 249 filtered out; finished in 0.02s"
+              ]
+            },
+            "npc_regression": {
+              "status": "GREEN",
+              "log": "/tmp/questpc3-sum-npc-regression.log",
+              "sha256": "a96f340aa098a3d7c6fc2d900e5be1be63721d058d15b75be5ab29a0c68ac5fd",
+              "evidence": [
+                "    Finished `test` profile [unoptimized + debuginfo] target(s) in 3m 19s",
+                "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2550 filtered out; finished in 172.64s"
+              ]
+            }
+          },
+          "greeting_merge_02": {
+            "own_greeting": {
+              "log": "/tmp/questpc3-merged-own-greet-pg.log",
+              "sha256": "432b578a75c90b43ae74865f1a46cf3a6b4170b26b2b1272f10c3cc6532928e6",
+              "proof": [
+                "QUEST_L4_BEGINNING POSTGRES_ASSERTION_REACHED greeting_value=1",
+                "QUEST_L4_BEGINNING POSTGRES_CASE_COMPLETED duration_ms=114538 success=true",
+                "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2552 filtered out; finished in 114.54s"
+              ]
+            },
+            "six_programs": {
+              "log": "/tmp/questpc3-merged-npc-programs-pg.log",
+              "sha256": "f8178e70a1d99bf11df16a6d982ddd67ebd5d4b9fa6cc9ffc221597638a18da4",
+              "proof": [
+                "QUESTPC3_NPC POSTGRES_ASSERTION_REACHED phase=before_source_greet duration_ms=128339",
+                "QUESTPC3_NPC POSTGRES_ASSERTION_REACHED beginning_greet duration_ms=128832",
+                "QUESTPC3_NPC POSTGRES_CASE_COMPLETED beginning_greet duration_ms=130503",
+                "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2552 filtered out; finished in 130.51s"
+              ]
+            },
+            "sum": {
+              "log": "/tmp/questpc3-merged-sum-pg.log",
+              "sha256": "17c1130fcec1cb2c5dc74914ca7384d652a344129ebcd3fbc8e3a00cbdbf66a6",
+              "proof": [
+                "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=0 duration_ms=80746",
+                "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=1 duration_ms=80802",
+                "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=2 duration_ms=80944",
+                "QUEST_L4_SUM POSTGRES_CASE_COMPLETED duration_ms=81697 success=true",
+                "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2553 filtered out; finished in 81.71s"
+              ]
+            },
+            "clippy": {
+              "status": "RUNNING",
+              "log": "/tmp/questpc3-merged-greet-clippy.log",
+              "sha256": null
+            }
+          }
+        },
+        "rule": "Metadata-only delta from025936c3d; no source/data or validation inputs changed."
       }
     }
   }
