@@ -1,6 +1,6 @@
 use super::*;
 
-/// MAP-ITEM-REF-1 Part B: the durable corpse Item a projected death materialized as. The Channel
+/// MAP-ITEM-REF-1 Part B: the durable corpse Item a projected death materialized as. The runtime
 /// owner binds it once the corpse's MINT has committed: KILL-REWARD part B calls
 /// [`ChannelRuntimeV1::bind_corpse_item`] with the item instance id `commit_corpse_mint` returned
 /// and the corpse's typed definition. Not durable, like the projection it belongs to: an unbound
@@ -37,9 +37,8 @@ impl ChannelActorCarrier {
         actor: ExactActorRef,
         item: RuntimeCorpseItem,
     ) -> Result<(), CarrierError> {
-        // A runtime projection alone never proves a committed Item MINT in
-        // Instance custody. That durable owner is not implemented yet.
-        self.channel_id()?;
+        // The death reward owner supplies the committed Item. Both namespace
+        // kinds retain the exact native death scope and generation below.
         if actor.runtime_scope() != self.runtime_scope
             || actor.scope_generation() != self.scope_generation
             || !self

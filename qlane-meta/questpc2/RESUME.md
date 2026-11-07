@@ -6,58 +6,57 @@ requires local commits as blakinio with the supplied Claude trailers and a
 fast-forward push after every green batch. Older no-commit/no-push instructions
 and `/home/mole` paths are superseded. Never read credentials or force-push.
 
-Latest green batch: generic durable Instance physical corpse root MINT. Exact RED
-(PG 18.6 marker, AuthorityRejected, 74.45s), generated-column trigger repair,
-GREEN and self-review are in BATCH-instance-corpse-root-2026-11-06.json.
-Five native dispatch PG cases passed in 398.74s; three isolated root MINTs
-prove exact Instance custody, attribution, audit, replay and wrong-scope refusal.
-The original Channel MINT/replay case passed in 9.68s. Thirty selected audit
-cases passed, including unchanged revision-one goldens. Both changed crates'
-check and all-target/all-feature clippy -D warnings, fmt, explicit module fmt,
-registry fragments and whitespace passed. No pins or new source grants.
+Latest green batch: native combat corpse MINT and actual projection binding.
+BATCH-native-corpse-binding-2026-11-07.json records RED zero native roots
+(70.57s), then RED unbound projection (74.11s), and final real Primal PG GREEN
+(72.18s). Native draining creates the already admitted corpse39530, binds its
+actual committed Item ID into the visible Instance projection, and preserves
+one private reward chest with zero physical corpse contents and replay safety.
+Five typed-scope carrier tests and the Channel ground-placement replay test pass.
+All three changed crates' check/clippy (all targets/features, -D warnings), fmt
+and whitespace pass. No new Item/data grants or generated files in this batch.
 
-The root bridge uses the existing MINT owner, a generated tagged full-scope key,
-current assignment/node fencing and existing receipt/audit chains. PostgreSQL
-BEFORE immutability guards compare all writable fields and exclude only the
-unassignable generated key; both work-unit charging and corpse materialization
-require this. Historical Channel intent bindings and cause-lock bytes are kept.
+The generic root owner is already pushed in647e33cf3; its exact evidence remains
+BATCH-instance-corpse-root-2026-11-06.json. It uses the existing MINT owner,
+tagged full cause keys, current assignment/node fences, immutable writable
+fields and existing audit/receipt chains. Channel intent/audit goldens remain.
+The native producer no longer refuses Instance placement, and the carrier no
+longer rejects a same-scope Instance projection after the committed MINT.
 
-Whole L3 scope remains 0 qualified / 35 unfinished / 0 external blockers.
-The Item used by the generic PG slice is isolated test data. Immediately finish
-the live combat/Content descendant, source corpse Item admission, corpse-loot/
-nested coverage, source-native rooms and boss mechanics. Combat still explicitly
-refuses Instance loot and Content still gates corpse-bearing templates; remove
-those gates with native production proof in the next batch, not by declaring
-this root slice a whole quest. No waiting for another engine lane.
+Whole L3 remains0 qualified /35 unfinished /0 external blockers. Continue now:
+missing Spite33867 and Bakragore44012 Item admission, native corpse composition
+for both, then source-qualified Content rooms and complete boss callbacks.
+Primal39530 is ALREADY canonically admitted: do not redo it. The separate native
+spell-provider file is not the authoritative test of its corpse admission.
+The Content template's obsolete blanket corpse refusal remains to be replaced
+with the complete native death/Item closure proof; no room is silently enabled.
 
-Existing native death progression remains verified by the preceding
-BATCH-native-death-2026-11-06.json: native timed W02 victories, atomic XP/Quest/
-Hazard progression, late refusal, Primal alias admission and exact personal
-reward replay. Do not repeat that slice as new work.
+CONTRACT-NOTES.md records the time-boxed source/default decisions. Source XML:
+imports/canary/items-xml/items.xml:63232 (Spite48 slots), :76397 (Bakragore30),
+Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b, SHA256
+1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2.
+Use existing primal_corpse_items.py admission tooling and captured WorldObject
+flags; preserve source capacities/decay and unrelated unknown semantic groups.
+Declared capacity and actual write budgets differ: keep the30-entry corpse and
+16-entry plan checks rather than clamping source data. No engine deferrals.
 
-Source investigation for the next batch: imports/canary/items-xml/items.xml
-63232 (Spite 33867, capacity 48), 73137 (Primal 39530, capacity 30), 76397
-(Bakragore 44012, capacity 30). Their native Item profiles are absent here and
-on inspected itemhold. XML SHA256: 1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2.
-Existing summer_corpse_items.py and canonical corpse
-preparation tooling show the native admission route. Respect exact source,
-registered caps and decay/custody owners; missing Game mechanisms remain work.
+The preceding native death progression batch remains verified in
+BATCH-native-death-2026-11-06.json. Do not repeat finished slices as new work.
+qengine2 and questpc/questpc3-8 had no reusable corpse bridge or overlapping L3
+whole qualification. Read-only main91afbe0ba1 was checked for allocation; no main
+merge/write. Preserve published1020-1024 and prior commits. Fetch the lane and
+merge if it moved before every push; never force or rebase. Use the specified
+commit identity/trailers. Push each green mechanic slice immediately and no
+less often than30 minutes. Limit any one investigation to10 minutes; record the
+chosen documented/conservative rule in CONTRACT-NOTES.md and implement it.
 
-Checked qengine2 and questpc/questpc3-8 for a reusable corpse bridge; none found.
-No overlapping L3 entry was QUALIFIED in their inspected status files. Main was
-refreshed read-only to 91afbe0ba1 for allocation checks; no main merge or write.
-Migration 1024 is unused there and in the open-PR held numbers. Preserve the
-published lane migrations and all prior commits. Fetch the lane and merge if it
-moved before each push. Commit identity/trailers remain the owner's instructions.
+QSPLIT-PLAN/LANE-L3 retain scope: skip others' qualified entries and world changes
+owned by worldchg/wvar/wcontrib/wevents. Father's Burden's11 tracks stay atomic;
+charge grants only on exact match. Missing source facts use donor file:line+SHA.
 
-QSPLIT-PLAN and LANE-L3 retain ownership: skip other lanes' qualified entries and
-world changes owned by worldchg/wvar/wcontrib/wevents. Keep Father's Burden's
-11-track write atomic; charge grants only on exact match. Missing source facts
-are authored from pinned in-repo donors, with file:line and hash.
-
-Environment startup completed; source /workspace/oteryn-env/env.sh for Cargo/PG
-without printing URLs. PostgreSQL 18.6 retains fsync, synchronous_commit and
-full_page_writes on. Offline resolution initially lacked schemars; normal
---locked resolution succeeded without lock changes. Do not reinstall or clean.
-No full PG/nextest suite. Require positive test counts, real PG markers and
-nontrivial duration. Scratch logs are /tmp/questpc2-corpse-*.log.
+Startup is completed. Source /workspace/oteryn-env/env.sh for Cargo/PG without
+printing URLs. PG18.6 has fsync/synchronous_commit/full_page_writes on. Do not
+reinstall/clean. Normal --locked Cargo resolved the initially absent offline
+schemars index without lock changes. No full workspace/PG/nextest suites.
+Require positive counts, actual PG markers and nontrivial duration. Scratch
+logs are /tmp/questpc2-native-*.log and /tmp/questpc2-corpse-projection-*.log.

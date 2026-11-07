@@ -419,25 +419,37 @@ pub fn loot_plan_seed(death: CreatureDeathOccurrenceKey) -> LootPlanDeathKey {
     }
 }
 
-/// A death has no durable placement rule yet (out of scope; owned by a
-/// future Ground/room placement decision). This builds the smallest
-/// defensible `GroundPlacement`: the corpse's own local position, and a
-/// `corpse_ref` that is a canonical big-endian encoding of the exact death
-/// key, so two entries of the same death always frame to the same
-/// placement and two different deaths never collide.
+/// Place the corpse at the native death's captured position. The reference
+/// encodes the exact death scope and actor generation, preserving Channel
+/// bytes and tagging Instance custody separately for deterministic replay.
 fn ground_placement(
     death: CreatureDeathOccurrenceKey,
     corpse: MovementLocalPosition,
     ground: &DeathGroundContext,
 ) -> Result<GroundPlacement, ItemMintError> {
-    let channel_id = death.channel_id().ok_or(ItemMintError::AuthorityRejected)?;
     let mut spatial_position = Vec::with_capacity(10);
     spatial_position.extend_from_slice(&corpse.x.to_be_bytes());
     spatial_position.extend_from_slice(&corpse.y.to_be_bytes());
     spatial_position.extend_from_slice(&corpse.floor.to_be_bytes());
-    let mut corpse_ref = Vec::with_capacity(52);
-    corpse_ref.extend_from_slice(death.world_id().as_bytes());
-    corpse_ref.extend_from_slice(channel_id.as_bytes());
+    let mut corpse_ref = Vec::with_capacity(53);
+    match death.runtime_scope() {
+        crate::foundation::RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } => {
+            // Preserve existing Channel placement identities byte for byte.
+            corpse_ref.extend_from_slice(world_id.as_bytes());
+            corpse_ref.extend_from_slice(channel_id.as_bytes());
+        }
+        crate::foundation::RuntimeScopeRefV1::Instance {
+            world_id,
+            instance_id,
+        } => {
+            corpse_ref.push(3);
+            corpse_ref.extend_from_slice(world_id.as_bytes());
+            corpse_ref.extend_from_slice(&instance_id);
+        }
+    }
     corpse_ref.extend_from_slice(&death.scope_ownership_generation().get().to_be_bytes());
     corpse_ref.extend_from_slice(&death.actor_local_id().to_be_bytes());
     corpse_ref.extend_from_slice(&death.actor_local_generation().to_be_bytes());
@@ -473,13 +485,6 @@ async fn settle_loot(
     inflight_before_this_death: usize,
     committed_loot: &mut Vec<(CommittedItemMint, LootDefinitionRef, u32)>,
 ) -> Result<CommittedCorpseLoot, CombatDeathRewardLootError> {
-    // Ground custody has no Instance placement contract. This typed refusal does
-    // not suppress the independent XP path or W03's personal reward entitlements.
-    if death.channel_id().is_none() {
-        return Err(CombatDeathRewardLootError::Corpse(
-            ItemMintError::AuthorityRejected,
-        ));
-    }
     let plan: LootPlan = plan_creature_loot(loot_plan_seed(death), loot_table_ref, loot_table)
         .map_err(CombatDeathRewardLootError::Plan)?;
     // W22a: a fluid subtype mints with its fluid state; only one beyond the fluid range is refused.
@@ -1265,8 +1270,7 @@ mod tests {
             sim_revision: "sim-1".into(),
             native_room_placement_context: b"room".to_vec(),
         };
-        // Ordinary creature corpse placement now explicitly refuses Instance deaths.
-        // This Channel fixture must still preserve its existing replay identity.
+        // This Channel fixture preserves its existing replay identity.
         let placement_a =
             ground_placement(death_a, corpse, &ground).expect("Channel ground placement");
         let placement_b =

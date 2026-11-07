@@ -466,25 +466,61 @@ fn boss_activity_carrier_death_projection_replays_in_its_scope_without_channel_c
             carrier.reward_occurrence_inner(owner, *actor, id(8)),
             Err(CarrierError::RewardPrincipalConflict)
         );
-        if matches!(owner.runtime_scope, RuntimeScopeRefV1::Instance { .. }) {
-            let before = carrier.clone();
-            assert_eq!(
-                carrier.bind_corpse_item_inner(
-                    ExactActorRef(*actor),
-                    RuntimeCorpseItem {
-                        item_instance_id: id(10),
-                        family: "Item".into(),
-                        production_key: "fixture:corpse".into(),
-                        revision_ref: "r1".into()
-                    }
-                ),
-                Err(CarrierError::WrongScope)
-            );
-            assert_eq!(
-                *carrier, before,
-                "Instance death does not authorize Channel Ground custody"
-            );
-        }
+        let item = RuntimeCorpseItem {
+            item_instance_id: id(10),
+            family: "Item".into(),
+            production_key: "fixture:corpse".into(),
+            revision_ref: "r1".into(),
+        };
+        assert_eq!(
+            carrier.bind_corpse_item_inner(ExactActorRef(*actor), item.clone()),
+            Ok(())
+        );
+        let before = carrier.clone();
+        assert_eq!(
+            carrier.bind_corpse_item_inner(ExactActorRef(*actor), item.clone()),
+            Ok(())
+        );
+        assert_eq!(*carrier, before, "same committed Item replay is idempotent");
+        let mut foreign = *actor;
+        foreign.runtime_scope = match owner.runtime_scope {
+            RuntimeScopeRefV1::Channel {
+                world_id,
+                channel_id,
+            } => RuntimeScopeRefV1::Instance {
+                world_id,
+                instance_id: *channel_id.as_bytes(),
+            },
+            RuntimeScopeRefV1::Instance {
+                world_id,
+                instance_id,
+            } => RuntimeScopeRefV1::channel(
+                world_id,
+                ChannelId::decode(&instance_id).expect("valid namespace twin"),
+            ),
+        };
+        assert_eq!(
+            carrier.bind_corpse_item_inner(ExactActorRef(foreign), item.clone()),
+            Err(CarrierError::CommittedLethalUnavailable)
+        );
+        assert_eq!(
+            *carrier, before,
+            "same-UUID foreign namespace cannot bind a corpse"
+        );
+        let mut conflict = item.clone();
+        conflict.item_instance_id = id(11);
+        assert_eq!(
+            carrier.bind_corpse_item_inner(ExactActorRef(*actor), conflict),
+            Err(CarrierError::CorpseProjectionConflict)
+        );
+        assert_eq!(
+            *carrier, before,
+            "a conflicting Item cannot replace the original MINT"
+        );
+        let visible = carrier.bound_corpses(None);
+        assert_eq!(visible.len(), 1);
+        assert_eq!(visible[0].item, item);
+        assert_eq!(visible[0].position, projected.position());
         // Reusing the slot cannot let an old receipt address its successor.
         carrier.remove(owner, *actor).expect("retire dead slot");
         let successor = carrier

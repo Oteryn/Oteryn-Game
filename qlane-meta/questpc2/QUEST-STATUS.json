@@ -1632,13 +1632,19 @@
       "postgres_cases_passed": 6,
       "audit_unit_cases_passed": 30,
       "whole_quest_qualifications": 0
+    },
+    "native_corpse_binding_2026_11_07": {
+      "record": "BATCH-native-corpse-binding-2026-11-07.json",
+      "postgres_cases_passed": 1,
+      "unit_cases_passed": 6,
+      "whole_quest_qualifications": 0
     }
   },
   "current_batch": {
-    "id": "instance-corpse-root-2026-11-06",
-    "record": "BATCH-instance-corpse-root-2026-11-06.json",
+    "id": "native-corpse-binding-2026-11-07",
+    "record": "BATCH-native-corpse-binding-2026-11-07.json",
     "whole_quest_qualifications": 0,
-    "entries_with_verified_shared_slice": 3,
-    "next": "Continue immediately with exact source corpse Item admission and native combat/Content composition, corpse-loot/nested ownership and source-native room/boss mechanics; then the remaining owned L3 quests. No external engine deferral."
+    "entries_with_verified_shared_slice": 1,
+    "next": "Immediately admit the missing exact Spite/Bakragore corpse definitions with repository tooling, separate declared container capacity from actual unchanged count budgets, prove native draining for both, and then compose qualified source rooms/callbacks. Continue all remaining L3 entries."
   }
 }
