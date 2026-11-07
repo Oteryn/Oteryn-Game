@@ -1,3 +1,30 @@
+# Grimvale contact mechanism fully verified — 2026-11-07
+
+Generic pinned recipe placement support is complete. Actual PG18.6
+RED41.1128287s→GREEN74.382453038s proves both published contacts, separate
+canonical runtime actors, and no subject progress seeded. Native compiler
+collision proof18.83s and11 authoring tests pass; Cargo check, strict Clippy,
+pin refresh/check,5 world tests and fmt all pass. Push final proof now.
+Seven ACTIVE remain; full Grimvale is next, not qualified by contact admission.
+
+Producer draft and native endpoints: /tmp/questpc7-grimvale-pending/programme.py
+and native-sites.json. Add whole-route PG test under a shared qengine-rewards
+fixture name, log SHOW server_version, assert missing entry callback after PG
+initialization to obtain honest RED, then integrate producer/world fixtures.
+Producer emits23 callbacks,9 native death objectives (total31 stays≤32),
+and2 NPC phase advances, without adding a migration or protocol command.
+Normal world USE already settles item_on_target from carried inventory:22074
+closed silvered trap is consumed exactly once on the selected ground target.
+Add22082/22074/27565 to the source physical item qualifier and regenerate with
+register_spell_families.py; do not edit generated profiles by hand.
+Missing per-NPC Lua greetings should use common retained npc_handler defaults,
+with their own exact source citations (inputs.get(path,b'') before fallback).
+Verify the draft entry ground appearance at33328,31690,-7 before integrating.
+Personal botanical plots are explicit chosen harvesting sites; no static
+22063/22064 plants were found in that region, and no global bloom event is
+claimed or changed. Original source script and native area anchors are recorded
+in the draft facts. Do not redo these bounded investigations.
+
 # Grimvale contacts compiling checkpoint — 2026-11-07
 
 Actual PG18.6 RED41.1128287s then GREEN74.382453038s proves both contacts

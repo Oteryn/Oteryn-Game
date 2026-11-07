@@ -117,11 +117,53 @@
       "seconds": 120.323,
       "exit_code": 0,
       "log": "/tmp/questpc7-grimvale-contacts-pin-refresh.log"
+    },
+    {
+      "check": "pin-check",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--",
+        "pin-check",
+        ".",
+        "/tmp/questpc7-grimvale-contacts-pin-check"
+      ],
+      "seconds": 127.489,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-contacts-pin-check.log"
+    },
+    {
+      "check": "world",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository"
+      ],
+      "seconds": 176.684,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-contacts-world.log"
+    },
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "seconds": 11.02,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-contacts-fmt.log"
     }
   ],
-  "pending": [
-    "pin-check",
-    "focused world test",
-    "fmt"
-  ]
+  "pending": [],
+  "mechanism": "QUALIFIED; pinned recipe placements and native actor admission only"
 }
