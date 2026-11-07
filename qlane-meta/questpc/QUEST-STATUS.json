@@ -3539,7 +3539,7 @@
         ]
       },
       "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
-      "active_batch": "Native stock3003-3007 and doors3001/3002/3003 plus both Hellgate3012 doors PG/strict green. Continue doors3004-3008, source selectors/level gate, party and first stock/NPC exchange, then complete reward composition."
+      "active_batch": "All ten native source key-door entries and stock3003-3007 PG/strict green. Next exact native callback anchors, source level gate, party, first shared container key and NPC exchange; then full reward/route composition."
     },
     {
       "title": "Dragon Corpse Quest",
@@ -6032,13 +6032,34 @@
           "generic_computed_evaluation": "NOT_SUPPORTED",
           "recovery": "exact committed receipt; newer shared map revision preserved",
           "evidence": "qlane-meta/questpc/cloud-source-world-validation.json"
+        },
+        {
+          "status": "QUALIFIED",
+          "scope": "Ratter and Servant source acceptance",
+          "test": "hidden_threats_source_npc_acceptance_initializes_mission_once",
+          "evidence": "qlane-meta/questpc/cloud-hidden-npcs-validation.json",
+          "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+        },
+        {
+          "status": "QUALIFIED",
+          "scope": "eight distinct once-only rescues with three native gifts",
+          "test": "hidden_threats_source_npc_eight_rescues_grant_each_reward_once",
+          "evidence": "qlane-meta/questpc/cloud-hidden-npcs-validation.json",
+          "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+        },
+        {
+          "status": "QUALIFIED",
+          "scope": "twenty rare earth exchanged atomically for two3040, line5 and access9",
+          "test": "hidden_threats_source_npc_rare_earth_exchange_is_atomic_and_replays",
+          "evidence": "qlane-meta/questpc/cloud-hidden-npcs-validation.json",
+          "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
         }
       ],
       "blocker": {
-        "missing_piece": "Continue the full source NPC/forge/rescue/door and Cave Spider room composition. The guarded departure and native rewards are implemented and qualified; no shared-engine ownership deferral applies.",
+        "missing_piece": "Continue forge, forged-key doors and Cave Spider room composition. NPC acceptance, rescues, hand-in and guarded source departure are implemented with real dispatch PG evidence; this lane owns the remaining reusable engine work.",
         "evidence": [
-          "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/npc/corym_servant.lua",
-          "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/hidden_threats/action-key_forge.lua"
+          "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/hidden_threats/action-key_forge.lua",
+          "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/hidden_threats/movement-cave_spider_room.lua"
         ]
       }
     },
@@ -8522,7 +8543,7 @@
     "earlier_snapshot_merged": "6c09e0365110db6683f938dd08d5d584744cbf37",
     "merge_resolution": "Retained the current newer tree in all 86 overlapping paths. Earlier snapshot retained in ancestry.",
     "owner_rule": "All shared engine features remain in scope; historical outside-lane engine blockers are nonterminal and must be implemented or reused.",
-    "active": "Mintwallin original source composition qualified and publishing. Next Devil Helmet sewer435: verify source floor facts, add composed floor routing and source UID25030 entry/departure, then whole source PG.",
+    "active": "NPC three-component batch and native stock/door integrations GREEN. Publish fast-forward, then execute Hidden Threats filing/heating-joining/finishing craft batch. Follow with source key doors and Cave Spider room; no shared-engine deferral.",
     "concurrent_remote_head": "4e12ac30e",
     "validation": {
       "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal -- --nocapture",
@@ -9153,12 +9174,9 @@
     "rule": "Skip per current owner; this does not claim those implementations are merged here."
   },
   "latest_cloud_integration": {
-    "status": "GREEN",
-    "parents": [
-      "4b08ff5c4506759d3f9025ad24f8b95ec133e119",
-      "69ad45e6e9c3af9a30522bc8cc7acf48ebf08a3c"
-    ],
-    "evidence": "qlane-meta/questpc/cloud-source-integration-validation.json"
+    "state": "combined_tree_checks_pass",
+    "remote": "4c2056aa8",
+    "validation": "qlane-meta/questpc/cloud-upper-door-merge-validation.json"
   },
   "concurrent_cloud_batch": {
     "name": "Draconia exit six-scene PG proof; implementation checks running",
@@ -9174,5 +9192,90 @@
     "ref": "cc36e6070",
     "source_code_changes": false,
     "proof": "qlane-meta/questpc/cloud-draconia-exit-validation.json"
+  },
+  "concurrent_native_stock_batch": {
+    "name": "Five exact native source-stock bindings and runtime owner integration",
+    "validation": "qlane-meta/questpc/cloud-native-key-validation.json",
+    "qualified_titles_added": 0,
+    "counts": {
+      "QUALIFIED": 60,
+      "UNFINISHED": 117,
+      "BLOCKED": 1
+    }
+  },
+  "concurrent_key_door_batch": {
+    "name": "Five exact native source key-door access entries",
+    "validation": "qlane-meta/questpc/cloud-draconia-door-validation.json",
+    "qualified_titles_added": 0,
+    "counts": {
+      "QUALIFIED": 60,
+      "UNFINISHED": 117,
+      "BLOCKED": 1
+    }
+  },
+  "latest_cloud_door_integration": {
+    "parents": [
+      "dc989c1f1",
+      "fcde7f80d"
+    ],
+    "status": "GREEN",
+    "resolution": "Source-disjoint union; only latest batch metadata conflicted. All NPC and native door evidence retained. Current44-placement pin verified.",
+    "fresh_checks": {
+      "fmt": {
+        "path": "qlane-meta/questpc/cloud-hidden-door-merge-fmt.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "results": []
+      },
+      "check": {
+        "path": "qlane-meta/questpc/cloud-hidden-door-merge-check.log",
+        "sha256": "efaae545df73dbbb22fd73636ac210f44fea2519bcc17d56307b2625e94778fe",
+        "results": [
+          "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 43s"
+        ]
+      },
+      "clippy": {
+        "path": "qlane-meta/questpc/cloud-hidden-door-merge-clippy.log",
+        "sha256": "1cb500d9da1d0e79888730a38b2421b4f1771e5658440dc8b6f1b8dd603bbb16",
+        "results": [
+          "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 50s"
+        ]
+      },
+      "units": {
+        "path": "qlane-meta/questpc/cloud-hidden-door-merge-units.log",
+        "sha256": "e4bf1a4e863dc749c587da99b7cbf32f251cd79c466e6bb716ed5daf6825ec3d",
+        "results": [
+          "    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 28s",
+          "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 219 filtered out; finished in 0.05s"
+        ]
+      },
+      "generation": {
+        "path": "qlane-meta/questpc/cloud-hidden-door-merge-generation.log",
+        "sha256": "b223e7aa5109fc79ecefe4c12c5705c64760d0b703dce9b9851131f5eec0d4f0",
+        "results": []
+      },
+      "pin": {
+        "path": "qlane-meta/questpc/cloud-hidden-door-merge-pin.log",
+        "sha256": "2a238f88819004e624a23597fc21a519aa5a7536cf3d0eba5871f2169c03016c",
+        "results": [
+          "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.10s"
+        ]
+      }
+    },
+    "reused_postgres": [
+      "qlane-meta/questpc/cloud-hidden-npcs-validation.json",
+      "qlane-meta/questpc/cloud-hidden-merge-validation.json",
+      "qlane-meta/questpc/cloud-draconia-door-validation.json"
+    ],
+    "postgres_boundary": "No PG cases repeated for this disjoint merge; the new native door producer/profile cohort has its own committed actual PG proof and full NPC composition passed on the combined ancestor."
+  },
+  "concurrent_hidden_npc_batch": {
+    "scope": [
+      "Ratter and Servant source acceptance",
+      "eight distinct once-only rescues with three native gifts",
+      "twenty rare earth exchanged atomically for two3040, line5 and access9"
+    ],
+    "status": "GREEN",
+    "evidence": "qlane-meta/questpc/cloud-hidden-npcs-validation.json",
+    "qualification_boundary": "Three source components qualified; complete Hidden Threats continues with forge/door/room."
   }
 }

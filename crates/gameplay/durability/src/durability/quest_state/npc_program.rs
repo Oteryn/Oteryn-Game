@@ -5,6 +5,10 @@ use oteryn_gameplay_quests::quest::npc_rules::{
 };
 mod fathers_burden;
 mod marlin_trophy;
+mod items;
+
+/// Constructed only by this fenced NPC owner after current equipment admission.
+pub(in crate::durability) struct NpcItemPermit(());
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct NpcProgramRequest {
@@ -23,6 +27,8 @@ pub struct NpcProgramCommit {
     pub next_topic: i32,
     /// The locked source branch only replied; it wrote no receipt or value.
     pub read_only: bool,
+    pub inventory_changed: bool,
+    pub end_conversation: bool,
 }
 
 impl NpcProgramRequest {
@@ -85,6 +91,10 @@ pub fn preview(
             now,
             Some(&marlin_trophy::optimistic_inventory()),
         ),
+        Err(error) => match source.optimistic_item_inventory(&request.npc) {
+            Some(inventory) => evaluate_source(&source, request, tracks, catalogue, now, Some(&inventory)),
+            None => Err(error),
+        },
         result => result,
     }
 }
@@ -139,8 +149,10 @@ fn evaluate_source(
     };
     if inventory.is_some() && marlin_trophy::owns(request) {
         source.plan_marlin_items(&input)
-    } else if inventory.is_some() {
+    } else if inventory.is_some() && request.npc == "oteryn:npc.tereban" {
         source.plan_father_items(&input)
+    } else if inventory.is_some() {
+        source.plan_item_exchange(&input)
     } else {
         source.plan_storage(&input)
     }
@@ -244,15 +256,19 @@ impl DurabilityRoot {
             let now:i64=sqlx::query_scalar("SELECT floor(extract(epoch FROM now()))::bigint").fetch_one(&mut **tx).await?;
             let father_items = fathers_burden::owns(&request);
             let marlin_items = marlin_trophy::owns(&request);
-            let item_action = father_items || marlin_items;
+            let plain_keys = source.item_exchange_keys(&request.npc);
+            let generic_items = !father_items && !marlin_items && plain_keys.is_some();
+            let inventory_owned = father_items || marlin_items || generic_items;
             let inventory = if marlin_items {
                 Some(fathers_burden::inventory_for(&mut tx, fence, &[marlin_trophy::FISH.into()]).await?)
             } else if father_items {
                 Some(fathers_burden::inventory(&mut tx, fence).await?)
+            } else if let Some(keys) = plain_keys.filter(|_| generic_items) {
+                Some(fathers_burden::inventory_for(&mut tx, fence, &keys).await?)
             } else { None };
             let evaluated = evaluate_source(&source,&request,&effective_tracks,&catalogue,now,inventory.as_ref());
-            if item_action && let Ok(Some(plan)) = &evaluated && plan.track_changes.is_empty() {
-                let result = NpcProgramCommit { transition: QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch), reply: plan.reply.clone(), next_topic: plan.next_topic, read_only: true };
+            if inventory_owned && let Ok(Some(plan)) = &evaluated && plan.track_changes.is_empty() {
+                let result = NpcProgramCommit { transition: QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch), reply: plan.reply.clone(), next_topic: plan.next_topic, read_only: true, inventory_changed: false, end_conversation: items::ends(plan) };
                 tx.commit(deadline).await?;
                 return Ok(Ok(result));
             }
@@ -260,6 +276,7 @@ impl DurabilityRoot {
                 Ok(Some(plan)) if plan.selected_rule_keys.first()==Some(&request.transition_key) && !plan.track_changes.is_empty()=>plan,
                 _=>return Ok(Ok(refused(QuestRefusal::StageMismatch))),
             };
+            let item_action = father_items || marlin_items || (generic_items && items::changes_items(&plan));
             let quest=&plan.quest;
             let hash=catalogue.definition_hash(quest).ok_or(DurabilityError::InvalidStoredState)?;
             let stored_state=sqlx::query("SELECT pinned_content_revision,definition_hash,completed_character_revision IS NOT NULL AS completed FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 FOR UPDATE").bind(id).bind(quest).fetch_optional(&mut **tx).await?;
@@ -290,9 +307,11 @@ impl DurabilityRoot {
                 }
                 let pending: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_xp_obligations WHERE character_id=encode($1,'hex')::uuid")
                     .bind(id).fetch_one(&mut **tx).await?;
-                if pending >= QUESTGATE0_RL_10 as i64 { return Ok(Ok(refused(QuestRefusal::CapacityExceeded))); }
+                if !generic_items && pending >= QUESTGATE0_RL_10 as i64 { return Ok(Ok(refused(QuestRefusal::CapacityExceeded))); }
                 let applied = if marlin_items {
                     marlin_trophy::apply(&mut tx, fence, &request, &plan, *content, &node).await?
+                } else if generic_items {
+                    items::apply(&mut tx, fence, &request, &plan, *content, &node).await?
                 } else {
                     fathers_burden::apply(&mut tx, fence, &request, &plan, *content, &node).await?
                 };
@@ -319,8 +338,8 @@ impl DurabilityRoot {
             } else {
                 sqlx::query("INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5::text::numeric,$5::text::numeric)").bind(id).bind(quest).bind(&pin).bind(hash.as_slice()).bind(&committed).execute(&mut **tx).await?;
             }
-            sqlx::query("INSERT INTO game_quest_npc_program_receipts(character_id,game_session_id,command_id,transition_key,reply,next_topic) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6)")
-                .bind(id).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).bind(&plan.reply).bind(plan.next_topic).execute(&mut **tx).await?;
+            sqlx::query("INSERT INTO game_quest_npc_program_receipts(character_id,game_session_id,command_id,transition_key,reply,next_topic,inventory_changed,end_conversation) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7,$8)")
+                .bind(id).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).bind(&plan.reply).bind(plan.next_topic).bind(item_action).bind(items::ends(&plan)).execute(&mut **tx).await?;
             if father_items {
                 let amount = fathers_burden::experience(&plan)?;
                 insert_xp_obligation(&mut tx, character, &q, amount, &pin).await?;
@@ -328,7 +347,7 @@ impl DurabilityRoot {
             let receipt=load_receipt(&mut tx,character,&q).await?.ok_or(DurabilityError::InvalidStoredState)?;
             let receipt=decode_receipt(&receipt)?;
             tx.commit(deadline).await?;
-            Ok(Ok(NpcProgramCommit{transition:QuestTransitionOutcome::Committed(receipt),reply:plan.reply,next_topic:plan.next_topic,read_only:false}))
+            Ok(Ok(NpcProgramCommit{transition:QuestTransitionOutcome::Committed(receipt),end_conversation:items::ends(&plan),reply:plan.reply,next_topic:plan.next_topic,read_only:false,inventory_changed:item_action}))
         })).await?
     }
 }
@@ -339,6 +358,8 @@ fn refused(refusal: QuestRefusal) -> NpcProgramCommit {
         reply: Vec::new(),
         next_topic: 0,
         read_only: false,
+        inventory_changed: false,
+        end_conversation: false,
     }
 }
 
@@ -353,12 +374,14 @@ async fn load(
     if row.try_get::<Vec<u8>, _>("request_binding")? != request.binding(character) {
         return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
     }
-    let response=sqlx::query("SELECT reply,next_topic FROM game_quest_npc_program_receipts WHERE character_id=encode($1,'hex')::uuid AND game_session_id=encode($2,'hex')::uuid AND command_id=$3::text::numeric AND transition_key=$4")
+    let response=sqlx::query("SELECT reply,next_topic,inventory_changed,end_conversation FROM game_quest_npc_program_receipts WHERE character_id=encode($1,'hex')::uuid AND game_session_id=encode($2,'hex')::uuid AND command_id=$3::text::numeric AND transition_key=$4")
         .bind(character.as_bytes().as_slice()).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).fetch_optional(&mut **tx).await?.ok_or(DurabilityError::InvalidStoredState)?;
     Ok(Ok(Some(NpcProgramCommit {
         transition: QuestTransitionOutcome::AlreadyCommitted(decode_receipt(&row)?),
         reply: response.try_get("reply")?,
         next_topic: response.try_get("next_topic")?,
         read_only: false,
+        inventory_changed: response.try_get("inventory_changed")?,
+        end_conversation: response.try_get("end_conversation")?,
     })))
 }

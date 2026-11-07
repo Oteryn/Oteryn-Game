@@ -140,12 +140,13 @@ impl NpcTalkBook {
     pub fn from_model_with_native_quests(model: &NpcServiceModel, native_npcs: &[&str]) -> Self {
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "{}\0{}\0{}",
+                "{}\0{}\0{}\0{:?}",
                 crate::content::npc_catalogue::grizzly_shop::book_digest(
                     model.source_tree_digest()
                 ),
                 dark_trails::TEXT,
                 isle_of_evil::revision_material(),
+                crate::quest_greetings::revision_material(),
             )),
             ..Self::default()
         };
@@ -570,6 +571,17 @@ mod tests {
             "oteryn:npc.viola",
         ];
         let old = NpcTalkBook::from_model(&model);
+        for key in [
+            "oteryn:npc.corym_ratter",
+            "oteryn:npc.corym_servant",
+            "oteryn:npc.corym_worker_1",
+        ] {
+            assert!(
+                old.get(key).is_some(),
+                "the production book admits the separately pinned Corym opener: {key}"
+            );
+        }
+        assert!(old.get("oteryn:npc.corym_fake").is_none());
         assert!(keys.iter().all(|key| old.get(key).is_none()));
         let book = NpcTalkBook::from_model_with_native_quests(&model, &keys);
         for key in keys {

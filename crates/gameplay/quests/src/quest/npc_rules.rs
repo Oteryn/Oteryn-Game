@@ -2,6 +2,8 @@
 //! Crystal source references and source-order branches are retained in each program.
 
 mod evaluate;
+mod hidden_threats;
+mod item_exchange;
 mod keyword;
 mod marlin_trophy;
 mod validate;
@@ -277,6 +279,9 @@ pub struct NpcSourceFile {
 #[serde(deny_unknown_fields)]
 pub struct NpcRuleDocument {
     pub schema: u32,
+    /// Independent source programmes may share one canonical aggregate quest.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub program_key: Option<String>,
     pub quest: String,
     pub tracks: Vec<NpcTrackDefinition>,
     pub rules: Vec<NpcRule>,
@@ -423,17 +428,18 @@ impl NpcRuleCatalog {
             .get_or_init(|| {
                 let mut catalogue = Self::load_embedded()?;
                 catalogue.programs.retain(|p| {
-                    matches!(
-                        p.document.quest.as_str(),
-                        "oteryn:quest.a_father_s_burden_quest"
-                            | "oteryn:quest.a_pirates_tail"
-                            | "oteryn:quest.bigfoot_s_burden_quest"
-                            | "oteryn:quest.hero_of_rathleton_quest"
-                            | "oteryn:quest.hot_cuisine_quest"
-                            | "oteryn:quest.in_service_of_yalahar_quest"
-                            | "oteryn:quest.marlin_trophy_quest"
-                            | "oteryn:quest.the_order_of_the_stag_quest"
-                    )
+                    p.document.program_key.as_deref() == Some(hidden_threats::PROGRAM)
+                        || matches!(
+                            p.document.quest.as_str(),
+                            "oteryn:quest.a_father_s_burden_quest"
+                                | "oteryn:quest.a_pirates_tail"
+                                | "oteryn:quest.bigfoot_s_burden_quest"
+                                | "oteryn:quest.hero_of_rathleton_quest"
+                                | "oteryn:quest.hot_cuisine_quest"
+                                | "oteryn:quest.in_service_of_yalahar_quest"
+                                | "oteryn:quest.marlin_trophy_quest"
+                                | "oteryn:quest.the_order_of_the_stag_quest"
+                        )
                 });
                 Ok(catalogue)
             })

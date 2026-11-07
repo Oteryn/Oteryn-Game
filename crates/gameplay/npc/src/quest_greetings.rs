@@ -4,6 +4,15 @@ use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::LazyLock;
 
+mod corym;
+
+const BASE: &str = include_str!("../../../../content/dialogues/quests-2/npc-greetings.json");
+const CORYM: &str = include_str!("../../../../content/dialogues/quests-2/corym-npc-greetings.json");
+
+pub(crate) fn revision_material() -> [&'static str; 2] {
+    [BASE, CORYM]
+}
+
 const PIN: &str = "201189f871d23597b82caf88fd611454a2ddefb8";
 
 #[derive(Deserialize)]
@@ -84,12 +93,12 @@ fn parse(text: &str) -> Option<Vec<Greeting>> {
 }
 
 pub fn get(npc: &str) -> Option<&'static Greeting> {
-    static DATA: LazyLock<Option<Vec<Greeting>>> = LazyLock::new(|| {
-        parse(include_str!(
-            "../../../../content/dialogues/quests-2/npc-greetings.json"
-        ))
-    });
-    DATA.as_ref()?.iter().find(|entry| entry.npc == npc)
+    static DATA: LazyLock<Option<Vec<Greeting>>> = LazyLock::new(|| parse(BASE));
+    static CORYM_DATA: LazyLock<Option<Vec<Greeting>>> = LazyLock::new(|| corym::parse(CORYM));
+    DATA.as_ref()?
+        .iter()
+        .find(|entry| entry.npc == npc)
+        .or_else(|| CORYM_DATA.as_ref()?.iter().find(|entry| entry.npc == npc))
 }
 
 /// Existing canonical tracks for the two source-owned conditional greetings.

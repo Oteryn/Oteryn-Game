@@ -580,14 +580,28 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     }
     let active = extend(old.catalogue().clone(), &bindings)?;
     let runtime = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
-    // Pemaret adds one source programme and one legacy-compatible track.
-    assert_eq!(runtime.programs().len(), 8);
+    // Corym adds one independently scoped programme to the same canonical aggregate.
+    assert_eq!(runtime.programs().len(), 9);
     assert!(
         runtime
             .program("oteryn:quest.marlin_trophy_quest")
             .is_some()
     );
-    assert_eq!(active.npc_legacy.len(), 7);
+    let corym = runtime
+        .program("oteryn:quest.tibia_tales")
+        .ok_or("Corym programme")?;
+    assert_eq!(
+        corym.document.program_key.as_deref(),
+        Some(hidden_threats::PROGRAM)
+    );
+    assert!(
+        corym
+            .document
+            .rules
+            .iter()
+            .all(|rule| rule.npc.starts_with("oteryn:npc.corym_"))
+    );
+    assert_eq!(active.npc_legacy.len(), 8);
     let mut defaults = BTreeMap::new();
     for track in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
@@ -597,7 +611,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     {
         *defaults.entry(track.initial).or_insert(0usize) += 1;
     }
-    assert_eq!(defaults, BTreeMap::from([(-1, 181), (0, 50)]));
+    assert_eq!(defaults, BTreeMap::from([(-1, 192), (0, 52)]));
     for program in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
         .programs()
@@ -653,7 +667,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         .map_err(|e| e.to_string())?;
     let loaded = super::super::loader::load_embedded_quest_state("npc-legacy")
         .map_err(|e| format!("{e:?}"))?;
-    assert_eq!(loaded.catalogue().npc_legacy.len(), 7);
+    assert_eq!(loaded.catalogue().npc_legacy.len(), 8);
     Ok(())
 }
 

@@ -1,3 +1,30 @@
+## Upper-door and concurrent NPC merge checked — 2026-11-07
+Preserved remote4c2056aa8 Corym NPC work and local upper-door batch7c3d513fe.
+Only latest-batch JSON conflicted; both records retained. Combined world/dispatch
+check and strict Clippy, fmt, source captures and pin refresh PASS. PG evidence is
+retained from each unchanged slice; no fresh merge PG run claimed. World digest
+9865615ff643553f07bccfc4f76c0f05919939c751cd35f0a87f92d82591e8f7.
+Next local batch: four exact native Draconia callback anchors, plan at
+/tmp/questpc-next-native-selectors-plan.md. Incoming writer owns Hidden Threats;
+continue Draconia here without overlapping its craft work.
+
+## Concurrent native door integration — 2026-11-07
+
+NPC/native-stock merge is GREEN (cloud-hidden-merge-validation.json). Remote
+fcde7f80d adds five exact native door selectors and5097 profiles with its own
+real PostgreSQL proof. This disjoint runtime merge has only batch metadata
+conflict; both records retained. Fresh world+dispatch strict checks, exact source
+capture/generation, focused binding units and pin check PASS; prior PG cases stay
+unchanged and were not repeated. Evidence: cloud-hidden-door-merge-validation.json.
+Current44-placement pin9865615f... verified; commit/push fast-forward.
+Then execute /tmp/questpc-hidden-next-plan.md crafting batch; qengine2 checked2638a83ca.
+Draft PG fixture: /tmp/questpc-hidden-threats-craft-draft.rs (not applied yet).
+Reuse existing carried wire helper, adapting map target and distinct equal-type
+operands while preserving original fluid cases. Run actual PG RED before feature
+implementation; add source-bound generic retained tool conversion and recipe facts.
+
+---
+
 ## All ten native source key doors GREEN — 2026-11-07
 Upper source doors3004-3008 now use exact pinned startup selectors. Original five
 capture rows and stock capture preserved. Actual PostgreSQL18.6 RED5/5 failures
@@ -50,6 +77,24 @@ on qengine2/other lanes before implementing; own all missing features here.
 Use sourceenv then CARGO_INCREMENTAL=0; push every green slice and at least30min.
 Do not end while actual entries remain. Latest temporary active note:
 /tmp/questpc-active-door-batch.md (current batch now complete; superseded here).
+
+## NPC and native-stock integration — 2026-11-07
+
+NPC batch90a959a3e is green with three source components; remote89cfab3ee
+adds exact native stock-key bindings plus shared map-key pickup and object
+predicates. Runtime merged without conflicts. The only JSON metadata conflict
+keeps both batch records. Current44-NPC-placement world pin9865615f... supersedes
+the older remote2cabea56... pin. Both implementations and all evidence retained.
+
+Merged five-crate format/check/strict Clippy, source generation checks, full NPC
+hand-in composition, native3003 crash/replay and pin check are GREEN. Exact
+markers/durations/hashes: cloud-hidden-merge-validation.json. Commit/push merge. Continue forge/doors/Cave Spider
+room; full Hidden Threats remains active. Detailed next craft reuse/test plan is
+/tmp/questpc-hidden-next-plan.md; temporary normalized item policies and fresh
+source custody are ready. Latest qengine2 checked2638a83ca has no forge delta.
+Counts60/117/1excluded unchanged.
+
+---
 
 ## Exact native source stock runtime GREEN — 2026-11-07
 Reused questpc6@f91534062 source_bindings.rs and its source/native pin producer
@@ -188,6 +233,36 @@ conflicts resolved by keeping all optional fields and selector.positions. Status
 union retains incoming qualification; counts60QUALIFIED/117UNFINISHED/1excluded.
 Run merged-crate checks and Draconia exit PG before publishing this merge. Inputs
 were independently green, but combined evidence is still pending. No forced push.
+
+## Hidden Threats NPC batch qualified — 2026-11-07
+
+Three source components now have real PostgreSQL18.6 RED/GREEN evidence:
+Ratter/Servant acceptance, eight distinct once-only rescues and gifts, and the
+20 rare-earth exchange for two3040 with line5/access9. Evidence and exact marker
+durations are in cloud-hidden-npcs-validation.json. The injected final-track
+failure proves item burn and MINT rollback; replay returns exact stored replies.
+Production NPC book and generated44-placement shard admit all ten Corym NPCs.
+
+The reusable NPC item participant adapts qengine2e45e8f8a9 and retains existing
+Father/Marlin owners; the exact eleven-track Father and Marlin PG regressions
+pass. Four-crate format/check/strict Clippy,29 quest units,3 greeting units,
+production-book integration,3 authoring tests and generated/pin checks pass.
+NPC fixture installs all ten actors once; immutable runtime placement stays intact.
+Earlier failed candidates remain archived rather than hidden.
+
+Continue Hidden Threats forge/key doors/Cave Spider room. Check current qengine2
+before new generic engine work. Pinned fresh mechanics are in
+/tmp/questpc-hidden-source (temporary originals only), revision04b83b5121.
+Forge six conversions and retained metal file; corrected Canary door storage IDs
+must agree with stamped source targets. Keep source citation and conservative
+rules explicit. Full Hidden Threats remains active; counts stay60/117/1excluded.
+
+Fetch the explicit pc2 tracking ref and merge concurrent native stock/key/object
+predicate work before pushing;1007 map-key binding precedes1008 NPC item sources.
+Preserve current NPC placement pin9865615ff643553f07bccfc4f76c0f05919939c751cd35f0a87f92d82591e8f7.
+Do not force push, create a PR, touch workflows/repository tools or accept skipped PG.
+
+---
 
 ## Documentation follow-up integrated — 2026-11-07
 

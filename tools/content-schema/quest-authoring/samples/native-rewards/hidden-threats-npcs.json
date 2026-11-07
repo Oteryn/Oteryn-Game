@@ -1,0 +1,106 @@
+{
+  "schema": "OTERYN_HIDDEN_THREATS_NPCS/v1",
+  "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+  "corpus_sha256": "f3fe990f2a72e2779fb360b9c8f98be9d4174b898fa486d4251aa00137c56277",
+  "sources": [
+    {
+      "path": "data-otservbr-global/npc/corym_butler.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "sha256": "045a7f5ecc773e962492dc1d7c92ab23b28d5cacdd193cc4818514d47cb54b57",
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/corym_butler.lua"
+    },
+    {
+      "path": "data-otservbr-global/npc/corym_footman.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "sha256": "c535be49f54dbb4c64f0de21a2df099443ac671a691757662269f1dcef5f1097",
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/corym_footman.lua"
+    },
+    {
+      "path": "data-otservbr-global/npc/corym_ratter.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "sha256": "6cdadfe5c542508fd7c10bcff7f752fd42528a1b8ab0b852de1ceae7b3869f0a",
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/corym_ratter.lua"
+    },
+    {
+      "path": "data-otservbr-global/npc/corym_servant.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "sha256": "c5edcb889d6149169d5e7f03dd27bda47f3df62161ae62a043277aa42784bd31",
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/corym_servant.lua"
+    },
+    {
+      "path": "data-otservbr-global/npc/corym_slave.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "sha256": "b76801379572ecf46561b6352135921731b14a1ac82f9b0d48248b68d509d60b",
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/corym_slave.lua"
+    },
+    {
+      "path": "data-otservbr-global/npc/corym_worker_01.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "sha256": "52fcb188a51ad723746b5f8b35b00b2f2b0b164c8250e96b7fac3a7442ce00ad",
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/corym_worker_01.lua"
+    },
+    {
+      "path": "data-otservbr-global/npc/corym_worker_02.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "sha256": "fd6292307e436789b2811f52a8aeb332c954ffcbe8a700a4b54f661c1d62b561",
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/corym_worker_02.lua"
+    },
+    {
+      "path": "data-otservbr-global/npc/corym_worker_03.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "sha256": "e69b29006bfbf2bdc5aca02a1fd6887dbe449fa3bb223413f2045204b9e5f320",
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/corym_worker_03.lua"
+    },
+    {
+      "path": "data-otservbr-global/npc/corym_worker_04.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "sha256": "210df7efbdffa4935969486b756d8fe99b148e6ca6b719878eeab32a0a69404c",
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/corym_worker_04.lua"
+    },
+    {
+      "path": "data-otservbr-global/npc/corym_worker_05.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "sha256": "142b4ad3f51e2f0ba0d6a7fcc8903149dcd8bd8ebca53cc8fd5c6be09c9efb9b",
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/corym_worker_05.lua"
+    }
+  ],
+  "mechanics": [
+    {
+      "path": "data-otservbr-global/scripts/actions/tools/metal_file.lua",
+      "sha256": "b7ed2f97a9632aacd831c8dbd47a6e0be75440100b433ad90f2c006bffb5d402",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/actions/tools/metal_file.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+    },
+    {
+      "path": "data-otservbr-global/scripts/quests/hidden_threats/action-key_forge.lua",
+      "sha256": "de4ddfb2c7fc132479dd9dc83cde430981295c2c0716901968897443d21f02eb",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/hidden_threats/action-key_forge.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+    },
+    {
+      "path": "data-otservbr-global/scripts/quests/hidden_threats/action-corym_works_doors.lua",
+      "sha256": "263b50458d596e4900dfa491997f184ef6c88879034a61c52aae42c983f42184",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/hidden_threats/action-corym_works_doors.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+    },
+    {
+      "path": "data-otservbr-global/scripts/quests/hidden_threats/movement-cave_spider_room.lua",
+      "sha256": "be8fc17a2046d2e4201b046a05eeded092464526d9dd4d1cf46e3ecf27ae74de",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/hidden_threats/movement-cave_spider_room.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+    }
+  ],
+  "conservative_rules": [
+    "Source -1 and the inherited canonical absent0 both mean an unrescued once flag; accept values below1 and write1 exactly once.",
+    "Rescues require the initialized mission counter0..7, avoiding uninitialized or inconsistent counter grants.",
+    "Ratter repeats retain later quest-line progress; the source help conversation cannot rewind a completed stage.",
+    "All item effects and their quest writes commit or roll back together, including inventory-capacity failures."
+  ],
+  "source_difference": "Pinned Canary has eight distinct rescue flags and initializes the counter0, then sets9 after the20 rare-earth hand-in. The Crystal NPC programme has conflicting rescuer flags/counters; it is not composed into this programme.",
+  "handler_source": {
+    "path": "data/npclib/npc_system/npc_handler.lua",
+    "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "sha256": "632be3d5b445ec233d80ed2e60c3cd6bc43fec0691330d35aea10f5a21551f55",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/npclib/npc_system/npc_handler.lua"
+  }
+}

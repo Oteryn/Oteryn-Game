@@ -121,6 +121,7 @@ mod contents;
 pub mod falcon;
 pub(in crate::durability) mod fathers_burden;
 pub(in crate::durability) mod marlin_trophy;
+pub(in crate::durability) mod npc_program;
 mod fluid;
 mod grizzly;
 mod monk;
