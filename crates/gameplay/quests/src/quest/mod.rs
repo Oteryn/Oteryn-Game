@@ -41,6 +41,7 @@ mod quests_2_focus;
 pub mod reward_callbacks;
 pub mod rotten_blood;
 pub mod schrodinger_island;
+pub mod shared_switches;
 pub mod soul_war;
 pub mod soul_war_dialogue;
 pub mod task_board;
