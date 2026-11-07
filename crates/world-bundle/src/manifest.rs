@@ -84,6 +84,7 @@ mod tests {
     {
         let manifest = Manifest {
             subareas: Default::default(),
+            world_changes: None,
             format: FORMAT.into(),
             min_reader_version: VERSION,
             projection_class: "server".into(),

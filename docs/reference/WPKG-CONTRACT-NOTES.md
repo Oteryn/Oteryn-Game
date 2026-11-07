@@ -737,3 +737,83 @@ unadmitted legacy records without semantics while rejecting admitted conflicts
 Shared shop/potion input repinning permits only exact verified WVAR source
 qualifier outputs from main9668; all other selected changes remain errors.
 Generated content and focused PostgreSQL validation remain pending here.
+
+
+## Integrated WVAR source contract notes
+
+## WVAR spawn prerequisites
+
+A gated spawn source opens after one sealed, committed death from each exact prerequisite home cell and creature identity. Repeated kills of one source, administrative removal, failed projection, and replay cannot replace another prerequisite. The existing spawn owner handles warning, occupancy, respawn, and activation rollback; no second scheduler is introduced. Prerequisites are local to the admitted Channel spawn set.
+
+## WVAR variant projection and conservative source rules
+
+Variant-only sectors use the same sorted tile stream and portal/marker binding as base sectors. A missing managed portal anchor refuses admission. Only bundles declaring the W1 capability receive these projections; exits remain available after closure through current authority checks.
+
+Missing exact entrance geometry is represented by bounded, declared landing pads. Awash uses a separate dry return pad so a flooded entrance cannot strand a player; Down the Drain reserves dry entrance/return pads over the sourced surface water. Awash's202coal threshold is interpreted as the community total across three pumps. The exact source citations and per-title geometry assumptions are retained in the recipe's source/assumption fields.
+
+## WVAR native creature and Item admission
+
+Mamma Longlegs uses the retained1800HP/2200XP/outfit208 facts and the existing Giant Spider executable AI as the conservative archetype. Its new native profile invents no loot, Bestiary, Prey or Forge reward. The bounded corpse Item dependencies are admitted through the existing authoring importer. Sandfish13992 keeps its existing canonical weight660, stack100 and food regeneration660seconds; only the missing native provider binding is added. Source locators and hashes are recorded beside those native facts.
+
+## WVAR camp, Spider Nest and illusion rules
+
+Spider Nest entry arrives beside Mamma's live spawn cell and returns to a separate maintained surface pad. Decorative web12747 has no retained solid flag; the selected sealed variant therefore declares a bounded barrier through the existing map collision/passability owner. Three lifetime sealed credited Mamma kills deny new entry while the return remains available.
+
+Bored uses three conservative adjacent illusion pads around Wyda because the retained source fixes the exact illusion identity/top-damage achievement but not an executable population count. The NPC home cell remains free. The existing seven-spawn Warpath recipe means six distinct guard homes before Bibby, using the already-pushed spawn prerequisite owner. Lumberjack's source50gold offer is interpreted as the player selling one piece of5901wood, independently of the Chip→Queen report.
+
+## WVAR Lumberjack NPC contract
+
+Retained TibiaWiki page76247/rev893906, `npc_conditions`:9–13 (body SHA256 `a31cf523648ff168e34f12a31429a05d8db42be4e7a0daa6df49dc6e32355ce2`) supplies the Chip→Queen Eloise order, Whistle-Blower, and a50gold wood sale with unspecified quantity. Wood5901 is Crystal `201189f871d23597b82caf88fd611454a2ddefb8` `data/items/items.xml:15919`, file SHA256 `8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509`.
+
+The explicit conservative offer is that the player sells ONE wood5901 to Chip for50gold through the existing NPC trade owner. This is independent of the report and does not make50gold a quest reward. Conservative dialogue keywords are `wood`/`logging` at Chip and `chip`/`lumberjack` at Queen Eloise; replies are authored text, not purported donor quotations. Reporting requires the prior visit and grants Whistle-Blower once. It remains available after the daily change ends. Chip's authored home `[32418,31699,7]` is an explicitly inferred placement, checked against the current stored variant; wandering changes talk range, not source membership. New writes require a private context resolved from the real current NPC actor, session, lease, scope generation and active content. Existing matching Quest/trade receipts retain ordinary read-only replay after closure.
+
+## Warpath repeat admission
+
+The retained Warpath spoiler fixes24hours and restarts the clock on an early revisit. Entry therefore records an actual server movement-step Quest receipt: elapsed admission uses SetNow, while an early denied attempt uses a separate SetNow transition. A bounded palisade enclosure and separate return platform are conservative geometry for the retained Femor camp. The source inside roster remains two Berserkers, three Warlords and one Leader; only six distinct sealed guard deaths unlock Bibby through the existing spawn owner. Return never consumes or checks the entry clock.
+
+## WVAR source-specific reward closure
+
+Crystal `201189f871d23597b82caf88fd611454a2ddefb8` fixes Wyda loot at `data-crystal/monster/raids/giant_spider_wyda.lua:67-70` (SHA256 `d64925aa3300e7bb6c8ec8abcfd815500624d344e4e2b411f8559624108993d6`): gold3031 and spider fangs8031 only. Bibby uses `data-crystal/monster/bosses/bibby_bloodbath.lua:72-90` (SHA256 `62bc99a21a214baaf6e1b0a8dba5ee595674c7baf15b0b3f952925ea3b58e5a2`), its17 genuine leaves; modern imported44612 is absent. These two source-specific tables replace the imported tables without promoting ordinary Giant Spider loot. Only six missing genuine leaves8031/7412/7395/817/3316/3265 become Native materializable Items.
+
+The same pinned `data/items/items.xml` (SHA256 `8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509`) supplies Bibby corpse6008 at16475–16480 and its4148→4149→4147 chain at12738–12755: capacities10 on the first three, durations10/300/300/60seconds, and weights0/120000/120000/10000. Pinned appearances preserve the primary corpse immobility and the later stages being takeable. Existing Item decay/custody owns the chain; no new scheduler. The existing independent Crystal/Canary imbuement cross-check gains only butcher axe7412, whose two slots and five family tiers match both exact source pins; no existing witness row changes.
+
+The six leaf definitions in that same exact XML are8031:21688–21692,7412:19911–19930,7395:19688–19691,817:2728–2740,3316:9014–9024, and3265:8282–8295. The canonical Item source facts feed the native loot admission for Bibby corpse6008 (materializable, capacity10); later corpse stages retain the existing Item decay owner.
+
+## WVAR generic physical reward closure
+
+`tools/content-schema/native-gameplay/wvar-reward-closure.json` is the reusable source receipt for all42 WVAR recipe/source creature keys:41 retained donor Lua definitions plus the explicitly authored Mamma template. It derives133 corpse-chain Items and337 actual corpse/loot dependencies from the exact Crystal201189f archive SHA256 `2b734db10c8c00e7a11a59f1cb49a786099959e98a622732b7fb80bcc8345b9d`. Every creature has its Lua file:line+SHA; every Item has its XML file:line+SHA and span digest. No raw source or map bytes are copied into the repository. The bounded supplemental keys are the four source Shadowthorn Elf types and the prepared-bucket Thornfire Wolf.
+
+The generic reward projection admits physical/stack/container/absolute decay facts and supported loot charges. Equipment, combat, imbuement and use-effect systems retain their existing owners; this reward importer does not fill their unknown fields. Existing canonical Known facts remain authoritative. Actual source primary-corpse/loot edges alone enter the loot section; decay-only stages and future bucket operands do not become unrelated loot facts.
+
+Our earlier16-slot Mamma/Giant Spider projection was a native projection, not the donor capacity. It is corrected to the source30/30/20 capacities. The existing shared corpse-container owner now supports the exact required maximum44, rather than clamping larger bodies: Hive-related bodies and Deepling Scout36, Spectre/Poacher40, and Insectoid Worker44. Migration1102 retains the installed receipt/lifecycle/nested/single-location guards and extends their shared bound, including retirement ordinals. The independent total loot-plan ceiling remains unchanged.
+
+Canonical guard receipts are regenerated through their existing source capture functions; their captured record sets remain unchanged. The existing Prey producer is rerun because its model binds the exact loot bytes. There is no second counter, store, admission table or timer in this source closure. The shared dependency closure does not qualify any additional world-change title by itself.
+
+## WVAR iceberg, Spirit Grounds, Hive and Poacher rules
+
+Chakoya's 63 retained donor homes use the 2,118 bounded snow/ice tiles recorded in the authored recipe. Equal iceberg/open-water alternatives are conservative: open water removes owned upper-floor terrain and changes floor 7 to appearance 622. The retained [Chakoya page](https://tibia.fandom.com/index.php?curid=76213&oldid=887139), line 4 (SHA256 `16abb4b72959e6969dc11e24717b7cbf703df6d7cc9ed4a8935686a4ff6a2e68`), declares no event reward. Its line 6 (SHA256 `ff4d57a94bdf28759e74d23b6806a02e949c1c2c78983d805a24fd0804d4671e`) distinguishes Cartography 101 and incidental Fireproof Horn loot.
+
+Spirit Grounds retains all three entrance coordinates and the shared destination. Twelve equal variants are the Cartesian product of three entrances and four populations. This preserves the retained [Spirit Grounds page](https://tibia.fandom.com/index.php?curid=76264&oldid=887160), line 17 (SHA256 `59b829915a0b21c494521fb1a351335f44708cadf75709a3dd009ead86a33940`): population and daily portal choice are independent; the objective and achievement are unknown. Four creature pads, a connected 49-cell cleared room floor and an adjacent return selector are conservative geometry. Separate maintained dry pads beside each surface entry prevent landing on the active entry. These escape surfaces persist without enabling a closed entry. No objective or achievement is invented.
+
+Hive Outpost uses six Vandura source pads conservatively assigned to the six hive-born types. Daily 500-permille admission and 49:1 ordinary/Overseer weights are explicit assumptions. The optional Overseer occupies a seventh adjacent clear pad and preserves Kollos. The retained [Hive Outpost page](https://tibia.fandom.com/index.php?curid=76241&oldid=887146), line 6 (SHA256 `8abed8a9797761bfd4b722eb5b7b3cd547eb00ee93d028a54cc845f3ac0fc4ca`), establishes Vandura and the invasion, while leaving the reward quantity unknown. Exact donor homes are `world-monster.xml:51169,52098-52102` at Crystal commit `201189f871d23597b82caf88fd611454a2ddefb8`, SHA256 `f90e82203a112c9068d4ed123e3e5bb4c1b9743f2c2d3bcb12039ac8ebd9ad4e`.
+
+Poacher Caves uses the same 12 Gloom/Ghost Wolf donor homes and 60-second source intervals for mutually exclusive Game/Poacher/Gloomy populations. The retained [Poacher Caves page](https://tibia.fandom.com/index.php?curid=76258&oldid=1175805), lines 17-18 (line SHA256 `5f657dd641977d669f56568d3f13ce11480418696a162e6817a8b9ff6ebaf0ea` and `86aede34bd487d35f366c6acd47a369d707214110e68b4b2ac083a153f359b3b`), describes the populations but supplies no executable threshold/order. Equal daily selection is the conservative rule. Exact homes are `world-monster.xml:63222,63329,63776,63891,63921,64194,64310,64313,90293,90811,90976,91588` at the same pinned Crystal commit and XML SHA256 above. No kill threshold is invented.
+
+All decisions use the existing World/reset owner. All 63/4/6+1/12 native creature memberships use already-qualified native policies; no additional Creature or Item profile is introduced. Recipe source fields retain the full donor URLs, exact XML home lines and map SHA256 `c0549a4c94e1706861252a6cd7db7a3545cdd2f96259f405c5481e45d02a3f85`.
+
+## WVAR Thornfire reset and water stations
+
+Thornfire uses the existing World/reset owner and exact slot15 recipes. The restored phase retains54 pinned Shadowthorn Elf homes on688 admitted tiles, including three Overseers; the burning phase retains24 Firestarters on634 tiles. The explicit conservative phase rule requires one sealed native death from every exact restored home and all three Overseer-release bits. Existing next-save admission maps counter stage1 to restored variant1 and stage2 to burning variant0; one burning save epoch then restores the normal roster. The phase has no random selection or boot activation. Individual repeated kills cannot substitute for another home.
+
+Prepared bucket source facts remain bound to Crystal201189f `prepared_bucket.lua:3-83` (SHA256 `5e0d0253f913cb788a7fcbd6be41ad465b56ab1026c68226f80f79c31cefe01f`) and `thornfire_wolf.lua:3-18` (SHA256 `010270cc7a3ad1ecdd960b645d1013bc61f24feace4df38092295b91aca2b7cf`). Mixing11466 with2873 yields empty bucket12819; using bog water12721 fills it to12722. Each fire use transforms the filled state back to empty; filled water decays after one hour. Existing terrain restoration uses the first future save+8h or save+16h boundary, then the next reset after16h. Every extinguish increments the personal count; Firefighter grants only on the10% two-wolf branch when the count is at least500 (`prepared_bucket.lua:44-59`, same source SHA256 above); no guaranteed mount or unrelated event reward is invented. The retained Lua samples four nearby pads with replacement and permits `createMonster` failure. The explicit conservative placement rule requires two distinct currently available source pads atomically, otherwise the whole use refuses before debit; it does not claim exact donor sampling. Current Character/session/generation/lease, exact selected action membership, atomic Item custody, durable replay and native spawn/death receipts remain with their existing owners.
+
+
+The final Thornfire admission extends the earlier42-key closure through the same producer to the existing M10 bog-derived Crystal Wolf:43 actor keys,42 retained Creature Lua definitions,137 corpse-chain Items and344 dependencies. Crystal `201189f871d23597b82caf88fd611454a2ddefb8` `data-crystal/monster/mammals/crystal_wolf.lua:32,78-85`, SHA256 `55815115e6b393f6e7cab39a69ee0c59fc0c87acf59dcf9ce1e0e33e4d6e7061`, supplies its six exact loot leaves and12058→12069→12070→12071 corpse chain (capacities10/10/10/leaf); the unrelated modern10310 loot edge is removed. The two bucket profiles remain physical/use operands rather than unrelated loot. Existing craft authoring admits nine operand profiles and130 recipes. Native Item payload is3728 rows/8,107,377 bytes; the official Prey producer was rerun against the final loot bytes (15 cases/776 creatures). Historical42-key PG receipts remain evidence for their recorded payload, and do not substitute for the separate final43-key Native admission proof.
+
+### WVAR expanded compile gate
+
+All15 changed crates passed all-target/all-feature `cargo check` (116.181s).
+Two main test fixtures now provide WVAR's new optional bundle/variant fields;
+their existing layer and fungus assertions are retained. Prey completed15 cases
+for776 creatures against the merged source loot. Clippy, pins and PostgreSQL
+remain pending at this compiling checkpoint.
