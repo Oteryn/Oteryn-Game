@@ -5239,7 +5239,7 @@
     },
     "current_batch": {
       "batch": "first_dragon_life_20",
-      "phase": "COMPILING_WIP_PUSH: PREPUSH-2 steps1/2/4PASS; step3 pending under explicit cadence exception; life-site qualification not claimed",
+      "phase": "COMPILING_WIP: correct native StepIn revision contract; own PG rerun and12crate units pending under PREPUSH-2 cadence exception",
       "entries": [
         "AID25002 DesertTile once",
         "AID25003 StoneSculptureTile once",
@@ -5263,18 +5263,37 @@
       ],
       "checks": {
         "world_change_units": "21PASS 0.062s /tmp/questpc3-prepush2-world-change-unit.log",
-        "workspace_all_targets": "PASS1m26s /tmp/questpc3-prepush2-publish-workspace-check.log; preceding full compatibility PASS7m30s",
+        "workspace_all_targets": "PASS7m24s /tmp/questpc3-batch20-publish-check.log",
         "content_regeneration": "RUNNING repository native/tree route /tmp/questpc3-prepush2-targeted-regenerate.log",
         "postgres_green": "PENDING after generated files settle",
         "remaining_changed_crate_units": "PENDING: client-assets, client-ui, game-server, gameplay-content, dispatch, durability, encounter-rules, foundation, npc, quests, social, world; world-change21PASS",
-        "generated": "PASS native43 drift-check; binding evidence and all373 matrix regenerated; Item34111/Mount252 equivalence main phasePASS; existing RewardClaim339 and blessing8 registry restored by producers; trailing imbue24families/72tiers and craft129 --checkPASS; materialized97/97 and world metadataPASS; duplicate-migration checkCLEAR",
-        "fmt": "PASS /tmp/questpc3-prepush2-publish-fmt.log",
-        "pins": "PASS official cargo release pin-refresh; world digest unchanged319a8f2f4eb80c6e591da852e23889ea6a1105e44c2bcaafb96337428c588289",
+        "generated": "PASS native43 +Grizzly30/30 +all repo authoring-family producers +binding evidence +all373 matrix +Item audit tags; canonical blessing registration8 --checkPASS; duplicate migrationsCLEAR",
+        "fmt": "PASS /tmp/questpc3-batch20-publish-fmt.log",
+        "pins": "PASS official release pin-refresh /tmp/questpc3-batch20-publish-pins.log unchanged319a8f2f4eb80c6e591da852e23889ea6a1105e44c2bcaafb96337428c588289",
         "pending": [
           "post-merge First Dragon lava and three-life-site real PG cases",
           "unit suites for oteryn-client-assets, oteryn-client-ui, oteryn-game-server, oteryn-gameplay-content, oteryn-gameplay-dispatch, oteryn-gameplay-durability, oteryn-gameplay-encounter-rules, oteryn-gameplay-foundation, oteryn-gameplay-npc, oteryn-gameplay-quests, oteryn-gameplay-social, oteryn-gameplay-world"
         ]
-      }
+      },
+      "post_merge_pg": {
+        "version": "18.6",
+        "lava": {
+          "result": "PASS",
+          "duration_ms": 76982,
+          "sacrifices": 4,
+          "portals": 2,
+          "receipts": 4,
+          "counter": 4
+        },
+        "life": {
+          "result": "fixture assertion failed before qualification",
+          "duration_ms": 66719,
+          "point": "source revision1 versus incorrect expected0; source appearance invariance plus exactly-one revision assertion now retained"
+        },
+        "log": "/tmp/questpc3-prepush2-first-dragon-pg.log"
+      },
+      "retry": "Focused life rerun compiler SIGKILL before execution; cgroup reports OOM kill. Next retry CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_TEST_DEBUG=0, preserving all assertions.",
+      "unit_retry": "Non-heavy10-crate build hit disk full before test execution; stale inactive caches removed, queued retry paused for mandatory publish gate; all12unit suites remain pending. Keep current PG cache1es7p8qb8nel8, not obsolete pre-merge1xzydsvq6pzum."
     },
     "diagnosis": {
       "log": "/tmp/questpc3-counter-diagnosis.log",
@@ -9857,7 +9876,7 @@
       },
       "review": "Read strict combined admission union, all unchanged conflicting Item weights, retained source observation guards, disjoint NPC producer prefixes, both new physical PG contracts and generated input witnesses. All three PG cases, 4callbackunits,15profiles,9authoring,actual15case/776creatureprey,check/strictClippy3crates,123content,5repository andpinchecks pass; no blocking finding."
     },
-    "updated_at": "2026-11-07T22:07:41.815625+00:00",
+    "updated_at": "2026-11-07T22:43:31.446280+00:00",
     "standing_validation_rule": "PREPUSH-2: fetch+merge main before every push; regenerate generated files/pins/central lists with repo tooling; every changed-crate unit suite plus own real-PG cases; workspace all-targets check and fmt. At30min, may push compiling generated state with step3 tests explicitly pending.",
     "main_merge_validation": {
       "main": "e1ca3e003",

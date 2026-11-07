@@ -240,13 +240,31 @@ fn scenario() -> TestResult {
                 "reentering an already counted source never increments the counter"
             );
         }
+        eprintln!(
+            "FIRST_DRAGON_LIFE POSTGRES_PROGRESS completed={completed} counter={}",
+            progress(&owner, &admitted, &authority, COUNTER).await?
+        );
         for at in TILES {
             let key = oteryn_world_bundle::bundle::placement_key(at.2, at.0, at.1, 1)
                 .ok_or("placement")?;
+            let map = owner.bundle_map().ok_or("map")?;
             assert_eq!(
-                owner.bundle_map().ok_or("map")?.facts.object_revision(key),
-                0,
-                "life-site tile stays unchanged"
+                map.facts.object_revision(key),
+                1,
+                "one successful StepIn advances each source revision once; reentry is refused"
+            );
+            let pos = crate::map::overlay::TilePos {
+                x: at.0,
+                y: at.1,
+                floor: at.2,
+            };
+            assert_eq!(
+                map.facts
+                    .base_entry(pos, 1, 1)
+                    .ok_or("life-site facts")?
+                    .appearance_id,
+                100,
+                "life-site appearance stays unchanged"
             );
         }
         let counter = progress(&owner, &admitted, &authority, COUNTER).await?;
