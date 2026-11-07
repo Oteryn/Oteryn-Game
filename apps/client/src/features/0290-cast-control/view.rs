@@ -23,6 +23,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Read consent",
                 "Allow shown",
                 "Hide me",
+                "Refresh cast",
             ],
             snapshot: |m| {
                 let p = &m.cast_control;

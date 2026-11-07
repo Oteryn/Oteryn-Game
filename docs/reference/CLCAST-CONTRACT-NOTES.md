@@ -743,3 +743,22 @@ Domain 103 now has a strict native session decoder and revisioned event. The
 playing mailbox presents it immediately, including D=300, while viewer copies
 continue through the existing delay queue. Ctrl+Alt+Shift+H opens the native
 reply/mute/unmute/kick/ban form. Disconnect clears room history and pending UI.
+
+CLCAST projection allocations extend the reserved outer Message sequence after
+52: **53 Ready{epoch,chat,delay}**, **54 CasterRoster{revision,subjects}**, and
+**55 ControlQuery**. Domain 103's next free delta type is 2; +30 allocates
+**32 CAST_CASTER_ROSTER_V1**, bounded to 1024 bytes and 50 sorted, unique opaque
+handles. No command/capability/migration is added. Ready is an admission/clear
+policy message, containing selected chat permission and chosen delay but no
+picture, speech, viewer count or absolute identity. It is emitted under the
+existing egress barrier on epoch/consent clears; content still follows D.
+ControlQuery uses command 502 and lets native settings refresh a stopped or
+externally revoked cast without guessing its revision.
+
+Canary `src/creatures/players/livestream/livestream.cpp:388,396,431,541,724`
+grounds viewer presence, removal, opcode selection and the caster room. The
+accepted S17 typed-projection difference uses a structured owner-only roster
+rather than inferring membership from spoofable user text. It refreshes on
+change and at the existing two-second renewal cadence for resync, keeping
+silent viewers selectable after chat history rolls over. Roster frames cannot
+enter an observer envelope. Moderator targets come only from that roster.

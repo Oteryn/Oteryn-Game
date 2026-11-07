@@ -42,10 +42,14 @@ fn s17c_live_caster_line_decodes_with_revision_and_direction_checks() -> Result<
                         .is_err(),
                     "stale base cannot duplicate a line"
                 );
-                let wrong = cast::Message::Chat("wrong direction".into())
+    let roster=cast::Message::CasterRoster{revision:7,subjects:vec![[3;16],[4;16]]}.encode().map_err(|e|format!("{e:?}"))?;
+                    let roster_frame=encode_state_delta(1,42,103,2,3,cast::DELTA_TYPE_CAST_ROSTER,&roster)?;
+                    let roster_event=session.apply_state_delta(42,decode_wire_envelope(&roster_frame)?.payload())?;
+                    assert!(matches!(roster_event,SessionEvent::CastRoster(row) if row.value.revision==7&&row.value.subjects==vec![[3;16],[4;16]]));
+                                let wrong = cast::Message::Chat("wrong direction".into())
                     .encode()
                     .map_err(|e| format!("{e:?}"))?;
-                let frame = encode_state_delta(1, 42, 103, 2, 3, 1, &wrong)?;
+                let frame = encode_state_delta(1, 43, 103, 3, 4, 1, &wrong)?;
                 assert!(
                     session
                         .apply_state_delta(42, decode_wire_envelope(&frame)?.payload())

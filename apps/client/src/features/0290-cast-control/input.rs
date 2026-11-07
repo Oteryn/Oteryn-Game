@@ -11,7 +11,10 @@ impl PlayLink {
         true
     }
     pub fn cast_control_open(&self) {
-        if lock(&self.mailbox).cast_control.consent_selected {
+        let control = lock(&self.mailbox).cast_control.clone();
+        if control.selected {
+            self.cast_control_request(5);
+        } else if control.consent_selected {
             self.cast_control_request(2);
         }
 
@@ -33,7 +36,7 @@ pub(in crate::play) fn submit(
     action: usize,
 ) {
     let panel = &mut shared.cast_control;
-    let message = if action >= 2 {
+    let message = if (2..=4).contains(&action) {
         oteryn_client_ui::cast_consent::protocol::request(
             panel,
             match action {
@@ -48,8 +51,8 @@ pub(in crate::play) fn submit(
     match message.and_then(|m| m.encode().map_err(|_| "Invalid settings")) {
         Ok(payload) => {
             let command = oteryn_client_runtime::server_mechanic::ServerMechanicCommand {
-                capability: if action >= 2 { 292 } else { 290 },
-                command_type: if action >= 2 { 503 } else { 502 },
+                capability: if (2..=4).contains(&action) { 292 } else { 290 },
+                command_type: if (2..=4).contains(&action) { 503 } else { 502 },
                 payload,
             };
             panel.pending = commands

@@ -18,7 +18,11 @@ fn s17b_observer_accepts_only_bound_public_frames_and_no_player_fallback()
                     Message::Join(_)
                 ));
                 for message in [
-                    Message::Clear { epoch: 4 },
+                    Message::Ready {
+                        epoch: 4,
+                        chat: false,
+                        delay: 300,
+                    },
                     Message::Scene {
                         epoch: 4,
                         sequence: 1,
@@ -49,6 +53,9 @@ fn s17b_observer_accepts_only_bound_public_frames_and_no_player_fallback()
             let mut session =
                 CastViewerSession::join(client, b"ticket", Duration::from_secs(2)).await?;
             assert_eq!(session.epoch(), 4);
+            assert!(!session.chat_allowed());
+            assert_eq!(session.delay(), 300);
+            assert!(session.chat("disabled").await.is_err());
             assert!(matches!(
                 session.next().await?,
                 Message::Scene { epoch: 4, .. }

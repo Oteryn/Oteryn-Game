@@ -200,3 +200,24 @@ Message kind 52 is ConsentQuery, with no fields. Existing player command 503
 It cannot be carried by an observer envelope. Native settings read the current
 revision before enabling/disabling consent. Kind 52 is next free outer kind 22
 plus the assigned CLCAST lane offset 30; no new command or capability is used.
+
+### CLCAST readiness, roster and control read
+
+Outer kind 53 Ready has required epoch (varint field 2, >0), selected-and-enabled
+chat (boolean field 3), and chosen delay (varint field 4, 0..300). It is the first
+server observer frame and replaces an immediate clear when policy/epoch changes.
+It clears staged/shown pictures; it contains no delayed cast content or viewer
+count. Generation remains bound by the observer envelope. Unknown fields and
+role/direction mismatches fail closed.
+
+Owner-only kind 54 CasterRoster has required cast revision (varint field 2, >0)
+and zero to 50 repeated field-3 byte strings, exactly 16 bytes each. Handles must
+be nonzero, unique and strictly sorted. It is carried only by Foundation domain
+103, delta type 32 (next free type 2 + CLCAST offset 30), maximum 1024 bytes.
+Domain revision advances with both roster and live-line frames. It never carries
+account IDs and is forbidden in observer envelopes.
+
+Outer kind 55 ControlQuery has no fields and uses existing player command 502.
+It returns CasterState or End for the current fenced caster session. Busy owners
+remain a refused request, not an assertion that a still-running cast is stopped.
+Kinds 53–55 continue CLCAST's allocation from next-free outer kind 22 + offset 30.

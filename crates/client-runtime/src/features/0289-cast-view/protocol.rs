@@ -8,6 +8,7 @@ use std::{
 #[derive(Debug, Clone, Default)]
 pub struct Picture {
     pub epoch: u64,
+    pub chat_enabled:bool,
     pub floor: Option<i16>,
     pub tiles: BTreeMap<(i16, u16, u16), Vec<u16>>,
     pub actors: Vec<(u32, u16, u16, u16, u8)>,
@@ -60,6 +61,7 @@ impl Picture {
 
         self.expire(now);
         match message {
+            Message::Ready{epoch,chat,delay}=>{self.clear();self.epoch=epoch;self.chat_enabled=chat;self.delay=delay;self.slate=false;}
             Message::Clear { epoch } => {
                 self.clear();
                 self.epoch = epoch;

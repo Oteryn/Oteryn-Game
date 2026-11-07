@@ -34,7 +34,7 @@ pub fn command(
             *byte = u8::from_str_radix(&subject[i * 2..i * 2 + 2], 16)
                 .map_err(|_| "Invalid viewer handle")?;
         }
-        if handle == [0; 16] || !panel.lines.iter().any(|line| line.handle == handle) {
+        if handle == [0; 16] || !panel.subjects.contains(&handle) {
             return Err("Unknown viewer handle");
         }
         (
@@ -56,4 +56,11 @@ pub fn command(
         command_type,
         payload,
     })
+}
+
+pub fn roster(panel: &mut Panel, roster: oteryn_client_runtime::CastRoster) {
+    if panel.selected && roster.revision >= panel.roster_revision {
+        panel.roster_revision = roster.revision;
+        panel.subjects = roster.subjects;
+    }
 }

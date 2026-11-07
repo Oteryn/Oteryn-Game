@@ -25,6 +25,13 @@ fn s17c_live_text_and_revision_fenced_moderation_are_native_values() -> Result<(
         },
     );
     assert!(panel_text(&panel).contains("hello now"));
+    protocol::roster(
+        &mut panel,
+        oteryn_client_runtime::CastRoster {
+            revision: 7,
+            subjects: vec![[3; 16]],
+        },
+    );
     for action in 1..=4 {
         let request = protocol::command(&panel, &control, "", &"03".repeat(16), action, [9; 16])?;
         assert_eq!((request.capability, request.command_type), (290, 505));

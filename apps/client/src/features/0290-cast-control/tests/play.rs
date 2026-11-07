@@ -9,6 +9,19 @@ fn s17a_native_caster_panel_sends_start_and_confirmed_stop()
     let (link, mut rx, outbox) = play_channel();
     outbox.cast_control_initialize(true);
     link.cast_control_open();
+    let crate::combat_input::PlayCommand::ServerMechanic(query) = rx.try_recv()? else {
+        return Err("cast query".into());
+    };
+    assert_eq!(
+        Message::decode(&query.payload).map_err(|e| format!("{e:?}"))?,
+        Message::ControlQuery
+    );
+    outbox.cast_control_result(&ServerMechanicResponse {
+        command_id: 1,
+        status: CommandStatus::Accepted,
+        server_sequence: 1,
+        payload: Message::End.encode().map_err(|e| format!("{e:?}"))?,
+    });
     link.cast_control_request(0);
     let crate::combat_input::PlayCommand::ServerMechanic(request) = rx.try_recv()? else {
         return Err("cast command".into());

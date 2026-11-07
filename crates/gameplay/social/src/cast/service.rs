@@ -55,6 +55,7 @@ pub enum Operation {
     ),
     Refresh(TargetFacts),
     ObserverState(ObserverId),
+    CasterRoster(GameSessionId),
     State(GameSessionId),
     Invalidate(CharacterId, i64),
     CasterChat(GameSessionId),
@@ -64,6 +65,7 @@ pub enum Operation {
     Flush(ObserverId, CastWriter),
 }
 pub enum Reply {
+    Roster(Option<(u64, Vec<[u8; 16]>)>),
     State(State),
     Capture(CapturePermit),
     Observer(ObserverId),
@@ -425,6 +427,26 @@ pub(super) fn apply(
             owner.invalidate(id, revision).map(|()| Reply::Applied)
         }
         Operation::State(id) => owner.state(id).map(Reply::State).ok_or(Error::Unavailable),
+        Operation::CasterRoster(target) => {
+            let mut subjects: Vec<_> = owner
+                .viewers
+                .iter()
+                .filter(|(_, viewer)| viewer.target == target)
+                .map(|(id, _)| id.0)
+                .collect();
+            subjects.sort_unstable();
+            let cast = owner.casts.get_mut(&target).ok_or(Error::Unavailable)?;
+            if cast.chat.last_roster == subjects
+                && cast.chat.roster_revision == cast.state.revision
+                && now.saturating_sub(cast.chat.roster_at) < 2000
+            {
+                return Ok(Reply::Roster(None));
+            }
+            cast.chat.last_roster = subjects.clone();
+            cast.chat.roster_revision = cast.state.revision;
+            cast.chat.roster_at = now;
+            Ok(Reply::Roster(Some((cast.state.revision, subjects))))
+        }
         Operation::ObserverState(id) => {
             let viewer = owner.viewers.get(&id).ok_or(Error::Unavailable)?;
             owner

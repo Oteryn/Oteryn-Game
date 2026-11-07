@@ -31,6 +31,7 @@ impl Outbox {
         let panel = &mut shared.cast_control;
         panel.pending = false;
         let value = oteryn_client_runtime::cast::Message::decode(&result.payload);
+        let stopped = matches!(value, Ok(oteryn_client_runtime::cast::Message::End));
         if result.status != oteryn_session::CommandStatus::Accepted
             || value
                 .ok()
@@ -45,6 +46,11 @@ impl Outbox {
                 .is_none()
         {
             panel.feedback = "Cast unavailable; refresh consent or saved account settings".into();
+        }
+        if stopped && result.status == oteryn_session::CommandStatus::Accepted {
+            shared.cast_chat.lines.clear();
+            shared.cast_chat.subjects.clear();
+            shared.cast_chat.roster_revision = 0;
         }
     }
 }

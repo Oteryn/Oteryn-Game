@@ -36,12 +36,25 @@ impl Outbox {
 pub(in crate::play) fn reduce(mailbox: &mut Mailbox, events: &[SessionEvent]) {
     for event in events {
         match event {
+            SessionEvent::CastRoster(roster)
+                if mailbox.cast_control.active
+                    && roster.value.revision == mailbox.cast_control.revision =>
+            {
+                mailbox.cast_control.viewers =
+                    u8::try_from(roster.value.subjects.len()).unwrap_or(50);
+                oteryn_client_ui::cast_chat::protocol::roster(
+                    &mut mailbox.cast_chat,
+                    roster.value.clone(),
+                );
+            }
             SessionEvent::CastCasterLine(line) => oteryn_client_ui::cast_chat::protocol::append(
                 &mut mailbox.cast_chat,
                 line.value.clone(),
             ),
             SessionEvent::GatedSnapshotReplaced(snapshot) if snapshot.value.domain_id == 103 => {
-                mailbox.cast_chat.lines.clear()
+                mailbox.cast_chat.lines.clear();
+                mailbox.cast_chat.subjects.clear();
+                mailbox.cast_chat.roster_revision = 0;
             }
             _ => {}
         }

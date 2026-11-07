@@ -62,7 +62,7 @@ macro_rules! authority_methods {
         fn cast_live_chat(
             &self,
             _admitted: $crate::gameplay_transport::connection::AdmittedSession,
-        ) -> impl std::future::Future<Output = Vec<Vec<u8>>> {
+        ) -> impl std::future::Future<Output = Vec<(u32, Vec<u8>)>> {
             async { Vec::new() }
         }
     };
@@ -117,7 +117,10 @@ macro_rules! composed_methods {
         ) {
             self.cast_public_effects(admitted, events).await;
         }
-        async fn cast_live_chat(&self, admitted: connection::AdmittedSession) -> Vec<Vec<u8>> {
+        async fn cast_live_chat(
+            &self,
+            admitted: connection::AdmittedSession,
+        ) -> Vec<(u32, Vec<u8>)> {
             self.cast_chat_lines(admitted).await
         }
     };
@@ -171,7 +174,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let request = Message::decode(payload).ok()?;
         if kind == 503 {
             let change = match request {
-                Message::ConsentSet { revision, allowed } => Some((i64::try_from(revision).ok()?,allowed)),
+                Message::ConsentSet { revision, allowed } => {
+                    Some((i64::try_from(revision).ok()?, allowed))
+                }
                 Message::ConsentQuery => None,
                 _ => return None,
             };
@@ -181,12 +186,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // only after every media lease is invalidated or expired.
             let value = self
                 .root
-                .character_cast_consent(
-                    self.character,
-                    self.holder,
-                    fence,
-                    change,
-                )
+                .character_cast_consent(self.character, self.holder, fence, change)
                 .await
                 .ok()?;
             use crate::durability::cast_consent::CastConsentOutcome as O;
@@ -206,6 +206,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             .encode()
             .ok();
+        }
+        if kind == 502 && matches!(request, Message::ControlQuery) {
+            let message = match self.states.casts.get() {
+                Some(node) => match node
+                    .service
+                    .apply(Operation::State(admitted.game_session_id))
+                    .await
+                {
+                    Ok(Reply::State(state)) => Message::CasterState {
+                        cast_id: state.cast_id,
+                        revision: state.revision,
+                        epoch: state.epoch,
+                        delay: state.delay_seconds,
+                        count: state.viewers,
+                    },
+                    Err(oteryn_gameplay_social::cast::Error::Unavailable) => Message::End,
+                    _ => return None,
+                },
+                None => Message::End,
+            };
+            return message.encode().ok();
         }
         let node = self.states.casts.get()?;
         let op = match (kind, request) {
@@ -307,7 +328,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn cast_chat_lines(
         &self,
         admitted: connection::AdmittedSession,
-    ) -> Vec<Vec<u8>> {
+    ) -> Vec<(u32, Vec<u8>)> {
         let Some(node) = self.states.casts.get() else {
             return Vec::new();
         };
@@ -341,7 +362,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             lines.splice(0..0, presence);
         }
-        lines
+        let mut frames: Vec<_> = lines
             .into_iter()
             .filter_map(|v| {
                 Message::CasterLine {
@@ -350,8 +371,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 .encode()
                 .ok()
+                .map(|payload| (1, payload))
             })
-            .collect()
+            .collect();
+        if let Ok(Reply::Roster(Some((revision, subjects)))) = node
+            .service
+            .apply(Operation::CasterRoster(admitted.game_session_id))
+            .await
+        {
+            if let Ok(payload) = (Message::CasterRoster { revision, subjects }).encode() {
+                frames.insert(
+                    0,
+                    (
+                        oteryn_protocol_oteryn::cast::DELTA_TYPE_CAST_ROSTER,
+                        payload,
+                    ),
+                );
+            }
+        }
+        frames
     }
 }
 

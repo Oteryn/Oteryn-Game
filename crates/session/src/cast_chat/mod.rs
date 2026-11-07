@@ -8,6 +8,11 @@ pub struct CasterLine {
     pub handle: [u8; 16],
     pub text: String,
 }
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Roster {
+    pub revision: u64,
+    pub subjects: Vec<[u8; 16]>,
+}
 fn invalid() -> SessionError {
     SessionError::SessionUnusable
 }
@@ -63,21 +68,36 @@ pub(crate) fn apply<S: SessionStream>(
         .find(|(id, _)| *id == STATE_DOMAIN_CAST_CASTER_CHAT)
         .map(|(_, revision)| *revision)
         .ok_or(SessionError::MissingDomain(STATE_DOMAIN_CAST_CASTER_CHAT))?;
-    check_delta(&delta, 1, revision)?;
+    let message = Message::decode(delta.payload).map_err(|_| invalid())?;
+    let expected = if matches!(message, Message::CasterRoster { .. }) {
+        cast::DELTA_TYPE_CAST_ROSTER
+    } else {
+        1
+    };
+    check_delta(&delta, expected, revision)?;
     if revision.checked_add(1) != Some(delta.new_revision) {
         return Err(invalid());
     }
-    let value = decode_line(delta.payload)?;
+    let event = match message {
+        Message::CasterLine { handle, text } => SessionEvent::CastCasterLine(AppliedDelta {
+            server_sequence: sequence,
+            base_revision: delta.base_revision,
+            new_revision: delta.new_revision,
+            value: CasterLine { handle, text },
+        }),
+        Message::CasterRoster { revision, subjects } => SessionEvent::CastRoster(AppliedDelta {
+            server_sequence: sequence,
+            base_revision: delta.base_revision,
+            new_revision: delta.new_revision,
+            value: Roster { revision, subjects },
+        }),
+        _ => return Err(invalid()),
+    };
     let (_, stored) = session
         .gated_revisions
         .iter_mut()
         .find(|(id, _)| *id == STATE_DOMAIN_CAST_CASTER_CHAT)
         .ok_or(invalid())?;
     *stored = delta.new_revision;
-    Ok(SessionEvent::CastCasterLine(AppliedDelta {
-        server_sequence: sequence,
-        base_revision: delta.base_revision,
-        new_revision: delta.new_revision,
-        value,
-    }))
+    Ok(event)
 }

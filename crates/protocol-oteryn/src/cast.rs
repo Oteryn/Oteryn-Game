@@ -17,6 +17,11 @@ pub const STATE_DOMAIN_CAST_CASTER_CHAT: u32 = 103;
 pub const CAST_OBSERVER_FAMILY: u64 = 16;
 /// CLCAST: next free Message kind 22 plus assigned lane offset 30.
 pub const MESSAGE_KIND_CAST_CONSENT_QUERY: u64 = 52;
+pub const MESSAGE_KIND_CAST_READY: u64 = 53;
+pub const MESSAGE_KIND_CAST_ROSTER: u64 = 54;
+pub const MESSAGE_KIND_CAST_CONTROL_QUERY: u64 = 55;
+/// Next domain-103 delta type 2 plus CLCAST offset 30.
+pub const DELTA_TYPE_CAST_ROSTER: u32 = 32;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Scene {
@@ -43,7 +48,17 @@ impl Selection {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Message {
+    Ready {
+        epoch: u64,
+        chat: bool,
+        delay: u16,
+    },
+    CasterRoster {
+        revision: u64,
+        subjects: Vec<[u8; 16]>,
+    },
     ConsentQuery,
+    ControlQuery,
     Media {
         epoch: u64,
         sequence: u64,
@@ -129,6 +144,7 @@ impl Message {
         matches!(
             self,
             Self::ConsentQuery
+                | Self::ControlQuery
                 | Self::Start { .. }
                 | Self::Update { .. }
                 | Self::Stop { .. }
@@ -144,7 +160,10 @@ impl Message {
     pub fn encode(&self) -> Result<Vec<u8>, WireError> {
         let mut b = Vec::new();
         let kind = match self {
+            Self::Ready { .. } => MESSAGE_KIND_CAST_READY,
+            Self::CasterRoster { .. } => MESSAGE_KIND_CAST_ROSTER,
             Self::ConsentQuery => MESSAGE_KIND_CAST_CONSENT_QUERY,
+            Self::ControlQuery => MESSAGE_KIND_CAST_CONTROL_QUERY,
             Self::Media { .. } => 21,
             Self::CasterState { .. } => 20,
             Self::CasterChatEmpty => 19,
@@ -169,6 +188,27 @@ impl Message {
         };
         push_varint_field(&mut b, 1, kind);
         match self {
+            Self::Ready { epoch, chat, delay } => {
+                if *epoch == 0 || *delay > 300 {
+                    return Err(WireError::Malformed);
+                }
+                push_varint_field(&mut b, 2, *epoch);
+                push_varint_field(&mut b, 3, u64::from(*chat));
+                push_varint_field(&mut b, 4, u64::from(*delay));
+            }
+            Self::CasterRoster { revision, subjects } => {
+                if *revision == 0
+                    || subjects.len() > 50
+                    || subjects.iter().any(|id| *id == [0; 16])
+                    || subjects.windows(2).any(|pair| pair[0] >= pair[1])
+                {
+                    return Err(WireError::Malformed);
+                }
+                push_varint_field(&mut b, 2, *revision);
+                for id in subjects {
+                    push_message_field(&mut b, 3, id);
+                }
+            }
             Self::Media {
                 epoch,
                 sequence,
@@ -339,7 +379,8 @@ impl Message {
             | Self::Keepalive
             | Self::End
             | Self::CasterChatEmpty
-            | Self::ConsentQuery => {}
+            | Self::ConsentQuery
+            | Self::ControlQuery => {}
         }
         Ok(b)
     }
@@ -350,7 +391,24 @@ impl Message {
         let mut r = Reader { bytes, cursor: 0 };
         let kind = r.var(1)?;
         let result = match kind {
+            MESSAGE_KIND_CAST_READY => Self::Ready {
+                epoch: r.var(2)?,
+                chat: r.boolean(3)?,
+                delay: r.narrow(4)?,
+            },
+            MESSAGE_KIND_CAST_ROSTER => {
+                let revision = r.var(2)?;
+                let mut subjects = Vec::new();
+                while r.bytes.get(r.cursor) == Some(&26) {
+                    if subjects.len() >= 50 {
+                        return Err(WireError::LimitExceeded);
+                    }
+                    subjects.push(r.id(3)?);
+                }
+                Self::CasterRoster { revision, subjects }
+            }
             MESSAGE_KIND_CAST_CONSENT_QUERY => Self::ConsentQuery,
+            MESSAGE_KIND_CAST_CONTROL_QUERY => Self::ControlQuery,
             21 => Self::Media {
                 epoch: r.var(2)?,
                 sequence: r.var(3)?,
@@ -553,6 +611,7 @@ impl Envelope {
         if !matches!(
             self.message,
             Message::Join(_)
+                | Message::Ready { .. }
                 | Message::Leave
                 | Message::Keepalive
                 | Message::Chat(_)

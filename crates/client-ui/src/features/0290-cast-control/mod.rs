@@ -46,12 +46,13 @@ impl Default for Panel {
 impl Panel {
     pub fn command(&self, action: usize) -> Result<Message, &'static str> {
         if self.pending
-            || (action <= 1 && !self.selected)
-            || (action >= 2 && !self.consent_selected)
+            || ((action <= 1 || action == 5) && !self.selected)
+            || ((2..=4).contains(&action) && !self.consent_selected)
         {
             return Err("Cast controls unavailable");
         }
         let message = match action {
+            5 => Message::ControlQuery,
             2 => Message::ConsentQuery,
             3 | 4 if self.consent_known => Message::ConsentSet {
                 revision: self.consent_revision,

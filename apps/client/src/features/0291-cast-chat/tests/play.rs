@@ -25,7 +25,7 @@ fn s17c_caster_receives_live_text_at_delay_300_and_sends_moderation()
         .encode()
         .map_err(|e| format!("{e:?}"))?,
     });
-    outbox.push(vec![SessionEvent::CastCasterLine(AppliedDelta {
+    outbox.push(vec![SessionEvent::CastRoster(AppliedDelta{server_sequence:2,base_revision:1,new_revision:2,value:oteryn_client_runtime::CastRoster{revision:9,subjects:vec![[4;16]]}}),SessionEvent::CastCasterLine(AppliedDelta {
         server_sequence: 2,
         base_revision: 1,
         new_revision: 2,

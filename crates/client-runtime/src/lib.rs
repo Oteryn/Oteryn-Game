@@ -51,7 +51,7 @@ pub mod timed_item;
 
 /// Cast wire values pass through the session boundary.
 pub use oteryn_session::cast;
-pub use oteryn_session::cast_chat::CasterLine as CastCasterLine;
+pub use oteryn_session::cast_chat::{CasterLine as CastCasterLine,Roster as CastRoster};
 
 #[path = "features/0289-cast-view/protocol.rs"]
 pub mod cast_view;

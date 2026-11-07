@@ -61,3 +61,21 @@ fn s17b_native_picture_draws_map_and_creatures_then_blanks_on_terminal()
     assert!(panel.picture.ended);
     Ok(())
 }
+
+#[test]
+fn s17b_unselected_chat_is_disabled_before_any_observer_input_is_sent() -> Result<(), &'static str>
+{
+    let (link, mut rx) = channel();
+    link.apply(Message::Ready {
+        epoch: 1,
+        chat: false,
+        delay: 300,
+    })?;
+    link.chat("not selected".into());
+    assert!(rx.try_recv().is_err());
+    let (_, panel) = link.snapshot().ok_or("viewer panel")?;
+    assert!(!panel.picture.ended);
+    assert!(panel.feedback.contains("disabled"));
+    assert_eq!(panel.picture.delay, 300);
+    Ok(())
+}

@@ -50,6 +50,8 @@ pub struct CastViewerSession<S> {
     epoch: u64,
     sequence: u64,
     ended: bool,
+    chat_allowed: bool,
+    delay: u16,
     deadline: Duration,
     next_deadline: tokio::time::Instant,
 }
@@ -73,7 +75,7 @@ impl<S: SessionStream> CastViewerSession<S> {
             .await
             .map_err(|_| SessionError::Timeout("cast accept"))??;
         let first = Envelope::decode(&bytes, false).map_err(|_| invalid())?;
-        let Message::Clear { epoch } = first.message else {
+        let Message::Ready { epoch, chat, delay } = first.message else {
             return Err(invalid());
         };
         if first.generation == 0 || epoch == 0 {
@@ -86,11 +88,19 @@ impl<S: SessionStream> CastViewerSession<S> {
             epoch,
             sequence: 0,
             ended: false,
+            chat_allowed: chat,
+            delay,
             deadline,
             next_deadline: tokio::time::Instant::now() + Duration::from_secs(310),
         })
     }
     /// The initial clear is applied locally before any content is accepted.
+    pub fn chat_allowed(&self) -> bool {
+        self.chat_allowed
+    }
+    pub fn delay(&self) -> u16 {
+        self.delay
+    }
     pub fn epoch(&self) -> u64 {
         self.epoch
     }
@@ -114,6 +124,14 @@ impl<S: SessionStream> CastViewerSession<S> {
             return Err(invalid());
         }
         match &envelope.message {
+            Message::Ready { epoch, chat, delay } if *epoch >= self.epoch => {
+                if *epoch > self.epoch {
+                    self.sequence = 0;
+                }
+                self.epoch = *epoch;
+                self.chat_allowed = *chat;
+                self.delay = *delay;
+            }
             Message::Clear { epoch } if *epoch >= self.epoch => {
                 if *epoch > self.epoch {
                     self.sequence = 0;
@@ -164,6 +182,9 @@ impl<S: SessionStream> CastViewerSession<S> {
         self.send(Message::Keepalive).await
     }
     pub async fn chat(&mut self, text: &str) -> Result<(), SessionError> {
+        if !self.chat_allowed {
+            return Err(SessionError::CapabilityNotSelected { capability: 291 });
+        }
         self.send(Message::Chat(text.to_owned())).await
     }
     pub async fn leave(mut self) -> Result<(), SessionError> {
