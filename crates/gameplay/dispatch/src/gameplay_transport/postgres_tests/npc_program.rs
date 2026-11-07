@@ -62,8 +62,8 @@ pub(super) async fn exercise(
         .flat_map(|p| p.document.rules.iter().map(|r| r.npc.as_str()))
         .collect::<std::collections::BTreeSet<_>>();
     assert_eq!(unique.len(), 89);
-    let [kesar, demeron] =
-        super::classic_quests::install(owner, admitted, [KESAR, DEMERON]).await?;
+    let [kesar, demeron, tereban] =
+        super::classic_quests::install(owner, admitted, [KESAR, DEMERON, "oteryn:npc.tereban"]).await?;
     super::classic_quests::talk(owner, admitted, kesar, 2400, "hi").await?;
     // An unfinished Lion prerequisite cannot create a Stag receipt or source stage.
     super::classic_quests::talk(owner, admitted, kesar, 2401, "help").await?;
@@ -207,6 +207,20 @@ pub(super) async fn exercise(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(count, 1);
+    // The source absent sentinel remains readable after lowering to the native
+    // boolean/counter domains. Acceptance is still one eleven-track receipt.
+    for (command, message) in [(2430, "hi"), (2431, "mission"), (2432, "yes")] {
+        super::classic_quests::talk(owner, admitted, tereban, command, message).await?;
+    }
+    let father: i32 = sqlx::query_scalar(
+        "SELECT cardinality(track_keys) FROM game_character_quest_receipts WHERE transition_key=$1",
+    ).bind("oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-accept")
+        .fetch_one(&h.pool).await?;
+    assert_eq!(father, 11);
+    for (suffix, expected) in [("quest_log", 1), ("status", 1), ("progress", 0)] {
+        let key = format!("oteryn:quest-progress/quest/u8_6/afathers_burden/{suffix}");
+        assert_eq!(super::classic_quests::progress(owner, admitted, authority, &key).await?, expected);
+    }
     Ok(())
 }
 
