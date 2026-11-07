@@ -1481,13 +1481,11 @@
   {
     "canonical": "oteryn:quest.authored.braindeath_quest",
     "title": "Braindeath Quest",
-    "status": "UNFINISHED",
-    "disposition": "authoring",
+    "status": "QUALIFIED",
+    "disposition": "qualified-current-lane",
     "qualified_elsewhere": [],
     "mechanism": "native exploration, frozen principal death objective, exact coffin ordinal, atomic world MINT",
-    "blocker": {
-      "missing_piece": "PG green; final strict static checks and independent review in progress, see cloud-braindeath-proof.json"
-    },
-    "round": "L7"
+    "round": "L7",
+    "proof": "cloud-braindeath-proof.json"
   }
 ]

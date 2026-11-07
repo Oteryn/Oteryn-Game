@@ -12,14 +12,21 @@
     "marker": "POSTGRES_CASE_COMPLETED",
     "postgres": "real PostgreSQL 18.6; native death, world dispatch, MINT and replay"
   },
-  "checks_pending": [
-    "strict Clippy rerun after clearing exhausted incremental cache",
-    "focused units and pin refresh",
-    "independent review"
-  ],
+  "checks_pending": [],
   "logs": {
     "questpc8-braindeath-red.log": "d32db3a02bd0c41e701d758f832a188aeaf90c011b45a5600b055df1d48df279",
     "questpc8-braindeath-native-ordinal.log": "0c837ae73d551da939522f78eca5f63805a7cd0234ef5e9c9cadff489fdc551f",
-    "questpc8-braindeath-check-final.log": "78afe45743c217bcba1fb006c506305a6b1a60db8152285ba54ab44399107c34"
+    "questpc8-braindeath-check-final.log": "78afe45743c217bcba1fb006c506305a6b1a60db8152285ba54ab44399107c34",
+    "questpc8-braindeath-clippy-final.log": "1c23e076fe0efbfaef9886f136bf814e7e7911d531732ef6dc752b4d759ce5c1",
+    "questpc8-braindeath-units.log": "bc36e9b7859782daa2804087b4dd2d206795a9a0fbd95873f00ef277620a331a",
+    "questpc8-braindeath-pin.log": "faa43781a2adb76db34c1a5a80b2387682650e7c0d6f64b83c4b30d4e8b1314f"
+  },
+  "checks": {
+    "fmt": "passed",
+    "check": "passed changed three crates all features",
+    "clippy": "passed three crates all targets/all features -D warnings, 158s",
+    "unit": "provenance rejection passed1/1",
+    "pin_refresh": "passed; world pin unchanged",
+    "review": "independent exact d90c1bfa2 vs15b02adfd, no findings"
   }
 }

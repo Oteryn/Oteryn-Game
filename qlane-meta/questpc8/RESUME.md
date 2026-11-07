@@ -52,3 +52,8 @@ reuse existing capture, revision, Premium and MINT owners. cargo check passed;
 Clippy rerun after disk exhaustion cleared by deleting disposable incremental cache.
 Proof: cloud-braindeath-proof.json. Qualification awaits final checks/review.
 Last completed metadata push 15b02adfd at00:17:45Z November7.
+
+Braindeath QUALIFIED: PG native ordinal38.439s plus strict checks, provenance unit,
+pin refresh and independent exact-head review passed. L7 now18 remaining.
+Next Tinder Box RED fixture uses actual summit bone pile32085,31025,z1,
+appearance4285 ordinal1 (no UID); permanent chosen route, Premium and once-only.
