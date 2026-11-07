@@ -1,0 +1,69 @@
+{
+  "status": "QUALIFIED",
+  "scope": "Whole selected free once personal King/Noodles programme; retained courtyard NPC variant, not global escape/calendar",
+  "product_commit": "6bbdd150c241ac0330a5f5a98931348bf97d0ee4",
+  "postgres": {
+    "server_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "red": {
+      "duration_seconds": 52.200411359,
+      "log": "/tmp/questpc5-noodles-whole-red.log",
+      "error": "three missing programme callbacks:0!=3"
+    },
+    "green": {
+      "duration_seconds": 94.317145358,
+      "log": "/tmp/questpc5-noodles-whole-live-handle2.log",
+      "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-noodles success=true",
+      "assertions": [
+        "real source King NPC grants exactly one native DogCollar14156",
+        "actual exploration STEP precedes actor USE",
+        "wrong canonical NPC after exploration and correct Noodles out of reach refuse without consuming collar",
+        "literal USE targets live published Noodles generation with a freshly published inventory handle",
+        "exact selected native collar consumed once",
+        "same immutable command/ingress reconciles true; changed ingress false",
+        "actual King report grants exactly1000XP and5Platinum3035",
+        "canonical account DogSitter and quest completion once; repeated report does not duplicate values",
+        "no quest or reward progress seeds"
+      ]
+    }
+  },
+  "shared_mechanism": {
+    "source_commit": "97cb9db791482391e77049c8a27fefd659003669",
+    "reuse": "QENGINE2 exact selected-instance input proof and read-only reconciliation; canonical1005 unchanged",
+    "extension": "Optional published live NPC target, canonical identity/generation/floor/reach1; carried callbacks excluded from NPC dialogue; full-plan witness and exact ingress",
+    "legacy": "Optional fields omitNone/false; three legacy/bounds Rust tests pass"
+  },
+  "native_source": {
+    "path": "imports/canary/items-xml/items.xml",
+    "lines": "32492-32496",
+    "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+    "item": 14156,
+    "weight_centi_oz": 110,
+    "stack": "NonStackable",
+    "fallback": "NONE"
+  },
+  "checks": {
+    "rust_callback_units": "PASS3",
+    "python_placements": "PASS10",
+    "python_programme": "PASS1",
+    "cargo_check": "PASS3 changed crates all targets/features; final actor fixture1m54s",
+    "strict_clippy": "PASS dispatch/durability/quests all targets/features -D warnings2m55s",
+    "fmt": "PASS cargo fmt --all --check",
+    "generators": "PASS qengine_rewards.py --check and convert_placements.py --check",
+    "pins": {
+      "inputs_digest": "64eaff1acedc88abb4e42c67274390bcb76020d397eaaa6a9f2c716c9c055710",
+      "pins": [
+        {
+          "bytes": 31102142,
+          "digest": "e68caf65219557465f2102bfe55dcbf34ba037f9b483cedd9f3cb22b8c7c68b8",
+          "world": "oteryn"
+        }
+      ]
+    }
+  },
+  "fixture_repairs": [
+    "Use actual total_experience column, retaining exact+1000 requirement",
+    "Read fresh live item handles after each reconnect; retain actual encoded packet for replay, rather than guessed handle3"
+  ],
+  "assumptions": "Retained permanent courtyard variant for guaranteed personal Thais Peninsula route; documented CONTRACT-NOTES.md. Global Dog Lady/Puppies/reset remains excluded.",
+  "migrations": "No new migrations; canonical shared18 registry remains unchanged"
+}

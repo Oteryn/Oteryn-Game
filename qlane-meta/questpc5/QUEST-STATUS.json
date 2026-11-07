@@ -265,12 +265,11 @@
     "canonical": "oteryn:quest.authored.noodles_is_gone_mini_world_change",
     "title": "Noodles is Gone Mini World Change",
     "mechanism": "native_item_identity_charges_lifetime",
-    "status": "UNFINISHED",
-    "blocker": "Required Dog Collar14156 is canonically nonmaterializable; the King cannot issue an admitted collar and the capture cannot burn one. The source also requires a two-week repeat gate and NPC-target USE, not a dialogue success line.",
+    "status": "QUALIFIED",
     "from_lanes": [
       "questpc2"
     ],
-    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "qualification_scope": "Whole selected once personal King/Noodles courtyard route: actual NPC grant, exploration STEP, exact selected collar USE on published live Noodles, actual report with1000XP/5platinum/DogSitter and completion; actor/reach/order/ingress/repeat refusals. Global escape and Dog Lady/Puppies/calendar are not selected.",
     "input_canonical": "unresolved:questpc2:noodles_is_gone_mini_world_change",
     "canonical_location": {
       "path": "content/quests/definitions/quests-00300-00351.json",
@@ -288,7 +287,7 @@
       "evidence": "content/encounters/world-changes/owner-catalogue.json",
       "reviewed_wvar_sha": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
     },
-    "active_checkpoint": "Whole Noodles actual PostgreSQL18.6 GREEN94.317145358s in /tmp/questpc5-noodles-whole-live-handle2.log. Correct target refusal was stale test handle3; fixture now waits for current inventory snapshot and uses exact published collar handle/captures actual ingress for replay. All actor/reach/input/XP/coin/achievement/completion assertions intact. Temporary diagnostics removed. Final strict Clippy/fmt/generator checks next before qualification.",
+    "active_checkpoint": "QUALIFIED PG18.6 GREEN94.317145358s; native collar exact donor profile, published actor/handle checks, frozen replay; Rust3/Python11, check/strict clippy/fmt/generators/pins all PASS.",
     "assumptions": [
       "Use retained permanent King/Noodles courtyard NPC placements for guaranteed personal route in Thais Peninsula; do not implement global escape/Dog Lady/Puppies/calendar changes."
     ],
@@ -302,7 +301,9 @@
           "world": "oteryn"
         }
       ]
-    }
+    },
+    "qualification_proof": "cloud-noodles-whole-proof.json",
+    "whole_postgres_seconds": 94.317145358
   },
   {
     "canonical": "oteryn:quest.opticording_sphere_quest",
