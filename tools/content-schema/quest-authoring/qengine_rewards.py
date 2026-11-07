@@ -951,8 +951,14 @@ def build():
     newhaven_rewards.extend(callbacks, offers, greetings)
     import legion_helmet
     legion_helmet.extend(callbacks)
-    generated['content/quests/reward-claim-gates.json']=encoded(legion_helmet.claim_gates())
+    import serpentine_programme
+    serpentine_callbacks, serpentine_gate = serpentine_programme.documents()
+    claim_gates = legion_helmet.claim_gates()
+    claim_gates['gates'].append(serpentine_gate)
+    claim_gates['gates'].sort(key=lambda row:row['claim'])
+    generated['content/quests/reward-claim-gates.json']=encoded(claim_gates)
     authored_world=legion_helmet.world_callbacks()
+    authored_world['callbacks'].extend(serpentine_callbacks)
     import nimmersatt_programme
     nimmersatt_programme.extend_rewards(callbacks, greetings)
     nimmersatt_programme.extend_world(authored_world['callbacks'])

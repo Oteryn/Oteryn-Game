@@ -360,6 +360,17 @@
     "canonical_location": {
       "path": "content/quests/definitions/quests-00000-00099.json",
       "pointer": "/records/67/definition"
+    },
+    "engine_request": {
+      "owner": "qengine2",
+      "feature": "Source-bound selection of one nested reward leaf under its existing once-only source chest claim",
+      "where": [
+        "crates/gameplay/content/src/content/world_reward_claims/selected_leaf.rs",
+        "tools/content-schema/reward-claim-authoring/selected_native_leaf.py"
+      ],
+      "reason": "Existing native_selected_leaf_v1 accepts only plain original reward amounts, not the source bag with eight children at UID6062. The selected quest requires only shield3424 and excludes key3702/extras. No parallel MINT or copied migration will be introduced.",
+      "reported": "2026-11-07",
+      "state": "REQUESTED"
     }
   },
   {
@@ -786,7 +797,19 @@
     "current_batch": "Migration ownership correction GREEN: fresh PostgreSQL 18.6 registry case passed in 4.635718145s without local prerequisite copies; workspace all-target check, strict changed-crate Clippy, fmt, duplicate and pin refresh/check passed. Whole Serpentine route work preserved separately for the next mechanic slice.",
     "migration_registry": "Owner correction: lane ships only 1270-1276; remove foreign Father 1277, obsolete dependent repair 1278, and QUESTPC8 1300. Father and backpack-output integration require QNPCFX #3027 and QUESTPC8 from main; no local migration copies shipped.",
     "component_proof": "qlane-meta/questpc5/cloud-main-merge-proof.json",
-    "migration_ownership_proof": "qlane-meta/questpc5/cloud-migration-ownership-proof.json"
+    "migration_ownership_proof": "qlane-meta/questpc5/cloud-migration-ownership-proof.json",
+    "whole_route_batch": {
+      "state": "COMPILING_WIP_POST_BARREL_PG_PENDING",
+      "red_log": "/tmp/questpc5-serpentine-whole-red3.log",
+      "postgres_version": "18.6",
+      "red_duration_seconds": 120.085965821,
+      "red_point": "Existing chest granted one pearl before the selected trial; expected zero.",
+      "programme": "Six source-validated callbacks and one gate on the existing source claim authored. Repository generator updated the two runtime documents needed for PG validation; both authoring tests pass. Broad generation, matrix and pins deferred until push.",
+      "green_attempt_log": "/tmp/questpc5-serpentine-whole-green1.log",
+      "last_pg_failure": "After the claim gate was added, PG18.6 ran114.66067871s and reached the torch approach; blocked by barrel2523 without native physical facts. Source-backed Ground-only admission authored via existing importer in43-line helper; unit passed1.983s. Post-admission PG rerun pending; quest remains UNFINISHED.",
+      "push_rule": "Owner compiling-WIP deadline: workspace all-target check and fmt, then push without waiting for full tests.",
+      "shipping_check": "Workspace all-target check and fmt PASS; native regeneration45files and duplicate-migration check PASS. Compiling WIP pushed under latest owner rule; post-barrel PG and strict Clippy continue afterwards. No copied1300/1277/1278 migration ships."
+    }
   },
   {
     "canonical": "oteryn:quest.thais_lighthouse_quest",

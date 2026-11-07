@@ -88,6 +88,8 @@ fn scenario_case(
             | "qengine-rewards-nimmersatt-passage"
     ) {
         super::super::questpc5_nimmersatt_world_items::world()?
+    } else if name == "qengine-rewards-serpentine" {
+        super::super::questpc5_serpentine_route::world()?
     } else if name == "qengine-rewards-noodles" {
         super::super::questpc5_noodles::world()?
     } else if name == "qengine-rewards-nomads-mini" {
@@ -221,6 +223,7 @@ fn scenario_case(
         };
         let nimmersatt_premium = if name.starts_with("qengine-rewards-nimmersatt-")
             || name == "qengine-rewards-nomads-mini"
+            || name == "qengine-rewards-serpentine"
         {
             let (consumer, clock, activation, _) =
                 crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(

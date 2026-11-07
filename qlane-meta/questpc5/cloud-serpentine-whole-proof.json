@@ -1,0 +1,84 @@
+{
+  "status": "COMPILING_WIP_POST_BARREL_PG_PENDING",
+  "quest": "oteryn:quest.serpentine_tower_quest",
+  "base_head": "da3c129374c411120e1088e5cbe7c60a0bc2c97e",
+  "postgres_red": {
+    "version": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "duration_seconds": 120.085965821,
+    "log": "/tmp/questpc5-serpentine-whole-red3.log",
+    "sha256": "150adf9ee7e46c5d697ef471ce418d8ae066e96e730f03574f99cc793cc149e4",
+    "started_marker": "POSTGRES_CASE_STARTED serpentine_whole",
+    "completion_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-serpentine",
+    "success": false,
+    "failure": "Existing source chest granted one pearl before the trial; expected zero."
+  },
+  "source_validation": {
+    "callbacks": 6,
+    "callback_mints": 0,
+    "existing_claim_gates": 1,
+    "generator_in_memory": "PASS; no generated files written",
+    "authoring_tests": "2 passed in 3.254s after the two runtime programme/gate documents were produced by the repository generator."
+  },
+  "local_test_prerequisite": "Owner-authorized untracked 1300 migration only; never commit or ship. Consume QUESTPC8 from main after owner announces merge.",
+  "batch_state": "Whole PG green attempt active; only two runtime programme/gate documents updated to test the active quest. Broad generation, matrix and pins remain deferred until push. Post-dedup ownership clarification pending.",
+  "green_qualification": false,
+  "test_assertions_pending_green": [
+    "No seeded completion or quest progress",
+    "Chest denies early reward",
+    "Current Premium required for exploration and torch",
+    "Early observation cannot complete",
+    "Empty fire selects default entry",
+    "One exact pot transferred/dropped through native custody selects inner route",
+    "Torch removes source stone",
+    "Lever removes four source walls",
+    "Authored observation completes selected finite trial",
+    "Existing once-only claim mints one pearl",
+    "Repeated observation/chest do not duplicate progress/reward",
+    "Exactly four mutating progress receipts; read-only routing adds none"
+  ],
+  "post_binding_pg_attempt": {
+    "log": "/tmp/questpc5-serpentine-whole-green1.log",
+    "duration_seconds": 114.66067871,
+    "success": false,
+    "failure": "Blocked on second northward step approaching torch: retained barrel2523 lacked native collision facts. Early claim denial, Premium start guard, exploration, early observation guard and pot-conditioned/default entry branches reached before this failure."
+  },
+  "barrel_admission": {
+    "kind": "Source data through existing importer; no new engine feature",
+    "helper": "tools/content-migration/questpc5_map_profiles.py",
+    "helper_lines": 43,
+    "unit_test_passed": true,
+    "unit_duration_seconds": 1.983,
+    "unit_log": "/tmp/questpc5-serpentine-barrel-green.log",
+    "facts": "blocks_movement=false; blocks_projectile=false; has_height=true; movable=true; pickupable=false; container capacity25; Ground-only admission",
+    "source": "imports/canary/items-xml/items.xml:5290-5293",
+    "source_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+  },
+  "focused_callback_units": {
+    "passed": 14,
+    "duration_seconds": 1.801,
+    "log": "/tmp/questpc5-serpentine-callback-units.log"
+  },
+  "owner_push_rule": "Latest owner requires a compiling WIP push within15minutes after workspace all-target check and fmt; full post-admission PG qualification continues after push.",
+  "shipping_checks": {
+    "workspace_all_targets": {
+      "exit": 0,
+      "log": "/tmp/questpc5-serpentine-wip-workspace-check.log"
+    },
+    "fmt_all_check": {
+      "exit": 0,
+      "log": "/tmp/questpc5-serpentine-wip-fmt.log"
+    },
+    "native_regeneration": {
+      "exit": 0,
+      "files": 45,
+      "log": "/tmp/questpc5-serpentine-native-regen.log"
+    },
+    "duplicate_migrations": {
+      "exit": 0,
+      "method": "Git write-tree plus repository dup-migrations script"
+    },
+    "local_foreign_migration_copies": "Absent from shipping tree",
+    "whole_post_barrel_pg": "NOT YET RUN; WIP remains unqualified",
+    "clippy": "Not held before this push under latest owner compile-only deadline rule"
+  }
+}

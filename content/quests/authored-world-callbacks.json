@@ -753,6 +753,372 @@
         "oteryn:selected-recipe:content/quests/definitions/quests-00300-00351.json:/records/22/definition:sha256:4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a",
         "oteryn:source-map:content/world/placements/region-z06-x126-y125.b3:sha256:ade86a8e432522df4d30b1d8f56e8c6536a35c4e0664d426f4e895a2f80ddbfe"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-serpentine-entry",
+      "quest": "oteryn:quest.serpentine_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33148,
+          "y": 32864,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 5630,
+        "appearance": 1949
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33145,
+        "y": 32863,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/serpentine-trial/stage",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "oteryn-authored:selected-finite-observation-trial:entry",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/0/definition:sha256:4dfb2080a7dce045c63348fbe728ec9cdc780888e31086668b14b057d0e3b606",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_torch.lua:3-5:sha256:ec8c4bbf2c1643e5cf1cdf499f51a1ecc4ebba7bb4b3fca46ec82193207d648d",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_lever.lua:3-34:sha256:a0f4d171cb73739843e14021b5e87d2113753a816b213f4db218836f3e854c07",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/white_pearl/movements_white_pearl.lua:1-46:sha256:216b2d0a1111217874c28c31ef14501df70f96c9bf5e2f48975b56da5995d66f",
+        "oteryn:source-map:content/world/placements/region-z07-x129-y128.b3:sha256:7f335f791c1f5ac47e8f080a22d4428ca1bbacc552c7fd8c2ffdcd039cf17495",
+        "oteryn:source-map:content/world/placements/region-z08-x129-y128.b3:sha256:b183aca78f682b1c5e3f11b5876ad350ec15db6ad686bb71e9c9cd463545e826",
+        "oteryn:source-map:content/world/placements/region-z09-x129-y128.b3:sha256:5f1c4081bc48d6e2481d0e29f37fed6b6823d6e749d1d9e75ecbfba15706d3bc"
+      ],
+      "remote_teleport": {
+        "position": {
+          "x": 33145,
+          "y": 32862,
+          "floor": -7
+        },
+        "appearance": 3465,
+        "destination": {
+          "x": 33151,
+          "y": 32864,
+          "floor": -7
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-serpentine-explore",
+      "quest": "oteryn:quest.serpentine_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33147,
+          "y": 32863,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 423
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/serpentine-trial/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "oteryn-authored:selected-finite-observation-trial:explore",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/0/definition:sha256:4dfb2080a7dce045c63348fbe728ec9cdc780888e31086668b14b057d0e3b606",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_torch.lua:3-5:sha256:ec8c4bbf2c1643e5cf1cdf499f51a1ecc4ebba7bb4b3fca46ec82193207d648d",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_lever.lua:3-34:sha256:a0f4d171cb73739843e14021b5e87d2113753a816b213f4db218836f3e854c07",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/white_pearl/movements_white_pearl.lua:1-46:sha256:216b2d0a1111217874c28c31ef14501df70f96c9bf5e2f48975b56da5995d66f",
+        "oteryn:source-map:content/world/placements/region-z07-x129-y128.b3:sha256:7f335f791c1f5ac47e8f080a22d4428ca1bbacc552c7fd8c2ffdcd039cf17495",
+        "oteryn:source-map:content/world/placements/region-z08-x129-y128.b3:sha256:b183aca78f682b1c5e3f11b5876ad350ec15db6ad686bb71e9c9cd463545e826",
+        "oteryn:source-map:content/world/placements/region-z09-x129-y128.b3:sha256:5f1c4081bc48d6e2481d0e29f37fed6b6823d6e749d1d9e75ecbfba15706d3bc"
+      ],
+      "premium_required": true
+    },
+    {
+      "key": "oteryn:quest-callback/authored-serpentine-lever",
+      "quest": "oteryn:quest.serpentine_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33152,
+          "y": 32866,
+          "floor": -8
+        },
+        "unique": null,
+        "action": 5633,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 33148,
+            "y": 32867,
+            "floor": -9
+          },
+          "appearance": 2129,
+          "replacement": null
+        },
+        {
+          "position": {
+            "x": 33148,
+            "y": 32868,
+            "floor": -9
+          },
+          "appearance": 2129,
+          "replacement": null
+        },
+        {
+          "position": {
+            "x": 33149,
+            "y": 32867,
+            "floor": -9
+          },
+          "appearance": 2129,
+          "replacement": null
+        },
+        {
+          "position": {
+            "x": 33149,
+            "y": 32868,
+            "floor": -9
+          },
+          "appearance": 2129,
+          "replacement": null
+        }
+      ],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/serpentine-trial/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "oteryn-authored:selected-finite-observation-trial:lever",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/0/definition:sha256:4dfb2080a7dce045c63348fbe728ec9cdc780888e31086668b14b057d0e3b606",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_torch.lua:3-5:sha256:ec8c4bbf2c1643e5cf1cdf499f51a1ecc4ebba7bb4b3fca46ec82193207d648d",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_lever.lua:3-34:sha256:a0f4d171cb73739843e14021b5e87d2113753a816b213f4db218836f3e854c07",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/white_pearl/movements_white_pearl.lua:1-46:sha256:216b2d0a1111217874c28c31ef14501df70f96c9bf5e2f48975b56da5995d66f",
+        "oteryn:source-map:content/world/placements/region-z07-x129-y128.b3:sha256:7f335f791c1f5ac47e8f080a22d4428ca1bbacc552c7fd8c2ffdcd039cf17495",
+        "oteryn:source-map:content/world/placements/region-z08-x129-y128.b3:sha256:b183aca78f682b1c5e3f11b5876ad350ec15db6ad686bb71e9c9cd463545e826",
+        "oteryn:source-map:content/world/placements/region-z09-x129-y128.b3:sha256:5f1c4081bc48d6e2481d0e29f37fed6b6823d6e749d1d9e75ecbfba15706d3bc"
+      ],
+      "premium_required": true
+    },
+    {
+      "key": "oteryn:quest-callback/authored-serpentine-observation",
+      "quest": "oteryn:quest.serpentine_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33145,
+          "y": 32865,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2820
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/serpentine-trial/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "oteryn-authored:selected-finite-observation-trial:observation",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/0/definition:sha256:4dfb2080a7dce045c63348fbe728ec9cdc780888e31086668b14b057d0e3b606",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_torch.lua:3-5:sha256:ec8c4bbf2c1643e5cf1cdf499f51a1ecc4ebba7bb4b3fca46ec82193207d648d",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_lever.lua:3-34:sha256:a0f4d171cb73739843e14021b5e87d2113753a816b213f4db218836f3e854c07",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/white_pearl/movements_white_pearl.lua:1-46:sha256:216b2d0a1111217874c28c31ef14501df70f96c9bf5e2f48975b56da5995d66f",
+        "oteryn:source-map:content/world/placements/region-z07-x129-y128.b3:sha256:7f335f791c1f5ac47e8f080a22d4428ca1bbacc552c7fd8c2ffdcd039cf17495",
+        "oteryn:source-map:content/world/placements/region-z08-x129-y128.b3:sha256:b183aca78f682b1c5e3f11b5876ad350ec15db6ad686bb71e9c9cd463545e826",
+        "oteryn:source-map:content/world/placements/region-z09-x129-y128.b3:sha256:5f1c4081bc48d6e2481d0e29f37fed6b6823d6e749d1d9e75ecbfba15706d3bc"
+      ],
+      "premium_required": true,
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-callback/authored-serpentine-return",
+      "quest": "oteryn:quest.serpentine_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33150,
+          "y": 32864,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 5631,
+        "appearance": 1949
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33147,
+        "y": 32864,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/serpentine-trial/stage",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "oteryn-authored:selected-finite-observation-trial:return",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/0/definition:sha256:4dfb2080a7dce045c63348fbe728ec9cdc780888e31086668b14b057d0e3b606",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_torch.lua:3-5:sha256:ec8c4bbf2c1643e5cf1cdf499f51a1ecc4ebba7bb4b3fca46ec82193207d648d",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_lever.lua:3-34:sha256:a0f4d171cb73739843e14021b5e87d2113753a816b213f4db218836f3e854c07",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/white_pearl/movements_white_pearl.lua:1-46:sha256:216b2d0a1111217874c28c31ef14501df70f96c9bf5e2f48975b56da5995d66f",
+        "oteryn:source-map:content/world/placements/region-z07-x129-y128.b3:sha256:7f335f791c1f5ac47e8f080a22d4428ca1bbacc552c7fd8c2ffdcd039cf17495",
+        "oteryn:source-map:content/world/placements/region-z08-x129-y128.b3:sha256:b183aca78f682b1c5e3f11b5876ad350ec15db6ad686bb71e9c9cd463545e826",
+        "oteryn:source-map:content/world/placements/region-z09-x129-y128.b3:sha256:5f1c4081bc48d6e2481d0e29f37fed6b6823d6e749d1d9e75ecbfba15706d3bc"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-serpentine-torch",
+      "quest": "oteryn:quest.serpentine_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33151,
+          "y": 32861,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 5632,
+        "appearance": 2928
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 33151,
+            "y": 32866,
+            "floor": -8
+          },
+          "appearance": 1345,
+          "replacement": null
+        }
+      ],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/serpentine-trial/stage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "oteryn-authored:selected-finite-observation-trial:torch",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/0/definition:sha256:4dfb2080a7dce045c63348fbe728ec9cdc780888e31086668b14b057d0e3b606",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_torch.lua:3-5:sha256:ec8c4bbf2c1643e5cf1cdf499f51a1ecc4ebba7bb4b3fca46ec82193207d648d",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_lever.lua:3-34:sha256:a0f4d171cb73739843e14021b5e87d2113753a816b213f4db218836f3e854c07",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/white_pearl/movements_white_pearl.lua:1-46:sha256:216b2d0a1111217874c28c31ef14501df70f96c9bf5e2f48975b56da5995d66f",
+        "oteryn:source-map:content/world/placements/region-z07-x129-y128.b3:sha256:7f335f791c1f5ac47e8f080a22d4428ca1bbacc552c7fd8c2ffdcd039cf17495",
+        "oteryn:source-map:content/world/placements/region-z08-x129-y128.b3:sha256:b183aca78f682b1c5e3f11b5876ad350ec15db6ad686bb71e9c9cd463545e826",
+        "oteryn:source-map:content/world/placements/region-z09-x129-y128.b3:sha256:5f1c4081bc48d6e2481d0e29f37fed6b6823d6e749d1d9e75ecbfba15706d3bc"
+      ],
+      "premium_required": true
     }
   ]
 }

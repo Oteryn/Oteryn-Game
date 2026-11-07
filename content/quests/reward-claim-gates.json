@@ -24,6 +24,26 @@
       "sources": [
         "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:045895d90cfd1f23945887e2bf108f66db9a0079c0a5e50745806a6d50221058"
       ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_3.serpentine_tower.white_pearl",
+      "quest": "oteryn:quest.serpentine_tower_quest",
+      "conditions": [
+        {
+          "track": "oteryn:quest-progress/serpentine-trial/stage",
+          "minimum": 3,
+          "maximum": 3
+        }
+      ],
+      "sources": [
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/0/definition:sha256:4dfb2080a7dce045c63348fbe728ec9cdc780888e31086668b14b057d0e3b606",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_torch.lua:3-5:sha256:ec8c4bbf2c1643e5cf1cdf499f51a1ecc4ebba7bb4b3fca46ec82193207d648d",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_serpentine_tower_lever.lua:3-34:sha256:a0f4d171cb73739843e14021b5e87d2113753a816b213f4db218836f3e854c07",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/white_pearl/movements_white_pearl.lua:1-46:sha256:216b2d0a1111217874c28c31ef14501df70f96c9bf5e2f48975b56da5995d66f",
+        "oteryn:source-map:content/world/placements/region-z07-x129-y128.b3:sha256:7f335f791c1f5ac47e8f080a22d4428ca1bbacc552c7fd8c2ffdcd039cf17495",
+        "oteryn:source-map:content/world/placements/region-z08-x129-y128.b3:sha256:b183aca78f682b1c5e3f11b5876ad350ec15db6ad686bb71e9c9cd463545e826",
+        "oteryn:source-map:content/world/placements/region-z09-x129-y128.b3:sha256:5f1c4081bc48d6e2481d0e29f37fed6b6823d6e749d1d9e75ecbfba15706d3bc"
+      ]
     }
   ]
 }

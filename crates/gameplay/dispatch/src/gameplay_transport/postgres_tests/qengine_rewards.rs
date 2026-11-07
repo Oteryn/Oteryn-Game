@@ -35,6 +35,12 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
                     y: 31578,
                     floor: -7,
                 }
+            } else if name == "qengine-rewards-serpentine" {
+                Position {
+                    x: 33147,
+                    y: 32863,
+                    floor: -7,
+                }
             } else if name == "qengine-rewards-noodles" {
                 Position {
                     x: 32310,
@@ -757,6 +763,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-serpentine" {
+        return Box::pin(super::questpc5_serpentine_route::exercise(owner, admitted, h)).await;
+    }
     if name == "qengine-rewards-noodles" {
         return Box::pin(super::questpc5_noodles::exercise(owner, admitted, h)).await;
     }
