@@ -8,6 +8,12 @@
       "walkaway": "Safe travels."
     },
     {
+      "npc": "oteryn:npc.carlos",
+      "greet": "Welcome, |PLAYERNAME|. Shall I explain how to change your outfit?",
+      "farewell": "Good luck with your hunt, |PLAYERNAME|.",
+      "walkaway": "Goodbye, |PLAYERNAME|."
+    },
+    {
       "npc": "oteryn:npc.edala",
       "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
       "farewell": "Safe travels, |PLAYERNAME|.",

@@ -57,6 +57,7 @@ enum Scenario {
     Rewards,
     Equipment,
     Damage,
+    CarlosLessons,
 }
 
 #[test]
@@ -78,6 +79,32 @@ fn questpc3_beginning_damage_lesson_is_once_and_recovers_lost_ack() -> TestResul
             }
         }
     })?.join().map_err(|_|"damage lesson panicked")??;
+    Ok(())
+}
+
+#[test]
+fn questpc3_beginning_carlos_five_lessons_use_native_dialogue() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("QUESTPC3_CARLOS_LESSONS POSTGRES_SKIPPED no_admin_url");
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            let started = std::time::Instant::now();
+            let result = std::panic::catch_unwind(|| scenario(Scenario::CarlosLessons));
+            eprintln!(
+                "QUESTPC3_CARLOS_LESSONS POSTGRES_CASE_COMPLETED duration_ms={} success={}",
+                started.elapsed().as_millis(),
+                matches!(&result, Ok(Ok(())))
+            );
+            match result {
+                Ok(result) => result.map_err(|error| error.to_string()),
+                Err(panic) => std::panic::resume_unwind(panic),
+            }
+        })?
+        .join()
+        .map_err(|_| "Carlos lessons panicked")??;
     Ok(())
 }
 
@@ -136,6 +163,8 @@ fn scenario(mode: Scenario) -> TestResult {
             "santiago_quest_log",
             "zirella_npc_greet_storage",
             "zirella_quest_log",
+            "carlos_npc_greet_storage",
+            "carlos_quest_log",
         ]
         .into_iter()
         .map(|name| {
@@ -201,6 +230,86 @@ fn scenario(mode: Scenario) -> TestResult {
             vec![1, 1],
             "source legs are distinct nonstackable Items"
         );
+        if matches!(mode, Scenario::CarlosLessons) {
+            let [carlos] =
+                super::classic_quests::install(&owner, &admitted, ["oteryn:npc.carlos"]).await?;
+            let items_before: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE lifecycle=1")
+                    .fetch_one(&h.pool)
+                    .await?;
+            super::classic_quests::talk(&mut owner, &admitted, carlos, 4600, "hi").await?;
+            for stage in 1..=5 {
+                let greet = super::classic_quests::progress(
+                    &owner,
+                    &admitted,
+                    &authority,
+                    &format!("{BASE}carlos_npc_greet_storage"),
+                )
+                .await?;
+                let log = super::classic_quests::progress(
+                    &owner,
+                    &admitted,
+                    &authority,
+                    &format!("{BASE}carlos_quest_log"),
+                )
+                .await?;
+                eprintln!(
+                    "QUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage={} actual_greet={} actual_log={} duration_ms={}",
+                    stage,
+                    greet,
+                    log,
+                    started.elapsed().as_millis()
+                );
+                assert_eq!(
+                    greet, stage,
+                    "native Carlos dialogue must author the lesson milestone"
+                );
+                assert_eq!(log, stage);
+                if stage < 5 {
+                    super::classic_quests::talk(
+                        &mut owner,
+                        &admitted,
+                        carlos,
+                        4600 + u64::try_from(stage)? * 10,
+                        "yes",
+                    )
+                    .await?;
+                    if stage == 1 {
+                        super::classic_quests::talk(&mut owner, &admitted, carlos, 4611, "bye")
+                            .await?;
+                        super::classic_quests::talk(&mut owner, &admitted, carlos, 4612, "hi")
+                            .await?;
+                    }
+                }
+            }
+            super::classic_quests::talk(&mut owner, &admitted, carlos, 4660, "bye").await?;
+            super::classic_quests::talk(&mut owner, &admitted, carlos, 4661, "hi").await?;
+            assert_eq!(
+                super::classic_quests::progress(
+                    &owner,
+                    &admitted,
+                    &authority,
+                    &format!("{BASE}carlos_npc_greet_storage")
+                )
+                .await?,
+                5,
+                "return greeting cannot repeat a completed lesson"
+            );
+            let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key LIKE 'oteryn:quest-reward/questpc3/beginning-carlos/%'").fetch_one(&h.pool).await?;
+            assert_eq!(
+                receipts, 5,
+                "all five lessons must commit once through the existing quest writer"
+            );
+            let items_after: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE lifecycle=1")
+                    .fetch_one(&h.pool)
+                    .await?;
+            assert_eq!(
+                items_after, items_before,
+                "outfit and hunt instructions grant no physical items"
+            );
+            return Ok(());
+        }
         let [santiago, zirella] = super::classic_quests::install(
             &owner,
             &admitted,

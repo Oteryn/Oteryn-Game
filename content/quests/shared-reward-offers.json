@@ -444,6 +444,116 @@
         "Thus I'm stuck here for a while. But there are some children who lost their first milk tooth and are now waiting for their presents. Without my spells, I'm feeling utterly helpless. ...",
         "I don't dare going to their homes at night but I know they will be sad about the missing presents. Would you help me?"
       ]
+    },
+    {
+      "npc": "oteryn:npc.carlos",
+      "keywords": [
+        "hi",
+        "hello",
+        "greetings"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "reply": [
+        "Shall I explain how to change your outfit?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.carlos",
+      "keywords": [
+        "hi",
+        "hello",
+        "greetings"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": false
+        }
+      ],
+      "reply": [
+        "Welcome back. Could you help me with a little favour?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.carlos",
+      "keywords": [
+        "hi",
+        "hello",
+        "greetings"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": false
+        }
+      ],
+      "reply": [
+        "Could you help me find some food?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.carlos",
+      "keywords": [
+        "hi",
+        "hello",
+        "greetings"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": false
+        }
+      ],
+      "reply": [
+        "Will you bring me meat or ham from a rabbit or deer?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.carlos",
+      "keywords": [
+        "hi",
+        "hello",
+        "greetings"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": false
+        }
+      ],
+      "reply": [
+        "Did your hunt succeed? Have you brought meat or ham?"
+      ]
     }
   ]
 }
