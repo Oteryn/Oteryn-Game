@@ -1,0 +1,46 @@
+{
+  "state": "WHOLE_ROUTE_PG_GREEN_SHIPPING_CHECKS_PENDING",
+  "quest": "The Queen of the Banshees Quest",
+  "scope": "Whole selected free level60 once seven-seal personal trial, Queen pact, final chamber, two existing source claims and exit. Source lethal pact/puzzle fidelity and charged amulet hold are not claimed.",
+  "postgres": "18.6",
+  "red": {
+    "log": "/tmp/questpc5-banshees-valid-red.log",
+    "seconds": 115.988758922,
+    "verified_level": 60,
+    "failure": "first exploration stage -1 instead of0 against pre-binding runtime"
+  },
+  "green": {
+    "log": "/tmp/questpc5-banshees-green5.log",
+    "positive_seconds": 383.527553955,
+    "positive_body_seconds": 54.461339137,
+    "real_level59_seconds": 350.277026026,
+    "suite_seconds": 450.141,
+    "cases": 5,
+    "all_passed": true
+  },
+  "regressions": [
+    "Serpentine full native route and original pearl once159.274746144s",
+    "NPC item/XP hand-in passed",
+    "Father fresh acceptance remained one eleven-track transaction"
+  ],
+  "schema_prerequisite": {
+    "main_qnpcfx": "canonical1310\u20131315",
+    "pending_pc8": "1300 local uncommitted exact owner-approved SQL; not shipped",
+    "sha256": "ffc7094ae396ef1ca0ec4d9186b907500813ab5c690279e3b3574f0060a65e5f"
+  },
+  "claims": [
+    "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.boots_of_haste",
+    "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.platinum_coin"
+  ],
+  "rewards": {
+    "boots3079": 1,
+    "platinum3035": 100,
+    "amulet3081": 0
+  },
+  "canonical_main_followup": "Merged47db34f09 canonical equivalent apply_input_rows helper; retained private carried-input ground rejection. Fresh all-target/unit checks queued.",
+  "pending": [
+    "full changed-crate rerun after seven collected unit failures",
+    "current-head shipping check/Clippy",
+    "registry PG without local foreign migration file"
+  ]
+}

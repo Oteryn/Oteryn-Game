@@ -491,6 +491,7 @@ mod tests {
             }
         }
         expected.insert(crate::quest::rotten_blood::altar_callback().key);
+        expected.insert(crate::quest::schrodinger_island::callback().key);
         assert_eq!(
             callbacks
                 .into_iter()
@@ -546,8 +547,8 @@ mod tests {
     #[test]
     fn a_lowered_npc_transition_keeps_its_source_and_dialogue_bindings() {
         // The source capture retains its exact 0..=1 bounds. The executable
-        // catalogue additionally accepts the native NPC storage domain while
-        // preserving the legacy absent-track default.
+        // catalogue preserves the narrow native domain; the NPC compatibility
+        // reader supplies source absent sentinels without widening stored values.
         let lowered = parse_quest_state(EMBEDDED, "content-1").expect("source catalogue");
         let track = lowered.catalogue().track(QUEST_LOG).expect("track");
         assert_eq!(
@@ -565,7 +566,7 @@ mod tests {
         let track = native.catalogue().track(QUEST_LOG).expect("native track");
         assert_eq!(
             (track.quest.as_str(), track.initial, track.min, track.max),
-            (QUEST, 0, -1, i64::from(i32::MAX))
+            (QUEST, 0, 0, 1)
         );
         for lowered in [&lowered, &native] {
             assert_eq!(

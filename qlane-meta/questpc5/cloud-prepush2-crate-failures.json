@@ -1,0 +1,27 @@
+{
+  "run": "/tmp/questpc5-qnpcfx-units.log",
+  "tests": 2537,
+  "passed": 2530,
+  "failed": 7,
+  "duration_seconds": 2487.915,
+  "failures": [
+    "oteryn-gameplay-dispatch gameplay_transport::bundle_gates_tests::a_bundle_world_seam_has_no_qualified_room",
+    "oteryn-gameplay-dispatch gameplay_transport::equipment_move::equipment_effects_owner::tests::ability_tests::equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes",
+    "oteryn-gameplay-durability durability::item_mint_audit::tests::every_type2_insert_takes_its_tuple_from_a_type2_transaction",
+    "oteryn-gameplay-durability migration_numbers_are_unique_and_match_embedded_migrator",
+    "oteryn-gameplay-quests quest::loader::tests::a_lowered_npc_transition_keeps_its_source_and_dialogue_bindings",
+    "oteryn-gameplay-quests quest::loader::tests::owner_scope_excludes_dawnport_from_runtime_state_and_callbacks",
+    "oteryn-gameplay-npc npc_talk::tests::native_quest_book_admits_only_requested_source_greetings"
+  ],
+  "fix_groups": [
+    "seam inventory: admit only explicit None Corruptor fixture and retain production gate",
+    "equipment inventory: repo-generated exact136 zero-speed key cohort",
+    "Type2 audit inventory: repo-generated29 sites, adds only existing Viola writer, all tuple checks retained",
+    "embedded migrator: rebuild against stable current test schema, no assertion relaxed",
+    "source scope: exact set includes canonical Schrodinger native callback",
+    "Father native bounds: use canonical main narrow0..1 domain; legacy sentinel stays reader-only",
+    "native greetings: remove additive-merge duplicate generic branch which shadowed exact pipe defaults"
+  ],
+  "rerun": "/tmp/questpc5-final-crate-units3.log",
+  "state": "all failures collected; all root causes fixed; full changed-crate rerun queued"
+}
