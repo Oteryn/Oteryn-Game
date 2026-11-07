@@ -66,7 +66,11 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
                     "warpath",
                     "spider_nest",
                     "lumberjack",
-                    "bored"
+                    "bored",
+                    "chakoya_iceberg",
+                    "spirit_grounds",
+                    "hive_outpost",
+                    "poacher_caves"
                 ]
                 .contains(&key)
             );
@@ -80,7 +84,7 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
         }
     }
     assert_eq!(ready, 4);
-    assert_eq!(qualified, 12);
+    assert_eq!(qualified, 16);
     for key in [
         "river_runs_deep",
         "spider_nest",

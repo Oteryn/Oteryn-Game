@@ -155,7 +155,7 @@
       "key": "chakoya_iceberg",
       "title": "Chakoya Iceberg Mini World Change",
       "quest": "oteryn:quest.authored.chakoya_iceberg_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00200-00299.json",
@@ -168,6 +168,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "chakoya_iceberg; exact source and declared conservative assumption fields"
         }
       ],
       "source_refs": [
@@ -188,10 +192,12 @@
           "url": "https://tibia.fandom.com/index.php?curid=76213&oldid=887139"
         }
       ],
-      "reason": "Selected iceberg geometry, creature-to-variant membership and activation rule are absent; base Chakoya spawns/storage names do not identify the active iceberg.",
-      "missing_facts": [
-        "Selected iceberg geometry, creature-to-variant membership and activation rule are absent; base Chakoya spawns/storage names do not identify the active iceberg."
-      ]
+      "reason": "Exact63 pinned donor homes and2118 snow/ice tiles compose the selected iceberg; the alternative removes owned upper terrain and replaces floor7 with open water622. Equal alternatives are the documented conservative selection rule. Source/cell witnesses and the distinction between no event reward and incidental existing loot remain explicit in variants.json and CONTRACT-NOTES.md. Existing World reset, native Creature/Item and physical map owners are reused.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "world_change_variant",
+        "definition": "chakoya_iceberg"
+      }
     },
     {
       "key": "chyllfroest",
@@ -648,7 +654,7 @@
       "key": "hive_outpost",
       "title": "Hive Outpost Mini World Change",
       "quest": "oteryn:quest.authored.hive_outpost_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -661,6 +667,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "hive_outpost; exact source and declared conservative assumption fields"
         }
       ],
       "source_refs": [
@@ -681,10 +691,12 @@
           "url": "https://tibia.fandom.com/index.php?curid=76241&oldid=887146"
         }
       ],
-      "reason": "Native invasion variant membership, activation rule and optional-boss selection are absent.",
-      "missing_facts": [
-        "Native invasion variant membership, activation rule and optional-boss selection are absent."
-      ]
+      "reason": "Six common hive-born members retain all six pinned donor pads; the rare alternative adds a seventh adjacent Overseer pad while preserving Kollos. Daily500‰ and49:1 ordinary/Overseer selection are documented conservative assumptions. Native policies and actual reward rows are admitted by the shared42-creature proof; source/geometry and no invented event reward are explicit in variants.json and CONTRACT-NOTES.md.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "world_change_variant",
+        "definition": "hive_outpost"
+      }
     },
     {
       "key": "horse_station",
@@ -1178,7 +1190,7 @@
       "key": "poacher_caves",
       "title": "Poacher Caves Mini World Change",
       "quest": "oteryn:quest.authored.poacher_caves_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -1191,6 +1203,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "poacher_caves; exact source and declared conservative assumption fields"
         }
       ],
       "source_refs": [
@@ -1211,10 +1227,12 @@
           "url": "https://tibia.fandom.com/index.php?curid=76258&oldid=1175805"
         }
       ],
-      "reason": "Native three-state population transition, credited kills and active Game/poacher map/spawn membership are absent.",
-      "missing_facts": [
-        "Native three-state population transition, credited kills and active Game/poacher map/spawn membership are absent."
-      ]
+      "reason": "Three mutually exclusive Game/Poacher/Gloomy populations use the exact12 donor homes and60-second intervals. Equal daily selection is the explicit conservative substitute for an unavailable executable threshold/order; no credited-kill threshold is invented. Source locators and assumptions remain in variants.json and CONTRACT-NOTES.md; existing World reset, spawn and native reward owners are reused.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "world_change_variant",
+        "definition": "poacher_caves"
+      }
     },
     {
       "key": "rathleton",
@@ -1418,7 +1436,7 @@
       "key": "spirit_grounds",
       "title": "Spirit Grounds Mini World Change",
       "quest": "oteryn:quest.authored.spirit_grounds_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -1431,6 +1449,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "spirit_grounds; exact source and declared conservative assumption fields"
         }
       ],
       "source_refs": [
@@ -1451,10 +1473,12 @@
           "url": "https://tibia.fandom.com/index.php?curid=76264&oldid=887160"
         }
       ],
-      "reason": "Named gate regions/storage metadata exist; rotation rule, source/destination pairing and spawn-variant membership are absent.",
-      "missing_facts": [
-        "Named gate regions/storage metadata exist; rotation rule, source/destination pairing and spawn-variant membership are absent."
-      ]
+      "reason": "Three exact entrances and four independent populations form12 equal variants. Exact shared arrival, connected49-cell cleared landing room and three adjacent maintained surface return pads preserve escape after closure. No unknown objective or achievement is invented. Source rules and conservative geometry are explicit in variants.json and CONTRACT-NOTES.md; existing World reset and current-fenced passage owners are reused.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "world_change_variant",
+        "definition": "spirit_grounds"
+      }
     },
     {
       "key": "spring_into_life",
