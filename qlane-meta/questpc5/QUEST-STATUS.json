@@ -379,7 +379,7 @@
     "title": "Demon Helmet Quest",
     "mechanism": "paired_portals_stepout_remote_predicates",
     "status": "UNFINISHED",
-    "blocker": "Remaining complete route: two-player plate occupancy, three-wall removal/restoration with occupied-wall relocation, all relocation/end paths, and complete route PG qualification. StepOut itself is already implemented.",
+    "blocker": "Active next slice: compose the now-delivered native pressure mechanism with the complete exact source acquisitions/replays. No missing shared engine feature remains for this pressure contract.",
     "from_lanes": [
       "questpc",
       "questpc6"
@@ -389,14 +389,24 @@
     "canonical_location": {
       "path": "content/quests/definitions/quests-00000-00099.json",
       "pointer": "/records/21/definition"
-    }
+    },
+    "pressure_mechanism_evidence": "cloud-grouped-pressure-proof.json",
+    "evidence": [
+      {
+        "filter": "questpc5_grouped_pressure_source_projection",
+        "result": "PASS",
+        "duration_seconds": 115.48,
+        "scope": "Reusable grouped/player-qualified occupancy, owned remote items, native forced wall ejection and exact Devil startup selector. These are mechanisms; whole Demon/Devil acquisition routes remain active.",
+        "proof": "cloud-grouped-pressure-proof.json"
+      }
+    ]
   },
   {
     "canonical": "oteryn:quest.devil_helmet_quest",
     "title": "Devil Helmet Quest",
     "mechanism": "paired_portals_stepout_remote_predicates",
     "status": "UNFINISHED",
-    "blocker": "Remaining complete route: paired UID25030 creation/removal of item435 at the remote tile, relocation/end-path restoration, and complete route PG qualification. StepOut itself is already implemented.",
+    "blocker": "Active next slice: compose the now-delivered native pressure mechanism with the complete exact source acquisitions/replays. No missing shared engine feature remains for this pressure contract.",
     "from_lanes": [
       "questpc",
       "questpc6"
@@ -406,7 +416,17 @@
     "canonical_location": {
       "path": "content/quests/definitions/quests-00000-00099.json",
       "pointer": "/records/23/definition"
-    }
+    },
+    "pressure_mechanism_evidence": "cloud-grouped-pressure-proof.json",
+    "evidence": [
+      {
+        "filter": "questpc5_grouped_pressure_source_projection",
+        "result": "PASS",
+        "duration_seconds": 115.48,
+        "scope": "Reusable grouped/player-qualified occupancy, owned remote items, native forced wall ejection and exact Devil startup selector. These are mechanisms; whole Demon/Devil acquisition routes remain active.",
+        "proof": "cloud-grouped-pressure-proof.json"
+      }
+    ]
   },
   {
     "canonical": "oteryn:quest.formogar_mine_hoist",

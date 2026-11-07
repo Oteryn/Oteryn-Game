@@ -62,7 +62,7 @@ CALLBACK_FIELDS = {
     'key', 'quest', 'trigger', 'selector', 'lever', 'reversible', 'passages',
     'teleport', 'storage', 'minimum_level', 'experience', 'monk_reward',
     'offerings', 'item_on_target', 'return_on_failure', 'failure_message',
-    'success_message', 'native_rule', 'effects', 'sources', 'remote_teleport', 'occupancy_driven',
+    'success_message', 'native_rule', 'effects', 'sources', 'remote_teleport', 'occupancy_driven', 'occupancy_requirement', 'occupancy_items',
 }
 CALLBACK_REQUIRED = {
     'key', 'quest', 'trigger', 'selector', 'reversible', 'passages',
@@ -425,7 +425,26 @@ def validate_callback(callback, directory):
                 and callback.get('monk_reward') is None and callback.get('native_rule') is None
                 and not callback['return_on_failure'] and callback['failure_message'] is None
                 and callback.get('success_message') is None
-                and all(p.get('replacement') is not None for p in callback['passages']),key + ': impure occupancy projection')
+                and (callback.get('occupancy_requirement') is not None or all(p.get('replacement') is not None for p in callback['passages'])),key + ': impure occupancy projection')
+    required=callback.get('occupancy_requirement')
+    items=callback.get('occupancy_items',[])
+    require(isinstance(items,list) and len(items)<=8,key + ': occupancy items bound')
+    item_positions=[]
+    for item in items:
+        fields(item,{'position','appearance'},{'position','appearance'},key + ': occupancy item')
+        item_positions.append(position(item['position'],key + ': occupancy item'))
+        require(integer(item['appearance'],1,65535),key + ': occupancy appearance')
+    require(len(set(item_positions))==len(item_positions),key + ': duplicate occupancy item')
+    if required is not None:
+        fields(required,{'positions','players_only','eject'},{'positions','players_only','eject'},key + ': occupancy requirement')
+        require(callback.get('occupancy_driven') is True and isinstance(required['positions'],list)
+                and 1<=len(required['positions'])<=8 and type(required['players_only']) is bool,key + ': occupancy requirement shape')
+        positions=[position(p,key + ': required occupancy') for p in required['positions']]
+        require(len(set(positions))==len(positions) and position(callback['selector']['position'],key) in positions,key + ': duplicate or unbound occupancy source')
+        if required['eject'] is not None:
+            destination=position(required['eject'],key + ': occupancy ejection')
+            require(callback['passages'] and all(p.get('replacement') is None and position(p['position'],key)!=destination for p in callback['passages']),key + ': occupancy ejection shape')
+    require(callback.get('occupancy_driven') is True or (required is None and not items),key + ': occupancy on imperative callback')
     provenance(callback['sources'], key, outfit=callback.get('effects',{}).get('outfit_reward') is not None)
     validate_native(callback, key)
     validate_effects(callback, key)

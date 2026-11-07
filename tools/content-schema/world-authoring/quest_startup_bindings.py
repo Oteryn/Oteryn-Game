@@ -20,7 +20,7 @@ import lua_tables
 # Complete existing shared-access bindings plus the active L5 source objects.
 REQUESTED = {
     'lever.lua': {'LeverUnique': {30004, 30005, 30025, 30034}},
-    'tile.lua': {'TileUnique': {25010}, 'TileAction': {50022}},
+    'tile.lua': {'TileUnique': {25010, 25030}, 'TileAction': {50022}},
     'teleport.lua': {'TeleportUnique': {3059, 3060, 3061}, 'TeleportAction': {50022}},
     'corpse.lua': {'CorpseUnique': {20003}},
     'chest.lua': {'ChestUnique': {6014, 6015, 6113, 6151, 6152, 6214}},

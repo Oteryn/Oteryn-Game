@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "scope": "Reusable grouped/player-qualified occupancy, owned remote items, native forced wall ejection and exact Devil startup selector. These are mechanisms; whole Demon/Devil acquisition routes remain active.",
+  "red": {
+    "filter": "questpc5_grouped_pressure_source_projection",
+    "postgres_marker_seconds": 3.643312133,
+    "test_seconds": 3.65,
+    "error": "unknown field occupancy_requirement"
+  },
+  "green": {
+    "filter": "questpc5_grouped_pressure_source_projection",
+    "postgres_marker_seconds": 3.850050432,
+    "test_seconds": 115.48,
+    "demon_seconds": 54.967681767,
+    "devil_seconds": 55.042748939,
+    "demon_native_program_seconds": 1.365858312,
+    "devil_native_program_seconds": 1.943353466,
+    "two_real_runtime_players_required": true,
+    "creature_cannot_replace_player": true,
+    "walls_hidden_and_collision_open": [
+      33210,
+      33211,
+      33212
+    ],
+    "wall_player_and_creature_forcibly_ejected_to": [
+      33211,
+      31631,
+      -13
+    ],
+    "source_ejection_stacking": true,
+    "holder_retirement_restores_all_walls": true,
+    "unchanged_observation_idempotent": true,
+    "remote_item": 435,
+    "remote_position": [
+      32482,
+      32170,
+      -14
+    ],
+    "remote_exact_create_remove": true,
+    "forced_relocation_and_retirement_cleanup": true,
+    "unrelated_quest_state_and_receipts_unchanged": true
+  },
+  "thais_regression": {
+    "filter": "qengine_thais_plate_step_out_restores_stairs",
+    "test_seconds": 55.72,
+    "all_previous_native_descent_revision4_and_creature_end_paths_retained": true
+  },
+  "admission": {
+    "rust_tests": 2,
+    "group_negative_cases": 6,
+    "existing_thais_negative_cases": 6,
+    "python_authoring_cases": 17,
+    "physical_startup_cases": 3,
+    "startup_selectors": 20,
+    "closed_shapes": true,
+    "source_pin": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "new_donor_admission_limited_to_validated_occupancy_projection": true
+  },
+  "owner": "Existing committed actor positions, map CallbackStates/movement_items, source-step movement proof, runtime/lane locks; no persistent occupancy flags or new reward owner.",
+  "source": [
+    {
+      "path": "data-global/scripts/quests/demon_helmet/movement-walls.lua",
+      "lines": "15-38,44-64; ejection53-54",
+      "sha256": "b93439a8c9210be489b490b2983e4310622c671a49a6339ad869479ef502857b",
+      "url": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/demon_helmet/movement-walls.lua"
+    },
+    {
+      "path": "data-global/scripts/quests/devil_helmet/movements_sewer.lua",
+      "lines": "5-19,27-40",
+      "sha256": "71542a6acba0cd100b6f2d86339473e86781c777fa10aa339a62ea02d54e1e84",
+      "url": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/devil_helmet/movements_sewer.lua"
+    }
+  ],
+  "world_digest": "fbd743039f2bcc768cb8f856b9a34175c13f9360a056c8794f9edf989383b9df",
+  "logs": {
+    "postgres": {
+      "path": "/tmp/questpc5-pressure-green2.log",
+      "sha256": "1f4343780048dd9440ef3a7afcecb2b28d99b3d9a172a9f9cf046b0a8aacb04a"
+    },
+    "thais": {
+      "path": "/tmp/questpc5-pressure-thais-regression.log",
+      "sha256": "6547698189ad8ebaa2ac6bcc6c5d43b32a7e24c5a239dbc5a417745f96d0e132"
+    },
+    "unit": {
+      "path": "/tmp/questpc5-pressure-admission-unit2.log",
+      "sha256": "f25ba40072d56b2e63240b46c794e298b6ecb4e666a8a861a43eb92ab38a7585"
+    },
+    "clippy": {
+      "path": "/tmp/questpc5-pressure-clippy-final.log",
+      "sha256": "8037d4f4f8ddfa2b57953929d7de276ce5ec039c9ce25a65ba336ea67f989655"
+    },
+    "pins": {
+      "path": "/tmp/questpc5-pressure-pins.log",
+      "sha256": "d783e88be70d131655a8965c0019cfddafa39fde8e0354b4892d2f7f1ea4556b"
+    },
+    "pin_check": {
+      "path": "/tmp/questpc5-pressure-pin-check.log",
+      "sha256": "f252513c7a8185e635559c6fceec5586460a9611fb43503c8fb971d3c6919f74"
+    }
+  }
+}

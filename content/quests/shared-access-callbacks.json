@@ -151,6 +151,450 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/demon-helmet-pressure-1",
+      "quest": "oteryn:quest.demon_helmet_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33190,
+          "y": 31629,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 10145
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 33210,
+            "y": 31630,
+            "floor": -13
+          },
+          "appearance": 1295,
+          "replacement": null
+        },
+        {
+          "position": {
+            "x": 33211,
+            "y": 31630,
+            "floor": -13
+          },
+          "appearance": 1295,
+          "replacement": null
+        },
+        {
+          "position": {
+            "x": 33212,
+            "y": 31630,
+            "floor": -13
+          },
+          "appearance": 1295,
+          "replacement": null
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": 10145,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/demon_helmet/movement-walls.lua:15-38"
+      ],
+      "occupancy_driven": true,
+      "occupancy_requirement": {
+        "positions": [
+          {
+            "x": 33190,
+            "y": 31629,
+            "floor": -13
+          },
+          {
+            "x": 33191,
+            "y": 31629,
+            "floor": -13
+          }
+        ],
+        "players_only": true,
+        "eject": {
+          "x": 33211,
+          "y": 31631,
+          "floor": -13
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/demon-helmet-pressure-1-out",
+      "quest": "oteryn:quest.demon_helmet_quest",
+      "trigger": "step_out",
+      "selector": {
+        "position": {
+          "x": 33190,
+          "y": 31629,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 10145
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 33210,
+            "y": 31630,
+            "floor": -13
+          },
+          "appearance": 1295,
+          "replacement": null
+        },
+        {
+          "position": {
+            "x": 33211,
+            "y": 31630,
+            "floor": -13
+          },
+          "appearance": 1295,
+          "replacement": null
+        },
+        {
+          "position": {
+            "x": 33212,
+            "y": 31630,
+            "floor": -13
+          },
+          "appearance": 1295,
+          "replacement": null
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": 10145,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/demon_helmet/movement-walls.lua:44-64"
+      ],
+      "occupancy_driven": true,
+      "occupancy_requirement": {
+        "positions": [
+          {
+            "x": 33190,
+            "y": 31629,
+            "floor": -13
+          },
+          {
+            "x": 33191,
+            "y": 31629,
+            "floor": -13
+          }
+        ],
+        "players_only": true,
+        "eject": {
+          "x": 33211,
+          "y": 31631,
+          "floor": -13
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/demon-helmet-pressure-2",
+      "quest": "oteryn:quest.demon_helmet_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33191,
+          "y": 31629,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 10145
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 33210,
+            "y": 31630,
+            "floor": -13
+          },
+          "appearance": 1295,
+          "replacement": null
+        },
+        {
+          "position": {
+            "x": 33211,
+            "y": 31630,
+            "floor": -13
+          },
+          "appearance": 1295,
+          "replacement": null
+        },
+        {
+          "position": {
+            "x": 33212,
+            "y": 31630,
+            "floor": -13
+          },
+          "appearance": 1295,
+          "replacement": null
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": 10145,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/demon_helmet/movement-walls.lua:15-38"
+      ],
+      "occupancy_driven": true,
+      "occupancy_requirement": {
+        "positions": [
+          {
+            "x": 33190,
+            "y": 31629,
+            "floor": -13
+          },
+          {
+            "x": 33191,
+            "y": 31629,
+            "floor": -13
+          }
+        ],
+        "players_only": true,
+        "eject": {
+          "x": 33211,
+          "y": 31631,
+          "floor": -13
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/demon-helmet-pressure-2-out",
+      "quest": "oteryn:quest.demon_helmet_quest",
+      "trigger": "step_out",
+      "selector": {
+        "position": {
+          "x": 33191,
+          "y": 31629,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 10145
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 33210,
+            "y": 31630,
+            "floor": -13
+          },
+          "appearance": 1295,
+          "replacement": null
+        },
+        {
+          "position": {
+            "x": 33211,
+            "y": 31630,
+            "floor": -13
+          },
+          "appearance": 1295,
+          "replacement": null
+        },
+        {
+          "position": {
+            "x": 33212,
+            "y": 31630,
+            "floor": -13
+          },
+          "appearance": 1295,
+          "replacement": null
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": 10145,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/demon_helmet/movement-walls.lua:44-64"
+      ],
+      "occupancy_driven": true,
+      "occupancy_requirement": {
+        "positions": [
+          {
+            "x": 33190,
+            "y": 31629,
+            "floor": -13
+          },
+          {
+            "x": 33191,
+            "y": 31629,
+            "floor": -13
+          }
+        ],
+        "players_only": true,
+        "eject": {
+          "x": 33211,
+          "y": 31631,
+          "floor": -13
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/devil-helmet-pressure",
+      "quest": "oteryn:quest.devil_helmet_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32468,
+          "y": 32119,
+          "floor": -14
+        },
+        "unique": 25030,
+        "action": null,
+        "appearance": 431
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": 430,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/devil_helmet/movements_sewer.lua:5-19"
+      ],
+      "occupancy_driven": true,
+      "occupancy_requirement": {
+        "positions": [
+          {
+            "x": 32468,
+            "y": 32119,
+            "floor": -14
+          }
+        ],
+        "players_only": true,
+        "eject": null
+      },
+      "occupancy_items": [
+        {
+          "position": {
+            "x": 32482,
+            "y": 32170,
+            "floor": -14
+          },
+          "appearance": 435
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/devil-helmet-pressure-out",
+      "quest": "oteryn:quest.devil_helmet_quest",
+      "trigger": "step_out",
+      "selector": {
+        "position": {
+          "x": 32468,
+          "y": 32119,
+          "floor": -14
+        },
+        "unique": 25030,
+        "action": null,
+        "appearance": 431
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": 431,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/devil_helmet/movements_sewer.lua:27-40"
+      ],
+      "occupancy_driven": true,
+      "occupancy_requirement": {
+        "positions": [
+          {
+            "x": 32468,
+            "y": 32119,
+            "floor": -14
+          }
+        ],
+        "players_only": true,
+        "eject": null
+      },
+      "occupancy_items": [
+        {
+          "position": {
+            "x": 32482,
+            "y": 32170,
+            "floor": -14
+          },
+          "appearance": 435
+        }
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/thais-lighthouse-plate",
       "quest": "oteryn:quest.thais_lighthouse_quest",
       "trigger": "step_in",

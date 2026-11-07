@@ -417,6 +417,8 @@ fn scenario_in_world(
             // ground. An unknown storage track refuses before any callback mutation.
             let fixture = Callback {
                 occupancy_driven: false,
+                occupancy_requirement: None,
+                occupancy_items: Vec::new(),
                 key: "fixture:underwater-callback".into(),
                 quest: "fixture:underwater".into(),
                 trigger: Trigger::StepIn,

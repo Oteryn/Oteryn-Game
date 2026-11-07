@@ -105,3 +105,81 @@ impl crate::foundation::SourceStepCommitProof for CallbackTeleport<'_> {
         )
     }
 }
+
+struct OccupancyEjection<'a> {
+    cells: &'a NativeEntryMovementCells,
+    actor: ExactActorRef,
+    expected: MovementPositionSnapshot,
+    destination: MovementLocalPosition,
+    closed: &'a dyn CellBlocker,
+}
+impl OccupancyEjection<'_> {
+    fn check(&self, runtime: &ChannelRuntimeV1) -> Result<(), MovementError> {
+        if self.cells.scope().world_id != runtime.binding().world_id()
+            || self.cells.scope().generation_digest
+                != runtime.content_pin().server_artifact_digest()
+            || self.expected.context() != runtime.pinned_movement_context()
+            || self.expected.revision() == u64::MAX
+            || runtime
+                .read_actor_position(self.actor)
+                .map_err(MovementError::Actor)?
+                != self.expected
+            || !runtime
+                .positioned_melee_census()
+                .map_err(MovementError::Actor)?
+                .iter()
+                .any(|(actor, position, _)| *actor == self.actor && *position == self.expected)
+        {
+            return Err(MovementError::NotQualified);
+        }
+        let p = self.destination;
+        let cell = (p.x, p.y, i32::from(p.floor));
+        if ground_of(self.cells)(cell) != Ground::Walkable
+            || !landable_of(self.cells, false, self.closed)(cell)
+        {
+            return Err(MovementError::Blocked);
+        }
+        Ok(())
+    }
+}
+/// Exact current-scene forced ejection. It admits source stacking, but retains
+/// native map qualification, current namespace/frame, actor and revision fences.
+pub fn prepare_occupancy_ejection<'a>(
+    runtime: &ChannelRuntimeV1,
+    cells: &'a NativeEntryMovementCells,
+    actor: ExactActorRef,
+    expected: MovementPositionSnapshot,
+    destination: MovementLocalPosition,
+    closed: &'a dyn CellBlocker,
+) -> Result<impl crate::foundation::SourceStepCommitProof + 'a, MovementError> {
+    let proof = OccupancyEjection {
+        cells,
+        actor,
+        expected,
+        destination,
+        closed,
+    };
+    proof.check(runtime)?;
+    Ok(proof)
+}
+impl crate::foundation::source_step_seal::Sealed for OccupancyEjection<'_> {}
+impl crate::foundation::SourceStepCommitProof for OccupancyEjection<'_> {
+    fn validate_current(&self, runtime: &ChannelRuntimeV1) -> Result<(), CarrierError> {
+        self.check(runtime).map_err(|_| CarrierError::PlanConflict)
+    }
+    fn parts(
+        &self,
+    ) -> (
+        ExactActorRef,
+        MovementPositionSnapshot,
+        MovementLocalPosition,
+        MovementFacing,
+    ) {
+        (
+            self.actor,
+            self.expected,
+            self.destination,
+            self.expected.facing().unwrap_or(MovementFacing::South),
+        )
+    }
+}

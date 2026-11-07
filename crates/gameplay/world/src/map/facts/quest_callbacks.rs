@@ -17,6 +17,9 @@ struct DynamicPortal {
 
 /// Already qualified facts for one atomic, Channel-local callback projection.
 pub enum QuestCallbackProjection {
+    OccupancyItems {
+        entries: Vec<(TilePos, EntryFacts)>,
+    },
     Portals {
         endpoints: [(TilePos, TilePos, EntryFacts); 2],
         expires: Option<u64>,
@@ -40,6 +43,7 @@ pub(super) struct CallbackStates {
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
+    occupancy_items: BTreeMap<u64, Vec<(TilePos, EntryId)>>,
 }
 
 impl CallbackStates {
@@ -60,6 +64,50 @@ impl CallbackStates {
 
     fn project(&mut self, owner: u64, projection: &QuestCallbackProjection, close: bool) -> bool {
         match projection {
+            QuestCallbackProjection::OccupancyItems { entries } => {
+                if entries.len() > 8 {
+                    return false;
+                }
+                if let Some(previous) = self.occupancy_items.remove(&owner) {
+                    for (pos, id) in previous {
+                        if let Some(items) = self.movement_items.get_mut(&pos) {
+                            items.retain(|entry| entry.source != view::EntrySource::Added(id));
+                            if items.is_empty() {
+                                self.movement_items.remove(&pos);
+                            }
+                        }
+                    }
+                }
+                if close {
+                    return true;
+                }
+                let mut owned = Vec::new();
+                for &(pos, facts) in entries {
+                    if self.movement_items.get(&pos).is_some_and(|items| {
+                        items
+                            .iter()
+                            .any(|i| i.facts.appearance_id == facts.appearance_id)
+                    }) {
+                        return false;
+                    }
+                    let Some(sequence) = self.movement_sequence.checked_add(1) else {
+                        return false;
+                    };
+                    let Some(id) = EntryId::callback(sequence) else {
+                        return false;
+                    };
+                    self.movement_sequence = sequence;
+                    self.movement_items
+                        .entry(pos)
+                        .or_default()
+                        .push(view::ComposedEntry {
+                            source: view::EntrySource::Added(id),
+                            facts,
+                        });
+                    owned.push((pos, id));
+                }
+                self.occupancy_items.insert(owner, owned);
+            }
             QuestCallbackProjection::Portals { endpoints, expires } => {
                 if close {
                     if endpoints
@@ -151,12 +199,43 @@ impl CallbackStates {
             + self.movement_speech.len()
             + self.portals.len()
             + self.solid_items.len()
+            + self.occupancy_items.len()
             + self.movement_items.values().map(Vec::len).sum::<usize>();
         used.saturating_add(additional) < super::super::overlay::OVERLAY_BUDGET_BYTES / 512
     }
 }
 
 impl BundleFacts {
+    /// Read the existing movement-item owner index; no separate occupancy truth is cached.
+    pub fn quest_occupancy_items_match(
+        &self,
+        owner: u64,
+        entries: &[(TilePos, EntryFacts)],
+        close: bool,
+    ) -> bool {
+        let Ok(states) = self.callbacks.lock() else {
+            return false;
+        };
+        let owned = states.occupancy_items.get(&owner);
+        if close {
+            return owned.is_none();
+        }
+        owned.is_some_and(|owned| {
+            owned.len() == entries.len()
+                && owned
+                    .iter()
+                    .zip(entries)
+                    .all(|((pos, id), (wanted, facts))| {
+                        pos == wanted
+                            && states.movement_items.get(pos).is_some_and(|items| {
+                                items.iter().any(|entry| {
+                                    entry.source == view::EntrySource::Added(*id)
+                                        && entry.facts == *facts
+                                })
+                            })
+                    })
+        })
+    }
     /// A transformed/removed callback entry changes floor routing with its visible stack.
     /// Unchanged tiles keep the compact boot-time table and incur no stack scan.
     pub(crate) fn quest_callback_floor_mask(
@@ -559,7 +638,18 @@ impl BundleFacts {
             || expected == u64::MAX
             || passages.len() + replacements.len() > 8
             || !states.has_capacity(
-                passages.len() + replacements.len() + usize::from(projection.is_some()) * 8,
+                passages.len()
+                    + replacements.len()
+                    + projection.map_or(0, |p| match p {
+                        QuestCallbackProjection::OccupancyItems { entries } => {
+                            if close {
+                                0
+                            } else {
+                                entries.len().saturating_mul(2).saturating_add(1)
+                            }
+                        }
+                        _ => 8,
+                    }),
             )
         {
             return false;

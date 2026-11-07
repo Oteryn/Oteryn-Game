@@ -127,6 +127,8 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
                         .and_then(|(id, _)| map.facts.base_entry(pos, ordinal, *id))
                         .is_some_and(|facts| {
                             facts.appearance_id == appearance
+                                || (callback.occupancy_driven
+                                    && callback.effects.transform == Some(facts.appearance_id))
                                 || (callback.trigger == Trigger::Use
                                     && callback.reversible
                                     && callback.lever.is_some_and(|pair| {

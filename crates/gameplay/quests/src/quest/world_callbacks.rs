@@ -111,10 +111,27 @@ pub struct RemoteTeleport {
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
+pub struct OccupancyRequirement {
+    pub positions: Vec<Position>,
+    pub players_only: bool,
+    pub eject: Option<Position>,
+}
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct OccupancyItem {
+    pub position: Position,
+    pub appearance: u16,
+}
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct Callback {
     /// Only a validated pure STEP-in/out pair may be derived from current creature presence.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub occupancy_driven: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub occupancy_requirement: Option<OccupancyRequirement>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub occupancy_items: Vec<OccupancyItem>,
     pub key: String,
     pub quest: String,
     pub trigger: Trigger,
@@ -195,6 +212,11 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
     for callback in &document.callbacks {
         if callback.occupancy_driven {
             validate_occupancy_shape(callback)?;
+        } else if callback.occupancy_requirement.is_some() || !callback.occupancy_items.is_empty() {
+            return Err(format!(
+                "occupancy rule on imperative callback {}",
+                callback.key
+            ));
         }
         let selector = &callback.selector;
         let valid_pos = |p: Position| (-15..=0).contains(&p.floor);
@@ -266,7 +288,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
                 source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
                     || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
-                    || (callback.effects.outfit_reward.is_some()
+                    || ((callback.effects.outfit_reward.is_some() || callback.occupancy_driven)
                         && source.starts_with("crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:"))
             })
             || callback.item_on_target.as_ref().is_some_and(|item| {
@@ -912,7 +934,32 @@ fn validate_occupancy_shape(c: &Callback) -> Result<(), String> {
         || c.return_on_failure
         || c.failure_message.is_some()
         || c.success_message.is_some()
-        || c.passages.iter().any(|p| p.replacement.is_none())
+        || (c.occupancy_requirement.is_none() && c.passages.iter().any(|p| p.replacement.is_none()))
+        || c.occupancy_items.len() > 8
+        || c.occupancy_items
+            .iter()
+            .any(|i| i.appearance == 0 || !(-15..=0).contains(&i.position.floor))
+        || c.occupancy_items
+            .iter()
+            .map(|i| i.position)
+            .collect::<BTreeSet<_>>()
+            .len()
+            != c.occupancy_items.len()
+        || c.occupancy_requirement.as_ref().is_some_and(|r| {
+            !(1..=8).contains(&r.positions.len())
+                || r.positions.iter().copied().collect::<BTreeSet<_>>().len() != r.positions.len()
+                || r.positions.iter().any(|p| !(-15..=0).contains(&p.floor))
+                || c.selector
+                    .position
+                    .is_none_or(|p| !r.positions.contains(&p))
+                || r.eject.is_some_and(|p| {
+                    !(-15..=0).contains(&p.floor)
+                        || c.passages.is_empty()
+                        || c.passages
+                            .iter()
+                            .any(|passage| passage.replacement.is_some() || passage.position == p)
+                })
+        })
     {
         return Err(format!(
             "occupancy callback is not a pure source projection {}",
@@ -933,6 +980,8 @@ fn validate_occupancy_pairs(callbacks: &[Callback]) -> Result<(), String> {
             || pair[0].quest != pair[1].quest
             || pair[0].trigger == pair[1].trigger
             || pair[0].passages != pair[1].passages
+            || pair[0].occupancy_requirement != pair[1].occupancy_requirement
+            || pair[0].occupancy_items != pair[1].occupancy_items
             || pair
                 .iter()
                 .find(|p| p.trigger == Trigger::StepOut)
@@ -951,7 +1000,10 @@ mod occupancy_tests {
     #[test]
     fn occupancy_pairs_are_closed_pure_and_have_one_source_restore() -> Result<(), String> {
         let all = load()?;
-        let pair: Vec<_> = all.into_iter().filter(|c| c.occupancy_driven).collect();
+        let pair: Vec<_> = all
+            .into_iter()
+            .filter(|c| c.occupancy_driven && c.key.contains("thais-lighthouse"))
+            .collect();
         assert_eq!(pair.len(), 2);
         validate_occupancy_pairs(&pair)?;
         for edit in 0..6 {
@@ -977,6 +1029,50 @@ mod occupancy_tests {
                 }
             }
             assert!(validate_occupancy_pairs(&bad).is_err(), "edit {edit}");
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod grouped_occupancy_tests {
+    use super::*;
+    #[test]
+    fn grouped_projection_rejects_duplicate_unbound_and_invalid_ejection_inputs()
+    -> Result<(), String> {
+        let all = load()?;
+        let pair: Vec<_> = all
+            .into_iter()
+            .filter(|c| {
+                c.key == "oteryn:quest-callback/demon-helmet-pressure-1"
+                    || c.key == "oteryn:quest-callback/demon-helmet-pressure-1-out"
+            })
+            .collect();
+        assert_eq!(pair.len(), 2);
+        validate_occupancy_pairs(&pair)?;
+        for edit in 0..6 {
+            let mut bad = pair.clone();
+            for c in &mut bad {
+                let r = c.occupancy_requirement.as_mut().ok_or("group")?;
+                match edit {
+                    0 => r.positions.push(r.positions[0]),
+                    1 => r.positions.clear(),
+                    2 => r.positions[0].floor = -16,
+                    3 => r.eject = Some(c.passages[0].position),
+                    4 => {
+                        r.positions = vec![Position {
+                            x: 1,
+                            y: 1,
+                            floor: -13,
+                        }]
+                    }
+                    _ => c.minimum_level = Some(1),
+                }
+            }
+            assert!(
+                validate_occupancy_pairs(&bad).is_err(),
+                "malformed group {edit}"
+            );
         }
         Ok(())
     }

@@ -14,7 +14,7 @@ def position(x, y, z):
 
 def callback(name, quest, trigger, source, *, unique=None, action=None,
              at=None, appearance=None, lever=None, reversible=False,
-             passages=None, teleport=None, occupancy_driven=False, **effects):
+             passages=None, teleport=None, occupancy_driven=False, occupancy_requirement=None, occupancy_items=None, source_pin=PIN, **effects):
     return dict(key='oteryn:quest-callback/' + name,
                 quest='oteryn:quest.' + quest, trigger=trigger,
                 selector=dict(position=at, unique=unique, action=action,
@@ -24,7 +24,7 @@ def callback(name, quest, trigger, source, *, unique=None, action=None,
                 return_on_failure=False, failure_message=None,
                 effects=dict(transform=None, facing=None, magic=None,
                              portals=None, item_cycle=None, encounter=None) | effects,
-                sources=[PIN + source], **({'occupancy_driven':True} if occupancy_driven else {}))
+                sources=[source_pin + source], **({'occupancy_driven':True} if occupancy_driven else {}), **({'occupancy_requirement':occupancy_requirement} if occupancy_requirement else {}), **({'occupancy_items':occupancy_items} if occupancy_items else {}))
 
 
 def document():
@@ -35,6 +35,19 @@ def document():
                      passages=stairs, transform=appearance, occupancy_driven=True)
             for suffix, trigger, appearance, lines in
             [('', 'step_in', 430, '6-16'), ('-out', 'step_out', 431, '24-33')]]
+    demon_positions=[position(33190,31629,13),position(33191,31629,13)]
+    walls=[dict(position=position(x,31630,13),appearance=1295,replacement=None) for x in (33210,33211,33212)]
+    for index,at in enumerate(demon_positions):
+        for suffix,trigger,lines in [('', 'step_in','15-38'),('-out','step_out','44-64')]:
+            rows.append(callback('demon-helmet-pressure-'+str(index+1)+suffix,'demon_helmet_quest',trigger,
+                'data-global/scripts/quests/demon_helmet/movement-walls.lua:'+lines,at=at,appearance=10145,transform=10145,
+                passages=walls,source_pin='crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:',occupancy_driven=True,occupancy_requirement=dict(positions=demon_positions,players_only=True,eject=position(33211,31631,13))))
+    devil_at=position(32468,32119,14)
+    for suffix,trigger,appearance,lines in [('', 'step_in',430,'5-19'),('-out','step_out',431,'27-40')]:
+        rows.append(callback('devil-helmet-pressure'+suffix,'devil_helmet_quest',trigger,
+            'data-global/scripts/quests/devil_helmet/movements_sewer.lua:'+lines,at=devil_at,unique=25030,appearance=431,transform=appearance,
+            occupancy_driven=True,occupancy_requirement=dict(positions=[devil_at],players_only=True,eject=None),
+            occupancy_items=[dict(position=position(32482,32170,14),appearance=435)],source_pin='crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:'))
     rows.append(callback('thais-lighthouse-portals', 'thais_lighthouse_quest', 'use',
                          thais + 'action-lever.lua:17-46', unique=30005,
                          appearance=2772, at=position(32225,32285,10), lever=[2772, 2773], reversible=True,

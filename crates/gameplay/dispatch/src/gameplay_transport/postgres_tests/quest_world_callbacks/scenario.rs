@@ -136,7 +136,7 @@ fn scenario_case(
                 6
             } else if classic_npc {
                 5
-            } else if monk {
+            } else if monk || callback.occupancy_requirement.is_some() {
                 4
             } else if callback.effects.encounter.is_some() {
                 16

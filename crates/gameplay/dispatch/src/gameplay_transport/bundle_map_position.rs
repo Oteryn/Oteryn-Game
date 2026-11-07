@@ -104,7 +104,7 @@ pub(super) async fn observe(
     let (at, index) = {
         let mut runtime = admission.runtime.lock().await;
         if let Some(map) = admission.bundle_map()
-            && !admission.synchronize_occupancy_locked(&runtime, map)
+            && !admission.synchronize_occupancy_locked(&mut runtime, map)
         {
             return None;
         }

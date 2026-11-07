@@ -1004,6 +1004,19 @@ impl ChannelRuntimeV1 {
         &self,
         cell: MovementLocalPosition,
     ) -> Result<bool, CarrierError> {
+        self.committed_cell_occupied_kind(cell, false)
+    }
+    pub fn committed_player_cell_occupied(
+        &self,
+        cell: MovementLocalPosition,
+    ) -> Result<bool, CarrierError> {
+        self.committed_cell_occupied_kind(cell, true)
+    }
+    fn committed_cell_occupied_kind(
+        &self,
+        cell: MovementLocalPosition,
+        players_only: bool,
+    ) -> Result<bool, CarrierError> {
         self.carrier.validate_current_continuity(&self.continuity)?;
         self.owner_fence()?;
         let context = self.pinned_position_context();
@@ -1025,12 +1038,12 @@ impl ChannelRuntimeV1 {
                     health,
                     position: Some(p),
                     ..
-                } if *health > 0 => Some(p),
+                } if !players_only && *health > 0 => Some(p),
                 Slot::NpcOccupied {
                     position,
                     hireling: None,
                     ..
-                } => Some(position),
+                } if !players_only => Some(position),
                 _ => None,
             };
             if position.is_some_and(|p| {

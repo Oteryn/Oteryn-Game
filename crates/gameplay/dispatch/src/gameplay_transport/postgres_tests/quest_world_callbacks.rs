@@ -274,6 +274,30 @@ fn world_remote(
             .entry((position.floor, position.x, position.y))
             .or_default();
     }
+    if let Some(required) = &callback.occupancy_requirement {
+        let mut extra = required.positions.clone();
+        extra.extend(required.eject);
+        extra.extend(callback.occupancy_items.iter().map(|i| i.position));
+        for p in extra {
+            for x in p.x - 2..=p.x + 2 {
+                for y in p.y - 1..=p.y + 1 {
+                    cells.entry((p.floor, x, y)).or_default();
+                }
+            }
+        }
+        for &p in &required.positions {
+            if p != trigger {
+                cells
+                    .entry((p.floor, p.x, p.y))
+                    .or_default()
+                    .push(sector::Item {
+                        palette: 1,
+                        depth: 0,
+                        attrs: Default::default(),
+                    });
+            }
+        }
+    }
     for passage in &callback.passages {
         if passage.replacement == Some(7767) {
             let p = passage.position;
@@ -518,6 +542,19 @@ fn world_remote(
                 }),
             });
         }
+    }
+    for item in &callback.occupancy_items {
+        let id = u32::try_from(data.manifest.palette.len())?;
+        data.manifest.palette.push(bundle::PaletteEntry {
+            key: format!("oteryn:terrain.tibia.i{}", item.appearance),
+            family: bundle::Family::Terrain,
+            id,
+            terrain: Some(bundle::Terrain {
+                kind: bundle::TerrainKind::Common,
+                walkable: None,
+                ground_speed: None,
+            }),
+        });
     }
     let floors: std::collections::BTreeSet<_> = cells.keys().map(|(f, _, _)| *f).collect();
     data.manifest.world = bundle::Extent {

@@ -21,7 +21,7 @@ fn tile(p: Position) -> TilePos {
     }
 }
 
-async fn step(
+pub(super) async fn step(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     command: u64,
@@ -116,6 +116,12 @@ pub(super) async fn exercise(
             .map_err(debug)?,
         )
         .map_err(debug)?;
+    if callback.occupancy_requirement.is_some() {
+        return super::questpc5_pressure_projection::exercise(
+            owner, admitted, h, actor, callback, trigger,
+        )
+        .await;
+    }
     if callback.effects.outfit_reward.is_some() {
         return wardrobe(owner, admitted, h, callback, trigger).await;
     }
@@ -870,7 +876,7 @@ async fn relocate(
     Ok(())
 }
 
-fn scenario(name: &str, trigger: Position) -> TestResult {
+pub(super) fn scenario(name: &str, trigger: Position) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
