@@ -25,7 +25,18 @@ fn scenario_case(
     let small_ruby = name.starts_with("l6-small-ruby");
     let mead = name == "l6/waterskin-of-mead";
     let native_crop = small_ruby || mead;
-    let start = if mead { Position { x: trigger.x, y: trigger.y + 1, ..trigger } } else { Position { x: trigger.x - 1, ..trigger } };
+    let start = if mead {
+        Position {
+            x: trigger.x,
+            y: trigger.y + 1,
+            ..trigger
+        }
+    } else {
+        Position {
+            x: trigger.x - 1,
+            ..trigger
+        }
+    };
     let reward_fluids = name == "l6-reward-fluids";
     let ancient_instruments = name == "l6-ancient-instruments";
     let floor_profiles = name == "l6-floor-profiles" || name == "l6-ruby-profile";
@@ -113,7 +124,12 @@ fn scenario_case(
     let world = world(&callback, trigger)?;
     run(async |admin| {
         let h = if qengine_reward || outfit_world {
-            Harness::create_quest_reward(admin, "quest_rewards", !name.ends_with("pirate")).await
+            Harness::create_quest_reward(
+                admin,
+                "quest_rewards",
+                !name.ends_with("pirate") && !name.contains("beggar-male"),
+            )
+            .await
         } else {
             Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false).await
         }
@@ -147,7 +163,9 @@ fn scenario_case(
                     .ok_or("native pickup policies")?,
             )?
         } else if mead {
-            super::super::l6_mead::world(generation.native_gameplay().ok_or("native Mead policies")?)?
+            super::super::l6_mead::world(
+                generation.native_gameplay().ok_or("native Mead policies")?,
+            )?
         } else {
             world
         };
@@ -220,13 +238,53 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let (consumer, clock, activation, _) = crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
+        let premium = if name.contains("l6-beggar-") {
+            use crate::gameplay_transport::spell_premium_coordinator::{
+                SpellPremiumCoordinator, purchase_fixture,
+            };
+            let (consumer, clock, activation, _) =
+                purchase_fixture::current(super::super::fixture::id(40));
+            h.root
+                .latch_premium_activation(
+                    &activation.activation_id,
+                    activation.switch_over_us,
+                    activation.switch_over_us + 60_000_000,
+                )
+                .await
+                .map_err(debug)?;
+            Some(SpellPremiumCoordinator::new(
+                consumer,
+                Some(clock),
+                Some(activation),
+                Some(h.root.clone()),
+            ))
+        } else {
+            None
+        };
+        let (consumer, clock, activation, _) =
+            crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
         if mead {
-            h.root.latch_premium_activation(&activation.activation_id, activation.switch_over_us, activation.switch_over_us + 60_000_000).await.map_err(debug)?;
+            h.root
+                .latch_premium_activation(
+                    &activation.activation_id,
+                    activation.switch_over_us,
+                    activation.switch_over_us + 60_000_000,
+                )
+                .await
+                .map_err(debug)?;
         }
-        let premium = crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(consumer, Some(clock), Some(activation), Some(h.root.clone()));
+        let mead_premium =
+            crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
+                consumer,
+                Some(clock),
+                Some(activation),
+                Some(h.root.clone()),
+            );
         let mut owner = deps.owner(&h, &authority);
-        if mead { owner.premium_coordinator = Some(&premium); }
+        owner.premium_coordinator = premium.as_ref();
+        if mead {
+            owner.premium_coordinator = Some(&mead_premium);
+        }
         owner.active_generation = Some(generation);
         owner.movement_cells = &cells;
         if let Some(room) = bundle_room.as_ref() {
@@ -239,7 +297,10 @@ fn scenario_case(
                 .clone(),
         ));
         if mead {
-            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::l6_mead::catalogue(owner.quest_catalogue.as_ref().ok_or("Mead catalogue")?, &callback)?));
+            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::l6_mead::catalogue(
+                owner.quest_catalogue.as_ref().ok_or("Mead catalogue")?,
+                &callback,
+            )?));
         }
         if lever_fixture
             || target_swap
@@ -300,10 +361,13 @@ fn scenario_case(
             .map_err(|e| format!("callback starter items: {e:?}"))?;
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
-        if mead { owner.admit_premium(id(40), admitted.game_session_id); }
+        if mead {
+            owner.admit_premium(id(40), admitted.game_session_id);
+        }
         owner.admit_quest_session(&admitted).await;
         if mead {
-            super::super::l6_mead::exercise(&mut owner, &mut admitted, &h, fence, &callback).await?;
+            super::super::l6_mead::exercise(&mut owner, &mut admitted, &h, fence, &callback)
+                .await?;
         } else if reward_fluids {
             super::super::l6_reward_fluids::exercise(&owner, admitted, &h, &authority).await?;
         } else if small_ruby {

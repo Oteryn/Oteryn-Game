@@ -288,6 +288,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         crate::durability::reward_claim_mint::QuestRewardAdmission {
                             native,
                             weights,
+                            fee_payment: None,
                         }
                     })
             } else {

@@ -5622,7 +5622,91 @@
       "native_profile11544": "not yet admitted",
       "source_palette11544": "absent",
       "donor_chest_and_register_actions11544": "not present in pinned source chest/register_actions files",
-      "br_lookup": "https://www.tibiawiki.com.br/wiki/The_Spirit_Will_Get_You_Quest returned HTTP403; do not bypass; use another permitted source or documented conservative Oteryn bindings"
+      "br_lookup": "https://www.tibiawiki.com.br/wiki/The_Spirit_Will_Get_You_Quest returned HTTP403; do not bypass; use another permitted source or documented conservative Oteryn bindings",
+      "canary_npc_lookup": {
+        "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/cranky_lizard_crone.lua",
+        "sha256": "fc53fabc5f0e29370c8de5bb929182daffd95bcb99ee5743e7bf3944b665a8b8",
+        "result": "No will11544 or Spirit conversation branch; preserve independent Wayfarer service."
+      },
+      "will_physical_source": "imports/canary/items-xml/items.xml:28483-28487 @47dfd51f45280a59a1d3e50ba7edd573d7234446: 200 weight; writing long vanished; no readable text inferred",
+      "candidate_conservative_sources": {
+        "classification": "AUTHORING candidate only; not yet runtime enabled or qualified",
+        "native_region": "content/world/placements/region-z08-x129-y121.b3",
+        "sha256": "824f5682e85b1ac5e4ff9a22836a12b5cee6f3c07d285118f1091d54229348f4",
+        "two_boxes_and_chest": [
+          [
+            33079,
+            31158,
+            8,
+            2473
+          ],
+          [
+            33083,
+            31158,
+            8,
+            2469
+          ],
+          [
+            33083,
+            31159,
+            8,
+            2472
+          ]
+        ],
+        "rule": "Existing nearby pair of native box piles and one adjacent chest; one once flag per position. Exact historical will positions unavailable, document selected Oteryn approximation before admission; no raw map edits or fabricated UIDs."
+      }
+    }
+  },
+  "npc_engine_reuse": {
+    "status": "GREEN_PENDING_PUBLICATION",
+    "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+    "source_head": "a585529d7851a6b5efad8117e2838970b916ba83",
+    "published_lane_head": "2599afbed4d39da0f8c7fa60ffcf1fb12ffaf136",
+    "reuse": [
+      "read-only foreign requirements",
+      "atomic participant tracks and state operations",
+      "live premium requirements",
+      "exact coin fee and change"
+    ],
+    "profile_preservation": {
+      "old": 3607,
+      "new": 3623,
+      "added": 16,
+      "changed_existing": 0,
+      "missing_existing": 0,
+      "native_3230_preserved": true
+    },
+    "compatibility_repairs": [
+      "Keep exact-input fluid rejection alongside fee validation",
+      "Preserve optional filled-container gift schema without permitting fluid input matching",
+      "Separate optional Beggar premium coordinator from Mead coordinator",
+      "Explicit absent fluid subtype on imported test item literals"
+    ],
+    "checks": [
+      "22 authoring unit tests PASS in 8.134s",
+      "42 native generated files regenerated and freshness check PASS",
+      "all-target/all-feature dispatch,durability,quests cargo check PASS in 1m52s",
+      "pinned qengine_rewards.py --check PASS",
+      "Focused PostgreSQL18.6 integration PASS4/0 in196.72s: Mead62.729438579s, Nobleman fee101.821014243s, Norseman prerequisites96.472146663s, Citizen participants94.893287671s; /tmp/questpc4-npc-engine-pg.log",
+      "World pin-check PASS:7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37,31102360 bytes",
+      "cargo fmt --all -- --check PASS",
+      "all-target/all-feature dispatch,durability,quests clippy -D warnings PASS in9m34s",
+      "6 shared reward callback units PASS in1.36s",
+      "NPC native preservation: all37 previous records identical;19 additions,56 total"
+    ],
+    "pending": [
+      "commit and FF push"
+    ],
+    "qualification_counts_unchanged": {
+      "qualified": 3,
+      "active": 18,
+      "excluded": 2
+    },
+    "cross_lane_recheck": {
+      "questpc3": "0874c26945d3680a96bee9c38027e75c97063688",
+      "questpc6": "390e024503a7c02b9e15d67e680cec0ac711fd5b",
+      "questpc8": "7eeee8fb152806de66af062831f94c2183c915ee",
+      "result": "No new whole qualification for the six active cross-lane imports. PC6 Dreamer is SKIPPED_OTHER_LANE to this lane; PC8 Yalahar/Lions Rock/Machinery remain unqualified; current PC3 status no longer includes Realm or Skeleton as qualified entries. Historical source holds are not final blockers here."
     }
   }
 }

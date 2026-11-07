@@ -1,5 +1,39 @@
 {
   "schema": 1,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points",
+      "quest": "oteryn:quest.oramond_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ezebeth.lua:93-103:sha256:280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/outfit_quest/ref",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amber.lua:103-106:sha256:00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_first_addon_door",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "initial": 0,
+      "min": -1,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/simon_the_beggar.lua:158-166:sha256:7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74"
+      ]
+    }
+  ],
   "callbacks": [
     {
       "key": "oteryn:quest-reward/deepling-helmet",
@@ -441,6 +475,2944 @@
           "item": "oteryn:item.tibia.i9041",
           "count": 1
         }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-battle-mage-base",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "check"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/questlog",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/small_islands/questline",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/liquid_death/questline",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 8,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/asuras/questline",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 7,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/falcon_bastion/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/darashia/questline",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 9,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/mo_ta/questline",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 8,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.battle_mage",
+        "addons": 0
+      },
+      "achievement": "oteryn:achievement/battle_mage",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dedoras.lua:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-battle-mage-book",
+      "quest": "oteryn:quest.battle_mage_outfits_quest",
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "book",
+        "books",
+        "sturdy books"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i28792",
+          "count": 5
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.battle_mage",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dedoras.lua:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 7,
+          "maximum": 7
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-battle-mage-epaulettes",
+      "quest": "oteryn:quest.battle_mage_outfits_quest",
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "epaulettes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon2",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i28793",
+          "count": 20
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.battle_mage",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dedoras.lua:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 7,
+          "maximum": 7
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-elementalist-base",
+      "quest": "oteryn:quest.elementalist_outfits_quest",
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i12601",
+          "count": 20
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.elementalist",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/broken_servant_sentry.lua:sha256:d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-elementalist-cap",
+      "quest": "oteryn:quest.elementalist_outfits_quest",
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "cap",
+        "mage"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/addon1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i12599",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.elementalist",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/broken_servant_sentry.lua:sha256:d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-elementalist-staff",
+      "quest": "oteryn:quest.elementalist_outfits_quest",
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "staff",
+        "spike"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/addon2",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i12803",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.elementalist",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/broken_servant_sentry.lua:sha256:d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-elementalist-start",
+      "quest": "oteryn:quest.elementalist_outfits_quest",
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/questline",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/broken_servant_sentry.lua:sha256:d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-festive-base",
+      "quest": "oteryn:quest.the_first_dragon_quest",
+      "npc": "oteryn:npc.the_first_dragon",
+      "keywords": [
+        "reward"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/feathers",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.festive",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_first_dragon.lua:sha256:645852a73164653b3ae894eaeba26c31f672ca6802223ee9ac47a35c74a0c8aa"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-festive-feather",
+      "quest": "oteryn:quest.festive_outfits_quest",
+      "npc": "oteryn:npc.muriel",
+      "keywords": [
+        "feather",
+        "feathers"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/festive_outfits/addon2",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i25089",
+          "count": 50
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.festive",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/muriel.lua:sha256:7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/feathers",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-festive-feather-start",
+      "quest": "oteryn:quest.festive_outfits_quest",
+      "npc": "oteryn:npc.muriel",
+      "keywords": [
+        "second"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/festive_outfits/addon2",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/muriel.lua:sha256:7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/feathers",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i25089",
+          "count": 50
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-festive-mask",
+      "quest": "oteryn:quest.festive_outfits_quest",
+      "npc": "oteryn:npc.muriel",
+      "keywords": [
+        "mask",
+        "masks"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/festive_outfits/addon1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i25088",
+          "count": 3
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.festive",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/muriel.lua:sha256:7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/feathers",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-festive-mask-start",
+      "quest": "oteryn:quest.festive_outfits_quest",
+      "npc": "oteryn:npc.muriel",
+      "keywords": [
+        "first"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/festive_outfits/addon1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/muriel.lua:sha256:7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/feathers",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i25088",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l3-demon-base",
+      "quest": "oteryn:quest.the_annihilator_quest",
+      "npc": "oteryn:npc.avar_tar",
+      "keywords": [
+        "base"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_annihilator/reward",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.demon",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/avar_tar.lua:sha256:2262a6867b3a8260696ca9e08cc556ebb6362bfa28a601eede7cc7e9a89aeea3"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l3-demon-helmet",
+      "quest": "oteryn:quest.demon_oak",
+      "npc": "oteryn:npc.avar_tar",
+      "keywords": [
+        "helmet"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/done",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.demon",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/avar_tar.lua:sha256:2262a6867b3a8260696ca9e08cc556ebb6362bfa28a601eede7cc7e9a89aeea3"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_annihilator/reward",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l3-demon-shield",
+      "quest": "oteryn:quest.demon_helmet_quest",
+      "npc": "oteryn:npc.avar_tar",
+      "keywords": [
+        "shield"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u6_4/demon_helmet/rewards/demon_helmet",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.demon",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/avar_tar.lua:sha256:2262a6867b3a8260696ca9e08cc556ebb6362bfa28a601eede7cc7e9a89aeea3"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_annihilator/reward",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l3-glooth-engineer-base",
+      "quest": "oteryn:quest.dark_trails_quest",
+      "npc": "oteryn:npc.ezebeth",
+      "keywords": [
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.glooth_engineer",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ezebeth.lua:sha256:280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission18",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l3-glooth-engineer-first-high",
+      "quest": "oteryn:quest.glooth_engineer_outfits_quest",
+      "npc": "oteryn:npc.ezebeth",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/addon1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.glooth_engineer",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ezebeth.lua:sha256:280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/outfit",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points",
+          "minimum": 6,
+          "maximum": 2147483647
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/addon2",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l3-glooth-engineer-first-low",
+      "quest": "oteryn:quest.glooth_engineer_outfits_quest",
+      "npc": "oteryn:npc.ezebeth",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/addon1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.glooth_engineer",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ezebeth.lua:sha256:280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/outfit",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points",
+          "minimum": 3,
+          "maximum": 5
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l3-glooth-engineer-second",
+      "quest": "oteryn:quest.glooth_engineer_outfits_quest",
+      "npc": "oteryn:npc.ezebeth",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/addon2",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.glooth_engineer",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ezebeth.lua:sha256:280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/outfit",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points",
+          "minimum": 6,
+          "maximum": 2147483647
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l4-nobleman-first",
+      "quest": "oteryn:quest.nobleman_outfits_quest",
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 24,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.nobleman",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/irmana.lua:sha256:08e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03"
+      ],
+      "fee": {
+        "gold": 150000,
+        "include_bank": false
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/l4-nobleman-first-start",
+      "quest": "oteryn:quest.nobleman_outfits_quest",
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "150000"
+      ],
+      "topic": 23,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/irmana.lua:sha256:08e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l4-nobleman-second",
+      "quest": "oteryn:quest.nobleman_outfits_quest",
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 30,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_second_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.nobleman",
+        "addons": 2
+      },
+      "achievement": "oteryn:achievement/aristocrat",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/irmana.lua:sha256:08e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03"
+      ],
+      "fee": {
+        "gold": 150000,
+        "include_bank": false
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/l4-nobleman-second-start",
+      "quest": "oteryn:quest.nobleman_outfits_quest",
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "150000"
+      ],
+      "topic": 29,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_second_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/irmana.lua:sha256:08e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l4-pirate-base",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.raymond_striker",
+      "keywords": [
+        "pirate outfit"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_base_outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.pirate",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/raymond_striker.lua:sha256:9788635e604e865c0b06091cc9c4bff3c58aa5bc0c752e433790e00f52d4fab8"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_laguna_island",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4",
+          "minimum": 5,
+          "maximum": 5
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l4-pirate-eye-patches",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.duncan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_sabre_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6098",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/duncan.lua:sha256:292f86b5b453474645ce9f13955af7e4efc29cdb12e9d0cc5f7fd2115502815f"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l4-pirate-hat",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.ariella",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_hat_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6101",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6102",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6100",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6099",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.pirate",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ariella.lua:sha256:90cd51edf9d8829e054e2bfa38cbf61aa3bece945b56ceb60e9cb9a346c95a56"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l4-pirate-hat-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.ariella",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_base_outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_hat_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ariella.lua:sha256:90cd51edf9d8829e054e2bfa38cbf61aa3bece945b56ceb60e9cb9a346c95a56"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l4-pirate-hooks",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.duncan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_sabre_addon",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6097",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/duncan.lua:sha256:292f86b5b453474645ce9f13955af7e4efc29cdb12e9d0cc5f7fd2115502815f"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l4-pirate-peg-legs",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.duncan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_sabre_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6126",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/duncan.lua:sha256:292f86b5b453474645ce9f13955af7e4efc29cdb12e9d0cc5f7fd2115502815f"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l4-pirate-sabre-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.duncan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_sabre_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/duncan.lua:sha256:292f86b5b453474645ce9f13955af7e4efc29cdb12e9d0cc5f7fd2115502815f"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l4-royal-costume-base",
+      "quest": "oteryn:quest.royal_costume_outfits_quest",
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 16,
+      "next_topic": 15,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/outfit_quest/royal_costume_outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 15000
+        },
+        {
+          "item": "oteryn:item.tibia.i22721",
+          "count": 12500
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.royal_costume",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/percybald.lua:sha256:b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l4-royal-costume-crown",
+      "quest": "oteryn:quest.royal_costume_outfits_quest",
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 18,
+      "next_topic": 15,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/outfit_quest/royal_costume_outfit",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 7500
+        },
+        {
+          "item": "oteryn:item.tibia.i22721",
+          "count": 6250
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.royal_costume",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/percybald.lua:sha256:b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l4-royal-costume-shield",
+      "quest": "oteryn:quest.royal_costume_outfits_quest",
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 17,
+      "next_topic": 15,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/outfit_quest/royal_costume_outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 7500
+        },
+        {
+          "item": "oteryn:item.tibia.i22721",
+          "count": 6250
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.royal_costume",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/percybald.lua:sha256:b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l5-norseman-base",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "npc": "oteryn:npc.hjaern",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 39,
+          "maximum": 39,
+          "set": 40
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission12",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/yakchal_door",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7289",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.norseman",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hjaern.lua:sha256:4e9e42e8daf616fe8c5ef71cfd0a4ac0ae0ae5d7bd786c80ccb2c26286d40466"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/obelisk01",
+          "minimum": 5,
+          "maximum": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/obelisk02",
+          "minimum": 5,
+          "maximum": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/obelisk03",
+          "minimum": 5,
+          "maximum": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/obelisk04",
+          "minimum": 5,
+          "maximum": 5
+        }
+      ],
+      "participants": [
+        {
+          "quest": "oteryn:quest.outfit_and_addon_quests",
+          "storage": [
+            {
+              "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/norseman_outfit",
+              "minimum": 0,
+              "maximum": 3,
+              "set": 1
+            },
+            {
+              "track": "oteryn:quest-progress/outfit_quest/default_start",
+              "minimum": -1,
+              "maximum": 1,
+              "set": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l5-norseman-first-reward",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "npc": "oteryn:npc.hjaern",
+      "keywords": [
+        "reward"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 41,
+          "maximum": 41,
+          "set": 42
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.norseman",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hjaern.lua:sha256:4e9e42e8daf616fe8c5ef71cfd0a4ac0ae0ae5d7bd786c80ccb2c26286d40466"
+      ],
+      "participants": [
+        {
+          "quest": "oteryn:quest.outfit_and_addon_quests",
+          "storage": [
+            {
+              "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/norseman_outfit",
+              "minimum": 0,
+              "maximum": 3,
+              "set": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l5-norseman-first-shards",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "npc": "oteryn:npc.hjaern",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 40,
+          "maximum": 40,
+          "set": 41
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7290",
+          "count": 5
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hjaern.lua:sha256:4e9e42e8daf616fe8c5ef71cfd0a4ac0ae0ae5d7bd786c80ccb2c26286d40466"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l5-norseman-second-reward",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "npc": "oteryn:npc.hjaern",
+      "keywords": [
+        "reward"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 43,
+          "maximum": 43,
+          "set": 44
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.norseman",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hjaern.lua:sha256:4e9e42e8daf616fe8c5ef71cfd0a4ac0ae0ae5d7bd786c80ccb2c26286d40466"
+      ],
+      "participants": [
+        {
+          "quest": "oteryn:quest.outfit_and_addon_quests",
+          "storage": [
+            {
+              "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/norseman_outfit",
+              "minimum": 0,
+              "maximum": 3,
+              "set": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l5-norseman-second-shards",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "npc": "oteryn:npc.hjaern",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 42,
+          "maximum": 42,
+          "set": 43
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7290",
+          "count": 10
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hjaern.lua:sha256:4e9e42e8daf616fe8c5ef71cfd0a4ac0ae0ae5d7bd786c80ccb2c26286d40466"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l5-oriental-female-ape-fur",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5883",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/miraia.lua:sha256:7114cc53c7119cd7a42947a5be07611956e11e7f7c8833f68197f136be5e353f"
+      ],
+      "creation_sex": "female"
+    },
+    {
+      "key": "oteryn:quest-reward/l5-oriental-female-blue-cloth",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5912",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.oriental",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/miraia.lua:sha256:7114cc53c7119cd7a42947a5be07611956e11e7f7c8833f68197f136be5e353f"
+      ],
+      "creation_sex": "female"
+    },
+    {
+      "key": "oteryn:quest-reward/l5-oriental-female-comb",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.ishina",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/first_oriental_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5945",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.oriental",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ishina.lua:sha256:9eb2e869db4d0dfad8f04fc171773dcf9045e35647bd4069f9e9b18dc0513c71"
+      ],
+      "creation_sex": "female"
+    },
+    {
+      "key": "oteryn:quest-reward/l5-oriental-female-first-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.ishina",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/first_oriental_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ishina.lua:sha256:9eb2e869db4d0dfad8f04fc171773dcf9045e35647bd4069f9e9b18dc0513c71"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder",
+          "minimum": 35,
+          "maximum": 2147483647
+        }
+      ],
+      "creation_sex": "female",
+      "participants": [
+        {
+          "quest": "oteryn:quest.oriental_outfits_quest",
+          "storage": [
+            {
+              "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/oriental_door",
+              "minimum": 0,
+              "maximum": 1,
+              "set": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l5-oriental-female-fish-fins",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5895",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/miraia.lua:sha256:7114cc53c7119cd7a42947a5be07611956e11e7f7c8833f68197f136be5e353f"
+      ],
+      "creation_sex": "female"
+    },
+    {
+      "key": "oteryn:quest-reward/l5-oriental-female-second-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/miraia.lua:sha256:7114cc53c7119cd7a42947a5be07611956e11e7f7c8833f68197f136be5e353f"
+      ],
+      "creation_sex": "female"
+    },
+    {
+      "key": "oteryn:quest-reward/l5-oriental-female-wings",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5891",
+          "count": 2
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/miraia.lua:sha256:7114cc53c7119cd7a42947a5be07611956e11e7f7c8833f68197f136be5e353f"
+      ],
+      "creation_sex": "female"
+    },
+    {
+      "key": "oteryn:quest-reward/l5-oriental-male-ape-fur",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.razan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5883",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/razan.lua:sha256:c12e695654ada3a5f4b1775657835fa18e5957b0870e735803a5ead2e7483acb"
+      ],
+      "creation_sex": "male"
+    },
+    {
+      "key": "oteryn:quest-reward/l5-oriental-male-blue-cloth",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.razan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5912",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.oriental",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/razan.lua:sha256:c12e695654ada3a5f4b1775657835fa18e5957b0870e735803a5ead2e7483acb"
+      ],
+      "creation_sex": "male"
+    },
+    {
+      "key": "oteryn:quest-reward/l5-oriental-male-comb",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.habdel",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/first_oriental_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5945",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.oriental",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/habdel.lua:sha256:0666e7207a7fd9565f5311ffc3d87f9b138c858117d802c089a7d00c727c7b78"
+      ],
+      "creation_sex": "male"
+    },
+    {
+      "key": "oteryn:quest-reward/l5-oriental-male-first-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.habdel",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/first_oriental_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/habdel.lua:sha256:0666e7207a7fd9565f5311ffc3d87f9b138c858117d802c089a7d00c727c7b78"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder",
+          "minimum": 35,
+          "maximum": 2147483647
+        }
+      ],
+      "creation_sex": "male",
+      "participants": [
+        {
+          "quest": "oteryn:quest.oriental_outfits_quest",
+          "storage": [
+            {
+              "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/oriental_door",
+              "minimum": 0,
+              "maximum": 1,
+              "set": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l5-oriental-male-fish-fins",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.razan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5895",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/razan.lua:sha256:c12e695654ada3a5f4b1775657835fa18e5957b0870e735803a5ead2e7483acb"
+      ],
+      "creation_sex": "male"
+    },
+    {
+      "key": "oteryn:quest-reward/l5-oriental-male-second-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.razan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/razan.lua:sha256:c12e695654ada3a5f4b1775657835fa18e5957b0870e735803a5ead2e7483acb"
+      ],
+      "creation_sex": "male"
+    },
+    {
+      "key": "oteryn:quest-reward/l5-oriental-male-wings",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.razan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5891",
+          "count": 2
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/razan.lua:sha256:c12e695654ada3a5f4b1775657835fa18e5957b0870e735803a5ead2e7483acb"
+      ],
+      "creation_sex": "male"
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-base",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.beggar",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hugo.lua:55-199:sha256:60069ed647e4379a2e1177d32652602d86d8d50ad8da066f7dc65529b92fa55d"
+      ],
+      "requires_premium": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit_timer",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 86401
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-beard",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "beard",
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_first_addon_door",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.beggar",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/simon_the_beggar.lua:84-222:sha256:7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74"
+      ],
+      "creation_sex": "male",
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit_timer_addon",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 432000
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-beard-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "beard"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/simon_the_beggar.lua:84-222:sha256:7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74"
+      ],
+      "creation_sex": "male",
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit_timer_addon",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-blossoms",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5921",
+          "count": 30
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hugo.lua:55-199:sha256:60069ed647e4379a2e1177d32652602d86d8d50ad8da066f7dc65529b92fa55d"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit_timer",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-cloth",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5913",
+          "count": 20
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hugo.lua:55-199:sha256:60069ed647e4379a2e1177d32652602d86d8d50ad8da066f7dc65529b92fa55d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-dress",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "gypsy dress"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 10
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_first_addon_door",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.beggar",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/simon_the_beggar.lua:84-222:sha256:7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74"
+      ],
+      "creation_sex": "female"
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-first-materials",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_first_addon_door",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5883",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/simon_the_beggar.lua:84-222:sha256:7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74"
+      ],
+      "fee": {
+        "gold": 20000,
+        "include_bank": true
+      },
+      "requires_premium": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit_timer_addon",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-first-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/simon_the_beggar.lua:84-222:sha256:7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74"
+      ],
+      "requires_outfits": [
+        "oteryn:outfit.beggar"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-leather",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5878",
+          "count": 50
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hugo.lua:55-199:sha256:60069ed647e4379a2e1177d32652602d86d8d50ad8da066f7dc65529b92fa55d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-staff",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 11,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_second_addon",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6107",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.beggar",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/simon_the_beggar.lua:84-222:sha256:7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-staff-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_first_addon_door",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/simon_the_beggar.lua:84-222:sha256:7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hugo.lua:55-199:sha256:60069ed647e4379a2e1177d32652602d86d8d50ad8da066f7dc65529b92fa55d"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/l6-beggar-wings",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5894",
+          "count": 10
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hugo.lua:55-199:sha256:60069ed647e4379a2e1177d32652602d86d8d50ad8da066f7dc65529b92fa55d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-citizen-rook-backpack",
+      "quest": "oteryn:quest.citizen_outfits_quest_on_rook",
+      "npc": "oteryn:npc.amber",
+      "keywords": [
+        "addon",
+        "outfit",
+        "backpack"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_backpack_rook",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 4
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.citizen",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amber.lua:sha256:00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook_timer",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 7201
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ],
+      "participants": [
+        {
+          "quest": "oteryn:quest.outfit_and_addon_quests",
+          "storage": [
+            {
+              "track": "oteryn:quest-progress/outfit_quest/ref",
+              "minimum": 0,
+              "maximum": 2147483647,
+              "set": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-citizen-rook-backpack-materials",
+      "quest": "oteryn:quest.citizen_outfits_quest_on_rook",
+      "npc": "oteryn:npc.amber",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_backpack_rook",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5878",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amber.lua:sha256:00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook_timer",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-citizen-rook-backpack-start",
+      "quest": "oteryn:quest.citizen_outfits_quest_on_rook",
+      "npc": "oteryn:npc.amber",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_backpack_rook",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amber.lua:sha256:00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9"
+      ],
+      "participants": [
+        {
+          "quest": "oteryn:quest.outfit_and_addon_quests",
+          "storage": [],
+          "state_ops": [
+            {
+              "track": "oteryn:quest-progress/outfit_quest/ref",
+              "from": {
+                "kind": "between",
+                "minimum": 0,
+                "maximum": 2147483646
+              },
+              "effect": {
+                "kind": "add",
+                "value": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-citizen-rook-hat",
+      "quest": "oteryn:quest.citizen_outfits_quest_on_rook",
+      "npc": "oteryn:npc.norma",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_hat_rook",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_hat_rook",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3374",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i5902",
+          "count": 50
+        },
+        {
+          "item": "oteryn:item.tibia.i5890",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.citizen",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/norma.lua:sha256:c1eb0cbfdf9520fe110dd90b07674729d70aeaf69926f8f40a5f65d2983e2105"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-citizen-rook-hat-start",
+      "quest": "oteryn:quest.citizen_outfits_quest_on_rook",
+      "npc": "oteryn:npc.norma",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_hat_rook",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_hat_rook",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/norma.lua:sha256:c1eb0cbfdf9520fe110dd90b07674729d70aeaf69926f8f40a5f65d2983e2105"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-druid-rook-body",
+      "quest": "oteryn:quest.druid_outfits_quest_on_rook",
+      "npc": "oteryn:npc.tom",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/druid_outfits_rook/druid_body_addon_rook",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5896",
+          "count": 50
+        },
+        {
+          "item": "oteryn:item.tibia.i5897",
+          "count": 50
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.druid",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tom.lua:sha256:5079fd40c677dcee45941eac3eb4961c1260c5889635585d9d3441829de800b4"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-druid-rook-start",
+      "quest": "oteryn:quest.druid_outfits_quest_on_rook",
+      "npc": "oteryn:npc.tom",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/druid_outfits_rook/druid_body_addon_rook",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tom.lua:sha256:5079fd40c677dcee45941eac3eb4961c1260c5889635585d9d3441829de800b4"
       ]
     },
     {

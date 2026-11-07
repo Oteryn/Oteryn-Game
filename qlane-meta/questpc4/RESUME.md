@@ -1,3 +1,11 @@
+## Green shared NPC engine reuse / publication (2026-11-07)
+
+Published previous lane head2599afbed. Merge qengine2a585529d7851a6b5efad8117e2838970b916ba83 is now green: reuse read-only requirements, atomic participants/state operations, live premium gates and exact coin fees/change. All3607 previous native item profiles identical,16 added; all37 prior NPC placements identical,19 added. Owning tools regenerated42 native files and refreshed/checked World pin7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37 (31102360bytes). Compatibility repairs preserve filled gifts, closed exact inputs and separate optional Beggar/Mead premium test coordinators.
+
+PG18.6 focused integration PASS4/0 in196.72s: Mead62.729438579s, Nobleman fee101.821014243s, Norseman prerequisites96.472146663s, Citizen atomic participants94.893287671s. Log /tmp/questpc4-npc-engine-pg.log. Authoring22 units PASS8.134s; callback6 units PASS1.36s; pinned producer --check PASS; fmt PASS; all-target/all-feature dispatch/durability/quests check PASS1m52s, clippy-Dwarnings PASS9m34s.
+
+Commit required author/trailers and push FF after fetch; then continue entries. Counts unchanged3 qualified,18 active,2 exclusions. Latest PC3/PC6/PC8 recheck adds no whole qualified import. Spirit implementation design at /tmp/questpc4-spirit-design.md: native Crone already placed, item11544 requires admission; chosen recipe keeps3 wills and grants conversation access only. Conservative native box/chest candidate bindings and source hashes are in status; not yet enabled/qualified. Missing facts are not a final blocker. No main/force/PR. CARGO_INCREMENTAL=0.
+
 ## Green final delta / publication (2026-11-07)
 
 Reconciled local Mead375a7f532 and green expiry mergeaed14d2c8 with incomingab8ccdf0b (fresh-only floor effect publication). Current merged PG18.6 PASS3/0 in112.20s: assembly54.168439337s, ruby/replay54.186352972s, Mead58.019196009s. Log /tmp/questpc4-mead-floor-effects-pg.log. Affected items/durability/dispatch alltarget/allfeature check PASS2m48 and clippy-Dwarnings PASS; fmt all check PASS. Prior five-case nested/equipped expiry integration proof is preserved in status/history. No source/pin changes.

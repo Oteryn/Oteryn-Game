@@ -199,7 +199,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .filter(|c| c.effects.item_reward.is_some())
                 .and_then(|_| native.zip(weights.as_ref()))
                 .map(|(native, weights)| {
-                    crate::durability::reward_claim_mint::QuestRewardAdmission { native, weights }
+                    crate::durability::reward_claim_mint::QuestRewardAdmission {
+                        native,
+                        weights,
+                        fee_payment: None,
+                    }
                 });
             let disposition = match slot.commit_world_callback_with_items(self.root, self.character, self.holder, fence,
                 QuestTransitionRequest { transition_key: pending.callback, cause: pending.cause },
