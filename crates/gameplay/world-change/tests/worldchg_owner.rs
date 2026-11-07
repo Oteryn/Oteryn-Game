@@ -292,7 +292,7 @@ fn worldchg_final_six_native_bindings_qualify_only_their_current_world_state()
         owner::{CATALOGUE_JSON, counter_admitted, is_active},
     };
     let catalogue: serde_json::Value = serde_json::from_str(CATALOGUE_JSON)?;
-    let selected = DailyWorldChanges::roll(700, 6, 13, |_| u64::MAX);
+    let selected = DailyWorldChanges::roll(700, 6, 13, |_| 0);
     let inactive = DailyWorldChanges::roll(701, 1, 1, |_| u64::MAX);
     for key in [
         "deeplings",

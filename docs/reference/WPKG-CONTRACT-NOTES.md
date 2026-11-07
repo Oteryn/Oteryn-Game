@@ -969,3 +969,11 @@ Retain only independent main compatibility repairs: persisted static Fury
 eligibility and its guarded fixtures/unit test, and the1333 migration-composition
 repair for upcoming canonical QENGINE dependencies. Other runtime/content/pins
 restore the prior green World package. Continue with WEVENTS.
+
+
+Rollback validation after retaining independent fixes:
+- wcontrib-revert-check: PASS 120.128s.
+- wcontrib-revert-fmt: PASS 14.684s.
+- wcontrib-revert-fury-unit-final: PASS 0.849s.
+- wcontrib-revert-schema-pg-final: PASS 4.399s.
+The first rollback unit run caught an accidentally inactive draw in the existing selected-day fixture. Its selected draw is restored; all10 cases now pass. The320-migration base replay requires the existing Benevola/transaction proof; canonical QENGINE is intentionally absent until the next dependency merge.
