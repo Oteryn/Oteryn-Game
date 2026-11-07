@@ -3546,7 +3546,7 @@
         ]
       },
       "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
-      "active_batch": "Pressure gates29002/29003 and portals38004-38006 now native PG/strict green; native38003 regression retained. Earlier stock3003-3007, all ten key doors and four lever/exit anchors green. Finish level25/NPC/container stock, then compose complete source route."
+      "active_batch": "Dragonlord source greeting exchange/flag/replay/final-write rollback+recovery now native PG/strict GREEN. Pressure gates/portals, source stock3003-3007, ten key doors and four lever/exit anchors already GREEN. Finish level25 gate, Elathriel paid3012 and shared skeletonstock3001, then compose complete source route."
     },
     {
       "title": "Dragon Corpse Quest",
@@ -8579,10 +8579,10 @@
   },
   "owner_execution_override": "Shared quest-engine, reward/binding, NPC, Item and callback features are owned here when needed. Check and reuse origin/claude/happy-davinci-ijz3wy-qengine2 first; historical outside-lane blockers are active implementation obligations, not final dispositions.",
   "latest_cloud_batch": {
-    "slice": "draconia_source_pressure_gates_and_route_portals",
-    "result": "PASS",
-    "validation": "qlane-meta/questpc/cloud-draconia-route-validation.json",
-    "qualified_titles_added": 0
+    "scope": "Draconia Dragonlord greeting exchange and reviewed native NPC placement",
+    "validation": "qlane-meta/questpc/cloud-dragonlord-validation.json",
+    "status": "GREEN",
+    "whole_title_promoted": false
   },
   "continuation": {
     "base": "9bf74b42d",
@@ -9633,8 +9633,11 @@
     "rule": "Skip per current owner; this does not claim those implementations are merged here."
   },
   "cloud_dragonlord_progress": {
-    "phase": "actual PostgreSQL RED retained; implementation GREEN probes running",
-    "evidence": "qlane-meta/questpc/cloud-dragonlord-red-validation.json",
-    "whole_title_promoted": false
+    "phase": "native source greeting, exact flag exchange, rollback/recovery GREEN",
+    "evidence": "qlane-meta/questpc/cloud-dragonlord-validation.json",
+    "whole_title_promoted": false,
+    "pg_cases": 3,
+    "pg_selected_duration_seconds": 255.022765273,
+    "postgres": "18.6"
   }
 }

@@ -76,6 +76,18 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
         {
             return Err(invalid("Pemaret source custody"));
         }
+        if document.program_key.as_deref() == Some("oteryn:quest-npc-program.draconia")
+            && (document.quest != "oteryn:quest.draconia_quest"
+                || document.source_files.len() != 1
+                || document.source_files.iter().any(|file| {
+                    file.revision != "201189f871d23597b82caf88fd611454a2ddefb8"
+                        || file.path != "data-global/npc/an_old_dragon_lord.lua"
+                        || file.sha256
+                            != "85016cc08856f49d94c507f43bc84f54801d3a2844946ae391015a0d8c84a052"
+                }))
+        {
+            return Err(invalid("Draconia source custody"));
+        }
         if !super::hidden_threats::custody(document) {
             return Err(invalid("Corym source custody"));
         }

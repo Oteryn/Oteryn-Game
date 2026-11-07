@@ -1,0 +1,112 @@
+    Checking serde v1.0.229
+    Checking zerovec v0.11.8
+    Checking smallvec v1.15.2
+    Checking tokio v1.53.1 (/workspace/Oteryn-Game/vendor/tokio-1.53.1)
+    Checking oteryn-gameplay-domain v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/domain)
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32
+    |
+208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+    |                                ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
+    |
+
+   Compiling tinystr v0.8.4
+    Checking icu_locale_core v2.3.0
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)
+   Compiling potential_utf v0.1.6
+    Checking zerotrie v0.2.5
+   Compiling icu_collections v2.3.0
+   Compiling icu_provider v2.3.1
+   Compiling either v1.18.0
+   Compiling oteryn-gameplay-content v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/content)
+   Compiling icu_properties v2.3.0
+    Checking icu_normalizer v2.3.0
+    Checking oteryn-world-bundle v0.1.0 (/workspace/Oteryn-Game/crates/world-bundle)
+   Compiling idna_adapter v1.2.2
+   Compiling parking_lot_core v0.9.12
+warning: `tokio` (lib) generated 2 warnings (2 duplicates)
+   Compiling parking_lot v0.12.5
+    Checking idna v1.1.0
+   Compiling url v2.5.8
+   Compiling futures-intrusive v0.5.0
+   Compiling thiserror v2.0.20
+   Compiling sqlx-core v0.9.0 (/workspace/Oteryn-Game/vendor/sqlx-core-0.9.0)
+warning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14
+    |
+260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |              ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |
+
+warning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)
+   Compiling sqlx-postgres v0.9.0 (/workspace/Oteryn-Game/vendor/sqlx-postgres-0.9.0)
+    Checking tokio-rustls v0.26.6
+   Compiling itertools v0.14.0
+    Checking tokio-stream v0.1.19
+   Compiling sqlx-macros-core v0.9.0
+warning: `sqlx-core` (lib) generated 1 warning (1 duplicate)
+   Compiling prost-derive v0.14.4
+    Checking oteryn-gameplay-progression v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/progression)
+    Checking byteorder v1.5.0
+    Checking oteryn-gameplay-combat-rules v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat-rules)
+    Checking oteryn-gameplay-foundation v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/foundation)
+    Checking prost v0.14.4
+    Checking oteryn-error-codes v0.1.0 (/workspace/Oteryn-Game/crates/error-codes)
+   Compiling sqlx-macros v0.9.0
+    Checking oteryn-gameplay-native-admission-source v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/native-admission-source)
+    Checking sqlx v0.9.0
+    Checking oteryn-gameplay-characters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/characters)
+    Checking oteryn-gameplay-entities v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/entities)
+    Checking oteryn-gameplay-quests v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/quests)
+    Checking oteryn-gameplay-encounter-rules v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounter-rules)
+    Checking oteryn-gameplay-items v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/items)
+    Checking oteryn-gameplay-housing v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/housing)
+    Checking oteryn-gameplay-economy v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/economy)
+    Checking oteryn-gameplay-social-rules v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social-rules)
+    Checking oteryn-gameplay-world-change v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world-change)
+    Checking oteryn-foundation v0.1.0 (/workspace/Oteryn-Game/crates/foundation)
+    Checking oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)
+    Checking oteryn-gameplay-node-files v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/node-files)
+    Checking hyper v1.11.0
+    Checking tower v0.5.3
+    Checking hyper-util v0.1.20
+    Checking oteryn-gameplay-spell-rules v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell-rules)
+    Checking serde_urlencoded v0.7.1
+    Checking hyper-rustls v0.27.9
+    Checking tower-http v0.6.11
+    Checking tokio-util v0.7.19
+    Checking reqwest v0.13.5
+    Checking oteryn-gameplay-weather v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/weather)
+    Checking oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)
+    Checking oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)
+    Checking oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)
+    Checking oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)
+    Checking oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)
+    Checking oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)
+    Checking oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)
+    Checking oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 55s

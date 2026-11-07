@@ -1,0 +1,10 @@
+    Blocking waiting for file lock on build directory
+   Compiling oteryn-gameplay-quests v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/quests)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2m 26s
+     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_quests-83ac356503a3a145)
+
+running 1 test
+test quest::npc_rules::draconia_source_tests::draconia_programme_rejects_source_substitution ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 271 filtered out; finished in 0.00s
+

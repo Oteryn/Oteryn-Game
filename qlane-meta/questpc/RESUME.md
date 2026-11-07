@@ -1,3 +1,23 @@
+## Dragonlord slice GREEN — 2026-11-07
+Source-bound greeting uses existing generic atomic item-exchange owner: one3723
+consumed, one3206 granted, exact Dragonfetish!=1 guard, flag1, immediate focus end.
+Three actual PostgreSQL18.6 cases GREEN: exchange/replay/refusal85.158147972s,
+missing83.808583294s, corrected rollback/recovery/retry86.056034007s; selected
+255.022765273s. Original combined2pass/1failed recovery probe retained honestly;
+no rollback assertions removed. Exact source hash+greeting identity/hash units2/2.
+Final strict Clippy/check, fmt, generation/pins PASS. Existing frozen cohorts and
+owners unchanged; separate runtime programme and closed greeting admission.
+Reviewed native NPC32796,31558,z2,45 placements; pinbb0700fefb815beadb1a64e5b1ae0a46d2183197c4aeb56875902f2effe59a0c.
+Evidence cloud-dragonlord-validation.json; review no remaining findings.
+Counts60QUALIFIED/117UNFINISHED/1excludedDawnportBLOCKED; no whole-title promotion.
+
+NEXT level25 source door32804,31583,z2 action1025,5102->5103. Existing generic
+level-door owner already interprets25. Source verified offline; plan
+/tmp/questpc-level-door-next-plan.md. Add exact native source capsule and missing
+profiles with existing tooling; focused PG RED/GREEN levels24/25/26, no bypass.
+Then reuse freshqpc6 exact paid-key owner for Elathriel5000->copper2970 action3012;
+then generic shared skeleton5972 containerstock key3001. Own every missing feature.
+
 ## Dragonlord evidence checkpoint — 2026-11-07
 Three actual PostgreSQL18.6 RED probes retained (83.05/83.99/84.14s).
 No whole-title promotion. Implementation remains uncommitted pending GREEN.
