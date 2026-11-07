@@ -565,7 +565,7 @@
         "questpc4"
       ],
       "blocker": {
-        "missing_piece": "Native tomb assembly/switch/gate counterparts, original-online-actor treasure consequences, and remaining conditional room/NPC/finale composition are active obligations; do not redo qualified generic assembly, physical lifetimes, seven native carried routes, shared lease activation/count gates or physical switch restoration.",
+        "missing_piece": "Native tomb assembly/switch/gate counterparts and remaining conditional room/NPC/finale composition are active obligations; do not redo qualified generic assembly, physical lifetimes, seven native carried routes, shared lease activation/count gates, physical switch restoration or original-actor personal expiry.",
         "source": ".questpc4/evidence/wiki/The Ancient Tombs Quest_Spoiler.wiki:8",
         "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
         "canonical_json_pointer": "/records/15/definition",

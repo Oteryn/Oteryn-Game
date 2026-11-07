@@ -51,6 +51,9 @@ fn registry() -> Result<&'static Registry, String> {
                     add(world_callbacks::primary_transition(&callback)?, true)?;
                 }
             }
+            for recipe in super::timers::RECIPES {
+                add(recipe.transition(), false)?;
+            }
             Ok(registry)
         })
         .as_ref()

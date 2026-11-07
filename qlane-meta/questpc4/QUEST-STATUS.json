@@ -3227,7 +3227,7 @@
       {
         "canonical": "oteryn:quest.the_ancient_tombs_quest",
         "status": "IN_PROGRESS",
-        "blocker": "Native tomb assembly/switch/gate counterparts, original-online-actor treasure consequences, and remaining conditional room/NPC/finale composition are active obligations; do not redo qualified generic assembly, physical lifetimes, seven native carried routes, shared lease activation/count gates or physical switch restoration.",
+        "blocker": "Native tomb assembly/switch/gate counterparts and remaining conditional room/NPC/finale composition are active obligations; do not redo qualified generic assembly, physical lifetimes, seven native carried routes, shared lease activation/count gates, physical switch restoration or original-actor personal expiry.",
         "partial_qualification": {
           "scope": "Five successful instrument USE transitions, position/appearance binding independently checked against native B3; literal STEP approach, replay and fail-closed out-of-order/completed-attempt tests. Not tomb collision, source wrong-instrument damage/reset, doors, drops, assembly or whole quest.",
           "test": "l6_ancient_tombs_instruments_real_use_persists_order_and_replay",
@@ -3452,7 +3452,7 @@
     },
     "scope_note": "All LANE-L6 input source blockers remain obligations. Differences from selected recipe approximations are not authority to drop a blocker. Historical qengine ownership language is not treated as a reason to defer work now owned by L6.",
     "publication_branch": "claude/happy-davinci-ijz3wy-questpc4",
-    "latest_batch": "cloud-shared-switch-timers-14",
+    "latest_batch": "cloud-shared-switch-treasure-15",
     "mechanisms": {
       "reusable_tools_and_atomic_counters": {
         "status": "QUALIFIED",
@@ -4058,6 +4058,75 @@
           "clippy": "PASS same changed crates/all targets/features -D warnings2m55s",
           "duplicates_diff": "PASS schema numbers and staged/unstaged diff",
           "pins": "No generated/native/world input change; existing pin unchanged"
+        }
+      },
+      "shared_world_switch_personal_expiry": {
+        "status": "QUALIFIED",
+        "scope": "Generic original online actor/session server-timer consequences: Thalas<=0\u21921, Diprath<=1\u21922, Ashnone; immutable source/quest outcome audit, upper-guard no-ops, wrong-actor/future/absent/repeat/replay boundaries. Native source binding and whole quest remain active obligations.",
+        "migration": "1072_quest_source_expiry.sql",
+        "postgres": {
+          "status": "GREEN",
+          "version": "18.6",
+          "cases": 8,
+          "personal_cases_result": "6passed/0failed154.42s",
+          "groups": [
+            {
+              "log": "/tmp/questpc4-switch-treasure-final-green.log",
+              "cases": [
+                {
+                  "marker": "l6-tomb-switch-treasure-fresh-12121",
+                  "duration_seconds": 78.203976022
+                },
+                {
+                  "marker": "l6-tomb-switch-treasure-expired-12123",
+                  "duration_seconds": 78.385020039
+                },
+                {
+                  "marker": "l6-tomb-switch-treasure-offline-12122",
+                  "duration_seconds": 78.387980983
+                },
+                {
+                  "marker": "l6-tomb-switch-treasure-expired-12122",
+                  "duration_seconds": 109.491989351
+                },
+                {
+                  "marker": "l6-tomb-switch-treasure-repeat-12121",
+                  "duration_seconds": 75.337284278
+                },
+                {
+                  "marker": "l6-tomb-switch-treasure-expired-12121",
+                  "duration_seconds": 76.030562288
+                }
+              ]
+            },
+            {
+              "log": "/tmp/questpc4-switch-treasure-physical-regression.log",
+              "cases": [
+                {
+                  "marker": "l6-tomb-switch-timer-expired-12122",
+                  "duration_seconds": 81.974889966
+                }
+              ]
+            },
+            {
+              "log": "/tmp/questpc4-switch-treasure-gate-regression.log",
+              "cases": [
+                {
+                  "marker": "l6-tomb-gate-open-50135",
+                  "duration_seconds": 75.565395587
+                }
+              ]
+            }
+          ]
+        },
+        "checks": {
+          "fmt": "PASS cargo fmt all check and explicit owned leaves",
+          "check": "PASS quests/durability/dispatch all targets/features6m54s including build wait",
+          "clippy": "PASS same3crates all targets/features -D warnings2m53s",
+          "units": "5passed/0failed:1 timer binding,2 registered admission,2 extended cause/request namespace tests; pure units are not PG proof",
+          "migration": "1072 unique; published migrations untouched",
+          "diff": "PASS staged and unstaged",
+          "generated": "No content/native/world inputs changed; existing a36 pin unchanged"
         }
       }
     },
@@ -5407,9 +5476,9 @@
       }
     ],
     "last_pushed_batch": {
-      "head": "bd42f09bb3f56e58c7876a7a4d5069c9cbe68032",
+      "head": "26fbae136d75ecaf42f04fae97072a4b36188819",
       "status": "PUSHED",
-      "scope": "Shared gate predicates8/7/5 and original movement/11 cues/replay; PG7,units12,fmt/check/clippy green"
+      "scope": "Physical switch expiry and preserved incoming physical admission/input bindings; merged PG12/units14/5crate fmt check clippy/pin green"
     },
     "native_portal_batch_10": {
       "status": "GREEN",
@@ -5694,6 +5763,116 @@
           "pin": "PASS a36ca9460fcf4aa15127bfcf164b5d984629c2c38040db554c75eade9386ff01",
           "duplicates_diff": "PASS"
         }
+      }
+    },
+    "switch_treasure_batch_15": {
+      "status": "GREEN",
+      "stage": "All focused gates green; commit and exact fresh-fetch fast-forward push immediately",
+      "log": "/tmp/questpc4-switch-treasure-red.log",
+      "source_groups": [
+        12121,
+        12122,
+        12123
+      ],
+      "canonical_tracks": [
+        "oteryn:quest-track/ancient-tombs/thalas-treasure",
+        "oteryn:quest-track/ancient-tombs/diprath-treasure"
+      ],
+      "no_whole_qualification": true,
+      "reuse_check": {
+        "qengine2": "46d16cf29090b6609ca6205542b03b5a48e95663",
+        "questpc3": "12265d0b76b856f010a90c45536fc73cd2335697",
+        "questpc8": "70a0d92afcb095f792af7ab6409793320842c3af",
+        "worldchg": "ebc53bc6e5cceb72837b9a984723c433798c6955",
+        "wvar": "5fe120419214c6256250e47c86587ad1e12f75aa",
+        "wcontrib": "c8a8d97cf0eb82228177b192f138afd8ca1757f3",
+        "wevents": "aaa3e878100448ece34c00b1d2eeaea3fd0d7aed",
+        "result": "Fetched exact heads; no quest timer/server_timer/QuestCause Timer/lease expiry cause, only unrelated exercise trainer lease expiry. Reuse current registered bound transitions, revision writer, immutable shared leases and current owner timer cycle."
+      },
+      "red": {
+        "postgres": "18.6 (Debian18.6-1.pgdg13+2)",
+        "duration_seconds": 52.27,
+        "marker": "POSTGRES_DATABASE_READY l6_switch_treasure",
+        "observed": "Expired real Thalas lease leaves personal track-1 instead of1",
+        "log": "/tmp/questpc4-switch-treasure-red.log"
+      },
+      "migration": "1072_quest_source_expiry.sql",
+      "allocator": "Fresh main max916/openPR969; lane reserved1060..1079;1072 unique",
+      "implementation": [
+        "Sealed original lease occurrence in server_timer namespace, no player-command substitution",
+        "Registered exact SetWithBinding transitions and stripped/renamed/broadened alias rejection",
+        "Original active session/world/reset/content checks plus exact original runtime actor under revision-slot/runtime lock order",
+        "Eight pending eligible leases per actor/read, existing Channel owner cadence",
+        "Immutable APPLIED or already-satisfied observation plus full source/outcome/quest-receipt audit, deferred same-XID barriers",
+        "Task-board serialization knows new namespace; existing writer continues rejecting timer actions",
+        "Source upper-guard refusals become terminal no-op outcomes, no later revival after unrelated track reset"
+      ],
+      "green_log": "/tmp/questpc4-switch-treasure-final-green.log",
+      "preflight": "First compilation found exhaustive TaskBoard cause encoder; repaired, original task-board authority matcher unchanged. Compilation errors are not PG RED.",
+      "bounded_reader_repair": "Old/stale actor leases are excluded in SQL before the eight-row batch limit, preventing starvation of the current actor. Stopped only obsolete compilation/gate jobs143 before editing; no skipped or weakened tests.",
+      "postgres": {
+        "status": "GREEN",
+        "version": "18.6",
+        "cases": 8,
+        "personal_cases_result": "6passed/0failed154.42s",
+        "groups": [
+          {
+            "log": "/tmp/questpc4-switch-treasure-final-green.log",
+            "cases": [
+              {
+                "marker": "l6-tomb-switch-treasure-fresh-12121",
+                "duration_seconds": 78.203976022
+              },
+              {
+                "marker": "l6-tomb-switch-treasure-expired-12123",
+                "duration_seconds": 78.385020039
+              },
+              {
+                "marker": "l6-tomb-switch-treasure-offline-12122",
+                "duration_seconds": 78.387980983
+              },
+              {
+                "marker": "l6-tomb-switch-treasure-expired-12122",
+                "duration_seconds": 109.491989351
+              },
+              {
+                "marker": "l6-tomb-switch-treasure-repeat-12121",
+                "duration_seconds": 75.337284278
+              },
+              {
+                "marker": "l6-tomb-switch-treasure-expired-12121",
+                "duration_seconds": 76.030562288
+              }
+            ]
+          },
+          {
+            "log": "/tmp/questpc4-switch-treasure-physical-regression.log",
+            "cases": [
+              {
+                "marker": "l6-tomb-switch-timer-expired-12122",
+                "duration_seconds": 81.974889966
+              }
+            ]
+          },
+          {
+            "log": "/tmp/questpc4-switch-treasure-gate-regression.log",
+            "cases": [
+              {
+                "marker": "l6-tomb-gate-open-50135",
+                "duration_seconds": 75.565395587
+              }
+            ]
+          }
+        ]
+      },
+      "checks": {
+        "fmt": "PASS cargo fmt all check and explicit owned leaves",
+        "check": "PASS quests/durability/dispatch all targets/features6m54s including build wait",
+        "clippy": "PASS same3crates all targets/features -D warnings2m53s",
+        "units": "5passed/0failed:1 timer binding,2 registered admission,2 extended cause/request namespace tests; pure units are not PG proof",
+        "migration": "1072 unique; published migrations untouched",
+        "diff": "PASS staged and unstaged",
+        "generated": "No content/native/world inputs changed; existing a36 pin unchanged"
       }
     }
   },
