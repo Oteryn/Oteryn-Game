@@ -999,3 +999,16 @@ immutable publication/metadata and conflict refusal. Corpse-generation projectio
 unit PASS0.016s independently rejects foreign frame/scope and stale fields.
 Source comments/captures retain donor file:line evidence; no fixture profile,
 source probability, geometry, ownership or current-fence guard was relaxed.
+
+## W17 native arena cadence checkpoint
+
+Real qualified B3 hall/irregular connected arena wave PASS110.382s; timely
+native defeat observed after deadline PASS47.429s. Raffle source combat.md:284
+now awards exactly20% of remaining participants: actual320participant native
+case PASS47.233s with20ranked+60raffle winners, after RED70total/50raffle.
+The engine's actual native corpse/effects reservation edge observed RED49.265s
+and its one-time clear credit is implemented; focused GREEN is running. Auction
+cutoff/three-wave catch-up baselines are running with normal guard-preserving
+fixtures. No numeric command/capability/migration allocations in this engine step.
+The production library compiled in the Game-server PG target; pending edge-case
+qualification and genuine Drome-exclusive profile/scaling data keep W17 WIP.

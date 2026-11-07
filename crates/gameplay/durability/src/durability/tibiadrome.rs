@@ -287,10 +287,11 @@ pub(super) async fn publish(
     };
     // oteryn-choice: epoch-aligned fortnight boundaries and UUID final tie-break keep
     // rotation/replay deterministic where the captured sources do not specify an anchor.
-    // Finalize one indexed rotation, at most 20 ranked winners and 50 raffle winners.
+    // Manual combat.md:284: twenty ranked winners and exactly one fifth of
+    // all remaining participants; a large rotation must not truncate that share.
     // oteryn-choice: a stable exponential-race draw implements weighted sampling
     // without replacement; capacity refusals and repeat reads never reroll a prize.
-    sqlx::query("WITH ranked AS (SELECT world_id,rotation,character_id,level,row_number() OVER(ORDER BY level DESC,experience,character_id) AS rank FROM game_tibiadrome_scores WHERE world_id=encode($1,'hex')::uuid AND rotation=$2), top AS (SELECT * FROM ranked WHERE rank<=20 ORDER BY rank LIMIT 20), raffle AS (SELECT * FROM ranked WHERE rank>20 ORDER BY -ln((('x'||substr(md5(character_id::text||rotation::text),1,8))::bit(32)::bigint+1)::double precision/4294967297.0)/level,character_id LIMIT LEAST(50,(SELECT count(*)/5 FROM ranked WHERE rank>20))) INSERT INTO game_tibiadrome_awards(world_id,rotation,character_id,rank,potions) SELECT world_id,rotation,character_id,rank,CASE WHEN rank<=5 THEN 3 WHEN rank<=10 THEN 2 ELSE 1 END FROM top UNION ALL SELECT world_id,rotation,character_id,rank,1 FROM raffle ON CONFLICT DO NOTHING")
+    sqlx::query("WITH ranked AS (SELECT world_id,rotation,character_id,level,row_number() OVER(ORDER BY level DESC,experience,character_id) AS rank FROM game_tibiadrome_scores WHERE world_id=encode($1,'hex')::uuid AND rotation=$2), top AS (SELECT * FROM ranked WHERE rank<=20 ORDER BY rank LIMIT 20), raffle AS (SELECT * FROM ranked WHERE rank>20 ORDER BY -ln((('x'||substr(md5(character_id::text||rotation::text),1,8))::bit(32)::bigint+1)::double precision/4294967297.0)/level,character_id LIMIT (SELECT count(*)/5 FROM ranked WHERE rank>20)) INSERT INTO game_tibiadrome_awards(world_id,rotation,character_id,rank,potions) SELECT world_id,rotation,character_id,rank,CASE WHEN rank<=5 THEN 3 WHEN rank<=10 THEN 2 ELSE 1 END FROM top UNION ALL SELECT world_id,rotation,character_id,rank,1 FROM raffle ON CONFLICT DO NOTHING")
         .bind(world.as_slice()).bind(pending).execute(&mut **tx).await?;
     sqlx::query("INSERT INTO game_tibiadrome_rotations(world_id,rotation) VALUES(encode($1,'hex')::uuid,$2)").bind(world.as_slice()).bind(pending).execute(&mut **tx).await?;
     Ok(())

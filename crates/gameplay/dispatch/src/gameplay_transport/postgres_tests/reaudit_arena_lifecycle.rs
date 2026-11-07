@@ -3,6 +3,11 @@ use super::TestResult;
 use super::arena_match::fixture;
 use super::fixture::Harness;
 
+#[path = "reaudit_arena_lifecycle/auction.rs"]
+mod auction_history;
+#[path = "reaudit_arena_lifecycle/source.rs"]
+mod source_map;
+
 #[test]
 fn reaudit_arena_lifecycle() -> TestResult {
     // Existing command 436, additive action 6, Drome operation 1 (status).
@@ -22,7 +27,7 @@ fn reaudit_arena_lifecycle_postgres_rotation_rank_rewards_and_replay() -> TestRe
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "Drome regression thread panicked")??;
     eprintln!(
@@ -31,7 +36,43 @@ fn reaudit_arena_lifecycle_postgres_rotation_rank_rewards_and_replay() -> TestRe
     );
     Ok(())
 }
-fn scenario() -> TestResult {
+#[test]
+fn srvenc_tibiadrome_postgres_raffle_awards_one_fifth_of_large_rotation() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(true, false).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "Drome raffle thread panicked")??;
+    eprintln!(
+        "SRVENC POSTGRES_CASE_COMPLETED exact_large_rotation_raffle duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
+}
+
+#[test]
+fn srvenc_tibiadrome_postgres_auction_excludes_standing_and_expired_rewards() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(false, true).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "Drome auction thread panicked")??;
+    eprintln!(
+        "SRVENC POSTGRES_CASE_COMPLETED auction_standing_and_rotation_forfeiture duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
+}
+
+fn scenario(large_rotation: bool, auction: bool) -> TestResult {
     use super::fixture::{Harness, debug, id, run};
     use super::{Dependencies, prepare_current_session};
     use crate::durability::tibiadrome::{Progress, ROTATION_SECONDS, Record};
@@ -39,7 +80,19 @@ fn scenario() -> TestResult {
     use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
     use oteryn_protocol_oteryn::arena::{self as wire, ArenaAction, DromeAction};
     run(async |admin| {
-        let harness = Harness::create_with_admission_seed(admin, "b22_drome", false, false).await?;
+        let harness =
+            Harness::create_with_admission_seed(admin, "b22_drome", auction, false).await?;
+        if auction {
+            // Accepted historical authority facts precede admission and its
+            // recovery seal; every root revision is advanced by normal guards.
+            let cut: i64 = sqlx::query_scalar(
+                "SELECT floor(extract(epoch FROM clock_timestamp()))::bigint / 1209600 * 1209600",
+            )
+            .fetch_one(&harness.pool)
+            .await?;
+            auction_history::transition(&harness.pool, &id(41), 2, cut - 1).await?;
+            auction_history::transition(&harness.pool, &id(41), 1, cut).await?;
+        }
         super::reset();
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -157,14 +210,50 @@ fn scenario() -> TestResult {
         // A concurrent participant may hold its current root while the previous
         // rotation is published. Award FKs must lock its committed score, not that root.
         let mut seed = harness.pool.begin().await?;
-        sqlx::query("SET LOCAL session_replication_role=replica")
-            .execute(&mut *seed)
-            .await?;
-        sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) SELECT encode($2,'hex')::uuid,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,'Drome Other' FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
-            .bind(id(41).as_slice()).bind(id(92).as_slice()).execute(&mut *seed).await?;
+        if auction {
+            // Synthetic ranking subject, not a bootstrap/admission producer:
+            // initial root/progression revision one uses every normal SQL guard.
+            sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) SELECT encode($2,'hex')::uuid,account_id,world_id,1,1,profile_revision,ruleset_revision,content_revision,starter_template_revision,'Drome Other' FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                .bind(id(41).as_slice()).bind(id(92).as_slice()).execute(&mut *seed).await?;
+            sqlx::query("INSERT INTO game_character_progression_state SELECT (jsonb_populate_record(NULL::game_character_progression_state,to_jsonb(p)||jsonb_build_object('character_id',encode($2,'hex')::uuid,'character_revision',1))).* FROM game_character_progression_state p WHERE p.character_id=encode($1,'hex')::uuid")
+                .bind(id(41).as_slice()).bind(id(92).as_slice()).execute(&mut *seed).await?;
+        } else {
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *seed)
+                .await?;
+            sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) SELECT encode($2,'hex')::uuid,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,'Drome Other' FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                .bind(id(41).as_slice()).bind(id(92).as_slice()).execute(&mut *seed).await?;
+        }
         sqlx::query("INSERT INTO game_tibiadrome_scores(world_id,rotation,character_id,level,experience) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,25,2000)")
             .bind(id(42).as_slice()).bind(i64::from(rotation-1)).bind(id(92).as_slice()).execute(&mut *seed).await?;
+        if large_rotation {
+            // Manual combat.md:284: 320 participants leave 300 beyond the
+            // ranked twenty; exactly 60 receive weighted raffle potions.
+            // Give each additional participant a real UUIDv7 account guard.
+            sqlx::query("INSERT INTO game_character_account_guards(account_id) SELECT ('10000000-0000-7000-8000-'||lpad(n::text,12,'0'))::uuid FROM generate_series(1,318) AS sample(n)")
+                .execute(&mut *seed).await?;
+            sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) SELECT ('20000000-0000-7000-8000-'||lpad(n::text,12,'0'))::uuid,('10000000-0000-7000-8000-'||lpad(n::text,12,'0'))::uuid,r.world_id,r.lifecycle,r.character_revision,r.profile_revision,r.ruleset_revision,r.content_revision,r.starter_template_revision,'Drome Raffle '||chr(65+(n-1)/26)||chr(65+(n-1)%26) FROM game_character_roots r CROSS JOIN generate_series(1,318) AS sample(n) WHERE r.character_id=encode($1,'hex')::uuid")
+                .bind(id(41).as_slice()).execute(&mut *seed).await?;
+            sqlx::query("INSERT INTO game_tibiadrome_scores(world_id,rotation,character_id,level,experience) SELECT encode($1,'hex')::uuid,$2,('20000000-0000-7000-8000-'||lpad(n::text,12,'0'))::uuid,25,10000+n FROM generate_series(1,318) AS sample(n)")
+                .bind(id(42).as_slice()).bind(i64::from(rotation-1)).execute(&mut *seed).await?;
+        }
+        if auction {
+            // Manual combat.md:263: the Character was locked at the old
+            // rotation boundary, then unlocked before this real native read.
+            // The other Character remains auction-locked in the current list.
+            sqlx::query("INSERT INTO game_tibiadrome_scores(world_id,rotation,character_id,level,experience) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,25,1234),(encode($1,'hex')::uuid,$2,encode($4,'hex')::uuid,50,2000)")
+                .bind(id(42).as_slice()).bind(i64::from(rotation)).bind(id(41).as_slice()).bind(id(92).as_slice()).execute(&mut *seed).await?;
+        }
         seed.commit().await?;
+        if auction {
+            auction_history::transition(
+                &harness.pool,
+                &id(92),
+                2,
+                i64::from(rotation) * i64::from(ROTATION_SECONDS) - 1,
+            )
+            .await?;
+        }
         let mut concurrent = harness.pool.begin().await?;
         sqlx::query("SELECT character_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE").bind(id(92).as_slice()).execute(&mut *concurrent).await?;
         let next_id = admitted.continuity.next_command_id;
@@ -178,12 +267,35 @@ fn scenario() -> TestResult {
         .await?;
         concurrent.rollback().await?;
         let result = wire::DromeResult::decode(&rotated).map_err(debug)?;
+        if auction {
+            assert_eq!(
+                (result.rank, result.points, result.potions),
+                (1, 0, 0),
+                "current auction standings exclude the locked rival; expired locked rotation forfeits points and prizes even after unlock"
+            );
+            let awards:i64=sqlx::query_scalar("SELECT count(*) FROM game_tibiadrome_awards WHERE world_id=encode($1,'hex')::uuid AND rotation=$2")
+                .bind(id(42).as_slice()).bind(i64::from(rotation-1)).fetch_one(&harness.pool).await?;
+            assert_eq!(
+                awards, 0,
+                "neither Character was eligible when the prior rotation ended"
+            );
+            return Ok(());
+        }
         assert_eq!(
             (result.level, result.start, result.points, result.potions),
             (0, 20, 250, 3)
         );
         let award:(i64,i32)=sqlx::query_as("SELECT rank,potions FROM game_tibiadrome_awards WHERE character_id=encode($1,'hex')::uuid AND rotation=$2").bind(id(41).as_slice()).bind(i64::from(rotation-1)).fetch_one(&harness.pool).await?;
         assert_eq!(award, (1, 3));
+        if large_rotation {
+            let counts: (i64,i64) = sqlx::query_as("SELECT count(*),count(*) FILTER(WHERE rank>20) FROM game_tibiadrome_awards WHERE world_id=encode($1,'hex')::uuid AND rotation=$2")
+                .bind(id(42).as_slice()).bind(i64::from(rotation-1)).fetch_one(&harness.pool).await?;
+            assert_eq!(
+                counts,
+                (80, 60),
+                "20 ranked winners plus exactly 20% of the other 300 participants"
+            );
+        }
         super::item_look::seed_main_backpack(&harness, &[]).await?;
         let claim = wire::encode_match_request(ArenaAction::Drome(DromeAction::ClaimPotion))
             .map_err(debug)?;
@@ -221,6 +333,14 @@ fn scenario() -> TestResult {
             250,
             "rotation points are paid exactly once"
         );
+        if large_rotation {
+            let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_tibiadrome_awards WHERE world_id=encode($1,'hex')::uuid AND rotation=$2")
+                .bind(id(42).as_slice()).bind(i64::from(rotation-1)).fetch_one(&harness.pool).await?;
+            assert_eq!(
+                count, 80,
+                "repeated native reads cannot allocate a second raffle"
+            );
+        }
         let fence = owner
             .current_quest_fence(admitted.game_session_id)
             .await
@@ -288,7 +408,7 @@ fn reaudit_arena_lifecycle_postgres_real_wave_and_exempt_death() -> TestResult {
     let start = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| physical(false, false).map_err(|e| e.to_string()))?
+        .spawn(|| physical(Physical::Standard).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "Drome physical thread panicked")??;
     eprintln!(
@@ -305,10 +425,13 @@ fn srvenc_tibiadrome_postgres_exploding_corpse_hits_current_health_once() -> Tes
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| physical(true, false).map_err(|error| error.to_string()))?
+        .spawn(|| physical(Physical::Exploding).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "Drome modifier thread panicked")??;
-    eprintln!("SRVENC POSTGRES_CASE_COMPLETED exploding_corpse_once duration={:?}", started.elapsed());
+    eprintln!(
+        "SRVENC POSTGRES_CASE_COMPLETED exploding_corpse_once duration={:?}",
+        started.elapsed()
+    );
     Ok(())
 }
 
@@ -320,14 +443,69 @@ fn srvenc_tibiadrome_postgres_grace_expiry_clears_temporary_status_before_save()
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| physical(false, true).map_err(|error| error.to_string()))?
+        .spawn(|| physical(Physical::Grace).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "Drome grace thread panicked")??;
-    eprintln!("SRVENC POSTGRES_CASE_COMPLETED drome_grace_cleanup duration={:?}", started.elapsed());
+    eprintln!(
+        "SRVENC POSTGRES_CASE_COMPLETED drome_grace_cleanup duration={:?}",
+        started.elapsed()
+    );
     Ok(())
 }
 
-fn physical(exploding: bool, grace: bool) -> TestResult {
+#[derive(Clone, Copy)]
+enum Physical {
+    Standard,
+    Exploding,
+    Grace,
+    Source,
+    DelayedObservation,
+    PendingCorpseEffects,
+    ThreeWaveCommandCatchup,
+}
+
+#[test]
+fn srvenc_tibiadrome_postgres_real_source_hall_runs_an_irregular_native_wave() -> TestResult {
+    run_physical_regression(Physical::Source)
+}
+
+#[test]
+fn srvenc_tibiadrome_postgres_native_kills_before_deadline_survive_delayed_observation()
+-> TestResult {
+    run_physical_regression(Physical::DelayedObservation)
+}
+
+#[test]
+fn srvenc_tibiadrome_postgres_native_victory_credits_before_reserved_corpse_effects() -> TestResult
+{
+    run_physical_regression(Physical::PendingCorpseEffects)
+}
+
+#[test]
+fn srvenc_tibiadrome_postgres_three_native_waves_command_catchup_counts_each_once() -> TestResult {
+    run_physical_regression(Physical::ThreeWaveCommandCatchup)
+}
+
+fn run_physical_regression(case: Physical) -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(move || physical(case).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "Drome source/deadline thread panicked")??;
+    eprintln!(
+        "SRVENC POSTGRES_CASE_COMPLETED native_source_or_deadline duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
+}
+
+fn physical(case: Physical) -> TestResult {
+    let exploding = matches!(case, Physical::Exploding | Physical::PendingCorpseEffects);
+    let grace = matches!(case, Physical::Grace);
     use super::fixture::{debug, id, run};
     use super::{Dependencies, prepare_current_session};
     use crate::durability::character_progression::{
@@ -357,34 +535,42 @@ fn physical(exploding: bool, grace: bool) -> TestResult {
         )?;
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
-        let (bytes, pins) = fixture::bundle(native)?;
-        let base = crate::map::load(&bytes, &pins).map_err(debug)?;
-        let world = crate::map::boot::boot(
-            &bytes,
-            &crate::map::boot::BootPins {
-                bundle: pins,
-                map_revision: crate::map::overlay::map_revision(&base),
-                start: crate::map::overlay::TilePos {
-                    x: 32251,
-                    y: 31098,
-                    floor: -6,
+        let world = if matches!(case, Physical::Source) {
+            source_map::world(deps.admitted.world_id, deps.admitted.channel_id, native)?
+        } else {
+            let (bytes, pins) = fixture::bundle(native)?;
+            let base = crate::map::load(&bytes, &pins).map_err(debug)?;
+            crate::map::boot::boot(
+                &bytes,
+                &crate::map::boot::BootPins {
+                    bundle: pins,
+                    map_revision: crate::map::overlay::map_revision(&base),
+                    start: crate::map::overlay::TilePos {
+                        x: 32251,
+                        y: 31098,
+                        floor: -6,
+                    },
                 },
-            },
-            deps.admitted.world_id,
-            deps.admitted.channel_id,
-            |key| {
-                let index = native.item_index()?;
-                Some(crate::map::facts::ItemDefinition {
-                    reference: index.definition_ref("Item", key, "definition-r1")?,
-                    solid: Some(false),
-                    blocks_projectile: false,
-                    pickupable: false,
-                    door: false,
-                })
-            },
-        )
-        .map_err(debug)?;
-        fixture::runtime(&mut deps, active, &pin, &world)?;
+                deps.admitted.world_id,
+                deps.admitted.channel_id,
+                |key| {
+                    let index = native.item_index()?;
+                    Some(crate::map::facts::ItemDefinition {
+                        reference: index.definition_ref("Item", key, "definition-r1")?,
+                        solid: Some(false),
+                        blocks_projectile: false,
+                        pickupable: false,
+                        door: false,
+                    })
+                },
+            )
+            .map_err(debug)?
+        };
+        if matches!(case, Physical::Source) {
+            fixture::runtime_at(&mut deps, active, &pin, &world, source_map::ENTRY)?;
+        } else {
+            fixture::runtime(&mut deps, active, &pin, &world)?;
+        }
         let cells = world
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
@@ -575,18 +761,37 @@ fn physical(exploding: bool, grace: bool) -> TestResult {
                 .collect()
         };
         assert_eq!(targets.len(), 4);
+        if matches!(case, Physical::ThreeWaveCommandCatchup) {
+            owner.states.tibiadrome.test_somersault(session)?;
+        }
         if exploding {
             owner.states.tibiadrome.test_exploding_corpses(session)?;
             let mut runtime = deps.runtime.lock().await;
             let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
             let origin = before.position();
             let other = crate::foundation::GameSessionId::decode(&id(94)).map_err(debug)?;
-            assert!(runtime.return_tibiadrome_player(deps.actor, other, before, origin).is_err(),
-                "a terminal arena return cannot borrow another session");
-            assert_eq!(runtime.read_actor_position(deps.actor).map_err(debug)?.position(), origin);
-            runtime.relocate_arena_player(deps.actor, session, before, origin).map_err(debug)?;
-            assert!(runtime.return_tibiadrome_player(deps.actor, session, before, origin).is_err(),
-                "a terminal arena return compares the current position revision");
+            assert!(
+                runtime
+                    .return_tibiadrome_player(deps.actor, other, before, origin)
+                    .is_err(),
+                "a terminal arena return cannot borrow another session"
+            );
+            assert_eq!(
+                runtime
+                    .read_actor_position(deps.actor)
+                    .map_err(debug)?
+                    .position(),
+                origin
+            );
+            runtime
+                .relocate_arena_player(deps.actor, session, before, origin)
+                .map_err(debug)?;
+            assert!(
+                runtime
+                    .return_tibiadrome_player(deps.actor, session, before, origin)
+                    .is_err(),
+                "a terminal arena return compares the current position revision"
+            );
             assert!(runtime.is_tibiadrome(deps.actor));
         }
         {
@@ -643,24 +848,145 @@ fn physical(exploding: bool, grace: bool) -> TestResult {
             );
             runtime.remove_test_actor(outsider).map_err(debug)?;
         }
+        let defeated_targets = targets.clone();
         for (index, target) in targets.into_iter().enumerate() {
             fixture::fight(&mut owner, &mut admitted, deps.actor, target).await?;
             if exploding && index == 0 {
                 let mut runtime = deps.runtime.lock().await;
-                let (_, corpse) = runtime.borrow_combat_death().projected_death(target).map_err(debug)?;
+                let (_, corpse) = runtime
+                    .borrow_combat_death()
+                    .projected_death(target)
+                    .map_err(debug)?;
                 let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
-                runtime.relocate_arena_player(deps.actor, session, before, corpse).map_err(debug)?;
-                let health = owner.states.spell_states.lock().await
-                    .get(&runtime, deps.actor, session).ok_or("Drome participant")?.vitals().health;
+                runtime
+                    .relocate_arena_player(deps.actor, session, before, corpse)
+                    .map_err(debug)?;
+                let health = owner
+                    .states
+                    .spell_states
+                    .lock()
+                    .await
+                    .get(&runtime, deps.actor, session)
+                    .ok_or("Drome participant")?
+                    .vitals()
+                    .health;
                 crate::gameplay_transport::tibiadrome::tick(&owner, &mut runtime);
-                let after = owner.states.spell_states.lock().await
-                    .get(&runtime, deps.actor, session).ok_or("Drome participant")?.vitals().health;
-                assert_eq!(after, health - health / 4, "Exploding Corpses takes 25% of CURRENT health");
+                let after = owner
+                    .states
+                    .spell_states
+                    .lock()
+                    .await
+                    .get(&runtime, deps.actor, session)
+                    .ok_or("Drome participant")?
+                    .vitals()
+                    .health;
+                assert_eq!(
+                    after,
+                    health - health / 4,
+                    "Exploding Corpses takes 25% of CURRENT health"
+                );
                 crate::gameplay_transport::tibiadrome::tick(&owner, &mut runtime);
-                assert_eq!(owner.states.spell_states.lock().await
-                    .get(&runtime, deps.actor, session).ok_or("Drome participant")?.vitals().health,
-                    after, "a retained native death cannot explode twice");
+                assert_eq!(
+                    owner
+                        .states
+                        .spell_states
+                        .lock()
+                        .await
+                        .get(&runtime, deps.actor, session)
+                        .ok_or("Drome participant")?
+                        .vitals()
+                        .health,
+                    after,
+                    "a retained native death cannot explode twice"
+                );
             }
+        }
+        if matches!(case, Physical::ThreeWaveCommandCatchup) {
+            // Manual combat.md:264: each of three actual waves increases the
+            // starting level once even when command settlement catches up later.
+            for wave in 2_u32..=3 {
+                let observed = std::time::Instant::now()
+                    + std::time::Duration::from_secs(u64::from(wave) * 20);
+                let targets: Vec<_> = {
+                    let mut runtime = deps.runtime.lock().await;
+                    crate::gameplay_transport::tibiadrome::tick_at(&owner, &mut runtime, observed);
+                    crate::gameplay_transport::tibiadrome::tick_at(
+                        &owner,
+                        &mut runtime,
+                        observed + std::time::Duration::from_secs(9),
+                    );
+                    runtime
+                        .visible_entities()
+                        .creatures
+                        .iter()
+                        .filter(|creature| runtime.is_tibiadrome(creature.actor))
+                        .map(|creature| creature.actor)
+                        .collect()
+                };
+                assert_eq!(targets.len(), 4, "native next-wave spawning");
+                owner.states.tibiadrome.test_somersault(session)?;
+                for target in targets {
+                    fixture::fight(&mut owner, &mut admitted, deps.actor, target).await?;
+                }
+            }
+            {
+                let mut runtime = deps.runtime.lock().await;
+                crate::gameplay_transport::tibiadrome::tick_at(
+                    &owner,
+                    &mut runtime,
+                    std::time::Instant::now() + std::time::Duration::from_secs(80),
+                );
+            }
+            // Deliberately use the real native command before drome_sync, so
+            // its separate catch-up owner must observe all three native clears.
+            let caught_up = drome_exchange(
+                &owner,
+                &mut admitted,
+                oteryn_protocol_oteryn::arena::DromeAction::Status,
+            )
+            .await?;
+            assert_eq!(
+                (caught_up.level, caught_up.start),
+                (3, 3),
+                "three native victories grant three starting levels, not five"
+            );
+            let waves:i64=sqlx::query_scalar("SELECT (body->'progress'->>'waves')::bigint FROM game_character_tibiadrome WHERE character_id=encode($1,'hex')::uuid")
+                .bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(waves, 3);
+        }
+        if matches!(case, Physical::PendingCorpseEffects) {
+            // Manual combat.md:255,264: native defeat earns the wave even
+            // while the canonical HP owner temporarily reserves corpse effects.
+            let reserved = owner.states.spell_states.lock().await;
+            for _ in 0..2 {
+                assert!(owner.drome_sync(session, false).await);
+                let progress: (i64,i64) = sqlx::query_as("SELECT (body->'progress'->>'level')::bigint,(body->'progress'->>'waves')::bigint FROM game_character_tibiadrome WHERE character_id=encode($1,'hex')::uuid")
+                    .bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
+                assert_eq!(
+                    progress,
+                    (1, 1),
+                    "one native victory must settle once before corpse effects can acquire their owner"
+                );
+                let runtime = deps.runtime.lock().await;
+                assert!(
+                    defeated_targets
+                        .iter()
+                        .all(|target| runtime.read_actor_position(*target).is_ok()),
+                    "retain corpse actors until their effects resolve; do not advance physical spawning"
+                );
+            }
+            drop(reserved);
+        }
+        if matches!(case, Physical::DelayedObservation) {
+            // Native lethal receipts retain their real owner timestamps; only
+            // the observer is delayed past this wave's 120-second deadline.
+            owner.clock_origin -= std::time::Duration::from_secs(121);
+            let mut runtime = deps.runtime.lock().await;
+            crate::gameplay_transport::tibiadrome::tick_at(
+                &owner,
+                &mut runtime,
+                std::time::Instant::now() + std::time::Duration::from_secs(131),
+            );
         }
         assert!(owner.drome_sync(session, false).await);
         let status = drome_exchange(
@@ -669,7 +995,12 @@ fn physical(exploding: bool, grace: bool) -> TestResult {
             oteryn_protocol_oteryn::arena::DromeAction::Status,
         )
         .await?;
-        assert_eq!((status.level, status.start), (1, 1));
+        let expected = if matches!(case, Physical::ThreeWaveCommandCatchup) {
+            3
+        } else {
+            1
+        };
+        assert_eq!((status.level, status.start), (expected, expected));
         assert_eq!(
             owner
                 .root
@@ -687,22 +1018,50 @@ fn physical(exploding: bool, grace: bool) -> TestResult {
             {
                 let runtime = deps.runtime.lock().await;
                 let mut states = owner.states.spell_states.lock().await;
-                let next = states.get(&runtime, deps.actor, session).ok_or("Drome player")?
-                    .try_after_drome_status(crate::spell::cast::DromeStatus::Root, owner.owner_now().get())
+                let next = states
+                    .get(&runtime, deps.actor, session)
+                    .ok_or("Drome player")?
+                    .try_after_drome_status(
+                        crate::spell::cast::DromeStatus::Root,
+                        owner.owner_now().get(),
+                    )
                     .map_err(debug)?;
                 assert!(states.commit(&runtime, deps.actor, session, next));
             }
-            let deadline: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint-1")
-                .fetch_one(&harness.pool).await?;
+            let deadline: i64 =
+                sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint-1")
+                    .fetch_one(&harness.pool)
+                    .await?;
             sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=1,current_transport_ref=NULL,control_loss_epoch=1,predecessor_generation=current_generation,original_grace_deadline=$1 WHERE game_session_id=encode($2,'hex')::uuid")
                 .bind(deadline).bind(session.as_bytes().as_slice()).execute(&harness.pool).await?;
-            deps.runtime.lock().await.record_control_loss(deps.actor, session,
-                crate::foundation::ControlLossMark { epoch: 1, grace_deadline: deadline }).map_err(debug)?;
-            assert_eq!(tokio::time::timeout(std::time::Duration::from_secs(10), owner.release_after_grace(admitted)).await?,
-                crate::gameplay_transport::connection::GraceExpiryResult::Released);
+            deps.runtime
+                .lock()
+                .await
+                .record_control_loss(
+                    deps.actor,
+                    session,
+                    crate::foundation::ControlLossMark {
+                        epoch: 1,
+                        grace_deadline: deadline,
+                    },
+                )
+                .map_err(debug)?;
+            assert_eq!(
+                tokio::time::timeout(
+                    std::time::Duration::from_secs(10),
+                    owner.release_after_grace(admitted)
+                )
+                .await?,
+                crate::gameplay_transport::connection::GraceExpiryResult::Released
+            );
             let snapshot: Option<serde_json::Value> = sqlx::query_scalar("SELECT snapshot FROM game_character_condition_snapshots WHERE character_id=encode($1,'hex')::uuid")
                 .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&harness.pool).await?;
-            assert!(!snapshot.as_ref().is_some_and(|snapshot| snapshot.to_string().contains("drome.")), "temporary Drome effects must not survive grace expiry");
+            assert!(
+                !snapshot
+                    .as_ref()
+                    .is_some_and(|snapshot| snapshot.to_string().contains("drome.")),
+                "temporary Drome effects must not survive grace expiry"
+            );
             let stored: serde_json::Value = sqlx::query_scalar("SELECT body FROM game_character_tibiadrome WHERE character_id=encode($1,'hex')::uuid")
                 .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&harness.pool).await?;
             assert_eq!(stored.get("active"), Some(&serde_json::Value::Bool(false)));

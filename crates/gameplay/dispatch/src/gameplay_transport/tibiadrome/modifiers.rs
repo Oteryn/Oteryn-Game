@@ -183,27 +183,13 @@ fn candidates(
     sequence: u64,
 ) -> Vec<MovementLocalPosition> {
     let mut cells = Vec::new();
-    for y in -6..=6 {
-        for x in -6..=6 {
-            let Some(x) = center.x.checked_add(x) else {
-                continue;
-            };
-            let Some(y) = center.y.checked_add(y) else {
-                continue;
-            };
-            let at = MovementLocalPosition {
-                x,
-                y,
-                floor: center.floor,
-            };
-            if walkable(owner, runtime, at) {
-                let mut hash = Sha256::new();
-                hash.update(draw(run, wave, sequence, 1));
-                hash.update(x.to_be_bytes());
-                hash.update(y.to_be_bytes());
-                cells.push((<[u8; 32]>::from(hash.finalize()), at));
-            }
-        }
+    let seed = draw(run, wave, sequence, 1);
+    for at in battle_cells(owner, runtime, center) {
+        let mut hash = Sha256::new();
+        hash.update(seed);
+        hash.update(at.x.to_be_bytes());
+        hash.update(at.y.to_be_bytes());
+        cells.push((<[u8; 32]>::from(hash.finalize()), at));
     }
     cells.sort_by_key(|(key, _)| *key);
     cells.into_iter().map(|(_, cell)| cell).collect()
@@ -454,6 +440,7 @@ pub(in crate::gameplay_transport) fn somersault(
                 *session.as_bytes(),
             )
         })?;
+    let area = battle_cells(owner, runtime, battle.center);
     let destination = (-1..=1)
         .flat_map(|dy| (-1..=1).map(move |dx| (dx, dy)))
         .filter(|(dx, dy)| *dx != 0 || *dy != 0)
@@ -464,12 +451,7 @@ pub(in crate::gameplay_transport) fn somersault(
                 floor: farthest.floor,
             })
         })
-        .find(|at| {
-            at.x.abs_diff(battle.center.x) <= 6
-                && at.y.abs_diff(battle.center.y) <= 6
-                && walkable(owner, runtime, *at)
-                && runtime.native_summon_cell_free(*at)
-        })?;
+        .find(|at| area.contains(at) && runtime.native_summon_cell_free(*at))?;
     runtime
         .relocate_tibiadrome_opponent(actor, before, destination)
         .ok()?;
