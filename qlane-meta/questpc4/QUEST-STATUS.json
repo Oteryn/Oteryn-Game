@@ -6369,7 +6369,7 @@
       "remote_verified": true
     },
     "room_raise_batch_19": {
-      "status": "COMPILED_PG_GREEN_WIP_CHECKPOINT",
+      "status": "GREEN_READY_TO_FF_PUSH",
       "previous_pushed_head": "ce3d18208a008b9826b1f03407dfcd5688d74e4d",
       "scope": "Reusable monotone source room progress; five PG fixture cases lower/equal/higher/refusal/i64MAX+replay",
       "source_contract": "CONTRACT-NOTES.md batch19, exact retainedblob hashes/lines and primary frozen evidence distinguished",
@@ -6450,8 +6450,16 @@
         "fmt": "PASS",
         "check": "PASS quests/durability/dispatch alltargets/allfeatures6m53s includes buildlock wait",
         "frozen_hashes": "PASS1pureunit1.41s publishedungated baseline",
-        "final_clippy_source_security": "PENDING running32344"
-      }
+        "final_clippy_source_security": {
+          "clippy": "PASS3crates alltargets/features -Dwarnings3m13s",
+          "old_ancient_tests": "5passed0failed2.60s unchangedassertions",
+          "new_room_source": "1passed0failed1.30s",
+          "admission_security": "3passed0failed0.02s",
+          "duplicates_diff": "PASS",
+          "frozen_hash": "1passed0failed1.41s"
+        }
+      },
+      "compiled_green_checkpoint_pushed_head": "33f14e21daf5881760e76e2e19abccea447fbfaf"
     },
     "migration_registry_batch_20": {
       "status": "AUDITED_PENDING_RENUMBER",
