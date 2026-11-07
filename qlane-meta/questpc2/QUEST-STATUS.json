@@ -4,8 +4,8 @@
   "scope": "Only qlane-meta/questpc2/LANE-L3.json; whole-quest qualification, with inherited Primal shared-mechanism regression.",
   "lifecycle": "AUTHORING",
   "counts": {
-    "qualified": 2,
-    "unfinished": 27,
+    "qualified": 3,
+    "unfinished": 26,
     "blocked": 0,
     "skipped_other_lane": 6,
     "owned_total": 29
@@ -383,8 +383,7 @@
       "canonical": "oteryn:quest.authored.elvenbane_quest",
       "title": "Elvenbane Quest",
       "mechanism": "native_source_origin_personal_kill_goals",
-      "status": "UNFINISHED",
-      "blocker": "Full source route, six native wire kills, four treasure roots/two filled bags/five nested children, replay, earned exit and actual journal list/line are PG GREEN150.647s. Remaining canonical authoring/native-admission metadata reconciliation; no missing engine feature.",
+      "status": "QUALIFIED",
       "source_lane_checks": [
         {
           "lane": "questpc",
@@ -429,7 +428,16 @@
         "world_digest": "56275a3ba06db4611a016821d1c0194c261e320ef983fcb215631911b56bc306",
         "batch": "BATCH-native-carpet-reachability-2026-11-07.json"
       },
-      "runtime_pg_proof": "BATCH-main-3020-integration-2026-11-07.json"
+      "runtime_pg_proof": "BATCH-main-3020-integration-2026-11-07.json",
+      "qualification": {
+        "code_head": "23852002b803e2d01021518c146b503d91f4c625",
+        "postgres_case": "elvenbane_source_treasure_exit_and_journal_via_wire",
+        "duration_seconds": 150.647,
+        "postgres_version_num": 180006,
+        "proof": "BATCH-main-3020-integration-2026-11-07.json",
+        "scope": "Chosen personal Elvenbane route: actual source basement/poison/stairs/ladder, six earned native wire kills, capped progression, all four exact source treasure roots/two filled bags/five nested children, custody/replay/capacity guards, earned source exit and actual completed journal list/line.",
+        "metadata_reconciliation": "authored_quest_authoring.py:86-99 deliberately emits data-only recipes with runtime_enabled=false; these frozen SOURCE receipts are not runtime gates. The production loader extends the native catalogue and callbacks independently, exercised by the published PG case."
+      }
     },
     {
       "canonical": "oteryn:quest.forgotten_knowledge_quest",
@@ -1749,12 +1757,11 @@
     }
   },
   "current_batch": {
-    "id": "elvenbane-native-defender-goals-2026-11-07",
-    "state": "OWNER_STOP_HANDOFF_MERGED_VALIDATION_PENDING",
-    "record": "BATCH-elvenbane-native-defender-goals-2026-11-07.json",
-    "last_green_commit": "5d7d8a330",
-    "next": "Owner STOP: replacement r2 continues. Preserve verified native goal/corpse/loot work, merge published atomic continuation and hand off without further implementation.",
-    "incoming_sha": "86c4c6be71cf4d24aa6ca0ae7525479d5b5feddf"
+    "id": "empty-source-corpse-capacity-2026-11-07",
+    "state": "GREEN_READY_TO_PUBLISH",
+    "record": "BATCH-empty-source-corpse-capacity-2026-11-07.json",
+    "previous_pushed_head": "23852002b803e2d01021518c146b503d91f4c625",
+    "scope": "Restore source Spite48-slot empty physical corpse; preserve strict private/ordinary capacity and all existing PG assertions. Record Elvenbane qualification from published native route proof."
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
@@ -1777,14 +1784,20 @@
     "BATCH-desert-source-gate-and-earned-rewards-2026-11-07.json",
     "BATCH-annihilator-complete-source-route-2026-11-07.json",
     "BATCH-native-kill-objective-guards-2026-11-07.json",
-    "BATCH-main-3020-integration-2026-11-07.json"
+    "BATCH-main-3020-integration-2026-11-07.json",
+    "BATCH-empty-source-corpse-capacity-2026-11-07.json"
   ],
   "next_batch": {
-    "quest": "oteryn:quest.authored.elvenbane_quest",
+    "quests": [
+      "oteryn:quest.rotten_blood_quest",
+      "oteryn:quest.soul_war_quest"
+    ],
     "state": "AUTHORING",
     "work_owner": "questpc2",
-    "external_dependencies_to_wait_for": [],
-    "task": "Continuous actual native tower route: source basement/poison/Dragon/five defenders, personal reward bundle and replay. Reuse carrier capture and native XP audit; qualify only after positive whole-route PG proof."
+    "external_dependencies_to_wait_for": [
+      "QENGINE2 source boss template hooks/summons/reward closure request"
+    ],
+    "task": "Prepare reusable source room/content closure using existing mechanisms; no big generic engine implementation. Reconcile coordinator ownership transfers before starting another packet quest."
   },
   "remote_publications_reused": {
     "sha": "e0aca57413e36818be5406052ac656d240236b15",
@@ -2197,25 +2210,14 @@
     "push_policy": "one push after full dependent failure collection/grouped fixes and green full rerun; auto push reminder retracted"
   },
   "current_validation": {
-    "policy": "Owner speed rule: focused own mechanic PostgreSQL tests, workspace all-target check, changed-crate clippy, fmt, duplicate migrations, canonical regeneration; CI owns full suites.",
-    "merge_main": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
-    "last_pushed_head": "26e5a8f0b",
-    "regeneration": "GREEN: canonical regeneration and pin refresh completed with repository tooling.",
-    "migrations": "Main 0999-1008 retained byte-for-byte; no 1200-1205 copies; owned 1240-1244.",
-    "focused_red": "Catalogue-fix run completed 39:37 pass, 2 fail; both diagonal receipt assertions lacked explicit fixture rollout selection. Added cfg(test) receipt configuration; no assertions changed.",
-    "focused_rerun": "GREEN: 39/39,390.313s; actual PostgreSQL180006 markers and completion receipts retained in BATCH-main-3020-integration-2026-11-07.json.",
-    "workspace_all_targets": "GREEN final post-NPC source check, exit0,14m29s including cargo lock wait; /tmp/questpc2-3020-workspace-after-npc.log.",
-    "clippy": "GREEN: all31changed crates/all-targets, -D warnings; exit0.",
-    "proof_logs": [
-      "/tmp/red-catalogue-dup-questpc2-3020-focused-nextest.log",
-      "/tmp/questpc2-3020-focused-nextest.log",
-      "/tmp/questpc2-3020-workspace-final.log",
-      "/tmp/questpc2-3020-clippy-round3.log",
-      "/tmp/questpc2-3020-final-regeneration.log"
-    ],
-    "npc_regression": "GREEN: qengine_reward_npcs_open_only_source_conversations,32.742s,1/1; /tmp/questpc2-3020-npc-focused.log.",
-    "pin_check": "GREEN: final staged tree, repository release compiler; input digest d65e38a4c120cfb927b5ee9915f7615ae1fd559fb2518f2f2312ccdf2362772e.",
-    "state": "ALL_REQUIRED_CHECKS_GREEN_READY_TO_PUBLISH"
+    "state": "ALL_REQUIRED_CHECKS_GREEN_READY_TO_PUBLISH",
+    "base_pushed_head": "23852002b803e2d01021518c146b503d91f4c625",
+    "proof": "BATCH-empty-source-corpse-capacity-2026-11-07.json",
+    "focused": "GREEN5/5,78.795s,PG180006; sourceSpite64.957s,Rotten65.589s,Primal64.357s and both strict30/31 boundary tests.",
+    "clippy": "GREEN content/all-targets; no extra runs after speed override.",
+    "fmt": "GREEN",
+    "workspace_all_targets": "GREEN exit0,9m48s including cargo lock wait; /tmp/questpc2-source-corpse-capacity-workspace-check.log.",
+    "policy": "Owner19:45 SPEED override: only final workspace all-target check+fmt after focusedgreen, push within10min; CI heavy suites."
   },
   "engine_requests": [
     {
@@ -2235,6 +2237,17 @@
       "where": "crates/gameplay/dispatch",
       "status": "REQUESTED_FROM_QENGINE2",
       "owner_rule": "2026-11-07 shared engine ownership override"
+    },
+    {
+      "feature": "qualify activity templates for registered source boss hooks, summons and reward closures",
+      "quests": [
+        "Rotten Blood Quest",
+        "Soul War Quest"
+      ],
+      "where": "crates/gameplay/content/src/content/bosses/activity_template.rs:362",
+      "status": "REQUESTED_FROM_QENGINE2",
+      "proof": "All fetched qengine2/questpc3/4/5/7/8 carry identical activity_template.rs SHA256 prefix24a16c0dfca5; current guard admits only BossLeverOnDeath, refuses any summons/event bindings; Rotten Blood candidate records have callbacks_known=false.",
+      "local_work": "Continue native corpse/progression regressions and source content preparation without changing generic template guards."
     }
   ],
   "active_owned_work": {
@@ -2245,8 +2258,8 @@
       "Rotten Blood Quest",
       "Soul War Quest"
     ],
-    "done_pushed": 2,
-    "in_progress": 3,
+    "done_pushed": 3,
+    "in_progress": 2,
     "not_started_owned": 24,
     "excluded_other_lane": 6,
     "packet_total": 35,

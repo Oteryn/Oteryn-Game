@@ -1,3 +1,58 @@
+# GREEN19:51: publishing small source-corpse repair now
+
+Workspace --all-targets GREEN exit0,9m48s including lockwait. Focused5/5GREEN
+78.795s inclSpite/Rotten/Primal actualPG180006+strict30/31units. FmtGREEN;
+clippycontent/alltargets alreadyGREEN. Latest owner SPEED19:45 requires noextra
+verification/generation now, pushwithin10min. This commit follows thatoverride.
+Proof BATCH-empty-source-corpse-capacity-2026-11-07.json. Small24lineNEWhelper
+retains48-slot emptyphysical sourcecorpse with exactnativebinding/rewardbossflag;
+ordinary/private bound30, actualquotas and alltests unchanged. No migrations or
+generatedinputs changed. Commit+fetchownbranch+mergemovement+fastforwardpushnow.
+Only5actualstartedquests,3qualified2ongoing. Source-template ENGINE-REQUEST
+already sentqengine2 forRotten/Soul; identicalguardonall6fetchedlanes. No big
+enginework. Awaitcoordinator transfersofnotstartedquests. wpkgcollectsbranch,
+noPR. Afterpush recordpublishedSHA andcontinueownedsource/contentpreparation.
+
+# LIVE19:46: push source-corpse repair after workspace check ONLY
+
+Latest owner SPEED19:45 overrides extra clippy/pin/dup/fullregen beforethispush.
+Listed failure fixed, focused5/5GREEN78.795s incl3actual PG180006 cases. Only
+workspace --all-targets+fmt nowmandatory, thencommit/pushwithin10min. Clippy
+content/all-targets alreadyfinishedGREEN, do not repeat. FmtGREEN. No generated
+input/migration changed; no extra generation/verification runs allowed now.
+Small24lineNEWfile creature_reward_empty_corpse.rs repairs Spite48-slot empty
+physical corpse while ordinary/private rowcapacity1..30 and actualquotas remain.
+RED3cases2pass1fail64.847s exactsourcecorpse expected1 got0; GREENSpite64.957s,
+Rotten65.589s,Primal64.357s; bothstrict30/31unitsGREEN. Tests unchanged.
+Proof BATCH-empty-source-corpse-capacity-2026-11-07.json. Greenrun43717 complete;
+workspace95890 running /tmp/questpc2-source-corpse-capacity-workspace-check.log.
+Commitowneridentity+trailers; fetchownbranch,mergemovement,push immediately. Reply
+PUSHED <sha>. Lastsuccessfulpush23852002b at19:29. Thencontinue ownedwork; noPR.
+Elvenbane QUALIFIED from actual publishedPG source route/journal, data-onlyrecipe
+flags intentionallyheld, no schema/recipe rewrite. Status3qualified26unfinished.
+Only5actualstarted packetquests sent fordedup;24ownednotstarted maybereassigned.
+Sharedengine belongsqengine2: three ENGINE-REQUESTs sent (arena sequencing,
+atomiccapture, sourceboss activitytemplate hooks/summons/rewardclosure). Last
+request neededRottenBlood/SoulWar, exacttemplate guard identicalon6fetchedlanes.
+Do not build biggenericfeatures. wpkgcollectsbranch;merge mainonmerge notice.
+
+# PUSHED23852002b: all integration checks GREEN; Elvenbane QUALIFIED
+
+Published23852002b803e2d01021518c146b503d91f4c625 at19:29UTC. Main1ae merged;
+39/39focused PG/unit tests passed390.313s, all-target workspace check/clippy31
+crates/fmt/dup/regeneration/pincheck green. NPC source conversations PASS32.742s.
+Elvenbane actual fullsource route/claims/exit/journal PASS150.647s. Reconciled
+metadata: authored_quest_authoring.py:86-99 deliberately emits held DATA-only
+recipe receipts, not runtime gating. Native production catalogue/callbacks active
+and exercised. Do not rewrite frozen receipts/schema or add a metadata engine.
+Queststatusnow3QUALIFIED26unfinished; activeowned five=3done2inprogress
+(RottenBlood,SoulWar).24ownednotstarted+6excluded. Urgentdedup ownerreply named
+only5actuallystarted; coordinator may reassign notstartedquests, wait notice.
+Next review current main/qengine2 and otherbranches for reusable RottenBlood/
+SoulWar source room/boss bindings; no biggenericfeatures, requestqengine2 ifmissing.
+Keepnewlocalhelpersunder~50linesinNEWfiles. wpkgcollectsbranch;noPR. Regenonce
+atbatchend. Updatepublicationmetadata now inworktree fornextbatch.
+
 # GREEN main #3020 integration; publishing this merge
 
 All39focused mechanics PASS390.313s, actualPG180006 observed+completed receipts.

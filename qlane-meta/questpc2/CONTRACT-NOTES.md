@@ -566,3 +566,48 @@ rollout switch defaults off (connection/authority.rs:429). Their fixture now
 explicitly selects receipts through a cfg(test) composed-owner override. This
 leaves the process default and negotiated capability requirements unchanged and
 retains the nonzero, three-source-beat assertions for every diagonal.
+
+## Elvenbane qualification and retained data-only recipes
+
+Published runtime23852002b803e2d01021518c146b503d91f4c625 passed the full
+Elvenbane source route, four physical claims, nested custody, earned exit and
+actual wire journal in150.647s against PostgreSQL180006. The all39focused run
+passed390.313s. Authored recipe compiler at
+tools/content-schema/quest-authoring/authored_quest_authoring.py:86-99 always
+emits data-only native holds/runtime_enabled=false. Those are frozen SOURCE
+receipts, not production runtime gates; preserve them. The actual production
+loader separately extends the native catalogue and callback/journal owners.
+Whole chosen Elvenbane qualification follows the exercised runtime, without
+promoting unrelated data-only recipes or deleting their tests/holds.
+
+## Endgame template engine request and branch reuse check
+
+Fetched qengine2,questpc3,questpc4,questpc5,questpc7,questpc8 on2026-11-07.
+Their activity_template.rs is identical to main/current (SHA256 prefix
+24a16c0dfca5). Lines362-370 reject unknown/source hooks beyond BossLeverOnDeath;
+lines402 onward refuse summons/events. Rotten Blood candidates retain
+callbacks_known=false and source closure blockers. Requested shared qualification
+for registered source boss hooks/summons/reward closures fromqengine2. Do not
+remove guards or turn these bosses into vanilla creatures. Existing progression,
+physical corpse and private-reward owners remain the reusable implementations.
+
+## Empty source reward-boss corpse capacity repair
+
+Source imports/canary/items-xml/items.xml:63232-63236 declares Goshnar's Spite
+i33867 with48 slots (containersize at63235). Donor04b83b512114bfd888000d6e1433ed8ecaec7c5b;
+file SHA2561cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2,
+repository import commit1b2e040732a7b0da269579380a4d3fa8a93d17aa. No source
+capacity or Item definition is changed. The main-integration strict30 capacity
+repair regressed this existing empty physical corpse: PG RED64.847s expected
+one committed native source corpse, observed0; Rotten Blood and Primal passed.
+
+The24-line new creature_reward_empty_corpse.rs helper reuses existing row
+construction with no loot table, an exact native binding required by its caller,
+and the reward-boss flag checked locally. It permits positive u16 source slot
+counts only for this always-empty physical row. Ordinary/private row admission
+retains1..=30, and actual contents/loot-plan quotas are unchanged. Existing PG
+assertions still require empty physical contents, exact source custody/replay,
+no fabricated Spite/Bakragore personal chest, and Primal's earned private census.
+No tests are edited. This is a small repair of the existing physical owner, not
+a new generic encounter feature; all six fetched lane branches lack this source
+physical fallback and offer no replacement implementation to reuse.
