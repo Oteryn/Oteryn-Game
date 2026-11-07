@@ -565,6 +565,7 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                 return Err(format!("foreign participant operation {}", callback.key));
             }
             transitions.push(QuestTransition {
+                world_change: None,
                 key: participant_key(&callback.key, index),
                 quest: participant.quest.clone(),
                 effects: participant
@@ -608,6 +609,7 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
             }
         }
         transitions.push(QuestTransition {
+            world_change: None,
             key: callback.key.clone(),
             quest: callback.quest.clone(),
             effects: callback
