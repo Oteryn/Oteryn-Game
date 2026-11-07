@@ -287,70 +287,68 @@ impl NativeTimeGuardian {
                 )?;
                 if exists(map, runtime, parking, &context).await?
                     && exists(map, runtime, snapshot.position, &context).await?
-                {
-                    if let Some(form) =
+                    && let Some(form) =
                         runtime.current_top_actor_on_cell(parking).map_err(|_| ())?
-                    {
-                        if !map.validate_transaction(runtime).await {
-                            return Err(());
-                        }
-                        self.pending.try_reserve(1).map_err(|_| ())?;
-                        let key = self.next.checked_add(1).ok_or(())?;
-                        let deadline =
-                            SemanticTimeMicros::from_micros(now.checked_add(30_000_000).ok_or(())?);
-                        self.timers
-                            .as_mut()
-                            .ok_or(())?
-                            .schedule(
-                                runtime.owner_fence().map_err(|_| ())?,
-                                stamp,
-                                Family,
-                                key,
-                                None,
-                                deadline,
+                {
+                    if !map.validate_transaction(runtime).await {
+                        return Err(());
+                    }
+                    self.pending.try_reserve(1).map_err(|_| ())?;
+                    let key = self.next.checked_add(1).ok_or(())?;
+                    let deadline =
+                        SemanticTimeMicros::from_micros(now.checked_add(30_000_000).ok_or(())?);
+                    self.timers
+                        .as_mut()
+                        .ok_or(())?
+                        .schedule(
+                            runtime.owner_fence().map_err(|_| ())?,
+                            stamp,
+                            Family,
+                            key,
+                            None,
+                            deadline,
+                        )
+                        .map_err(|_| ())?;
+                    let swapped = (|| -> Result<(), ()> {
+                        let sample = runtime
+                            .capture_native_null_health_sample(native, &proof, p.issuer)
+                            .map_err(|_| ())?;
+                        map.view()
+                            .relocate_source_creature(runtime, p.issuer, parking)
+                            .map_err(|_| ())?;
+                        let target = runtime.companion_snapshot(form).map_err(|_| ())?;
+                        let occurrence = format!("{}:time-sync", p.occurrence.id().as_str());
+                        runtime
+                            .commit_native_null_health_sync_at(
+                                native,
+                                &proof,
+                                &sample,
+                                &target,
+                                occurrence.as_bytes(),
+                                &binding(&occurrence, form, sample.health()),
+                                now,
                             )
                             .map_err(|_| ())?;
-                        let swapped = (|| -> Result<(), ()> {
-                            let sample = runtime
-                                .capture_native_null_health_sample(native, &proof, p.issuer)
-                                .map_err(|_| ())?;
-                            map.view()
-                                .relocate_source_creature(runtime, p.issuer, parking)
-                                .map_err(|_| ())?;
-                            let target = runtime.companion_snapshot(form).map_err(|_| ())?;
-                            let occurrence = format!("{}:time-sync", p.occurrence.id().as_str());
-                            runtime
-                                .commit_native_null_health_sync_at(
-                                    native,
-                                    &proof,
-                                    &sample,
-                                    &target,
-                                    occurrence.as_bytes(),
-                                    &binding(&occurrence, form, sample.health()),
-                                    now,
-                                )
-                                .map_err(|_| ())?;
-                            map.view()
-                                .relocate_source_creature(runtime, form, snapshot.position)
-                                .map_err(|_| ())?;
-                            Ok(())
-                        })();
-                        if swapped.is_err() {
-                            self.timers.as_mut().ok_or(())?.cancel(Family, key);
-                            return Err(());
-                        }
-                        self.next = key;
-                        self.pending.push(Pending {
-                            key,
-                            #[cfg(test)]
-                            actor: p.issuer,
-                            parking,
-                            old: snapshot.position,
-                            alternate,
-                            source: proof,
-                            occurrence: p.occurrence.id().as_str().to_owned(),
-                        });
+                        map.view()
+                            .relocate_source_creature(runtime, form, snapshot.position)
+                            .map_err(|_| ())?;
+                        Ok(())
+                    })();
+                    if swapped.is_err() {
+                        self.timers.as_mut().ok_or(())?.cancel(Family, key);
+                        return Err(());
                     }
+                    self.next = key;
+                    self.pending.push(Pending {
+                        key,
+                        #[cfg(test)]
+                        actor: p.issuer,
+                        parking,
+                        old: snapshot.position,
+                        alternate,
+                        source: proof,
+                        occurrence: p.occurrence.id().as_str().to_owned(),
+                    });
                 }
             }
             self.memos.insert(

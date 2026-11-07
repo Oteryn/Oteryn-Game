@@ -510,39 +510,6 @@ impl NativeCallbacks {
 
     #[allow(
         clippy::too_many_arguments,
-        reason = "copied source handler shares the current owner, map, exact begin seal and existing combat state"
-    )]
-    pub(in crate::gameplay_transport) async fn consume_source_death(
-        &self,
-        _active: &crate::content::ActiveGeneration,
-        runtime: &mut ChannelRuntimeV1,
-        _states: &mut ChannelSpellStates,
-        _attack: &mut ChannelAttackStates,
-        room: &QualifiedNativeEntryRoom,
-        native: &NativeGameplayState,
-        _map: &mut CurrentMonsterMap<'_, '_>,
-        begin: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathSeal,
-        event: &crate::content::QualifiedNativeDeathEvent,
-        _now: u64,
-    ) -> Result<bool, ()> {
-        if !begin.current_for(runtime) || !begin.events().iter().any(|value| value == event) {
-            return Err(());
-        }
-        let Ok(mut owner) = self.owner.try_lock() else {
-            return Ok(false);
-        };
-        owner.bind_current(runtime, room, native)?;
-        #[cfg(test)]
-        eprintln!(
-            "[DBG-W11-DEATH] event={} source={}",
-            event.name(),
-            begin.definition_key()
-        );
-        // Shared FIFO retains an unsupported handler; no fake completion.
-        Ok(false)
-    }
-    #[allow(
-        clippy::too_many_arguments,
         reason = "accepted source party handoff retains its exact runtime, room, AI, prefix and receipt identity"
     )]
     pub(in crate::gameplay_transport) fn initialize_outburst_accepted_entry(

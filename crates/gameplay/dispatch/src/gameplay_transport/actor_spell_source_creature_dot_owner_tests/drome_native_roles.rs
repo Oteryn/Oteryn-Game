@@ -5,16 +5,22 @@ use oteryn_gameplay_entities::runtime_actor_carrier::tibiadrome_modifiers::{
     DromeCreatureRole, DromeModifier,
 };
 
-fn drome_fixture() -> (
+type DromeFixture = (
     ChannelRuntimeV1,
     ChannelSpellStates,
     ExactActorRef,
     ExactActorRef,
     GameSessionId,
-) {
+);
+
+fn drome_fixture() -> Result<DromeFixture, String> {
     let (mut runtime, states, player, creature, session) = fixture();
-    runtime.set_tibiadrome(player, true).unwrap();
-    runtime.scale_tibiadrome_opponent(creature, 0).unwrap();
+    runtime
+        .set_tibiadrome(player, true)
+        .map_err(|error| format!("{error:?}"))?;
+    runtime
+        .scale_tibiadrome_opponent(creature, 0)
+        .map_err(|error| format!("{error:?}"))?;
     let selected = [
         DromeModifier::Somersault,
         DromeModifier::ThatEscalatedQuickly,
@@ -22,27 +28,28 @@ fn drome_fixture() -> (
     for actor in [player, creature] {
         runtime
             .bind_tibiadrome_modifiers(actor, [5; 16], selected)
-            .unwrap();
+            .map_err(|error| format!("{error:?}"))?;
     }
     runtime
         .test_bind_drome_creature_role(creature, DromeCreatureRole::Murmillion, 0)
-        .unwrap();
+        .map_err(|error| format!("{error:?}"))?;
     assert_eq!(
         runtime
             .companion_snapshot(creature)
-            .unwrap()
+            .map_err(|error| format!("{error:?}"))?
             .state
             .policy
             .definition_key,
         "creature:source-healing-target",
         "the test must retain its existing immutable source profile"
     );
-    (runtime, states, player, creature, session)
+    Ok((runtime, states, player, creature, session))
 }
 
 #[test]
-fn srx3_drome_native_murmillion_commits_five_second_standard_player_paralysis() {
-    let (mut runtime, mut states, player, creature, session) = drome_fixture();
+fn srx3_drome_native_murmillion_commits_five_second_standard_player_paralysis() -> Result<(), String>
+{
+    let (mut runtime, mut states, player, creature, session) = drome_fixture()?;
     assert_eq!(
         states.apply_drome_murmillion_paralyze(
             &mut runtime,
@@ -56,14 +63,14 @@ fn srx3_drome_native_murmillion_commits_five_second_standard_player_paralysis() 
     assert_eq!(
         states
             .get(&runtime, player, session)
-            .unwrap()
+            .ok_or("current Player spell state")?
             .owned_conditions()
             .speed_delta(),
         0
     );
     let base = states
         .get(&runtime, player, session)
-        .unwrap()
+        .ok_or("current Player spell state")?
         .owned_base_speed();
     let _ = states.apply_drome_murmillion_paralyze(
         &mut runtime,
@@ -74,7 +81,7 @@ fn srx3_drome_native_murmillion_commits_five_second_standard_player_paralysis() 
     );
     let conditions = states
         .get(&runtime, player, session)
-        .unwrap()
+        .ok_or("current Player spell state")?
         .owned_conditions();
     assert_eq!(
         conditions.speed_delta(),
@@ -101,11 +108,13 @@ fn srx3_drome_native_murmillion_commits_five_second_standard_player_paralysis() 
     );
     assert!(!runtime.drome_role_paralyze_due(creature, 19_999_999));
     assert!(runtime.drome_role_paralyze_due(creature, 20_000_000));
+    Ok(())
 }
 
 #[test]
-fn srx3_drome_native_murmillion_cannot_paralyze_a_foreign_run_or_departed_player() {
-    let (mut runtime, mut states, player, creature, session) = drome_fixture();
+fn srx3_drome_native_murmillion_cannot_paralyze_a_foreign_run_or_departed_player()
+-> Result<(), String> {
+    let (mut runtime, mut states, player, creature, session) = drome_fixture()?;
     runtime
         .bind_tibiadrome_modifiers(
             player,
@@ -115,7 +124,7 @@ fn srx3_drome_native_murmillion_cannot_paralyze_a_foreign_run_or_departed_player
                 DromeModifier::ThatEscalatedQuickly,
             ],
         )
-        .unwrap();
+        .map_err(|error| format!("{error:?}"))?;
     assert_eq!(
         states.apply_drome_murmillion_paralyze(
             &mut runtime,
@@ -129,13 +138,15 @@ fn srx3_drome_native_murmillion_cannot_paralyze_a_foreign_run_or_departed_player
     assert_eq!(
         states
             .get(&runtime, player, session)
-            .unwrap()
+            .ok_or("current Player spell state")?
             .owned_conditions()
             .speed_delta(),
         0
     );
     assert!(runtime.drome_role_paralyze_due(creature, 10_000_000));
-    runtime.set_tibiadrome(player, false).unwrap();
+    runtime
+        .set_tibiadrome(player, false)
+        .map_err(|error| format!("{error:?}"))?;
     assert_eq!(
         states.apply_drome_murmillion_paralyze(
             &mut runtime,
@@ -146,4 +157,5 @@ fn srx3_drome_native_murmillion_cannot_paralyze_a_foreign_run_or_departed_player
         ),
         None
     );
+    Ok(())
 }

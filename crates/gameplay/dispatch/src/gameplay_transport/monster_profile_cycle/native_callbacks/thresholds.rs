@@ -36,14 +36,12 @@ fn present(
         use crate::map::boot::BundleCollisionIndexExt;
         if let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
             room.movement_cells().index()
-        {
-            if let Some(at) = runtime
+            && let Some(at) = runtime
                 .read_actor_position(actor)
                 .ok()
                 .and_then(|p| super::visual_position(p.position()))
-            {
-                index.map().facts.emit_movement_effect(at, 13);
-            }
+        {
+            index.map().facts.emit_movement_effect(at, 13);
         }
     }
 }
@@ -107,17 +105,16 @@ impl NativeThresholds {
                 .owner
                 .tick_current(runtime, stamp, source, *actor, now)
                 .map_err(|_| ())?
+                && outcome.healed.is_some()
             {
-                if outcome.healed.is_some() {
-                    let snapshot = runtime.companion_snapshot(*actor).map_err(|_| ())?;
-                    present(
-                        runtime,
-                        room,
-                        *actor,
-                        &snapshot.state.policy.definition_key,
-                        true,
-                    );
-                }
+                let snapshot = runtime.companion_snapshot(*actor).map_err(|_| ())?;
+                present(
+                    runtime,
+                    room,
+                    *actor,
+                    &snapshot.state.policy.definition_key,
+                    true,
+                );
             }
         }
         for proposal in proposals.iter().filter(|p| is_callback(p)) {

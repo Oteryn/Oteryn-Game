@@ -79,7 +79,7 @@ pub(in crate::gameplay_transport) async fn assert_native_house_use(
                 }
             }
             encode_item_use_intent(&UseIntent {target:UseTarget::Item(handle.ok_or("actual House inventory essence handle")?),
-                use_with:None,use_with_position:None,use_with_map_item:None}).map_err(|error|debug(error).into())
+                use_with:None,use_with_position:None,use_with_map_item:None}).map_err(debug)
         },13,&mut frames).await?;
     assert!(
         scope.is_none(),

@@ -99,34 +99,35 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 return malformed();
             }
         }
-        if kind == wire::COMMAND_TYPE_BOSS_LEVER && outburst {
-            if let Err(reason) = self
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER
+            && outburst
+            && let Err(reason) = self
                 .prepare_outburst_catalogue(admitted, &intent.boss_key)
                 .await
-            {
-                return refusal(reason);
-            }
+        {
+            return refusal(reason);
         }
-        if kind == wire::COMMAND_TYPE_BOSS_LEVER && primal {
-            if let Err(reason) = self.prepare_primal_catalogue(admitted).await {
-                return refusal(reason);
-            }
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER
+            && primal
+            && let Err(reason) = self.prepare_primal_catalogue(admitted).await
+        {
+            return refusal(reason);
         }
-        if kind == wire::COMMAND_TYPE_BOSS_LEVER && soul_war.is_some() {
-            if let Err(reason) = self
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER
+            && soul_war.is_some()
+            && let Err(reason) = self
                 .prepare_soul_war_catalogue(admitted, &intent.boss_key)
                 .await
-            {
-                return refusal(reason);
-            }
+        {
+            return refusal(reason);
         }
-        if kind == wire::COMMAND_TYPE_BOSS_LEVER && rotten.is_some() {
-            if let Err(reason) = self
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER
+            && rotten.is_some()
+            && let Err(reason) = self
                 .prepare_rotten_blood_catalogue(admitted, &intent.boss_key)
                 .await
-            {
-                return refusal(reason);
-            }
+        {
+            return refusal(reason);
         }
         if kind == wire::COMMAND_TYPE_BOSS_LEVER
             && !primal

@@ -50,10 +50,9 @@ pub(super) async fn step(
                 at,
                 &occupied,
                 false,
-            ) {
-                if !route.is_empty() {
-                    choices.push((route, timer));
-                }
+            ) && !route.is_empty()
+            {
+                choices.push((route, timer));
             }
         }
         choices

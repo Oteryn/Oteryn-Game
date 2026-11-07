@@ -2,23 +2,26 @@
 use super::*;
 
 #[test]
-fn srx3_hatred_native_player_periodic_health_event_adds_current_defense_once() {
-    exercise_hatred_periodic(true);
+fn srx3_hatred_native_player_periodic_health_event_adds_current_defense_once() -> Result<(), String>
+{
+    exercise_hatred_periodic(true)
 }
 #[test]
-fn srx3_hatred_native_null_periodic_health_event_keeps_defense() {
-    exercise_hatred_periodic(false);
+fn srx3_hatred_native_null_periodic_health_event_keeps_defense() -> Result<(), String> {
+    exercise_hatred_periodic(false)
 }
-fn exercise_hatred_periodic(player_owned: bool) {
+fn exercise_hatred_periodic(player_owned: bool) -> Result<(), String> {
     use crate::carrier::soul_war_hatred::HatredEmpowerment;
     use oteryn_gameplay_domain::domain::condition::{ConditionValues, DotElement};
     use oteryn_gameplay_foundation::foundation::condition::{ConditionDefinition, TickFacts};
     let (mut runtime, player, session, image, command) = fixture_with_scope(9, true);
     runtime
         .remove_encounter_actor(image)
-        .expect("healthy source fixture replacement");
+        .map_err(|error| format!("{error:?}"))?;
     let key = "oteryn:creature.goshnar_s_hatred";
-    let policy = runtime.companion_policy(key).expect("actual native Hatred");
+    let policy = runtime
+        .companion_policy(key)
+        .map_err(|error| format!("{error:?}"))?;
     let target = ExactActorRef(
         runtime
             .admit_encounter_fixture_actor(
@@ -31,28 +34,30 @@ fn exercise_hatred_periodic(player_owned: bool) {
                     floor: 7,
                 }),
             )
-            .expect("native target"),
+            .map_err(|error| format!("{error:?}"))?,
     );
     runtime
         .install_creature_policy(target, key)
-        .expect("exact source health token");
+        .map_err(|error| format!("{error:?}"))?;
     assert!(
         runtime
             .soul_war_health_callback(target)
-            .unwrap()
-            .unwrap()
+            .map_err(|error| format!("{error:?}"))?
+            .ok_or("actual empowered health callback")?
             .is_empowered_boss()
     );
-    let before = runtime.companion_snapshot(target).unwrap();
+    let before = runtime
+        .companion_snapshot(target)
+        .map_err(|error| format!("{error:?}"))?;
     let base = runtime
         .effective_creature_defense(&before)
-        .expect("canonical source defense");
+        .map_err(|error| format!("{error:?}"))?;
     runtime
         .change_soul_war_hatred_percent(&before, 0, HatredEmpowerment::Add(10))
-        .unwrap();
+        .map_err(|error| format!("{error:?}"))?;
     runtime
         .install_current_soul_war_player_source(player, session, None, 201_000, &PeriodicSource)
-        .expect("actual current condition creator facts");
+        .map_err(|error| format!("{error:?}"))?;
     let field = runtime_actor_periodic::CreatureFieldEntry {
         definition: ConditionDefinition::new(
             "source.actual-player.hatred-periodic",
@@ -66,7 +71,7 @@ fn exercise_hatred_periodic(player_owned: bool) {
                 delayed: false,
             },
         )
-        .unwrap(),
+        .ok_or("actual periodic condition definition")?,
         source: player_owned.then_some(player),
         lineage: player_owned.then_some(
             oteryn_gameplay_foundation::foundation::condition::ConditionLineage {
@@ -76,7 +81,7 @@ fn exercise_hatred_periodic(player_owned: bool) {
                 source_actor_placement: player.placement_identity(),
                 source_scope_generation: player.scope_generation().get(),
                 source_content_digest: runtime.content_pin().server_artifact_digest(),
-                source_catalog_digest: *NATIVE_CATALOG.get().expect("actual native catalog"),
+                source_catalog_digest: *NATIVE_CATALOG.get().ok_or("actual native catalog")?,
                 source_creation_command: command.command_id().get(),
             },
         ),
@@ -84,7 +89,7 @@ fn exercise_hatred_periodic(player_owned: bool) {
     };
     runtime
         .commit_creature_field_entry(target, 201_000, Some(&field))
-        .unwrap();
+        .map_err(|error| format!("{error:?}"))?;
     let receipt = runtime
         .apply_creature_periodic_turn_with_sources(
             target,
@@ -97,15 +102,19 @@ fn exercise_hatred_periodic(player_owned: bool) {
                     .map(|_| 100))
             },
         )
-        .expect("actual existing periodic owner");
+        .map_err(|error| format!("{error:?}"))?;
     assert!(
         receipt.health_after < receipt.health_before,
         "HP-positive prerequisite before defense assertion"
     );
-    let current = runtime.companion_snapshot(target).unwrap();
+    let current = runtime
+        .companion_snapshot(target)
+        .map_err(|error| format!("{error:?}"))?;
     let expected = base + if player_owned { 10 } else { 0 };
     assert_eq!(
-        runtime.effective_creature_defense(&current).unwrap(),
+        runtime
+            .effective_creature_defense(&current)
+            .map_err(|error| format!("{error:?}"))?,
         expected,
         "source incoming callback runs once for an actual Player-owned periodic health event"
     );
@@ -121,10 +130,15 @@ fn exercise_hatred_periodic(player_owned: bool) {
                     .map(|_| 100))
             },
         )
-        .expect("consumed exact tick replay");
-    let current = runtime.companion_snapshot(target).unwrap();
+        .map_err(|error| format!("{error:?}"))?;
+    let current = runtime
+        .companion_snapshot(target)
+        .map_err(|error| format!("{error:?}"))?;
     assert_eq!(
-        runtime.effective_creature_defense(&current).unwrap(),
+        runtime
+            .effective_creature_defense(&current)
+            .map_err(|error| format!("{error:?}"))?,
         expected
     );
+    Ok(())
 }

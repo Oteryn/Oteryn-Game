@@ -421,7 +421,8 @@ mod observation_tests {
     use oteryn_protocol_oteryn::presentation as wire;
 
     #[test]
-    fn native_observation_pair_preserves_existing_clocked_rows_and_revision() {
+    fn native_observation_pair_preserves_existing_clocked_rows_and_revision() -> Result<(), String>
+    {
         let selected = SelectedCapabilities::select(
             &[
                 OfferedCapability {
@@ -435,19 +436,25 @@ mod observation_tests {
             ],
             &[6, 23],
         )
-        .expect("negotiated observation");
+        .ok_or("negotiated observation")?;
         let mut domains = Vec::new();
         assert!(observation_snapshots(&SelectedCapabilities::NONE, 7, &mut domains).is_ok());
         assert!(domains.is_empty());
         assert!(observation_snapshots(&selected, 7, &mut domains).is_ok());
         assert_eq!(domains.len(), 2);
-        let presentation = domains.iter().find(|row| row.domain_id == 19).unwrap();
+        let presentation = domains
+            .iter()
+            .find(|row| row.domain_id == 19)
+            .ok_or("presentation domain")?;
         assert_eq!(presentation.revision, 7);
         assert!(presentation.payload.is_empty());
-        let cooldowns = domains.iter().find(|row| row.domain_id == 20).unwrap();
+        let cooldowns = domains
+            .iter()
+            .find(|row| row.domain_id == 20)
+            .ok_or("cooldown domain")?;
         assert!(
             wire::decode_actor_cooldowns(&cooldowns.payload)
-                .unwrap()
+                .map_err(|error| format!("cooldown codec: {error:?}"))?
                 .entries
                 .is_empty()
         );
@@ -467,7 +474,7 @@ mod observation_tests {
                     rtt_ms: Some(3),
                     entries: vec![],
                 })
-                .unwrap(),
+                .map_err(|error| format!("cooldown codec: {error:?}"))?,
             },
         ];
         let mut preserved = existing.clone();
@@ -487,9 +494,10 @@ mod observation_tests {
             domains
                 .iter()
                 .find(|row| row.domain_id == 19)
-                .unwrap()
+                .ok_or("restored presentation domain")?
                 .revision,
             17
         );
+        Ok(())
     }
 }

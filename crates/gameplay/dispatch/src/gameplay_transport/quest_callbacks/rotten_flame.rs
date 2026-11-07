@@ -98,6 +98,10 @@ fn map_revision(map: &BundleMap) -> String {
     crate::map::overlay::map_revision(map.overlay.base())
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "source qualification independently fences owner, runtime, actor, command, world context, map and selected object key/revision"
+)]
 pub(super) fn qualify(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     runtime: &ChannelRuntimeV1,

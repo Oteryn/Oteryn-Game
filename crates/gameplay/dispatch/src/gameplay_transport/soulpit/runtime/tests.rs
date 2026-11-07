@@ -603,7 +603,7 @@ fn srx3_soulpit_prepared_positions_emit_four_native_cues_once_without_spawn_redr
                 .map_err(debug)?;
             let effects = owner.scene.effects.lock().map_err(debug)?.clone();
             assert_eq!(effects.len(), 28, "source1/2/3/4second wave cues");
-            for burst in effects.chunks_exact(7) {
+            for burst in effects.as_chunks::<7>().0.iter() {
                 assert_eq!(burst, first.as_slice());
             }
             assert_eq!(owner.stored.encounter.snapshot().monsters_alive, 0);

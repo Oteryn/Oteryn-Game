@@ -318,8 +318,9 @@ fn catalogue_mission_and_altar_keep_existing_quest_receipt_owner() -> TestResult
 }
 
 #[test]
-fn srx3_bakragore_four_literal_flame_uses_consume_existing_essence_flags() {
-    let callbacks = crate::quest::world_callbacks::load().expect("source callback catalogue");
+fn srx3_bakragore_four_literal_flame_uses_consume_existing_essence_flags() -> Result<(), String> {
+    let callbacks = crate::quest::world_callbacks::load()
+        .map_err(|error| format!("source callback catalogue: {error:?}"))?;
     for (flavor, appearance, flag) in [
         ("murcion", 43983, "oteryn:quest-progress/storage/52280"),
         ("ichgahal", 43497, "oteryn:quest-progress/storage/52281"),
@@ -330,7 +331,7 @@ fn srx3_bakragore_four_literal_flame_uses_consume_existing_essence_flags() {
         let callback = callbacks
             .iter()
             .find(|c| c.key == key)
-            .unwrap_or_else(|| panic!("missing actual source flame USE: {key}"));
+            .ok_or_else(|| format!("missing actual source flame USE: {key}"))?;
         assert_eq!(
             callback.trigger,
             crate::quest::world_callbacks::Trigger::Use
@@ -360,4 +361,5 @@ fn srx3_bakragore_four_literal_flame_uses_consume_existing_essence_flags() {
                 .any(|source| source.contains("rottenEssences.lua:70-111"))
         );
     }
+    Ok(())
 }

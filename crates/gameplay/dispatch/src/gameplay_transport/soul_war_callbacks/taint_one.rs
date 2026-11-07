@@ -190,11 +190,10 @@ async fn drive_current(
         }
         if session.is_some_and(|session| runtime.player_control_facts(*actor, session).is_ok())
             && let Ok(at) = runtime.read_actor_position(*actor)
+            && map.read(runtime, at.position()).await.is_none()
+            && !map.view().known(at.position())
         {
-            if map.read(runtime, at.position()).await.is_none() && !map.view().known(at.position())
-            {
-                return Ok(());
-            }
+            return Ok(());
         }
     }
     if !map.validate_transaction(runtime).await {
@@ -333,12 +332,11 @@ fn emit(
                 TaintTeleportMagic::MortArea => 18,
                 TaintTeleportMagic::Teleport => 11,
             };
-            if let Some(at) = geometry.physical_position(*position) {
-                if let Some(map) = source_map(room, geometry)
-                    && let Some(at) = scene::wire_position(at)
-                {
-                    map.facts.emit_movement_effect(at, number);
-                }
+            if let Some(at) = geometry.physical_position(*position)
+                && let Some(map) = source_map(room, geometry)
+                && let Some(at) = scene::wire_position(at)
+            {
+                map.facts.emit_movement_effect(at, number);
             }
         }
     }

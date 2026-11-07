@@ -12,6 +12,13 @@ pub enum MaliceEffect {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MaliceRefusal {
+    Capacity,
+    DeadlineOverflow,
+    Allocation,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum CageTimerKind {
     Spawn,
     Remove,
@@ -96,16 +103,22 @@ impl MaliceRoom {
         vec![MaliceEffect::CreateWhiteTiles]
     }
     /// The copied SoulCageDeath callback claims its original death once.
-    pub fn cage_died(&mut self, death: [u8; 32], now_ms: u64) -> Result<bool, ()> {
+    pub fn cage_died(&mut self, death: [u8; 32], now_ms: u64) -> Result<bool, MaliceRefusal> {
         if self.cage_deaths.contains(&death) {
             return Ok(false);
         }
         if self.cage_deaths.len() >= MAX_CAGE_DEATHS || self.cage_timers.len() >= MAX_CAGE_TIMERS {
-            return Err(());
+            return Err(MaliceRefusal::Capacity);
         }
-        let due = now_ms.checked_add(23_000).ok_or(())?;
-        self.cage_deaths.try_reserve(1).map_err(|_| ())?;
-        self.cage_timers.try_reserve(1).map_err(|_| ())?;
+        let due = now_ms
+            .checked_add(23_000)
+            .ok_or(MaliceRefusal::DeadlineOverflow)?;
+        self.cage_deaths
+            .try_reserve(1)
+            .map_err(|_| MaliceRefusal::Allocation)?;
+        self.cage_timers
+            .try_reserve(1)
+            .map_err(|_| MaliceRefusal::Allocation)?;
         self.cage_deaths.push(death);
         self.cage_timers.push(CageTimer {
             due,
@@ -301,13 +314,13 @@ mod tests {
         );
     }
     #[test]
-    fn srx3_malice_connected_groups_preserve_the_source_twelve_tiles() {
+    fn srx3_malice_connected_groups_preserve_the_source_twelve_tiles() -> Result<(), String> {
         let center = RoomPosition {
             x: 33709,
             y: 31599,
             floor: 14,
         };
-        let tiles = select_white_cells(center, |_| Some(0)).expect("bounded source draws");
+        let tiles = select_white_cells(center, |_| Some(0)).ok_or("bounded source draws")?;
         assert_eq!(
             tiles.len(),
             12,
@@ -321,21 +334,23 @@ mod tests {
         for (i, tile) in tiles.iter().enumerate() {
             assert!(!tiles[..i].contains(tile));
         }
-        assert!(select_white_cells(center, |bound| Some(bound)).is_none());
+        assert!(select_white_cells(center, Some).is_none());
+        Ok(())
     }
     #[test]
-    fn srx3_malice_copied_cage_death_keeps_both_source_remove_timers() {
+    fn srx3_malice_copied_cage_death_keeps_both_source_remove_timers() -> Result<(), MaliceRefusal>
+    {
         let mut room = MaliceRoom::entered(0);
         assert_eq!(
             room.advance(23_000, false, true),
             vec![MaliceEffect::SpawnCage]
         );
         assert!(
-            room.cage_died([1; 32], 24_000).unwrap(),
+            room.cage_died([1; 32], 24_000)?,
             "actual copied onDeath schedules its23s continuation"
         );
         assert!(
-            !room.cage_died([1; 32], 25_000).unwrap(),
+            !room.cage_died([1; 32], 25_000)?,
             "same original death cannot schedule twice"
         );
         assert!(room.advance(46_999, false, true).is_empty());
@@ -357,15 +372,17 @@ mod tests {
             vec![MaliceEffect::RemoveCage, MaliceEffect::BuffMalice],
             "47s spawn's removal survives the63s callback"
         );
+        Ok(())
     }
     #[test]
-    fn srx3_malice_equal_deadlines_follow_actual_source_registration_order() {
+    fn srx3_malice_equal_deadlines_follow_actual_source_registration_order()
+    -> Result<(), MaliceRefusal> {
         let mut room = MaliceRoom::entered(0);
         assert_eq!(
             room.advance(23_000, false, true),
             vec![MaliceEffect::SpawnCage]
         );
-        assert!(room.cage_died([2; 32], 40_000).unwrap());
+        assert!(room.cage_died([2; 32], 40_000)?);
         assert_eq!(room.next_due_ms(), Some(63_000));
         assert!(
             room.advance(63_000, false, true).is_empty(),
@@ -376,5 +393,6 @@ mod tests {
             room.advance(63_000, false, true),
             vec![MaliceEffect::SpawnCage]
         );
+        Ok(())
     }
 }

@@ -123,7 +123,8 @@ pub(super) fn consume_cage_death(
         .as_mut()
         .ok_or(())?
         .clock
-        .cage_died(identity, now_us / 1_000)?;
+        .cage_died(identity, now_us / 1_000)
+        .map_err(|_| ())?;
     Ok(true)
 }
 
@@ -268,6 +269,10 @@ pub(super) fn due_timer_cells() -> [MovementLocalPosition; 1] {
 
 /// Synchronous publication while the detached read transaction still holds
 /// its actual Item locks. No SQL, fresh Think or invented callback clock.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "timer, named actors, current Map/native scope and real execution time require independent reproof"
+)]
 pub(super) fn publish_due_timer(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,

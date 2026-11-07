@@ -244,7 +244,7 @@ pub(super) fn drive(
                         position,
                         talk_type: 36,
                         text: text.into(),
-                        captured_name: captured_name.clone(),
+                        captured_name,
                     })
             })?;
         }
@@ -371,6 +371,7 @@ mod tests {
             "The fire of hatred fuels and empowers Goshnar's Hate!"
         );
         let snapshot = runtime.companion_snapshot(burning)?;
+        let mut replayed_speech = false;
         owner
             .think(
                 &mut runtime,
@@ -379,9 +380,13 @@ mod tests {
                     actor: burning,
                     sequence: 182,
                 },
-                |_, _, _| panic!("replayed think speech"),
+                |_, _, _| {
+                    replayed_speech = true;
+                    false
+                },
             )
             .map_err(|_| "exact think replay")?;
+        assert!(!replayed_speech, "replayed think speech");
         assert_eq!(runtime.companion_snapshot(burning)?, snapshot);
         assert_eq!(runtime.soul_war_hatred_percent(boss)?, 10);
         let mut forms = vec![burning];

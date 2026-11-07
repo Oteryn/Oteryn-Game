@@ -587,22 +587,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
             })
             .await;
-        match result {
-            Ok(facts) => {
-                #[cfg(test)]
-                eprintln!(
-                    "ROTTEN_AREA_DETACHED_READ count={} login_digests={}",
-                    facts.len(),
-                    facts.iter().all(|fact| fact.login_incarnation().is_some())
-                );
-                Some(facts)
-            }
-            Err(_error) => {
-                #[cfg(test)]
-                eprintln!("ROTTEN_AREA_DETACHED_READ_REFUSED {_error:?}");
-                None
-            }
+        #[cfg(test)]
+        match &result {
+            Ok(facts) => eprintln!(
+                "ROTTEN_AREA_DETACHED_READ count={} login_digests={}",
+                facts.len(),
+                facts.iter().all(|fact| fact.login_incarnation().is_some())
+            ),
+            Err(error) => eprintln!("ROTTEN_AREA_DETACHED_READ_REFUSED {error:?}"),
         }
+        result.ok()
     }
 }
 

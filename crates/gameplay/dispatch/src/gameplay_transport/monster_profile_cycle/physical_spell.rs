@@ -1140,6 +1140,62 @@ fn area_sight_origin(
     })
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "same current physical read with an owner-sealed source stage"
+)]
+pub(super) async fn prepare_callback_reader<'native>(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    attack: &mut ChannelAttackStates,
+    room: &QualifiedNativeEntryRoom,
+    native: &'native NativeGameplayState,
+    map: &mut CurrentMonsterMap<'_, '_>,
+    plan: &oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast::CallbackStagePlan,
+    parties: &ReferenceParties,
+    now: u64,
+    stamp: RuntimeWorkStamp,
+) -> Option<CurrentTarget<'native>> {
+    prepare_source_reader(
+        runtime,
+        states,
+        attack,
+        room,
+        native,
+        map,
+        SourceShape::Spell(plan.source()),
+        plan.proposal(),
+        parties,
+        now,
+        stamp,
+        false,
+        None,
+        Some(plan),
+    )
+    .await
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "existing ordinary spell timer owner shares one physical scope read"
+)]
+pub(super) async fn drain_due(
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    attack: &mut ChannelAttackStates,
+    room: &QualifiedNativeEntryRoom,
+    native: &NativeGameplayState,
+    map: &mut CurrentMonsterMap<'_, '_>,
+    parties: &ReferenceParties,
+    now: u64,
+    charms: &crate::content::charm_source::CanonicalCharmCatalogue,
+) {
+    timers::drain(
+        runtime, states, attack, room, native, map, parties, now, charms,
+    )
+    .await;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1277,60 +1333,4 @@ mod tests {
             .map_err(|_| "source constructor test thread panicked")??;
         Ok(())
     }
-}
-
-#[allow(
-    clippy::too_many_arguments,
-    reason = "same current physical read with an owner-sealed source stage"
-)]
-pub(super) async fn prepare_callback_reader<'native>(
-    runtime: &ChannelRuntimeV1,
-    states: &ChannelSpellStates,
-    attack: &mut ChannelAttackStates,
-    room: &QualifiedNativeEntryRoom,
-    native: &'native NativeGameplayState,
-    map: &mut CurrentMonsterMap<'_, '_>,
-    plan: &oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast::CallbackStagePlan,
-    parties: &ReferenceParties,
-    now: u64,
-    stamp: RuntimeWorkStamp,
-) -> Option<CurrentTarget<'native>> {
-    prepare_source_reader(
-        runtime,
-        states,
-        attack,
-        room,
-        native,
-        map,
-        SourceShape::Spell(plan.source()),
-        plan.proposal(),
-        parties,
-        now,
-        stamp,
-        false,
-        None,
-        Some(plan),
-    )
-    .await
-}
-
-#[allow(
-    clippy::too_many_arguments,
-    reason = "existing ordinary spell timer owner shares one physical scope read"
-)]
-pub(super) async fn drain_due(
-    runtime: &mut ChannelRuntimeV1,
-    states: &mut ChannelSpellStates,
-    attack: &mut ChannelAttackStates,
-    room: &QualifiedNativeEntryRoom,
-    native: &NativeGameplayState,
-    map: &mut CurrentMonsterMap<'_, '_>,
-    parties: &ReferenceParties,
-    now: u64,
-    charms: &crate::content::charm_source::CanonicalCharmCatalogue,
-) {
-    timers::drain(
-        runtime, states, attack, room, native, map, parties, now, charms,
-    )
-    .await;
 }

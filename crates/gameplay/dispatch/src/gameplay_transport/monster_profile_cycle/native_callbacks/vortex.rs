@@ -81,6 +81,10 @@ impl NativeVortex {
         self.drive_inner(active, runtime, room, native, map, proposals, now, now)
             .await
     }
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "qualified source, current runtime, map, proposals and original cutoff require independent authority checks"
+    )]
     pub(super) async fn drive_due_through(
         &mut self,
         active: &crate::content::ActiveGeneration,
@@ -103,6 +107,10 @@ impl NativeVortex {
         )
         .await
     }
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "qualified source, current runtime, map, proposals and original cutoff require independent authority checks"
+    )]
     async fn drive_inner(
         &mut self,
         active: &crate::content::ActiveGeneration,
@@ -172,10 +180,10 @@ impl NativeVortex {
             if !map.validate_transaction(runtime).await {
                 return Err(());
             }
-            if let Some((key, _)) = ground(room, at) {
-                if !transform(room, key, 23049) {
-                    return Err(());
-                }
+            if let Some((key, _)) = ground(room, at)
+                && !transform(room, key, 23049)
+            {
+                return Err(());
             }
             self.timers
                 .as_mut()

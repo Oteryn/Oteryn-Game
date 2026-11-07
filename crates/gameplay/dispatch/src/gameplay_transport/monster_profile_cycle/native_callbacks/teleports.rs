@@ -26,10 +26,9 @@ fn effect(room: &QualifiedNativeEntryRoom, at: MovementLocalPosition, id: u16) {
     use crate::map::boot::BundleCollisionIndexExt;
     if let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
         room.movement_cells().index()
+        && let Some(pos) = super::visual_position(at)
     {
-        if let Some(pos) = super::visual_position(at) {
-            index.map().facts.emit_movement_effect(pos, id);
-        }
+        index.map().facts.emit_movement_effect(pos, id);
     }
 }
 impl NativeTeleports {
@@ -56,6 +55,10 @@ impl NativeTeleports {
         self.drive_inner(active, runtime, room, native, map, proposals, now, now)
             .await
     }
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "qualified source, current runtime, map, proposals and original cutoff require independent authority checks"
+    )]
     pub(super) async fn drive_due_through(
         &mut self,
         active: &crate::content::ActiveGeneration,
@@ -78,6 +81,10 @@ impl NativeTeleports {
         )
         .await
     }
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "qualified source, current runtime, map, proposals and original cutoff require independent authority checks"
+    )]
     async fn drive_inner(
         &mut self,
         active: &crate::content::ActiveGeneration,

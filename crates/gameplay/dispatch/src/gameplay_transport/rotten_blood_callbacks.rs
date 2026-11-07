@@ -20,6 +20,9 @@ pub(super) use advanced::bak_preparation::before_drive as prepare_bak_first_thin
 pub(super) use advanced::step::step_in;
 mod mushroom;
 
+type BossSpawnPlan = (&'static str, RoomPosition, u8, bool);
+type BossSummonChange = (Option<BossSpawnPlan>, Option<u64>);
+
 #[derive(Debug)]
 struct Boss {
     actor: ExactActorRef,
@@ -409,70 +412,69 @@ pub(super) async fn drive(
             waved = true;
             draw(native, actor, occurrence.sequence, 0, 1001).map_or(0, |n| 8000 + u64::from(n))
         };
-        let effects: Vec<(Option<(&'static str, RoomPosition, u8, bool)>, Option<u64>)> =
-            if key == mur::MURCION_KEY {
-                boss.murcion
-                    .think(
-                        &mur::MurcionThinkFacts {
-                            boss: boss_position,
-                            interval_ms: interval,
-                            nearby_mushrooms: mushrooms,
-                            nearby_bloodjaws: jaws,
-                            bloodjaw_target: elder::bloodjaw_target_count(maximum),
-                            mechanics_disabled: false,
-                            bloodjaw_spawn_paused: false,
-                        },
-                        &mut interval_draw,
-                    )
-                    .map_err(|_| ())?
-                    .into_iter()
-                    .map(|e| match e {
-                        mur::MurcionEffect::Spawn {
-                            creature_key,
-                            around,
-                            placement,
-                        } => {
-                            let (offset, close) = match placement {
-                                mur::Placement::Close { offset_tiles } => (offset_tiles, true),
-                                mur::Placement::Random { offset_tiles } => (offset_tiles, false),
-                            };
-                            (Some((creature_key, around, offset, close)), None)
-                        }
-                        mur::MurcionEffect::RemoveSummon { actor } => (None, Some(actor)),
-                    })
-                    .collect()
-            } else {
-                boss.ichgahal
-                    .think(
-                        &ich::IchgahalThinkFacts {
-                            boss: boss_position,
-                            interval_ms: interval,
-                            nearby_mushrooms: mushrooms,
-                            nearby_bloodjaws: jaws,
-                            bloodjaw_target: elder::bloodjaw_target_count(maximum),
-                            mechanics_disabled: false,
-                            bloodjaw_spawn_paused: false,
-                        },
-                        &mut interval_draw,
-                    )
-                    .map_err(|_| ())?
-                    .into_iter()
-                    .map(|e| match e {
-                        ich::IchgahalEffect::Spawn {
-                            creature_key,
-                            around,
-                            placement,
-                        } => {
-                            let (offset, close) = match placement {
-                                ich::Placement::Close { offset_tiles } => (offset_tiles, true),
-                                ich::Placement::Random { offset_tiles } => (offset_tiles, false),
-                            };
-                            (Some((creature_key, around, offset, close)), None)
-                        }
-                        ich::IchgahalEffect::RemoveSummon { actor } => (None, Some(actor)),
-                    })
-                    .collect()
-            };
+        let effects: Vec<BossSummonChange> = if key == mur::MURCION_KEY {
+            boss.murcion
+                .think(
+                    &mur::MurcionThinkFacts {
+                        boss: boss_position,
+                        interval_ms: interval,
+                        nearby_mushrooms: mushrooms,
+                        nearby_bloodjaws: jaws,
+                        bloodjaw_target: elder::bloodjaw_target_count(maximum),
+                        mechanics_disabled: false,
+                        bloodjaw_spawn_paused: false,
+                    },
+                    &mut interval_draw,
+                )
+                .map_err(|_| ())?
+                .into_iter()
+                .map(|e| match e {
+                    mur::MurcionEffect::Spawn {
+                        creature_key,
+                        around,
+                        placement,
+                    } => {
+                        let (offset, close) = match placement {
+                            mur::Placement::Close { offset_tiles } => (offset_tiles, true),
+                            mur::Placement::Random { offset_tiles } => (offset_tiles, false),
+                        };
+                        (Some((creature_key, around, offset, close)), None)
+                    }
+                    mur::MurcionEffect::RemoveSummon { actor } => (None, Some(actor)),
+                })
+                .collect()
+        } else {
+            boss.ichgahal
+                .think(
+                    &ich::IchgahalThinkFacts {
+                        boss: boss_position,
+                        interval_ms: interval,
+                        nearby_mushrooms: mushrooms,
+                        nearby_bloodjaws: jaws,
+                        bloodjaw_target: elder::bloodjaw_target_count(maximum),
+                        mechanics_disabled: false,
+                        bloodjaw_spawn_paused: false,
+                    },
+                    &mut interval_draw,
+                )
+                .map_err(|_| ())?
+                .into_iter()
+                .map(|e| match e {
+                    ich::IchgahalEffect::Spawn {
+                        creature_key,
+                        around,
+                        placement,
+                    } => {
+                        let (offset, close) = match placement {
+                            ich::Placement::Close { offset_tiles } => (offset_tiles, true),
+                            ich::Placement::Random { offset_tiles } => (offset_tiles, false),
+                        };
+                        (Some((creature_key, around, offset, close)), None)
+                    }
+                    ich::IchgahalEffect::RemoveSummon { actor } => (None, Some(actor)),
+                })
+                .collect()
+        };
         let count = effects.len();
         for (index, (spawn, remove)) in effects.into_iter().enumerate() {
             if let Some((key, around, offset, close)) = spawn {

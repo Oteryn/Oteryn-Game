@@ -8,6 +8,10 @@ pub(super) struct Entry {
     handoff: [u8; 16],
     sparks: [Option<(ExactActorRef, u64)>; 4],
 }
+#[allow(
+    clippy::too_many_arguments,
+    reason = "accepted prefix, durable handoff, current destination runtime, native policy, AI owner and birth clock stay distinct"
+)]
 pub(super) fn initialize(
     owner: &mut NativeCallbackState,
     runtime: &mut ChannelRuntimeV1,

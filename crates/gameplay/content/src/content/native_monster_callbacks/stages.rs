@@ -291,50 +291,6 @@ impl QualifiedNativeCallback {
         }))
     }
 }
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn srx3_opaque_callback_stage_keeps_exact_gaz_damage_and_plagirath_matrix()
-    -> Result<(), Box<dyn std::error::Error>> {
-        let w = source().map_err(|e| format!("{e:?}"))?;
-        let gaz = w
-            .cases
-            .get("oteryn:ability.spell.gaz_haragoth_death")
-            .ok_or("actual Gaz callback")?;
-        let spec = parse_stage(w, gaz, &gaz.casts[0]).map_err(|e| format!("{e:?}"))?;
-        assert_eq!((spec.minimum, spec.maximum), (30000, 30000));
-        assert_eq!(spec.element, "energy");
-        let plag = w
-            .cases
-            .get("oteryn:ability.spell.plagirath_bog")
-            .ok_or("actual Plagirath callback")?;
-        let spec = parse_stage(w, plag, &plag.casts[0]).map_err(|e| format!("{e:?}"))?;
-        let Some(ProjectV2AbilityArea::Matrix { north, .. }) = spec.area else {
-            return Err("actual source matrix".into());
-        };
-        assert_eq!(
-            north
-                .iter()
-                .map(|r| r.bytes().filter(|b| matches!(*b, b'x' | b'C')).count())
-                .sum::<usize>(),
-            41
-        );
-        Ok(())
-    }
-    #[test]
-    fn srx3_opaque_callback_stage_compiles_all_nine_existing_source_cases()
-    -> Result<(), Box<dyn std::error::Error>> {
-        let w = source().map_err(|e| format!("{e:?}"))?;
-        assert_eq!(w.cases.len(), 9);
-        for c in w.cases.values() {
-            for stage in &c.casts {
-                parse_stage(w, c, stage).map_err(|e| format!("{}:{e:?}", c.caster))?;
-            }
-        }
-        Ok(())
-    }
-}
 
 /// Literal source area DATA, not a numeric Circle approximation or a grant.
 /// Canary47dfd51/Crystal201189f outburst_explode.lua:16-30,
@@ -397,4 +353,49 @@ pub fn source_callback_area(creature: &str) -> Option<ProjectV2AbilityArea> {
         north: rows.iter().map(|row| (*row).to_owned()).collect(),
         diagonal: Vec::new(),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn srx3_opaque_callback_stage_keeps_exact_gaz_damage_and_plagirath_matrix()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let w = source().map_err(|e| format!("{e:?}"))?;
+        let gaz = w
+            .cases
+            .get("oteryn:ability.spell.gaz_haragoth_death")
+            .ok_or("actual Gaz callback")?;
+        let spec = parse_stage(w, gaz, &gaz.casts[0]).map_err(|e| format!("{e:?}"))?;
+        assert_eq!((spec.minimum, spec.maximum), (30000, 30000));
+        assert_eq!(spec.element, "energy");
+        let plag = w
+            .cases
+            .get("oteryn:ability.spell.plagirath_bog")
+            .ok_or("actual Plagirath callback")?;
+        let spec = parse_stage(w, plag, &plag.casts[0]).map_err(|e| format!("{e:?}"))?;
+        let Some(ProjectV2AbilityArea::Matrix { north, .. }) = spec.area else {
+            return Err("actual source matrix".into());
+        };
+        assert_eq!(
+            north
+                .iter()
+                .map(|r| r.bytes().filter(|b| matches!(*b, b'x' | b'C')).count())
+                .sum::<usize>(),
+            41
+        );
+        Ok(())
+    }
+    #[test]
+    fn srx3_opaque_callback_stage_compiles_all_nine_existing_source_cases()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let w = source().map_err(|e| format!("{e:?}"))?;
+        assert_eq!(w.cases.len(), 9);
+        for c in w.cases.values() {
+            for stage in &c.casts {
+                parse_stage(w, c, stage).map_err(|e| format!("{}:{e:?}", c.caster))?;
+            }
+        }
+        Ok(())
+    }
 }

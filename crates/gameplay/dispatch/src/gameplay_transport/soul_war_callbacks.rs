@@ -743,21 +743,20 @@ async fn apply_greed_effects(
                 if let Some((target, session)) = players
                     .iter()
                     .find(|(target, _)| u64::from(target.0.actor_local_id.0) == actor)
+                    && let Some(source) = callback_source
                 {
-                    if let Some(source) = callback_source {
-                        // Lua ignores addHealth's false result (for example a
-                        // player already killed earlier in this same callback).
-                        // The source still removes itself and schedules its return.
-                        let _ = states.apply_soul_war_lua_health_loss(
-                            runtime,
-                            native,
-                            source,
-                            *target,
-                            *session,
-                            amount,
-                            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now),
-                        );
-                    }
+                    // Lua ignores addHealth's false result (for example a
+                    // player already killed earlier in this same callback).
+                    // The source still removes itself and schedules its return.
+                    let _ = states.apply_soul_war_lua_health_loss(
+                        runtime,
+                        native,
+                        source,
+                        *target,
+                        *session,
+                        amount,
+                        crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now),
+                    );
                 }
             }
             GreedEffect::BossBuff {

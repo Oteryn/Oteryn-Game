@@ -55,14 +55,15 @@ mod tests {
         );
     }
     #[test]
-    fn srx3_cruelty_maw_future_timestamp_delays_next_increase_thirty_seconds() {
+    fn srx3_cruelty_maw_future_timestamp_delays_next_increase_thirty_seconds() -> Result<(), String>
+    {
         let mut owner = Cruelty::default();
         for tick in 1..=15 {
             let _ = owner.think(1_800_000_000 + tick, 1000);
         }
         owner
             .mortal_essence_used(1_800_000_020)
-            .expect("source timestamp");
+            .ok_or("source timestamp")?;
         assert_eq!(owner.think(1_800_000_049, 1000), None);
         assert_eq!(
             owner.think(1_800_000_050, 1000),
@@ -71,5 +72,6 @@ mod tests {
                 drain: 3
             })
         );
+        Ok(())
     }
 }

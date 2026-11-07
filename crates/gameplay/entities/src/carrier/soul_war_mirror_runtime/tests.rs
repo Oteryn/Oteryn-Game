@@ -1431,7 +1431,8 @@ fn srx3_autonomous_player_source_keeps_prepare_death_and_bypasses_mirror_health_
 mod absorption_source;
 
 #[test]
-fn srx3_actual_player_damage_map_retains_source_actor_and_replay_without_master_credit_alias() {
+fn srx3_actual_player_damage_map_retains_source_actor_and_replay_without_master_credit_alias()
+-> Result<(), String> {
     let (mut runtime, player, session, image, command) = fixture(8);
     runtime
         .remove_encounter_actor(image)
@@ -1493,11 +1494,18 @@ fn srx3_actual_player_damage_map_retains_source_actor_and_replay_without_master_
     assert_eq!(source[0].total, 5);
     assert_eq!(source[0].last_damage_at_ms, Some(200));
     assert!(!commit(&mut runtime).applied);
-    assert_eq!(runtime.source_player_damage_shares(target).unwrap(), source);
+    assert_eq!(
+        runtime
+            .source_player_damage_shares(target)
+            .map_err(|error| format!("{error:?}"))?,
+        source
+    );
+    Ok(())
 }
 
 #[test]
-fn srx3_actual_player_periodic_damage_map_retains_source_actor_and_consumed_tick_replay() {
+fn srx3_actual_player_periodic_damage_map_retains_source_actor_and_consumed_tick_replay()
+-> Result<(), String> {
     use oteryn_gameplay_domain::domain::condition::{ConditionValues, DotElement};
     use oteryn_gameplay_foundation::foundation::condition::{ConditionDefinition, TickFacts};
     let (mut runtime, player, session, image, command) = fixture(9);
@@ -1520,7 +1528,9 @@ fn srx3_actual_player_periodic_damage_map_retains_source_actor_and_consumed_tick
             )
             .expect("actual native target"),
     );
-    runtime.install_creature_policy(target, key).unwrap();
+    runtime
+        .install_creature_policy(target, key)
+        .map_err(|error| format!("{error:?}"))?;
     runtime
         .install_current_soul_war_player_source(player, session, None, 201_000, &PeriodicSource)
         .expect("actual current condition creator data");
@@ -1539,7 +1549,7 @@ fn srx3_actual_player_periodic_damage_map_retains_source_actor_and_consumed_tick
                 delayed: false,
             },
         )
-        .unwrap(),
+        .ok_or("valid condition definition")?,
         source: Some(player),
         lineage: Some(
             oteryn_gameplay_foundation::foundation::condition::ConditionLineage {
@@ -1557,7 +1567,7 @@ fn srx3_actual_player_periodic_damage_map_retains_source_actor_and_consumed_tick
     };
     runtime
         .commit_creature_field_entry(target, 201_000, Some(&field))
-        .unwrap();
+        .map_err(|error| format!("{error:?}"))?;
     let receipt = runtime
         .apply_creature_periodic_turn_with_sources(
             target,
@@ -1575,7 +1585,9 @@ fn srx3_actual_player_periodic_damage_map_retains_source_actor_and_consumed_tick
         receipt.health_after < receipt.health_before,
         "source damage attribution is tested only after a real canonical tick"
     );
-    let source = runtime.source_player_damage_shares(target).unwrap();
+    let source = runtime
+        .source_player_damage_shares(target)
+        .map_err(|error| format!("{error:?}"))?;
     assert_eq!(
         source.len(),
         1,
@@ -1584,7 +1596,8 @@ fn srx3_actual_player_periodic_damage_map_retains_source_actor_and_consumed_tick
     assert_eq!(source[0].actor, player);
     assert_eq!(
         source[0].total,
-        u64::try_from(receipt.health_before - receipt.health_after).unwrap()
+        u64::try_from(receipt.health_before - receipt.health_after)
+            .map_err(|error| format!("{error:?}"))?
     );
     assert_eq!(source[0].last_damage_at_ms, Some(201));
     runtime
@@ -1600,11 +1613,18 @@ fn srx3_actual_player_periodic_damage_map_retains_source_actor_and_consumed_tick
             },
         )
         .expect("consumed tick replay");
-    assert_eq!(runtime.source_player_damage_shares(target).unwrap(), source);
+    assert_eq!(
+        runtime
+            .source_player_damage_shares(target)
+            .map_err(|error| format!("{error:?}"))?,
+        source
+    );
+    Ok(())
 }
 
 #[test]
-fn srx3_autonomous_reflection_lethal_enqueues_actual_source_death_before_reward() {
+fn srx3_autonomous_reflection_lethal_enqueues_actual_source_death_before_reward()
+-> Result<(), String> {
     let (mut runtime, player, session, image, _) = fixture(10);
     runtime
         .remove_encounter_actor(image)
@@ -1630,7 +1650,7 @@ fn srx3_autonomous_reflection_lethal_enqueues_actual_source_death_before_reward(
     runtime
         .install_creature_policy(target, key)
         .expect("qualified current native death metadata");
-    let damage = u32::try_from(policy.maximum_health).unwrap();
+    let damage = u32::try_from(policy.maximum_health).map_err(|error| format!("{error:?}"))?;
     let receipt = runtime
         .commit_source_damage(
             target,
@@ -1651,14 +1671,16 @@ fn srx3_autonomous_reflection_lethal_enqueues_actual_source_death_before_reward(
         .projection
         .occurrence
         .death_key()
-        .unwrap();
+        .map_err(|error| format!("{error:?}"))?;
     let notice = runtime
         .next_source_creature_death()
-        .unwrap()
+        .map_err(|error| format!("{error:?}"))?
         .expect("manual autonomous Slot publication must retain the same source death FIFO notice");
     assert_eq!(notice.actor(), target);
     assert_eq!(notice.death_key(), original);
-    let begin = runtime.begin_source_creature_death(&notice).unwrap();
+    let begin = runtime
+        .begin_source_creature_death(&notice)
+        .map_err(|error| format!("{error:?}"))?;
     assert!(
         begin.has_reward_damage_credit(),
         "an actual reflected Player contribution cannot become an uncredited corpse cause"
@@ -1674,10 +1696,16 @@ fn srx3_autonomous_reflection_lethal_enqueues_actual_source_death_before_reward(
                 damage,
                 202
             )
-            .unwrap()
+            .map_err(|error| format!("{error:?}"))?
             .applied
     );
-    assert_eq!(runtime.next_source_creature_death().unwrap(), Some(notice));
+    assert_eq!(
+        runtime
+            .next_source_creature_death()
+            .map_err(|error| format!("{error:?}"))?,
+        Some(notice)
+    );
+    Ok(())
 }
 
 #[path = "tests/hatred_periodic.rs"]

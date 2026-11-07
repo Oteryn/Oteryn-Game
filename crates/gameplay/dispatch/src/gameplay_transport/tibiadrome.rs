@@ -624,14 +624,13 @@ pub(in crate::gameplay_transport) fn tick_at(
                         let _ = runtime.remove_arena_opponent(target);
                         break;
                     }
-                    if let Some(modifiers) = &battle.modifiers {
-                        if runtime
+                    if let Some(modifiers) = &battle.modifiers
+                        && runtime
                             .bind_tibiadrome_modifiers(target, current.run, modifiers.selected())
                             .is_err()
-                        {
-                            let _ = runtime.remove_arena_opponent(target);
-                            break;
-                        }
+                    {
+                        let _ = runtime.remove_arena_opponent(target);
+                        break;
                     }
                     battle.opponents.push(target);
                 }

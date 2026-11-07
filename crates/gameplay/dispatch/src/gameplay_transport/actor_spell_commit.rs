@@ -609,14 +609,12 @@ fn stage_player_batch_inner(
             source_time,
         )
         .map_err(|_| SpellCastDisposition::Rejected)?
-    {
-        if states
+        && states
             .get(runtime, batch.caster, batch.command.game_session_id())
             .map(|state| state.revision())
             != Some(source.before_revision)
-        {
-            return Err(SpellCastDisposition::Rejected);
-        }
+    {
+        return Err(SpellCastDisposition::Rejected);
     }
     let preprocessed_caster = if preprocessed {
         let session = batch.command.game_session_id();

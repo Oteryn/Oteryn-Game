@@ -73,13 +73,17 @@ fn presentation_audio_negotiates_and_validates_revisions_before_delivery() -> Re
                 );
                 // Repeated/stale revisions cannot replay an audible event.
                 let stale = encode_state_delta(1, 43, 19, 0, 1, 1, &[])?;
-                assert!(session
-                    .apply_state_delta(43, decode_wire_envelope(&stale)?.payload())
-                    .is_err());
+                assert!(
+                    session
+                        .apply_state_delta(43, decode_wire_envelope(&stale)?.payload())
+                        .is_err()
+                );
                 let malformed = encode_state_delta(1, 43, 19, 1, 2, 1, &[255])?;
-                assert!(session
-                    .apply_state_delta(43, decode_wire_envelope(&malformed)?.payload())
-                    .is_err());
+                assert!(
+                    session
+                        .apply_state_delta(43, decode_wire_envelope(&malformed)?.payload())
+                        .is_err()
+                );
                 assert_eq!(
                     session
                         .gated_revisions
@@ -157,13 +161,17 @@ fn ambient_b24_negotiates_without_enabling_legacy_presentation() -> Result<(), B
                 );
                 // Repeated/stale revisions cannot replay an audible event.
                 let stale = encode_state_delta(1, 43, 101, 0, 1, 1, &[])?;
-                assert!(session
-                    .apply_state_delta(43, decode_wire_envelope(&stale)?.payload())
-                    .is_err());
+                assert!(
+                    session
+                        .apply_state_delta(43, decode_wire_envelope(&stale)?.payload())
+                        .is_err()
+                );
                 let malformed = encode_state_delta(1, 43, 101, 1, 2, 1, &[255])?;
-                assert!(session
-                    .apply_state_delta(43, decode_wire_envelope(&malformed)?.payload())
-                    .is_err());
+                assert!(
+                    session
+                        .apply_state_delta(43, decode_wire_envelope(&malformed)?.payload())
+                        .is_err()
+                );
                 assert_eq!(
                     session
                         .gated_revisions
@@ -288,7 +296,7 @@ fn nx5_item_effects_negotiate_without_casting_and_reject_other_payload_kinds()
 }
 
 #[test]
-fn srx3_native_map_epoch_basis_requires_negotiated_capability() {
+fn srx3_native_map_epoch_basis_requires_negotiated_capability() -> Result<(), String> {
     use oteryn_protocol_oteryn::presentation::*;
     let snapshots = vec![
         GatedSnapshot {
@@ -306,7 +314,7 @@ fn srx3_native_map_epoch_basis_requires_negotiated_capability() {
                 rtt_ms: None,
                 entries: vec![],
             })
-            .unwrap(),
+            .map_err(|error| format!("{error:?}"))?,
         },
     ];
     assert!(
@@ -322,4 +330,5 @@ fn srx3_native_map_epoch_basis_requires_negotiated_capability() {
     let mut legacy = snapshots;
     legacy[0].snapshot_type = 1;
     assert!(crate::presentation::validate_join(&[6, 23], &legacy).is_ok());
+    Ok(())
 }

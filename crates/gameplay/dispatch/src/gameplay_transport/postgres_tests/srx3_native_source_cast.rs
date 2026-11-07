@@ -160,13 +160,13 @@ fn source_cast_case_inner(
                 owner.drain_monster_melee().await;
                 let runtime = owner.runtime.lock().await;
                 let states = owner.states.spell_states.lock().await;
-                if let Some(master) = master.filter(|_| !selected) {
-                    if let Some(child) = runtime.positioned_actor_census().map_err(debug)?.into_iter()
+                if let Some(master) = master.filter(|_| !selected)
+                    && let Some(child) = runtime.positioned_actor_census().map_err(debug)?.into_iter()
                         .map(|(actor, _, _)| actor).find(|actor|
                             runtime.native_summon_master(*actor) == Some(master)
-                                && runtime.matches_live_creature_identity(*actor, key.as_bytes())) {
-                        caster = child;
-                    }
+                                && runtime.matches_live_creature_identity(*actor, key.as_bytes()))
+                {
+                    caster = child;
                 }
                 if let Some(report) = states.monster_melee.creature_ai.last_report_for_test(caster) {
                     selected |= report.proposals.iter().any(|proposal| proposal.ability.key == ability);

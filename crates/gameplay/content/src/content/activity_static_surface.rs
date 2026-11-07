@@ -95,22 +95,6 @@ fn records() -> Option<&'static BTreeMap<String, StaticSurfaceFacts>> {
 pub fn qualified_static_surface(key: &str) -> Option<StaticSurfaceFacts> {
     records()?.get(key).copied()
 }
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn static_primal_decoration_has_no_item_identity() {
-        let facts = qualified_static_surface("oteryn:world-object.tibia.i39095").unwrap();
-        assert_eq!(facts.source_id, 39095);
-        assert_eq!(facts.ground, None);
-        assert_eq!(qualified_static_surface("oteryn:item.tibia.i39095"), None);
-        assert_eq!(
-            qualified_static_surface("oteryn:world-object.tibia.i39096"),
-            None
-        );
-    }
-}
-
 /// A source-only static binding never substitutes for a native Item reference.
 pub fn qualified_static_binding(family: &str, key: &str, revision: &str, source_id: u32) -> bool {
     qualified_static_surface(key).is_some_and(|facts| {
@@ -151,4 +135,22 @@ pub fn static_surface_definition_id(key: &str) -> Option<u32> {
     .as_ref()?
     .get(key)
     .copied()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn static_primal_decoration_has_no_item_identity() -> Result<(), &'static str> {
+        let facts = qualified_static_surface("oteryn:world-object.tibia.i39095")
+            .ok_or("source-qualified Primal decoration policy")?;
+        assert_eq!(facts.source_id, 39095);
+        assert_eq!(facts.ground, None);
+        assert_eq!(qualified_static_surface("oteryn:item.tibia.i39095"), None);
+        assert_eq!(
+            qualified_static_surface("oteryn:world-object.tibia.i39096"),
+            None
+        );
+        Ok(())
+    }
 }

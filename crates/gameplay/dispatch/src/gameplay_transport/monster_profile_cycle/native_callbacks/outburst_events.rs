@@ -63,6 +63,10 @@ impl NativeOutburstEvents {
         )
         .await
     }
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "shared source globals, qualified content, physical map, AI owner and source cutoff use the real execution clock"
+    )]
     pub(super) async fn drive_due_through(
         &mut self,
         globals: &mut outburst_state::OutburstState,
@@ -89,6 +93,10 @@ impl NativeOutburstEvents {
         )
         .await
     }
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "shared source globals, qualified content, physical map, AI owner and source cutoff use the real execution clock"
+    )]
     async fn drive_inner(
         &mut self,
         globals: &mut outburst_state::OutburstState,

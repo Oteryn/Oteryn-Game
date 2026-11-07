@@ -67,18 +67,6 @@ pub(super) struct NativeActivityAttempt<'a> {
     outcome: Option<NativeActivityOutcome>,
 }
 
-#[cfg(test)]
-pub(in crate::gameplay_transport) mod srx3_faults {
-    use std::cell::Cell;
-    thread_local! { static AFTER_SOULPIT_COMMIT: Cell<bool> = const { Cell::new(false) }; }
-    pub(in crate::gameplay_transport) fn stop_after_soulpit_commit_once() {
-        AFTER_SOULPIT_COMMIT.set(true);
-    }
-    pub(super) fn take_after_soulpit_commit() -> bool {
-        AFTER_SOULPIT_COMMIT.replace(false)
-    }
-}
-
 impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
     pub(super) async fn prune_refused_activity_attempts(
         &self,
@@ -1252,5 +1240,17 @@ pub(super) fn activity_continuity(source: SessionContinuity) -> SessionContinuit
         server_save_revision: source.server_save_revision,
         server_save_sent: source.server_save_sent,
         ..SessionContinuity::FRESH
+    }
+}
+
+#[cfg(test)]
+pub(in crate::gameplay_transport) mod srx3_faults {
+    use std::cell::Cell;
+    thread_local! { static AFTER_SOULPIT_COMMIT: Cell<bool> = const { Cell::new(false) }; }
+    pub(in crate::gameplay_transport) fn stop_after_soulpit_commit_once() {
+        AFTER_SOULPIT_COMMIT.set(true);
+    }
+    pub(super) fn take_after_soulpit_commit() -> bool {
+        AFTER_SOULPIT_COMMIT.replace(false)
     }
 }

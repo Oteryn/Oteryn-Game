@@ -41,8 +41,8 @@ struct Birth {
 #[derive(Debug)]
 enum WorkKind {
     Beam {
-        parent: ProfileAbilityProposal,
-        source: Option<crate::creature_damage_spell::composed::ComposedSource>,
+        parent: Box<ProfileAbilityProposal>,
+        source: Option<Box<crate::creature_damage_spell::composed::ComposedSource>>,
     },
     Boom {
         actor: ExactActorRef,
@@ -52,7 +52,7 @@ enum WorkKind {
     },
     Reform {
         occurrence: crate::foundation::ThinkOccurrence,
-        birth: Option<Birth>,
+        birth: Option<Box<Birth>>,
         known_failure: bool,
     },
 }
@@ -359,7 +359,7 @@ impl NativeOmrafir {
                     family: Family::Reform,
                     kind: WorkKind::Reform {
                         occurrence: *occurrence,
-                        birth: reform,
+                        birth: reform.map(Box::new),
                         known_failure: !normal,
                     },
                 });
@@ -535,7 +535,7 @@ impl NativeOmrafir {
                             key: token,
                             family: Family::Beam,
                             kind: WorkKind::Beam {
-                                parent: p.clone(),
+                                parent: Box::new(p.clone()),
                                 source: None,
                             },
                         });
@@ -706,11 +706,11 @@ impl NativeOmrafir {
                     .ok_or(())?
                     .beam_stage(direction)
                     .ok_or(())?;
-                *source=Some(crate::creature_damage_spell::composed::ComposedSource::from_omrafir_beam_current(native,&descriptor,runtime,parent).map_err(|_|())?);
+                *source=Some(Box::new(crate::creature_damage_spell::composed::ComposedSource::from_omrafir_beam_current(native,&descriptor,runtime,parent).map_err(|_|())?));
             }
-            let source = source.as_ref().ok_or(())?;
+            let source = source.as_deref().ok_or(())?;
             let actor = parent.issuer;
-            let mut proposal = parent.clone();
+            let mut proposal = parent.as_ref().clone();
             proposal.target = actor;
             let atom = format!(
                 "actor:{}",
@@ -790,6 +790,10 @@ impl NativeOmrafir {
         }
         Ok(())
     }
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "source event cutoff, real clock, current scope, map and native birth owners are independently checked"
+    )]
     async fn drain_events(
         &mut self,
         runtime: &mut ChannelRuntimeV1,

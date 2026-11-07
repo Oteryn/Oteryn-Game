@@ -136,10 +136,10 @@ impl DeferredCallbacks {
     pub(super) fn next_due(&self) -> Option<u64> {
         self.0
             .iter()
-            .filter_map(|occurrence| match &occurrence.effect {
+            .map(|occurrence| match &occurrence.effect {
                 PrimalMenaceEffect::SpawnSparkle { .. }
-                | PrimalMenaceEffect::ScheduledSpawn { .. } => Some(occurrence.original_due_ms),
-                PrimalMenaceEffect::ReplaceWithFungosaurus { .. } => Some(0),
+                | PrimalMenaceEffect::ScheduledSpawn { .. } => occurrence.original_due_ms,
+                PrimalMenaceEffect::ReplaceWithFungosaurus { .. } => 0,
             })
             .min()
     }
@@ -148,13 +148,14 @@ impl DeferredCallbacks {
 #[cfg(test)]
 mod tests {
     use super::*;
+    type TestResult<T = ()> = Result<T, String>;
     use crate::foundation::MovementLocalPosition;
     use oteryn_gameplay_encounters::bosses::hazard_primal::primal_menace_think::{
         PrimalMenaceEffect, WaveKind,
     };
 
     #[test]
-    fn primal_native_due_cutoff_uses_original_execution_not_retry_wake() {
+    fn primal_native_due_cutoff_uses_original_execution_not_retry_wake() -> TestResult {
         let at = MovementLocalPosition {
             x: 33558,
             y: 32759,
@@ -169,7 +170,7 @@ mod tests {
                 },
                 600,
             )
-            .expect("actual replacement execution");
+            .map_err(|_| "actual replacement execution".to_owned())?;
         callbacks
             .enqueue_at(
                 PrimalMenaceEffect::SpawnSparkle {
@@ -178,7 +179,7 @@ mod tests {
                 },
                 400,
             )
-            .expect("later original source deadline");
+            .map_err(|_| "later original source deadline".to_owned())?;
         assert_eq!(
             callbacks.next_due(),
             Some(0),
@@ -187,33 +188,34 @@ mod tests {
         assert!(
             callbacks
                 .peek_due_through(1_000, 599)
-                .expect("no old work")
+                .map_err(|_| "no old work".to_owned())?
                 .is_none()
         );
         let first = callbacks
             .peek_due_through(1_000, 600)
-            .expect("due-only owner must consume eligible original work")
-            .expect("original replacement, despite wake0");
+            .map_err(|_| "due-only owner must consume eligible original work".to_owned())?
+            .ok_or("original replacement, despite wake0")?;
         assert_eq!(first.original_due_ms, 600);
         callbacks
             .acknowledge(first.id)
-            .expect("known source replacement");
+            .map_err(|_| "known source replacement".to_owned())?;
         assert_eq!(callbacks.next_due(), Some(700));
         assert!(
             callbacks
                 .peek_due_through(1_000, 600)
-                .expect("later work retained")
+                .map_err(|_| "later work retained".to_owned())?
                 .is_none()
         );
         let later = callbacks
             .peek_due_through(1_000, 700)
-            .expect("real owner time stays1000")
-            .expect("original700ms source work");
+            .map_err(|_| "real owner time stays1000".to_owned())?
+            .ok_or("original700ms source work")?;
         assert_eq!(later.original_due_ms, 700);
+        Ok(())
     }
 
     #[test]
-    fn primal_native_deferred_retry_retains_original_creation_occurrence() {
+    fn primal_native_deferred_retry_retains_original_creation_occurrence() -> TestResult {
         let effect = PrimalMenaceEffect::ScheduledSpawn {
             kind: WaveKind::Beast,
             position: MovementLocalPosition {
@@ -224,15 +226,17 @@ mod tests {
             at_ms: 24_000,
         };
         let mut callbacks = DeferredCallbacks::default();
-        callbacks.enqueue(effect).expect("source addEvent");
+        callbacks
+            .enqueue(effect)
+            .map_err(|_| "source addEvent".to_owned())?;
         let first = callbacks.take_due(24_000, true).remove(0);
         let id = first.id;
         callbacks
             .retry(first)
-            .expect("unknown Map retains original callback");
+            .map_err(|_| "unknown Map retains original callback".to_owned())?;
         callbacks
             .enqueue(effect)
-            .expect("a distinct later source creation");
+            .map_err(|_| "a distinct later source creation".to_owned())?;
         let retried = callbacks.take_due(25_000, true);
         assert_eq!(retried.len(), 2);
         assert_eq!(retried[0].id, id);
@@ -241,10 +245,11 @@ mod tests {
             retried[1].id, id,
             "failed placement cannot alias a later literal creation"
         );
+        Ok(())
     }
 
     #[test]
-    fn primal_native_deferred_retained_replacement_stays_due_after_parent_death() {
+    fn primal_native_deferred_retained_replacement_stays_due_after_parent_death() -> TestResult {
         let mut callbacks = DeferredCallbacks::default();
         callbacks
             .enqueue(PrimalMenaceEffect::ReplaceWithFungosaurus {
@@ -255,20 +260,21 @@ mod tests {
                     floor: 15,
                 },
             })
-            .expect("actual aged beast replacement");
+            .map_err(|_| "actual aged beast replacement".to_owned())?;
         let callback = callbacks.take_due(25_000, false).remove(0);
         callbacks
             .retry(callback)
-            .expect("unavailable map retains source replacement");
+            .map_err(|_| "unavailable map retains source replacement".to_owned())?;
         assert_eq!(
             callbacks.next_due(),
             Some(0),
             "a pending replacement must wake without a live parent profile"
         );
+        Ok(())
     }
 
     #[test]
-    fn primal_native_deferred_callbacks_keep_exact_due_and_pod_after_boss_death() {
+    fn primal_native_deferred_callbacks_keep_exact_due_and_pod_after_boss_death() -> TestResult {
         let at = MovementLocalPosition {
             x: 33558,
             y: 32759,
@@ -281,14 +287,14 @@ mod tests {
                 position: at,
                 at_ms: 24_000,
             })
-            .expect("bounded source event");
+            .map_err(|_| "bounded source event".to_owned())?;
         callbacks
             .enqueue(PrimalMenaceEffect::ScheduledSpawn {
                 kind: WaveKind::Beast,
                 position: at,
                 at_ms: 24_000,
             })
-            .expect("bounded source event");
+            .map_err(|_| "bounded source event".to_owned())?;
         assert!(callbacks.take_due(23_999, false).is_empty());
         let due = callbacks.take_due(24_000, false);
         assert_eq!(
@@ -308,5 +314,6 @@ mod tests {
             callbacks.take_due(24_001, true).is_empty(),
             "callbacks execute once"
         );
+        Ok(())
     }
 }

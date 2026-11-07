@@ -154,7 +154,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             if states.has_pending_spell_commit(actor,session){return Err(DurabilityError::Unavailable)}
                             let next=states.get(runtime,actor,session).and_then(|p|p.stage_soul_war_torment_icon_removed());
                             map.view().relocate_source_player(runtime,actor,session,exit).map_err(|_|DurabilityError::Unavailable)?;
-                            if let Some(next)=next{if !states.commit(runtime,actor,session,next){return Err(DurabilityError::Unavailable)}}
+                            if let Some(next)=next && !states.commit(runtime,actor,session,next){return Err(DurabilityError::Unavailable)}
                         }
                     }
                 }

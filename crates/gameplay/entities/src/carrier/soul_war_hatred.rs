@@ -135,6 +135,98 @@ impl super::runtime_actor_spell::ActorCombatState {
     }
 }
 
+impl ChannelRuntimeV1 {
+    /// Creature(name) sees registered actors until the death dispatcher removes
+    /// them (Crystal game.cpp1150-1175), including a queued zero-HP successor.
+    pub fn soul_war_megalomania_name_present(&self) -> Result<bool, CarrierError> {
+        self.owner_fence()?;
+        Ok(self
+            .carrier
+            .occupied
+            .iter()
+            .any(|&index| match &self.carrier.slots[index as usize] {
+                Slot::CreatureOccupied {
+                    companion: Some(companion),
+                    spell_combat,
+                    ..
+                } => {
+                    matches!(
+                        companion.policy.definition_key.as_str(),
+                        "oteryn:creature.goshnar_s_megalomania_purple"
+                            | "oteryn:creature.goshnar_s_megalomania_green"
+                            | "oteryn:creature.goshnar_s_megalomania_blue"
+                    ) && spell_combat
+                        .soul_war_health
+                        .as_deref()
+                        .is_some_and(|policy| {
+                            policy.is_empowered_boss()
+                                && policy.matches(
+                                    self.content_pin().server_artifact_digest(),
+                                    &companion.policy.definition_key,
+                                    &companion.policy.definition_revision,
+                                )
+                        })
+                }
+                _ => false,
+            }))
+    }
+}
+
+impl ChannelRuntimeV1 {
+    /// Literal Player-target branch, after block and before origin reductions.
+    /// Lua binary64 multiplication is narrowed exactly like the donor's
+    /// getNumber<int32_t> (creatureevent.cpp473; lua_functions_loader.hpp74-90).
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "finite nonnegative result is checked against the donor signed32 boundary before truncation"
+    )]
+    pub fn soul_war_hatred_player_primary(
+        &self,
+        source: ExactActorRef,
+        original: u32,
+    ) -> Result<u32, CarrierError> {
+        self.owner_fence()?;
+        let index = self.encounter_actor_index(source)?;
+        let Slot::CreatureOccupied {
+            companion: Some(companion),
+            spell_combat,
+            ..
+        } = self.encounter_slot(index)
+        else {
+            return Ok(original);
+        };
+        // The literal alternate condition tests the Player's name against
+        // Goshnar's Megalomania. CharacterName forbids apostrophes; no admitted
+        // Player can satisfy it. Do not repair it into a Mego attacker test.
+        if companion.policy.definition_key != HATRED {
+            return Ok(original);
+        }
+        let policy = spell_combat
+            .soul_war_health
+            .as_deref()
+            .ok_or(CarrierError::ContentPinWorldMismatch)?;
+        if !policy.is_empowered_boss()
+            || !policy.matches(
+                self.content_pin().server_artifact_digest(),
+                HATRED,
+                &companion.policy.definition_revision,
+            )
+        {
+            return Err(CarrierError::ContentPinWorldMismatch);
+        }
+        if spell_combat.soul_war_hatred_percent == 0 {
+            return Ok(original);
+        }
+        let scaled =
+            f64::from(original) * (1.0 + f64::from(spell_combat.soul_war_hatred_percent) / 100.0);
+        if !scaled.is_finite() || scaled < 0.0 || scaled > f64::from(i32::MAX) {
+            return Err(CarrierError::DamageOverflow);
+        }
+        Ok(scaled.trunc() as u32)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -260,97 +352,5 @@ mod tests {
                 .is_err()
         );
         Ok(())
-    }
-}
-
-impl ChannelRuntimeV1 {
-    /// Creature(name) sees registered actors until the death dispatcher removes
-    /// them (Crystal game.cpp1150-1175), including a queued zero-HP successor.
-    pub fn soul_war_megalomania_name_present(&self) -> Result<bool, CarrierError> {
-        self.owner_fence()?;
-        Ok(self
-            .carrier
-            .occupied
-            .iter()
-            .any(|&index| match &self.carrier.slots[index as usize] {
-                Slot::CreatureOccupied {
-                    companion: Some(companion),
-                    spell_combat,
-                    ..
-                } => {
-                    matches!(
-                        companion.policy.definition_key.as_str(),
-                        "oteryn:creature.goshnar_s_megalomania_purple"
-                            | "oteryn:creature.goshnar_s_megalomania_green"
-                            | "oteryn:creature.goshnar_s_megalomania_blue"
-                    ) && spell_combat
-                        .soul_war_health
-                        .as_deref()
-                        .is_some_and(|policy| {
-                            policy.is_empowered_boss()
-                                && policy.matches(
-                                    self.content_pin().server_artifact_digest(),
-                                    &companion.policy.definition_key,
-                                    &companion.policy.definition_revision,
-                                )
-                        })
-                }
-                _ => false,
-            }))
-    }
-}
-
-impl ChannelRuntimeV1 {
-    /// Literal Player-target branch, after block and before origin reductions.
-    /// Lua binary64 multiplication is narrowed exactly like the donor's
-    /// getNumber<int32_t> (creatureevent.cpp473; lua_functions_loader.hpp74-90).
-    #[allow(
-        clippy::cast_possible_truncation,
-        clippy::cast_sign_loss,
-        reason = "finite nonnegative result is checked against the donor signed32 boundary before truncation"
-    )]
-    pub fn soul_war_hatred_player_primary(
-        &self,
-        source: ExactActorRef,
-        original: u32,
-    ) -> Result<u32, CarrierError> {
-        self.owner_fence()?;
-        let index = self.encounter_actor_index(source)?;
-        let Slot::CreatureOccupied {
-            companion: Some(companion),
-            spell_combat,
-            ..
-        } = self.encounter_slot(index)
-        else {
-            return Ok(original);
-        };
-        // The literal alternate condition tests the Player's name against
-        // Goshnar's Megalomania. CharacterName forbids apostrophes; no admitted
-        // Player can satisfy it. Do not repair it into a Mego attacker test.
-        if companion.policy.definition_key != HATRED {
-            return Ok(original);
-        }
-        let policy = spell_combat
-            .soul_war_health
-            .as_deref()
-            .ok_or(CarrierError::ContentPinWorldMismatch)?;
-        if !policy.is_empowered_boss()
-            || !policy.matches(
-                self.content_pin().server_artifact_digest(),
-                HATRED,
-                &companion.policy.definition_revision,
-            )
-        {
-            return Err(CarrierError::ContentPinWorldMismatch);
-        }
-        if spell_combat.soul_war_hatred_percent == 0 {
-            return Ok(original);
-        }
-        let scaled =
-            f64::from(original) * (1.0 + f64::from(spell_combat.soul_war_hatred_percent) / 100.0);
-        if !scaled.is_finite() || scaled < 0.0 || scaled > f64::from(i32::MAX) {
-            return Err(CarrierError::DamageOverflow);
-        }
-        Ok(scaled.trunc() as u32)
     }
 }

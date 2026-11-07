@@ -15,15 +15,17 @@ struct Delayed {
     occurrence: String,
     kind: Kind,
 }
+type AttackOwnerBinding = (
+    RuntimeScopeRefV1,
+    ScopeOwnershipGeneration,
+    [u8; 32],
+    [u8; 32],
+    [u8; 32],
+);
+
 #[derive(Debug, Default)]
 pub(super) struct SoulWarAttacks {
-    binding: Option<(
-        RuntimeScopeRefV1,
-        ScopeOwnershipGeneration,
-        [u8; 32],
-        [u8; 32],
-        [u8; 32],
-    )>,
+    binding: Option<AttackOwnerBinding>,
     delayed: Vec<Delayed>,
     seen: Vec<(ExactActorRef, String)>,
 }
@@ -315,6 +317,10 @@ async fn drive_owned(
     Ok(next)
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "source issuer, target/session, native appearance and occurrence clock are independent owner proofs"
+)]
 fn apply_outfit(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,

@@ -283,6 +283,10 @@ impl OutburstCasts {
         pending.prepared_at = Some(now);
         Ok(true)
     }
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "stage identity, current source globals, native policy, map, work stamp and real clock are independently checked"
+    )]
     pub(super) fn commit(
         &mut self,
         id: CallbackStageId,

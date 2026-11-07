@@ -91,11 +91,11 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         let view = self.runtime_view(registered);
         let generation = crate::foundation::ScopeOwnershipGeneration::new(registered.generation)
             .map_err(|_| super::runtime::SoulpitRuntimeError::InvalidScope)?;
-        let permit = view.spell_lane_permit().await.ok_or_else(|| {
+        let Some(permit) = view.spell_lane_permit().await else {
             #[cfg(test)]
             eprintln!("SRX3_SOULPIT READ_REFUSAL stage=lane");
-            super::runtime::SoulpitRuntimeError::AdapterUnavailable
-        })?;
+            return Err(super::runtime::SoulpitRuntimeError::AdapterUnavailable);
+        };
         let Some(bound) = self
             .root
             .read_soulpit_scope_binding(self.character, self.holder, registered.scope, generation)
@@ -208,14 +208,14 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 // Membership observes the retained living avatar during reconnect grace;
                 // the canonical tuple and visible read below independently fence it.
                 let census = runtime.positioned_melee_census()?;
-                let (actor, _, _) = census
+                let Some((actor, _, _)) = census
                     .iter()
                     .find(|(_, _, session)| *session == Some(member.destination_session))
-                    .ok_or_else(|| {
-                        #[cfg(test)]
-                        eprintln!("SRX3_SOULPIT READ_REFUSAL stage=physical_actor");
-                        super::runtime::SoulpitRuntimeError::AdapterUnavailable
-                    })?;
+                else {
+                    #[cfg(test)]
+                    eprintln!("SRX3_SOULPIT READ_REFUSAL stage=physical_actor");
+                    return Err(super::runtime::SoulpitRuntimeError::AdapterUnavailable);
+                };
                 let control = runtime
                     .player_control_facts(*actor, member.destination_session)
                     .map_err(|_| super::runtime::SoulpitRuntimeError::AdapterUnavailable)?;
@@ -261,16 +261,15 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     );
                     return Err(super::runtime::SoulpitRuntimeError::AdapterUnavailable);
                 }
-                let observed = observe_current_visible_actor_for_source_read(
+                let Some(observed) = observe_current_visible_actor_for_source_read(
                     &runtime,
                     *actor,
                     member.destination_session,
-                )
-                .ok_or_else(|| {
+                ) else {
                     #[cfg(test)]
                     eprintln!("SRX3_SOULPIT READ_REFUSAL stage=visible_capture");
-                    super::runtime::SoulpitRuntimeError::AdapterUnavailable
-                })?;
+                    return Err(super::runtime::SoulpitRuntimeError::AdapterUnavailable);
+                };
                 (*actor, observed)
             };
             let record = self

@@ -52,12 +52,9 @@ fn srx3_native_birth_unknown_commit_keeps_exact_capacity_reserved() {
     let (mut runtime, owner, session) = owner();
     let at = runtime.read_actor_position(owner).unwrap().position();
     let mut retained = Vec::new();
-    loop {
-        let Ok(mut birth) =
-            runtime.prepare_native_creature_birth(owner, session, "creature:rat", at)
-        else {
-            break;
-        };
+    while let Ok(mut birth) =
+        runtime.prepare_native_creature_birth(owner, session, "creature:rat", at)
+    {
         runtime.reserve_native_creature_birth(&mut birth).unwrap();
         retained.push(birth);
     }

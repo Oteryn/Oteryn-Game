@@ -5,7 +5,7 @@ use crate::source_callback_cast::{CallbackCastOwner, SourceCallbackCast};
 use crate::source_callback_cast_tests::{draft, fence, proposal};
 
 #[test]
-fn srx3_native_cancelled_current_map_read_retains_original_source_timer() {
+fn srx3_native_cancelled_current_map_read_retains_original_source_timer() -> Result<(), String> {
     use super::NativeCallbacks;
     use std::{
         future::Future,
@@ -27,17 +27,18 @@ fn srx3_native_cancelled_current_map_read_retains_original_source_timer() {
             &creature.key,
             300000,
         )
-        .expect("actual actor");
+        .map_err(|error| format!("actual actor: {error:?}"))?;
     let source = SourceCallbackCast::qualify(
         &draft(&runtime),
         &creature,
         4,
         runtime.content_pin().server_artifact_digest(),
     )
-    .expect("source closure")
-    .expect("Foam callback");
+    .map_err(|error| format!("source closure: {error:?}"))?
+    .ok_or("Foam callback")?;
     let (fence, stamp) = fence(&runtime);
-    let mut owner = CallbackCastOwner::new(&runtime, &fence).expect("current timer owner");
+    let mut owner = CallbackCastOwner::new(&runtime, &fence)
+        .map_err(|error| format!("current timer owner: {error:?}"))?;
     owner
         .schedule(
             &runtime,
@@ -47,7 +48,7 @@ fn srx3_native_cancelled_current_map_read_retains_original_source_timer() {
             &proposal(caster, &source, 0),
             SemanticTimeMicros::from_micros(0),
         )
-        .expect("original native source stage");
+        .map_err(|error| format!("original native source stage: {error:?}"))?;
     let callbacks = NativeCallbacks::with_source_cast_owner_for_test(owner);
     assert_eq!(callbacks.next_due_time(), Some(1_000_000));
     let retained = callbacks.retained_owner();
@@ -68,4 +69,5 @@ fn srx3_native_cancelled_current_map_read_retains_original_source_timer() {
         Some(1_000_000),
         "cancellation must retain the original due time"
     );
+    Ok(())
 }

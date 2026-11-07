@@ -80,7 +80,9 @@ fn reference(
         .map(|record| record.profile.target.clone())
         .ok_or_else(|| format!("actual native {key}"))
 }
-struct NoSummons;
+struct NoSummons {
+    called: bool,
+}
 impl MonsterThinkReader for NoSummons {
     async fn summon_facts(
         &mut self,
@@ -89,7 +91,8 @@ impl MonsterThinkReader for NoSummons {
         _: Option<ExactActorRef>,
         _: Option<&[MovementLocalPosition]>,
     ) -> Option<super::super::profile_schedule::MonsterSummonFacts> {
-        panic!("the actual test creature has no summon schedule")
+        self.called = true;
+        None
     }
 }
 fn think(
@@ -97,27 +100,34 @@ fn think(
     runtime: &mut ChannelRuntimeV1,
     players: &[super::super::targeting::TargetCandidate],
     now: u64,
-) -> Vec<(ExactActorRef, ThinkReport)> {
+) -> Result<Vec<(ExactActorRef, ThinkReport)>, String> {
     let root = super::super::think_tests::root();
     let revisions = super::super::think_tests::revisions();
     let batch = table
         .reserve_current_thinks(runtime, now)
-        .expect("current source reserve");
-    let mut reader = NoSummons;
-    let future = table.run_reserved_current_thinks(
-        runtime,
-        batch,
-        &root,
-        &revisions,
-        players,
-        &mut reader,
-        |_, _, _, _, _| {},
+        .ok_or("current source reserve")?;
+    let mut reader = NoSummons { called: false };
+    let polled = {
+        let future = table.run_reserved_current_thinks(
+            runtime,
+            batch,
+            &root,
+            &revisions,
+            players,
+            &mut reader,
+            |_, _, _, _, _| {},
+        );
+        let mut future = std::pin::pin!(future);
+        let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+        std::future::Future::poll(future.as_mut(), &mut context)
+    };
+    assert!(
+        !reader.called,
+        "the actual test creature has no summon schedule"
     );
-    let mut future = std::pin::pin!(future);
-    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
-    match std::future::Future::poll(future.as_mut(), &mut context) {
-        std::task::Poll::Ready(reports) => reports,
-        std::task::Poll::Pending => panic!("no source summon IO"),
+    match polled {
+        std::task::Poll::Ready(reports) => Ok(reports),
+        std::task::Poll::Pending => Err("no source summon IO".into()),
     }
 }
 
@@ -184,7 +194,7 @@ fn srx3_native_monster_uses_symmetric_eleven_tile_source_perception() -> Result<
             health: 100,
             damage: 0,
         }];
-        let reports = think(&mut table, &mut runtime, &players, 0);
+        let reports = think(&mut table, &mut runtime, &players, 0)?;
         assert_eq!(reports.len(), 1);
         assert_eq!(
             reports[0].1.target,
@@ -255,7 +265,7 @@ fn srx3_fresh_native_canonical_condition_prevents_idle_without_players() -> Resu
             )
             .map_err(|e| format!("{e:?}"))?;
         assert_eq!(table.due(rat), Some(0));
-        let reports = think(&mut table, &mut runtime, &[], 0);
+        let reports = think(&mut table, &mut runtime, &[], 0)?;
         assert!(!reports[0].1.idle);
         assert_eq!(table.due(rat), Some(1_000_000));
         Ok(())
@@ -324,7 +334,7 @@ fn srx3_native_default_faction_intrinsic_summon_stays_active_without_players() -
             .admit_native_creature(&runtime, native, child, &child_ref, 0)
             .map_err(|e| format!("{e:?}"))?;
         assert_eq!(table.due(child), Some(0));
-        let reports = think(&mut table, &mut runtime, &[], 0);
+        let reports = think(&mut table, &mut runtime, &[], 0)?;
         assert!(
             !reports[0].1.idle,
             "default-faction source intrinsic summon is not an idle ordinary creature"
@@ -352,7 +362,7 @@ fn srx3_fresh_native_spawn_return_fact_keeps_off_home_creature_active() -> Resul
             .admit_current_native_state(&runtime, state, 0)
             .map_err(|e| format!("{e:?}"))?;
         assert_eq!(table.due(rat), Some(0));
-        let reports = think(&mut table, &mut runtime, &[], 0);
+        let reports = think(&mut table, &mut runtime, &[], 0)?;
         assert!(matches!(reports[0].1.goal,MovementGoal::WalkBack{spawn} if spawn==at(100,100)));
         assert!(!reports[0].1.idle);
         assert_eq!(table.due(rat), Some(1_000_000));
@@ -381,7 +391,7 @@ fn srx3_native_game_created_birth_position_is_not_a_cpp_spawn_zone() -> Result<(
             None,
             "Crystal Monster::isInSpawnLocation returns true without spawnMonster; a Game-created birth position grants no walkback or initial onThink"
         );
-        assert!(think(&mut table, &mut runtime, &[], 0).is_empty());
+        assert!(think(&mut table, &mut runtime, &[], 0)?.is_empty());
         Ok(())
     })
 }
@@ -425,7 +435,7 @@ fn srx3_plagirath_registered_spell_flag_selects_actual_native_target_without_pro
             .clone();
         let mut selected = false;
         for sequence in 0..1024_u64 {
-            let reports = think(&mut table, &mut runtime, &players, sequence * 1_000_000);
+            let reports = think(&mut table, &mut runtime, &players, sequence * 1_000_000)?;
             for (_, report) in reports {
                 for proposal in report.proposals {
                     if proposal.ability.key == "oteryn:ability.spell.plagirath_bog" {
@@ -503,7 +513,7 @@ fn srx3_native_cross_floor_target_list_keeps_thinks_without_attack_target() -> R
                 .map_err(|e| format!("{e:?}"))?;
             cases.push((caster, floor >= 12));
         }
-        let reports = think(&mut table, &mut runtime, &candidates, 0);
+        let reports = think(&mut table, &mut runtime, &candidates, 0)?;
         for (caster, perceived) in cases {
             let report = reports.iter().find(|(actor, _)| *actor == caster);
             if perceived {

@@ -322,7 +322,6 @@ async fn settle_source_boss(
         assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_boss_reward_items WHERE definition_production_key=$1 AND collected_transaction_id IS NULL")
             .bind(source_key).fetch_one(&h.pool).await?, 1, "source guaranteed private material {source_key}");
     }
-    let mut admitted = admitted;
     admitted.item_fence = Some(fence);
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(
@@ -370,7 +369,7 @@ async fn settle_source_boss(
     );
     assert_eq!(replay, bytes);
     let audits: Vec<Vec<u8>> = sqlx::query_scalar("SELECT a.envelope FROM game_boss_reward_item_collections c JOIN game_item_audit_outbox a USING(event_id)").fetch_all(&h.pool).await?;
-    assert_eq!(audits.len(), usize::try_from(collected.moved)?);
+    assert_eq!(audits.len(), usize::from(collected.moved));
     for audit in audits {
         let (envelope, mint) =
             crate::durability::reward_claim_mint_audit::decode_reward_claim_mint_envelope(&audit)
@@ -508,7 +507,7 @@ fn raid_world_with_reward_chest(
         .map_err(debug)?
         .digest;
     let base = crate::map::load(&bytes, &pins).map_err(debug)?;
-    Ok(crate::map::boot::boot(
+    crate::map::boot::boot(
         &bytes,
         &crate::map::boot::BootPins {
             map_revision: crate::map::overlay::map_revision(&base),
@@ -545,7 +544,7 @@ fn raid_world_with_reward_chest(
             })
         },
     )
-    .map_err(debug)?)
+    .map_err(debug)
 }
 
 async fn seed_source_raid(

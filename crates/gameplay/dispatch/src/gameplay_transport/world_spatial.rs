@@ -1401,14 +1401,14 @@ mod tests {
 mod soulpit_icon_projection_tests {
     use super::*;
     #[test]
-    fn srx3_soulpit_actual_entity_projection_retains_native_source_icon() {
+    fn srx3_soulpit_actual_entity_projection_retains_native_source_icon() -> Result<(), String> {
         let entity = ChannelEntity {
             source_icons: NativeCreatureIcons::new(&[NativeCreatureIcon {
                 category: 1,
                 id: 6,
                 count: 15,
             }])
-            .expect("source Powerful badge"),
+            .map_err(|error| format!("source Powerful badge: {error:?}"))?,
             display_name: None,
             health_percent: 100,
             direction: StepDirection::South,
@@ -1423,8 +1423,9 @@ mod soulpit_icon_projection_tests {
             revision: 1,
         };
         let EntityDetail::ActorWithIcons { icons, .. } = wire_entity(&entity).detail else {
-            panic!("actual entity projection must preserve source icons");
+            return Err("actual entity projection must preserve source icons".into());
         };
         assert_eq!(icons, entity.source_icons);
+        Ok(())
     }
 }

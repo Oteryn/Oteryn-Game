@@ -43,7 +43,7 @@ pub(super) fn core_use_payload(
         "SRX3_SOULPIT PREFLIGHT stage=native_inventory_handle handle={handle:?} definition={definition} equip_drop={equip_drop}"
     );
     intent.target = UseTarget::Item(handle);
-    encode_item_use_intent(&intent).map_err(|error| debug(error).into())
+    encode_item_use_intent(&intent).map_err(debug)
 }
 
 pub(super) struct WaveStage {

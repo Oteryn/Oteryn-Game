@@ -598,12 +598,10 @@ fn execute_pulse(
             if let Some(top) = r
                 .current_top_actor_on_cell(at)
                 .map_err(|_| AttackError::MissingCombatFacts)?
-            {
-                if let Some((_, _, Some(session))) =
+                && let Some((_, _, Some(session))) =
                     census.iter().find(|(actor, _, _)| *actor == top)
-                {
-                    targets.push((top, *session));
-                }
+            {
+                targets.push((top, *session));
             }
         }
         targets

@@ -291,9 +291,7 @@ pub(super) async fn use_essence(
         if let UseSource::Definition(definition) = source {
             let index = super::super::item_ref_admission::pinned_index(&runtime, Some(active))?;
             let (key, _) = index.definition_at(*definition)?;
-            if oteryn_gameplay_quests::quest::rotten_blood::essence(key).is_none() {
-                return None;
-            }
+            oteryn_gameplay_quests::quest::rotten_blood::essence(key)?;
         }
         runtime
             .house_actor_state(actor, command.game_session_id)

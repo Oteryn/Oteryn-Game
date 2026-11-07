@@ -1,9 +1,9 @@
 use super::*;
 
-fn surface(appearance: u16) -> PaletteEntry {
+fn surface(appearance: u16) -> Result<PaletteEntry, String> {
     let key = format!("oteryn:world-object.tibia.i{appearance}");
-    PaletteEntry {
-        id: crate::content::static_surface_definition_id(&key).expect("source map definition"),
+    Ok(PaletteEntry {
+        id: crate::content::static_surface_definition_id(&key).ok_or("source map definition")?,
         key,
         family: Family::Terrain,
         terrain: Some(oteryn_world_bundle::bundle::Terrain {
@@ -11,13 +11,14 @@ fn surface(appearance: u16) -> PaletteEntry {
             walkable: None,
             ground_speed: None,
         }),
-    }
+    })
 }
 
 #[test]
-fn srx3_static_world_object_keeps_native_blocking_and_has_no_item_reference() {
+fn srx3_static_world_object_keeps_native_blocking_and_has_no_item_reference() -> Result<(), String>
+{
     let id = crate::content::static_surface_definition_id("oteryn:world-object.tibia.i10649")
-        .expect("actual technical definition ID");
+        .ok_or("actual technical definition ID")?;
     let entry = PaletteEntry {
         key: "oteryn:world-object.tibia.i10649".into(),
         family: Family::Terrain,
@@ -28,10 +29,16 @@ fn srx3_static_world_object_keeps_native_blocking_and_has_no_item_reference() {
             ground_speed: None,
         }),
     };
+    let item_resolver_called = std::cell::Cell::new(false);
     let facts = palette_facts(&entry, &|_| {
-        panic!("static object must never resolve as inventory Item")
+        item_resolver_called.set(true);
+        None
     })
-    .expect("qualified source static surface");
+    .map_err(|error| format!("qualified source static surface: {error:?}"))?;
+    assert!(
+        !item_resolver_called.get(),
+        "static object must never resolve as inventory Item"
+    );
     assert_eq!(facts.facts.appearance_id, 10649);
     assert!(facts.solid, "real pinned source surface blocks movement");
     assert!(
@@ -40,37 +47,44 @@ fn srx3_static_world_object_keeps_native_blocking_and_has_no_item_reference() {
     );
     assert_eq!(
         facts.facts.definition,
-        MapDefinition::Terrain(NonZeroU32::new(id + 1).expect("reference"))
+        MapDefinition::Terrain(NonZeroU32::new(id + 1).ok_or("reference")?)
     );
     assert!(!facts.facts.pickupable);
+    Ok(())
 }
 
 #[test]
-fn srx3_static_world_object_flame_transforms_collision_with_its_visible_state() {
+fn srx3_static_world_object_flame_transforms_collision_with_its_visible_state() -> Result<(), String>
+{
     use crate::map::boot::tests as fixture;
     use oteryn_world_bundle::{bundle, writer};
     let (bytes, mut pins) = fixture::bundle();
-    let mut source = bundle::read(&bytes).expect("fixture map");
-    let ordinal = u32::try_from(source.manifest.palette.len()).expect("bounded palette");
+    let mut source = bundle::read(&bytes).map_err(|error| format!("fixture map: {error:?}"))?;
+    let ordinal = u32::try_from(source.manifest.palette.len())
+        .map_err(|error| format!("bounded palette: {error:?}"))?;
     source
         .manifest
         .palette
-        .extend([surface(43497), surface(43498)]);
+        .extend([surface(43497)?, surface(43498)?]);
     let tile = source.sectors[0]
         .tiles
         .iter_mut()
         .find(|tile| tile.x == 1)
-        .expect("grounded cell");
+        .ok_or("grounded cell")?;
     tile.items.push(oteryn_world_bundle::sector::Item {
         palette: ordinal,
         depth: 0,
         attrs: Default::default(),
     });
     let bytes = writer::write(&source.manifest, &source.sectors, &Default::default())
-        .expect("source surface map");
-    pins.digest = bundle::read(&bytes).expect("written map").digest;
-    let base = crate::map::load(&bytes, &pins).expect("actual map base");
-    let mut facts = BundleFacts::palette(&source.manifest, fixture::items).expect("source facts");
+        .map_err(|error| format!("source surface map: {error:?}"))?;
+    pins.digest = bundle::read(&bytes)
+        .map_err(|error| format!("written map: {error:?}"))?
+        .digest;
+    let base =
+        crate::map::load(&bytes, &pins).map_err(|error| format!("actual map base: {error:?}"))?;
+    let mut facts = BundleFacts::palette(&source.manifest, fixture::items)
+        .map_err(|error| format!("source facts: {error:?}"))?;
     let mut blocked = BTreeSet::new();
     for sector in &source.sectors {
         facts.push(&source.manifest, sector, &mut blocked);
@@ -80,7 +94,7 @@ fn srx3_static_world_object_flame_transforms_collision_with_its_visible_state() 
         y: 0,
         floor: -7,
     };
-    let key = placement_key(at, 1).expect("actual flame placement");
+    let key = placement_key(at, 1).ok_or("actual flame placement")?;
     assert!(facts.quest_callback_blocked(&base, at, blocked.contains(&at)));
     assert!(facts.transform_movement_item(key, 43498));
     assert!(
@@ -89,27 +103,30 @@ fn srx3_static_world_object_flame_transforms_collision_with_its_visible_state() 
     );
     assert!(facts.transform_movement_item(key, 43497));
     assert!(facts.quest_callback_blocked(&base, at, blocked.contains(&at)));
+    Ok(())
 }
 
 #[test]
-fn srx3_source_static_transform_and_action_share_one_current_object_revision() {
+fn srx3_source_static_transform_and_action_share_one_current_object_revision() -> Result<(), String>
+{
     use crate::map::boot::tests as fixture;
     use crate::map::view::MapFacts;
     use oteryn_world_bundle::{bundle, writer};
     let (bytes, mut pins) = fixture::bundle();
-    let mut source = bundle::read(&bytes).expect("fixture map");
-    let ordinal = u32::try_from(source.manifest.palette.len()).expect("palette ordinal");
+    let mut source = bundle::read(&bytes).map_err(|error| format!("fixture map: {error:?}"))?;
+    let ordinal = u32::try_from(source.manifest.palette.len())
+        .map_err(|error| format!("palette ordinal: {error:?}"))?;
     // Real source-published static states; this tests the map owner primitive,
     // independently of the closed script rule choosing its action number.
     source
         .manifest
         .palette
-        .extend([surface(43497), surface(43498)]);
+        .extend([surface(43497)?, surface(43498)?]);
     let tile = source.sectors[0]
         .tiles
         .iter_mut()
         .find(|tile| tile.x == 1)
-        .expect("grounded cell");
+        .ok_or("grounded cell")?;
     tile.items.push(oteryn_world_bundle::sector::Item {
         palette: ordinal,
         depth: 0,
@@ -121,11 +138,14 @@ fn srx3_source_static_transform_and_action_share_one_current_object_revision() {
         },
     });
     let bytes = writer::write(&source.manifest, &source.sectors, &Default::default())
-        .expect("source states");
-    pins.digest = bundle::read(&bytes).expect("written map").digest;
-    let base = crate::map::load(&bytes, &pins).expect("actual map base");
-    let mut facts =
-        BundleFacts::palette(&source.manifest, fixture::items).expect("qualified facts");
+        .map_err(|error| format!("source states: {error:?}"))?;
+    pins.digest = bundle::read(&bytes)
+        .map_err(|error| format!("written map: {error:?}"))?
+        .digest;
+    let base =
+        crate::map::load(&bytes, &pins).map_err(|error| format!("actual map base: {error:?}"))?;
+    let mut facts = BundleFacts::palette(&source.manifest, fixture::items)
+        .map_err(|error| format!("qualified facts: {error:?}"))?;
     let mut blocked = BTreeSet::new();
     for sector in &source.sectors {
         facts.push(&source.manifest, sector, &mut blocked);
@@ -135,7 +155,7 @@ fn srx3_source_static_transform_and_action_share_one_current_object_revision() {
         y: 0,
         floor: -7,
     };
-    let key = placement_key(at, 1).expect("source placement");
+    let key = placement_key(at, 1).ok_or("source placement")?;
     assert_eq!(facts.action_at(key), Some(14350));
     assert!(facts.transform_movement_item_with_action(key, 0, 43497, 43498, Some(14325)));
     assert_eq!(
@@ -148,12 +168,14 @@ fn srx3_source_static_transform_and_action_share_one_current_object_revision() {
     let source_id = |tag| [1, 0, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag];
     let overlay = crate::map::overlay::ChannelOverlay::new(
         Arc::new(base),
-        crate::foundation::WorldId::decode(&source_id(1)).expect("actual World identity"),
-        crate::foundation::ChannelId::decode(&source_id(2)).expect("actual Channel identity"),
+        crate::foundation::WorldId::decode(&source_id(1))
+            .map_err(|error| format!("actual World identity: {error:?}"))?,
+        crate::foundation::ChannelId::decode(&source_id(2))
+            .map_err(|error| format!("actual Channel identity: {error:?}"))?,
     );
     let current = crate::map::view::compose_tile(&overlay, &facts, at)
-        .expect("current source stack")
-        .expect("existing source cell");
+        .map_err(|error| format!("current source stack: {error:?}"))?
+        .ok_or("existing source cell")?;
     assert!(
         current
             .entries
@@ -164,7 +186,7 @@ fn srx3_source_static_transform_and_action_share_one_current_object_revision() {
         .placements
         .iter()
         .find(|(placement, _)| *placement == key)
-        .expect("same physical placement")
+        .ok_or("same physical placement")?
         .1
         .attrs;
     assert_eq!(original.unique, Some(50001));
@@ -186,4 +208,5 @@ fn srx3_source_static_transform_and_action_share_one_current_object_revision() {
     assert_eq!(facts.action_at(key), Some(14350));
     assert_eq!(facts.object_revision(key), 2);
     assert!(facts.quest_callback_blocked(overlay.base(), at, blocked.contains(&at)));
+    Ok(())
 }

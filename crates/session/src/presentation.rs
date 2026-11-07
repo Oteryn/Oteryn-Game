@@ -233,23 +233,25 @@ mod native_basis_tests {
         }
     }
     #[test]
-    fn srx3_native_epoch_projects_legacy_positions_once_and_refuses_wrong_basis() {
-        let legacy = encode_presentation_batch(&[missile(14, 0)]).unwrap();
+    fn srx3_native_epoch_projects_legacy_positions_once_and_refuses_wrong_basis()
+    -> Result<(), String> {
+        let legacy =
+            encode_presentation_batch(&[missile(14, 0)]).map_err(|error| format!("{error:?}"))?;
         assert_eq!(
-            decode_events(&legacy, false, false).unwrap(),
+            decode_events(&legacy, false, false).map_err(|error| format!("{error:?}"))?,
             [missile(14, 0)]
         );
         assert_eq!(
-            decode_events(&legacy, false, true).unwrap(),
+            decode_events(&legacy, false, true).map_err(|error| format!("{error:?}"))?,
             [missile(-14, 0)]
         );
         let native =
             oteryn_protocol_oteryn::native_map_cues::encode_native_map_presentation_batch(&[
                 missile(-14, -13),
             ])
-            .unwrap();
+            .map_err(|error| format!("{error:?}"))?;
         assert_eq!(
-            decode_events(&native, true, true).unwrap(),
+            decode_events(&native, true, true).map_err(|error| format!("{error:?}"))?,
             [missile(-14, -13)]
         );
         assert!(decode_events(&native, true, false).is_err());
@@ -269,9 +271,11 @@ mod native_basis_tests {
                 floor: 14,
             },
         };
-        let bytes = oteryn_protocol_oteryn::chat::encode_chat_line(&line).unwrap();
-        line = oteryn_protocol_oteryn::chat::decode_chat_line(&bytes).unwrap();
-        project_legacy_chat(&mut line).unwrap();
+        let bytes = oteryn_protocol_oteryn::chat::encode_chat_line(&line)
+            .map_err(|error| format!("{error:?}"))?;
+        line = oteryn_protocol_oteryn::chat::decode_chat_line(&bytes)
+            .map_err(|error| format!("{error:?}"))?;
+        project_legacy_chat(&mut line).map_err(|error| format!("{error:?}"))?;
         assert!(matches!(
             line,
             oteryn_protocol_oteryn::chat::ChatLine::Local {
@@ -279,5 +283,6 @@ mod native_basis_tests {
                 ..
             }
         ));
+        Ok(())
     }
 }
