@@ -5172,7 +5172,7 @@
     },
     "next_batch": "Continue owned state/reward/access NPC entries using delivered core and any newer lane work; Fading Memory needs the existing SetNow/ElapsedAtLeast timer composed into shared rewards. Do not redo now-qualified physical entries.",
     "shared_engine_lookup": {
-      "owner_rule": "Shared engine features are this lane’s responsibility when required. Never leave an entry unfinished for missing engine support.",
+      "owner_rule": "Shared engine features are this lane\u2019s responsibility when required. Never leave an entry unfinished for missing engine support.",
       "qengine2": {
         "head": "9d3c3869f",
         "found": [
@@ -7507,7 +7507,7 @@
     }
   ],
   "shared_engine_lookup": {
-    "owner_rule": "Shared engine features are this lane’s responsibility when required. Never leave an entry unfinished for missing engine support.",
+    "owner_rule": "Shared engine features are this lane\u2019s responsibility when required. Never leave an entry unfinished for missing engine support.",
     "qengine2": {
       "head": "9d3c3869f",
       "found": [
@@ -7777,7 +7777,7 @@
     },
     "next_batch": "Finish the separate six-NPC canonical placement/name batch and push immediately; keep all remaining owned scope active.",
     "shared_engine_lookup": {
-      "owner_rule": "Shared engine features are this lane’s responsibility when required. Never leave an entry unfinished for missing engine support.",
+      "owner_rule": "Shared engine features are this lane\u2019s responsibility when required. Never leave an entry unfinished for missing engine support.",
       "qengine2": {
         "head": "9d3c3869f",
         "found": [
@@ -8682,10 +8682,40 @@
         }
       ]
     },
-    "remaining_gates": "Only final post-canonical-order strict Clippy and four atomicity tests remain active. Full regeneration/repository5 tests125.91s, corrected catalogue55.83s, final check, fmt, duplicate migrations and independent pin PASS; PG111.62s and source delta retained.",
     "name": "npcfix-exact-displayed-names-43",
     "checks": "PASS: PG RED162.13s/GREEN111.62s; full generator including repository5 tests125.91s; final game-server alltargets/allfeatures check and strict Clippy; canonical-order authoring4 tests; catalogue55.83s; fmt; duplicate migration check; independent regenerated world pin.",
     "cumulative_npcs": 238,
     "cumulative_native_actors": 240
+  },
+  "active_shop_work": {
+    "state": "CONTRACT_AND_ACTOR_FIXTURES_WIP; NO_PROMOTION",
+    "entries": [
+      "Dixi",
+      "Lubo",
+      "Pompan",
+      "Shiantis",
+      "Toffee"
+    ],
+    "contracts": "tools/content-schema/npc-authoring/npcfix-retained-shop-contracts.json",
+    "exact_offers": 35,
+    "test": "npcfix_postgres_retained_exact_shop_prices_and_replay",
+    "scope": "Every corrected offer requires exact item/side/count/price, wrong-price no-charge/no-item/no-receipt, correct one-time payment and physical units across replay. Original service/postal assertions remain unchanged.",
+    "missing_native_items": [
+      "oteryn:item.tibia.i48251",
+      "oteryn:item.tibia.i48254",
+      "oteryn:item.tibia.i48256",
+      "oteryn:item.tibia.i48273",
+      "oteryn:item.tibia.i48544"
+    ],
+    "source_xml_lines": {
+      "48251": 80495,
+      "48254": 80510,
+      "48256": 80635,
+      "48273": 80640,
+      "48544": 80910
+    },
+    "placement_cases": "four retained exact donor/retail anchors appended; Toffee prior placement proof retained",
+    "compile_note": "Corrected u64 contract prices to checked u32 runtime prices; fresh focused test compiling. No native mutation or promotion ahead of actual PG RED.",
+    "publication_note": "This checkpoint changes data/metadata only; Rust source remains the previously green head. Focused shop test is being compiled in the working tree and follows in the next checkpoint. Exact open point: five Toffee native item profiles absent; actual shop PG repro not yet completed."
   }
 }

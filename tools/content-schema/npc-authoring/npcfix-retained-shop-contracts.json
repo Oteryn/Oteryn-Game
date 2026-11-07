@@ -1,0 +1,347 @@
+[
+  {
+    "npc": "oteryn:npc.dixi",
+    "service": "oteryn:service.trade.dixi",
+    "offers": [
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3352",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 17
+      }
+    ]
+  },
+  {
+    "npc": "oteryn:npc.lubo",
+    "service": "oteryn:service.trade.lubo",
+    "offers": [
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2920",
+          "revision": "definition-r1"
+        },
+        "direction": "SellToPlayer",
+        "unit_price": 2
+      }
+    ]
+  },
+  {
+    "npc": "oteryn:npc.pompan",
+    "service": "oteryn:service.trade.pompan",
+    "offers": [
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i10409",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 700
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i10413",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 600
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i10415",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 550
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i10417",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 500
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3349",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 120
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3349",
+          "revision": "definition-r1"
+        },
+        "direction": "SellToPlayer",
+        "unit_price": 500
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3350",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 100
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3350",
+          "revision": "definition-r1"
+        },
+        "direction": "SellToPlayer",
+        "unit_price": 400
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3446",
+          "revision": "definition-r1"
+        },
+        "direction": "SellToPlayer",
+        "unit_price": 4
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3447",
+          "revision": "definition-r1"
+        },
+        "direction": "SellToPlayer",
+        "unit_price": 3
+      }
+    ]
+  },
+  {
+    "npc": "oteryn:npc.shiantis",
+    "service": "oteryn:service.trade.shiantis",
+    "offers": [
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2386",
+          "revision": "definition-r1"
+        },
+        "direction": "SellToPlayer",
+        "unit_price": 20
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2387",
+          "revision": "definition-r1"
+        },
+        "direction": "SellToPlayer",
+        "unit_price": 20
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2388",
+          "revision": "definition-r1"
+        },
+        "direction": "SellToPlayer",
+        "unit_price": 20
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2389",
+          "revision": "definition-r1"
+        },
+        "direction": "SellToPlayer",
+        "unit_price": 20
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2390",
+          "revision": "definition-r1"
+        },
+        "direction": "SellToPlayer",
+        "unit_price": 20
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2391",
+          "revision": "definition-r1"
+        },
+        "direction": "SellToPlayer",
+        "unit_price": 20
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2392",
+          "revision": "definition-r1"
+        },
+        "direction": "SellToPlayer",
+        "unit_price": 20
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2393",
+          "revision": "definition-r1"
+        },
+        "direction": "SellToPlayer",
+        "unit_price": 30
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2395",
+          "revision": "definition-r1"
+        },
+        "direction": "SellToPlayer",
+        "unit_price": 25
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2396",
+          "revision": "definition-r1"
+        },
+        "direction": "SellToPlayer",
+        "unit_price": 25
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2397",
+          "revision": "definition-r1"
+        },
+        "direction": "SellToPlayer",
+        "unit_price": 25
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2398",
+          "revision": "definition-r1"
+        },
+        "direction": "SellToPlayer",
+        "unit_price": 25
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2399",
+          "revision": "definition-r1"
+        },
+        "direction": "SellToPlayer",
+        "unit_price": 25
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2400",
+          "revision": "definition-r1"
+        },
+        "direction": "SellToPlayer",
+        "unit_price": 25
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2401",
+          "revision": "definition-r1"
+        },
+        "direction": "SellToPlayer",
+        "unit_price": 25
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3456",
+          "revision": "definition-r1"
+        },
+        "direction": "SellToPlayer",
+        "unit_price": 50
+      }
+    ]
+  },
+  {
+    "npc": "oteryn:npc.toffee",
+    "service": "oteryn:service.trade.toffee",
+    "offers": [
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i48251",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 2350
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i48252",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 2640
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i48254",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 2680
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i48255",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 1870
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i48256",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 95000
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i48273",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 6750
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i48544",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 2910
+      }
+    ]
+  }
+]

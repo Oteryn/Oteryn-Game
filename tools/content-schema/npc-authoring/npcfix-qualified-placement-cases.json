@@ -2791,6 +2791,69 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "npcfix-retained-exact-shop-actors-44",
+      "before_commit": "069d29d2790eab711e1376af58816a03fdc9f642",
+      "source": "tools/content-schema/npc-authoring/samples/npcfix-retail-placements.json: frozen retail positions; exact shop contracts retained; Dixi exact donor anchor: content/world/npc-placements/placements-00000-00344.json declaration oteryn:npc_placement.dixi.x32105_y32207_z6, Canary 47dfd51f45280a59a1d3e50ba7edd573d7234446 row canary:npc/dixi",
+      "cases": [
+        {
+          "npc": "oteryn:npc.dixi",
+          "name": "Dixi",
+          "expected": {
+            "x": 32105,
+            "y": 32207,
+            "floor": -6
+          },
+          "before": {
+            "x": 32105,
+            "y": 32207,
+            "floor": -6
+          }
+        },
+        {
+          "npc": "oteryn:npc.lubo",
+          "name": "Lubo",
+          "expected": {
+            "x": 32488,
+            "y": 32119,
+            "floor": -7
+          },
+          "before": {
+            "x": 32488,
+            "y": 32119,
+            "floor": -7
+          }
+        },
+        {
+          "npc": "oteryn:npc.pompan",
+          "name": "Pompan",
+          "expected": {
+            "x": 33036,
+            "y": 31543,
+            "floor": -10
+          },
+          "before": {
+            "x": 33036,
+            "y": 31543,
+            "floor": -10
+          }
+        },
+        {
+          "npc": "oteryn:npc.shiantis",
+          "name": "Shiantis",
+          "expected": {
+            "x": 32890,
+            "y": 32086,
+            "floor": -6
+          },
+          "before": {
+            "x": 32890,
+            "y": 32086,
+            "floor": -6
+          }
+        }
+      ]
     }
   ]
 }
