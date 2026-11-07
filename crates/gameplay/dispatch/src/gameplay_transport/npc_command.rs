@@ -49,6 +49,7 @@ mod liquid_black;
 mod monk;
 mod premium_purchase;
 mod quest_dialogue;
+mod reward_callbacks;
 mod service_context;
 mod session_transfer;
 mod threatened_dreams;
@@ -721,6 +722,11 @@ pub(super) async fn npc_bank_talk(
             _trade_permit.as_ref(),
         )
         .await;
+    }
+    if let Some(step) = reward_callbacks::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
     }
     if let Some(context) = grizzly::context(admission, &runtime, actor, session, &intent) {
         if ChatText::parse(&intent.text).is_ok_and(|text| asks_to_trade(&text))

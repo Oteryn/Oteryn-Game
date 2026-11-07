@@ -229,6 +229,8 @@ pub fn load_embedded_quest_state(
     );
     lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
         .map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     // Preserve source captures and their counts; only the production catalogue
     // and its executable bindings are filtered by the owner's target scope.
     let npc_legacy = std::mem::take(&mut lowered.catalogue.npc_legacy);

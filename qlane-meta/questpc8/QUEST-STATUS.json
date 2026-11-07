@@ -302,25 +302,18 @@
     "title": "Killing in the Name of... Quest",
     "canonical": "oteryn:quest.killing_in_the_name_of_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/64/definition",
-    "status": "UNFINISHED",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
       "stage": "s11",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
+      "native_dispatch_binding": "oteryn:quest-reward/chosen/hunting-campaign",
+      "runtime_enabled": true
     },
-    "blocker": {
-      "missing_piece": "The chosen Crocodile-kill progression and final 10000-XP/5000-gold completion are not composed; the existing source hunting programme pays different rewards."
-    },
-    "first_unqualified_stage": {
-      "key": "s11",
-      "kind": "complete",
-      "objective": "Deliver the selected authored10000XP and5000GoldCoin payout with the chosen programme completion through the shared native reward owner."
-    },
+    "blocker": null,
     "source_path_evidence": {
       "pg_qualified": true,
-      "scope": "Native source progression and source rewards only. The authored final10000XP/5000GoldCoin payout remains blocked; this is not whole chosen-quest qualification.",
+      "scope": "Historical source-only proof; superseded by the complete chosen-program qualification below.",
       "test": "questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards",
       "command": "CARGO_BUILD_JOBS=3 /home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --lib questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards -- --nocapture --test-threads=1",
       "log": ".questpc8/lane-hunting-qualified-pg.log",
@@ -345,10 +338,45 @@
         "exact three achievements and no additional reward on a subsequent report"
       ]
     },
-    "disposition": "authoring",
+    "disposition": "dispatch-pg-qualified",
     "qualified_elsewhere": [],
     "mechanism": "none",
-    "round": "L7"
+    "round": "L7",
+    "qualification": {
+      "scope": "complete chosen eleven-stage programme plus retained native source task/rank/portal/report obligations",
+      "test": "questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards",
+      "marker": "POSTGRES_CASE_COMPLETED questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards",
+      "duration_seconds": 116.125280947,
+      "red_duration_seconds": 113.73,
+      "native_deaths": 2003,
+      "ordinary_deaths": 2000,
+      "reward_experience": 10000,
+      "reward_gold_value": 5000,
+      "native_currency_delivery": {
+        "value_gold": 5000,
+        "item": "oteryn:item.tibia.i3035",
+        "count": 50,
+        "gold_per_item": 100,
+        "basis": "native denomination normalization; economy/src/npc_trade.rs:42 and economy/src/coin_exchange.rs:26"
+      },
+      "progress_tracks": [
+        "oteryn:quest-progress/chosen/killing_in_the_name_of/phase",
+        "oteryn:quest-progress/chosen/killing_in_the_name_of/count",
+        "oteryn:quest-progress/chosen/killing_in_the_name_of/reported"
+      ],
+      "binding": "oteryn:quest-reward/chosen/hunting-campaign",
+      "evidence": "qlane-meta/questpc8/campaign-validation.json",
+      "proof": [
+        "ordered chosen kill counters observe successful source actions in the existing locked writer",
+        "three task/boss pairs, native portals, promotion and final report",
+        "late captured deaths cannot enter a later chosen phase",
+        "missing backpack refuses payout without completing or awarding XP",
+        "50 platinum coins and completed quest share the transaction; XP obligation pays exactly 10000",
+        "command replay and fresh claim retry mint/pay nothing twice",
+        "reward quantity and grant conditions participate in definition hash",
+        "Father start remains a single eleven-track transaction"
+      ]
+    }
   },
   {
     "title": "Kilmaresh Quest",

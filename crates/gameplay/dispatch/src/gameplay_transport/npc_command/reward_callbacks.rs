@@ -1,0 +1,83 @@
+//! Content selects a bounded exchange; the shared quest transaction owns every effect.
+use super::super::{ComposedFreshAdmission, connection::UseCommand};
+use super::quest_dialogue::{self, Choice, Step, Topic};
+use super::*;
+use oteryn_gameplay_quests::quest::reward_callbacks;
+use oteryn_gameplay_quests::quest::world_callbacks::Storage;
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Offers {
+    schema: u32,
+    offers: Vec<Offer>,
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Offer {
+    npc: String,
+    keywords: Vec<String>,
+    topic: u16,
+    next_topic: u16,
+    storage: Vec<Storage>,
+    reply: Vec<String>,
+}
+
+pub(super) fn prepare(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: &NpcTalkIntent,
+    runtime: &ChannelRuntimeV1,
+) -> Option<Step> {
+    let callbacks = reward_callbacks::load().ok()?;
+    let offers: Offers = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/chosen-reward-offers.json"
+    ))
+    .ok()?;
+    if offers.schema != 1 {
+        return None;
+    }
+    quest_dialogue::prepare(
+        admission,
+        actor,
+        command,
+        intent,
+        runtime,
+        |context, topic, _, tracks| {
+            let text = intent.text.trim().to_ascii_lowercase();
+            let eligible = |storage: &[Storage]| {
+                storage.iter().all(|s| {
+                    (s.minimum..=s.maximum).contains(&tracks.get(&s.track).copied().unwrap_or(-1))
+                })
+            };
+            let mut selected = callbacks.iter().filter(|c| {
+                c.npc == context.2
+                    && c.topic == topic.number
+                    && c.keywords.contains(&text)
+                    && eligible(&c.storage)
+            });
+            if let Some(callback) = selected.next() {
+                if selected.next().is_some() {
+                    return None;
+                }
+                return Some(Choice {
+                    transition: Some(callback.key.clone()),
+                    next_topic: Some(Topic::from(callback.next_topic)),
+                    reply: callback.reply.clone(),
+                });
+            }
+            let offer = offers.offers.iter().find(|c| {
+                c.npc == context.2
+                    && c.topic == topic.number
+                    && c.keywords.contains(&text)
+                    && eligible(&c.storage)
+            })?;
+            Some(Choice {
+                transition: None,
+                next_topic: Some(Topic::from(offer.next_topic)),
+                reply: offer.reply.clone(),
+            })
+        },
+    )
+}

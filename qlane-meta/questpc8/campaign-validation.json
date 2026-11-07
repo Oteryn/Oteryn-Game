@@ -1,0 +1,114 @@
+{
+  "base": "fced2532a",
+  "qengine2_reused": "5a6de28c1",
+  "scope": "shared atomic NPC reward participant plus complete chosen hunting campaign",
+  "checks": {
+    "campaign_pg": {
+      "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards -- --nocapture",
+      "exit_code": 0,
+      "log": "/tmp/questpc8-campaign-final2.log",
+      "sha256": "6bde54f42070b57e8e85d713b2152e924f05b71df032fc769ec02e636481067e",
+      "proof": [
+        "GRIZZLY_NPC_WIRE POSTGRES_CASE_COMPLETED case=5",
+        "POSTGRES_CASE_COMPLETED questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards duration=116.125280947s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2534 filtered out; finished in 116.13s"
+      ]
+    },
+    "father_pg": {
+      "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib catalogue_npc_father_fresh_acceptance_is_one_eleven_track_transaction -- --nocapture",
+      "exit_code": 0,
+      "log": "/tmp/questpc8-campaign-father-final.log",
+      "sha256": "35ad0f291aae930ebc5f419014253a66214ef522fe983126aa61f39d806d7eee",
+      "proof": [
+        "POSTGRES_CASE_COMPLETED catalogue-npc-father 47.018053928s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2534 filtered out; finished in 47.02s"
+      ]
+    },
+    "world_input_pg": {
+      "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib rotten_blood_postgres_literal_altar_consumption_and_replay -- --nocapture",
+      "exit_code": 0,
+      "log": "/tmp/questpc8-campaign-input-final.log",
+      "sha256": "e549d621f91fe22ba35c6b864d260fb743c7f818cda513aacf5b606e8af752c6",
+      "proof": [
+        "ROTTEN_BLOOD POSTGRES_CASE_COMPLETED literal_altar possession_only_phase atomic_item_burn replay",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2534 filtered out; finished in 25.13s"
+      ]
+    },
+    "rules_unit": {
+      "command": "cargo test --locked -p oteryn-gameplay-quests --lib grizzly_adams -- --nocapture",
+      "exit_code": 0,
+      "log": "/tmp/questpc8-campaign-rules-final.log",
+      "sha256": "2fd89da990bcb07ca7d28a2e0351673d63b64edccc30ddea93ce4b426ca2f4e3",
+      "proof": [
+        "test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 241 filtered out; finished in 0.76s"
+      ]
+    },
+    "rewards_unit": {
+      "command": "cargo test --locked -p oteryn-gameplay-quests --lib reward_callbacks -- --nocapture",
+      "exit_code": 0,
+      "log": "/tmp/questpc8-reward-final-unit.log",
+      "sha256": "e799736bce7228e0234f69d853594f0b58dd1efd84a52e79fc49335647aaa939",
+      "proof": [
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 261 filtered out; finished in 0.68s"
+      ]
+    },
+    "check": {
+      "command": "cargo check --locked -p oteryn-gameplay-quests -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch --all-features",
+      "exit_code": 0,
+      "log": "/tmp/questpc8-campaign-check-final2.log",
+      "sha256": "f192c61e62575be244c6a28fb0581a6488b6ae57e257ef7e9b8946466ce4b378"
+    },
+    "clippy": {
+      "command": "cargo clippy --locked -p oteryn-gameplay-quests -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch --all-features --all-targets -- -D warnings",
+      "exit_code": 0,
+      "log": "/tmp/questpc8-campaign-clippy-final.log",
+      "sha256": "7ec63fd43ae79c8a475efec8fb199a48d7aefcc15247ea2080ee4a9e1b09f642"
+    },
+    "fmt": {
+      "command": "cargo fmt --all -- --check",
+      "exit_code": 0,
+      "log": "/tmp/questpc8-campaign-fmt-final.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "pins": {
+      "command": "oteryn-world-bundle-compiler pin-refresh .; oteryn-world-bundle-compiler pin-check . /tmp/questpc8-campaign-pincheck",
+      "exit_code": 0,
+      "log": "/tmp/questpc8-campaign-pins.log",
+      "sha256": "f72c2b54f69889fa07ea0a6d73a9d1bec049bb712242a1dc7b8e62c8a860d6c5"
+    },
+    "content_integration": {
+      "command": "cargo test --locked -p oteryn-game-server --test integration_rest content_ --quiet",
+      "exit_code": 0,
+      "log": "/tmp/questpc8-campaign-content-integration.log",
+      "sha256": "28ff304fdf1013c5d4d0b47071c2931a969bc96c5414da963201cddbbe74be92",
+      "proof": [
+        "test result: ok. 123 passed; 0 failed; 0 ignored; 0 measured; 152 filtered out; finished in 1.42s"
+      ]
+    },
+    "world_repository": {
+      "command": "cargo test --locked -p oteryn-game-server --test content_world_project_repository --quiet",
+      "exit_code": 0,
+      "log": "/tmp/questpc8-campaign-world-repository.log",
+      "sha256": "0b503f4ac79e69de4b61f257f9efe960675deceecab3db1ebe6494d768894864",
+      "proof": [
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 31.00s"
+      ]
+    }
+  },
+  "red": {
+    "campaign_pg_seconds": 113.73,
+    "campaign_pg_failure": "authored final XP delta was 0 instead of 10000",
+    "reward_hash_unit_failure": "payout 50 and 51 had identical definition hashes",
+    "npc_metadata_pg_seconds": 45.87,
+    "npc_metadata_failure": "NPC legacy binding sidecar was discarded; initial Father greeting rejected"
+  },
+  "generator": "python3 tools/content-schema/quest-authoring/chosen_campaign_rewards.py --check: exit 0; recipe stages and reward values validated",
+  "currency_rule": {
+    "value_gold": 5000,
+    "item": "oteryn:item.tibia.i3035",
+    "count": 50,
+    "gold_per_item": 100,
+    "basis": "native denomination normalization; economy/src/npc_trade.rs:42 and economy/src/coin_exchange.rs:26"
+  },
+  "review": "Whole product diff reviewed: preserved fences/role guards and source task gates, reused qengine transaction/MINT, exact-value fingerprint and full NPC legacy sidecar preservation added. Father eleven-track and world-input regressions executed on PG. No blocking self-review finding remains. Task remains AUTHORING; no PR/main publication or deployment."
+}
