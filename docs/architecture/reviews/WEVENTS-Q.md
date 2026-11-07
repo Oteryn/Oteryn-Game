@@ -421,3 +421,29 @@ with `-D warnings` in **4m46s**. Focused cost/lifecycle and catalogue model test
 passed; fmt and mounted-source formatting passed. Migrations 1120–1129 were
 checked against freshly fetched main, WVAR, WCONTRIB, WORLDCHG and QENGINE2;
 none of those branches uses this range.
+
+## Bank native Item/loot checkpoint
+
+The stolen-gold bag and Jesse's four-stage corpse now materialize through
+source-derived native profiles and the existing loot/deadline owners. The
+20/20/10-slot chain and timers, bag weight conflict, source SHA/lines and
+registered NPC bank callback are recorded in CONTRACT-NOTES.md. Historical
+reference-only Item declarations are preserved. The native loot admission
+generator consumes the exact admitted profiles, including corpse capacities.
+
+The production NPC PostgreSQL case passed with executed marker
+`qengine-rewards-bank` **135.149640147 s**, exercising actual native MINT and
+hand-in, ordinary bag refusal, missing native kill proof refusal/rollback,
+current sealed raid kill admission/replay, achievement and coin reward,
+reopening and repeated/literal claim refusal. Log:
+`/tmp/wevents-bank-native-pg-complete.log`. Its companion actor case exposed a
+fixture assertion equating boss identity with end policy; that correction is
+being independently verified and is not included in this Item checkpoint.
+Bank's publication row and callbacks remain outside this commit.
+
+Source Item/corpse tests: **2 passed / 5.402 s**. Native loot class: **4 passed /
+19.044 s**. The dependent Prey model was actually regenerated with the unchanged
+Rust combat tool (**15 cases / 776 creatures**) against the complete current
+loot admission; generated reports/runtime values and registration were refreshed
+through tooling. Final six-crate cargo check and strict clippy each passed in
+**2m34s**. Formatting and tooling pin refresh/check passed; World pin unchanged.

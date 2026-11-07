@@ -156,3 +156,54 @@ These location/population/chance choices are explicitly Oteryn policy, not
 claims that the retained royal dialogue supplies a raid. Previous exhibition
 actors retire on the next firing or day reset. Arena waves continue after
 attendance victory; a daily claim cannot repeat the account achievement.
+
+## Bank Robbery implementation policy
+
+The conservative native scope is Thais, Naji and Jesse the Wicked. The existing
+hourly 10-per-mille draw is consumed once per hour after the first hour; one
+successful robbery closes Naji's bank service until recovery or the next save.
+This is explicit Oteryn policy where the retained bank dialogue supplies no
+complete robbery scheduler. Other cities are not selected implicitly.
+
+Jesse's existing native creature and guaranteed stolen-gold bag loot follow
+Canary `47dfd51f45280a59a1d3e50ba7edd573d7234446`,
+`data-otservbr-global/monster/bosses/jesse_the_wicked.lua:21-22,77`, SHA256
+`08d8ca5871bf4b1bbd3123d940dc26193796bc70dce003f63c21bf0eec2825c2`:
+https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/monster/bosses/jesse_the_wicked.lua#L77
+Recovery must consume item 13429 with a native MINT cause matching the actual
+current-World/current-day robbery kill. Ordinary bags, previous-day bags and
+foreign-World bags do not prove recovery. The bag debit, shared reopening and
+quest reward are atomic. The pinned quest reward is ten platinum coins and
+Honest Finder, per https://tibia.fandom.com/index.php?curid=76139&oldid=1082154
+(body SHA256 `a865de3250f6abd2e432be0b265a88cb14e6bc202b07661af28f2f9cd35d5cc1`).
+
+Naji's retained normalized placement is (32342,32229,7), in
+`tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:1`,
+SHA256 `1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a`.
+The authored escape alley (32336..32339,32233..32235,7) has simple ground 506,
+house 0 and flags 0 in region-z07-x126-y125.b3, SHA256
+`b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037`.
+The position is an explicit Oteryn fallback rather than an inferred donor raid.
+
+The historical canonical bag weight is 5000, but retained Crystal
+`data/items/items.xml:31463-31466` @ `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`,
+SHA256 `c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb`,
+and pinned Canary XML:31281-31284 both explicitly declare **500**. Per the owner
+donor-wins rule, the active native Item profile uses 500. The historical
+canonical import remains intact; the source override is explicit in the
+generated qengine reward profile evidence. No other known physical fact is
+overridden. Naji's registered `parseBank` callback is retained Crystal
+`data-global/npc/naji.lua:61-80`, SHA256
+`7752587c14e87d611edc01ee3723afb75fa08c2f29aded246ad458353ed7c1ac`.
+A published event-owned bank service admits this existing native Bank owner;
+profession labels and arbitrary donor callback text alone still grant no service.
+
+Jesse's corpse chain also needed native admission. Retained Crystal
+`data/items/items.xml:37349-37370` @ `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`,
+SHA256 `c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb`,
+agrees with pinned Canary XML:37154-37176: 18153 (20 slots, 10 s) → 18150
+(20 slots, 300 s) → 18151 (10 slots, 300 s) → 18152 (60 s) → removal.
+All four native profiles are Ground-only and reuse the existing durable
+absolute-deadline/decay owner. Their legacy reference-only identities remain
+unchanged. Native loot admission now derives the corpse capacities from those
+exact profiles, alongside the stolen-gold bag's portable admission.

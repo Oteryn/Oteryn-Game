@@ -508,7 +508,8 @@ def main() -> int:
         for path, data in generated.items():
             destination = ROOT / path
             destination.parent.mkdir(parents=True, exist_ok=True)
-            destination.write_bytes(data)
+            if not destination.exists() or destination.read_bytes() != data:
+                destination.write_bytes(data)
     print(f"PASS registered spell import files={len(generated)} activation=false")
     return 0
 

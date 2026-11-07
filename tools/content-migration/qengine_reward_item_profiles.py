@@ -4,6 +4,7 @@ Uses the existing native source importer and exact canonical identity bindings.
 Known canonical facts win. No use effect, subtype, timer or custom script is
 inferred, and the canonical Item admission records remain unchanged.
 """
+import copy
 import hashlib
 import json
 import sys
@@ -14,7 +15,8 @@ sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
 import build_source_item_profiles as source
 import grizzly_shop_profiles as accepted
 
-IDS = {133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701}
+CORPSE_IDS = {18150, 18151, 18152, 18153}
+IDS = {133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701, 13429} | CORPSE_IDS
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'
@@ -42,21 +44,32 @@ def capture(root=ROOT):
     records=[]
     for item_id in sorted(IDS):
         node=xml[item_id]
-        if {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
+        if item_id not in CORPSE_IDS and {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
             raise ValueError('QENGINE_REWARD_ITEM_INSTANCE_OWNER_REQUIRED')
         flags=objects[item_id]['flags']
         if flags.get('flags.liquidcontainer') or flags.get('flags.liquidpool'):
             raise ValueError('QENGINE_REWARD_ITEM_FLUID_OWNER_REQUIRED')
         record=source.profile(item_id,node,objects[item_id],physical[item_id],bindings,None)
         definition=definitions[f'oteryn:item.tibia.i{item_id}']
+        # Owner WEVENTS: retained Crystal items.xml:31463-31466 agrees
+        # with pinned Canary on weight 500. Historical wiki metadata says 5000.
+        # Correct only the active native profile; keep the historical tree intact.
+        if item_id == 13429:
+            definition = copy.deepcopy(definition)
+            weight = definition['semantics']['physical']['value']['weight']
+            if weight not in (source.K(5000), source.K(500)):
+                raise ValueError('WEVENTS_BAG_WEIGHT_SOURCE_CONFLICT')
+            if record['semantics']['physical']['value']['weight'] != source.K(500):
+                raise ValueError('WEVENTS_BAG_DONOR_WEIGHT_DRIFT')
+            definition['semantics']['physical']['value']['weight'] = source.K(500)
         for group in ('physical','stack','container'):
-            if accepted.known_conflict(definition['semantics'][group],record['semantics'][group]):
+            if accepted.known_conflict(definition.get('semantics', {}).get(group, {'state':'UNKNOWN'}),record['semantics'][group]):
                 raise ValueError('QENGINE_REWARD_ITEM_CANONICAL_CONFLICT:'+group)
         if definition['stack_class'] not in ('Unknown',record['admission']['stack_class']):
             raise ValueError('QENGINE_REWARD_ITEM_STACK_CONFLICT')
-        if record['admission']['legal_destinations']!=['CharacterInventory','Ground']:
+        if item_id not in CORPSE_IDS and record['admission']['legal_destinations']!=['CharacterInventory','Ground']:
             raise ValueError('QENGINE_REWARD_ITEM_NOT_PORTABLE')
-        record['semantics']=accepted.accepted_first(definition['semantics'],record['semantics'])
+        record['semantics']=accepted.accepted_first(definition.get('semantics', {}),record['semantics'])
         records.append(record)
     records=source.bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,IDS)['records']
     return {'schema':'OTERYN_QENGINE_REWARD_ITEM_PROFILES/v1',
@@ -64,6 +77,11 @@ def capture(root=ROOT):
         'sources':[{'path':XML,'revision':'47dfd51f45280a59a1d3e50ba7edd573d7234446','sha256':XML_SHA},
                    {'path':CLIENT,'sha256':CLIENT_SHA}],
         'scope':'Physical custody for the shared quest exchanges; no custom use or script activation.',
+        'native_source_overrides':[{'item':'oteryn:item.tibia.i13429',
+            'field':'physical.weight','historical_canonical':5000,'native':500,
+            'source':'crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/items/items.xml:31463-31466',
+            'source_sha256':'c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb',
+            'decision':'CONTRACT-NOTES.md#bank-robbery-implementation-policy'}],
         'records':records}
 
 
