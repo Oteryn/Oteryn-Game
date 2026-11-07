@@ -1350,6 +1350,73 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-21",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.romir",
+          "name": "Romir",
+          "expected": {
+            "x": 32212,
+            "y": 31057,
+            "floor": -5
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.sinatuki",
+          "name": "Sinatuki",
+          "expected": {
+            "x": 32426,
+            "y": 31085,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.sirik",
+          "name": "Sirik",
+          "expected": {
+            "x": 32323,
+            "y": 31117,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.thorwulf",
+          "name": "Thorwulf",
+          "expected": {
+            "x": 32267,
+            "y": 31091,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.zora",
+          "name": "Zora",
+          "expected": {
+            "x": 32362,
+            "y": 31324,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.dorian",
+          "name": "Dorian",
+          "expected": {
+            "x": 32317,
+            "y": 32208,
+            "floor": -8
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }
