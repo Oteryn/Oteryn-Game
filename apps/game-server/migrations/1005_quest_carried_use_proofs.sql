@@ -1,4 +1,3 @@
--- Reused from QENGINE2 97cb9db79; 1149 checked free across seventy fetched remote heads.
 -- Carried quest tools reuse existing same-transaction quest/input/grant proofs.
 -- Bind the exact selected instance and bounded ingress before acknowledging USE.
 CREATE FUNCTION game_quest_carried_use_complete() RETURNS trigger LANGUAGE plpgsql AS $$

@@ -10,7 +10,7 @@
       "status": "QUALIFIED",
       "postgres_test": "questl2_eleven_tracks_commit_atomically",
       "maximum_tracks": 16,
-      "migration": 1140,
+      "migration": 1210,
       "postgres_version": "18.6",
       "red": {
         "result": "TooManyEffects",
@@ -45,7 +45,7 @@
     {
       "name": "costed repeatable item exchanges",
       "status": "QUALIFIED",
-      "migration": 1141,
+      "migration": 1211,
       "postgres_test": "questl2_repeatable_token_exchange",
       "red": {
         "marker": "POSTGRES_CASE_FAILED qengine-rewards-l2-token-abacus",
@@ -187,7 +187,7 @@
       "reuse": {
         "commit": "33b640335",
         "reviewed_head": "4ddf4bcff",
-        "migration": "1142_quest_reward_payments.sql",
+        "migration": "1000_quest_reward_payments.sql",
         "original_migration": "1000_quest_reward_payments.sql",
         "source_red": "QENGINE2 L1-04A real PostgreSQL failure44.661348814s (missing first-start binding), recorded in qlane-meta/qengine2/QUEST-STATUS.json at4ddf4bcff"
       },
@@ -317,7 +317,7 @@
     {
       "name": "atomic native monetary fees for repeatable quest item issuance",
       "status": "QUALIFIED",
-      "migration": 1142,
+      "migration": 1000,
       "reused_from": "33b640335067df5d5582460bf06ce818d39b9d4d",
       "postgres_test": "questl2_paid_stake_fee_is_atomic_and_repeatable",
       "postgres_version": "18.6",
@@ -329,7 +329,7 @@
       "integration_red": {
         "marker": "POSTGRES_CASE_FAILED qengine-rewards-paid-stake",
         "duration_seconds": 76.259353117,
-        "failure": "Migration 1141 rejected a positive monetary fee as a repeatable cost"
+        "failure": "Migration 1211 rejected a positive monetary fee as a repeatable cost"
       },
       "green": {
         "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-paid-stake",
@@ -354,7 +354,7 @@
     {
       "name": "source-bound quest reward absolute ItemType deadlines",
       "status": "QUALIFIED",
-      "migration": 1143,
+      "migration": 1212,
       "owner": "existing spell_item_temporal absolute schedule, custody, expiry and audit owner",
       "postgres_test": "questl2_exchange_fixed_source_journey",
       "postgres_version": "18.6",
@@ -386,13 +386,13 @@
       "name": "atomic direct backpack reward outputs",
       "status": "QUALIFIED",
       "reused_commit": "eb196696c7d2606656f07cc72bf850ecdec81e10",
-      "migration": 1144,
+      "migration": 1213,
       "postgres_test": "questl2_peer_outputs_are_atomic_audited_and_replay_safe",
       "postgres_version": "18.6",
       "red": {
         "log": "/tmp/l2-flat-red.log",
         "duration_seconds": 2.95,
-        "failure": "Native MINT layout columns absent before migration 1144"
+        "failure": "Native MINT layout columns absent before migration 1213"
       },
       "green": {
         "marker": "POSTGRES_CASE_COMPLETED questl2-peer-outputs",
@@ -413,7 +413,7 @@
     {
       "name": "all-carried-item bulk exchange with retained per-input native random draws",
       "status": "QUALIFIED",
-      "migration": 1145,
+      "migration": 1214,
       "postgres_test": "questl2_exchange_fixed_source_journey",
       "red": {
         "marker": "POSTGRES_CASE_FAILED qengine-rewards-exchange-fixed",
@@ -441,7 +441,7 @@
       "name": "finite source world USE complete native item reward participant",
       "status": "QUALIFIED",
       "reused_commit": "d90c1bfa29fac954fbdd08e014a6473d4a33de96",
-      "migration": 1146,
+      "migration": 1215,
       "postgres_evidence": [
         {
           "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-father-scale",
@@ -486,7 +486,7 @@
     {
       "name": "bounded counters, transaction-clock timers and atomic foreign quest participants",
       "status": "QUALIFIED",
-      "migration": 1148,
+      "migration": 1216,
       "reused_engine_commits": [
         "6ad33a4b1",
         "e9d98947f"
@@ -524,7 +524,7 @@
     {
       "name": "native selected carried quest USE and exact ingress recovery",
       "status": "QUALIFIED",
-      "migration": 1149,
+      "migration": 1005,
       "reused_engine_commit": "97cb9db79",
       "postgres_test": "questl2_selected_carried_use_native_journey",
       "postgres_version": "18.6",
@@ -1516,41 +1516,20 @@
       "all_features": true
     },
     "migration_allocation": {
-      "number": 1140,
-      "main": "91afbe0ba172181e6d5b2e8f2f0bbdf8775f3726",
-      "branch_snapshots_checked": 78,
-      "open_pr_check": "next-free-numbers.py: no 1140-1149 claims",
-      "numbers": [
-        1140,
-        1141,
-        1142,
-        1143,
-        1144,
-        1145,
-        1146
+      "range": [
+        1210,
+        1219
       ],
-      "payment_checked_main": "ca5a91b59",
-      "deadline_checked_main": "9668e0a04e1a631ebfc8752772102a1fd98ce8fa",
-      "latest_all_branch_check": {
-        "refs_checked": 80,
-        "free_before_fee_port": [
-          1142,
-          1143,
-          1144,
-          1145,
-          1146,
-          1147,
-          1148,
-          1149
-        ],
-        "evidence": "/tmp/l2-migration-range-current.json"
-      },
-      "backpack_outputs_checked_heads": 24,
-      "backpack_outputs_evidence": "/tmp/l2-flat-migration-lanes.json",
-      "bulk_checked_heads": 24,
-      "bulk_evidence": "/tmp/l2-bulk-migration-lanes.json",
-      "world_reward_checked_heads": 24,
-      "world_reward_evidence": "/tmp/l2-world-migration-lanes.json"
+      "numbers": [
+        1210,
+        1211,
+        1212,
+        1213,
+        1214,
+        1215,
+        1216
+      ],
+      "authority": "Coordinator binding supersedes all prior local allocation checks."
     },
     "world_pins": {
       "regenerated": true,
@@ -2348,7 +2327,7 @@
       "authoring_log": "/tmp/l2-shared-authoring3.log",
       "domain_passed": 1,
       "world_pin_check": "/tmp/l2-shared-pin-check.log",
-      "migration_clash_check": "Seventy fetched remote heads: npcfix occupies 1147; 1148 unused before this slice."
+      "migration_clash_check": "Coordinator registry: QENGINE2 owns1001/1002 unchanged; L2 state extensions own1216."
     },
     "mergee992_authoring": {
       "passed": true,
@@ -2358,10 +2337,11 @@
       "l2_duration_seconds": 36.407,
       "world_tests": 22,
       "world_duration_seconds": 1.4,
-      "migration_1148_clash_check": {
+      "coordinator_registry_supersedes_clash_check": {
         "branch_refs": 82,
         "clashes": 0,
-        "source_ref": "origin/claude/happy-davinci-ijz3wy-questl2"
+        "source_ref": "origin/claude/happy-davinci-ijz3wy-questl2",
+        "current_owner": "QENGINE2 1001/1002; L2 extension1216"
       }
     },
     "mergee992_postgres": {
@@ -2524,7 +2504,7 @@
       "clippy_deny_warnings": true,
       "authoring_passed": 25,
       "placement_tests_passed": 11,
-      "migration_allocation": "1149 unused across all seventy freshly fetched remote heads",
+      "migration_allocation": "Canonical QENGINE2 1005 unchanged; no lane-owned duplicate.",
       "pin_refresh": "/tmp/l2-carried-pin-refresh.log",
       "pin_check": "/tmp/l2-carried-pin-check.log"
     },
@@ -2538,7 +2518,7 @@
     "delivery_batch_wip": {
       "compilation": "Current full dispatch test binary compiled successfully in 5m15s; /tmp/l2-delivery-green7.log. Three native PG journeys are running.",
       "postgres_log": "/tmp/l2-delivery-green7.log",
-      "exact_red_point": "Last full run: Steal From Thieves expected 20 occupied slots but one-coin mint outputs coalesced into two total entries; Troll Sabotage equipped the helmet but boots3079 returned SlotMismatch because native requirements were UNKNOWN.",
+      "exact_red_point": "Troll Sabotage passed native equipment and timed gates, then fixture NPC initialization returned AlreadyPlaced at the chief. Candidate now initializes both source NPCs once and keeps the same actors for the return.",
       "cartography_qualified": true,
       "clippy_final": "/tmp/l2-delivery-clippy5.log",
       "pins_final_pending": true,
@@ -2553,6 +2533,42 @@
       "shared_authoring_log": "/tmp/l2-equipment-qengine-tests.log",
       "steal_full_journey_passed": true,
       "remaining": "Troll full journey running; final clippy and world pin verification pending."
+    },
+    "migration_registry": {
+      "coordinator_binding": "2026-11-07; questl2 owns1210-1219; QBASE1200-1209; QENGINE2 owns0999-1006 unchanged",
+      "qengine2_source": "46d16cf29090b6609ca6205542b03b5a48e95663",
+      "files": [
+        "1000_quest_reward_payments.sql",
+        "1001_quest_reward_participants.sql",
+        "1002_quest_reward_state_operations.sql",
+        "1003_quest_reward_target_sets.sql",
+        "1004_quest_paid_item_exchanges.sql",
+        "1005_quest_carried_use_proofs.sql",
+        "1006_quest_owned_base_predicates.sql",
+        "1200_quest_finish.sql",
+        "1201_corruptor_lifecycle.sql",
+        "1202_questpc_npc_revision.sql",
+        "1203_questpc_viola.sql",
+        "1204_questpc_viola_book.sql",
+        "1205_fathers_burden_items.sql",
+        "1210_quest_atomic_track_capacity.sql",
+        "1211_quest_costed_repeat_occurrences.sql",
+        "1212_quest_reward_item_deadlines.sql",
+        "1213_quest_reward_backpack_outputs.sql",
+        "1214_quest_reward_bulk_draws.sql",
+        "1215_quest_world_reward_participants.sql",
+        "1216_quest_reward_state_extensions.sql"
+      ],
+      "qbase_renames": "Byte-identical contents; only filenames and references change.",
+      "l2_extensions": "1210 preserves canonical value-only receipts and raises the atomic bound;1211 extends exact paid repeats;1216 preserves16-track and exact-set_if participant proofs.",
+      "focused_postgres_log": "/tmp/l2-registry-probe-green.log",
+      "full_lane_postgres_after_renumber": "pending",
+      "schema_probe": {
+        "marker": "POSTGRES_CASE_COMPLETED l2-migration-registry",
+        "duration_seconds": 2.88443,
+        "server_version": "18.6",
+        "result": "passed"
+      }
     }
   },
   "cross_lane_inspection": {
@@ -2598,7 +2614,7 @@
       "source_commit": "33b640335",
       "reviewed_head": "4ddf4bcff",
       "implementation": "Reusable exact native coin/bank payment participant and cross-quest read-only prerequisites; retain L2 repeatability, conditional writes and shared sixteen-track cap.",
-      "migration": "1142_quest_reward_payments.sql, original1000 conflicts with imported corruptor lifecycle migration"
+      "migration": "1000_quest_reward_payments.sql, original1000 conflicts with imported corruptor lifecycle migration"
     },
     "draconia_remote_merge": {
       "commit": "66bea9a4095aefbfb120d92366df9c20920195b1",

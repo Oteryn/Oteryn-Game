@@ -1,40 +1,40 @@
-diff --git a/apps/game-server/migrations/0969_quest_finish.sql b/apps/game-server/migrations/0969_quest_finish.sql
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
 +RETURNS BOOLEAN LANGUAGE sql SECURITY DEFINER AS $$
-diff --git a/apps/game-server/migrations/0969_quest_finish.sql b/apps/game-server/migrations/0969_quest_finish.sql
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
 +RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER AS $$
-diff --git a/apps/game-server/migrations/0969_quest_finish.sql b/apps/game-server/migrations/0969_quest_finish.sql
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
 +        EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC',signature);
-diff --git a/apps/game-server/migrations/0969_quest_finish.sql b/apps/game-server/migrations/0969_quest_finish.sql
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
 +GRANT EXECUTE ON FUNCTION game_reward_claim_fluid_plan_valid(JSONB,JSONB),
-diff --git a/apps/game-server/migrations/0969_quest_finish.sql b/apps/game-server/migrations/0969_quest_finish.sql
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
 +RETURNS BOOLEAN LANGUAGE sql SECURITY DEFINER AS $$
-diff --git a/apps/game-server/migrations/0969_quest_finish.sql b/apps/game-server/migrations/0969_quest_finish.sql
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
 +RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER AS $$
-diff --git a/apps/game-server/migrations/0969_quest_finish.sql b/apps/game-server/migrations/0969_quest_finish.sql
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
 +        EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC',signature);
-diff --git a/apps/game-server/migrations/0969_quest_finish.sql b/apps/game-server/migrations/0969_quest_finish.sql
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
 +GRANT EXECUTE ON FUNCTION game_reward_claim_charges_plan_valid(JSONB,JSONB),
-diff --git a/apps/game-server/migrations/0969_quest_finish.sql b/apps/game-server/migrations/0969_quest_finish.sql
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
 +REVOKE ALL ON game_quest_npc_program_receipts FROM PUBLIC;
-diff --git a/apps/game-server/migrations/0969_quest_finish.sql b/apps/game-server/migrations/0969_quest_finish.sql
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
 +GRANT SELECT,INSERT ON game_quest_npc_program_receipts TO oteryn_game_runtime;
-diff --git a/apps/game-server/migrations/0969_quest_finish.sql b/apps/game-server/migrations/0969_quest_finish.sql
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
 +GRANT SELECT ON game_quest_npc_program_receipts TO oteryn_game_control;
-diff --git a/apps/game-server/migrations/0969_quest_finish.sql b/apps/game-server/migrations/0969_quest_finish.sql
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
 +REVOKE ALL ON FUNCTION game_quest_npc_program_response_guard() FROM PUBLIC;
-diff --git a/apps/game-server/migrations/0969_quest_finish.sql b/apps/game-server/migrations/0969_quest_finish.sql
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
 +REVOKE ALL ON game_character_falcon_chest_cycles FROM PUBLIC;
-diff --git a/apps/game-server/migrations/0969_quest_finish.sql b/apps/game-server/migrations/0969_quest_finish.sql
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
 +GRANT SELECT,INSERT,UPDATE ON game_character_falcon_chest_cycles TO oteryn_game_runtime;
-diff --git a/apps/game-server/migrations/0969_quest_finish.sql b/apps/game-server/migrations/0969_quest_finish.sql
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
 +GRANT SELECT ON game_character_falcon_chest_cycles TO oteryn_game_control;
-diff --git a/apps/game-server/migrations/0969_quest_finish.sql b/apps/game-server/migrations/0969_quest_finish.sql
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
 +CREATE TRIGGER game_falcon_cycles_no_truncate BEFORE TRUNCATE
-diff --git a/apps/game-server/migrations/0969_quest_finish.sql b/apps/game-server/migrations/0969_quest_finish.sql
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
 +REVOKE ALL ON FUNCTION game_falcon_now_ms(),game_falcon_draw_index(BYTEA),game_falcon_cycle_guard(),game_falcon_receipt_guard() FROM PUBLIC;
-diff --git a/apps/game-server/migrations/0969_quest_finish.sql b/apps/game-server/migrations/0969_quest_finish.sql
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
 +GRANT EXECUTE ON FUNCTION game_falcon_now_ms(),game_falcon_draw_index(BYTEA),game_falcon_cycle_guard(),game_falcon_receipt_guard() TO oteryn_game_runtime;
-diff --git a/apps/game-server/migrations/0969_quest_finish.sql b/apps/game-server/migrations/0969_quest_finish.sql
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
 +GRANT EXECUTE ON FUNCTION game_falcon_now_ms(),game_falcon_draw_index(BYTEA) TO oteryn_game_control;
 diff --git a/apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs b/apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs
 +                harness.tamper("DROP TRIGGER aa_quest_fluid_fault ON game_item_fluid_states").await?;

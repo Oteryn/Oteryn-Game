@@ -2439,7 +2439,7 @@ index 000000000..fe6ba16af
 +    corpse: [u8; 16],
 +) -> TestResult {
 +    sqlx::raw_sql(sqlx::AssertSqlSafe(
-+        include_str!("../../../../../../apps/game-server/migrations/1000_corruptor_lifecycle.sql")
++        include_str!("../../../../../../apps/game-server/migrations/1201_corruptor_lifecycle.sql")
 +            .to_owned(),
 +    ))
 +    .execute(&h.pool)
@@ -3188,11 +3188,11 @@ index 000000000..f5fa1bb03
 +                 for path in paths]}, indent=2) + '\n')
 +print(json.dumps({'inventory_pages': len(inventory), 'page_captures': len(paths),
 +                  'metadata_pages': len(metadata)}))
-diff --git a/apps/game-server/migrations/0969_quest_finish.sql b/apps/game-server/migrations/0969_quest_finish.sql
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
 new file mode 100644
 index 000000000..40a635973
 --- /dev/null
-+++ b/apps/game-server/migrations/0969_quest_finish.sql
++++ b/apps/game-server/migrations/1200_quest_finish.sql
 @@ -0,0 +1,438 @@
 +-- QUEST-FINISH: source-resolved fluid rewards use the existing fluid state
 +-- owner and once-claim transaction, never a synthetic item or a later fill.
@@ -3632,11 +3632,11 @@ index 000000000..40a635973
 +REVOKE ALL ON FUNCTION game_falcon_now_ms(),game_falcon_draw_index(BYTEA),game_falcon_cycle_guard(),game_falcon_receipt_guard() FROM PUBLIC;
 +GRANT EXECUTE ON FUNCTION game_falcon_now_ms(),game_falcon_draw_index(BYTEA),game_falcon_cycle_guard(),game_falcon_receipt_guard() TO oteryn_game_runtime;
 +GRANT EXECUTE ON FUNCTION game_falcon_now_ms(),game_falcon_draw_index(BYTEA) TO oteryn_game_control;
-diff --git a/apps/game-server/migrations/1000_corruptor_lifecycle.sql b/apps/game-server/migrations/1000_corruptor_lifecycle.sql
+diff --git a/apps/game-server/migrations/1201_corruptor_lifecycle.sql b/apps/game-server/migrations/1201_corruptor_lifecycle.sql
 new file mode 100644
 index 000000000..513b8899b
 --- /dev/null
-+++ b/apps/game-server/migrations/1000_corruptor_lifecycle.sql
++++ b/apps/game-server/migrations/1201_corruptor_lifecycle.sql
 @@ -0,0 +1,42 @@
 +-- QUESTPC: Crystal201189f8 items.xml:87366-84. The approved native30
 +-- projection preserves the donor's source48 fact in the authoring overlay.
@@ -3680,11 +3680,11 @@ index 000000000..513b8899b
 + IF position(old IN body)=0 THEN RAISE EXCEPTION 'corpse retirement policy changed; review migration'; END IF;
 + EXECUTE replace(body,old,replacement);
 +END $$;
-diff --git a/apps/game-server/migrations/1001_questpc_npc_revision.sql b/apps/game-server/migrations/1001_questpc_npc_revision.sql
+diff --git a/apps/game-server/migrations/1202_questpc_npc_revision.sql b/apps/game-server/migrations/1202_questpc_npc_revision.sql
 new file mode 100644
 index 000000000..c1c095307
 --- /dev/null
-+++ b/apps/game-server/migrations/1001_questpc_npc_revision.sql
++++ b/apps/game-server/migrations/1202_questpc_npc_revision.sql
 @@ -0,0 +1,29 @@
 +-- QUESTPC / NPC-LEGACY-1: read-compatible definition activation, no durable repinning.
 +-- Existing states/receipts/track rows are immutable. The catalogue retains each
@@ -3715,11 +3715,11 @@ index 000000000..c1c095307
 +        AND array_position(track_keys, NULL) IS NULL
 +        AND array_position(values_before, NULL) IS NULL
 +        AND array_position(values_after, NULL) IS NULL);
-diff --git a/apps/game-server/migrations/1002_questpc_viola.sql b/apps/game-server/migrations/1002_questpc_viola.sql
+diff --git a/apps/game-server/migrations/1203_questpc_viola.sql b/apps/game-server/migrations/1203_questpc_viola.sql
 new file mode 100644
 index 000000000..5d1cfc81a
 --- /dev/null
-+++ b/apps/game-server/migrations/1002_questpc_viola.sql
++++ b/apps/game-server/migrations/1203_questpc_viola.sql
 @@ -0,0 +1,98 @@
 +-- Current TibiaWiki Lost Wisdom reward, retaining Crystal's mission/yes flow.
 +-- Forward rollback: disable Viola's adapter; retain earned state and receipts.
@@ -3819,11 +3819,11 @@ index 000000000..5d1cfc81a
 +END $$;
 +REVOKE ALL ON FUNCTION game_viola_complete(),game_viola_handoff_proven(),game_viola_state_guard(),game_viola_state_proven() FROM PUBLIC;
 +GRANT EXECUTE ON FUNCTION game_viola_complete(),game_viola_handoff_proven(),game_viola_state_guard(),game_viola_state_proven() TO oteryn_game_runtime;
-diff --git a/apps/game-server/migrations/1003_questpc_viola_book.sql b/apps/game-server/migrations/1003_questpc_viola_book.sql
+diff --git a/apps/game-server/migrations/1204_questpc_viola_book.sql b/apps/game-server/migrations/1204_questpc_viola_book.sql
 new file mode 100644
 index 000000000..76864cb10
 --- /dev/null
-+++ b/apps/game-server/migrations/1003_questpc_viola_book.sql
++++ b/apps/game-server/migrations/1204_questpc_viola_book.sql
 @@ -0,0 +1,64 @@
 +-- Current TibiaWiki Book of Wisdom (51977): one per character per 300 seconds.
 +-- Forward rollback disables the literal USE adapter; earned items/receipts remain.
@@ -8363,7 +8363,7 @@ index 000000000..13e68a2c1
 +    corpse: [u8; 16],
 +) -> TestResult {
 +    sqlx::raw_sql(sqlx::AssertSqlSafe(
-+        include_str!("../../../../../../apps/game-server/migrations/1000_corruptor_lifecycle.sql")
++        include_str!("../../../../../../apps/game-server/migrations/1201_corruptor_lifecycle.sql")
 +            .to_owned(),
 +    ))
 +    .execute(&h.pool)

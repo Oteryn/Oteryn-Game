@@ -49,7 +49,7 @@ pub(super) async fn install<const N: usize>(
     admitted: &AdmittedSession,
     keys: [&str; N],
 ) -> TestResult<[EntityRef; N]> {
-    install_offsets(owner, admitted, keys, |i| (i, 1)).await
+    install_offsets(owner, admitted, keys, |i| (i, 1), None).await
 }
 
 /// Two rows keep a longer source NPC journey inside the compact walkable map.
@@ -58,10 +58,24 @@ pub(super) async fn install_nearby<const N: usize>(
     admitted: &AdmittedSession,
     keys: [&str; N],
 ) -> TestResult<[EntityRef; N]> {
-    install_offsets(owner, admitted, keys, |i| {
-        (i % 6, if i < 6 { -1 } else { 1 })
-    })
+    install_offsets(
+        owner,
+        admitted,
+        keys,
+        |i| (i % 6, if i < 6 { -1 } else { 1 }),
+        None,
+    )
     .await
+}
+
+/// Initialize the complete fixture NPC set once at exact native source cells.
+pub(super) async fn install_at<const N: usize>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    keys: [&str; N],
+    positions: [Position; N],
+) -> TestResult<[EntityRef; N]> {
+    install_offsets(owner, admitted, keys, |_| (0, 0), Some(positions)).await
 }
 
 async fn install_offsets<const N: usize>(
@@ -69,6 +83,7 @@ async fn install_offsets<const N: usize>(
     admitted: &AdmittedSession,
     keys: [&str; N],
     offset: impl Fn(i32) -> (i32, i32),
+    positions: Option<[Position; N]>,
 ) -> TestResult<[EntityRef; N]> {
     let catalogue = NpcDataCatalogue::load(
         std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
@@ -123,12 +138,21 @@ async fn install_offsets<const N: usize>(
         .enumerate()
         .map(|(i, key)| {
             let (dx, dy) = offset(i32::try_from(i)?);
-            Ok(NpcPlacements {
-                key: key.into(),
-                placements: vec![NpcPlacement {
+            let cell = if let Some(positions) = &positions {
+                positions[i]
+            } else {
+                Position {
                     x: u16::try_from(at.x + dx)?,
                     y: u16::try_from(at.y + dy)?,
                     floor: -i8::try_from(at.floor)?,
+                }
+            };
+            Ok(NpcPlacements {
+                key: key.into(),
+                placements: vec![NpcPlacement {
+                    x: cell.x,
+                    y: cell.y,
+                    floor: cell.floor,
                     direction: MovementFacing::South,
                 }],
             })

@@ -3,7 +3,7 @@
 - 2026-11-06: Reuse PC5's source NPC programme interpreter, item hand-ins and claim-progress bindings. L2's sixteen-track atomic writer and paid repeat identities remain authoritative.
 - Native Item composition: canonical known facts and existing admitted facts take precedence over donor hypotheses. A portable canonical shell may receive source-qualified physical defaults only when its exact identity, admission, known semantics and zero-only operational attributes agree. Existing richer providers cannot be replaced. This reconciles PC5's generic canonical shells with QENGINE2's bounded source importer.
 - Shared starter Items keep one native provider. Newhaven's overlay reuses the already generated starting-loadout fragment after checking identity, portability and known physical/stack/container facts; it does not mount duplicate records.
-- No new L2 migration numbers are allocated by these reuse changes. PC5's already authored migrations retain their original numbers; new L2 migrations remain restricted to 1140–1149.
+- No new L2 migration numbers are allocated by these reuse changes. PC5's already authored migrations retain their original numbers; new L2 migrations follow the coordinator-owned range1210–1219.
 - Departure callbacks: `reversible` governs lever pairs. A non-lever pressure-plate departure may restore Channel-local map facts without that flag; all departure predicates continue to reject quest writes, item hand-ins, rewards, teleports and level gates. The Python authoring validator and Rust loader enforce the same rule.
 - Deployment: Jorge uses the pinned Global cell (32204,32292,6); Tereban uses (33170,31807,6). The example-map Tereban cell is excluded. NPC callbacks require actual deployment as well as dialogue admission.
 - Draconia reset reuse: PC6 commit `be812420e3c20d9dd8ae6c3c23a9c4acb942ceda` supplies an exact-value conditional write. Nonmatching values must remain unchanged under the existing fenced quest transaction and replay receipt; an unconditional reset is insufficient. The NPC exchange source is Crystal `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`, `data-global/npc/an_old_dragon_lord.lua:61-74`, SHA-256 `85016cc08856f49d94c507f43bc84f54801d3a2844946ae391015a0d8c84a052`: one mushroom (3723) grants one fetish (3206) and flag 1; flag 1 refuses another grant.
@@ -12,14 +12,14 @@
 - Reuse PC6's already captured portable Item 3206 admission and regenerate its registration with the existing native producer. The source NPC filename `an_old_dragon_lord.lua` resolves to the accepted canonical NPC key `oteryn:npc.an_old_dragonlord`; its production cell is (32796,31558,2).
 - Current Crystal world witnesses outside the legacy wardrobe scope require positive exact source lines plus a lowercase SHA-256 on the already accepted immutable 9f5a72c pin. Legacy wardrobe witnesses without source lines remain wardrobe-only; their negative admission tests remain intact.
 - Exchange continuation reuses QENGINE2 payment commit `33b640335067df5d5582460bf06ce818d39b9d4d`: the existing native coin/change and account-bank fee owner participates in the same Type2 quest/item transaction. Keep all custody, epoch, ordering, conservation and source-receipt guards. A positive monetary fee is a valid cost for a repeatable item exchange; a fee and an explicit coin-item cost may not coexist.
-- Gamon's exact source price is 5000 gold, with carried money and bank accepted; Quentin must introduce the stake first. Source: Crystal `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`, `data-global/npc/gamon.lua:59-71`, SHA-256 `466de8702c51fc9c550f3f9f75e0301713eeec3a81bb8974fc848f10df5ead83`. New L2 payment SQL uses 1142, after checking main `ca5a91b59` and the inspected lane refs. The existing 1000 corruptor migration is retained; the reused payment migration's original 1000 number is not reused.
+- Gamon's exact source price is 5000 gold, with carried money and bank accepted; Quentin must introduce the stake first. Source: Crystal `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`, `data-global/npc/gamon.lua:59-71`, SHA-256 `466de8702c51fc9c550f3f9f75e0301713eeec3a81bb8974fc848f10df5ead83`. Canonical QENGINE2 payment SQL uses1000, after checking main `ca5a91b59` and the inspected lane refs. The shared corruptor migration is renamed1201; canonical QENGINE2 payment1000 is consumed unchanged.
 - Friends and Traders preserves the existing catalogue’s zero initial value: source unstarted `-1` accepts the canonical `0` only for the introductory transition. Gamon requires stage at least 1, so the zero normalization cannot bypass Quentin.
-- The paid-repeat PostgreSQL regression found L2 migration 1141's material-only cost guard. Migration 1142 extends that guard with an alternative exact same-transaction monetary fee receipt; it retains the item-output restriction and all receipt, custody and positive-price checks. The paid purchase was rejected until this integration was added.
+- The paid-repeat PostgreSQL regression found L2 migration 1211's material-only cost guard. Migration 1000 extends that guard with an alternative exact same-transaction monetary fee receipt; it retains the item-output restriction and all receipt, custody and positive-price checks. The paid purchase was rejected until this integration was added.
 - Wooden Stake prayers reuse the existing carried-evidence participant. Quentin, Tibra, Maealil, Yberius, Isimov, Amanda, Kasmir, Rahkem and Brewster advance stages 1 through 10 without consuming the wooden stake; Tyrias alone consumes one 5941, grants one 5942 and writes stage 11. Generated bindings retain exact file:line and SHA-256 witnesses from Crystal 9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d. The authoring refuses changes to the final item exchange or intermediate retention.
 - The nine additional priests use the existing pinned placement candidates, each with one unique, unshared cell. No synthetic production NPC placement is used. The compact PostgreSQL fixture places all eleven story NPCs on two rows and walks the actual wire corridor; this corridor is isolated from the unrelated Behemoth lever and barriers used by the shared fixture.
 - The ordered-prayer PG regression found that an ineligible reward confirmation could reach ordinary NPC fallback and acknowledge `Ok` without a quest change. Recognized, unhandled reward confirmations now refuse after every specialized native owner has had its opportunity; normal greetings and active bank confirmations retain their owners. The strict out-of-order and completed-prayer assertions remain intact.
-- Reuse the existing absolute ItemType decay schedule and expiry owner for timed Quest rewards. The cup of molten gold has source duration 36000 seconds, with no stopping or decay target (pinned Canary items.xml; exact item 12804). The source authoring includes its full 36000000ms decay plan. Rust resolves the admitted generation's typed decay and requires an exact match; MINT and immutable deadline scheduling share the Quest transaction. Migration 1143 adds only the matching same-XID Quest MINT proof to the existing schedule owner and detects omitted schedules at deferred completion. Existing cast, action, event, custody, expiry and audit proofs remain intact.
-- Migration 1143 was free in main 9668e0a04e1a631ebfc8752772102a1fd98ce8fa and the freshly inspected QENGINE2, PC5, PC6 and PC8 refs. Source deadline initialization is generic, including an admitted decay target; no item-specific runtime duration exception is introduced. The producer continues to reject charge and pausable time-budget definitions for this composition.
+- Reuse the existing absolute ItemType decay schedule and expiry owner for timed Quest rewards. The cup of molten gold has source duration 36000 seconds, with no stopping or decay target (pinned Canary items.xml; exact item 12804). The source authoring includes its full 36000000ms decay plan. Rust resolves the admitted generation's typed decay and requires an exact match; MINT and immutable deadline scheduling share the Quest transaction. Migration 1212 adds only the matching same-XID Quest MINT proof to the existing schedule owner and detects omitted schedules at deferred completion. Existing cast, action, event, custody, expiry and audit proofs remain intact.
+- Migration 1212 was free in main 9668e0a04e1a631ebfc8752772102a1fd98ce8fa and the freshly inspected QENGINE2, PC5, PC6 and PC8 refs. Source deadline initialization is generic, including an admitted decay target; no item-specific runtime duration exception is introduced. The producer continues to reject charge and pausable time-budget definitions for this composition.
 - Fixed Cyclops/Marina item admission reuses the richer existing native providers for weapons, armour, honeycomb, silk, metals, ingots and gear wheels. The L2 custody producer adds only the three missing definitions (3560, 5886, 12804); it does not replace an operational provider with an inert source shell. Its native-conflict rejection remains intact.
 - The first integrated PG run reached every steel exchange and then rejected molten-gold scheduling because the reusable action scheduler requires its normalized `count: 1` evidence. The Quest composition now supplies that evidence; the scheduler's original one-item guard is unchanged.
 - Concurrent L2 merge: preserve incoming fcb7ac5576a8a42fb081745c83c219dce8206201 and local cbf052888. Retain incoming read-only prerequisites, XP/level guards, source greeting conclusions, all twelve additional native item profiles and published NPC placements together with the fixed exchanges and deadline composition. Duplicate source programme blocks were removed through the authoring, and derived content was regenerated with the repository merge tool.
@@ -30,8 +30,8 @@ PC8 commit eb196696c7d2606656f07cc72bf850ecdec81e10 already implements
 atomic direct backpack outputs through the complete native MINT reservation,
 child identities, per-item audit and deferred complete-plan proof. L2 reuses
 that implementation, retaining fee, expiry and prerequisite extensions. Its
-1108 migration is allocated as L2 1144 after checking the available remote
-main, engine and quest-lane refs for 1144 collisions. This is a shared mechanic
+The source backpack-output extension is allocated as L2 1213 after checking the available remote
+main, engine and quest-lane refs before the coordinator registry superseded local allocation checks. This is a shared mechanic
 slice; it does not alone qualify a quest. A source soul-orb trade may require
 more room than available; refuse the whole exchange without consuming orbs.
 
@@ -47,13 +47,13 @@ output layout. A whole output set that cannot fit is refused atomically.
 The isolated PostgreSQL fixture replaces only the server RNG function to drive
 normal and bonus outcomes deterministically; it seeds neither quest progress
 nor earned outputs. Native orb/ammunition providers are reused unchanged.
-Migration1145 was checked against24 current main/engine/quest heads.
+Migration1214 was checked against24 current main/engine/quest heads.
 
 ### L2 world USE reward participants
 
 Reuse PC8 d90c1bfa29fac954fbdd08e014a6473d4a33de96's finite world
 USE reward composition through the existing complete native MINT owner.
-Migration1146 extends the installed receipt proof without changing published
+Migration1215 extends the installed receipt proof without changing published
 migrations; 24 current main/engine/quest heads were checked for allocation.
 World metadata must identify the same USE, quest, storage and complete output
 plan. The weaker context-free writer cannot execute a world value grant.
@@ -158,7 +158,7 @@ source promotion-candidate cell (33009,31532,10).
 L2 shared callback state owners reuse QENGINE2 commits 6ad33a4b1 and
 e9d98947f: bounded counter operations, server-time stamps/elapsed predicates,
 and up to three explicitly declared foreign quest participants. Migration
-1148 combines their deferred proofs; 1147 is already occupied on npcfix.
+Canonical QENGINE2 migrations1001/1002 retain their deferred proofs; L2 extensions are in1216.
 The combined operation limit remains sixteen, preserving the eleven-track
 Father completion. Foreign writes retain the same fenced Character revision,
 source plan, content pins and PostgreSQL transaction as their primary reward.
@@ -188,7 +188,7 @@ L2 selected carried USE reuses QENGINE2 `97cb9db79` through the existing
 quest/value transaction. The exact selected UUID must be in fenced carried
 custody; matching another instance of the same definition is insufficient.
 The consumption proof stores that UUID and the bounded, encoded USE ingress.
-Migration 1149 reuses the deferred same-transaction ingress proof; all seventy
+Migration 1005 reuses the deferred same-transaction ingress proof; all seventy
 fetched remote heads were checked for number clashes before authoring.
 NPC selection excludes carried callbacks and NPC admissions supply no carried
 ingress. Recovery compares immutable bytes and never restores live authority.
@@ -264,3 +264,13 @@ Boots source witness: `imports/canary/items-xml/items.xml:7224-7236`, SHA256
 `1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2`.
 The explicit moveevent feet slot has no level/vocation attributes; the existing
 native source importer records its constructor defaults as level0 and no vocations.
+Troll Sabotage initializes both native NPC actors once at their source cells
+(Jerom33240,31757,7 and Chief33231,31754,1). The player walks back to the same
+Jerom actor; the fixture does not reinstall or move NPCs during the journey.
+
+Coordinator migration registry (2026-11-07) supersedes prior local range checks.
+QENGINE2 0999–1006 are byte-identical to its fetched branch. Shared QBASE files
+are renamed1200–1205 without content changes. L2 owns1210–1216, including only
+L2 extensions; Father's eleven-track write remains one physical transaction.
+Renaming QBASE after QENGINE2 exposed a historical nonempty receipt constraint;
+1210 retains that shared content and restores QENGINE2's guarded value-only arm.

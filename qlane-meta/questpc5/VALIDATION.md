@@ -4,7 +4,7 @@ AUTHORING on detached local base `28e4313e1`; no frozen candidate or publication
 
 ## Changed product files
 
-- `apps/game-server/migrations/1004_fathers_burden_items.sql`
+- `apps/game-server/migrations/1205_fathers_burden_items.sql`
 - `content/content.lock.json`
 - `content/items/definitions/spell-native-profiles.json`
 - `content/items/index.json`

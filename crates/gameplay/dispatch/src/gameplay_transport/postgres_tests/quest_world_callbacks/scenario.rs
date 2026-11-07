@@ -209,6 +209,8 @@ fn scenario_case(
                 6
             } else if name == "qengine-rewards-paid-stake-priests" {
                 12
+            } else if name == "qengine-rewards-l2-troll" {
+                3
             } else if classic_npc {
                 5
             } else if monk {

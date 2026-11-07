@@ -1,5 +1,3 @@
--- Reused from QENGINE2 commit 33b640335067df5d5582460bf06ce818d39b9d4d.
--- L2 allocation 1142 preserves the existing 1000 corruptor migration.
 -- Exact Quest fees compose existing fee, Quest receipt and item/appearance owners.
 CREATE TABLE game_quest_reward_fees (
  character_id UUID NOT NULL REFERENCES game_character_roots(character_id),
@@ -124,15 +122,3 @@ BEGIN
     AND q.created_xact_id=pg_current_xact_id() AND s.created_xact_id=pg_current_xact_id()))
  )$new$);
 END $receipt$;
--- A repeat still requires a proven cost. Native money is an alternative to
--- carried material, with the same positive-price and same-transaction receipt.
-DO $repeat_fee$ DECLARE body TEXT; anchor TEXT := $old$jsonb_array_length(NEW.plan->'take')=0$old$;
-BEGIN
- SELECT pg_get_functiondef('game_quest_reward_complete()'::regprocedure) INTO STRICT body;
- IF position(anchor IN body)=0 THEN RAISE EXCEPTION 'quest payment requires repeat cost proof anchor'; END IF;
- EXECUTE replace(body,anchor,$new$(jsonb_array_length(NEW.plan->'take')=0 AND NOT EXISTS(
-  SELECT 1 FROM game_quest_reward_fees q WHERE q.character_id=NEW.character_id
-   AND q.cause_id=NEW.cause_id AND q.cause_ordinal=NEW.cause_ordinal
-   AND q.transition_key=NEW.transition_key AND q.fee_gold_units>0
-   AND q.created_xact_id=pg_current_xact_id()))$new$);
-END $repeat_fee$;

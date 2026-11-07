@@ -661,8 +661,24 @@ async fn troll(
         .iter()
         .find(|c| c.key.ends_with("/l2-troll-return"))
         .ok_or("Jerom hand-in")?;
-    let [jerom] =
-        super::super::classic_quests::install_nearby(owner, admitted, ["oteryn:npc.jerom"]).await?;
+    let [jerom, chief] = super::super::classic_quests::install_at(
+        owner,
+        admitted,
+        ["oteryn:npc.jerom", "oteryn:npc.chief_grarkharok"],
+        [
+            Position {
+                x: 33240,
+                y: 31757,
+                floor: -7,
+            },
+            Position {
+                x: 33231,
+                y: 31754,
+                floor: -1,
+            },
+        ],
+    )
+    .await?;
     assert_eq!(
         wire_grant(owner, admitted, jerom, start).await?.0,
         NpcIntentDisposition::Ok
@@ -757,12 +773,7 @@ async fn troll(
             floor: -1
         }
     );
-    let [chief] = super::super::classic_quests::install_nearby(
-        owner,
-        admitted,
-        ["oteryn:npc.chief_grarkharok"],
-    )
-    .await?;
+
     assert_eq!(
         wire_grant(owner, admitted, chief, necklace).await?.0,
         NpcIntentDisposition::Ok
@@ -815,8 +826,7 @@ async fn troll(
         step(owner, admitted, South).await?;
     }
     step(owner, admitted, East).await?;
-    let [jerom] =
-        super::super::classic_quests::install_nearby(owner, admitted, ["oteryn:npc.jerom"]).await?;
+
     assert_eq!(
         wire_grant(owner, admitted, jerom, finish).await?.0,
         NpcIntentDisposition::Ok
