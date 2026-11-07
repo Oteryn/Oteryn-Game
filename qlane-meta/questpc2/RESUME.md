@@ -1,3 +1,37 @@
+# Current authoring checkpoint — continuous source-region Annihilator
+
+This checkpoint publishes verified contract facts and state only. The new Rust
+fixture remains local until its PostgreSQL case passes. No whole quest is newly
+qualified:0/35, no external owner wait. Latest published green slice remains
+e0aca5741 (startup selectors), preceded by97c922c33 (reward door).
+
+Local fixture postgres_tests/annihilator_route.rs compiles actual region129,123
+with source::project_regions/registry, all floors, real collision; four genuine
+committed_fresh_player authorities and D88 level100 XP awards; real cast-facts
+and monk reads; shared source approach start33215,31671,z13; literal door USE
+and East steps to distinct staging cells, then existing encounter lever.
+Dependencies.owner_from only generalizes test harness borrowing. No duplicate
+engine, quest progress injection or fake cached levels. Actual bundle combat
+view/frame binding follows full_world_support. Native runtime remains unchanged.
+
+Observed PG18.6 RED70.11s ItemReference: fixture incorrectly required a native
+profile for every indexed static Item. Production serve.rs:2293-2338 preserves
+indexed references and conservative defaults; fixture now follows that path.
+Second PG RED72.55s reached initialize: old fixture monk3/7s is invalid for the
+actual vocationless build; now load_monk_state through the real owner.
+Latest native link attempts failed with signal7 Bus error at filesystem
+exhaustion, before PostgreSQL. Removed exact failed temporary executables and
+319 obsolete object files, retaining latest257 objects and current READY cache.
+Same scoped test is retrying; logs /tmp/questpc2-route-recovered-final-pg.log.
+Final clippy all-targets/all-features -Dwarnings passed64s; fmt passed. Cargo
+check needs retry after its ENOSPC. Do not publish the fixture as green until
+actual PG marker + positive nontrivial duration and all required checks pass.
+
+Continue after every push. Once entry slice passes/pushes, immediately extend
+the same actual route through native combat clearance, physical earned chest,
+source exit teleport33236,31655,z13 ->33213,31671,z13 and sealed re-entry.
+No all-six-kill storage gate or escape timer is in the selected source.
+
 # Latest green slice — captured Annihilator startup selectors
 
 BATCH-annihilator-startup-selectors-2026-11-07.json: PG18.6 RED3.90s missing

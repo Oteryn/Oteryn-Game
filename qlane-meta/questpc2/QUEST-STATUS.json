@@ -1697,5 +1697,24 @@
     "wcontrib_sha": "c8a8d97cf0eb82228177b192f138afd8ca1757f3",
     "wevents_sha": "4b08b4530574c98ada5798b795de7de62b1e5242",
     "rule": "Skip world changes owned by these lanes; retain their historical source statuses without treating them as external blockers. Down the Drain is already QUALIFIED in wvar: docs/architecture/reviews/WORLDCHG-Q.md. No local whole-quest qualification inferred."
+  },
+  "authoring_checkpoint": {
+    "id": "annihilator-source-route-2026-11-07",
+    "state": "AUTHORING",
+    "base_sha": "e0aca5741",
+    "published_scope": "Verified source/production-boot facts and resume checkpoint only; pending Rust fixture excluded.",
+    "postgres_red": {
+      "server_version": 180006,
+      "duration_seconds": 70.11,
+      "error": "ItemReference from overly strict fixture lookup; corrected to existing production boot defaults locally."
+    },
+    "second_postgres_red": {
+      "server_version": 180006,
+      "duration_seconds": 72.55,
+      "error": "Fixture monk values incompatible with actual vocationless build; locally changed to durable monk owner read."
+    },
+    "latest_attempt": "Native linker bus error at disk exhaustion; retained latest257 link objects and removed319 older objects. Same scoped PG test retry running.",
+    "whole_quest_qualifications": 0,
+    "next": "Finish genuine source-region entry PG, check/clippy/fmt and push its fixture immediately; continue native combat, earned chest, actual exit and sealed re-entry."
   }
 }

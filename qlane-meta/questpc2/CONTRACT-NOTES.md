@@ -121,3 +121,17 @@ qualification. Continue owned missing mechanisms; no external engine deferral.
   unchanged; no executable/object/archive/reference copy is added.
   The same real captured selectors now pass native PG USE, cold replay, one
   shared claim/MINT and alternate-choice refusal (PG18.6,43.95s).
+
+- Continuous Annihilator fixture compiles source::project_regions(129,123) with
+  the real registry and every captured floor. No placement/flag/geometry is
+  replaced by synthetic walkable terrain. Runtime map boot follows production
+  apps/game-server/src/node/serve.rs:2293-2338: indexed static Items without a
+  native profile retain conservative owner defaults rather than becoming an
+  ItemReference error. Item key sets agree exactly (34,111 definitions).
+  Four genuine Fresh authorities share the source approach start33215,31671,z13,
+  as ordinary admissions share a configured start, and independently walk to
+  distinct source staging cells. No relocation supplies encounter entry.
+  Progression uses the admitted D88 policy/XP writer; level/build facts and monk
+  values are read through existing Character owners. The source bundle combat
+  view supplies its actual frame binding. Entry evidence alone remains partial;
+  native combat, earned chest, escape and sealed re-entry are still required.
