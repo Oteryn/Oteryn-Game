@@ -1216,3 +1216,13 @@ The obsolete broad test snapshot was stopped after 812 passing cases; four runni
 ENGINE-REQUEST QNPCFX: durable NPC cook/bonus callbacks using the existing HotCuisine planner | needed by: Hot Cuisine Quest | where: crates/gameplay/dispatch/src/gameplay_transport/npc_command and crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs
 
 Owner speed instruction applied: no additional broad verification before push. The final workspace check passed in 3m15s and final fmt passed. The final Father acceptance PG proof passed after the request-specific routing correction (62.912s). The earlier clippy checks passed; CI owns subsequent full sweeps.
+
+## VIP replay timing repair and main merge (2026-11-07)
+
+CI's `[8,9,16,0,24,0,32,0]` is VIP code 9 (temporary root unavailability), whereas the retained `[8,8,16,25,24,0,32,2]` is the immutable exhausted-bucket receipt. The direct replay call shared the serving session's local semantic-pass holder with periodic VIP presence work. The pre-fix local run passed in 5.713s, consistent with a scheduling race rather than a deterministic receipt change. This is the same holder-isolation requirement already applied to the fixture's second live session.
+
+The replay assertion now opens an independent runtime root and reconciles its current authority from the existing recovery seal immediately before calling the unchanged production VIP executor. The original wire sessions remain live. Exact replay bytes, rate-bucket bounds, consent, restart, concurrent receipt uniqueness and negative fence assertions are unchanged; no busy response is accepted and no retry/sleep is added.
+
+Focused real-dispatch PostgreSQL case `gameplay_transport::monk_save::postgres_tests::vip::vip_postgres_real_wire_consent_replay_restart_and_fences` passed five consecutive runs: 5.609s, 5.524s, 5.436s, 5.355s and 5.400s. Each emitted `VIP-PG installed 0163, real admitted wire scenario` and executed the real wire/SQL assertions. Final `cargo check --workspace --all-targets` passed in 5m24s; fmt passed. Repository pin-refresh/pin-check and duplicate-migration checks passed.
+
+Merged origin/main 1138720b1 (QWORLD 3026, CATALOG 3025 and CLCAST 3028). The only textual conflict was the shared historical root note rename: both lane-specific note files are preserved, with QENGINE2's file byte-identical to main and no root CONTRACT-NOTES.md. QWORLD's production behavior is retained; the NPC source digest marker explicitly has world_change=None because it is an unexecutable binding, while main's actual gated transitions retain their gates. No migration duplicates or QENGINE2 variants were introduced.
