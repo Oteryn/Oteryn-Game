@@ -3699,7 +3699,7 @@
     "grants": "charge only on an exact match",
     "publication": "commit as blakinio with required trailers; fetch and fast-forward push each green batch; no main, force push or PR"
   },
-  "next_batch": "Complete combined physical18 PG proof and source/pin checks, push merged green slice immediately, then resume independent placement qualifications.",
+  "next_batch": "Push merged green18-actor proof immediately, then continue independent data-only placement qualification batches; retain all cumulative assertions.",
   "shared_engine_lookup": {
     "owner_rule": "Shared engine features are this lane’s responsibility when required. Never leave an entry unfinished for missing engine support.",
     "qengine2": {
@@ -3761,8 +3761,16 @@
   "continuation_merge": {
     "ours": "535109142",
     "incoming": "3787a419a",
-    "state": "COMBINED_VALIDATION",
-    "scope": "Preserve incoming paid Altar/delayed Sweaty/Fading workshop qualification and our six independent placement rows; only lane metadata conflicted. Revalidate cumulative18 actual actors against combined source before push."
+    "state": "GREEN",
+    "scope": "Preserve incoming paid Altar/delayed Sweaty/Fading workshop qualification and our six independent placement rows; only lane metadata conflicted. Revalidate cumulative18 actual actors against combined source before push.",
+    "postgres": {
+      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+      "seconds": 79.06,
+      "cumulative_cases": 18,
+      "log": "/tmp/npcfix-evidence/retail-03-workshop-merged-green.log"
+    },
+    "rust_and_content": "Exact apps/crates/content identity with validated upstream3787a419a; reuse upstream all-target/all-feature check5m53s and strict clippy5m05s. Our new qualification changes only external test data and lane records.",
+    "review": "Reviewed exact same-XID fee/source/receipt bindings, immutable payment rows, retained1144+forward1145 clock proof, explicit transaction rollback on missing inputs and coherent i128 remaining-time advice. No integration findings in these paths. Workshop owner retains its broader review/smithing scope."
   },
   "active_reward_delivery": {
     "entries": [
