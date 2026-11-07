@@ -2044,5 +2044,14 @@
     "qengine_0999": "Byte-identical to QENGINE2; no local variant.",
     "qbase_present": false,
     "state": "GREEN_MIGRATION_RENUMBER_SLICE"
+  },
+  "basement_cohort_authoring": {
+    "state": "WIP_CANONICAL_ACTIVATION_ALIAS_REQUIRED",
+    "red_postgres_seconds": 75.36,
+    "red": "Actual basement landing earns ownphase1 but cohort absent, expected0.",
+    "rejected_attempt_postgres_seconds": 75.39,
+    "rejected_attempt": "Catalogue native goal run may reopen; reverted attempt, keep closed activation guard.",
+    "check": "quests+dispatch PASS41.79s; fixture early-return cleanup compiles.",
+    "next": "Reuse canonical once-only activation key at both source basement positions through bounded selector aliases; preserve guard and original tests."
   }
 }

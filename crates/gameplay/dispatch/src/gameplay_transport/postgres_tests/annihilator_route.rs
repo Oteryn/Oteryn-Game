@@ -375,19 +375,28 @@ fn run(route: Route) -> TestResult {
             route,
             Route::ObjectiveAtomicity | Route::ObjectiveAtomicityStale
         ) {
-            super::native_objective_atomic::scenario(
+            let result = super::native_objective_atomic::scenario(
                 &mut owner,
                 &mut admitted[0],
                 map,
                 &h.pool,
                 route == Route::ObjectiveAtomicityStale,
             )
-            .await?;
-            return Ok(());
+            .await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return result;
         }
         if route == Route::ElvenbaneExploration {
-            super::elvenbane_route::exploration(&mut owner, &mut admitted[0], &h.pool).await?;
-            return Ok(());
+            let result =
+                super::elvenbane_route::exploration(&mut owner, &mut admitted[0], &h.pool).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return result;
         }
         // Fresh admissions share the same source approach tile, as normal login
         // admissions share a configured start. Each walks through the real door

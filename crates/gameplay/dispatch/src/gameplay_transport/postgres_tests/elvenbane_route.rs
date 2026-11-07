@@ -57,6 +57,26 @@ pub(super) async fn exploration(
         Some(1),
         "source basement exploration must earn phase1"
     );
+    let defender_phase = &oteryn_gameplay_quests::quest::native_kill_goals::load()
+        .map_err(debug)?
+        .iter()
+        .find(|goal| goal.key.ends_with("/elvenbane-dragon"))
+        .ok_or("native defender phase")?
+        .phase;
+    let activated: Option<i64> = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(defender_phase).fetch_optional(pool).await?;
+    assert_eq!(
+        activated,
+        Some(0),
+        "actual source basement entry must activate the exact native defender cohort"
+    );
+    let one_visit_transaction: bool = sqlx::query_scalar("SELECT count(*)=2 AND count(DISTINCT committed_character_revision)=1 AND count(DISTINCT xmin::text)=1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=ANY($2::text[])")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(vec![rules::PHASE, defender_phase.as_str()])
+        .fetch_one(pool).await?;
+    assert!(
+        one_visit_transaction,
+        "basement exploration and defender activation must be one atomic visit"
+    );
     use oteryn_gameplay_quests::quest::{elvenbane, world_callbacks::Position};
     use oteryn_protocol_oteryn::world_spatial::StepDirection::North;
     // The original basement stairs return outdoors; every subsequent flat edge

@@ -410,3 +410,29 @@ replays before fresh-grant checks, preserving current phase and prior credit.
 The dedicated stale case asserts counter1 remains in its earlier transaction;
 the unchanged normal case still requires freshly earned counter1 in XP's
 transaction, plus the original receipt/phase/replay assertions in both cases.
+
+## Earned actual basement landing enables the defender cohort
+
+Actual exploration PG180006 RED75.36s showed own phase1 earned at source hole
+landing32598,31653,z8 but native defender phase absent, expected0. The incoming
+isolated cohort activation at32598,31641,z8 remains compatible. First whole
+route basement callback (ownphase0->1) now activates the same cohort phase0 in
+that one atomic quest write, retaining every per-origin counter. The cohort's
+intermediate return flag may already be-1/0/1; first whole-route visit enables
+it without resetting any credit. Own phase0 gates this once, and completed
+whole-quest state cannot re-enter that first-visit transition. These progress
+flags are authored approximation, not invented donor storage facts; physical
+landing and source recipe citations/hashes remain those above.
+
+Route fixture early returns for isolated native atomicity and exploration now
+close their owned PostgreSQL database after success or a returned error, using
+the same teardown as the full route. Assertions and panic behavior unchanged.
+Read-only inspection found35idle bp_annihilator_route test databases;33older
+than10minutes were dropped withoutFORCE and without touching active/recent DBs
+(`/tmp/questpc2-idle-route-database-cleanup.json`), recovering about1.4GiB.
+
+The widerange cohort activation proposal above was NOT accepted: catalogue
+validate_closed correctly rejects any reopening or noncanonical activation
+(PG75.39s). It has been reverted. Continue with one canonical once-only
+activation callback matching both evidenced physical basement positions;
+preserve all closed activation/counter validation and original source tests.

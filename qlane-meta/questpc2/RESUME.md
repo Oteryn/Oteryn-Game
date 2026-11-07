@@ -1,34 +1,31 @@
-# Active r2: terminal stale-capture replay GREEN, continue
+# Active r2: canonical basement activation alias WIP, continue immediately
 
-Latest BATCH-native-stale-capture-2026-11-07.json: actual PG180006 RED74.83s
-second XP settlement AuthorityRejected -> GREEN2cases152.80s. Fresh marker197ms,
-stale148ms; fresh native counter1 shares XP xmin, stale counter1 retains its
-prior transaction unchanged, original objective/receipt/phase/replay asserts
-remain. A captured intent that caps before settlement now seals a read-only
-current-phase effect under its original component binding in the XP transaction;
-no progress granted/re-written. Fresh-death audit and SQL guards untouched.
-Check36.58s, alltarget/allfeatureclippy-Dwarnings39.20s, fmt PASS. No content
-or pin inputs changed. ccc5bfd135fd8b90214db04d4a4ca04b3b2e59cc prior combined
-slice pushed. Current terminal fix ready to push immediately; continue next.
+Actual source exploration newassert PG180006 RED75.36s: own basementphase1
+but defender cohort phase absent (expected0). Attempt to set cohort0 from
+widerange-1..1 was correctly refused at boot (PG75.39s, native goal run may
+reopen), and has been REVERTED. Keep native_kill_goals::validate_closed intact:
+activation must be exactly canonical goal.activation with Between(-1,-1)->0.
+Next implement/reuse bounded physical selector aliases for the SAME canonical
+activation callback, original32598,31641,z8 plus actual hole landing32598,31653,z8;
+compose own first-basementphase1 there and retain once-only native/counter caps.
+Do not weaken guard or add a foreign counter writer. First check fresh qengine
+and peer implementations. New exploration test requires nativephase0 and own
+phase1 same xmin/revision, then all original ladder/poison/Dragon route asserts.
 
-NEXT: add actual source exploration PG assertion that the exact goal cohort
-activates from the earned basement landing32598,31653,z8. Existing physical
-route already earns own phase1/poison/Dragon phase2; native cohort currently
-activates only at incoming selector32598,31641,z8. Compose actual first visit
-with cohort activation while retaining bounded native counters/caps and earlier
-kernel tests. Then actual wire Dragon+five upper defenders, atomic seven-item
-physical reward/capacity/replay and source exit/journal, whole Elvenbane qualify.
-No final while owned27 unfinished remain; push after every green step and at
-least15minutes. Use only own SQL range1240–49 (1240–44 occupied). Father11
-atomic; main/QENGINE/QBASE/other-lane registry rules remain binding.
+Quest+dispatch check41.79s passes. Fixture Atomicity/Exploration early returns
+now drop owner/authority/seal and call h.cleanup before preserving result;
+actual runtime cleanup regression still pending. Found35idle own route DBs,
+removed33older10min withoutFORCE or active connections; ledger
+/tmp/questpc2-idle-route-database-cleanup.json reclaimed~1.4GiB. This cleanup
+is needed because prior early returns skipped h.cleanup. No test weakened.
 
-Current native READY/exe contains both cases and migrations1240–44; positive
-prior composition4PGcase archive questpc2-native-composition-green-four-postgres-cases.gz
-is retained. Latest stale RED archive questpc2-native-stale-capture-red-executable.gz.
-Cache prunes/archives/restorations in /tmp/questpc2-native-stale-* ledgers;
-current clippy/check caches may have superseded READY; prune only older completed
-versions while retaining newest. Root disk tight; archive inactive modes/retire
-superseded executable caches precisely, no broad clean/profile flags/credentials.
+Reusable audited cache helper /tmp/questpc2-cache-slice.py supports hold,
+prune,restore; archive index /tmp/questpc2-cache-latest.json. Latest positive
+43990facf terminal2case executable archived by hold terminal-green-before-basement;
+current exe is activation-attempt RED75.39. Native old/new READY may need prune;
+heavy compiler sequential, clippy restore only after native build exits.
+Restore inactive check/clippy via helper and preserve latest READY. No profiles,
+broad clean, binary commits or credential reads. Next push within15minutes.
 
 Branch claude/happy-davinci-ijz3wy-questpc2; AUTHORING. Owned29:
 2QUALIFIED (Desert/Annihilator),27UNFINISHED,6world titles SKIPPED_OTHER_LANE
