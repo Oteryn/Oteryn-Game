@@ -103,3 +103,12 @@ qualification. Continue owned missing mechanisms; no external engine deferral.
   Opening requires a sealed proof of the future open state of exactly the
   selected door; bypassing the closed-door predicate alone cannot bypass the
   actual movement-cell collision index. Other solids/doors stay blocking.
+
+- Continuous-route readback: existing content/world/placements/region-z13-x129-y123.b3
+  SHA256718d9825424eb18b97b9f593601e27eb918f7b112f42452b8604db641ecd3939
+  has closed door5113/action10102 at33216,31671,z13; lever2772/unique30025
+  at33226,31671,z13; chests2472 atx33227,33229,33231,33233/y31656/z13
+  with no unique attrs. The scripted door is in the entry corridor. The
+  isolated door PG fixture is a mechanic proof, not a source-room placement
+  claim. Implement source startup chest-selector binding and the continuous
+  native route next, using retained source startup tables; no invented kill flag.

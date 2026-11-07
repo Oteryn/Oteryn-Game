@@ -28,7 +28,9 @@
 //! because the bundle carries no height facts.
 
 use super::floor_catalogue::{OBJECT, TERRAIN};
+mod door_displacement;
 mod house;
+pub use door_displacement::{prepare_quest_door_displacement, prepare_quest_door_opening};
 mod quest_callback;
 mod rope;
 use super::overlay::TilePos;

@@ -53,6 +53,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if map.facts.object_revision(key) != expected_revision {
             return UseDisposition::StaleState;
         }
+        if callback.effects.reward_door.is_some() {
+            return self
+                .execute_reward_door(
+                    runtime,
+                    states,
+                    actor,
+                    session,
+                    map,
+                    callback,
+                    key,
+                    expected_revision,
+                    fence,
+                    optional_pvp,
+                )
+                .await;
+        }
         let close = callback.trigger == Trigger::StepOut
             || callback
                 .lever

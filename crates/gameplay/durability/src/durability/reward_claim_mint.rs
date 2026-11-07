@@ -117,6 +117,7 @@ use sqlx::Row;
 mod arena;
 pub mod boss_reward;
 mod contents;
+mod claimed;
 mod grizzly;
 mod monk;
 pub(crate) mod quest;

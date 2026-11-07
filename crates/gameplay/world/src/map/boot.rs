@@ -1580,6 +1580,73 @@ pub mod tests {
         door_world_with(door_items)
     }
 
+    #[test]
+    fn opening_door_collision_exception_keeps_other_solids_blocking() -> Result<(), Box<dyn Error>>
+    {
+        use crate::map::view::MapFacts;
+        let world = door_world()?;
+        let key = super::super::view::placement_key(DOOR_AT, 1).ok_or("door key")?;
+        assert!(world.map.facts.opening_door_enterable(world.base(), key));
+        assert!(
+            !world
+                .map
+                .facts
+                .opening_door_enterable(world.base(), key + 1)
+        );
+        let original = world
+            .map
+            .facts
+            .base_entry(DOOR_AT, 1, 0)
+            .ok_or("door facts")?;
+        assert!(
+            world
+                .map
+                .facts
+                .apply_quest_callback(key, 0, original, &[], &[], false, None)
+        );
+        assert!(
+            !world.map.facts.opening_door_enterable(world.base(), key),
+            "a different callback must not be bypassed by the native door owner"
+        );
+        let (bytes, mut load) =
+            bundle_with_items("oteryn:item.tibia.i1629", "oteryn:item.tibia.i1000");
+        let mut data = oteryn_world_bundle::bundle::read(&bytes)?;
+        let blocker = data
+            .sectors
+            .iter()
+            .flat_map(|sector| &sector.tiles)
+            .find(|tile| tile.x == 7)
+            .and_then(|tile| tile.items.get(1))
+            .ok_or("blocker")?
+            .clone();
+        data.sectors
+            .iter_mut()
+            .flat_map(|sector| &mut sector.tiles)
+            .find(|tile| tile.x == 6)
+            .ok_or("door tile")?
+            .items
+            .push(blocker);
+        let bytes =
+            oteryn_world_bundle::writer::write(&data.manifest, &data.sectors, &Default::default())?;
+        load.digest = oteryn_world_bundle::bundle::read(&bytes)?.digest;
+        let world = boot(
+            &bytes,
+            &pins(load, 2),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            |key| {
+                let mut facts = door_items(key)?;
+                if key == "oteryn:item.tibia.i1000" {
+                    facts.solid = Some(true);
+                    facts.blocks_projectile = true;
+                }
+                Some(facts)
+            },
+        )?;
+        assert!(!world.map.facts.opening_door_enterable(world.base(), key));
+        Ok(())
+    }
+
     /// The door's tile.
     pub const DOOR_AT: TilePos = TilePos {
         x: 6,

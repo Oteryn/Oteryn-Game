@@ -701,6 +701,63 @@ impl BundleFacts {
         true
     }
 
+    /// Qualify the future open state of exactly one selected native door.
+    /// Other solid entries, live callback effects and other closed doors remain blocking.
+    pub fn opening_door_enterable(&self, base: &super::super::WorldBase, key: u64) -> bool {
+        let Some((pos, _)) = view::placement_of(key) else {
+            return false;
+        };
+        if !self.doors.contains(key) || self.doors.blocks_except(pos, Some(key)) {
+            return false;
+        }
+        let Some(tile) = base.tile(pos.x, pos.y, pos.floor) else {
+            return false;
+        };
+        let Ok(states) = self.callbacks.lock() else {
+            return false;
+        };
+        if !tile.walkable()
+            || states.solid_items.contains(&pos)
+            || states.changed.contains_key(&key)
+            || states.hidden.contains(&key)
+            || states.passable.contains_key(&key)
+        {
+            return false;
+        }
+        let mut ordinal = 0_u8;
+        for (&id, &depth) in tile.ids().iter().zip(tile.depths()) {
+            if depth != 0 {
+                continue;
+            }
+            let Some(entry) = placement_key(pos, ordinal) else {
+                return false;
+            };
+            ordinal = ordinal.saturating_add(1);
+            if entry == key || states.hidden.contains(&entry) {
+                continue;
+            }
+            if let Some(passable) = states.passable.get(&entry) {
+                if !passable {
+                    return false;
+                }
+                continue;
+            }
+            if self.doors.contains(entry) {
+                continue;
+            }
+            let palette = self
+                .placements
+                .binary_search_by_key(&entry, |(k, _)| *k)
+                .ok()
+                .map(|i| self.placements[i].1.palette)
+                .or_else(|| self.unique_index(id));
+            if palette.is_none_or(|p| self.blocks(p)) {
+                return false;
+            }
+        }
+        true
+    }
+
     /// Removing a wall must alter the collision index as well as its visible stack.
     pub fn quest_callback_blocked(
         &self,

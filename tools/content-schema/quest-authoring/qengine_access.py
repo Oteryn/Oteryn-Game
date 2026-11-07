@@ -66,6 +66,16 @@ def document():
                                        for x,y in [(33219,31657),(33221,31657),(33223,31659),
                                                    (33224,31659),(33220,31661),(33222,31661)]],
                              room_min=position(33217,31655,13), room_max=position(33225,31663,13))))
+    reward_door = callback('annihilator-reward-door', 'the_annihilator', 'use',
+                           'data-global/scripts/quests/the_annihilator/door.lua:4-25',
+                           action=10102, appearance=5113, lever=[5113, 5114], reversible=True,
+                           reward_door=dict(claim='oteryn:reward-claim.quest.u7_24.the_annihilator.reward'))
+    reward_door['failure_message'] = 'The door seems to be sealed against unwanted intruders.'
+    reward_door['sources'] = [
+        'canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:'
+        'data-otservbr-global/scripts/quests/the_annihilator/door.lua:4-25'
+        '#sha256:03c6833cf9c9e4c335e2d33716b1180159696eb45cf1772d9e09e6036ef50ca1']
+    rows.append(reward_door)
     for row in rows:
         encounter = row['effects']['encounter']
         if encounter:
@@ -74,10 +84,43 @@ def document():
     return dict(schema=1, callbacks=sorted(rows, key=lambda row: row['key']))
 
 
+def verify_reward_door_source():
+    # The retained corpus and manifest pins are shared with the encounter proof.
+    import hashlib
+    import importlib.util
+    import tarfile
+    path = ROOT / 'tools/content-migration/group_encounter_callbacks.py'
+    spec = importlib.util.spec_from_file_location('pinned_group_source', path)
+    group = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(group)
+    group.verify_source()
+    blob = '1170e128e15ee05582db092987beea7a6935726a'
+    digest = '03c6833cf9c9e4c335e2d33716b1180159696eb45cf1772d9e09e6036ef50ca1'
+    with tarfile.open(ROOT / group.ARCHIVE) as archive:
+        manifest = json.load(archive.extractfile('corpus-manifest.json'))
+        rows = [row for row in manifest['files'] if row['source'] == 'canary'
+                and row['path'] == 'data-otservbr-global/scripts/quests/the_annihilator/door.lua']
+        if len(rows) != 1 or rows[0]['revision'] != group.REVISION or rows[0]['git_blob_sha1'] != blob or rows[0]['sha256'] != digest:
+            raise ValueError('REWARD_DOOR_SOURCE_BINDING')
+        helper = '2ab1104989a5d1f50669dbb1e2d2aeef2f7c8dec'
+        helper_digest = 'a34f5bad153897359cd1f2499b6cf189d32c61e3d7ae18dd35a67eeedfd357c7'
+        rows = [row for row in manifest['files'] if row['source'] == 'canary'
+                and row['path'] == 'data/libs/functions/creature.lua']
+        if len(rows) != 1 or rows[0]['revision'] != group.REVISION or rows[0]['git_blob_sha1'] != helper or rows[0]['sha256'] != helper_digest:
+            raise ValueError('REWARD_DOOR_CLOSE_SOURCE_BINDING')
+        helper_body = archive.extractfile('blobs/' + helper).read()
+        if hashlib.sha256(helper_body).hexdigest() != helper_digest or hashlib.sha1(f'blob {len(helper_body)}\0'.encode() + helper_body).hexdigest() != helper:
+            raise ValueError('REWARD_DOOR_CLOSE_SOURCE_BYTES')
+        body = archive.extractfile('blobs/' + blob).read()
+        if hashlib.sha256(body).hexdigest() != digest or hashlib.sha1(f'blob {len(body)}\0'.encode() + body).hexdigest() != blob:
+            raise ValueError('REWARD_DOOR_SOURCE_BYTES')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
+    verify_reward_door_source()
     text = json.dumps(document(), ensure_ascii=False, indent=2) + '\n'
     if args.check:
         if OUTPUT.read_text() != text:

@@ -1,276 +1,57 @@
-# Active reward-door slice
+# questpc2 — continue after the green reward-door slice
 
-Latest source facts: BATCH-annihilator-door-source-facts-2026-11-07.json.
-Only these notes/status are in this checkpoint. Runtime/data/authoring changes
-remain LOCAL and are not yet GREEN. Continue the active source door slice;
-do not duplicate effects.encounter, re-run finished reward cohorts as new work,
-or promote a whole quest from an isolated door/entry test.
+AUTHORING on claude/happy-davinci-ijz3wy-questpc2. No PR/main/force/rebase.
+Latest batch: BATCH-annihilator-reward-door-2026-11-07.json. Real PG18.6
+RED2.90s missing callback -> GREEN44.47s. Runtime door opens with a sealed
+future-open collision proof; replay leaves one revision. Occupied close
+pushes E,S,N,W before the native door CAS. Actual chest claim seals explicit
+open AND close; native step-out still closes. Exact unrelated claim is false;
+stale fence refuses. No SQL quest-progress injection or shadow storage.
 
-PG RED18.6/2.90s proves missing callback. A subsequent PG18.6/43.58s refused
-StartNotEnterable because the fixture started on a closed door; corrected to
-adjacent walkable start. Two compile attempts then hit os error28, not PG.
-Current test: annihilator_reward_door_tracks_the_real_shared_claim. Latest
-log /tmp/questpc2-annihilator-door-opening-final.log. It must prove opening,
-replay, E-priority occupied-door displacement/close, actual shared chest claim,
-claimed open/close refusal, step-out close, exact unrelated claim and stale fence.
+All checks green:3focused units (closed schema, whole-carrier CAS rollback,
+other-solid/live-callback collision refusal),5source/effect and3group Python cases,123content
+integration,5World repository, five-crate check/all-targets/all-features clippy
+-Dwarnings,fmt,governance and tooling pin-check. Exact logs/durations in record.
+Native generation registration ran; raid_catalogue.py restored its baseline
+registration. Only shared-access-callbacks.json differs under content/.
+No migration, binary, source dump, protected workflow/tool or pin edits.
 
-Read CONTRACT-NOTES for exact donor helper facts: occupied close pushes E,S,N,W
-with IGNOREBLOCKCREATURE. Do not preserve the initial mistaken occupied refusal.
-Native opening needs a future-open collision proof for exactly one selected
-door; ordinary sealed teleports still see it as blocked before the CAS.
-The native door book owns appearance/collision/revision; the carrier rolls back
-if the final door CAS refuses. No shadow quest progress or duplicate claim.
+NEXT: continuous source Annihilator entry-to-earned-reward route now. Existing
+source B3 door is33216,31671,z13 (the entry corridor), lever33226,31671,z13.
+The four chests2472 atx33227/29/31/33,y31656,z13 currently lack their startup
+unique attrs in the captured B3. Close that source binding as part of the
+continuous route; do not invent a reward-room door or a kill-storage gate. Reuse
+quest_callbacks/encounter.rs, commit_quest_encounter_entry and the existing
+shared four-choice reward claim. Do not implement a parallel group engine or
+repeat finished entry/reward cohorts as whole qualification. Whole L3 remains
+0qualified/35unfinished/0external blockers. Entry+door+reward isolated proofs
+are not a whole-quest claim. No source escape timer or invented all-six-kill
+gate. Missing generic engine/mechanic/NPC/Item support is our implementation
+work, not a final deferral. Father's Burden11-track write stays atomic; grants
+charge only on exact match. Respect QSPLIT and excluded World-owner work.
 
-Five changed Rust crates: quests, durability, entities, world, dispatch. Check
-and clippy all targets/features -Dwarnings after the final source correction.
-The schema gate unit and full-carrier rollback unit already passed; run scoped
-content_ integration, World repository and tooling pin checks before publication.
-Python5source/effect cases and3group-source cases pass. The native registration
-check ran; raid_catalogue.py then restored its baseline registration exactly.
-Only the authored shared-access callback should differ under content/.
+Source facts in CONTRACT-NOTES.md and authoring verifier: door blob1170e128...
+SHA25603c6833cf9c9e4c335e2d33716b1180159696eb45cf1772d9e09e6036ef50ca1;
+Creature helper2ab11049..., SHA256a34f5bad153897359cd1f2499b6cf189d32c61e3d7ae18dd35a67eeedfd357c7,
+Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b. Closing displaces the sole
+occupant, not an unconditional occupied refusal. Multiple occupants refuse
+rather than closing over remaining creatures. Ordinary blockers/PZ remain.
 
-Disk recovery retains source/PG and latest caches. Current clippy incremental
-path098tcw7aevych is symlinked byte-for-byte to /tmp after SHA256 verification.
-Two lossless failed-test executable archives are in /tmp; ledgers record hashes.
-Reclaimed only unlocked superseded sessions/executables. No broad clean, flags,
-profiles, disabled incremental or installations. Do not accumulate extra RAM
-archives during compiler frontends. Cargo normal scoped runs source env.sh.
+Disk recovery: the main leak was failed linker .tmp executables and thousands
+of superseded .rcgu.o files, not needed current cache state. Removed only task
+failed temporaries/old object outputs with no compiler active, retaining latest
+objects/cache/source/PG. Ledger /tmp/questpc2-failed-link-artifact-recovery.json.
+Native incremental0clhrjm82foyu, clippy098tcw7aevych and durability380dn26icaqbh
+are losslessly retained behind original-path symlinks into /tmp; SHA256 ledgers
+record verification. One superseded regular dispatch rlib is retained the same
+way. /tmp is RAM-backed; prune only unlocked superseded sessions and obsolete
+archives at batch boundaries. No broad clean/profile/RUSTFLAGS/incremental
+changes, downloads or PostgreSQL data changes. A pre-reuse parallel group
+prototype is in a local Git stash; never apply it over the published engine.
 
-Fetch exact lane before every push; compare FETCH_HEAD, merge advances, never
-force/rebase/main/PR. Preserve blakinio identity and task trailers. Whole L3
-remains0/35. Continue after every green push; no external-engine deferrals.
-
-Prior continuation (conflicting next-step prose superseded):
-
-# Current continuation — group owner reuse
-
-Latest slice: BATCH-group-owner-reuse-2026-11-07.json. Fast-forwarded the lane
-to8d57515a1, preserving the already published qengine/source corpse integration.
-The parallel group prototype is unpublished and retained in a local Git stash
-for regression extraction. Do not apply it: effects.encounter and
-commit_quest_encounter_entry already own atomic4-player/6-demon admission.
-Its PG18.6/38.39s pass is historical prototype evidence, not published proof.
-Superseded final check processes were interrupted, never counted as GREEN.
-
-The standalone group source tool now only verifies the existing shared callback
-against pinned donor bytes.3source tests and4shared-effect authoring tests pass;
-qengine_access.py --check passes. No runtime/data or default regeneration hook
-changed in this slice; no new PG proof claimed.
-
-Continue the actual source Annihilator door and earned reward route now.
-Door donor corpus blob1170e128e15ee05582db092987beea7a6935726a:1-25, SHA256
-03c6833cf9c9e4c335e2d33716b1180159696eb45cf1772d9e09e6036ef50ca1,
-Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b,
-data-otservbr-global/scripts/quests/the_annihilator/door.lua. Reward10102==1
-refuses; closed5113 teleports onto the target then opens5114; close checks
-occupancy first. No source escape timer or invented all-six-kill gate.
-Reuse the actual shared reward claim owner, never a shadow progress track.
-Whole L3 remains0/35; entry/reward slices are not whole qualification.
-
-Fetch the exact lane before every push and compare FETCH_HEAD: the origin
-tracking ref can be stale. Merge advances; no force/rebase/main/PR. Preserve
-blakinio identity and supplied trailers. Push every green slice immediately.
-Source env.sh in each Cargo/PG command. No credentials/full suites/clean/flags.
-
-Historical continuation below (all conflicting next-step prose superseded):
-
-Latest inert authoring integration: BATCH-group-authoring-integration-2026-11-07.json; product proof remains464bdc05f. No duplicate group engine.
-
-# questpc2 — continue now
-
-AUTHORING on claude/happy-davinci-ijz3wy-questpc2. No PR/main/force/credentials.
-Commit as blakinio with task trailers; fetch/merge newer lane head and FF push every green batch.
-
-Current GREEN: BATCH-source-corpse-integration-2026-11-07.json. Seven real PG18.6 cases passed: native Instance108.54s, five endgame510.46s, Channel104.71s. All10 validation groups green, including31audit/8owner/1migration/1private-loot units, changed11-crate check, all-targets/all-features clippy-Dwarnings,fmt. 28Python,123content integration,5World repository cases pass; generation checks and tooling pins pass. Exact proof in batch record. Whole L3 remains0 newly qualified; preserve finished N-Q and reward cohorts.
-
-Source-authoring5c45cf2b7 and key fixc63c6cc71 are now integrated; all3Python tests pass. No active data/runtime changed. NEXT: push the green integration FF, then continue whole source quests. qengine2@5a6de28c is ALREADY merged locally with atomic effects.encounter entry and native six-demon/four-player PG proof. Reuse quest_callbacks/encounter.rs and Carrier commit_quest_encounter_entry. Do not implement a parallel group_encounter schema/owner because the inert tool uses a different field name. Adapt source authoring to the existing owner when activating. Continue actual encounter/escape/door/reward paths and whole quests; entry/reward alone never equals whole qualification.
-
-Published migration1024 is immutable Git blob c89455d0a109379a848015f815f1e3a997b07b48. Instance corpse_ref tag3; Ground scope2; Channel bytes unchanged. Spite33867/Bakragore44012/Primal39530 canonically admitted and real native deaths/visible Item bindings PG verified. Do not redo corpse authoring. Private reward rows remain independent and strict. Keep declared source capacity apart from30/16actual resource budgets.
-
-Source /workspace/oteryn-env/env.sh for Cargo/PG without printing URLs. Current native incremental path and two completed cache paths are symlinks to /tmp; preserved byte-for-byte. /tmp is memory-backed: do not accumulate obsolete archives there during compiler frontends. Prune only superseded inactive sessions and obsolete artifacts; retain latest caches, source and PG. No broad clean/profile/RUSTFLAGS/incremental changes. Resource interruptions and recovered GREEN evidence are in the batch record.
-
-World lanes fetched: worldchg318ab59d2, wvarda822d3e2, wcontribc8a8d97cf, wevents4b08b4530. Respect owner exclusions. Down the Drain already QUALIFIED in wvar; Demon Wars/Deeplings World changes belong to worldchg. Read their committed WORLDCHG-Q/WEVENTS-Q evidence before redoing any world change. Missing engine/item/NPC support remains our implementation work within owned scope. Father's Burden11-track write stays atomic; grants charge only exact matches.
-
-Prior detailed continuation and historical evidence (superseded next-step prose below):
-
-# questpc2 current continuation
-
-AUTHORING on `claude/happy-davinci-ijz3wy-questpc2`; no PR or frozen head.
-Read git log and this branch's remote before selecting the next batch. The owner
-requires local commits as blakinio with the supplied Claude trailers and a
-fast-forward push after every green batch. Older no-commit/no-push instructions
-and `/home/mole` paths are superseded. Never read credentials or force-push.
-
-Latest authoring correction: BATCH-group-source-key-2026-11-07.json.
-The required key is oteryn:quest-callback/annihilator/group-entry. The prototype
-short key was rejected by the native callback decoder (actual PG18.6,2.72s).
-The tool now emits the canonical key and refuses edited legacy data.3 Python
-authoring cases and the new Rust closed-callback load contract unit pass.
-No active callback/default hook/runtime changes are in this authoring commit.
-
-ACTIVE runtime/code/data remain local. The full group PG reached every core
-case: missing member, level99, occupied room, insufficient actor capacity with
-rollback, exact4 destinations/6 source demons, and accepted command replay.
-37.81s onPG18.6; final used-lever check returned Rejected for the relocated
-participant. No GREEN claimed. The matcher uses original bound placement;
-no matcher relaxation was made. The test now uses the still-outside bystander
-for shared used-lever rejection across Characters, and logs participant state.
-That rerun was stopped before execution by disk exhaustion. Rerun it now;
-current stable file is postgres_tests/group_encounters.rs. All source membership,
-rollback, exact spawn and replay assertions remain. Latest attempted log:
-/tmp/questpc2-group-entry-bystander-link.log (compile disk error, not PG proof).
-
-Disk recovery just reclaimed249 inactive incremental caches (current dispatch
-cache retained), preserving compiled libraries/test outputs, source and PG.
-Overlay now12GB free. No Cargo clean, flags/profiles changes or disabled
-incremental. Reclamation ledger /tmp/questpc2-inactive-incremental-recovery.json.
-Do final check/clippy on quests/entities/dispatch, fmt, source tool and native
-registration checks, content integration and world repository tests before runtime
-commit. No additional World/pin change is expected from the callback inventory.
-
-Latest authoring tool: BATCH-group-source-authoring-2026-11-07.json.
-Standalone group_encounter_callbacks.py verifies the exact retained source corpus,
-manifest and Git blob, then emits the four-player/six-Angry-Demon layout.3 authoring
-cases pass. No active callback data/default regeneration hook/runtime code in that
-publication. Latest runtime green is f1c59a37c, detailed below.
-
-ACTIVE LOCAL GROUP WORK: Callback.group_encounter schema and generic native
-commit_source_group rollback owner; dispatch group census checks real member
-sessions/fences/levels and sealed native destinations before world lever CAS.
-Two rollback units and two schema boundary units pass. Use entity --features
-test-support; omitting it failed existing fixture APIs, not accepted as a test.
-PG RED /tmp/questpc2-group-entry-red.log ran on18.6,2.61s: source callback absent.
-The PG group_encounters.rs test is still a RED skeleton: extend it to complete
-real four-character admission/USE and negative cases BEFORE generating the
-production callback and accepting GREEN. Do not count presence alone as proof.
-Current local regeneration hook changes and three existing Callback literal
-updates must stay with runtime/schema, not the standalone authoring commit.
-Dependencies.owner_from now permits the existing genuine multi-player fixture;
-world callback fixture includes the declared group cells. Complete the full PG
-fixture next. No current Cargo process is required for this continuation.
-
-Check fetched branch object IDs from the authoring batch record; none had an
-existing group_encounter implementation. FETCH_HEAD is authoritative: explicit
-git fetch origin <branch> does not update this checkout's stale origin tracking
-ref. Before every push fetch lane, merge FETCH_HEAD if needed, then push exact
-HEAD:claude/happy-davinci-ijz3wy-questpc2. Never force or rebase.
-
-Latest runtime publication: BATCH-source-corpse-admission-2026-11-07.json.
-Five real PG18.6 cases pass197.29s: one exact native Spite33867/Bakragore44012/
-Primal39530 root, exact visible Item binding, empty physical contents, replay,
-atomic native progression and preserved Primal private chest. Seven source corpse
-stages are canonically admitted. Positive u16 declared capacity is separate from
-unchanged actual30/16 write/plan quotas. Full private loot admission stays strict;
-separate empty reward-boss corpse rows cannot fabricate private chests. Source
-fixture1/1 passes33.57s, seventeen Python cases,123 content integration and5 world
-repository cases pass. Check/clippy all-targets/all-features -D warnings, fmt,
-full tree roundtrip, tooling pin refresh/check pass. Exact logs in batch record.
-
-Generation order matters: apply corpse tooling; refresh Grizzly shared-shard
-fingerprints through its guarded --refresh-canonical-inputs mode; refresh native
-loot facts; run prey_difficulty.py --simulate after final Rust formatting; full
-world_project_v2_to_tree.py rebinds119 taxonomy evidence hashes (all12,252 targets
-and profiles unchanged); reapply raid_catalogue.py registration. Shared raid
-manifest files must match committed branch; no new raid/world work claimed.
-Then stage canonical Item inputs and refresh/check World pins with repository
-wrapper. No manual generated hashes. Earlier failed intermediate logs are not
-green evidence; use the final logs in the batch record.
-
-Continue immediately with source participant-bound encounter composition.
-The Annihilator's retained inventory is batch3_status/the_annihilator.json:
-exactly4 players level>=100, uid30025/item2772, empty arena,6 Angry Demon,
-lever2773, settings.daily=true; no invented24h cooldown. Existing reward choice
-cohort remains separate evidence. Recheck qengine2 and lane branches for existing
-implementation before generic changes; do not repeat completed source reward
-cohorts. No whole quest is yet QUALIFIED. Source rooms and callbacks remain owned
-work; never defer them as shared engine support. See CONTRACT-NOTES.md.
-
-Disk:32GB overlay repeatedly exhausted during compiler/linker output. Recovery
-reclaimed only superseded/inactive incremental state and obsolete/truncated test
-executables, retaining source, PG, compiled libraries and current test outputs.
-No broad clean, installs, profile changes, disabled incremental or RUSTFLAGS.
-Some earlier archive references are historical; disposable cache archives were
-reclaimed. Keep enough build headroom and finish generation before compilation.
-
-Last runtime green batch: native combat corpse MINT and actual projection binding.
-BATCH-native-corpse-binding-2026-11-07.json records RED zero native roots
-(70.57s), then RED unbound projection (74.11s), and final real Primal PG GREEN
-(72.18s). Native draining creates the already admitted corpse39530, binds its
-actual committed Item ID into the visible Instance projection, and preserves
-one private reward chest with zero physical corpse contents and replay safety.
-Five typed-scope carrier tests and the Channel ground-placement replay test pass.
-All three changed crates' check/clippy (all targets/features, -D warnings), fmt
-and whitespace pass. No new Item/data grants or generated files in this batch.
-
-The generic root owner is already pushed in647e33cf3; its exact evidence remains
-BATCH-instance-corpse-root-2026-11-06.json. It uses the existing MINT owner,
-tagged full cause keys, current assignment/node fences, immutable writable
-fields and existing audit/receipt chains. Channel intent/audit goldens remain.
-The native producer no longer refuses Instance placement, and the carrier no
-longer rejects a same-scope Instance projection after the committed MINT.
-
-Whole L3 remains0 qualified /35 unfinished /0 external blockers. Continue now:
-source-qualified Content rooms and complete boss callbacks, composing
-participant admission, settlement, custody and earned reward access.
-Primal39530 is ALREADY canonically admitted: do not redo it. The separate native
-spell-provider file is not the authoritative test of its corpse admission.
-The Content template's obsolete blanket corpse refusal remains to be replaced
-with the complete native death/Item closure proof; no room is silently enabled.
-
-CONTRACT-NOTES.md records the time-boxed source/default decisions. Source XML:
-imports/canary/items-xml/items.xml:63232 (Spite48 slots), :76397 (Bakragore30),
-Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b, SHA256
-1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2.
-Use existing primal_corpse_items.py admission tooling and captured WorldObject
-flags; preserve source capacities/decay and unrelated unknown semantic groups.
-Declared capacity and actual write budgets differ: keep the30-entry corpse and
-16-entry plan checks rather than clamping source data. No engine deferrals.
-
-The preceding native death progression batch remains verified in
-BATCH-native-death-2026-11-06.json. Do not repeat finished slices as new work.
-qengine2 and questpc/questpc3-8 had no reusable corpse bridge or overlapping L3
-whole qualification. Read-only main91afbe0ba1 was checked for allocation; no main
-merge/write. Preserve published1020-1024 and prior commits. Fetch the lane and
-merge if it moved before every push; never force or rebase. Use the specified
-commit identity/trailers. Push each green mechanic slice immediately and no
-less often than30 minutes. Limit any one investigation to10 minutes; record the
-chosen documented/conservative rule in CONTRACT-NOTES.md and implement it.
-
-QSPLIT-PLAN/LANE-L3 retain scope: skip others' qualified entries and world changes
-owned by worldchg/wvar/wcontrib/wevents. Father's Burden's11 tracks stay atomic;
-charge grants only on exact match. Missing source facts use donor file:line+SHA.
-
-Startup is completed. Source /workspace/oteryn-env/env.sh for Cargo/PG without
-printing URLs. PG18.6 has fsync/synchronous_commit/full_page_writes on. Do not
-reinstall/clean. Normal --locked Cargo resolved the initially absent offline
-schemars index without lock changes. No full workspace/PG/nextest suites.
-Require positive counts, actual PG markers and nontrivial duration. Scratch
-logs are /tmp/questpc2-native-*.log and /tmp/questpc2-corpse-projection-*.log.
-
-## Additional local integration evidence
-
-
-Local5ee9e1c83 merged qengine2@5a6de28c142de185594217ce1e5cbc7f4b6e6e4e and an
-independent corpse implementation. Pre-push fetch found newer remotef9cc1e550
-with published owner647e33cf3, native binding1ee1efc2a and corpse-authoring tools.
-The integration reuses that published owner, not a second mechanism. Preserve
-apps/game-server/migrations/1024_instance_corpse_mint.sql byte-for-byte (Git blob
-c89455d0a109379a848015f815f1e3a997b07b48); unpublished duplicate migration removed.
-Instance corpse_ref uses published tag3, while Ground scope kind remains2.
-All native, immutable-raw-scope, current-owner, foreign-permit/no-charge and
-legacy Channel tests are retained. No active Item-data change in this merge.
-
-BATCH-remote-integration-2026-11-07.json records the fresh green evidence:
-real native Instance PG109.760s; exact canonical Primal corpse/binding/private
-reward PG103.27s; Soul root/permit/native progression PG104.32s; ordinary Channel
-corpse/loot/XP PG104.53s.31 audit,8 corpse-owner,5 typed carrier and1 migration
-unit tests pass, plus32 focused Python tests. All changed-crate check, clippy
-(all targets/features,-D warnings),fmt pass. Historical5ee evidence (including
-five endgame cases) remains in BATCH-scoped-corpse-2026-11-07.json; do not confuse
-its unpublished old migration format with the integrated published one.
-
-Merge checkpoint must be committed and FF pushed before new authoring; verify
-HEAD and the fetched lane branch rather than assuming tracking refs exist.
-
-
-Current merge integrates f1c59a37 with 6006f0db8. Re-run combined checks before committing/pushing. Do not repeat completed Spite/Bakragore authoring.
+Source /workspace/oteryn-env/env.sh per Cargo/PG command without printing URLs.
+No full test suites. Use scoped filters and positive counts; real PG needs its
+server marker and nontrivial duration. Pure units may take0.00s. Fetch the exact
+lane before every push and compare FETCH_HEAD (tracking ref can be stale);
+merge advances. Commit as blakinio with supplied trailers. Push every green
+slice immediately, at least every30 minutes. Continue after pushing.
