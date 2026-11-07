@@ -458,7 +458,8 @@ def validate_callbacks(document):
                      or callback['outfit'] or callback['achievement']))
             or (callback.get('fee') is not None and any(i['item'] in {'oteryn:item.tibia.i3031','oteryn:item.tibia.i3035','oteryn:item.tibia.i3043'} for i in callback['take']))
             or (callback.get('give') is not None and callback['give'].get('decay') is not None
-                and (callback['give']['count'] != 1 or callback['give'].get('contents')))
+                and (callback['give']['count'] != 1 or callback['give'].get('contents') or callback['give'].get('backpack_outputs')))
+            or (callback.get('give') is not None and callback['give'].get('contents') and callback['give'].get('backpack_outputs'))
             or callback.get('minimum_level',1) < 1
             or not 1 <= callback.get('experience',1) <= 100000000
             or any(len(line.encode('utf-8'))>512 or any(ord(c)<32 or 127<=ord(c)<=159 for c in line) for line in callback.get('failure_reply',[]))

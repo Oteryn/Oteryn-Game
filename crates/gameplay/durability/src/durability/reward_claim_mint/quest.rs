@@ -235,6 +235,7 @@ async fn mint(
         callback.key.clone()
     };
     let request = RewardClaimMintRequest {
+        backpack_outputs: !reward.backpack_outputs.is_empty(),
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),
@@ -244,8 +245,7 @@ async fn mint(
         source_placement: callback.key.clone(),
         item: resolve(&reward.item)?,
         quantity: u32::from(reward.count),
-        contents: reward
-            .contents
+        contents: (if reward.backpack_outputs.is_empty() { &reward.contents } else { &reward.backpack_outputs })
             .iter()
             .map(|i| {
                 Ok(RewardClaimMintContent {

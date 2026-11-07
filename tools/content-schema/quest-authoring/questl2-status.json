@@ -381,6 +381,34 @@
         "All six fixed exchanges retain exact cost and replay semantics"
       ],
       "source": "imports/canary/items-xml/items.xml:30991-30994:sha256:1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+    },
+    {
+      "name": "atomic direct backpack reward outputs",
+      "status": "QUALIFIED",
+      "reused_commit": "eb196696c7d2606656f07cc72bf850ecdec81e10",
+      "migration": 1144,
+      "postgres_test": "questl2_peer_outputs_are_atomic_audited_and_replay_safe",
+      "postgres_version": "18.6",
+      "red": {
+        "log": "/tmp/l2-flat-red.log",
+        "duration_seconds": 2.95,
+        "failure": "Native MINT layout columns absent before migration 1144"
+      },
+      "green": {
+        "marker": "POSTGRES_CASE_COMPLETED questl2-peer-outputs",
+        "duration_seconds": 2.991528947,
+        "log": "/tmp/l2-flat-green.log",
+        "passed": true
+      },
+      "proves": [
+        "Root and multiple peer stacks retain exact quantities and direct backpack custody",
+        "Every output has its own native MINT audit",
+        "Replay preserves the full inventory and audit footprint",
+        "A late final-output write failure rolls back every value effect",
+        "Insufficient total backpack space refuses the complete reward",
+        "Changing the layout cannot reinterpret a committed claim"
+      ],
+      "qualification_scope": "Generic mechanism only; no quest qualification is inferred."
     }
   ],
   "entries": [
@@ -915,7 +943,8 @@
         1140,
         1141,
         1142,
-        1143
+        1143,
+        1144
       ],
       "payment_checked_main": "ca5a91b59",
       "deadline_checked_main": "9668e0a04e1a631ebfc8752772102a1fd98ce8fa",
@@ -932,7 +961,9 @@
           1149
         ],
         "evidence": "/tmp/l2-migration-range-current.json"
-      }
+      },
+      "backpack_outputs_checked_heads": 24,
+      "backpack_outputs_evidence": "/tmp/l2-flat-migration-lanes.json"
     },
     "world_pins": {
       "regenerated": true,
@@ -1376,6 +1407,29 @@
       "reward_authoring_passed": 49,
       "npc_placement_passed": 11,
       "formatting_exit_code": 0
+    },
+    "direct_output_slice": {
+      "postgres_log": "/tmp/l2-flat-green.log",
+      "postgres_seconds": 2.991528947,
+      "reward_authoring_passed": 50,
+      "reward_authoring_seconds": 30.519,
+      "authoring_log": "/tmp/l2-flat-authoring-final.log",
+      "clippy_packages": [
+        "oteryn-game-server",
+        "oteryn-gameplay-dispatch",
+        "oteryn-gameplay-durability",
+        "oteryn-gameplay-quests",
+        "oteryn-gameplay-social"
+      ],
+      "clippy_all_targets": true,
+      "clippy_deny_warnings": true,
+      "clippy_exit_code": 0,
+      "clippy_log": "/tmp/l2-flat-clippy.log",
+      "formatting_exit_code": 0,
+      "generation_log": "/tmp/l2-flat-regenerate.log",
+      "pin_refresh_log": "/tmp/l2-flat-pin-refresh.log",
+      "pin_check_log": "/tmp/l2-flat-pin-check.log",
+      "pin_digest": "099ec5efdf4e1fa87a0e63fb8077e0f22fa497bf252c8f2a244276f9a753947b"
     }
   },
   "cross_lane_inspection": {

@@ -28,6 +28,23 @@ class QuestRewards(unittest.TestCase):
         cls.author=json.loads(cls.outputs['content/cosmetics/outfits/authoring.json'])
         cls.schema=json.loads((q.ROOT/'tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json').read_text())
 
+    def test_peer_outputs_reject_mixed_layouts_and_omitted_deadlines(self):
+        row = copy.deepcopy(next(c for c in self.callbacks['callbacks']
+                                 if c['give'] and not c['give'].get('decay')))
+        row['give']['contents'] = []
+        row['give']['backpack_outputs'] = [{'item': 'oteryn:item.tibia.i3035', 'count': 10}]
+        q.validate_callbacks({'schema': 1, 'callbacks': [row]})
+        for update in [
+            {'contents': [{'item': 'oteryn:item.tibia.i3035', 'count': 1}]},
+            {'backpack_outputs': [{'item': 'oteryn:item.tibia.i3035', 'count': 101}]},
+            {'backpack_outputs': [{'item': 'oteryn:item.tibia.i3035', 'count': 1}] * 20},
+            {'decay': {'duration_millis': 36000000, 'target': None}},
+        ]:
+            bad = copy.deepcopy(row)
+            bad['give'].update(update)
+            with self.assertRaises((ValueError, ValidationError)):
+                q.validate_callbacks({'schema': 1, 'callbacks': [bad]})
+
     def test_qengine_rewards_outputs_reproduce_and_validate(self):
         q.validate_callbacks(self.callbacks)
         for path,raw in self.outputs.items():

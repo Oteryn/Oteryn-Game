@@ -23,3 +23,14 @@
 - Fixed Cyclops/Marina item admission reuses the richer existing native providers for weapons, armour, honeycomb, silk, metals, ingots and gear wheels. The L2 custody producer adds only the three missing definitions (3560, 5886, 12804); it does not replace an operational provider with an inert source shell. Its native-conflict rejection remains intact.
 - The first integrated PG run reached every steel exchange and then rejected molten-gold scheduling because the reusable action scheduler requires its normalized `count: 1` evidence. The Quest composition now supplies that evidence; the scheduler's original one-item guard is unchanged.
 - Concurrent L2 merge: preserve incoming fcb7ac5576a8a42fb081745c83c219dce8206201 and local cbf052888. Retain incoming read-only prerequisites, XP/level guards, source greeting conclusions, all twelve additional native item profiles and published NPC placements together with the fixed exchanges and deadline composition. Duplicate source programme blocks were removed through the authoring, and derived content was regenerated with the repository merge tool.
+
+### L2 direct reward output reuse
+
+PC8 commit eb196696c7d2606656f07cc72bf850ecdec81e10 already implements
+atomic direct backpack outputs through the complete native MINT reservation,
+child identities, per-item audit and deferred complete-plan proof. L2 reuses
+that implementation, retaining fee, expiry and prerequisite extensions. Its
+1108 migration is allocated as L2 1144 after checking the available remote
+main, engine and quest-lane refs for 1144 collisions. This is a shared mechanic
+slice; it does not alone qualify a quest. A source soul-orb trade may require
+more room than available; refuse the whole exchange without consuming orbs.

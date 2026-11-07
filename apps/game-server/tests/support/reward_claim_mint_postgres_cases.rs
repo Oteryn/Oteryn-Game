@@ -4,6 +4,9 @@
 // through the real B3-1 TRANSFER path; its definition is the same test-only
 // fixture as the B3-1 cases.
 
+#[path = "reward_claim_mint_postgres_cases/backpack_outputs.rs"]
+mod backpack_outputs;
+
 #[path = "reward_claim_mint_postgres_cases/filled_fluid.rs"]
 mod filled_fluid;
 
@@ -804,6 +807,7 @@ fn chest(
     quantity: u32,
 ) -> RewardClaimMintRequest {
     RewardClaimMintRequest {
+        backpack_outputs: false,
         command,
         claim: definition("RewardClaim", claim_key),
         source_placement: "fixture:placement.chest".into(),
@@ -1715,6 +1719,7 @@ fn a_key_claim_records_its_number_once_and_the_database_rejects_any_other_key_ro
             .map_err(debug)?;
         let backpack = harness.equip_backpack(&authority, 1).await?;
         let key = RewardClaimMintRequest {
+            backpack_outputs: false,
             key_number: Some(10),
             ..chest(
                 command(2)?,

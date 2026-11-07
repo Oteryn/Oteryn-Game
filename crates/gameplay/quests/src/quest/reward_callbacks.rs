@@ -22,6 +22,8 @@ pub struct ItemReward {
     pub count: u16,
     #[serde(default)]
     pub contents: Vec<ItemAmount>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub backpack_outputs: Vec<ItemAmount>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub decay: Option<ItemDecay>,
 }
@@ -250,11 +252,15 @@ fn parse_document(text: &str) -> Result<Document, String> {
             || c.give.as_ref().is_some_and(|r| {
                 !item(&r.item, r.count)
                     || r.contents.len() > 20
+                    || (!r.contents.is_empty() && !r.backpack_outputs.is_empty())
+                    || r.backpack_outputs.len() > 19
+                    || r.backpack_outputs.iter().any(|s| !item(&s.item, s.count))
                     || r.contents.iter().any(|s| !item(&s.item, s.count))
                     || r.decay.as_ref().is_some_and(|decay| {
                         decay.duration_millis == 0
                             || r.count != 1
                             || !r.contents.is_empty()
+                            || !r.backpack_outputs.is_empty()
                             || decay.target.as_ref().is_some_and(|target| {
                                 !item(&target.key, 1)
                                     || target.revision.is_empty()

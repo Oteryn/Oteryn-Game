@@ -74,6 +74,13 @@
         },
         "decay": {
           "$ref": "#/$defs/decay"
+        },
+        "backpack_outputs": {
+          "type": "array",
+          "maxItems": 19,
+          "items": {
+            "$ref": "#/$defs/item"
+          }
         }
       }
     },

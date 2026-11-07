@@ -136,3 +136,10 @@ Crystal revision `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`, lines 61-80,
 SHA256 `85016cc08856f49d94c507f43bc84f54801d3a2844946ae391015a0d8c84a052`.
 The full Draconia qualification also requires the offering and alternative exit
 journeys; a greeting test alone does not qualify that entry.
+
+`give.backpack_outputs` uses PC8's existing complete MINT output plan: up to
+19 additional direct backpack entries accompany the root reward. It is mutually
+exclusive with container contents. The whole set must fit the equipped backpack
+and carried capacity; each item retains a native MINT audit and all outputs
+commit with the same quest receipt. Absolute-deadline rewards currently require
+a single root, so mixed timed peer outputs are rejected at authoring.
