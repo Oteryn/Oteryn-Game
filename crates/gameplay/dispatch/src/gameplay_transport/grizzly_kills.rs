@@ -47,6 +47,17 @@ pub(super) struct FrozenGrizzlyDeath {
     recipients: Vec<Recipient>,
 }
 
+impl FrozenGrizzlyDeath {
+    /// Only the captured loot principal's eligible objectives may select a corpse drop.
+    pub(super) fn loot_objectives(&self, principal: &[u8; 16]) -> Vec<&str> {
+        self.recipients
+            .iter()
+            .filter(|recipient| &recipient.character == principal)
+            .flat_map(|recipient| recipient.objective_actions.iter().map(String::as_str))
+            .collect()
+    }
+}
+
 /// Capture memory only; there is no independently drained queue here. Sessions are
 /// bounded by the runtime's committed player census. Replayed corpse projections retain
 /// their first capture, bounded by the carrier's existing pinned/unpinned corpse ceilings.

@@ -467,6 +467,17 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
                 raise ValueError(f"Loot table given twice: {definition['identity']['key']}")
             tables[definition['identity']['key']] = definition
     facts = item_facts(item_definitions)
+    # Repository-authored Quest rules bind the complete canonical dataset.
+    if (creature_definitions.resolve() == CREATURE_DEFINITIONS.resolve()
+            and loot_definitions.resolve() == LOOT_DEFINITIONS.resolve()
+            and item_definitions.resolve() == ITEM_DEFINITIONS.resolve()):
+        migration_tools = str(ROOT / 'tools/content-migration')
+        if migration_tools not in sys.path:
+            sys.path.insert(0, migration_tools)
+        import quest_corpse_profiles
+        quest_corpse_profiles.apply_loot_facts(facts, ROOT, creatures)
+        import quest_loot_profiles
+        quest_loot_profiles.apply_loot_facts(facts, ROOT, creatures, tables)
     bindings, named, used = {}, {}, {}
 
     def name(ref):

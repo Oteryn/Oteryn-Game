@@ -50,9 +50,23 @@ def generate():
             "https://tibia.fandom.com/index.php?curid=36695&oldid=843864",
         ]
     }
+    authored = json.loads((Path(__file__).with_name("chosen-route-rewards.json")).read_text())
+    if (authored.get("schema") != 1 or set(authored) != {"schema", "callbacks", "offers", "greetings", "tracks"}
+            or len(authored["callbacks"]) > 128 or len(authored["offers"]) > 128
+            or len(authored["greetings"]) > 64 or len(authored["tracks"]) > 64):
+        raise ValueError("chosen route reward authoring bounds")
+    keys = [row["key"] for row in authored["callbacks"]]
+    if len(keys) != len(set(keys)) or callback["key"] in keys:
+        raise ValueError("duplicate chosen reward callback")
+    canonical = {record["definition"]["identity"]["key"]
+                 for path in (ROOT / "content/quests/definitions").glob("quests-*.json")
+                 for record in json.loads(path.read_text())["records"]}
+    if any(row["quest"] not in canonical for row in authored["callbacks"]):
+        raise ValueError("chosen route reward needs a canonical quest")
     return {
-        "content/quests/chosen-reward-callbacks.json": {"schema": 1, "callbacks": [callback]},
-        "content/quests/chosen-reward-offers.json": {"schema": 1, "offers": []},
+        "content/quests/chosen-reward-callbacks.json": {"schema": 1, "tracks": authored["tracks"], "callbacks": [callback, *authored["callbacks"]]},
+        "content/quests/chosen-reward-offers.json": {"schema": 1, "offers": authored["offers"]},
+        "content/dialogues/quests/chosen-reward-greetings.json": {"schema": 1, "npcs": authored["greetings"]},
     }
 
 

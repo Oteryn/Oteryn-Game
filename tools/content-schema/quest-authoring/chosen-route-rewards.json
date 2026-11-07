@@ -1,0 +1,712 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/chosen/trader/trophy",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.rashid",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 71,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7397",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your trading mission is recorded."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/trader/willard",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.willard",
+      "keywords": [
+        "package for rashid"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your trading mission is recorded."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/willard.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/trader/snake-eye",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.snake_eye",
+      "keywords": [
+        "package for rashid"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your trading mission is recorded."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/snake_eye.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/trader/package",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.rashid",
+      "keywords": [
+        "package"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i145",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your trading mission is recorded."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/trader/buy-cheese",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 72,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i169",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your trading mission is recorded."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/miraia.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+      ],
+      "fee": {
+        "gold": 100,
+        "include_bank": true
+      },
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/trader/cheese",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.rashid",
+      "keywords": [
+        "cheese"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i169",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 10,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your trading mission is recorded."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/trader/buy-vase",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.briasol",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 73,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i227",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your trading mission is recorded."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/briasol.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+      ],
+      "fee": {
+        "gold": 1000,
+        "include_bank": true
+      },
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/trader/vase",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.rashid",
+      "keywords": [
+        "vase"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i227",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your trading mission is recorded."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/trader/buy-sword",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.uzgod",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 75,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5880",
+          "count": 3
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i7385",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your trading mission is recorded."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/uzgod.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+      ],
+      "fee": {
+        "gold": 250,
+        "include_bank": true
+      },
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/trader/sword",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.rashid",
+      "keywords": [
+        "sword"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7385",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your trading mission is recorded."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/trader/goldfish",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.rashid",
+      "keywords": [
+        "goldfish"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 12
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5929",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your trading mission is recorded."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/trader/recognised",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.rashid",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 13
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/recognised_trader",
+      "reply": [
+        "Your trading mission is recorded."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+      ],
+      "completes": true,
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/authored-secret-library/charles",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "npc": "oteryn:npc.charles",
+      "keywords": [
+        "raft"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/stage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "If you are stranded, lash the loose raft planks with a hawser."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charles.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/spectulus.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/high_and_dry_isles/movements_boat_puzzle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/actions_bonefiddle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/actions_oberonLever.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/movement_teleport.lua",
+        "Conservative chosen programme: fixed native palace ground23881 and object25051 stand for unavailable loose skull28489/hair28490 targets. Only carried ebony wood converts; fixed stations are not consumed. Charles raft assistance is an authored discussion, not a paid shortcut passage. The selected temple research counterpart is the source Liquid Death entrance. No fabricated source tags."
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/authored-secret-library/spectulus",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "npc": "oteryn:npc.spectulus",
+      "keywords": [
+        "rumours"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Investigate the sunken temple in northern Tiquanda and its fishmen."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charles.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/spectulus.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/high_and_dry_isles/movements_boat_puzzle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/actions_bonefiddle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/actions_oberonLever.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/movement_teleport.lua",
+        "Conservative chosen programme: fixed native palace ground23881 and object25051 stand for unavailable loose skull28489/hair28490 targets. Only carried ebony wood converts; fixed stations are not consumed. Charles raft assistance is an authored discussion, not a paid shortcut passage. The selected temple research counterpart is the source Liquid Death entrance. No fabricated source tags."
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/authored-secret-library/gail",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "npc": "oteryn:npc.gail",
+      "keywords": [
+        "daughter"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/stage",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/kills",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for telling me what happened to my daughter."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charles.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/spectulus.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/high_and_dry_isles/movements_boat_puzzle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/actions_bonefiddle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/actions_oberonLever.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/movement_teleport.lua",
+        "Conservative chosen programme: fixed native palace ground23881 and object25051 stand for unavailable loose skull28489/hair28490 targets. Only carried ebony wood converts; fixed stations are not consumed. Charles raft assistance is an authored discussion, not a paid shortcut passage. The selected temple research counterpart is the source Liquid Death entrance. No fabricated source tags."
+      ],
+      "requires_premium": true
+    }
+  ],
+  "offers": [
+    {
+      "npc": "oteryn:npc.rashid",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 71,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Bring me a rare deer trophy. May I take it?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "scarab cheese"
+      ],
+      "topic": 0,
+      "next_topic": 72,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Would you like to buy scarab cheese for 100 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.briasol",
+      "keywords": [
+        "fine vase"
+      ],
+      "topic": 0,
+      "next_topic": 73,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 7,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Would you buy this fine vase for 1000 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.uzgod",
+      "keywords": [
+        "crimson sword"
+      ],
+      "topic": 0,
+      "next_topic": 75,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 9,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I can make the crimson sword for three iron ores and 250 gold. Agreed?"
+      ]
+    }
+  ],
+  "greetings": [
+    {
+      "npc": "oteryn:npc.briasol",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your trading mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/briasol.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.miraia",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your trading mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/miraia.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rashid",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your trading mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.snake_eye",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your trading mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/snake_eye.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.uzgod",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your trading mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/uzgod.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.willard",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your trading mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/willard.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.charles",
+      "greet": "Hello, |PLAYERNAME|. Ask about your library research.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "oteryn-authored:chosen-secret-library-research:quest-r1",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charles.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.spectulus",
+      "greet": "Hello, |PLAYERNAME|. Ask about your library research.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "oteryn-authored:chosen-secret-library-research:quest-r1",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/spectulus.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gail",
+      "greet": "Hello, |PLAYERNAME|. Ask about your library research.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "oteryn-authored:chosen-secret-library-research:quest-r1",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua"
+      ]
+    }
+  ],
+  "tracks": []
+}

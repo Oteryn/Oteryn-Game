@@ -7,6 +7,9 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 
+mod state_ops;
+pub use state_ops::{StateCondition, StateMutation, StateOperation};
+
 pub const PROVENANCE: &str = "crystal-9f5a72c-quest-rewards-v1";
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -35,6 +38,14 @@ pub struct OutfitReward {
     pub addons: u8,
 }
 
+/// Exact source price; only the durable fee owner may consume the funds.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct MonetaryFee {
+    pub gold: u64,
+    pub include_bank: bool,
+}
+
 /// Immutable evidence survives a source track being reset for another task run.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(deny_unknown_fields)]
@@ -55,8 +66,14 @@ pub struct RewardCallback {
     pub next_topic: u16,
     pub storage: Vec<Storage>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub state_ops: Vec<StateOperation>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub requires_premium: bool,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub required_receipts: Vec<ReceiptPredicate>,
     pub take: Vec<ItemAmount>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fee: Option<MonetaryFee>,
     /// Carried evidence checked under the same locks, without consuming it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub present: Vec<ItemAmount>,
@@ -97,28 +114,63 @@ fn is_false(value: &bool) -> bool {
     !*value
 }
 
+/// Bounded writable metadata, naming the original quest owner explicitly.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct TrackDeclaration {
+    writable: bool,
+    key: String,
+    quest: String,
+    initial: i64,
+    min: i64,
+    max: i64,
+    sources: Vec<String>,
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Document {
     schema: u32,
+    #[serde(default)]
+    tracks: Vec<TrackDeclaration>,
     callbacks: Vec<RewardCallback>,
 }
 
 pub fn load() -> Result<Vec<RewardCallback>, String> {
-    let mut callbacks = parse(include_str!(
-        "../../../../../content/quests/shared-reward-callbacks.json"
-    ))?;
-    callbacks.extend(parse(include_str!(
-        "../../../../../content/quests/chosen-reward-callbacks.json"
-    ))?);
-    let keys: BTreeSet<_> = callbacks.iter().map(|callback| &callback.key).collect();
-    if keys.len() != callbacks.len() || callbacks.len() > 256 {
-        return Err("duplicate or excessive reward callbacks".into());
-    }
-    Ok(callbacks)
+    Ok(load_document()?.callbacks)
 }
 
+fn load_document() -> Result<Document, String> {
+    let mut document = parse_document(include_str!(
+        "../../../../../content/quests/shared-reward-callbacks.json"
+    ))?;
+    let chosen = parse_document(include_str!(
+        "../../../../../content/quests/chosen-reward-callbacks.json"
+    ))?;
+    document.callbacks.extend(chosen.callbacks);
+    document.tracks.extend(chosen.tracks);
+    let keys: BTreeSet<_> = document
+        .callbacks
+        .iter()
+        .map(|callback| &callback.key)
+        .collect();
+    let tracks: BTreeSet<_> = document.tracks.iter().map(|track| &track.key).collect();
+    if keys.len() != document.callbacks.len()
+        || document.callbacks.len() > 256
+        || tracks.len() != document.tracks.len()
+        || document.tracks.len() > 256
+    {
+        return Err("duplicate or excessive reward callbacks/tracks".into());
+    }
+    Ok(document)
+}
+
+#[cfg(test)]
 fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
+    Ok(parse_document(text)?.callbacks)
+}
+
+fn parse_document(text: &str) -> Result<Document, String> {
     let document: Document = serde_json::from_str(text).map_err(|e| e.to_string())?;
     let mut keys = BTreeSet::new();
     let slug = |value: &str, prefix: &str, alphabet: &[u8], maximum: usize| {
@@ -130,26 +182,75 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                     })
             })
     };
-    if document.schema != 1 || document.callbacks.len() > 256 {
+    if document.schema != 1 || document.callbacks.len() > 256 || document.tracks.len() > 256 {
         return Err("reward callback bounds".into());
     }
+    let mut declared = BTreeSet::new();
+    for track in &document.tracks {
+        let owners = document
+            .callbacks
+            .iter()
+            .flat_map(|callback| {
+                callback
+                    .storage
+                    .iter()
+                    .map(|storage| (&callback.quest, &storage.track))
+                    .chain(
+                        callback
+                            .state_ops
+                            .iter()
+                            .map(|operation| (&callback.quest, &operation.track)),
+                    )
+            })
+            .filter(|(_, key)| key.as_str() == track.key.as_str())
+            .map(|(quest, _)| quest)
+            .collect::<Vec<_>>();
+        if !track.writable
+            || !slug(&track.key, "oteryn:", b"._/:-", 128)
+            || !slug(&track.quest, "oteryn:", b"._/:-", 128)
+            || !declared.insert(&track.key)
+            || track.min > track.initial
+            || track.initial > track.max
+            || owners.is_empty()
+            || owners
+                .iter()
+                .any(|quest| quest.as_str() != track.quest.as_str())
+            || track.sources.is_empty()
+            || track.sources.len() > 8
+            || track
+                .sources
+                .iter()
+                .any(|source| source.is_empty() || source.len() > 1024)
+        {
+            return Err(format!("invalid writable reward track {}", track.key));
+        }
+    }
     for c in &document.callbacks {
-        let tracks: BTreeSet<_> = c.storage.iter().map(|s| &s.track).collect();
+        let tracks: BTreeSet<_> = c
+            .storage
+            .iter()
+            .map(|s| &s.track)
+            .chain(c.state_ops.iter().map(|s| &s.track))
+            .collect();
         let inputs: BTreeSet<_> = c.take.iter().map(|s| &s.item).collect();
         let evidence: BTreeSet<_> = c.present.iter().map(|s| &s.item).collect();
         if !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
             || !slug(&c.npc, "oteryn:npc.", b"_", 128)
-            || c.storage.is_empty()
-            || c.storage.len() > 8
-            || tracks.len() != c.storage.len()
+            || c.storage.len() + c.state_ops.len() == 0
+            || c.storage.len() + c.state_ops.len() > 8
+            || tracks.len() != c.storage.len() + c.state_ops.len()
+            || c.state_ops.iter().any(|operation| !operation.valid())
             || c.storage
                 .iter()
                 .any(|s| !slug(&s.track, "oteryn:", b"._/:-", 128) || s.minimum > s.maximum)
             || c.storage
                 .iter()
                 .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+                && c.state_ops
+                    .iter()
+                    .all(|operation| matches!(operation.effect, StateMutation::Add { value: 0 }))
             || c.required_receipts.len() > 8
             || c.required_receipts.iter().collect::<BTreeSet<_>>().len()
                 != c.required_receipts.len()
@@ -163,6 +264,18 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || c.present
                 .iter()
                 .any(|s| !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0)
+            || c.fee.as_ref().is_some_and(|fee| {
+                fee.gold == 0
+                    || fee.gold > 1_000_000_000_000
+                    || c.take.iter().any(|item| {
+                        matches!(
+                            item.item.as_str(),
+                            "oteryn:item.tibia.i3031"
+                                | "oteryn:item.tibia.i3035"
+                                | "oteryn:item.tibia.i3043"
+                        )
+                    })
+            })
             || c.take.len() > 8
             || inputs.len() != c.take.len()
             || c.take
@@ -197,21 +310,99 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             return Err(format!("invalid reward callback {}", c.key));
         }
     }
-    Ok(document.callbacks)
+    Ok(document)
+}
+
+fn value_plan(callback: &RewardCallback) -> Result<Vec<u8>, String> {
+    let legacy = serde_json::to_vec(&(
+        &callback.key,
+        &callback.quest,
+        &callback.required_receipts,
+        &callback.npc,
+        &callback.keywords,
+        callback.topic,
+        callback.next_topic,
+        &callback.storage,
+        &callback.take,
+        &callback.present,
+        &callback.give,
+        &callback.outfit,
+        &callback.achievement,
+        callback.completes,
+        callback.experience,
+    ))
+    .map_err(|e| e.to_string())?;
+    if callback.state_ops.is_empty() && callback.fee.is_none() && !callback.requires_premium {
+        return Ok(legacy);
+    }
+    serde_json::to_vec(&(
+        "oteryn:quest-reward-extended-v1",
+        legacy,
+        &callback.state_ops,
+        &callback.fee,
+        callback.requires_premium,
+    ))
+    .map_err(|error| error.to_string())
 }
 
 pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
-    extend_callbacks(catalogue, load()?)
+    let document = load_document()?;
+    extend_callbacks(catalogue, document.callbacks, document.tracks)
 }
 
 fn extend_callbacks(
     catalogue: QuestStateCatalogue,
     callbacks: Vec<RewardCallback>,
+    declarations: Vec<TrackDeclaration>,
 ) -> Result<QuestStateCatalogue, String> {
     let npc_legacy = catalogue.npc_legacy.clone();
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
+    let explicit: BTreeSet<_> = declarations
+        .iter()
+        .map(|declaration| declaration.key.clone())
+        .collect();
+    for declaration in declarations {
+        let track = QuestTrack {
+            key: declaration.key,
+            quest: declaration.quest,
+            initial: declaration.initial,
+            min: declaration.min,
+            max: declaration.max,
+        };
+        if let Some(existing) = tracks.iter().find(|existing| existing.key == track.key) {
+            if existing != &track {
+                return Err(format!(
+                    "conflicting writable reward declaration {}",
+                    track.key
+                ));
+            }
+        } else {
+            tracks.push(track);
+        }
+    }
     for callback in callbacks {
+        for operation in &callback.state_ops {
+            let track = tracks
+                .iter()
+                .find(|track| track.key == operation.track)
+                .ok_or_else(|| format!("undeclared reward operation {}", operation.track))?;
+            if track.quest != callback.quest
+                || !operation.valid()
+                || ((matches!(operation.effect, StateMutation::SetNow)
+                    || matches!(
+                        operation.from,
+                        StateCondition::ElapsedAtLeast { .. }
+                            | StateCondition::ElapsedLessThan { .. }
+                    ))
+                    && (track.initial != 0 || track.min != 0 || track.max != i64::MAX))
+            {
+                return Err(format!(
+                    "foreign or invalid reward operation {}",
+                    operation.track
+                ));
+            }
+        }
         for requirement in &callback.required_receipts {
             if !catalogue
                 .transition(&requirement.transition)
@@ -230,24 +421,7 @@ fn extend_callbacks(
 
         // Value participants are part of the pinned quest contract. Reply copy and
         // source citations remain journal metadata and do not invalidate progress.
-        let value_plan = serde_json::to_vec(&(
-            &callback.key,
-            &callback.quest,
-            &callback.required_receipts,
-            &callback.npc,
-            &callback.keywords,
-            callback.topic,
-            callback.next_topic,
-            &callback.storage,
-            &callback.take,
-            &callback.present,
-            &callback.give,
-            &callback.outfit,
-            &callback.achievement,
-            callback.completes,
-            callback.experience,
-        ))
-        .map_err(|e| e.to_string())?;
+        let value_plan = value_plan(&callback)?;
         let digest: String = Sha256::digest(value_plan)
             .iter()
             .map(|b| format!("{b:02x}"))
@@ -259,9 +433,14 @@ fn extend_callbacks(
                 track: callback
                     .storage
                     .first()
-                    .ok_or("reward storage")?
-                    .track
-                    .clone(),
+                    .map(|storage| storage.track.clone())
+                    .or_else(|| {
+                        callback
+                            .state_ops
+                            .first()
+                            .map(|operation| operation.track.clone())
+                    })
+                    .ok_or("reward storage/operation")?,
                 from: QuestComparison::Any,
                 effect: QuestEffectKind::Computed,
             }],
@@ -273,8 +452,20 @@ fn extend_callbacks(
                 if track.quest != callback.quest {
                     return Err(format!("foreign reward track {}", s.track));
                 }
-                track.max = track.max.max(s.maximum).max(s.set);
-                track.min = track.min.min(s.minimum);
+                if explicit.contains(&s.track)
+                    && (s.minimum < track.min
+                        || s.maximum > track.max
+                        || !(track.min..=track.max).contains(&s.set))
+                {
+                    return Err(format!(
+                        "unbounded explicitly declared reward track {}",
+                        s.track
+                    ));
+                }
+                if !explicit.contains(&s.track) {
+                    track.max = track.max.max(s.maximum).max(s.set);
+                    track.min = track.min.min(s.minimum);
+                }
             } else {
                 tracks.push(QuestTrack {
                     key: s.track.clone(),
@@ -300,6 +491,7 @@ fn extend_callbacks(
                         QuestEffectKind::Set(s.set)
                     },
                 })
+                .chain(callback.state_ops.iter().map(StateOperation::quest_effect))
                 .collect(),
             completes: callback.completes,
             experience: callback.experience,
@@ -341,8 +533,8 @@ mod tests {
                 QuestStateCatalogue::empty("content-1").ok_or("empty")?,
             )
         };
-        let before = extend_callbacks(empty()?, before)?;
-        let changed = extend_callbacks(empty()?, changed)?;
+        let before = extend_callbacks(empty()?, before, Vec::new())?;
+        let changed = extend_callbacks(empty()?, changed, Vec::new())?;
         assert_ne!(
             before.definition_hash(super::super::grizzly_adams::QUEST),
             changed.definition_hash(super::super::grizzly_adams::QUEST),
@@ -465,6 +657,175 @@ mod tests {
             document["callbacks"][0]["give"] = invalid;
             assert!(parse(&document.to_string()).is_err());
         }
+        Ok(())
+    }
+    #[test]
+    fn quest_fees_preserve_free_callback_identity_and_reject_coin_double_charge()
+    -> Result<(), String> {
+        let source = include_str!("../../../../../content/quests/shared-reward-callbacks.json");
+        let mut document: serde_json::Value =
+            serde_json::from_str(source).map_err(|error| error.to_string())?;
+        let free = parse(source)?.remove(0);
+        assert!(free.fee.is_none());
+        assert!(
+            serde_json::to_value(&free)
+                .map_err(|error| error.to_string())?
+                .get("fee")
+                .is_none()
+        );
+        document["callbacks"][0]["fee"] = serde_json::json!({"gold":100,"include_bank":true});
+        assert!(parse(&document.to_string()).is_ok());
+        for gold in [0_u64, 1_000_000_000_001] {
+            let mut invalid = document.clone();
+            invalid["callbacks"][0]["fee"]["gold"] = gold.into();
+            assert!(parse(&invalid.to_string()).is_err());
+        }
+        for coin in [3031, 3035, 3043] {
+            let mut invalid = document.clone();
+            invalid["callbacks"][0]["take"] = serde_json::json!([
+                {"item":format!("oteryn:item.tibia.i{coin}"),"count":1}
+            ]);
+            assert!(parse(&invalid.to_string()).is_err());
+        }
+        Ok(())
+    }
+
+    fn state_ops_callback() -> Result<RewardCallback, String> {
+        serde_json::from_value(serde_json::json!({
+            "key":"oteryn:quest-reward/state_ops_test/start","quest":"oteryn:quest.state_ops_test",
+            "npc":"oteryn:npc.test","keywords":["start"],"topic":0,"next_topic":0,
+            "storage":[{"track":"oteryn:quest-progress/state_ops_test/stage","minimum":-1,"maximum":-1,"set":1}],
+            "take":[],"give":null,"outfit":null,"achievement":null,"reply":["Start."],"sources":["test:state-ops"]
+        })).map_err(|error|error.to_string())
+    }
+
+    fn clock_declaration() -> TrackDeclaration {
+        TrackDeclaration {
+            writable: true,
+            key: "oteryn:quest-progress/state_ops_test/clock".into(),
+            quest: "oteryn:quest.state_ops_test".into(),
+            initial: 0,
+            min: 0,
+            max: i64::MAX,
+            sources: vec!["test:clock".into()],
+        }
+    }
+
+    fn callback_hash(
+        callback: RewardCallback,
+        declarations: Vec<TrackDeclaration>,
+    ) -> Result<String, String> {
+        let quest = callback.quest.clone();
+        let catalogue = extend_callbacks(
+            QuestStateCatalogue::empty("content-1").ok_or("empty catalogue")?,
+            vec![callback],
+            declarations,
+        )?;
+        Ok(catalogue
+            .definition_hash(&quest)
+            .ok_or("definition hash")?
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect())
+    }
+
+    #[test]
+    fn free_legacy_hash_is_stable_and_fees_premium_operations_and_guards_are_bound()
+    -> Result<(), String> {
+        let legacy = state_ops_callback()?;
+        // Snapshot computed from the pre-port reward tuple and version2 quest encoding.
+        let baseline = callback_hash(legacy.clone(), Vec::new())?;
+        assert_eq!(
+            baseline,
+            "4a17ff7834109f75619e0aac06f022d0485ef3a7f9ca89973479c244c4d7ffea"
+        );
+        let encoded = serde_json::to_value(&legacy).map_err(|error| error.to_string())?;
+        for omitted in ["state_ops", "fee", "requires_premium"] {
+            assert!(encoded.get(omitted).is_none());
+        }
+        let mut paid = legacy.clone();
+        paid.fee = Some(MonetaryFee {
+            gold: 50,
+            include_bank: false,
+        });
+        let first = callback_hash(paid.clone(), Vec::new())?;
+        assert_ne!(first, baseline);
+        paid.fee.as_mut().ok_or("fee")?.gold = 51;
+        assert_ne!(callback_hash(paid.clone(), Vec::new())?, first);
+        paid.fee = Some(MonetaryFee {
+            gold: 50,
+            include_bank: true,
+        });
+        assert_ne!(callback_hash(paid, Vec::new())?, first);
+        let mut premium = legacy.clone();
+        premium.requires_premium = true;
+        assert_ne!(callback_hash(premium, Vec::new())?, baseline);
+        let clock = clock_declaration();
+        let mut operation = legacy;
+        operation.state_ops.push(StateOperation {
+            track: clock.key.clone(),
+            from: StateCondition::ElapsedLessThan { seconds: 1800 },
+            effect: StateMutation::Add { value: 0 },
+        });
+        let with_guard = callback_hash(operation.clone(), vec![clock.clone()])?;
+        operation.state_ops[0].from = StateCondition::ElapsedLessThan { seconds: 1801 };
+        assert_ne!(
+            callback_hash(operation.clone(), vec![clock.clone()])?,
+            with_guard
+        );
+        operation.state_ops[0].from = StateCondition::ElapsedLessThan { seconds: 1800 };
+        operation.state_ops[0].effect = StateMutation::SetNow;
+        assert_ne!(callback_hash(operation, vec![clock])?, with_guard);
+        Ok(())
+    }
+
+    #[test]
+    fn state_operations_require_exact_writable_owned_declarations() -> Result<(), String> {
+        let mut callback = state_ops_callback()?;
+        let clock = clock_declaration();
+        callback.state_ops.push(StateOperation {
+            track: clock.key.clone(),
+            from: StateCondition::Any,
+            effect: StateMutation::SetNow,
+        });
+        assert!(callback_hash(callback.clone(), Vec::new()).is_err());
+        callback_hash(callback.clone(), vec![clock.clone()])?;
+        let mut foreign = clock.clone();
+        foreign.quest = "oteryn:quest.other".into();
+        assert!(callback_hash(callback.clone(), vec![foreign]).is_err());
+        let mut untyped = clock.clone();
+        untyped.initial = -1;
+        untyped.min = -1;
+        assert!(callback_hash(callback.clone(), vec![untyped]).is_err());
+        let serialized = serde_json::to_value(&callback).map_err(|error| error.to_string())?;
+        let mut document = serde_json::json!({"schema":1,"tracks":[{"writable":true,"key":clock.key,"quest":clock.quest,"initial":0,"min":0,"max":i64::MAX,"sources":["test:clock"]}],"callbacks":[serialized]});
+        parse_document(&document.to_string())?;
+        for edit in 0..4 {
+            let mut invalid = document.clone();
+            match edit {
+                0 => invalid["tracks"][0]["writable"] = false.into(),
+                1 => invalid["tracks"][0]["quest"] = "oteryn:quest.other".into(),
+                2 => invalid["tracks"][0]["initial"] = (-1).into(),
+                _ => {
+                    invalid["callbacks"][0]["state_ops"][0]["track"] =
+                        invalid["callbacks"][0]["storage"][0]["track"].clone()
+                }
+            }
+            assert!(
+                parse_document(&invalid.to_string()).is_err(),
+                "invalid declaration/operator case {edit}"
+            );
+        }
+        document["tracks"] = serde_json::json!([]);
+        let undeclared = parse_document(&document.to_string())?;
+        assert!(
+            extend_callbacks(
+                QuestStateCatalogue::empty("content-1").ok_or("empty")?,
+                undeclared.callbacks,
+                undeclared.tracks
+            )
+            .is_err()
+        );
         Ok(())
     }
 }

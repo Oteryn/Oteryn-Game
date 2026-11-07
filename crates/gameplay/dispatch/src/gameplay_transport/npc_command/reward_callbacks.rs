@@ -31,13 +31,19 @@ pub(super) fn prepare(
     runtime: &ChannelRuntimeV1,
 ) -> Option<Step> {
     let callbacks = reward_callbacks::load().ok()?;
-    let offers: Offers = serde_json::from_str(include_str!(
+    let catalogue = admission.quest_catalogue.as_deref()?;
+    let mut offers: Offers = serde_json::from_str(include_str!(
         "../../../../../../content/quests/shared-reward-offers.json"
     ))
     .ok()?;
-    if offers.schema != 1 {
+    let chosen: Offers = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/chosen-reward-offers.json"
+    ))
+    .ok()?;
+    if offers.schema != 1 || chosen.schema != 1 || offers.offers.len() + chosen.offers.len() > 256 {
         return None;
     }
+    offers.offers.extend(chosen.offers);
     quest_dialogue::prepare(
         admission,
         actor,
@@ -56,6 +62,9 @@ pub(super) fn prepare(
                     && c.topic == topic.number
                     && c.keywords.contains(&text)
                     && eligible(&c.storage)
+                    && c.state_ops
+                        .iter()
+                        .all(|op| op.advisory_holds(catalogue, tracks))
             });
             if let Some(callback) = selected.next() {
                 if selected.next().is_some() {

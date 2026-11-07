@@ -302,6 +302,61 @@ Its existing physical custody profile is reused by exact definition/binding.
 
 https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/actions/rookgaard/sewer_lever.lua
 
+## Continuation: collection, transport and native access participants
+
+The canonical recipe's `adaptations` field governs each selected route. The
+extracted research summary omitted it. Trader explicitly removes weekday
+restrictions, cheese decay, vase fragility and exact-price dialogue. The initial
+strict cheese prototype was corrected before publication. Item 169 now receives
+physical custody through a producer that checks that exact canonical adaptation
+and the closed Miraia-to-Rashid delivery graph. Native FOOD, temporal use and
+inventory decay remain unqualified; the pinned XML and canonical facts remain
+unchanged. The shared native clock supports the separately selected daily circuit.
+
+Rashid's native service projection consumes the 157 existing held source tuples,
+including their exact item revision, direction, price, count and source predicate.
+It preserves the canonical held records. The existing Item/arbitrage classifiers
+still run. A trade additionally requires `chosen/travelling-trader/stage == 13` and a
+completed quest under the current Character root fence. The native weekday
+placement scheduler remains authoritative for physical presence.
+
+Treasure Island reuses the existing 200-gold outbound and 50-gold return services.
+Its final gate requires an arrived return receipt whose fee Character revision is
+later than the earned rope milestone. An old visit cannot complete a new journey.
+The selected sand/rope counterpart uses literal native 231/615/386, a carried map,
+Shovel and Rope, and no item reward. Its test uses real grouped NPC wire commands,
+actual fees and a historical-return negative probe.
+
+Anniversary maps the absent sewing table to the actual public small table 2319 at
+32359,32235,-7,ordinal 1. This is an explicit selected seasonal counterpart. Frozen
+native animal-death objectives select one rag through the existing corpse MINT;
+ordinary callback probabilities remain unchanged. Four required fresh corpses and
+all 16 decay stages are qualified from the pinned XML/client/typed bindings. Fresh
+capacities are Troll 7, Cyclops 30, Wolf 5, Bear 20. Canonical definitions and holds are
+preserved. Both native Item profiles and generated loot facts use this qualification.
+
+Secret Library retains the selected raft, research, instrument, Gail, native Oberon
+and entry graph. Fixed palace stations replace unavailable loose skull/hair map
+objects; the actual owned ebony wood transforms to the fiddle in place. Its original
+main descent now reads the ready/completed stage and native kill proof. Read-only
+StepIn gates use the existing fenced read owner and exact movement snapshot,
+returning a refused entry to its origin without writing another quest receipt.
+
+Public source bindings and explicit counterpart differences are carried by the
+callback `sources` arrays. Validation history and current work are recorded in
+continuation-validation.json; qualification is withheld until full PG routes pass.
+
+### Native ordinary loot custody bridge
+
+The selected Anniversary animal deaths use the unchanged canonical loot tables.
+Eight existing native Item profiles (7398,3413,3410,9657,9689,3336,3355,3277)
+were already materializable and exactly bound while their canonical loot facts
+still said false. `quest_loot_profiles.py` joins active authored death-loot rules,
+objective Creature identities, exact canonical Loot revisions and exact native
+Item bindings before projecting those custody facts. It changes no source drop
+entries, quantities, probabilities or canonical holds. Five focused tests include
+actual production facts and atomic refusal for incomplete qualification.
+
 Mystery of the Valley authoring decisions (2026-11-07): accepted canonical
 Items50335 and50336..50338 are Guardian Statue and three nonstacking statue
 fragments. The recipe-specific ordinal labels have no certified donor binding;

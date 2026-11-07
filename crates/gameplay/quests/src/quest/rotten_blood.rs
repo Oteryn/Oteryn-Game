@@ -38,7 +38,7 @@ pub(crate) fn altar_callback() -> super::world_callbacks::Callback {
         storage: vec![Storage { track: ACCESS_TRACK.into(), minimum: 0, maximum: 3, set: 1, preserve: false, read_only: false }],
         minimum_level: None, experience: None,
             completes: false,
-            premium_required: false, monk_reward: None, offerings: Vec::new(),
+            premium_required: false, monk_reward: None, present: Vec::new(), required_travel: Vec::new(), offerings: Vec::new(),
         item_on_target: Some(ItemOnTarget { item: "oteryn:item.tibia.i32594".into(), count: 1, reusable: false,
             replacement: None, target_replacement: None }),
         return_on_failure: false,

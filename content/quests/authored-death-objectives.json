@@ -226,6 +226,225 @@
         "https://tibia.fandom.com/index.php?curid=3397&oldid=425673",
         "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/rookgaard_quests/actions_sewer_lever.lua"
       ]
+    },
+    {
+      "key": "oteryn:quest-death/authored-anniversary-cyclops",
+      "quest": "oteryn:quest.authored.tibia_anniversary",
+      "creature": "oteryn:creature.cyclops",
+      "stage": "oteryn:quest-progress/chosen/anniversary/stage",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/chosen/anniversary/rags",
+      "required": 30,
+      "minimum": {
+        "x": 32354,
+        "y": 32229,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 32364,
+        "y": 32239,
+        "floor": -7
+      },
+      "guardian": {
+        "position": {
+          "x": 32358,
+          "y": 32233,
+          "floor": -7
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "oteryn-authored:chosen-recipe:tibia-anniversary:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=87456&oldid=752614",
+        "Conservative chosen seasonal programme: one old rag per captured named native animal death while collecting;30ownedrags, five native Pinata Dragons, one festive backpack. Source-event randomness is replaced by deterministic bounded progress; no ordinary loot table changes."
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/authored-anniversary-wolf",
+      "quest": "oteryn:quest.authored.tibia_anniversary",
+      "creature": "oteryn:creature.wolf",
+      "stage": "oteryn:quest-progress/chosen/anniversary/stage",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/chosen/anniversary/rags",
+      "required": 30,
+      "minimum": {
+        "x": 32354,
+        "y": 32229,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 32364,
+        "y": 32239,
+        "floor": -7
+      },
+      "guardian": {
+        "position": {
+          "x": 32359,
+          "y": 32233,
+          "floor": -7
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "oteryn-authored:chosen-recipe:tibia-anniversary:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=87456&oldid=752614",
+        "Conservative chosen seasonal programme: one old rag per captured named native animal death while collecting;30ownedrags, five native Pinata Dragons, one festive backpack. Source-event randomness is replaced by deterministic bounded progress; no ordinary loot table changes."
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/authored-anniversary-troll",
+      "quest": "oteryn:quest.authored.tibia_anniversary",
+      "creature": "oteryn:creature.troll",
+      "stage": "oteryn:quest-progress/chosen/anniversary/stage",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/chosen/anniversary/rags",
+      "required": 30,
+      "minimum": {
+        "x": 32354,
+        "y": 32229,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 32364,
+        "y": 32239,
+        "floor": -7
+      },
+      "guardian": {
+        "position": {
+          "x": 32360,
+          "y": 32233,
+          "floor": -7
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "oteryn-authored:chosen-recipe:tibia-anniversary:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=87456&oldid=752614",
+        "Conservative chosen seasonal programme: one old rag per captured named native animal death while collecting;30ownedrags, five native Pinata Dragons, one festive backpack. Source-event randomness is replaced by deterministic bounded progress; no ordinary loot table changes."
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/authored-anniversary-bear",
+      "quest": "oteryn:quest.authored.tibia_anniversary",
+      "creature": "oteryn:creature.bear",
+      "stage": "oteryn:quest-progress/chosen/anniversary/stage",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/chosen/anniversary/rags",
+      "required": 30,
+      "minimum": {
+        "x": 32354,
+        "y": 32229,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 32364,
+        "y": 32239,
+        "floor": -7
+      },
+      "guardian": {
+        "position": {
+          "x": 32358,
+          "y": 32234,
+          "floor": -7
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "oteryn-authored:chosen-recipe:tibia-anniversary:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=87456&oldid=752614",
+        "Conservative chosen seasonal programme: one old rag per captured named native animal death while collecting;30ownedrags, five native Pinata Dragons, one festive backpack. Source-event randomness is replaced by deterministic bounded progress; no ordinary loot table changes."
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/authored-anniversary-pinata",
+      "quest": "oteryn:quest.authored.tibia_anniversary",
+      "creature": "oteryn:creature.pinata_dragon",
+      "stage": "oteryn:quest-progress/chosen/anniversary/stage",
+      "stage_value": 2,
+      "counter": "oteryn:quest-progress/chosen/anniversary/kills",
+      "required": 5,
+      "minimum": {
+        "x": 32354,
+        "y": 32229,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 32364,
+        "y": 32239,
+        "floor": -7
+      },
+      "guardian": {
+        "position": {
+          "x": 32358,
+          "y": 32232,
+          "floor": -7
+        },
+        "additional_positions": [
+          {
+            "x": 32359,
+            "y": 32232,
+            "floor": -7
+          },
+          {
+            "x": 32360,
+            "y": 32232,
+            "floor": -7
+          },
+          {
+            "x": 32358,
+            "y": 32230,
+            "floor": -7
+          },
+          {
+            "x": 32359,
+            "y": 32230,
+            "floor": -7
+          }
+        ],
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "oteryn-authored:chosen-recipe:tibia-anniversary:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=87456&oldid=752614",
+        "Conservative chosen seasonal programme: one old rag per captured named native animal death while collecting;30ownedrags, five native Pinata Dragons, one festive backpack. Source-event randomness is replaced by deterministic bounded progress; no ordinary loot table changes."
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/authored-secret-library-oberon",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "creature": "oteryn:creature.grand_master_oberon",
+      "stage": "oteryn:quest-progress/chosen/secret-library/stage",
+      "stage_value": 7,
+      "counter": "oteryn:quest-progress/chosen/secret-library/kills",
+      "required": 1,
+      "minimum": {
+        "x": 33356,
+        "y": 31311,
+        "floor": -9
+      },
+      "maximum": {
+        "x": 33376,
+        "y": 31328,
+        "floor": -9
+      },
+      "guardian": {
+        "position": {
+          "x": 33365,
+          "y": 31318,
+          "floor": -9
+        },
+        "respawn_ms": 90000
+      },
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charles.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/spectulus.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/high_and_dry_isles/movements_boat_puzzle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/actions_bonefiddle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/actions_oberonLever.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/movement_teleport.lua",
+        "Conservative chosen programme: fixed native palace ground23881 and object25051 stand for unavailable loose skull28489/hair28490 targets. Only carried ebony wood converts; fixed stations are not consumed. Charles raft assistance is an authored discussion, not a paid shortcut passage. The selected temple research counterpart is the source Liquid Death entrance. No fabricated source tags."
+      ]
     }
   ]
 }

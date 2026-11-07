@@ -257,7 +257,7 @@ async fn clear_group(
     Ok(())
 }
 
-async fn raise_level(
+pub(super) async fn raise_level(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     level: u32,

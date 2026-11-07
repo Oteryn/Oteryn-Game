@@ -110,6 +110,15 @@ pub struct MonkReward {
     pub final_shrine: bool,
 }
 
+/// A native paid transport receipt, optionally later than a named earned milestone.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct TravelRequirement {
+    pub route: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub after_transition: Option<String>,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Callback {
@@ -135,6 +144,12 @@ pub struct Callback {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub monk_reward: Option<MonkReward>,
     pub offerings: Vec<Offering>,
+    /// Carried prerequisites retained under the same Character/custody locks.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub present: Vec<super::reward_callbacks::ItemAmount>,
+    /// Completed native transport receipts; no caller can substitute a location for payment.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub required_travel: Vec<TravelRequirement>,
     #[serde(default)]
     pub item_on_target: Option<ItemOnTarget>,
     pub return_on_failure: bool,
@@ -224,13 +239,14 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || unique_storage.len() != callback.storage.len()
             || (callback.storage.iter().any(|storage| storage.read_only)
                 && (!callback.is_read_only()
-                    || callback.trigger != Trigger::Use
+                    || !matches!(callback.trigger, Trigger::Use | Trigger::StepIn)
                     || callback.teleport.is_none()
                     || callback.lever.is_some()
                     || !callback.passages.is_empty()
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
                     || callback.minimum_level.is_some()
+                    || callback.premium_required
                     || callback.experience.is_some()
                     || callback.monk_reward.is_some()
                     || callback.native_rule.is_some()
@@ -240,6 +256,39 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || callback
                 .minimum_level
                 .is_some_and(|level| level == 0 || callback.storage.is_empty())
+            || callback.present.len() > MAX_EFFECTS
+            || callback
+                .present
+                .iter()
+                .map(|item| &item.item)
+                .collect::<BTreeSet<_>>()
+                .len()
+                != callback.present.len()
+            || callback.present.iter().any(|item| {
+                !item.item.starts_with("oteryn:item.")
+                    || !super::valid_quest_key(&item.item)
+                    || !(1..=100).contains(&item.count)
+            })
+            || callback.required_travel.len() > 4
+            || callback
+                .required_travel
+                .iter()
+                .map(|requirement| &requirement.route)
+                .collect::<BTreeSet<_>>()
+                .len()
+                != callback.required_travel.len()
+            || callback.required_travel.iter().any(|requirement| {
+                let route = &requirement.route;
+                !route.starts_with("oteryn:service.travel.")
+                    || !super::valid_quest_key(route)
+                    || !route.contains('/')
+                    || route.len() > 192
+                    || requirement.after_transition.as_ref().is_some_and(|key| {
+                        !key.starts_with("oteryn:quest-callback/") || !super::valid_quest_key(key)
+                    })
+            })
+            || ((!callback.present.is_empty() || !callback.required_travel.is_empty())
+                && (callback.storage.is_empty() || callback.is_read_only()))
             || callback.offerings.len() > MAX_EFFECTS
             || callback
                 .experience

@@ -372,7 +372,7 @@ fn scenario() -> TestResult {
             lever: None, reversible: false, passages: vec![], teleport: None, storage: vec![],
             minimum_level: None, experience: None,
             completes: false,
-            premium_required: false, monk_reward: None, offerings: vec![], item_on_target: None,
+            premium_required: false, monk_reward: None, present: Vec::new(), required_travel: Vec::new(), offerings: vec![], item_on_target: None,
             return_on_failure: false, failure_message: None, success_message: None,
             native_rule: None,
                 effects: Default::default(), sources: vec![],

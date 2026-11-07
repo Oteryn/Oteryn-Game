@@ -325,7 +325,8 @@ pub fn build(
     source_tree_digest: &str,
     facts: &dyn NpcItemFacts,
 ) -> NpcServiceModel {
-    let grizzly = super::grizzly_shop::declarations(records);
+    let mut grizzly = super::grizzly_shop::declarations(records);
+    grizzly.extend(super::quest_access::declarations(records));
     let records: Vec<_> = records
         .iter()
         .copied()
