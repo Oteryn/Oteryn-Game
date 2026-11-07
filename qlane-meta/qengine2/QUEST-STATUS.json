@@ -2258,10 +2258,25 @@
       "oteryn:quest.druid_outfits_quest",
       "oteryn:quest.assassin_outfits_quest"
     ],
-    "phase": "Full9/12/19stage independent story expectations added;3focusedPGREDrunning before source implementation. No qualification claimed.",
+    "phase": "First full PG run exposed a test-harness error:multi-ingredient partial-funding assertion also ran after fully funding single-ingredient recipes. Corrected predicate to needed.len()>1;all recipes retain initial zero-funding refusal,and every multi-input recipe retains partial-funding atomicity. Strictclippy23.51s passes;focusedPG reruncompiling. No qualification claimed.",
     "reuse_audit": "git fetch origin --no-tags refreshed branches;questpc6 3bfd856061e5aa89668747ec7405af8c2b8cf7f5 Druid UNFINISHED;questpc8 fced2532a67ec03571d21c2bdb244ac2f0017737 Knight BLOCKED;older questpc branch has no qlane-meta status tree. No newer matched QUALIFIED found. Reuse native timer/counter/owned-outfit/premium owners already delivered.",
-    "source_facts": "Pinned Crystal9f5a72c:Knight Morgan+Gregor+Sam exactore/crudeiron;ApeCity>15 gate;100fangs/helmet/sweat/royalsteel and strict2h Samtimer. Druid Ustan paws plusCeiron completehat objectives/gifts/language thenWarwolf. AssassinVescu7ingredients/base,Erayo6cloth+yarn/ownedbase/Shipwrecked2,Atradclaw+ring;Vescuinitial greeting requiresDrunk,Atrad greeting requiresFire. Generic current actor-condition support is ours;implement/reuse,never defer.",
+    "source_facts": "Pinned Crystal9f5a72c:Knight Morgan+Gregor+Sam exactore/crudeiron(existingknight-swordwordalreadycorrect);ApeCity>15 gate;100fangs/helmet/sweat/royalsteel and strict2h Samtimer. Druid Ustan paws plusCeiron completehat objectives/gifts/language thenWarwolf. AssassinVescu7ingredients/base,Erayo6cloth+yarn/ownedbase/Shipwrecked2,Atradclaw+ring;Vescuinitial greeting requiresDrunk,Atrad greeting requiresFire. Generic current actor-condition support is ours;implement/reuse,never defer.",
     "red_command": "cargo test --locked -p oteryn-gameplay-dispatch qengine_l7_ -- --nocapture --test-threads=2",
-    "red_log": "/tmp/qengine2-batch7-red.log"
+    "red_log": "/tmp/qengine2-batch7-red.log",
+    "red_markers": [
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l7-druid-story duration=44.634701448s success=false",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l7-assassin-story duration=45.053551306s success=false",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l7-knight-story duration=42.499994174s success=false"
+    ],
+    "mechanisms": "Opaque native actor-condition sample binds exact command/callback/itemfence/native generation;existing native runtime/player stores only,no locks inside SQL. Generic unowned-addon read reuses existing compatible earned/starter owner;unknown identifiers failclosed. Source gifts use existing same-transaction MINT.",
+    "source_implementation": "39newsourcecallbacks:8Knight+12Druid+19Assassin;existing knight-sword retained with source unowned-addon check. SourceCorpus file:line+sha citations in callbacks and CONTRACT-NOTES.md. Existing Ref nonnegative normalization reused;strictSam deadline7201;actualApeCity16..18/Shipwrecked2 readonly under original owners.",
+    "checks": [
+      "22authoring8.155s",
+      "7Rustreward_callbacks1.24s",
+      "cargo check18.43s;clippy36.31s;final changedtestclippy pending",
+      "fmt andcallback/placement reproduction pass",
+      "finalclippy37.22s;pinrefresh24ab;recipepredicatefixclippy23.51s"
+    ],
+    "harness_correction": "Failed run3actualPGcases80.711302894s/80.780567711s/79.708959976s,all at same invalid missing-later-ingredient assertion on a fully funded single-input hand-in;0passed3failed160.42s. Production correctlyacceptedexactrecipes. No assertion removed for missing inputs;partialrecipe test now requires at least2inputs."
   }
 }

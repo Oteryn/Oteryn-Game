@@ -461,3 +461,39 @@ actual sword hand-in is forge/knight's sword,not old synthetic yes;retain old
 knight-sword key and correct words when sourcepathimplemented (entrynotfinished).
 No missing fact investigation needed:all facts pinned source bytes in repo.
 18/66qualified48remaining;continue,never end while remaining.
+
+Correction after direct producer audit:retained knight-sword ALREADY uses exact
+forge/knight's sword wording;no productionword change is needed. Newfullpath
+adds only introduction/helmet stages and sourceownership/eligibility guards.
+L1-07 actualPGRED: Druid44.634701448s,Assassin45.053551306s,Knight42.499994174s,
+allmissingintroductioncallbacks;0passed3failed87.14s.
+Generic actorconditionproof implemented in reward_claim_mint/quest_actor_conditions.rs:
+reads native actor store plus current spell store under existing admissionlocks;
+opaque fields bind exactCommandRef/callback/itemfence/nativegeneration. Native
+reward apply refuses missing/mismatched proof;no runtime lock acquired in SQL.
+ReadCurrentconditionatcommandadmission is conservative relative to Lua greeting;
+no condition truth is inferred from storage or copied dialogueboolean.
+Initial enginecheck1m17passed before last unowned-addon guard. That guard reuses
+native starter/compatible-earned addon proof;unknown identities failclosed.
+Missingphysicalprofiles5924/4867/5937/5938/5939/5940/5886 generationrunning.
+L1-07 source paths IMPLEMENTED:39newcallbacks(8Knight,12Druid,19Assassin)
+plus retained knight-sword with exact source unowned-addon check.7missingphysical
+profiles admitted by repo tooling;all NPC placements reused. Actualnative
+condition fixture applies/clears ownedDrunk/Fire;absence proof runs with funded
+recipes,then sourcepartialrecipe checks run with active conditions. Native
+conditions sampled oncepercommand under existing locks,opaque proof exactcause/
+callback/fence/nativegeneration;nativeSQLapply refuses missing or mismatchedproof.
+Druid two gifts4867/5938 checked independently and exactphysical quantity/MINT
+receipt/replay;newquest flagskeepGeneral owner/sourcebound metadata.
+22Python8.155s;7Rustunit1.24s;check18.43s;clippy36.31s;fmt/repro passed.
+Knight500ozfangs needordinarycapacity:existing nativeXPfixture earnslevel50,
+no weight bypass. Final changedtestclippy/pin then3focusedPGGREEN runningqueue
+session66256,logs /tmp/qengine2-batch7-{clippy-final2,pin-refresh,green}.log.
+No qualification yet. Need prove3actualPGGREEN beforequalify/commit/push.
+FirstL7PG fullrun failed on harnessbug,not a source predicate:single-input
+recipe became fullyfunded and was incorrectly subjected to missing-LATER-input
+assertion. Fixedonlyneeded.len()>1;initialzero-fundingrefusalremainsonALLrecipes,
+partialfirstingredientatomicrefusalremainsonALLmulti-inputrecipes. Actualfail
+markersAssassin80.711302894/Druid80.780567711/Knight79.708959976,160.42stotal.
+Clippyfix23.51spassed;PG rerun session95987 log /tmp/qengine2-batch7-green2.log.
+No entriesqualifiedyet;pushimmediatelywhengreen. Lastsource/metadataHEADa585529d7.
