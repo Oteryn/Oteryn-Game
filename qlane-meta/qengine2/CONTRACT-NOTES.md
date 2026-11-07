@@ -27,3 +27,16 @@ Accepted implemented decisions (all PostgreSQL qualified and pushed):
 
 All source blobs remain in the committed pinned donor corpus; no donor copies
 or binaries are added. QUEST-STATUS.json retains exact tests and case markers.
+
+- Nobleman: the donor implements the150000 carried-money choice for each addon.
+  Its10000-instalment text has no executable payment branch; preserve that
+  implemented one-shot behavior. Dress/coat are aliases for the same canonical
+  first-addon effect; the appearance owner uses immutable sex for the actual
+  look. Hat is the second addon. No bank balance pays a carried-only request.
+  Crystal9f5a72c, data-global/npc/irmana.lua:50-135 and male counterpart.
+
+  Exact Nobleman donor citation: crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/irmana.lua:sha256:08e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03.
+
+- Native Quest payments reuse the complete bounded carried-coin proof profile.
+  The new cause must also have its exact same-transaction Quest fee/source
+  receipt; no legacy custody, ordering, epoch or Character proof is skipped.

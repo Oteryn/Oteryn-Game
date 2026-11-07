@@ -46,6 +46,11 @@ fn qengine_l3_dark_trails_base_and_glooth_addons_follow_live_votes() -> TestResu
     super::qengine_rewards::scenario("qengine-rewards-l3-dark-trails-story")
 }
 
+#[test]
+fn qengine_l4_nobleman_paid_outfit_story() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-l4-nobleman-story")
+}
+
 const ANNIHILATOR: &str = "oteryn:quest-progress/quest/u7_24/the_annihilator/reward";
 const DEMON_HELMET: &str = "oteryn:quest-progress/quest/u6_4/demon_helmet/rewards/demon_helmet";
 const DEMON_OAK: &str = "oteryn:quest-progress/quest/u8_2/the_demon_oak/done";
@@ -81,6 +86,10 @@ async fn counts(h: &Harness) -> TestResult<Counts> {
 }
 async fn quantity(h: &Harness, item: &str) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1").bind(item).fetch_one(&h.pool).await?)
+}
+
+async fn coin_worth(h: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar("SELECT coalesce(sum(quantity * CASE definition_production_key WHEN 'oteryn:item.tibia.i3031' THEN 1 WHEN 'oteryn:item.tibia.i3035' THEN 100 WHEN 'oteryn:item.tibia.i3043' THEN 10000 END),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key IN('oteryn:item.tibia.i3031','oteryn:item.tibia.i3035','oteryn:item.tibia.i3043')").fetch_one(&h.pool).await?)
 }
 
 async fn commit_fixture(
@@ -298,12 +307,24 @@ pub(super) async fn exercise(
             ],
             618,
         ),
+        "qengine-rewards-l4-nobleman-story" => (
+            "nobleman",
+            &[
+                ("first-start", None, None, None),
+                ("first", None, None, Some(1)),
+                ("second-start", None, None, None),
+                ("second", None, None, Some(2)),
+            ],
+            140,
+        ),
         _ => return Err("unknown outfit story".into()),
     };
     let all = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
     let mut callbacks = Vec::new();
     for (suffix, take, present, addon) in steps {
-        let batch = if name.starts_with("qengine-rewards-l3-") {
+        let batch = if name.starts_with("qengine-rewards-l4-") {
+            "l4"
+        } else if name.starts_with("qengine-rewards-l3-") {
             "l3"
         } else {
             "l2"
@@ -325,6 +346,14 @@ pub(super) async fn exercise(
             present.iter().map(amount).collect::<Vec<_>>()
         );
         assert_eq!(callback.outfit.as_ref().map(|o| o.addons), *addon);
+        if family == "nobleman" && addon.is_some() {
+            let value = serde_json::to_value(&callback)?;
+            assert_eq!(
+                value.get("fee"),
+                Some(&serde_json::json!({"gold":150000,"include_bank":false})),
+                "exact source carried-money charge"
+            );
+        }
         if family == "battle-mage" && *suffix == "base" {
             assert_eq!(
                 callback.achievement.as_deref(),
@@ -609,6 +638,7 @@ pub(super) async fn exercise(
         npcs.insert(key, actor);
     }
     let mut checked_stale = false;
+    let mut earned_base = false;
     let mut bags = Vec::new();
     let mut occurrence = 500;
     for callback in &callbacks {
@@ -688,6 +718,7 @@ pub(super) async fn exercise(
                     crate::durability::reward_claim_mint::QuestRewardAdmission {
                         native,
                         weights: &weights,
+                        fee_payment: None,
                     },
                 )
                 .await
@@ -721,6 +752,38 @@ pub(super) async fn exercise(
         for item in &needed {
             held.insert(item.item.clone(), quantity(h, &item.item).await?);
         }
+        if family == "nobleman" && callback.outfit.is_some() {
+            let before = counts(h).await?;
+            let (result, _, _) =
+                super::qengine_rewards::wire_reward(owner, admitted, npc, callback, false).await?;
+            assert_eq!(
+                result,
+                NpcIntentDisposition::Rejected,
+                "unpaid source reward"
+            );
+            assert_eq!(
+                counts(h).await?,
+                before,
+                "unpaid hand-in has no flags/value/consumption"
+            );
+            supply(
+                owner,
+                admitted,
+                h,
+                &oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
+                    item: "oteryn:item.tibia.i3043".into(),
+                    count: 15,
+                },
+                &mut bags,
+                &mut occurrence,
+            )
+            .await?;
+        }
+        let money_before = if family == "nobleman" {
+            Some(coin_worth(h).await?)
+        } else {
+            None
+        };
         let before = counts(h).await?;
         let (result, catalogues, command) =
             super::qengine_rewards::wire_reward(owner, admitted, npc, callback, true).await?;
@@ -728,7 +791,19 @@ pub(super) async fn exercise(
         let after = counts(h).await?;
         assert_eq!(after.0, before.0 + 1);
         assert_eq!(after.2, before.2);
-        assert_eq!(after.3, before.3 + i64::from(callback.outfit.is_some()));
+        let new_facts = callback
+            .outfit
+            .as_ref()
+            .map_or(0, |o| if o.addons != 0 && !earned_base { 2 } else { 1 });
+        assert_eq!(after.3, before.3 + new_facts);
+        earned_base |= callback.outfit.is_some();
+        if let Some(before) = money_before {
+            assert_eq!(
+                coin_worth(h).await?,
+                before - if callback.outfit.is_some() { 150000 } else { 0 },
+                "exact source fee, retain all change"
+            );
+        }
         if let Some(key) = &callback.achievement {
             let earned: i64 = sqlx::query_scalar(
                 "SELECT count(*) FROM game_account_achievements WHERE achievement_key=$1",
@@ -774,6 +849,11 @@ pub(super) async fn exercise(
                 })
             }));
         }
+        let retained_money = if family == "nobleman" {
+            Some(coin_worth(h).await?)
+        } else {
+            None
+        };
         let replay = super::quest_world_callbacks::wire(
             owner,
             admitted,
@@ -792,8 +872,26 @@ pub(super) async fn exercise(
             NpcIntentDisposition::Ok
         );
         assert_eq!(counts(h).await?, after, "literal replay has no new value");
+        if let Some(money) = retained_money {
+            assert_eq!(
+                coin_worth(h).await?,
+                money,
+                "literal replay cannot pay twice"
+            );
+        }
     }
-    assert_eq!(checked_stale, family != "elementalist");
+    assert_eq!(
+        checked_stale,
+        !matches!(family, "elementalist" | "nobleman")
+    );
+    if family == "nobleman" {
+        let paid:(i64,i64,i64)=sqlx::query_as("SELECT count(*),coalesce(sum(fee_gold_units),0)::bigint,coalesce(sum(bank_debit_gold_units),0)::bigint FROM game_item_fee_burns WHERE cause_kind=18").fetch_one(&h.pool).await?;
+        assert_eq!(
+            paid,
+            (2, 300000, 0),
+            "exactly two source prices, no bank debit"
+        );
+    }
     let observed = owner
         .appearance_observation(
             admitted.runtime_actor.ok_or("actor")?,

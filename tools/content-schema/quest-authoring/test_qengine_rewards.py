@@ -2,7 +2,7 @@
 import copy
 import json
 import unittest
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator, ValidationError
 import qengine_rewards as q
 
 
@@ -91,12 +91,22 @@ class QuestRewards(unittest.TestCase):
         self.assertEqual(second['requires'][1]['minimum'],6)
         self.assertEqual(second['outfit']['addons'],2)
 
+    def test_monetary_source_price_disallows_zero_or_double_coin_consumption(self):
+        source=next(c for c in self.callbacks['callbacks'] if c.get('fee'))
+        for mutation in ('zero','double'):
+            bad=copy.deepcopy(self.callbacks)
+            callback=next(c for c in bad['callbacks'] if c['key']==source['key'])
+            if mutation=='zero':callback['fee']['gold']=0
+            else:callback['take']=[{'item':'oteryn:item.tibia.i3043','count':15}]
+            with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(bad)
+        self.assertEqual(source['fee'],{'gold':150000,'include_bank':False})
+
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
-        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-'))},
+        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),27)
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),6)
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),29)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),8)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 

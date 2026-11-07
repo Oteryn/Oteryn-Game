@@ -818,6 +818,7 @@ async fn wardrobe(
         storage: callback.storage.clone(),
         requires: vec![],
         take: vec![],
+        fee: None,
         present: vec![],
         give: None,
         outfit: Some(reward.clone()),

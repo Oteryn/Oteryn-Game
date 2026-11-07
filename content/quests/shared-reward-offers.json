@@ -281,6 +281,289 @@
       ]
     },
     {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 19,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 24,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Are you here to collect your accessory for 150000 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 25,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_second_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 30,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_second_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Are you here to collect your accessory for 150000 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 19,
+      "next_topic": 20,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "dress",
+        "coat"
+      ],
+      "topic": 20,
+      "next_topic": 21,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 21,
+      "next_topic": 22,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 22,
+      "next_topic": 23,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 25,
+      "next_topic": 26,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_second_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "hat"
+      ],
+      "topic": 26,
+      "next_topic": 27,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_second_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 27,
+      "next_topic": 28,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_second_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 28,
+      "next_topic": 29,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_second_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
       "npc": "oteryn:npc.morgan",
       "keywords": [
         "forge"

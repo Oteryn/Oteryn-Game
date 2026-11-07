@@ -92,3 +92,13 @@ base grant; six or more Oramond voting points prioritize addon2. The addon1 path
 at six or more points also requires completed addon2, preserving source `elseif`
 ordering without ambiguous eligible reward callbacks. Three to five points can
 earn addon1 first. Oramond voting progress retains its original owner.
+
+An optional `fee: {gold, include_bank}` composes the existing native fee owner
+with the same Quest transaction. A price is1..1000000000000 gold units; it cannot
+also consume coin identities through `take`. The retained native coin/change
+facts come from the admitted generation. The writer checks the source price,
+fresh carried tree, change capacity and the source bank policy under locks.
+Carried-only prices never debit Bank. Missing inputs or any later grant refusal
+roll back the entire payment, state, item and appearance transaction. A distinct
+native audit cause binds the callback, exact price and bank policy; it retains
+all bounded carried-source audit checks and the Type2 activation tuple.

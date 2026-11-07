@@ -32,7 +32,7 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth')]
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana')]
     paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua']
@@ -142,7 +142,7 @@ def build():
         return {'track': track, 'minimum': before, 'maximum': before if maximum is None else maximum,
                 'set': after, **({'preserve': True} if preserve else {})}
     def add(name, quest, npc, keywords, states, take=(), give=None, outfit=None, topic=0, next_topic=0,
-            requires=(), present=(), achievement=None):
+            requires=(), present=(), achievement=None, fee=None):
         path = f'data-global/npc/{npc}.lua'
         callbacks.append({'key': 'oteryn:quest-reward/' + name, 'quest': 'oteryn:quest.' + quest,
             'npc': 'oteryn:npc.' + npc, 'keywords': keywords, 'topic': topic, 'next_topic': next_topic,
@@ -152,6 +152,8 @@ def build():
             'achievement': achievement or ('oteryn:achievement/backpack_tourist' if name == 'sam-backpack' else None),
             'reply': ['Thank you for your help.'],
             'sources': [f'crystal:{PIN}:{path}:sha256:{sha(inputs[path])}']})
+        if fee is not None:
+            callbacks[-1]['fee']=fee
         if requires:
             callbacks[-1]['requires']=list(requires)
         if present:
@@ -298,6 +300,24 @@ def build():
             [storage(glooth+'addon'+str(bit),-1,1,0)],outfit=('glooth_engineer',bit),requires=required)
     declarations=[{'key':votes,'quest':'oteryn:quest.oramond_quest','initial':-1,'min':-1,'max':2147483647,
         'sources':[f'crystal:{PIN}:data-global/npc/ezebeth.lua:93-103:sha256:{sha(inputs["data-global/npc/ezebeth.lua"])}']}]
+    noble=prefix+'u7_8/nobleman_outfits/'
+    first=noble+'nobleman_first_addon'
+    second=noble+'nobleman_second_addon'
+    for name,track,topic,pay_topic,bit,words in [('first',first,23,24,1,['dress','coat']),('second',second,29,30,2,['hat'])]:
+        parent=[] if bit==1 else [storage(first,2,2,preserve=True)]
+        add('l4-nobleman-'+name+'-start','nobleman_outfits_quest','irmana',['150000'],
+            parent+[storage(track,-1,1,0)],topic=topic)
+        add('l4-nobleman-'+name,'nobleman_outfits_quest','irmana',['yes'],
+            parent+[storage(track,1,2)],outfit=('nobleman',bit),topic=pay_topic,
+            fee={'gold':150000,'include_bank':False},achievement='oteryn:achievement/aristocrat' if bit==2 else None)
+        start_topic=19 if bit==1 else 25
+        guard=parent+[storage(track,-1,0,0,preserve=True)]
+        for keywords,before,after in [(['addon'],0,start_topic),(['yes'],start_topic,start_topic+1),
+            (words,start_topic+1,start_topic+2),(['yes'],start_topic+2,start_topic+3),(['yes'],start_topic+3,topic)]:
+            offers.append({'npc':'oteryn:npc.irmana','keywords':keywords,'topic':before,'next_topic':after,
+                'storage':guard,'reply':['The accessory costs 150000 gold carried with you.']})
+        offers.append({'npc':'oteryn:npc.irmana','keywords':['addon'],'topic':0,'next_topic':pay_topic,
+            'storage':parent+[storage(track,1,1,preserve=True)],'reply':['Are you here to collect your accessory for 150000 gold?']})
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
@@ -376,6 +396,7 @@ def validate_callbacks(document):
             or len({s['track'] for s in storage})!=len(storage)
             or len({i['item'] for i in callback['take']})!=len(callback['take'])
             or len({i['item'] for i in callback.get('present',[])})!=len(callback.get('present',[]))
+            or (callback.get('fee') and any(i['item'] in ('oteryn:item.tibia.i3031','oteryn:item.tibia.i3035','oteryn:item.tibia.i3043') for i in callback['take']))
             or len({r['track'] for r in requires})!=len(requires)
             or {r['track'] for r in requires}&{s['track'] for s in storage}
             or any(r['minimum']>r['maximum'] for r in requires)

@@ -8,7 +8,7 @@ META 3.1.0 resolved at bound immutable commit; required dev/coding/debugging/
 review/verify/waves guidance read. Source env.sh for Cargo/PG commands:
 `source /workspace/oteryn-env/env.sh` (do not print its private URL).
 
-Scope: exactly 66 L1 outfit/addon entries. Counts: 9 QUALIFIED, 57 UNFINISHED,
+Scope: exactly 66 L1 outfit/addon entries. Counts: 10 QUALIFIED, 56 UNFINISHED,
 0 BLOCKED. Original cross-lane evidence and source hashes remain in QUEST-STATUS.
 Preserve exclusions and other-lane/world-change ownership. Parent quest tracks
 retain their original owners; qualify all of an L1 outfit entry's reward paths.
@@ -123,3 +123,34 @@ conservative decisions in CONTRACT-NOTES.md. Only focused tests.
 Logs /tmp/qengine2-batch3-{red,green,unit,final-check,clippy,pins,pincheck,
 content-tests,world-tests,authoring-tests}.log. Source scratch files/index only
 in /tmp; never commit donor copies. Continue without ending at a checkpoint.
+
+
+Active L1-04 group: Nobleman, Royal Costume, Pirate. Owner requires immediate
+push of every green quest/mechanism slice; do not hold it for the full group.
+L1-04A generic native fees + complete Nobleman source story is GREEN; commit/push
+now. Counts10/66 QUALIFIED,56 remain. Nobleman input alias resolves to canonical
+oteryn:quest.nobleman_outfits_quest without changing the66-entry scope.
+
+PG RED44.661348814s (missing first-start); final GREEN82.309922214s,1 passed,
+no ignored/skipped case. Exact two150000 carried-gold fees,unpaid refusals,
+retained change,replay without payment,three immutable account facts,Aristocrat
+and normal final appearance selection pass. Native fee kind18 reuses existing
+FeeBurn/Bank owners and complete carried proof. Migration1000 binds immutable
+Quest fee/source receipts,exact frozen price/bank policy and same transaction.
+The original Atelier proof branches remain; new source receipt alternative is
+required for Quest payments. No detached monetary charge is allowed.
+
+Checks: fmt;check1m16s;final strict clippy38.65s;2 Quest tests1.15s;33 focused
+fee audit tests0.13s;15 authoring tests5.468s;reproducers;pin-refresh. Two earlier
+real PG failures exposed closed Atelier kind/receipt gates; fixed and retained
+all proof checks. CONTRACT-NOTES records source one-shot150000 payment behavior
+and canonical dress/coat alias. Native appearance uses immutable creation sex.
+
+IMPORTANT: content integration compile hit disk exhaustion. Obsolete compiler
+snapshots cleaned (no sources/evidence deleted). Retry the two focused content
+integration targets and pin-check AFTER the immediate green slice push; do not
+claim these ancillary checks passed yet. SQL-only fixes are in final PG green4.
+Logs /tmp/qengine2-batch4-{red,green4,unit-quests,unit-fees,final-clippy,pins}.log.
+Then continue Royal Costume/Pirate in same group and push each green slice.
+Latest existing push before this sliceaae647c63. Other primary questpc branches
+refreshed; no matched current entry QUALIFIED,source NPC writer stillstorage-only.
