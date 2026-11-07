@@ -1,6 +1,6 @@
 //! Authored grant identities and compatibility, admitted with the cosmetics document.
 use super::{CosmeticsDiagnostic, Mount, Outfit, Result, text};
-use crate::domain::appearance::{EarnedCosmetic, UnlockFact};
+use crate::domain::appearance::{EarnedCosmetic, Sex, UnlockFact};
 use serde::Deserialize;
 use std::collections::BTreeSet;
 
@@ -10,6 +10,23 @@ pub(super) struct GrantMapping {
     pub(super) grant_key: String,
     target: Target,
     compatible_provenance: Vec<String>,
+    #[serde(default)]
+    sex: Option<GrantSex>,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum GrantSex {
+    Female,
+    Male,
+}
+impl GrantSex {
+    fn matches(self, sex: Sex) -> bool {
+        matches!(
+            (self, sex),
+            (Self::Female, Sex::Female) | (Self::Male, Sex::Male)
+        )
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -53,7 +70,7 @@ pub(super) fn validate(
                 .any(|o| o.key == *outfit_key && (1..=o.addon_count).contains(addon)),
             Target::Mount { mount_key } => mounts.iter().any(|m| m.key == *mount_key),
         };
-        if !exists {
+        if !exists || (mapping.sex.is_some() && matches!(mapping.target, Target::Mount { .. })) {
             return Err(invalid());
         }
     }
@@ -65,9 +82,24 @@ pub(super) fn resolve(
     provenance: &str,
     target: EarnedCosmetic<'_>,
 ) -> UnlockFact {
+    resolve_for_sex(mapping, provenance, target, None)
+}
+
+pub(super) fn resolve_for_sex(
+    mapping: Option<&GrantMapping>,
+    provenance: &str,
+    target: EarnedCosmetic<'_>,
+    sex: Option<Sex>,
+) -> UnlockFact {
     let Some(mapping) = mapping else {
         return UnlockFact::Absent;
     };
+    if mapping
+        .sex
+        .is_some_and(|required| sex.is_none_or(|sex| !required.matches(sex)))
+    {
+        return UnlockFact::Absent;
+    }
     let matches = match (&mapping.target, target) {
         (Target::Outfit { outfit_key }, EarnedCosmetic::Outfit(key)) => outfit_key == key,
         (Target::Addon { outfit_key, addon }, EarnedCosmetic::Addon(key, bit)) => {
@@ -86,5 +118,55 @@ pub(super) fn resolve(
         UnlockFact::Compatible
     } else {
         UnlockFact::Incompatible
+    }
+}
+
+#[cfg(test)]
+mod sex_qualified_tests {
+    use super::*;
+
+    #[test]
+    fn qualified_grant_requires_matching_sex_target_and_provenance()
+    -> std::result::Result<(), serde_json::Error> {
+        let mut mapping: GrantMapping = serde_json::from_value(serde_json::json!({
+            "grant_key":"test", "target":{"kind":"Addon","outfit_key":"hunter","addon":2},
+            "compatible_provenance":["pinned"],"sex":"female"
+        }))?;
+        let target = EarnedCosmetic::Addon("hunter", 2);
+        assert_eq!(
+            resolve_for_sex(Some(&mapping), "pinned", target, Some(Sex::Female)),
+            UnlockFact::Compatible
+        );
+        assert_eq!(
+            resolve_for_sex(Some(&mapping), "pinned", target, Some(Sex::Male)),
+            UnlockFact::Absent
+        );
+        assert_eq!(
+            resolve(Some(&mapping), "pinned", target),
+            UnlockFact::Absent
+        );
+        assert_eq!(
+            resolve_for_sex(Some(&mapping), "stale", target, Some(Sex::Female)),
+            UnlockFact::Incompatible
+        );
+        assert_eq!(
+            resolve_for_sex(
+                Some(&mapping),
+                "pinned",
+                EarnedCosmetic::Addon("hunter", 1),
+                Some(Sex::Female)
+            ),
+            UnlockFact::Absent
+        );
+        mapping.sex = None;
+        assert_eq!(
+            resolve(Some(&mapping), "pinned", target),
+            UnlockFact::Compatible
+        );
+        assert_eq!(
+            resolve_for_sex(Some(&mapping), "pinned", target, Some(Sex::Male)),
+            UnlockFact::Compatible
+        );
+        Ok(())
     }
 }

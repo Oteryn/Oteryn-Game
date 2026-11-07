@@ -76,6 +76,50 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/atrad.lua:75-104:sha256:ffdc0e1b8d0d5455be4be4c6875b3f832dca3a488440ed08020bfa20bd7bde01"
       ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "initial": 0,
+      "min": -1,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/legola.lua:sha256:26084a8748e9d3a01d59745bb30e67fb3610924430ce86034828c893c9b8dfc2"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "initial": 0,
+      "min": -1,
+      "max": 11,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/myra.lua:sha256:5939c5f235ac5f58bff2b2bf6668145e6da0a7ded222d46c3a792c02a386f94b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/dream_outfit_1",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "initial": 0,
+      "min": -1,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/eruaran.lua:153-199:sha256:6da2bd991078e0b7ac9cf96f855f4e931800e5609ba82280ea19bd749ae49936"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/dream_outfit",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "initial": 0,
+      "min": -1,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/eruaran.lua:153-199:sha256:6da2bd991078e0b7ac9cf96f855f4e931800e5609ba82280ea19bd749ae49936"
+      ]
     }
   ],
   "callbacks": [
@@ -4903,6 +4947,1168 @@
           "outfit": "oteryn:outfit.knight",
           "addons": 1
         }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-dream-warden-claw",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.eruaran",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/dream_outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i20275",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.dream_warden",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/eruaran.lua:sha256:6da2bd991078e0b7ac9cf96f855f4e931800e5609ba82280ea19bd749ae49936"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/l8-dream-warden-mask",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.eruaran",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/dream_outfit_1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i20276",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.dream_warden",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/eruaran.lua:sha256:6da2bd991078e0b7ac9cf96f855f4e931800e5609ba82280ea19bd749ae49936"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/l8-hunter-crossbow",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_hat_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5947",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/elane.lua:sha256:beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-hunter-gloves",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.legola",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/legola.lua:sha256:26084a8748e9d3a01d59745bb30e67fb3610924430ce86034828c893c9b8dfc2"
+      ],
+      "requires_premium": true,
+      "outfits": [
+        {
+          "outfit": "oteryn:outfit.hunter",
+          "addons": 2,
+          "sex": "male"
+        },
+        {
+          "outfit": "oteryn:outfit.hunter",
+          "addons": 1,
+          "sex": "female"
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-hunter-hat",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_hat_addon",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5887",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i5888",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i5889",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/elane.lua:sha256:beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef"
+      ],
+      "outfits": [
+        {
+          "outfit": "oteryn:outfit.hunter",
+          "addons": 1,
+          "sex": "male"
+        },
+        {
+          "outfit": "oteryn:outfit.hunter",
+          "addons": 2,
+          "sex": "female"
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-hunter-leather",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_hat_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5876",
+          "count": 100
+        },
+        {
+          "item": "oteryn:item.tibia.i5948",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/elane.lua:sha256:beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-hunter-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_hat_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/elane.lua:sha256:beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-hunter-wings",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_hat_addon",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5891",
+          "count": 5
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/elane.lua:sha256:beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-mage-female-belt",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.sandra",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5958",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/sandra.lua:sha256:566fd1c69a69ed447fbf6f56d08603631983cfbc9f203a11c41b71b9bd47ae53"
+      ],
+      "outfits": [
+        {
+          "outfit": "oteryn:outfit.mage",
+          "addons": 1,
+          "sex": "female"
+        },
+        {
+          "outfit": "oteryn:outfit.summoner",
+          "addons": 1,
+          "sex": "male"
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-mage-female-belt-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.sandra",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/sandra.lua:sha256:566fd1c69a69ed447fbf6f56d08603631983cfbc9f203a11c41b71b9bd47ae53"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-mage-female-cloth",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.myra",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/mission_hat_cloak",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5911",
+          "count": 20
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/myra.lua:sha256:5939c5f235ac5f58bff2b2bf6668145e6da0a7ded222d46c3a792c02a386f94b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-mage-female-fur",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.myra",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/mission_hat_cloak",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 4
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5883",
+          "count": 40
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/myra.lua:sha256:5939c5f235ac5f58bff2b2bf6668145e6da0a7ded222d46c3a792c02a386f94b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-mage-female-hat",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.zoltan",
+      "keywords": [
+        "myra"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/mission_hat_cloak",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/zoltan.lua:sha256:c184ead30d167e379ccd628713028fd9cc8acc24713bb7c6943deefce14032d1"
+      ],
+      "creation_sex": "female",
+      "outfits": [
+        {
+          "outfit": "oteryn:outfit.mage",
+          "addons": 2,
+          "sex": "female"
+        },
+        {
+          "outfit": "oteryn:outfit.summoner",
+          "addons": 2,
+          "sex": "female"
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-mage-female-hat-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.myra",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/mission_hat_cloak",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/myra.lua:sha256:5939c5f235ac5f58bff2b2bf6668145e6da0a7ded222d46c3a792c02a386f94b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-mage-female-lizard",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.myra",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/mission_hat_cloak",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 7
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5881",
+          "count": 60
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/myra.lua:sha256:5939c5f235ac5f58bff2b2bf6668145e6da0a7ded222d46c3a792c02a386f94b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-mage-female-orchids",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.myra",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/mission_hat_cloak",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 5
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5922",
+          "count": 35
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/myra.lua:sha256:5939c5f235ac5f58bff2b2bf6668145e6da0a7ded222d46c3a792c02a386f94b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-mage-female-scales",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.myra",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 9,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/mission_hat_cloak",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 8
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5882",
+          "count": 40
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/myra.lua:sha256:5939c5f235ac5f58bff2b2bf6668145e6da0a7ded222d46c3a792c02a386f94b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-mage-female-sulphur",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.myra",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 10,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/mission_hat_cloak",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 9
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5904",
+          "count": 15
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/myra.lua:sha256:5939c5f235ac5f58bff2b2bf6668145e6da0a7ded222d46c3a792c02a386f94b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-mage-female-vampire",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.myra",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 11,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/mission_hat_cloak",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 10
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5905",
+          "count": 30
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/myra.lua:sha256:5939c5f235ac5f58bff2b2bf6668145e6da0a7ded222d46c3a792c02a386f94b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-mage-female-wings",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.myra",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/mission_hat_cloak",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5894",
+          "count": 70
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/myra.lua:sha256:5939c5f235ac5f58bff2b2bf6668145e6da0a7ded222d46c3a792c02a386f94b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-mage-female-yarn",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.myra",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/mission_hat_cloak",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 6
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5886",
+          "count": 10
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/myra.lua:sha256:5939c5f235ac5f58bff2b2bf6668145e6da0a7ded222d46c3a792c02a386f94b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-mage-male-ankhs",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lynda",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_wand",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3077",
+          "count": 20
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lynda.lua:sha256:c02b3072ac121d52ccd9e4e6d911942633bddbd9489c9325f66e375e8f5207a9"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_wand_timer",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-mage-male-hat",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.zoltan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5903",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/zoltan.lua:sha256:c184ead30d167e379ccd628713028fd9cc8acc24713bb7c6943deefce14032d1"
+      ],
+      "creation_sex": "male",
+      "exact_take": true,
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.mage",
+          "addons": 2,
+          "sex": "male"
+        }
+      ],
+      "outfits": [
+        {
+          "outfit": "oteryn:outfit.mage",
+          "addons": 2,
+          "sex": "male"
+        },
+        {
+          "outfit": "oteryn:outfit.summoner",
+          "addons": 2,
+          "sex": "female"
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-mage-male-ritual",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lynda",
+      "keywords": [
+        "ritual"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_wand",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lynda.lua:sha256:c02b3072ac121d52ccd9e4e6d911942633bddbd9489c9325f66e375e8f5207a9"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_wand_timer",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 10801
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ],
+      "outfits": [
+        {
+          "outfit": "oteryn:outfit.mage",
+          "addons": 1,
+          "sex": "male"
+        },
+        {
+          "outfit": "oteryn:outfit.summoner",
+          "addons": 1,
+          "sex": "female"
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-mage-male-soul",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lynda",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_wand",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5809",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lynda.lua:sha256:c02b3072ac121d52ccd9e4e6d911942633bddbd9489c9325f66e375e8f5207a9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-mage-male-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.angelina",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_wand",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/angelina.lua:sha256:9c9d66498d3880f1c587aea1b43fd44f2c4ceaa9b8b839a4192aaa3dd572ca98"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-mage-male-sulphur",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lynda",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_wand",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5904",
+          "count": 10
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lynda.lua:sha256:c02b3072ac121d52ccd9e4e6d911942633bddbd9489c9325f66e375e8f5207a9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-mage-male-wand-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lynda",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_wand",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lynda.lua:sha256:c02b3072ac121d52ccd9e4e6d911942633bddbd9489c9325f66e375e8f5207a9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-mage-male-wands",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lynda",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_wand",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3065",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3066",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3067",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3069",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3070",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3071",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3072",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3073",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3074",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3075",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lynda.lua:sha256:c02b3072ac121d52ccd9e4e6d911942633bddbd9489c9325f66e375e8f5207a9"
       ]
     },
     {

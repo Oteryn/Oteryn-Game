@@ -253,6 +253,22 @@ impl AppearanceContent<String> for CosmeticsCandidate {
             target,
         )
     }
+    fn earned_unlock_for_sex(
+        &self,
+        grant_key: &str,
+        provenance: &str,
+        target: crate::domain::appearance::EarnedCosmetic<'_>,
+        sex: Sex,
+    ) -> UnlockFact {
+        grant_mappings::resolve_for_sex(
+            self.grants
+                .get(grant_key)
+                .map(|index| &self.document.grant_mappings[*index]),
+            provenance,
+            target,
+            Some(sex),
+        )
+    }
     fn palette_size(&self) -> u16 {
         self.palette_size
     }

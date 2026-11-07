@@ -14,6 +14,23 @@ class QuestRewards(unittest.TestCase):
         cls.author=json.loads(cls.outputs['content/cosmetics/outfits/authoring.json'])
         cls.schema=json.loads((q.ROOT/'tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json').read_text())
 
+    def test_l8_source_targets_and_atomic_ten_wand_recipe(self):
+        rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
+        self.assertEqual(rows['l8-hunter-hat']['outfits'],[
+            {'outfit':'oteryn:outfit.hunter','addons':1,'sex':'male'},
+            {'outfit':'oteryn:outfit.hunter','addons':2,'sex':'female'}])
+        self.assertEqual(rows['l8-mage-male-wands']['take'],[
+            {'item':f'oteryn:item.tibia.i{i}','count':1} for i in (3065,3066,3067,3069,3070,3071,3072,3073,3074,3075)])
+        hat=rows['l8-mage-male-hat']
+        self.assertEqual(hat['storage'],[])
+        self.assertTrue(hat['exact_take'])
+        self.assertEqual(hat['creation_sex'],'male')
+        self.assertEqual(hat['forbids_addons'],[{'outfit':'oteryn:outfit.mage','addons':2,'sex':'male'}])
+        invalid=copy.deepcopy(self.callbacks)
+        next(c for c in invalid['callbacks'] if c['key']==hat['key'])['forbids_addons']=[]
+        with self.assertRaises(ValueError):q.validate_callbacks(invalid)
+        for name in ('mask','claw'):self.assertTrue(rows['l8-dream-warden-'+name]['requires_premium'])
+
     def test_norseman_reward_continues_with_next_shards_on_published_topic(self):
         callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}
         reward=callbacks['l5-norseman-first-reward']
@@ -209,10 +226,10 @@ class QuestRewards(unittest.TestCase):
 
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
-        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-'))},
+        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),54)
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),71)
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),56)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),98)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 

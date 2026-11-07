@@ -24,6 +24,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.angelina",
+      "greet": "Greetings, |PLAYERNAME|.",
+      "farewell": "May the gods bless you.",
+      "walkaway": "May the gods bless you.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:81:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/angelina.lua:84:sha256:9c9d66498d3880f1c587aea1b43fd44f2c4ceaa9b8b839a4192aaa3dd572ca98",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/angelina.lua:85:sha256:9c9d66498d3880f1c587aea1b43fd44f2c4ceaa9b8b839a4192aaa3dd572ca98"
+      ]
+    },
+    {
       "npc": "oteryn:npc.ariella",
       "greet": "Hi there.",
       "farewell": "Good bye, |PLAYERNAME|.",
@@ -145,6 +156,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.elane",
+      "greet": "Welcome to the paladins' guild, |PLAYERNAME|! How can I help you?",
+      "farewell": "Bye, |PLAYERNAME|.",
+      "walkaway": "Bye, |PLAYERNAME|.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/elane.lua:328:sha256:beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/elane.lua:329:sha256:beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/elane.lua:330:sha256:beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef"
+      ]
+    },
+    {
       "npc": "oteryn:npc.erayo",
       "greet": "What the... I mean, of course I sensed you.",
       "farewell": "Good bye, |PLAYERNAME|.",
@@ -152,6 +174,17 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/erayo.lua:129:sha256:dc6c54417c8bfdd32abcea9f068322f17d029c4d7722f1acfdeb6cd795a4c48f",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.eruaran",
+      "greet": "Greetings, |PLAYERNAME|.",
+      "farewell": "Good bye!",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:81:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/eruaran.lua:468:sha256:6da2bd991078e0b7ac9cf96f855f4e931800e5609ba82280ea19bd749ae49936",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
       ]
     },
@@ -233,6 +266,28 @@
       ]
     },
     {
+      "npc": "oteryn:npc.legola",
+      "greet": "Greetings, |PLAYERNAME|.",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:81:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lynda",
+      "greet": "Welcome in the name of the gods, pilgrim |PLAYERNAME|!",
+      "farewell": "Be careful on your journeys.",
+      "walkaway": "Be careful on your journeys.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lynda.lua:307:sha256:c02b3072ac121d52ccd9e4e6d911942633bddbd9489c9325f66e375e8f5207a9",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lynda.lua:308:sha256:c02b3072ac121d52ccd9e4e6d911942633bddbd9489c9325f66e375e8f5207a9",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lynda.lua:309:sha256:c02b3072ac121d52ccd9e4e6d911942633bddbd9489c9325f66e375e8f5207a9"
+      ]
+    },
+    {
       "npc": "oteryn:npc.miraia",
       "greet": "Daraman's blessings, |PLAYERNAME|. Welcome to the Enlightened Oasis. Sit down, have a {drink} or some {food}!",
       "farewell": "Daraman's blessings. Come back soon.",
@@ -263,6 +318,17 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/muriel.lua:318:sha256:7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/muriel.lua:319:sha256:7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/muriel.lua:320:sha256:7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.myra",
+      "greet": "Greetings, |PLAYERNAME|. If you are looking for sorcerer {spells} don't hesitate to ask.",
+      "farewell": "Farewell, |PLAYERNAME|.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/myra.lua:582:sha256:5939c5f235ac5f58bff2b2bf6668145e6da0a7ded222d46c3a792c02a386f94b",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/myra.lua:583:sha256:5939c5f235ac5f58bff2b2bf6668145e6da0a7ded222d46c3a792c02a386f94b",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/myra.lua:584:sha256:5939c5f235ac5f58bff2b2bf6668145e6da0a7ded222d46c3a792c02a386f94b"
       ]
     },
     {
@@ -343,6 +409,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.sandra",
+      "greet": "Hello |PLAYERNAME|, welcome to the fluid and potion {shop} of Edron.",
+      "farewell": "Good bye, |PLAYERNAME|, please come back soon.",
+      "walkaway": "Good bye, |PLAYERNAME|, please come back soon.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/sandra.lua:142:sha256:566fd1c69a69ed447fbf6f56d08603631983cfbc9f203a11c41b71b9bd47ae53",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/sandra.lua:143:sha256:566fd1c69a69ed447fbf6f56d08603631983cfbc9f203a11c41b71b9bd47ae53",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/sandra.lua:144:sha256:566fd1c69a69ed447fbf6f56d08603631983cfbc9f203a11c41b71b9bd47ae53"
+      ]
+    },
+    {
       "npc": "oteryn:npc.simon_the_beggar",
       "greet": "Hello |PLAYERNAME|. I am a poor man. Please help me.",
       "farewell": "Have a nice day.",
@@ -405,6 +482,17 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:81:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zoltan",
+      "greet": "Welcome |PLAYERNAME|, student of the arcane arts. I teach the fiercest {spells} available.",
+      "farewell": "Use your knowledge wisely, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/zoltan.lua:160:sha256:c184ead30d167e379ccd628713028fd9cc8acc24713bb7c6943deefce14032d1",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/zoltan.lua:161:sha256:c184ead30d167e379ccd628713028fd9cc8acc24713bb7c6943deefce14032d1",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
       ]
     }

@@ -3,8 +3,8 @@
   "lifecycle": "AUTHORING; owner-authorized local commits and fast-forward pushes to claude/happy-davinci-ijz3wy-qengine2 after each green batch",
   "qualification_boundary": "Whole L1 entry, not an isolated seeded reward stage. No entry is promoted before all of its required stages and relevant PG cases pass.",
   "counts": {
-    "qualified": 21,
-    "unfinished": 45,
+    "qualified": 24,
+    "unfinished": 42,
     "blocked": 0
   },
   "quests": [
@@ -435,7 +435,7 @@
     {
       "canonical": "oteryn:quest.dream_warden_outfits_quest",
       "title": "Dream Warden Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc",
@@ -452,7 +452,15 @@
           ]
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "qualification": {
+        "batch": "L1-08",
+        "scope": "Both Eruaran source mask/claw hand-ins with current premium refusal, exact custody, replay, both addons and base, normal appearance. Same-transaction SQL rejection of unauthored value-only receipt and invalid sex target. Conservative repeated577 source correction to canonical paired family documented.",
+        "native_owner_canonical": "oteryn:quest.outfit_and_addon_quests",
+        "postgres_markers": [
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l8-dream-warden-story duration=87.305627507s success=true"
+        ],
+        "assumptions": "CONTRACT-NOTES.md L1-08; normalize absent source flags to native zero; Eruaran repeated male look corrected to the canonical paired family."
+      }
     },
     {
       "canonical": "oteryn:quest.dream_warrior_outfits_quest",
@@ -826,7 +834,7 @@
     {
       "canonical": "oteryn:quest.hunter_outfits_quest",
       "title": "Hunter Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc",
@@ -843,7 +851,16 @@
           ]
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "qualification": {
+        "batch": "L1-08",
+        "scope": "Complete Elane introduction, crossbow, two-leather recipe, enchanted wings, three steels, and Legola premium sniper gloves. Both sex-specific source addon permutations, partial recipes, replay, six immutable grants, intermediate and final normal catalogues. No outfit stage seeded.",
+        "native_owner_canonical": "oteryn:quest.outfit_and_addon_quests",
+        "postgres_markers": [
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l8-hunter-female-story duration=91.07388077s success=true",
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l8-hunter-male-story duration=84.564699197s success=true"
+        ],
+        "assumptions": "CONTRACT-NOTES.md L1-08; normalize absent source flags to native zero; Eruaran repeated male look corrected to the canonical paired family."
+      }
     },
     {
       "canonical": "oteryn:quest.authored.illuminated_warrior_outfits_quest",
@@ -986,7 +1003,7 @@
     {
       "canonical": "oteryn:quest.outfit_and_addon_quests",
       "title": "Mage Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc",
@@ -1033,7 +1050,16 @@
           ]
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "qualification": {
+        "batch": "L1-08",
+        "scope": "Complete male Angelina/Lynda ten-wand, sulphur, soulstone, ankhs, strict10801s ritual and exact-total-one Zoltan hat; complete female Sandra winning-ticket belt and Myra nine ingredients/Zoltan hat. Explicit source Mage/Summoner sex-qualified targets; normal appearance and replay, nine-of-ten refusal retaining all ingredients, excess hat refusal and legal extra-hat drop, genuine value-only same-R reward without invented progress flag.",
+        "native_owner_canonical": "oteryn:quest.outfit_and_addon_quests",
+        "postgres_markers": [
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l8-mage-male-story duration=83.025908968s success=true",
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l8-mage-female-story duration=83.789343681s success=true"
+        ],
+        "assumptions": "CONTRACT-NOTES.md L1-08; normalize absent source flags to native zero; Eruaran repeated male look corrected to the canonical paired family."
+      }
     },
     {
       "canonical": "oteryn:quest.makeshift_warrior_outfits_quest",
@@ -1976,6 +2002,21 @@
       "identity_correction": "Original L1 Assassin scope URI is oteryn:quest.assassin_outfit (singular),not inferred assassin_outfits_quest. Preserve original URI;native state remains General. Qualification attached to existing original entry;no new record fabricated.",
       "commit": "2a27f66f4",
       "push": "fast-forward confirmed"
+    },
+    {
+      "batch": "L1-08",
+      "status": "QUALIFIED",
+      "entries": [
+        "Hunter Outfits Quest",
+        "Mage Outfits Quest",
+        "Dream Warden Outfits Quest"
+      ],
+      "postgres_red_log": "/tmp/qengine2-batch8-red.log",
+      "postgres_green_logs": [
+        "/tmp/qengine2-batch8-green2.log",
+        "/tmp/qengine2-batch8-mage-green3.log"
+      ],
+      "verification": "Five PG stories green; neutral Druid Rook regression green93.315156406s. Check2m54s; final clippy24.41s; fmt pass;7 Rust callback tests1.35s and sex-qualified mapping unit pass;23 quest Python8.948s and23 cosmetics Python1.965s; source+placement reproduction pass; repo pin-refresh and pin-check pass24ab unchanged. Targeted server content/world follow-ons next."
     }
   ],
   "owner_rule": "This lane implements missing generic engine, reward/binding, world, NPC, item and callback features after checking/reusing related branches; dependency-only inherited blockers are superseded.",
@@ -2304,39 +2345,20 @@
     "finding": "The questpc5/6/7/8 NPC source executor provides bounded sorted foreign storage reads, source defaults and atomic Father-specific inventory operations; it still supplies empty outfit snapshots and uses storage-only planning elsewhere. No general shared-reward parent predicate or replacement general outfit owner was found. Reuse existing QuestComparison semantics and the established lock/fresh-default pattern with the already delivered shared value participant. Preserve Father atomicity and avoid unrelated lane data."
   },
   "delivery_rule": "Push every finished green quest/mechanism slice immediately and at least every30minutes while green work exists. Bound each investigation/missing-fact search to10minutes; record conservative decisions in CONTRACT-NOTES.md and implement. No full workspace/PG suite.",
-  "active_batch": {
-    "id": "L1-08",
-    "entries": [
-      "oteryn:quest.hunter_outfits_quest",
-      "oteryn:quest.outfit_and_addon_quests",
-      "oteryn:quest.dream_warden_outfits_quest"
-    ],
-    "titles": [
-      "Hunter Outfits Quest",
-      "Mage Outfits Quest",
-      "Dream Warden Outfits Quest"
-    ],
-    "phase": "ReadpinnedsourceandpreparePGREDbefore implementinggenericsex-specific/multi-target grants. PreserveoriginalscopeURIs;do notinfercanonicals.",
-    "source_facts": "Hunter Elane grantsmale129addon1/female137addon2,Legolamale2/female1. Mage/Summoner sourcegrantscrossdifferentfamilies andsexes,Lynda10wand/rod types atomic;Zoltanexactly1FerumbrasHat5903. DreamWardenEruaran requiresCurrentpremium and20276mask/20275claw;source duplicate577male grantbug must conservativelynormalizecanonicalfemale578 anddocument. Genericgrant support isours,neverdefer.",
-    "reuse_plan": "Reuse existing accountappearance owner/immutablefacts/nativegeneration mappings;add additive source target sex and bounded multi-target support,withlegacyneutral grants remaining compatible. No classname-specificbit patches;normalwardrobe projectionmustunderstand sex-qualifiedfacts."
-  },
+  "active_batch": "L1-08 QUALIFIED; push implementation then targeted content/world follow-ons and next source batch",
   "active_batch_progress": {
     "batch": "L1-08",
+    "status": "QUALIFIED",
     "entries": [
       "Hunter Outfits Quest",
       "Mage Outfits Quest",
       "Dream Warden Outfits Quest"
     ],
     "postgres_red_log": "/tmp/qengine2-batch8-red.log",
-    "postgres_red_seconds": [
-      43.299245271,
-      43.70156591,
-      43.65990467,
-      43.486180811,
-      44.152170484
+    "postgres_green_logs": [
+      "/tmp/qengine2-batch8-green2.log",
+      "/tmp/qengine2-batch8-mage-green3.log"
     ],
-    "checks": "All five changed crates check passed (15.43s). Quest callback unit tests passed; sex-qualified content unit passed. Quest authoring 23 tests passed (8.948s), cosmetics authoring 23 tests passed (1.965s), fmt/check and both source reproducers passed. Repo pin-refresh passed, digest unchanged 24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25. Clippy first run found one collapsible-if, corrected; final clippy and five PG cases are running/queued. Source bindings include four native importer profiles (20275,20276,5903,5947). No new qualified entries.",
-    "postgres_progress": "Dream Warden complete real PG GREEN (87.943021664s), including same-transaction grant checks and unauthored zero-effect SQL rejection. Hunter first run failed the strict intermediate catalogue mask after grants; wire helper closed early for target-set grants. Fixed helper to wait for every target applicable to immutable character sex. Five-case rerun queued in /tmp/qengine2-batch8-green2.log. No new qualified entries until batch checks close.",
-    "latest_verification": "Clippy all targets/all features five changed crates passed (8m17s including build-lock wait). Dream Warden PG passed 87.943021664s. First Hunter tests failed early-close catalogue harness assertion; corrected same-sex target-set refresh wait. First Mage cases refused carrier capacity during legal ingredient funding; fixtures now earn level 200 through real progression owner, preserving native capacity checks, and report ingredient context. Full corrected five-case run compiling /tmp/qengine2-batch8-green2.log. Legacy Druid Rook PG running /tmp/qengine2-batch8-legacy-regression.log. Final current-source check/clippy queued. Remote fetch confirms no divergence. Scope remains 21 QUALIFIED/45 UNFINISHED until GREEN closes."
+    "verification": "Five PG stories green; neutral Druid Rook regression green93.315156406s. Check2m54s; final clippy24.41s; fmt pass;7 Rust callback tests1.35s and sex-qualified mapping unit pass;23 quest Python8.948s and23 cosmetics Python1.965s; source+placement reproduction pass; repo pin-refresh and pin-check pass24ab unchanged. Targeted server content/world follow-ons next."
   }
 }

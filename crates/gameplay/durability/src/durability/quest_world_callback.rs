@@ -49,6 +49,21 @@ pub(super) async fn consume_reward_inputs(
     if rows.len() > 500 {
         return Ok(false);
     }
+    if callback.exact_take {
+        for input in &callback.take {
+            let mut total = 0_i64;
+            for row in &rows {
+                if row.try_get::<&str, _>("definition_production_key")? == input.item {
+                    total = total
+                        .checked_add(row.try_get::<i64, _>("quantity")?)
+                        .ok_or(DurabilityError::InvalidStoredState)?;
+                }
+            }
+            if total != i64::from(input.count) {
+                return Ok(false);
+            }
+        }
+    }
     // Read-only hand-ins (Palimuth's crest) prove custody without replacing
     // the original instance or manufacturing a second MINT receipt.
     for evidence in &callback.present {

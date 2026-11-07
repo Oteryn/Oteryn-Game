@@ -33,6 +33,8 @@ pub struct OutfitReward {
     pub outfit: String,
     /// Base entitlement is always included. Bits 1 and 2 earn the respective addons.
     pub addons: u8,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sex: Option<CreationSex>,
 }
 
 /// Exact source price; only the durable fee owner may consume the funds.
@@ -44,7 +46,7 @@ pub struct MonetaryFee {
 }
 
 /// Immutable creation-sex eligibility, independent of selected appearance.
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "snake_case")]
 pub enum CreationSex {
     Female,
@@ -130,9 +132,43 @@ pub struct RewardCallback {
     pub present: Vec<ItemAmount>,
     pub give: Option<ItemReward>,
     pub outfit: Option<OutfitReward>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub outfits: Vec<OutfitReward>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub exact_take: bool,
     pub achievement: Option<String>,
     pub reply: Vec<String>,
     pub sources: Vec<String>,
+}
+
+impl OutfitReward {
+    pub fn grant_key(&self, addon: u8) -> String {
+        match self.sex {
+            None => format!("{}/quest-grant/{addon}", self.outfit),
+            Some(sex) => format!(
+                "{}/quest-grant/{}/{addon}",
+                self.outfit,
+                match sex {
+                    CreationSex::Female => "female",
+                    CreationSex::Male => "male",
+                }
+            ),
+        }
+    }
+}
+impl RewardCallback {
+    pub fn cosmetic_targets(&self) -> impl Iterator<Item = &OutfitReward> {
+        self.outfit.iter().chain(&self.outfits)
+    }
+    fn value_only_guarded(&self) -> bool {
+        self.cosmetic_targets().any(|target| {
+            self.forbids_addons.iter().any(|guard| {
+                target.outfit == guard.outfit
+                    && target.addons & guard.addons != 0
+                    && (target.sex.is_none() || target.sex == guard.sex.or(self.creation_sex))
+            })
+        })
+    }
 }
 
 /// Source-bound track metadata; writable declarations name the exact existing owner.
@@ -293,7 +329,7 @@ fn parse_document(text: &str) -> Result<Document, String> {
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
             || !slug(&c.npc, "oteryn:npc.", b"_", 128)
-            || c.storage.is_empty()
+            || (c.storage.is_empty() && c.state_ops.is_empty() && !c.value_only_guarded())
             || c.storage.len() > 8
             || tracks.len() != c.storage.len()
             || c.requires_actor_conditions.len() > 8
@@ -305,7 +341,7 @@ fn parse_document(text: &str) -> Result<Document, String> {
             || c.forbids_addons.len() > 8
             || c.forbids_addons
                 .iter()
-                .map(|r| (&r.outfit, r.addons))
+                .map(|r| (&r.outfit, r.addons, r.sex))
                 .collect::<BTreeSet<_>>()
                 .len()
                 != c.forbids_addons.len()
@@ -326,9 +362,10 @@ fn parse_document(text: &str) -> Result<Document, String> {
             || c.storage
                 .iter()
                 .any(|s| !slug(&s.track, "oteryn:", b"._/:-", 128) || s.minimum > s.maximum)
-            || c.storage
-                .iter()
-                .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+            || (!c.value_only_guarded()
+                && c.storage
+                    .iter()
+                    .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
             || c.present.len() > 8
             || evidence.len() != c.present.len()
             || c.present
@@ -346,7 +383,7 @@ fn parse_document(text: &str) -> Result<Document, String> {
                         )
                     })
             })
-            || c.take.len() > 8
+            || c.take.len() > 16
             || inputs.len() != c.take.len()
             || c.take
                 .iter()
@@ -356,9 +393,15 @@ fn parse_document(text: &str) -> Result<Document, String> {
                     || r.contents.len() > 20
                     || r.contents.iter().any(|s| !item(&s.item, s.count))
             })
-            || c.outfit
-                .as_ref()
-                .is_some_and(|r| !slug(&r.outfit, "oteryn:outfit.", b"_", 160) || r.addons > 3)
+            || (!c.outfits.is_empty() && c.outfit.is_some())
+            || c.outfits.len() > 4
+            || c.cosmetic_targets()
+                .map(|r| (&r.outfit, r.addons, r.sex))
+                .collect::<BTreeSet<_>>()
+                .len()
+                != c.cosmetic_targets().count()
+            || c.cosmetic_targets()
+                .any(|r| !slug(&r.outfit, "oteryn:outfit.", b"_", 160) || r.addons > 3)
             || c.keywords.is_empty()
             || c.keywords.len() > 8
             || c.keywords.iter().collect::<BTreeSet<_>>().len() != c.keywords.len()

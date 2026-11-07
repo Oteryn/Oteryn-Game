@@ -46,10 +46,16 @@ pub(crate) fn outfit_compatible(
     let Some(cosmetics) = native.cosmetics() else { return false; };
     (0..=2).all(|addon| {
         if addon != 0 && reward.addons & (1 << (addon - 1)) == 0 { return true; }
-        let key = format!("{}/quest-grant/{addon}", reward.outfit);
+        let key = reward.grant_key(addon);
         let target = if addon == 0 { EarnedCosmetic::Outfit(&reward.outfit) }
             else { EarnedCosmetic::Addon(&reward.outfit, addon) };
-        cosmetics.earned_unlock(&key, PROVENANCE, target) == UnlockFact::Compatible
+        (match reward.sex {
+            None=>cosmetics.earned_unlock(&key,PROVENANCE,target),
+            Some(sex)=>cosmetics.earned_unlock_for_sex(&key,PROVENANCE,target,match sex {
+                oteryn_gameplay_quests::quest::reward_callbacks::CreationSex::Female=>crate::domain::appearance::Sex::Female,
+                oteryn_gameplay_quests::quest::reward_callbacks::CreationSex::Male=>crate::domain::appearance::Sex::Male,
+            }),
+        }) == UnlockFact::Compatible
     })
 }
 
@@ -96,7 +102,7 @@ pub(crate) async fn apply(
     if admission.weights.generation_digest() != admission.native.source_digest() {
         return Ok(false);
     }
-    if callback.outfit.as_ref().is_some_and(|reward| !outfit_compatible(admission.native, reward)) {
+    if callback.cosmetic_targets().any(|reward| !outfit_compatible(admission.native, reward)) {
         return Ok(false);
     }
     if !callback.requires_actor_conditions.is_empty() && admission.actor_conditions.is_none_or(|proof|
@@ -117,8 +123,11 @@ pub(crate) async fn apply(
             for addon in 1..=2 {
                 if reward.addons & (1 << (addon-1)) != 0 && addon>count {return Ok(false);}
                 if reward.addons & (1 << (addon-1)) != 0
-                    && super::super::character_appearance::podium_cosmetic_owned(
-                        tx,fence.character_id,cosmetics,EarnedCosmetic::Addon(&reward.outfit,addon)
+                    && super::super::character_appearance::cosmetic_owned_for_sex(
+                        tx,fence.character_id,cosmetics,EarnedCosmetic::Addon(&reward.outfit,addon),reward.sex.map(|sex|match sex {
+                        oteryn_gameplay_quests::quest::reward_callbacks::CreationSex::Female=>crate::domain::appearance::Sex::Female,
+                        oteryn_gameplay_quests::quest::reward_callbacks::CreationSex::Male=>crate::domain::appearance::Sex::Male,
+                    })
                     ).await? { return Ok(false); }
             }
         }
@@ -175,20 +184,20 @@ pub(crate) async fn apply(
         return Ok(false);
     }
     let mut grant_keys = Vec::new();
-    if let Some(reward) = &callback.outfit {
+    for reward in callback.cosmetic_targets() {
         let occurrence = serde_json::to_vec(&(
             command.game_session_id().as_bytes(),
             command.command_id().get(),
             &callback.key,
         ))
         .map_err(|_| DurabilityError::InvalidStoredState)?;
-        grant_keys = super::super::character_appearance::grant_callback_outfit(
+        grant_keys.extend(super::super::character_appearance::grant_callback_outfit(
             tx,
             fence.character_id,
             &occurrence,
             reward,
         )
-        .await?;
+        .await?);
     }
     let minted = if let Some(reward) = &callback.give {
         let Some(transaction) =

@@ -32,7 +32,7 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad')]
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran')]
     paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua']
@@ -112,6 +112,13 @@ def build():
     mappings.append({'grant_key': 'oteryn:appearance-grant/quest/rotten-blood/decaying-defender-base',
         'target': {'kind': 'Outfit', 'outfit_key': 'oteryn:outfit.decaying_defender'},
         'compatible_provenance': ['owner-pr2784-decaying-defender-base-v1']})
+    for row in outfits:
+        if row['key'] in ('oteryn:outfit.hunter','oteryn:outfit.mage','oteryn:outfit.summoner'):
+            for sex in ('female','male'):
+                for addon in range(row['addon_count']+1):
+                    mappings.append({'grant_key':row['key']+f'/quest-grant/{sex}/{addon}',
+                        'target':{'kind':'Outfit','outfit_key':row['key']} if addon==0 else {'kind':'Addon','outfit_key':row['key'],'addon':addon},
+                        'sex':sex,'compatible_provenance':[PROVENANCE]})
     atlas = load_module('qengine_atlas_palette', 'tools/game-atlas-appearances/export.py')
     palette_path = 'tools/game-atlas-appearances/export.py'
     palette_source = {'reference': palette_path + '#outfit_color', 'revision': 'rounded-hsi-133-v1',
@@ -633,6 +640,82 @@ def build():
             npc=callback['npc'].split('.')[-1];path='data-global/npc/'+npc+'.lua'
             lines={'morgan':'115-148','gregor':'63-211','sam':'67-88','ustan':'63-85','ceiron':'60-187','a_majestic_warwolf':'64-75','vescu':'56-189','erayo':'57-114','atrad':'60-105'}[npc]
             callback['sources']=[f'crystal:{PIN}:{path}:{lines}:sha256:{sha(inputs[path])}']
+    # L8: source looktypes are explicit sex-qualified grants, including cross-family rewards.
+    for key,maximum,npc in [(prefix+'u7_8/hunter_outfits/hunter/addon_glove',1,'legola'),
+            (prefix+'u7_8/mage_and_summoner_outfits/addon_hat_cloak',11,'myra')]:
+        path='data-global/npc/'+npc+'.lua'
+        declarations.append({'key':key,'quest':'oteryn:quest.'+general,'initial':0,'min':-1,'max':maximum,
+            'writable':True,'sources':[f'crystal:{PIN}:{path}:sha256:{sha(inputs[path])}']})
+    def targets(*values):
+        callbacks[-1]['outfits']=[{'outfit':'oteryn:outfit.'+family,'addons':bit,'sex':sex} for family,bit,sex in values]
+    hunter=prefix+'u7_8/hunter_outfits/'
+    hat=hunter+'hunter_hat_addon'
+    states=[storage(hat,-1,1,0),storage('oteryn:quest-progress/outfit_quest/default_start',0,1,1)]
+    add('l8-hunter-start',general,'elane',['yes'],states,topic=3)
+    for words,a,b in [(['addon','outfit'],0,1),(['task'],1,2),(['yes'],2,3)]:source_offer('elane',words,a,b,states)
+    for name,words,before,topic,items in [('crossbow',['crossbow'],1,4,[(5947,1)]),
+            ('leather',['leather'],2,5,[(5876,100),(5948,100)]),('wings',['chicken wing'],3,6,[(5891,5)]),
+            ('hat',['steel'],4,7,[(5887,1),(5888,1),(5889,1)])]:
+        states=[storage(hat,before,before+1)]
+        add('l8-hunter-'+name,general,'elane',['yes'],states,take=items,topic=topic)
+        source_offer('elane',words,0,topic,states)
+        if name=='hat':targets(('hunter',1,'male'),('hunter',2,'female'))
+    glove=hunter+'hunter/addon_glove'
+    states=[storage(glove,-1,1,0)]
+    add('l8-hunter-gloves',general,'legola',['yes'],states,take=[(5875,1)],topic=1)
+    callbacks[-1]['requires_premium']=True
+    targets(('hunter',2,'male'),('hunter',1,'female'))
+    source_offer('legola',['sniper gloves'],0,1,states)
+    mage=prefix+'u7_8/mage_and_summoner_outfits/'
+    wand=mage+'addon_wand'
+    states=[storage(wand,-1,1,0),storage('oteryn:quest-progress/outfit_quest/default_start',0,1,1)]
+    add('l8-mage-male-start',general,'angelina',['yes'],states)
+    states=[storage(wand,1,2)]
+    add('l8-mage-male-wand-start',general,'lynda',['yes'],states,topic=2)
+    source_offer('lynda',['angelina'],0,1,states);source_offer('lynda',['yes'],1,2,states)
+    for name,words,before,topic,items in [('wands',['wand','rod'],2,3,[(i,1) for i in (3065,3066,3067,3069,3070,3071,3072,3073,3074,3075)]),
+            ('sulphur',['sulphur'],3,4,[(5904,10)]),('soul',['soul stone'],4,5,[(5809,1)]),('ankhs',['ankh'],5,6,[(3077,20)])]:
+        states=[storage(wand,before,before+1)]
+        add('l8-mage-male-'+name,general,'lynda',['yes'],states,take=items,topic=topic)
+        source_offer('lynda',words,0,topic,states)
+        if name=='ankhs':callbacks[-1]['state_ops']=[stamp(mage+'addon_wand_timer')]
+    add('l8-mage-male-ritual',general,'lynda',['ritual'],[storage(wand,6,7)])
+    callbacks[-1]['state_ops']=[elapsed(mage+'addon_wand_timer',10801)]
+    targets(('mage',1,'male'),('summoner',1,'female'))
+    add('l8-mage-male-hat',general,'zoltan',['yes'],[],take=[(5903,1)],topic=1)
+    callbacks[-1].update(creation_sex='male',exact_take=True,forbids_addons=[{'outfit':'oteryn:outfit.mage','addons':2,'sex':'male'}])
+    targets(('mage',2,'male'),('summoner',2,'female'))
+    source_offer('zoltan',['proof'],0,1,[])
+    belt=mage+'addon_belt'
+    states=[storage(belt,-1,1,0),storage('oteryn:quest-progress/outfit_quest/default_start',0,1,1)]
+    add('l8-mage-female-belt-start',general,'sandra',['yes'],states,topic=2)
+    source_offer('sandra',['vial','ticket','bonus','deposit'],0,1,states);source_offer('sandra',['yes'],1,2,states)
+    states=[storage(belt,1,2)]
+    add('l8-mage-female-belt',general,'sandra',['yes'],states,take=[(5958,1)],topic=4)
+    targets(('mage',1,'female'),('summoner',1,'male'))
+    source_offer('sandra',['prize'],0,4,states)
+    hat=mage+'addon_hat_cloak';mission=mage+'mission_hat_cloak'
+    states=[storage(hat,-1,1,0),storage(mission,0,1,11)]
+    add('l8-mage-female-hat-start',general,'myra',['yes'],states,topic=2)
+    for words,a,b in [(['outfit'],0,100),(['tiara'],100,1),(['yes'],1,2)]:source_offer('myra',words,a,b,states)
+    for before,(name,item,count,word) in enumerate([('wings',5894,70,'bat wings'),('cloth',5911,20,'red cloth'),
+            ('fur',5883,40,'ape fur'),('orchids',5922,35,'holy orchids'),('yarn',5886,10,'yarn'),
+            ('lizard',5881,60,'lizard scales'),('scales',5882,40,'red dragon scales'),('sulphur',5904,15,'sulphur'),('vampire',5905,30,'vampire dust')],1):
+        states=[storage(hat,before,before+1),storage(mission,0,before+1,11)]
+        add('l8-mage-female-'+name,general,'myra',['yes'],states,take=[(item,count)],topic=before+2)
+        source_offer('myra',[word],0,before+2,states)
+    add('l8-mage-female-hat',general,'zoltan',['myra'],[storage(hat,10,11),storage(mission,0,0,11)])
+    callbacks[-1]['creation_sex']='female'
+    targets(('mage',2,'female'),('summoner',2,'female'))
+    for name,bit,item,track,words in [('mask',1,20276,'dream_outfit_1',['dream warden mask']),('claw',2,20275,'dream_outfit',['dream warden claw'])]:
+        key='oteryn:quest-progress/'+track
+        path='data-global/npc/eruaran.lua'
+        declarations.append({'key':key,'quest':'oteryn:quest.'+general,'initial':0,'min':-1,'max':1,'writable':True,
+            'sources':[f'crystal:{PIN}:{path}:153-199:sha256:{sha(inputs[path])}']})
+        states=[storage(key,-1,1,0)]
+        add('l8-dream-warden-'+name,general,'eruaran',['yes'],states,take=[(item,1)],outfit=('dream_warden',bit),topic=bit)
+        callbacks[-1]['requires_premium']=True
+        source_offer('eruaran',words,0,bit,states)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
@@ -714,6 +797,12 @@ def validate_callbacks(document):
     keys=set()
     for callback in document['callbacks']:
         storage=callback['storage']
+        targets=([callback['outfit']] if callback.get('outfit') is not None else callback.get('outfits',[]))
+        value_guard=any(t['outfit']==g['outfit'] and t['addons'] & g['addons']
+            and (t.get('sex') is None or t.get('sex')==(g.get('sex') or callback.get('creation_sex')))
+            for t in targets for g in callback.get('forbids_addons',[]))
+        if callback.get('outfits') and callback.get('outfit') is not None:
+            raise ValueError('mixed legacy and target-set grants '+callback['key'])
         participants=callback.get('participants',[])
         participant_storage=[s for p in participants for s in p['storage']]
         participant_ops=[s for p in participants for s in p.get('state_ops',[])]
@@ -736,7 +825,7 @@ def validate_callbacks(document):
             or {r['track'] for r in requires}&{s['track'] for s in storage}
             or any(r['minimum']>r['maximum'] for r in requires)
             or any(s['minimum']>s['maximum'] for s in storage)
-            or all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage)
+            or (not value_guard and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
             or any(k!=k.lower() or not k.isascii() for k in callback['keywords'])
             or any(len(line.encode('utf-8'))>512 or any(ord(c)<32 or 127<=ord(c)<=159 for c in line) for line in callback['reply'])
             or any(len(source.encode('utf-8'))>1024 for source in callback['sources'])):

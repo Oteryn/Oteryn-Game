@@ -489,6 +489,12 @@
             "maxLength": 128,
             "pattern": "^[ -~]+$"
           }
+        },
+        "sex": {
+          "enum": [
+            "female",
+            "male"
+          ]
         }
       }
     }

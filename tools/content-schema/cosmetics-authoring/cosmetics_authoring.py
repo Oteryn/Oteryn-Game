@@ -143,7 +143,7 @@ def validate(authoring):
             outfit = outfits.get(target["outfit_key"])
             valid = outfit is not None and (target["kind"] == "Outfit"
                     or target["addon"] <= outfit["addon_count"])
-        if not valid:
+        if not valid or (mapping.get("sex") is not None and target["kind"] == "Mount"):
             raise ValueError("unknown cosmetics grant target")
     for sex in ["female", "male"]:
         fallback = document["fallbacks"][sex]

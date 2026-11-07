@@ -829,6 +829,8 @@ async fn wardrobe(
         present: vec![],
         give: None,
         outfit: Some(reward.clone()),
+        outfits: vec![],
+        exact_take: false,
         achievement: None,
         reply: vec![],
         sources: vec![],

@@ -4550,6 +4550,216 @@
         "compatible_provenance": [
           "owner-pr2784-decaying-defender-base-v1"
         ]
+      },
+      {
+        "grant_key": "oteryn:outfit.hunter/quest-grant/female/0",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:outfit.hunter"
+        },
+        "sex": "female",
+        "compatible_provenance": [
+          "crystal-9f5a72c-quest-rewards-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:outfit.hunter/quest-grant/female/1",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.hunter",
+          "addon": 1
+        },
+        "sex": "female",
+        "compatible_provenance": [
+          "crystal-9f5a72c-quest-rewards-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:outfit.hunter/quest-grant/female/2",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.hunter",
+          "addon": 2
+        },
+        "sex": "female",
+        "compatible_provenance": [
+          "crystal-9f5a72c-quest-rewards-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:outfit.hunter/quest-grant/male/0",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:outfit.hunter"
+        },
+        "sex": "male",
+        "compatible_provenance": [
+          "crystal-9f5a72c-quest-rewards-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:outfit.hunter/quest-grant/male/1",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.hunter",
+          "addon": 1
+        },
+        "sex": "male",
+        "compatible_provenance": [
+          "crystal-9f5a72c-quest-rewards-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:outfit.hunter/quest-grant/male/2",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.hunter",
+          "addon": 2
+        },
+        "sex": "male",
+        "compatible_provenance": [
+          "crystal-9f5a72c-quest-rewards-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:outfit.mage/quest-grant/female/0",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:outfit.mage"
+        },
+        "sex": "female",
+        "compatible_provenance": [
+          "crystal-9f5a72c-quest-rewards-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:outfit.mage/quest-grant/female/1",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.mage",
+          "addon": 1
+        },
+        "sex": "female",
+        "compatible_provenance": [
+          "crystal-9f5a72c-quest-rewards-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:outfit.mage/quest-grant/female/2",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.mage",
+          "addon": 2
+        },
+        "sex": "female",
+        "compatible_provenance": [
+          "crystal-9f5a72c-quest-rewards-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:outfit.mage/quest-grant/male/0",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:outfit.mage"
+        },
+        "sex": "male",
+        "compatible_provenance": [
+          "crystal-9f5a72c-quest-rewards-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:outfit.mage/quest-grant/male/1",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.mage",
+          "addon": 1
+        },
+        "sex": "male",
+        "compatible_provenance": [
+          "crystal-9f5a72c-quest-rewards-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:outfit.mage/quest-grant/male/2",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.mage",
+          "addon": 2
+        },
+        "sex": "male",
+        "compatible_provenance": [
+          "crystal-9f5a72c-quest-rewards-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:outfit.summoner/quest-grant/female/0",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:outfit.summoner"
+        },
+        "sex": "female",
+        "compatible_provenance": [
+          "crystal-9f5a72c-quest-rewards-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:outfit.summoner/quest-grant/female/1",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.summoner",
+          "addon": 1
+        },
+        "sex": "female",
+        "compatible_provenance": [
+          "crystal-9f5a72c-quest-rewards-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:outfit.summoner/quest-grant/female/2",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.summoner",
+          "addon": 2
+        },
+        "sex": "female",
+        "compatible_provenance": [
+          "crystal-9f5a72c-quest-rewards-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:outfit.summoner/quest-grant/male/0",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:outfit.summoner"
+        },
+        "sex": "male",
+        "compatible_provenance": [
+          "crystal-9f5a72c-quest-rewards-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:outfit.summoner/quest-grant/male/1",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.summoner",
+          "addon": 1
+        },
+        "sex": "male",
+        "compatible_provenance": [
+          "crystal-9f5a72c-quest-rewards-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:outfit.summoner/quest-grant/male/2",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.summoner",
+          "addon": 2
+        },
+        "sex": "male",
+        "compatible_provenance": [
+          "crystal-9f5a72c-quest-rewards-v1"
+        ]
       }
     ],
     "fallbacks": {
@@ -6585,6 +6795,216 @@
           },
           "compatible_provenance": [
             "owner-pr2784-decaying-defender-base-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:outfit.hunter/quest-grant/female/0",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:outfit.hunter"
+          },
+          "sex": "female",
+          "compatible_provenance": [
+            "crystal-9f5a72c-quest-rewards-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:outfit.hunter/quest-grant/female/1",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.hunter",
+            "addon": 1
+          },
+          "sex": "female",
+          "compatible_provenance": [
+            "crystal-9f5a72c-quest-rewards-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:outfit.hunter/quest-grant/female/2",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.hunter",
+            "addon": 2
+          },
+          "sex": "female",
+          "compatible_provenance": [
+            "crystal-9f5a72c-quest-rewards-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:outfit.hunter/quest-grant/male/0",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:outfit.hunter"
+          },
+          "sex": "male",
+          "compatible_provenance": [
+            "crystal-9f5a72c-quest-rewards-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:outfit.hunter/quest-grant/male/1",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.hunter",
+            "addon": 1
+          },
+          "sex": "male",
+          "compatible_provenance": [
+            "crystal-9f5a72c-quest-rewards-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:outfit.hunter/quest-grant/male/2",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.hunter",
+            "addon": 2
+          },
+          "sex": "male",
+          "compatible_provenance": [
+            "crystal-9f5a72c-quest-rewards-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:outfit.mage/quest-grant/female/0",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:outfit.mage"
+          },
+          "sex": "female",
+          "compatible_provenance": [
+            "crystal-9f5a72c-quest-rewards-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:outfit.mage/quest-grant/female/1",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.mage",
+            "addon": 1
+          },
+          "sex": "female",
+          "compatible_provenance": [
+            "crystal-9f5a72c-quest-rewards-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:outfit.mage/quest-grant/female/2",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.mage",
+            "addon": 2
+          },
+          "sex": "female",
+          "compatible_provenance": [
+            "crystal-9f5a72c-quest-rewards-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:outfit.mage/quest-grant/male/0",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:outfit.mage"
+          },
+          "sex": "male",
+          "compatible_provenance": [
+            "crystal-9f5a72c-quest-rewards-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:outfit.mage/quest-grant/male/1",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.mage",
+            "addon": 1
+          },
+          "sex": "male",
+          "compatible_provenance": [
+            "crystal-9f5a72c-quest-rewards-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:outfit.mage/quest-grant/male/2",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.mage",
+            "addon": 2
+          },
+          "sex": "male",
+          "compatible_provenance": [
+            "crystal-9f5a72c-quest-rewards-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:outfit.summoner/quest-grant/female/0",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:outfit.summoner"
+          },
+          "sex": "female",
+          "compatible_provenance": [
+            "crystal-9f5a72c-quest-rewards-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:outfit.summoner/quest-grant/female/1",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.summoner",
+            "addon": 1
+          },
+          "sex": "female",
+          "compatible_provenance": [
+            "crystal-9f5a72c-quest-rewards-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:outfit.summoner/quest-grant/female/2",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.summoner",
+            "addon": 2
+          },
+          "sex": "female",
+          "compatible_provenance": [
+            "crystal-9f5a72c-quest-rewards-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:outfit.summoner/quest-grant/male/0",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:outfit.summoner"
+          },
+          "sex": "male",
+          "compatible_provenance": [
+            "crystal-9f5a72c-quest-rewards-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:outfit.summoner/quest-grant/male/1",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.summoner",
+            "addon": 1
+          },
+          "sex": "male",
+          "compatible_provenance": [
+            "crystal-9f5a72c-quest-rewards-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:outfit.summoner/quest-grant/male/2",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.summoner",
+            "addon": 2
+          },
+          "sex": "male",
+          "compatible_provenance": [
+            "crystal-9f5a72c-quest-rewards-v1"
           ]
         }
       ],

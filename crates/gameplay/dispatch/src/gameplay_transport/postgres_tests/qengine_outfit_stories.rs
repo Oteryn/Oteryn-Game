@@ -182,6 +182,27 @@ fn qengine_l7_assassin_complete_source_outfit_story() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-l7-assassin-story")
 }
 
+#[test]
+fn qengine_l8_hunter_female_source_outfit_story() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-l8-hunter-female-story")
+}
+#[test]
+fn qengine_l8_hunter_male_source_outfit_story() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-l8-hunter-male-story")
+}
+#[test]
+fn qengine_l8_mage_female_source_outfit_story() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-l8-mage-female-story")
+}
+#[test]
+fn qengine_l8_mage_male_source_outfit_story() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-l8-mage-male-story")
+}
+#[test]
+fn qengine_l8_dream_warden_source_outfit_story() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-l8-dream-warden-story")
+}
+
 const ICE_ISLANDS: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/";
 
 const ORC_POWDER: &str = "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder";
@@ -515,6 +536,71 @@ pub(super) async fn exercise(
             ],
             148,
         ),
+        "qengine-rewards-l8-hunter-female-story" => (
+            "hunter",
+            &[
+                ("start", None, None, None),
+                ("crossbow", Some((5947, 1)), None, None),
+                ("leather", Some((5876, 100)), Some((5948, 100)), None),
+                ("wings", Some((5891, 5)), None, None),
+                ("hat", None, None, Some(2)),
+                ("gloves", Some((5875, 1)), None, Some(1)),
+            ],
+            137,
+        ),
+        "qengine-rewards-l8-hunter-male-story" => (
+            "hunter",
+            &[
+                ("start", None, None, None),
+                ("crossbow", Some((5947, 1)), None, None),
+                ("leather", Some((5876, 100)), Some((5948, 100)), None),
+                ("wings", Some((5891, 5)), None, None),
+                ("hat", None, None, Some(1)),
+                ("gloves", Some((5875, 1)), None, Some(2)),
+            ],
+            129,
+        ),
+        "qengine-rewards-l8-mage-male-story" => (
+            "mage",
+            &[
+                ("male-start", None, None, None),
+                ("male-wand-start", None, None, None),
+                ("male-wands", None, None, None),
+                ("male-sulphur", Some((5904, 10)), None, None),
+                ("male-soul", Some((5809, 1)), None, None),
+                ("male-ankhs", Some((3077, 20)), None, None),
+                ("male-ritual", None, None, Some(1)),
+                ("male-hat", Some((5903, 1)), None, Some(2)),
+            ],
+            130,
+        ),
+        "qengine-rewards-l8-mage-female-story" => (
+            "mage",
+            &[
+                ("female-belt-start", None, None, None),
+                ("female-belt", Some((5958, 1)), None, Some(1)),
+                ("female-hat-start", None, None, None),
+                ("female-wings", Some((5894, 70)), None, None),
+                ("female-cloth", Some((5911, 20)), None, None),
+                ("female-fur", Some((5883, 40)), None, None),
+                ("female-orchids", Some((5922, 35)), None, None),
+                ("female-yarn", Some((5886, 10)), None, None),
+                ("female-lizard", Some((5881, 60)), None, None),
+                ("female-scales", Some((5882, 40)), None, None),
+                ("female-sulphur", Some((5904, 15)), None, None),
+                ("female-vampire", Some((5905, 30)), None, None),
+                ("female-hat", None, None, Some(2)),
+            ],
+            138,
+        ),
+        "qengine-rewards-l8-dream-warden-story" => (
+            "dream-warden",
+            &[
+                ("mask", Some((20276, 1)), None, Some(1)),
+                ("claw", Some((20275, 1)), None, Some(2)),
+            ],
+            578,
+        ),
         "qengine-rewards-l7-knight-story" => (
             "knight",
             &[
@@ -636,7 +722,9 @@ pub(super) async fn exercise(
     let all = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
     let mut callbacks = Vec::new();
     for (suffix, take, present, addon) in steps {
-        let batch = if name.starts_with("qengine-rewards-l7-") {
+        let batch = if name.starts_with("qengine-rewards-l8-") {
+            "l8"
+        } else if name.starts_with("qengine-rewards-l7-") {
             "l7"
         } else if name.starts_with("qengine-rewards-l6-") {
             "l6"
@@ -667,6 +755,18 @@ pub(super) async fn exercise(
                 count: item.1,
             };
         let mut expected_take = take.iter().map(amount).collect::<Vec<_>>();
+        if family == "mage" && *suffix == "male-wands" {
+            expected_take = [3065, 3066, 3067, 3069, 3070, 3071, 3072, 3073, 3074, 3075]
+                .iter()
+                .map(|id| amount(&(*id, 1)))
+                .collect();
+        }
+        if family == "hunter" && *suffix == "hat" {
+            expected_take = [(5887, 1), (5888, 1), (5889, 1)]
+                .iter()
+                .map(amount)
+                .collect();
+        }
         if family == "citizen-rook" && *suffix == "hat" {
             expected_take = [(3374, 1), (5902, 50), (5890, 100)]
                 .iter()
@@ -681,7 +781,7 @@ pub(super) async fn exercise(
         }
         if matches!(
             family,
-            "royal-costume" | "druid-rook" | "druid" | "knight" | "assassin"
+            "royal-costume" | "druid-rook" | "druid" | "knight" | "assassin" | "hunter"
         ) {
             expected_take.extend(present.iter().map(amount));
         }
@@ -690,14 +790,35 @@ pub(super) async fn exercise(
             callback.present,
             if matches!(
                 family,
-                "royal-costume" | "druid-rook" | "druid" | "knight" | "assassin"
+                "royal-costume" | "druid-rook" | "druid" | "knight" | "assassin" | "hunter"
             ) {
                 vec![]
             } else {
                 present.iter().map(amount).collect::<Vec<_>>()
             }
         );
-        assert_eq!(callback.outfit.as_ref().map(|o| o.addons), *addon);
+        let expected_targets: Vec<(&str, u8, &str)> = match (family, *suffix) {
+            ("hunter", "hat") => vec![("hunter", 1, "male"), ("hunter", 2, "female")],
+            ("hunter", "gloves") => vec![("hunter", 2, "male"), ("hunter", 1, "female")],
+            ("mage", "male-ritual") => vec![("mage", 1, "male"), ("summoner", 1, "female")],
+            ("mage", "male-hat") => vec![("mage", 2, "male"), ("summoner", 2, "female")],
+            ("mage", "female-belt") => vec![("mage", 1, "female"), ("summoner", 1, "male")],
+            ("mage", "female-hat") => vec![("mage", 2, "female"), ("summoner", 2, "female")],
+            _ => vec![],
+        };
+        if expected_targets.is_empty() {
+            assert_eq!(callback.outfit.as_ref().map(|o| o.addons), *addon);
+            assert!(callback.outfits.is_empty());
+        } else {
+            let actual = serde_json::to_value(&callback.outfits)?;
+            let expected=expected_targets.iter().map(|(family,bit,sex)|serde_json::json!({"outfit":format!("oteryn:outfit.{family}"),"addons":bit,"sex":sex})).collect::<Vec<_>>();
+            assert_eq!(
+                actual,
+                serde_json::json!(expected),
+                "exact source looktype targets"
+            );
+            assert!(callback.outfit.is_none());
+        }
         let expected_give = match (family, *suffix) {
             ("druid", "hat-start") => Some(4867),
             ("druid", "water-start") => Some(5938),
@@ -1072,7 +1193,7 @@ pub(super) async fn exercise(
     // the largest source recipes, preserving every native weight check.
     if matches!(
         family,
-        "battle-mage" | "royal-costume" | "pirate" | "oriental" | "knight"
+        "battle-mage" | "royal-costume" | "pirate" | "oriental" | "knight" | "hunter" | "mage"
     ) {
         let carrying_level = if family == "royal-costume" { 200 } else { 50 };
         use crate::durability::character_progression::{
@@ -1209,7 +1330,27 @@ pub(super) async fn exercise(
         assert_eq!(counts(h).await?, before);
     }
     let mut npcs = BTreeMap::new();
-    if family == "citizen-rook" {
+    if family == "hunter" {
+        let keys = ["oteryn:npc.elane", "oteryn:npc.legola"];
+        let actors = super::classic_quests::install(owner, admitted, keys).await?;
+        for (key, actor) in keys.into_iter().zip(actors) {
+            npcs.insert(key.to_owned(), actor);
+        }
+    } else if family == "mage" {
+        let keys = if name.contains("-male-") {
+            [
+                "oteryn:npc.angelina",
+                "oteryn:npc.lynda",
+                "oteryn:npc.zoltan",
+            ]
+        } else {
+            ["oteryn:npc.sandra", "oteryn:npc.myra", "oteryn:npc.zoltan"]
+        };
+        let actors = super::classic_quests::install(owner, admitted, keys).await?;
+        for (key, actor) in keys.into_iter().zip(actors) {
+            npcs.insert(key.to_owned(), actor);
+        }
+    } else if family == "citizen-rook" {
         let keys = ["oteryn:npc.amber", "oteryn:npc.norma"];
         let actors = super::classic_quests::install(owner, admitted, keys).await?;
         for (key, actor) in keys.into_iter().zip(actors) {
@@ -1273,6 +1414,8 @@ pub(super) async fn exercise(
     }
     let mut checked_stale = false;
     let mut earned_base = false;
+    let mut qualified_keys = std::collections::BTreeSet::new();
+    let mut qualified_masks = BTreeMap::<String, u8>::new();
     let mut bags = Vec::new();
     let mut occurrence = 500;
     for (step_index, callback) in callbacks.iter().enumerate() {
@@ -1358,12 +1501,42 @@ pub(super) async fn exercise(
             assert_eq!(counts(h).await?, before);
         }
         for (index, item) in needed.iter().enumerate() {
+            if family == "mage" && callback.key.ends_with("-male-wands") && index == 9 {
+                let before = counts(h).await?;
+                let mut held = Vec::new();
+                for ingredient in &needed[..9] {
+                    held.push((
+                        ingredient.item.clone(),
+                        quantity(h, &ingredient.item).await?,
+                    ));
+                }
+                let (result, _, _) =
+                    super::qengine_rewards::wire_reward(owner, admitted, npc, callback, false)
+                        .await?;
+                assert_eq!(
+                    result,
+                    NpcIntentDisposition::Rejected,
+                    "nine of ten source wand types cannot satisfy the atomic recipe"
+                );
+                assert_eq!(counts(h).await?, before);
+                for (key, count) in held {
+                    assert_eq!(quantity(h, &key).await?, count, "all nine types retained");
+                }
+            }
             if quantity(h, &item.item).await? < i64::from(item.count) {
-                supply(owner, admitted, h, item, &mut bags, &mut occurrence).await?;
+                supply(owner, admitted, h, item, &mut bags, &mut occurrence)
+                    .await
+                    .map_err(|e| format!("source ingredient {}: {e}", item.item))?;
             }
             if (matches!(
                 family,
-                "royal-costume" | "druid-rook" | "druid" | "knight" | "assassin"
+                "royal-costume"
+                    | "druid-rook"
+                    | "druid"
+                    | "knight"
+                    | "assassin"
+                    | "hunter"
+                    | "mage"
             ) || (matches!(family, "pirate" | "citizen-rook")
                 && callback.key.ends_with("-hat")))
                 && needed.len() > 1
@@ -1386,6 +1559,60 @@ pub(super) async fn exercise(
                     "first ingredient cannot be consumed before the complete recipe is proven"
                 );
             }
+        }
+        if callback.exact_take {
+            let input = callback.take.first().ok_or("exact input")?;
+            supply(owner, admitted, h, input, &mut bags, &mut occurrence).await?;
+            let before = counts(h).await?;
+            let total = quantity(h, &input.item).await?;
+            assert_eq!(total, 2, "two legally admitted source hats");
+            let (result, _, _) =
+                super::qengine_rewards::wire_reward(owner, admitted, npc, callback, false).await?;
+            assert_eq!(
+                result,
+                NpcIntentDisposition::Rejected,
+                "source total must equal exactly one"
+            );
+            assert_eq!(counts(h).await?, before);
+            assert_eq!(
+                quantity(h, &input.item).await?,
+                total,
+                "excess quantity cannot be charged"
+            );
+            let item:sqlx::types::Uuid=sqlx::query_scalar("SELECT i.item_instance_id FROM game_item_nested_entries e JOIN game_item_instances i USING(item_instance_id) WHERE i.definition_production_key=$1 LIMIT 1").bind(&input.item).fetch_one(&h.pool).await?;
+            let fence = owner
+                .current_quest_fence(admitted.game_session_id)
+                .await
+                .map_err(|_| "fence")?
+                .ok_or("fence")?;
+            let permit = owner.spell_lane_permit().await.ok_or("permit")?;
+            let native = owner
+                .active_generation
+                .and_then(|g| g.native_gameplay())
+                .ok_or("native")?;
+            let (digest, frame) = {
+                let runtime = owner.runtime.lock().await;
+                (
+                    runtime.content_pin().server_artifact_digest(),
+                    runtime.content_pin().frame_binding_digest(),
+                )
+            };
+            let revision = format!(
+                "sha256:{}",
+                digest
+                    .iter()
+                    .map(|b| format!("{b:02x}"))
+                    .collect::<String>()
+            );
+            let result=owner.root.commit_item_loop_move(&permit,owner.character,owner.holder,&fence.item_fence(),
+                CommandRef::new(admitted.game_session_id,CommandId::new(29500).map_err(debug)?),
+                &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native),
+                crate::durability::item_loop_move::LoopMoveRequest{item:*item.as_bytes(),count:None,pickup_cell:None,
+                destination:crate::durability::item_loop_move::LoopDestination::Ground(crate::durability::item_loop_move::LoopGround {
+                    spatial_position:crate::durability::map_item_mint_audit::map_item_spatial_position(33293,31677,-15),
+                    map_revision:crate::map::overlay::map_revision(owner.bundle_map().ok_or("map")?.overlay.base()),
+                    content_revision:revision,placement_context:frame.to_vec()})}).await.map_err(debug)?;
+            assert!(result.is_ok(), "native drop extra source hat: {result:?}");
         }
         let required = requirements(callback)?;
         if !checked_stale && !required.is_empty() {
@@ -1573,10 +1800,19 @@ pub(super) async fn exercise(
                 "exact source gift delivered once"
             );
         }
-        let new_facts = callback
+        let mut new_facts = callback
             .outfit
             .as_ref()
             .map_or(0, |o| if o.addons != 0 && !earned_base { 2 } else { 1 });
+        for target in &callback.outfits {
+            for bit in [0, 1, 2] {
+                if (bit == 0 || target.addons & bit != 0)
+                    && qualified_keys.insert(target.grant_key(bit))
+                {
+                    new_facts += 1;
+                }
+            }
+        }
         assert_eq!(after.3, before.3 + new_facts);
         earned_base |= callback.outfit.is_some();
         if let Some(before) = money_before {
@@ -1630,6 +1866,27 @@ pub(super) async fn exercise(
                     o.key == outfit.outfit && o.permitted_addons & outfit.addons == outfit.addons
                 })
             }));
+        }
+        if !callback.outfits.is_empty() {
+            let sex = if name.contains("-male-") {
+                "male"
+            } else {
+                "female"
+            };
+            for target in &callback.outfits {
+                if serde_json::to_value(target.sex)? == serde_json::json!(sex) {
+                    *qualified_masks.entry(target.outfit.clone()).or_default() |= target.addons;
+                }
+            }
+            for (key, mask) in &qualified_masks {
+                assert!(
+                    catalogues.iter().any(|c| c
+                        .outfits
+                        .iter()
+                        .any(|o| o.key == *key && o.permitted_addons == *mask)),
+                    "sex-specific normal catalogue {key}: {mask}"
+                );
+            }
         }
         let retained_money = if callback.fee.is_some() {
             Some(coin_worth(h).await?)
@@ -1753,8 +2010,43 @@ pub(super) async fn exercise(
         oteryn_protocol_oteryn::appearance::ChangeResult::decode(&reply).map_err(debug)?,
         oteryn_protocol_oteryn::appearance::ChangeResult::Committed(_)
     ));
+    if name.starts_with("qengine-rewards-l8-") {
+        let mut tx = h.pool.begin().await?;
+        let inserted=sqlx::query("INSERT INTO game_character_quest_receipts SELECT (jsonb_populate_record(NULL::game_character_quest_receipts,to_jsonb(r)||jsonb_build_object('cause_ordinal',999999,'transition_key','oteryn:quest-reward/qengine2-unauthored-value-only','track_keys','[]'::jsonb,'values_before','[]'::jsonb,'values_after','[]'::jsonb,'completes',false,'original_character_revision',999998,'committed_character_revision',999999,'created_xact_id',pg_current_xact_id()::text))).* FROM game_character_quest_receipts r LIMIT 1").execute(&mut *tx).await?;
+        assert_eq!(inserted.rows_affected(), 1);
+        let error = sqlx::query("SET CONSTRAINTS game_quest_reward_value_only_complete IMMEDIATE")
+            .execute(&mut *tx)
+            .await;
+        assert!(
+            matches!(error,Err(sqlx::Error::Database(ref e)) if e.code().as_deref()==Some("23514") && e.message().contains("value-only quest lacks exact same-transaction source")),
+            "effectless receipt without native source must fail: {error:?}"
+        );
+        tx.rollback().await?;
+        let mut tx = h.pool.begin().await?;
+        let error=sqlx::query("SELECT game_quest_reward_grant_keys('{\"outfit\":null,\"outfits\":[{\"outfit\":\"oteryn:outfit.hunter\",\"addons\":1,\"sex\":\"invalid\"}]}'::jsonb)").execute(&mut *tx).await;
+        assert!(
+            matches!(error,Err(sqlx::Error::Database(ref e)) if e.code().as_deref()==Some("23514")),
+            "unknown grant sex must fail closed: {error:?}"
+        );
+        tx.rollback().await?;
+    }
     let root: (i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_account_appearance_unlocks WHERE unlock_key LIKE $1),(SELECT count(*) FROM game_account_appearance_unlock_receipts WHERE unlock_key LIKE $1)").bind(format!("oteryn:outfit.{outfit_family}/quest-grant/%")).fetch_one(&h.pool).await?;
-    let facts = 1 + i64::from(expected_addons.count_ones());
+    let facts = if family == "hunter" {
+        6
+    } else if family == "mage" {
+        3
+    } else {
+        1 + i64::from(expected_addons.count_ones())
+    };
+    for key in &qualified_keys {
+        let count: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_account_appearance_unlocks WHERE unlock_key=$1",
+        )
+        .bind(key)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(count, 1, "exact sex-qualified source fact {key}");
+    }
     assert_eq!(
         root,
         (facts, facts),

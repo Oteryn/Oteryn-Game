@@ -191,6 +191,32 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l7-assassin-yellow" => &["50 yellow cloth"],
         "l7-assassin-white" => &["50 white cloth"],
         "l7-assassin-yarn" => &["10 spools of yarn"],
+        "l8-hunter-start" => &["addon","task","yes"],
+        "l8-hunter-crossbow" => &["crossbow"],
+        "l8-hunter-leather" => &["leather"],
+        "l8-hunter-wings" => &["chicken wing"],
+        "l8-hunter-hat" => &["steel"],
+        "l8-hunter-gloves" => &["sniper gloves"],
+        "l8-mage-male-wand-start" => &["angelina","yes"],
+        "l8-mage-male-wands" => &["wand"],
+        "l8-mage-male-sulphur" => &["sulphur"],
+        "l8-mage-male-soul" => &["soul stone"],
+        "l8-mage-male-ankhs" => &["ankh"],
+        "l8-mage-male-hat" => &["proof"],
+        "l8-mage-female-belt-start" => &["vial","yes"],
+        "l8-mage-female-belt" => &["prize"],
+        "l8-mage-female-hat-start" => &["outfit","tiara","yes"],
+        "l8-dream-warden-mask" => &["dream warden mask"],
+        "l8-dream-warden-claw" => &["dream warden claw"],
+        "l8-mage-female-wings" => &["bat wings"],
+        "l8-mage-female-cloth" => &["red cloth"],
+        "l8-mage-female-fur" => &["ape fur"],
+        "l8-mage-female-orchids" => &["holy orchids"],
+        "l8-mage-female-yarn" => &["yarn"],
+        "l8-mage-female-lizard" => &["lizard scales"],
+        "l8-mage-female-scales" => &["red dragon scales"],
+        "l8-mage-female-sulphur" => &["sulphur"],
+        "l8-mage-female-vampire" => &["vampire dust"],
         "l7-assassin-second-start" => &["addon","yes"],
         "l6-beggar-start" => &["outfit","yes"],
         "l6-beggar-cloth" => &["20 brown pieces of cloth"],
@@ -304,7 +330,13 @@ pub(super) async fn wire_reward(
         })
         .collect::<TestResult<Vec<_>>>()?;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    let expected_outfit = if expect_outfit { callback.outfit.clone() } else { None };
+    let expected_outfits = if expect_outfit && !callback.outfits.is_empty() {
+        let fence=owner.current_quest_fence(admitted.game_session_id).await.map_err(|_|"fence")?.ok_or("fence")?;
+        let state=owner.root.read_current_character_appearance_state(owner.character,owner.holder,fence,vec![]).await.map_err(debug)?;
+        callback.outfits.iter().filter(|target|target.sex.is_none_or(|sex|matches!((sex,state.sex),
+            (oteryn_gameplay_quests::quest::reward_callbacks::CreationSex::Female,crate::domain::appearance::Sex::Female)
+            |(oteryn_gameplay_quests::quest::reward_callbacks::CreationSex::Male,crate::domain::appearance::Sex::Male)))).cloned().collect::<Vec<_>>()
+    } else if expect_outfit {callback.outfit.iter().cloned().collect()} else {vec![]};
     let peer = tokio::spawn(async move {
         let mut catalogues = Vec::new();
         let mut result = None;
@@ -379,7 +411,7 @@ pub(super) async fn wire_reward(
             }
         }
         let has_outfit = |catalogues: &[oteryn_protocol_oteryn::appearance::Catalogue]| {
-            expected_outfit.as_ref().is_none_or(|expected| {
+            expected_outfits.iter().all(|expected| {
                 catalogues.iter().any(|c| {
                     c.outfits.iter().any(|o| {
                         o.key == expected.outfit
@@ -667,7 +699,7 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
-    if name.starts_with("qengine-rewards-l7-") || name.starts_with("qengine-rewards-l2-") || name.starts_with("qengine-rewards-l3-") || name.starts_with("qengine-rewards-l4-") || name.starts_with("qengine-rewards-l5-") || name.starts_with("qengine-rewards-l6-") {
+    if name.starts_with("qengine-rewards-l8-") || name.starts_with("qengine-rewards-l7-") || name.starts_with("qengine-rewards-l2-") || name.starts_with("qengine-rewards-l3-") || name.starts_with("qengine-rewards-l4-") || name.starts_with("qengine-rewards-l5-") || name.starts_with("qengine-rewards-l6-") {
         return super::qengine_outfit_stories::exercise(owner, admitted, h, authority, name).await;
     }
     if name == "qengine-rewards-l1-legacy-decaying" {
