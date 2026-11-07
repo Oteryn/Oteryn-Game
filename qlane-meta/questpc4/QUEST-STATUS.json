@@ -7351,7 +7351,7 @@
       }
     },
     "paradox_story_batch_26": {
-      "status": "COMPILED_BEHAVIORAL_RED_WIP_CHECKPOINT",
+      "status": "COMPILED_LESSON_RED_WIP_CHECKPOINT",
       "previous_pushed_head": "bc9c9ce60d6460ecb1d4faa833afa7ca6ef13335",
       "decision_at": "2026-11-07 14:34 UTC",
       "scope": "Four selected ordered NPC progression contacts: Zoltan,Padreia,Lubo,prisoner lesson; three native cases ordered/premature/replay. Oldrak level/premium gate reused.",
@@ -7378,7 +7378,7 @@
         "classification": "Fixture setup failure, not missing-story behavioral RED",
         "fixes": "Reserve six slots only for native story; use native story start as initial trigger/floor; use paradox-story family to reuse existing premium fixture setup."
       },
-      "checkpoint_head": "776b3c721",
+      "checkpoint_head": "8c21dc1d3",
       "fixture_correction": "Six reserved actor slots only for native story; qengine scenario trigger/native entry matches Oldrak start/floor6; paradox-story name family reuses existing premium fixture setup. Catalogue admission and actor-capacity enforcement retained.",
       "behavioral_red": {
         "postgres_version": "18.6",
@@ -7388,7 +7388,33 @@
         "actual": "Native NPC placement and Oldrak story1 succeed; Zoltan crunor's caress command refused",
         "expected": "Exact ordered Zoltan contact advances story1->2",
         "log": "/tmp/questpc4-paradox-story-red3.log"
-      }
+      },
+      "implementation": "Four bound ordered NPC callbacks with level30/premium and exact predecessor; three read-only prisoner topic offers; final yes/topic8 advances story4->5 and names Mathemagician achievement.",
+      "green_session": 75088,
+      "green_log": "/tmp/questpc4-paradox-story-green.log",
+      "gate_session": 35152,
+      "gate_script": "/tmp/questpc4-paradox-story-gates.sh",
+      "first_green_attempt": {
+        "postgres_version": "18.6",
+        "cases_passed": 0,
+        "cases_failed": 3,
+        "seconds": 146.67,
+        "progress": "All ordered contacts advance through story4; all fail lesson word dispositions before achievement/replay assertions.",
+        "log": "/tmp/questpc4-paradox-story-green.log"
+      },
+      "regressions": {
+        "minimum_level": {
+          "passed": 1,
+          "seconds": 136.717309008,
+          "postgres_version": "18.6"
+        },
+        "spirit_completion": {
+          "passed": 1,
+          "seconds": 130.513234053,
+          "postgres_version": "18.6"
+        }
+      },
+      "gates": "Obsolete gates stopped before targeted diagnostic; no final clippy/check claim."
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",
