@@ -9048,8 +9048,46 @@
         ],
         "where": "gameplay entities/content/dispatch",
         "state": "REQUESTED; continue other owned entries"
+      },
+      {
+        "feature": "Travel permission/fine predicates and expiring tickets with remembered return port",
+        "needed_by": [
+          "Captain Jack",
+          "Petros"
+        ],
+        "where": "crates/gameplay/content/src/content/npc_catalogue/travel.rs and paid-travel dispatch",
+        "state": "REQUESTED; continue other owned entries",
+        "reuse_review": "qengine2 e5850715e fetched and source reviewed; existing ordinary quest gates and Petros carried-cheese proof retained; no Travora ticket/last-port or Captain Jack permission/fine owner found",
+        "evidence": "crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:599; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:2256"
       }
     ],
     "publication_override": "Latest HARD RULE: within15 minutes publish current compiling state after workspace all-target check and fmt; tests/CI may remain pending. Thereafter publish compiling checkpoints at least every30 minutes."
+  },
+  "post3020_published_checkpoint": {
+    "head": "18ca444be3c277ebd1e3dbbe190e74ecab3a0b3f",
+    "remote_verified": true,
+    "focused_retest": "Ten collected regressions running; three completed PASS, zero failures reported so far. Remaining cases pending; /tmp/npcfix-evidence/post3020-focused-fixed-tests-2.log",
+    "qualification_change": 0,
+    "focused_completed_so_far": [
+      {
+        "case": "npcfix_guardian_chat_preserves_name_and_multipart_source_order",
+        "result": "PASS",
+        "seconds": 69.93
+      },
+      {
+        "case": "npcfix_postgres_ahmet_filled_fluid_mints_exact_matching_and_replay",
+        "result": "PASS",
+        "seconds": 217.48
+      },
+      {
+        "case": "npcfix_postgres_additional_postal_services_and_replay",
+        "result": "PASS",
+        "seconds": 571.317
+      }
+    ],
+    "next_checkpoint_gate": {
+      "check": "PASS; cargo check --workspace --all-targets;14m23s including Cargo lock wait; /tmp/npcfix-evidence/post3020-next-checkpoint-check.log",
+      "fmt": "PASS; cargo fmt --all -- --check; /tmp/npcfix-evidence/post3020-next-checkpoint-fmt.log"
+    }
   }
 }
