@@ -241,24 +241,26 @@
       "scope": "Freshly compiled exact merged source; all54 physical/native assertions passed."
     },
     "latest_checked_source": {
-      "source_commit": "c918fc759804e081dbf1c0174247e5598e7426ef",
-      "parity_report": "/tmp/npcfix-evidence/post-passive-four-parity.json",
-      "check": "Own multi-anchor fixture89db51927 dispatch alltargets/allfeatures check PASS18m26s including lock wait; incoming BookWorld compiler/content check and dispatch/entities checks PASS as preserved in199f309b0 continuation_merge. No Rust source changed in provider slice.",
-      "clippy": "Own multi-anchor fixture strict dispatch alltargets/allfeatures Clippy -D warnings PASS7m17s; incoming BookWorld compiler/content and merged dispatch/entities strict checks preserved in199f309b0 continuation_merge. No changed Rust crates in provider slice.",
-      "postgres": "Actual PG marker/durations and all178 native source-cell/name assertions; passive-four-red.log/passive-four-green.log. All other quest/service/travel proofs retained.",
-      "physical_fixture": "Fresh merged199f309b0 dispatch test binary compiled13m34s before provider edit. Actual default current-source PG RED71.02s BlockSolid -> GREEN133.67s tests177 NPCs/178 actors including both Emiliana anchors and all BookWorld cases. Provider-only changes afterward; all Rust byte-identical to compiled merged source.",
-      "physical_latest_green": "Actual PG177 NPCs/178 actors GREEN133.67s; passive-four-green.log",
-      "native_provider": "Native42 generation/reproduction PASS;9 custody/conflict tests PASS39.914s; all3616 prior native records exactly identical;4 pinned passives added.",
+      "source_commit": "f87861eab9ba7d889a0bbe5f495237b45190214d",
+      "production_snapshot": "aed13d05c14a66cfce5c2508aef0b984f1ad5865",
+      "parity_report": "/tmp/npcfix-evidence/fluid-registry-parity.json",
+      "check": "Five changed crates alltargets/allfeatures PASS; fluid-registry-check.log",
+      "clippy": "Five changed crates alltargets/allfeatures strict -D warnings PASS; fluid-registry-clippy.log",
+      "format": "cargo fmt --all -- --check PASS",
+      "repository": "Default repository regeneration completed; focused repository5 tests and materialized97/97, semantic validator, Python checks PASS",
+      "authoring": "Four exact-before/late-fluid atomicity tests PASS; shape unit and NPC catalogue repair test PASS",
+      "postgres": "Fresh migration-embedded binary: Ahmet RED139.14 -> GREEN300.85s, oil197.15s, Father11-track40.94s, retained204NPC205actors216.33s; all actual PG markers present",
       "world_pin": {
-        "inputs_digest": "2d85b3e389793cdc5d2c1d842142489a629a054146311598bb50a8fbd5071fb8",
+        "inputs_digest": "9a2a5db0021b35fd5a5dada9ac50e7d41b12d35138d34725d0de8008690b5250",
         "pins": [
           {
-            "bytes": 32007254,
-            "digest": "685a297ae8db4510fb3ee529c84a4854f984d9762112ee368677142889a2dee3",
+            "bytes": 31812443,
+            "digest": "9e77d39c2877f3151a5f02df91e8a8dd342fd44ef74e093d98233fb27f356c7c",
             "world": "oteryn"
           }
         ]
-      }
+      },
+      "native_provider": "All3627 prior native profiles unchanged; fluid canonical facts only2 Item fields and3 offers; full other record arrays retained (taxonomy119 canonical provenance hashes refreshed)."
     }
   },
   "incoming_cooldown_delivery": {},
@@ -326,9 +328,9 @@
     "final_pg_log": "/tmp/npcfix-evidence/refusal-final-paid-clock-pg.log"
   },
   "counts": {
-    "QUALIFIED": 216,
-    "PENDING": 8,
+    "QUALIFIED": 217,
     "EXCLUDED": 24,
+    "PENDING": 7,
     "AUTHORED; QUALIFICATION PENDING": 69,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
@@ -415,10 +417,10 @@
       "npc": "Ahmet",
       "town": "Ankrahmun",
       "audit_status": "DIFF",
-      "work": "Retail actor PG-qualified. Generic filled-container purchase production path actual PG RED139.14s -> GREEN300.85s; exact prices/subtypes, wrong-price and bulk refusal, one-container mint, durable replay and unproven fluid mutations covered. Oil-use compatibility PG GREEN197.15s. Migration1238/pins verified. Strict five-crate check/Clippy and repository regeneration completion remain actively running; keep PENDING until gates pass.",
+      "work": "Filled oil/water containers use the generic exact server-bound subtype and price, one physical mint and atomic fluid-state insertion; bulk/wrong-price refusal and committed replay are durable. Retail actor and oil compatibility proven on PostgreSQL.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/16",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "PENDING",
+      "test": "npcfix_postgres_ahmet_filled_fluid_mints_exact_matching_and_replay",
+      "status": "QUALIFIED",
       "source": {
         "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/ahmet.lua",
         "sha256": "7141a6ed014f4ca77031a6c83f41f7ff9603bf35a645004be53754e7bfa62797",
@@ -432,6 +434,35 @@
         "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
         "scope": "Native retail actor, exact captured cell and displayed identity; 174 NPCs/175 anchors in tested source manifest",
         "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
+      },
+      "qualification": {
+        "batch": "npcfix-filled-container-trade",
+        "postgres_red_seconds": 139.14,
+        "postgres_green_seconds": 300.85,
+        "oil_green_seconds": 197.15,
+        "physical_green_seconds": 216.33,
+        "source_certificate": {
+          "source_commit": "f87861eab9ba7d889a0bbe5f495237b45190214d",
+          "production_snapshot": "aed13d05c14a66cfce5c2508aef0b984f1ad5865",
+          "parity_report": "/tmp/npcfix-evidence/fluid-registry-parity.json",
+          "check": "Five changed crates alltargets/allfeatures PASS; fluid-registry-check.log",
+          "clippy": "Five changed crates alltargets/allfeatures strict -D warnings PASS; fluid-registry-clippy.log",
+          "format": "cargo fmt --all -- --check PASS",
+          "repository": "Default repository regeneration completed; focused repository5 tests and materialized97/97, semantic validator, Python checks PASS",
+          "authoring": "Four exact-before/late-fluid atomicity tests PASS; shape unit and NPC catalogue repair test PASS",
+          "postgres": "Fresh migration-embedded binary: Ahmet RED139.14 -> GREEN300.85s, oil197.15s, Father11-track40.94s, retained204NPC205actors216.33s; all actual PG markers present",
+          "world_pin": {
+            "inputs_digest": "9a2a5db0021b35fd5a5dada9ac50e7d41b12d35138d34725d0de8008690b5250",
+            "pins": [
+              {
+                "bytes": 31812443,
+                "digest": "9e77d39c2877f3151a5f02df91e8a8dd342fd44ef74e093d98233fb27f356c7c",
+                "world": "oteryn"
+              }
+            ]
+          },
+          "native_provider": "All3627 prior native profiles unchanged; fluid canonical facts only2 Item fields and3 offers; full other record arrays retained (taxonomy119 canonical provenance hashes refreshed)."
+        }
       }
     },
     {
@@ -7256,7 +7287,7 @@
       "normal_profile": "This checkout retained normal unoptimized+debuginfo profiles and existing env.sh. Only stopped-build incremental caches were removed."
     }
   },
-  "next_batch": "Complete registry renumber/checks and source-equivalent fluid generation; rebuild fresh PG tests with1230-1238, verify Father11 atomicity and Ahmet, regenerate pins, commit and push.",
+  "next_batch": "Continue remaining owned entries immediately. No final turn until all scope qualified and pushed.",
   "active_batch": {
     "name": "reviewed-passive-cells-35",
     "state": "QUALIFIED",
@@ -7426,7 +7457,7 @@
     "local_full_checkpoint": "git stash entry npcfix owner STOP: preserve local fluid source and generated checkpoint"
   },
   "active_fluid_work": {
-    "state": "FRESH_POSTGRES_GREEN; OIL_COMPATIBILITY_GREEN; STRICT_CRATE_AND_REPOSITORY_GATES_RUNNING",
+    "state": "QUALIFIED",
     "entries": [
       "Ahmet"
     ],
@@ -7504,6 +7535,28 @@
       "seconds": 197.15,
       "log": "/tmp/npcfix-evidence/fluid-registry-oil-pg.log",
       "sha256": "8e839257696b397636782675603e4e107d0e0778fcbec9eae9961ad54f90bc83"
+    },
+    "verification": {
+      "source_commit": "f87861eab9ba7d889a0bbe5f495237b45190214d",
+      "production_snapshot": "aed13d05c14a66cfce5c2508aef0b984f1ad5865",
+      "parity_report": "/tmp/npcfix-evidence/fluid-registry-parity.json",
+      "check": "Five changed crates alltargets/allfeatures PASS; fluid-registry-check.log",
+      "clippy": "Five changed crates alltargets/allfeatures strict -D warnings PASS; fluid-registry-clippy.log",
+      "format": "cargo fmt --all -- --check PASS",
+      "repository": "Default repository regeneration completed; focused repository5 tests and materialized97/97, semantic validator, Python checks PASS",
+      "authoring": "Four exact-before/late-fluid atomicity tests PASS; shape unit and NPC catalogue repair test PASS",
+      "postgres": "Fresh migration-embedded binary: Ahmet RED139.14 -> GREEN300.85s, oil197.15s, Father11-track40.94s, retained204NPC205actors216.33s; all actual PG markers present",
+      "world_pin": {
+        "inputs_digest": "9a2a5db0021b35fd5a5dada9ac50e7d41b12d35138d34725d0de8008690b5250",
+        "pins": [
+          {
+            "bytes": 31812443,
+            "digest": "9e77d39c2877f3151a5f02df91e8a8dd342fd44ef74e093d98233fb27f356c7c",
+            "world": "oteryn"
+          }
+        ]
+      },
+      "native_provider": "All3627 prior native profiles unchanged; fluid canonical facts only2 Item fields and3 offers; full other record arrays retained (taxonomy119 canonical provenance hashes refreshed)."
     }
   },
   "migration_registry": {
@@ -7725,5 +7778,23 @@
         "sha256": "178aedb24d3dff6c873762ecf00df1f177ae33e380f73eb209cd9d15a77583e9"
       }
     }
-  ]
+  ],
+  "active_ground_work": {
+    "name": "npcfix-reviewed-ground-cells-42",
+    "state": "ACTUAL_DEFAULT_POSTGRES_RED_CONFIRMED",
+    "entries": [
+      "Javala",
+      "John The Carpenter",
+      "Toffee"
+    ],
+    "source_commit": "f87861eab9ba7d889a0bbe5f495237b45190214d",
+    "red": {
+      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+      "seconds": 94.0,
+      "log": "/tmp/npcfix-evidence/ground-three-pg-red.log",
+      "sha256": "0d0572b33f877997fbf019229d9848a856b4d1b1510adccfd1972b9194391abe"
+    },
+    "scope": "Javala and John complete physical-only entries; Toffee physical component retained pending separate candy service proof. No NPC coordinate/name or prior case changes.",
+    "next": "Reuse strict Summer appearance-only producer for53254/35700/44783; retain exact cells. Anaztassja has five anchors and will be handled as a complete separate multi-anchor slice; do not drop the two deeper anchors."
+  }
 }
