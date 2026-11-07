@@ -34,7 +34,18 @@ def qualify_custody(definition, profile):
     return result
 
 
-def refresh(relative, root=ROOT, base='HEAD', custody=False):
+def qualify_native_core(definition, profile):
+    """Add only core facts already present in the unchanged, Git-bound source profile."""
+    result = qualify_custody(definition, profile)
+    for group in ('physical', 'charges', 'temporal'):
+        if known_conflict(result['semantics'][group], profile['semantics'][group]):
+            raise ValueError('ITEM_OVERLAY_NATIVE_CORE_CONFLICT')
+        result['semantics'][group] = accepted_first(
+            result['semantics'][group], profile['semantics'][group])
+    return result
+
+
+def refresh(relative, root=ROOT, base='HEAD', custody=False, native_core=False):
     if (Path(relative).parts[:3] != ('tools', 'content-schema', 'native-gameplay')
             or len(Path(relative).parts) != 4 or not relative.endswith('.json')
             or not (root / relative).resolve().is_relative_to(root.resolve())):
@@ -91,8 +102,9 @@ def refresh(relative, root=ROOT, base='HEAD', custody=False):
                                  separators=(',', ':')).encode()
             if hashlib.sha256(encoded).hexdigest() != original['definition_sha256']:
                 raise ValueError('ITEM_OVERLAY_BASE_HASH')
-        if custody:
-            selected_before = {key: (qualify_custody(value, profiles[key])
+        if custody or native_core:
+            qualify = qualify_native_core if native_core else qualify_custody
+            selected_before = {key: (qualify(value, profiles[key])
                                     if value != selected_after.get(key) else value)
                                for key, value in selected_before.items()}
         if selected_before != selected_after:
@@ -112,9 +124,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('overlays', nargs='+')
     parser.add_argument('--base', default='HEAD')
-    parser.add_argument('--qualify-custody-inputs', action='store_true')
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument('--qualify-custody-inputs', action='store_true')
+    mode.add_argument('--qualify-native-core-inputs', action='store_true')
     args = parser.parse_args()
-    outputs = {path: refresh(path, base=args.base, custody=args.qualify_custody_inputs)
+    outputs = {path: refresh(path, base=args.base, custody=args.qualify_custody_inputs, native_core=args.qualify_native_core_inputs)
                for path in args.overlays}
     for path, raw in outputs.items():
         (ROOT / path).write_bytes(raw)

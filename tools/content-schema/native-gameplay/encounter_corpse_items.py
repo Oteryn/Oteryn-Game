@@ -26,7 +26,7 @@ OBJECT_SHARDS = ('objects-01000-01499.json', 'objects-01500-01999.json',
                  'objects-10500-10999.json', 'objects-12000-12499.json')
 
 
-def source_policies(root=ROOT):
+def source_policies(root=ROOT, roots=ROOTS, *, explicit_weights=False):
     raw = (root / XML).read_bytes()
     if hashlib.sha256(raw).hexdigest() != SHA256:
         raise ValueError('Encounter corpse source XML differs from its selected pin')
@@ -35,7 +35,7 @@ def source_policies(root=ROOT):
         if 'id' in node.attrib:
             indexed.setdefault(int(node.attrib['id']), []).append(node)
     policies = {}
-    for first in ROOTS:
+    for first in roots:
         item = first
         seen = set()
         while item:
@@ -51,7 +51,8 @@ def source_policies(root=ROOT):
                 if key in attributes:
                     raise ValueError(f'Encounter corpse source attribute duplicated: {item}/{key}')
                 attributes[key] = attribute.attrib['value']
-            if any(key in attributes for key in ('weight', 'stopduration', 'pickupable', 'allowpickupable')):
+            if (any(key in attributes for key in ('stopduration', 'pickupable', 'allowpickupable'))
+                    or ('weight' in attributes and not explicit_weights)):
                 raise ValueError('Encounter corpse source overrides the selected Game policy')
             capacity = int(attributes['containersize']) if 'containersize' in attributes else None
             duration = int(attributes['duration']) * 1000

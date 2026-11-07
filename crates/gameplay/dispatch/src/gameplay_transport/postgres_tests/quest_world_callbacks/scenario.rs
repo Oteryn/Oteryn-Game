@@ -22,6 +22,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let elvenbane = name == "elvenbane-native-goals";
     let monk = name.starts_with("monk-guidance");
     let qengine_reward = name.starts_with("qengine-rewards-");
     let outfit_world = name.starts_with("l1-") && name.ends_with("-wardrobe");
@@ -36,7 +37,9 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if classic_npc {
+    let mut callback = callback(if elvenbane {
+        "elvenbane-basement-entry"
+    } else if classic_npc {
         "behemoth"
     } else if rotten_purchase {
         "rotten-blood/sacrifice"
@@ -95,6 +98,28 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
+        let world = if elvenbane {
+            super::super::source_world_crop::compiled_region(
+                crate::map::overlay::TilePos {
+                    x: 32584,
+                    y: 31638,
+                    floor: -8,
+                },
+                crate::map::overlay::TilePos {
+                    x: 32599,
+                    y: 31653,
+                    floor: -3,
+                },
+                crate::map::overlay::TilePos {
+                    x: trigger.x,
+                    y: trigger.y,
+                    floor: trigger.floor,
+                },
+                generation.native_gameplay().ok_or("native")?,
+            )?
+        } else {
+            world
+        };
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;
@@ -208,7 +233,9 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if outfit_world {
+        if elvenbane {
+            super::super::elvenbane_native_goals::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if outfit_world {
             super::super::qengine_access::exercise(
                 &mut owner,
                 &mut admitted,

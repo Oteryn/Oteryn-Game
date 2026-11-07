@@ -413,6 +413,12 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     # Complete only unknown kinds from agreeing admitted taxonomy and pinned XML.
     import hand_weapon_kinds
     hand_weapon_kinds.apply_native(root, generated, spell_import.canonical_bytes)
+    import sys
+    sys.path.insert(0, str(root / 'tools/content-schema/native-gameplay'))
+    import native_goal_corpse_items
+    native_goal_corpse_items.admit_native(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import native_goal_loot_items
+    native_goal_loot_items.admit_native(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Later admitted creature overlays (for example forge eligibility) change
     # Creature roots. Bind executable closures only after those policies settle.
     from bind_monster_source_definitions import bind_definitions

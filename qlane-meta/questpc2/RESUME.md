@@ -1,3 +1,115 @@
+# Local GREEN checkpoint: native defender source proof and ordinary settlement
+
+All batch checks passed: actual PG18.6 2cases100.92s; fmt; four-crate check112s
+and all-target/all-feature clippy225s; native-goal units2, Grizzly regressions9;
+123content2.57s,5World56.97s; native generator42+42; pin-refresh/check PASS digest
+650dc1e4627e3f0e785067d68a6302555ca6ff20a5adfec67fc047f2c856a420.
+53 new Item core admissions change compiled projection; no placement edits.
+Failed additional cargo regression rebuild ENOSPC is not accepted evidence;
+9regressions ran same actual-PG dispatch executable. Inactive cache only retired.
+Next IMMEDIATELY fetch/merge current own remote (last55a76f4f7), preserve whole
+Annihilator qualification and incoming stage writer. Namespace the exact native
+origin proof phase/counters separately from incoming broad stage progression;
+then rerun actual PG and affected checks, push combined green. Do not stop.
+Whole Elvenbane remains active; physical approach/poison/native wire combat/
+source claims/exit still need composition. No whole qualification from fixture.
+
+# Latest WIP: Elvenbane native goals and ordinary settlement PG GREEN
+
+Last pushed GREEN remains 5d7d8a330. Current uncommitted mechanism batch now has
+2/2 actual PostgreSQL18.6 cases GREEN: 100.92s runtime (96.016 +4.905), command
+282.536s. Six exact origins, prerequisite/cap/refusal/cancel/replay plus ordinary
+reward rows and 17 actual persisted corpses asserted. No corpse-only fallback.
+53 canonical unknown Item admissions (20 corpse stages +33 portable), 71 unique
+selected loot Items, exact known charge agreement. Source fallback44158 only:
+Crystal00ce02a items.xml line77054 SHA13a8773e; no reference copies committed.
+Eight final corpse/loot Python tests pass36.760s. Prey simulation15cases/776
+creatures and regenerated4outputs done; strict native42 checks previously passed.
+Final fmt/check/clippy4 crates and fresh native regeneration currently running.
+Remaining checks: required content/World/pin, focused runtime units/regressions;
+then update status/batch, commit exact identity/trailers, fetch OWN branch and
+merge if needed, push GREEN. Whole Elvenbane remains active: actual source
+approach/poison floor/native wire combat/treasure claims/exit still to qualify.
+No source geometry, monster stats or source charged loot rewritten.
+
+# Latest WIP: Elvenbane native-goal PG rerun with complete defender corpses
+
+Last pushed GREEN remains5d7d8a330 (Desert wholeQUALIFIED,1/35).
+Current session2556: fmt+gitadd+repo pin-refresh done; then focusedPG2cases from
+/tmp/questpc2-elvenbane-native-goals.py. Compile86s done; actualPG running. Inspect
+/tmp/questpc2-elvenbane-native-goals-pg.log +runnerduration/counts. No mechanism
+GREEN yet. Previous run95.86s actualPG18.6: cataloguepass5.962s; deathcasefailed
+queueassert for wrongspeciesDragonLord (untracked); now uses trackedElfArcanist
+at Dragon'swrongorigin, same assertion. Redlog preserved...-queue-red.log.
+
+Nativeordinarycorpse_refused also exposed: authored all5selected defender roots
+5963/5973/5978/5981/6011 and20complete decay stages via new generic
+native_goal_corpse_items.py. Reuses existingcorpse builder/lifecycleproof with
+explicit XMLweights preserved, unspecifiedGame0, WorldObject movement/corpse
+identity and known-fact guards. Canonical2Itemshards+native Ground-only profiles;
+7corpse/oldencounter Pythonpass23.890s. Sourcegenerator42fresh PASS. Nativeprovider
+7888967bytes (under8MiB). Newadmission mergesafterexistinggatheringowners toavoid
+duplicates. World digest stays4990f60c (no geometry changed), pin refreshed.
+
+World-tree regeneration completednativeproviders butfoundpreexistingimbuement
+hashdrift from otherPCAnniItemadmissions. OneDemonHornbinding and3equipment hashes
+onlychanged. Existing binding/eligibilityproducers +newstrict Git-bound
+refresh_binding_evidence_pin.py repinonlycanonicaldefinitiondigests; identities,
+names,client/wiki evidence,eligibility/rules/counts stayexact;8tests PASS. Existing
+imbuement_authoring build,imbuementcontent andcraftcontent129 allpass. SourceItem
+shop/task/quest3pins refreshed throughrepo tools with selecteddefsunchanged;quest3
+needed originalbaseline8f1d71547f2b2fd694487326497efacc2679a838. No guards weakened.
+
+NEXT: PG2green inclsixorigins/caps/predecessors/cancel/replay; fix any real missing
+loot/corpse/runtime issue generically. Then fmt/check/clippy4changedRustcrates,
+focusedoldGrizzly/Desertregression asrelevant,123content/5World/pin andfreshPython
+genchecks; updatebatch/status/resume; commitexactidentity/trailers; FETCHOWNBRANCH
+beforemerge/push (FETCH_HEAD lastmayhold7otherlaneheads!), fast-forwardpushGREEN.
+Then continuefullElvenbane earnedroute/rewards/exit; currentbatchismechanismonly.
+Do not endturnwhileownedentriesremain. Nativegoalwholeproofmustnotinferfromthis
+engineeringsource-death test; actualcombat/fullroute follows next.
+
+# Active update: reused native goal mechanism authored; PG compiling
+
+Session87543 runs /tmp/questpc2-elvenbane-native-goals.py,2focused PG cases
+patternelvenbane_. Inspectactualmarker/count/runtime; no mechanismPG GREEN yet.
+Ported pc6@390e02450 generic native_kill_goals, grizzly native_goals capture/settle,
+creature_death_spawn_cell and exactcause writerguard. Added bounded samequest
+prerequisite DAG, capture+durable recheck; five distinct capped goals require Dragon.
+Native counter tracks initialize before world callback read guards; final closure
+validator remainsstrict. Pure2nativegoal tests pass1.34s; Python10pass2.610s.
+4cratecheck passed111s before latest fixture-only additions. New generic authoring
+native_kill_goals.py verifies hashes + exact point/cell/species from per-lane cohorts;
+Elvenbane6goal fragment, generated global catalog, and qengine_access2StepIn callbacks.
+Activation chosen at existing dirt35532598,31641,z8 (not adjacent438stairs).
+PG fixture shares existingquest_world_callbacks scenario through new namedcase, loads
+actual source compiledregion32584..32599/31638..31653/floors3..8. Reuses pc6 native
+lethal/cancel/drain helpers; live literalSTEP activation, preactivation/wrongorigin/
+species/encountercopy/command/early-upper refusals,12eligible exactgoal deaths with
+independentcap1 andqueue replay. Mechanism only; full Elvenbane native combat route,
+physical treasure and exit remain active afterward. No source geometry mutated.
+
+# Active now: Elvenbane six native defender goals; Desert pushed
+
+Desert complete GREEN pushed5d7d8a330. New PG RED actual18.6 runtime4.69s,
+source defender catalogue missing (log /tmp/questpc2-elvenbane-native-goals-red.log).
+Focused test auto-mounted elvenbane_native_goals.rs; expand it to actual retained
+native deaths/fencing/replay/capped per-origin proof before mechanism GREEN.
+Fresh branch inspection finds reusable pc6@390e024503a7c02b9e15d67e680cec0ac711fd5b
+native_kill_goals.rs +grizzly_kills/native_goals.rs +death_spawn_cell +writer guard.
+Reuse these, adapt only owned Elvenbane data. Add bounded prerequisite guards so
+five distinct upper-defender goals require mandatory Dragon first. Native origins
+from source spawn declarations are in batch record and /tmp/questpc2-elvenbane-source-origins.json.
+Dragon32590,31645,z5; MinotaurMage32592,31643,z4; OrcShaman32590,31647,z4;
+ElfArcanist32590,31643,z3; DemonSkeletons32592,31644,z3 and32589,31646,z3.
+Exact source top chests6253..6256 share this tower but donor names them To Blind
+the Enemy; retain authored Elvenbane personal recipe scope rather than qualifying
+that other quest. Source table chest.lua2553..2584; map source inspected through
+repository world_region_codec, no geometry modified. Source basement438 at
+32597,31641,z8 is a candidate chosen activation; prove full approach in later route.
+No generic implementation is ported yet. Do that now, complete GREEN+checks+push,
+then continuous route/rewards; do not finish turn while owned scope remains.
+
 # Latest GREEN: complete Desert Dungeon source route
 
 Whole Desert Dungeon QUALIFIED,1/35 now (34remaining before ownership exclusions).

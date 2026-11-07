@@ -330,9 +330,9 @@
     {
       "canonical": "oteryn:quest.authored.elvenbane_quest",
       "title": "Elvenbane Quest",
-      "mechanism": "encounter_party_admission_settlement",
+      "mechanism": "native_source_origin_personal_kill_goals",
       "status": "UNFINISHED",
-      "blocker": "The required Dragon and five upper-floor defenders are not bound to personal encounter completion before terminal loot.",
+      "blocker": "Native six-origin defender prerequisite goals and ordinary corpse/loot closure now pass PostgreSQL. Whole qualification still requires physical approach, poison floor, actual wire combat, four source treasure claims and exit.",
       "source_lane_checks": [
         {
           "lane": "questpc",
@@ -350,7 +350,13 @@
         }
       ],
       "qualification_scope": "Whole quest; no qualification inferred from existing reward cohorts.",
-      "external_owner_blocker": false
+      "external_owner_blocker": false,
+      "mechanism_pg_proof": {
+        "record": "BATCH-elvenbane-native-defender-goals-2026-11-07.json",
+        "server_version_num": 180006,
+        "cases": 2,
+        "runtime_seconds": 100.92
+      }
     },
     {
       "canonical": "oteryn:quest.forgotten_knowledge_quest",
@@ -1652,11 +1658,11 @@
     }
   },
   "current_batch": {
-    "id": "desert-source-gate-and-earned-rewards-2026-11-07",
-    "state": "GREEN",
-    "record": "BATCH-desert-source-gate-and-earned-rewards-2026-11-07.json",
-    "whole_quest_qualifications": 1,
-    "next": "Commit/push green batch, then Elvenbane source/encounter/reward route. Preserve ongoing other-PC Annihilator continuation."
+    "id": "elvenbane-native-defender-goals-2026-11-07",
+    "state": "LOCAL_GREEN_PENDING_REMOTE_INTEGRATION",
+    "record": "BATCH-elvenbane-native-defender-goals-2026-11-07.json",
+    "last_green_commit": "5d7d8a330",
+    "next": "Finish final static/content/pin checks, commit and push green generic native-goal/ordinary settlement batch; then implement and qualify whole Elvenbane earned route."
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
