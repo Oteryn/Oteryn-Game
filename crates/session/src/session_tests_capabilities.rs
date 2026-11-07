@@ -158,6 +158,10 @@ fn derived_gated_routes_match_previous_table() {
         (19, &[], &[18]),
         (23, &[], &[19, 20]),
         (288, &[], &[101]),
+        // CLCAST: native caster controls and room; Watch 289 stays account-only.
+        (290, &[502, 505], &[]),
+        (291, &[504], &[103]),
+        (292, &[503], &[]),
         (330, &[560, 561], &[]),
         (37, &[36], &[]),
         (31, &[], &[23]),

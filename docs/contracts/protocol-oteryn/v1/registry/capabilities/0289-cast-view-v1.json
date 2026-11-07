@@ -7,6 +7,6 @@
   "state_domains": [
     102
   ],
-  "offered": false,
-  "offer_gate": "Disabled pending Platform observer profile, production worker composition, durable audit and measured qualification."
+  "offered": true,
+  "offer_gate": "Native observer and caster chat consumers; account observer admission remains mTLS purpose-bound and requires explicitly configured cast worker and current consent/audit authority."
 }
