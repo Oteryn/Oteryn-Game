@@ -550,6 +550,14 @@ pub(super) fn scenario_with_inspection(inspection: Option<bool>) -> TestResult {
 
 /// The existing LOOK backpack fixture, optionally populated with direct entries.
 pub(super) async fn seed_main_backpack(harness: &Harness, entries: &[(&str, i64)]) -> TestResult {
+    seed_main_backpack_definition(harness, entries, "oteryn:item.tibia.i2854").await
+}
+
+pub(super) async fn seed_main_backpack_definition(
+    harness: &Harness,
+    entries: &[(&str, i64)],
+    backpack: &str,
+) -> TestResult {
     // Seed the migration-owned fixture as the existing item PostgreSQL harnesses do.
     // All observations below use the real durable owner under its recovery fence.
     let mut tx = harness.pool.begin().await?;
@@ -558,9 +566,9 @@ pub(super) async fn seed_main_backpack(harness: &Harness, entries: &[(&str, i64)
         .await?;
     sqlx::query("INSERT INTO game_item_instances(item_instance_id, world_id, definition_family, \
         definition_production_key, definition_revision_ref, quantity, lifecycle, minted_transaction_id) \
-        VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, 'Item', 'oteryn:item.tibia.i2854', \
+        VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, 'Item', $4, \
         'definition-r1', 1, 1, encode($3,'hex')::uuid)")
-        .bind(id(70).as_slice()).bind(id(42).as_slice()).bind(id(71).as_slice())
+        .bind(id(70).as_slice()).bind(id(42).as_slice()).bind(id(71).as_slice()).bind(backpack)
         .execute(&mut *tx).await?;
     sqlx::query(
         "INSERT INTO game_item_container_slots(character_id, item_instance_id, world_id, \

@@ -143,7 +143,7 @@ fn scenario() -> TestResult {
     })
 }
 
-async fn use_source(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admitted:&mut AdmittedSession,command:u64,target:WorldObjectTarget)->TestResult<UseDisposition> {
+pub(super) async fn use_source(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admitted:&mut AdmittedSession,command:u64,target:WorldObjectTarget)->TestResult<UseDisposition> {
     owner.clock_origin=owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("clock")?;
     admitted.item_fence=Some(owner.current_quest_fence(admitted.game_session_id).await.map_err(|()|"fence")?.ok_or("fence")?.item_fence());
     let payload=oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?;

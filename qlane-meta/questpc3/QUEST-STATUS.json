@@ -4021,208 +4021,42 @@
       "skipped_world_owner": 17
     },
     "current_batch": {
-      "batch": "threatened_acquisition_13",
-      "phase": "GREEN; commit/fetch/merge and fast-forward publish immediately",
-      "previous_published": "4785fb242",
+      "batch": "threatened_treasure_14",
+      "phase": "WIP compiled fixture-helper slice published now under owner15min rule; revised treasure test remains local/rebuilding, production14 still untouched.",
+      "previous_published": "6146ee945",
       "entries": [
-        "poacher chest actual item plus source storage flag",
-        "dark moon mirror actual item plus source storage flag",
-        "AID20002 physical notes plus exact source conditions and once flag"
+        "agaric25385 -> fourth map24946",
+        "compose selected24943",
+        "compose selected24944",
+        "compose selected24945",
+        "compose selected24946",
+        "treasure25380 exact position -> ring1/quartz5/coins5"
       ],
-      "test_filter": "threatened_acquisition_ --nocapture --test-threads=1",
-      "log": "/tmp/questpc3-acquisition-red.log",
-      "source": "chest.lua:1346-1360 blob ea2ef1963395a479ed927481bc3a14065b125a3f SHA2560ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca; action_poacher_notes.lua:1-14 blob2814b532928717adb6630c84d384923f3d199328 SHA2569e8b533913ce6e8df365c1ccf9ea9b280f28a2189408c95b849ffaf703736626",
-      "reuse": "Both source chest physical claims and source tracks already admitted; add native chest obligations after RED, do not duplicate Items/claims. Reuse questl2 c9cdfd5ae native world reward participant, adapted to local callback/fee bindings, for notes. Canonical notes25242 already materializable NonStackable weight200; preserve.",
-      "test_priors": "Only empty backpack and Animals6 then7 seeded; no notes/chest outputs, success flags or reward receipts seeded.",
-      "partial_red": {
-        "mirror_ms": 67928,
-        "poacher_chest_ms": 58675,
-        "evidence": "both existing physical claims mint1, source flagNone"
+      "source_facts": {
+        "agaric": "action_big_fly_agaric.lua:3-14 blobce19427af8dc6dbdb9e8c72037c78d829cf1dc05 SHA256f84f18c4c333b7cbd534f47fe0d6836d7bc5db09b2ffff932f52cafaef069289",
+        "composition": "action_map.lua:3-23 blobd7302f806c60734dcd84642e80f756d7b7404094 SHA2564814b16c6fcd3e6e755495fd130a81740865723d8f14b655eb4c0c9ad0c655ca",
+        "treasure": "action_treasure.lua:3-20 blob413f3b76363117d7b37a135551b5447d6d7d41d3 SHA256438fcbc59629440d277241d5a08653a5d28600940c477f71b600b04ae85f18a8"
       },
-      "prepared_reuse_patch": "/tmp/questpc3-acquisition-world-reward-reuse.patch (migration1146/sequencer/dispatch only; unapplied; manually adapt writer/MINT/effects after full RED)",
-      "postgres_red": {
-        "mirror_ms": 67928,
-        "poacher_chest_ms": 58675,
-        "notes_ms": 60549,
-        "chests": "physical1/flagNone each",
-        "notes": "NothingToUse/physical0/flag0/Animals7/receipts0",
-        "sha256": "2898c95f5b9dc1a0a022d955146e512d623d485c6c83fc39bb7b9d9087395a35"
+      "reuse_heads": {
+        "qengine2": "9c581fd104aa9c6cbdd8404618e65bc112b73f88",
+        "questl2": "352325ea9a2c242a11b0a38170e22630d7e72463"
       },
-      "local_changes": "Reused c9cdfd5ae migration1146/sequencer/dispatch, adapted own2tuple world context with optional native MINT admission; same-type2 receipt+item, no new writer. Existing native chest obligations link2 existing claims to source flags. Generic effects ItemReward bounded to pure world USE. NPC fee/health/premium/capacity preserved.",
-      "initial_checks": {
-        "native_generator": "PASS41; exactly notes25242 profile added, ALL old profiles unchanged",
-        "authoring": "PASS2/0.027s",
-        "core_check": "PASS2m58s before final units/source updates"
+      "candidate_reuse": [
+        "97cb9db79 / d668338be selected carried USE proof",
+        "96d03398f complete loose backpack reward outputs",
+        "a0100244c per-occurrence repeatable native exchanges",
+        "c9cdfd5ae positive appearance-only world USE (not yet ported here)"
+      ],
+      "tests": "One real native-world/carried-USE PG scenario, six entry counters, actual four-input consumption/mapMINT, complete treasure counts, exact replay, wrong-stage/position, global revision0. Only prior flags1/2 and treasure input4 plus backpack/input fragments are fixtures. No complete maps, treasure assets, stage5 or successful receipts seeded. Results are captured per entry before any later independent fixture setup.",
+      "log": "/tmp/questpc3-treasure-red.log",
+      "last_completed_red": {
+        "duration_ms": 61702,
+        "exact_error": "Blocked",
+        "cause": "wrong-mosaic approach stood on actual treasure tile; corrected local WRONG to32363/32417/-7",
+        "qualification": "fixture failure, not accepted as full six-entry mechanism RED"
       },
-      "publication": "All focused qualification checks complete; publish implementation immediately.",
-      "checks": {
-        "units": "worldreward1/0.02s,chestflags1/2.79s,rewardbindings7/1.77s PASS",
-        "profile_closure": "PASS1/10.845s includes full root+child and canonicalweight200",
-        "authoring": "PASS2/0.027s",
-        "claims": "PASS exact declared set + generator --check",
-        "native": "PASS41 generation and --check; one new25242 profile, all old unchanged",
-        "pins": "repo pin-refresh exit0; digest remains1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f, no deploymirror drift",
-        "cargo_check": "Latest PASS35.72s after source witness metadata repair; no further runtime changes",
-        "domain_final": "World7/1.65s,chest1/1.50s,reward7/1.44s PASS; source witness test was not altered and now passes"
-      },
-      "map_noop": "Existing map.facts.apply_quest_callback always increments revision; pure per-character ItemReward bypasses projection. Domain validation forbids map effects on that mode; test asserts original object revision0. Context-free caller must fail before MINT/flag.",
-      "source_metadata_fix": "Unchanged world callback witness test exposed missing metadata for prior barrier flags. Preserve declared native overlay aliases and register callback-derived source identities through the same exact pinned donor authority check; all7 world tests pass. No state/reward change and no test weakening.",
-      "preserved_incoming_handoff": {
-        "checks": {
-          "units": "worldreward1/0.02s,chestflags1/2.79s,rewardbindings7/1.77s PASS",
-          "profile_closure": "PASS1/10.845s includes full root+child and canonicalweight200",
-          "authoring": "PASS2/0.027s",
-          "claims": "PASS exact declared set + generator --check",
-          "native": "PASS41 generation and --check; one new25242 profile, all old unchanged",
-          "pins": "repo pin-refresh exit0; digest remains1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f, no deploymirror drift",
-          "cargo_check": "Latest PASS35.72s after source witness metadata repair; no further runtime changes",
-          "domain_final": "World7/1.65s,chest1/1.50s,reward7/1.44s PASS; source witness test was not altered and now passes"
-        },
-        "id": "r2-stop-final-metadata-merge",
-        "incoming": "84e84323530bfe5fee7a8ea2d381d67e04d3acd7",
-        "local_green": "c550829512d0cc2a2158392c8394623860a538b2",
-        "map_noop": "Existing map.facts.apply_quest_callback always increments revision; pure per-character ItemReward bypasses projection. Domain validation forbids map effects on that mode; test asserts original object revision0. Context-free caller must fail before MINT/flag.",
-        "phase": "Real PG GREEN3/3 and Irmana regression PASS;15domainunits and all other checks PASS; strictClippy running. DOC checkpoint only, acquisition runtime still unpublished.",
-        "postgres_green_pending_lint": {
-          "mirror_ms": 73855,
-          "poacher_chest_ms": 70147,
-          "notes_ms": 59115,
-          "irmana_ms": 128154,
-          "notes": "physical1/flag1/Animals7/receipt1; context-free denial, wrong-stage/target and replay pass; object revision0",
-          "chests": "physical1/flag1 including cold replay",
-          "sha256": "ff4a177fac13ab00d3e3d7531e0459aec153c9ec82f5bfc0698beb09a1feebe3"
-        },
-        "publication": "DOC-ONLY progress checkpoint; do not claim runtime published until strictClippy finishes and implementation is committed/pushed.",
-        "qualification": "Completed green report/tooling proofs and unverified local work are separated in owner_stop_handoff_r2; no hardening GREEN claimed.",
-        "scope": "Owner STOP: preserve incoming source checkpoint and completed green work; r2 is sole continuing writer",
-        "source_metadata_fix": "Retain declared native overlay source aliases; callback-only flags derive aliases using the same exact pinned source authority helper as parser. Preserve existing mappings. Existing witness test RED MoonMirrorPos01 then GREEN7worldtests.",
-        "whole_entry_status": "Retain all qualifications; four owned whole quests still active unless durable quest rows show further remote qualification."
-      },
-      "postgres_green": {
-        "durations_ms": {
-          "THREATENED_MOON_MIRROR": 73855,
-          "THREATENED_POACHER_CHEST": 70147,
-          "THREATENED_POACHER_NOTES": 59115
-        },
-        "chests": "both physical1/flag1 including cold replay",
-        "notes": "physical1/flag1/Animals7/receipt1; wrong-stage/target/context-free caller and replay protected; global source revision0",
-        "irmana_regression_ms": 128154
-      },
-      "proofs": {
-        "red": {
-          "log": "/tmp/questpc3-acquisition-red.log",
-          "sha256": "2898c95f5b9dc1a0a022d955146e512d623d485c6c83fc39bb7b9d9087395a35",
-          "result": "expected RED"
-        },
-        "green": {
-          "log": "/tmp/questpc3-acquisition-green.log",
-          "sha256": "ff4a177fac13ab00d3e3d7531e0459aec153c9ec82f5bfc0698beb09a1feebe3",
-          "result": "PASS"
-        },
-        "irmana-regression": {
-          "log": "/tmp/questpc3-acquisition-irmana-regression.log",
-          "sha256": "eba23f216d03b2b2b378b2cea2b8b92e1b48bc40413fed264c62ccbb8fe67101",
-          "result": "PASS"
-        },
-        "fmt": {
-          "log": "/tmp/questpc3-acquisition-fmt.log",
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "result": "PASS"
-        },
-        "final-check": {
-          "log": "/tmp/questpc3-acquisition-final-check.log",
-          "sha256": "34b80fb99776e739086c573dbc8d8d0c443b51c35037ec31c0b5371834b544cd",
-          "result": "PASS"
-        },
-        "clippy": {
-          "log": "/tmp/questpc3-acquisition-clippy.log",
-          "sha256": "f5158d086d86fadce8c454c2824743658b6c391bdca6c80d1c838d6d616f7ad7",
-          "result": "PASS"
-        },
-        "world-units": {
-          "log": "/tmp/questpc3-acquisition-world-units.log",
-          "sha256": "c1e398df8c3648f4e5cfe2be96ca5ae54e0d0e8d10a00f989d219b5865baf0d0",
-          "result": "expected RED"
-        },
-        "world-units-final": {
-          "log": "/tmp/questpc3-acquisition-world-units-final.log",
-          "sha256": "fc9c8e4bb670dc1d0224cb949b535fab651ffad53c1006fbb9338c8f179bdb5f",
-          "result": "PASS"
-        },
-        "chest-unit-final": {
-          "log": "/tmp/questpc3-acquisition-chest-unit-final.log",
-          "sha256": "d972ae9fe771589a1d536be53440e72bb72624936d0bdde01844fe7eb41670d0",
-          "result": "PASS"
-        },
-        "reward-units-final": {
-          "log": "/tmp/questpc3-acquisition-reward-units-final.log",
-          "sha256": "6209555a58ea4bc184f23009a303dff89c65856b987c4d0ff439433fa8ffd860",
-          "result": "PASS"
-        },
-        "authoring": {
-          "log": "/tmp/questpc3-acquisition-authoring.log",
-          "sha256": "8fb7c0050b03ef803e8819d7a13002f014f5486222a6e1735d7415084264e70e",
-          "result": "PASS"
-        },
-        "profile-unit": {
-          "log": "/tmp/questpc3-acquisition-profile-unit.log",
-          "sha256": "cb6fdc1be7243e5be4dcd197966def8fe3ff4dd9bd0b33f78ada05071905f547",
-          "result": "PASS"
-        },
-        "claim-unit": {
-          "log": "/tmp/questpc3-acquisition-claim-unit.log",
-          "sha256": "bbd9df13f0d534b137b6b058e611395ae24a812ef6ebd434cb943fe1ce707a36",
-          "result": "PASS"
-        },
-        "native": {
-          "log": "/tmp/questpc3-acquisition-native.log",
-          "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
-          "result": "PASS"
-        },
-        "native-check": {
-          "log": "/tmp/questpc3-acquisition-native-check.log",
-          "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
-          "result": "PASS"
-        },
-        "pins": {
-          "log": "/tmp/questpc3-acquisition-pins.log",
-          "sha256": "94dbfe147f29cfdecd2c18592201d88181e7183f8ce3c74dfc3e21ab7b3df739",
-          "result": "PASS"
-        },
-        "union-fmt": {
-          "log": "/tmp/questpc3-acquisition-union-fmt.log",
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "result": "PASS"
-        },
-        "union-units": {
-          "log": "/tmp/questpc3-acquisition-union-units.log",
-          "sha256": "e6381bdf63d8adbf136473a378c916ad99291a49ba64d89d49aa797cd32d58b0",
-          "result": "PASS"
-        },
-        "union-check": {
-          "log": "/tmp/questpc3-acquisition-union-check.log",
-          "sha256": "1aa3f904aeae524a2f553cf62cd70aa8b60f2da10bfe42050c18af1ddb57cece",
-          "result": "PASS"
-        },
-        "union-clippy": {
-          "log": "/tmp/questpc3-acquisition-union-clippy.log",
-          "sha256": "5241d2457bc1de246eacaa9742d310a4cf650bb0d3cc3966e2673d0489ab71b9",
-          "result": "PASS"
-        },
-        "union-authoring": {
-          "log": "/tmp/questpc3-acquisition-union-authoring.log",
-          "sha256": "e11bbb630c1a6ea91f4322ac92d7ce2a6c043ad84d3e41ecf0d0f5a73e9c9fd0",
-          "result": "PASS"
-        }
-      },
-      "review": "Exactly1 new world callback and1 new native profile25242; all prior world callback/profile rows unchanged. Existing2 claims gain only native quest_transition links; all Item definitions and other claims unchanged. Reused c9 world MINT transaction; existing NPC fee/health/premium bindings retained. Pure character gifts preserve map object revision; only empty-effect constructor compatibility on other quests. No unrelated selector broadening, protected paths or whole-quest completion.",
-      "integration": {
-        "incoming": "7f71f3571425b94c22722affe75f2e8112281754",
-        "published_checkpoint_merge": "0ae6b6f58",
-        "scope": "qualified Carlos-only report data, test and stable offer generator; no acquisition source data or native closure dependency change",
-        "combined": "15 domain units,6 incoming authoring tests,fmt/check32.89s/strictClippy1m19s PASS",
-        "postgres": "Three acquisition cases and fee regression before this disjoint NPC-data merge; upstream report PG proofs retained. No new combined runtime run claimed."
-      }
+      "helper_compile_proof": "Completed dispatch test build3m26s and actual PG61.702s reached all4 map attempts before blocked movement. Only backpack helper parameter and world-use helper visibility are published; revised test/mount remains local.",
+      "push_interval_minutes": 15
     },
     "diagnosis": {
       "log": "/tmp/questpc3-counter-diagnosis.log",
