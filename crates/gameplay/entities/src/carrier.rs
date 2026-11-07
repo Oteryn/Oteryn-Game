@@ -82,6 +82,8 @@ pub mod house_custody;
 
 #[path = "carrier/encounter_access.rs"]
 pub mod encounter_access;
+#[path = "carrier/native_actor_batch.rs"]
+pub mod native_actor_batch;
 
 mod equipment_reflection;
 
@@ -1114,6 +1116,7 @@ pub struct ScopeRuntimeV1 {
     spawn_schedule: spawn::RespawnSchedule,
     boss_spawns: Vec<BossSpawn>,
     raid_spawns: raid_spawn::RaidSpawnLedger,
+    world_change_cycles: Option<(u64, std::collections::BTreeMap<String, u64>)>,
     daily_boost: Option<oteryn_gameplay_content::content::daily_boost::DailyBoostSelection>,
     echo_wardens: echo_warden::EchoRuntime,
     forge_next_tick_micros: u64,
@@ -1260,6 +1263,7 @@ impl ChannelRuntimeV1 {
             spawn_schedule: spawn::RespawnSchedule::default(),
             boss_spawns: Vec::new(),
             raid_spawns: raid_spawn::RaidSpawnLedger::default(),
+            world_change_cycles: None,
             daily_boost: None,
             echo_wardens: echo_warden::EchoRuntime::default(),
             forge_next_tick_micros: 0,
