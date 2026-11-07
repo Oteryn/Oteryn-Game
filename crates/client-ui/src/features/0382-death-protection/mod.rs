@@ -6,6 +6,9 @@ pub use protocol::decode;
 pub use state::{DeathProtection, DeathProtectionReply};
 pub use view::notice;
 #[cfg(test)]
+#[path = "tests/e2e_c20c.rs"]
+mod e2e_c20c;
+#[cfg(test)]
 mod tests {
     use super::*;
     #[test]
