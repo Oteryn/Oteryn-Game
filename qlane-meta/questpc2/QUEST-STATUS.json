@@ -2046,12 +2046,16 @@
     "state": "GREEN_MIGRATION_RENUMBER_SLICE"
   },
   "basement_cohort_authoring": {
-    "state": "WIP_CANONICAL_ACTIVATION_ALIAS_REQUIRED",
+    "state": "WIP_CANONICAL_SELECTOR_ALIAS_COMPILES",
     "red_postgres_seconds": 75.36,
     "red": "Actual basement landing earns ownphase1 but cohort absent, expected0.",
     "rejected_attempt_postgres_seconds": 75.39,
     "rejected_attempt": "Catalogue native goal run may reopen; reverted attempt, keep closed activation guard.",
     "check": "quests+dispatch PASS41.79s; fixture early-return cleanup compiles.",
-    "next": "Reuse canonical once-only activation key at both source basement positions through bounded selector aliases; preserve guard and original tests."
+    "next": "Native PG build running; actual basement activation/same-xmin route proof, original goal and atomic regressions, clippy and pin tools then push green.",
+    "check_seconds": 78,
+    "alias_unit_cases": 6,
+    "closed_goal_tests": 2,
+    "generation": "qengine_access write/check; native43write+43check PASS"
   }
 }

@@ -32,7 +32,7 @@ pub(crate) fn altar_callback() -> super::world_callbacks::Callback {
     use super::world_callbacks::{Callback, ItemOnTarget, Selector, Storage, Trigger};
     Callback {
         key: SACRIFICE.into(), quest: QUEST.into(), trigger: Trigger::Use,
-        selector: Selector { position: None, unique: None, action: None,
+        selector: Selector { position_aliases:Vec::new(), position: None, unique: None, action: None,
             appearance: Some(SACRIFICIAL_PLATE_APPEARANCE) },
         lever: None, reversible: false, passages: Vec::new(), teleport: None,
         storage: vec![Storage { track: ACCESS_TRACK.into(), minimum: 0, maximum: 3, set: 1, preserve: false }],

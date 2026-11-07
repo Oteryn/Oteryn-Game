@@ -436,3 +436,20 @@ validate_closed correctly rejects any reopening or noncanonical activation
 (PG75.39s). It has been reverted. Continue with one canonical once-only
 activation callback matching both evidenced physical basement positions;
 preserve all closed activation/counter validation and original source tests.
+
+Canonical activation implementation: bounded selector.position_aliases (at
+most7 alternates plus required primary) for StepIn/StepOut only. USE, native
+fixed-position rules, duplicates, primary duplication, invalid floors and
+unpositioned aliases fail closed. Empty aliases serialize exactly as before.
+Canonical elvenbane-basement-entry remains the sole -1->0 activation key,
+matching original32598,31641,z8 and actual landing32598,31653,z8. It also earns
+own first-basementphase1 in that same write. Remove the separate own basement
+callback; keep all native-run/counter closure validation unchanged. Existing
+cohort entry therefore cannot become active without earning own basementphase1.
+Fresh QENGINE2@5a6de28c1 and PC3/PC4 had no selector-alias implementation to reuse.
+Physical landing witness: content/world/placements/region-z08-x127-y123.b3:1,
+SHA25634d7229b0638876931954aced076b0dd62e600bf073ec0bd0f02ed47f9f5549a;
+original source floor rules world/src/map/floor.rs:295-317. Source geometry and
+per-origin credit remain unchanged. Generator qengine_access.py write/check
+and scoped native43write+43check passed. Alias6cases and closed goal2tests pass.
+Current PG activation proof, clippy and fresh pins remain pending WIP.

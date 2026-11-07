@@ -10,6 +10,7 @@ pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-cal
 // Static quest batches and the code-built source callbacks share this bound.
 pub const MAX_CALLBACKS: usize = 512;
 pub const MAX_EFFECTS: usize = 8;
+pub const MAX_SELECTOR_POSITIONS: usize = 8;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(deny_unknown_fields)]
@@ -37,9 +38,25 @@ pub use effects::{
 #[serde(deny_unknown_fields)]
 pub struct Selector {
     pub position: Option<Position>,
+    /// Alternate step tiles share one canonical callback/activation identity.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub position_aliases: Vec<Position>,
     pub unique: Option<u16>,
     pub action: Option<u16>,
     pub appearance: Option<u16>,
+}
+
+impl Selector {
+    #[must_use]
+    pub fn matches_position(&self, position: Position) -> bool {
+        if self.position_aliases.len() >= MAX_SELECTOR_POSITIONS {
+            return false;
+        }
+        match self.position {
+            Some(primary) => primary == position || self.position_aliases.contains(&position),
+            None => self.position_aliases.is_empty(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -176,6 +193,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
         let unique_offerings: BTreeSet<_> = callback.offerings.iter().map(|o| o.position).collect();
         let unique_passages: BTreeSet<_> = callback.passages.iter().map(|p| p.position).collect();
         let unique_storage: BTreeSet<_> = callback.storage.iter().map(|s| &s.track).collect();
+        let alias_positions: BTreeSet<_> = selector.position_aliases.iter().copied().collect();
         if !super::valid_quest_key(&callback.key)
             || !super::valid_quest_key(&callback.quest)
             || !keys.insert(&callback.key)
@@ -183,6 +201,16 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 && selector.unique.is_none()
                 && selector.action.is_none())
             || selector.position.is_some_and(|p| !valid_pos(p))
+            || selector.position_aliases.len() >= MAX_SELECTOR_POSITIONS
+            || alias_positions.len() != selector.position_aliases.len()
+            || selector
+                .position_aliases
+                .iter()
+                .any(|p| !valid_pos(*p) || Some(*p) == selector.position)
+            || (!selector.position_aliases.is_empty()
+                && (selector.position.is_none()
+                    || callback.trigger == Trigger::Use
+                    || callback.native_rule.is_some()))
             || callback.teleport.is_some_and(|p| !valid_pos(p))
             || !effects::valid(callback)
             || unique_offerings.len() != callback.offerings.len()
@@ -334,6 +362,59 @@ mod batch4_tests;
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn bounded_position_aliases_share_one_step_callback() -> Result<(), String> {
+        let document: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/shared-access-callbacks.json"
+        ))
+        .map_err(|error| error.to_string())?;
+        let callback = document["callbacks"]
+            .as_array()
+            .ok_or("callbacks")?
+            .iter()
+            .find(|c| c["key"] == "oteryn:quest-callback/elvenbane-basement-entry")
+            .ok_or("activation")?
+            .clone();
+        let mut input = serde_json::json!({"schema":1,"callbacks":[callback]});
+        let alias = serde_json::json!({"x":32598,"y":31653,"floor":-8});
+        input["callbacks"][0]["selector"]["position_aliases"] = serde_json::json!([alias.clone()]);
+        assert!(
+            parse(&input.to_string()).is_ok(),
+            "bounded alternate source position must retain one callback identity"
+        );
+        for bad in 0..6 {
+            let mut value = input.clone();
+            match bad {
+                0 => {
+                    value["callbacks"][0]["selector"]["position_aliases"] =
+                        serde_json::json!([alias.clone(), alias.clone()])
+                }
+                1 => {
+                    value["callbacks"][0]["selector"]["position_aliases"] =
+                        serde_json::json!([{"x":1,"y":1,"floor":1}])
+                }
+                2 => value["callbacks"][0]["selector"]["position"] = serde_json::Value::Null,
+                3 => value["callbacks"][0]["trigger"] = "use".into(),
+                4 => {
+                    value["callbacks"][0]["selector"]["position_aliases"] = serde_json::Value::Array(
+                        (0..MAX_SELECTOR_POSITIONS)
+                            .map(|x| serde_json::json!({"x":x,"y":1,"floor":-8}))
+                            .collect(),
+                    )
+                }
+                _ => {
+                    value["callbacks"][0]["selector"]["position_aliases"] =
+                        serde_json::json!([value["callbacks"][0]["selector"]["position"].clone()])
+                }
+            }
+            assert!(
+                parse(&value.to_string()).is_err(),
+                "invalid alias case{bad}"
+            );
+        }
+        Ok(())
+    }
+
     use super::*;
 
     #[test]

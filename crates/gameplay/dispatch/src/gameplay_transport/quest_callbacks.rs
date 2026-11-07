@@ -88,12 +88,15 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
         return false;
     };
     let selector = &callback.selector;
-    selector.position.is_none_or(|p| tile(p) == pos)
-        && (selector.position.is_none()
-            || selector.unique.is_some()
-            || selector.action.is_some()
-            || selector.appearance.is_some()
-            || ordinal == 0)
+    selector.matches_position(Position {
+        x: pos.x,
+        y: pos.y,
+        floor: pos.floor,
+    }) && (selector.position.is_none()
+        || selector.unique.is_some()
+        || selector.action.is_some()
+        || selector.appearance.is_some()
+        || ordinal == 0)
         && map
             .facts
             .quest_callback_matches(key, selector.unique, selector.action, None)

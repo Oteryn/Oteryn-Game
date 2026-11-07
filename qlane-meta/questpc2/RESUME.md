@@ -1,31 +1,31 @@
-# Active r2: canonical basement activation alias WIP, continue immediately
+# Active r2: canonical selector aliases compiling WIP, continue
 
-Actual source exploration newassert PG180006 RED75.36s: own basementphase1
-but defender cohort phase absent (expected0). Attempt to set cohort0 from
-widerange-1..1 was correctly refused at boot (PG75.39s, native goal run may
-reopen), and has been REVERTED. Keep native_kill_goals::validate_closed intact:
-activation must be exactly canonical goal.activation with Between(-1,-1)->0.
-Next implement/reuse bounded physical selector aliases for the SAME canonical
-activation callback, original32598,31641,z8 plus actual hole landing32598,31653,z8;
-compose own first-basementphase1 there and retain once-only native/counter caps.
-Do not weaken guard or add a foreign counter writer. First check fresh qengine
-and peer implementations. New exploration test requires nativephase0 and own
-phase1 same xmin/revision, then all original ladder/poison/Dragon route asserts.
+Bounded StepIn/StepOut position_aliases (max7+primary) implemented generically;
+no USE/native-fixed aliases, invalid/duplicate/overbound/unpositioned rejected.
+Canonical old elvenbane-basement-entry now matches original41 and actual53
+source basement positions and atomically earns ownphase1+nativephase0. Separate
+own BASEMENT callback removed. NativeGoalvalidate_closed untouched; no foreign
+counter or reopening writer. qengine_access repo generation write/check PASS;
+native-only43write+43check PASS. Quests+dispatch check78s, alias6case unit and
+closed native-goal2tests PASS. Source6PGRED75.36s before implementation (no
+nativephase) and rejected broaderange attempt75.39s remains reverted.
 
-Quest+dispatch check41.79s passes. Fixture Atomicity/Exploration early returns
-now drop owner/authority/seal and call h.cleanup before preserving result;
-actual runtime cleanup regression still pending. Found35idle own route DBs,
-removed33older10min withoutFORCE or active connections; ledger
-/tmp/questpc2-idle-route-database-cleanup.json reclaimed~1.4GiB. This cleanup
-is needed because prior early returns skipped h.cleanup. No test weakened.
+RIGHT NOW: session88247 native build/PGrun
+/tmp/questpc2-basement-selector-alias-green-pg.log. Before everypush fetch own
+branch/merge if moved. Push at least15min; current snapshot explicitly WIP.
+After native build startsPG, cache helper restore clippy, run changed quests+
+dispatch alltarget/allfeatures-Dwarnings; stage/pin-refresh/check repo tools;
+run original native goal2case and atomic2case focused regressions including
+new early-return h.cleanup behavior. Marker/duration realPG required. Keep
+source stable during build. Then commit/push green immediately, continue real
+wire6defenders and atomic7-item treasure/source exit/journal whole Elvenbane.
+No final while owned27 remain. Shared mechanisms are our job; no deferrals.
 
-Reusable audited cache helper /tmp/questpc2-cache-slice.py supports hold,
-prune,restore; archive index /tmp/questpc2-cache-latest.json. Latest positive
-43990facf terminal2case executable archived by hold terminal-green-before-basement;
-current exe is activation-attempt RED75.39. Native old/new READY may need prune;
-heavy compiler sequential, clippy restore only after native build exits.
-Restore inactive check/clippy via helper and preserve latest READY. No profiles,
-broad clean, binary commits or credential reads. Next push within15minutes.
+Cache helper /tmp/questpc2-cache-slice.py, index /tmp/questpc2-cache-latest.json;
+restore clippy only after native rustc exits; latest completed READY retained.
+33idle own route DBs older10minutes removed withoutFORCE; active/recent kept.
+Early-return fixture cleanup source now fixed, runtime regression pending.
+Range1240–1244 used;1245–1249 free. Canonical QENGINE0999 unchanged/no QBASE.
 
 Branch claude/happy-davinci-ijz3wy-questpc2; AUTHORING. Owned29:
 2QUALIFIED (Desert/Annihilator),27UNFINISHED,6world titles SKIPPED_OTHER_LANE

@@ -24,6 +24,11 @@ def callbacks(factory, position):
         row = factory(key, 'authored.elvenbane_quest', 'step_in', '', at=position(*at))
         row['sources'] = sources
         row['storage'] = [dict(track=PHASE, minimum=before, maximum=before, set=after)]
+        if after == 0:
+            # Both physical basement approaches share the closed once-only activation.
+            row['selector']['position_aliases'] = [position(32598, 31653, 8)]
+            row['storage'].append(dict(track='oteryn:quest-progress/elvenbane/phase',
+                                       minimum=0, maximum=0, set=1))
         if after == 1:
             row['storage'] += [dict(track='oteryn:quest-progress/elvenbane/native-defenders/' + name,
                                     minimum=1, maximum=1, set=1, preserve=True)

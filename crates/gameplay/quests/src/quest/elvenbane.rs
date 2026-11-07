@@ -4,7 +4,6 @@ use super::world_callbacks::{Callback, Position, Selector, Storage, Trigger};
 use super::{QuestStateCatalogue, QuestTrack, kill_objectives as rules};
 
 pub const POISON: &str = "oteryn:quest-progress/elvenbane/poison-crossed";
-pub const BASEMENT: &str = "oteryn:quest-callback/elvenbane/basement";
 pub const CROSS_POISON: &str = "oteryn:quest-callback/elvenbane/poison";
 pub const DRAGON_FLOOR: &str = "oteryn:quest-callback/elvenbane/dragon-floor";
 
@@ -34,15 +33,13 @@ pub(crate) fn callbacks() -> Vec<Callback> {
         preserve,
     };
     [
-        (BASEMENT, Position {x:32598, y:31653, floor:-8},
-            vec![storage(rules::PHASE,0,1,false)]),
         (CROSS_POISON, Position {x:32589, y:31644, floor:-6},
             vec![storage(rules::PHASE,1,1,true),storage(POISON,0,1,false)]),
         (DRAGON_FLOOR, Position {x:32588, y:31642, floor:-5},
             vec![storage(rules::PHASE,1,2,false),storage(POISON,1,1,true)]),
     ].into_iter().map(|(key, position, storage)| Callback {
         key:key.into(), quest:rules::QUEST.into(), trigger:Trigger::StepIn,
-        selector:Selector {position:Some(position),unique:None,action:None,appearance:None},
+        selector:Selector { position_aliases:Vec::new(),position:Some(position),unique:None,action:None,appearance:None},
         lever:None,reversible:false,passages:Vec::new(),teleport:None,storage,
         minimum_level:None,experience:None,monk_reward:None,offerings:Vec::new(),
         item_on_target:None,return_on_failure:false,failure_message:None,success_message:None,

@@ -14,7 +14,7 @@ pub(crate) fn callback() -> Callback {
         key: ENTER.into(),
         quest: QUEST.into(),
         trigger: Trigger::StepIn,
-        selector: Selector { position:None, unique:None, action:Some(15998), appearance:None },
+        selector: Selector { position_aliases:Vec::new(), position:None, unique:None, action:Some(15998), appearance:None },
         lever:None,
         reversible:false,
         passages:Vec::new(),

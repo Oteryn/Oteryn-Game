@@ -356,7 +356,14 @@
         },
         "unique": null,
         "action": null,
-        "appearance": null
+        "appearance": null,
+        "position_aliases": [
+          {
+            "x": 32598,
+            "y": 31653,
+            "floor": -8
+          }
+        ]
       },
       "lever": null,
       "reversible": false,
@@ -368,6 +375,12 @@
           "minimum": -1,
           "maximum": -1,
           "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/elvenbane/phase",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
         }
       ],
       "offerings": [],
