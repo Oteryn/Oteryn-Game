@@ -137,8 +137,8 @@ pub(super) async fn dev_client<'a>(
         )
         .into());
     }
-    // Negotiated owners push their initial state after the snapshot. Retain
-    // exact event, value, ordering and revision expectations across read batches.
+    // Negotiated owners refresh independently after the snapshot. Retain exact
+    // values, per-domain revisions and contiguous wire sequences across read batches.
     let mut expected = Vec::new();
     if dev_client
         .selected_capabilities()
@@ -214,11 +214,7 @@ pub(super) async fn dev_client<'a>(
     })
     .await
     .map_err(|_| "initial client pushes timed out")??;
-    dev_client_expect(
-        "initial ambient sound, channel list and party icons",
-        &events,
-        &expected,
-    )?;
+    expect_initial_pushes(&events, &expected)?;
     dev_client_door_scenario(
         &mut dev_client,
         &dev_client_snapshot,
@@ -286,6 +282,35 @@ pub(super) async fn dev_client<'a>(
     }
     evidence("dev_client released=terminal admissions=4");
 
+    Ok(())
+}
+
+fn expect_initial_pushes(
+    events: &[oteryn_dev_client::SessionEvent],
+    expected: &[oteryn_dev_client::SessionEvent],
+) -> TestResult {
+    use oteryn_dev_client::SessionEvent;
+    dev_client_expect("initial push count", &events.len(), &expected.len())?;
+    let mut remaining = expected.to_vec();
+    for (index, event) in events.iter().enumerate() {
+        // Chat and visibility both tick at 250 ms; Serene can publish ambience
+        // too. Match owners without inventing a total order between their timers.
+        let owner = remaining
+            .iter()
+            .position(|candidate| {
+                std::mem::discriminant(candidate) == std::mem::discriminant(event)
+            })
+            .ok_or("unexpected or duplicate initial server push")?;
+        let mut expected = remaining.remove(owner);
+        let sequence = u64::try_from(index)? + 1;
+        match &mut expected {
+            SessionEvent::Presentation(delta) => delta.server_sequence = sequence,
+            SessionEvent::ChatChannelList(delta) => delta.server_sequence = sequence,
+            SessionEvent::PartyIcons(delta) => delta.server_sequence = sequence,
+            _ => return Err("unexpected bootstrap owner in qualification".into()),
+        }
+        dev_client_expect("initial negotiated owner delta", event, &expected)?;
+    }
     Ok(())
 }
 
@@ -470,4 +495,108 @@ async fn dev_client_door_scenario(
         )?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod initial_pushes_tests {
+    use super::*;
+    use oteryn_dev_client::{AppliedDelta, EntityRef, SessionEvent};
+    use oteryn_protocol_oteryn::presentation::{PresentationEvent, PresentationEventKind};
+
+    fn expected() -> Vec<SessionEvent> {
+        vec![
+            SessionEvent::Presentation(AppliedDelta {
+                server_sequence: 1,
+                base_revision: 0,
+                new_revision: 1,
+                value: vec![PresentationEvent {
+                    decision_ordinal: 1,
+                    emission_ordinal: 1,
+                    kind: PresentationEventKind::AmbientSound { cue_id: 0 },
+                }],
+            }),
+            SessionEvent::ChatChannelList(AppliedDelta {
+                server_sequence: 2,
+                base_revision: 1,
+                new_revision: 2,
+                value: Default::default(),
+            }),
+            SessionEvent::PartyIcons(AppliedDelta {
+                server_sequence: 3,
+                base_revision: 1,
+                new_revision: 2,
+                value: vec![oteryn_protocol_oteryn::party_skull::PartyIcon {
+                    entity: EntityRef {
+                        identity: [1; 16],
+                        generation: 1,
+                    },
+                    shield: 0,
+                    skull: 0,
+                }],
+            }),
+        ]
+    }
+
+    fn sequence(event: &mut SessionEvent, value: u64) {
+        match event {
+            SessionEvent::Presentation(delta) => delta.server_sequence = value,
+            SessionEvent::ChatChannelList(delta) => delta.server_sequence = value,
+            SessionEvent::PartyIcons(delta) => delta.server_sequence = value,
+            _ => {}
+        }
+    }
+
+    #[test]
+    fn initial_pushes_accept_independent_owner_interleavings() -> TestResult {
+        let expected = expected();
+        for order in [
+            [0, 1, 2],
+            [1, 0, 2],
+            [0, 2, 1],
+            [1, 2, 0],
+            [2, 0, 1],
+            [2, 1, 0],
+        ] {
+            let mut actual: Vec<_> = order
+                .into_iter()
+                .map(|index| expected[index].clone())
+                .collect();
+            for (index, event) in actual.iter_mut().enumerate() {
+                sequence(event, u64::try_from(index)? + 1);
+            }
+            expect_initial_pushes(&actual, &expected)?;
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn initial_pushes_reject_missing_duplicate_extra_or_corrupt_owner_state() {
+        let expected = expected();
+        assert!(expect_initial_pushes(&expected[..2], &expected).is_err());
+        let mut extra = expected.clone();
+        extra.push(expected[0].clone());
+        assert!(expect_initial_pushes(&extra, &expected).is_err());
+        let mut duplicate = expected.clone();
+        duplicate[1] = expected[0].clone();
+        sequence(&mut duplicate[1], 2);
+        assert!(expect_initial_pushes(&duplicate, &expected).is_err());
+        let mut wrong_sequence = expected.clone();
+        sequence(&mut wrong_sequence[1], 3);
+        assert!(expect_initial_pushes(&wrong_sequence, &expected).is_err());
+        let mut wrong_revision = expected.clone();
+        if let SessionEvent::ChatChannelList(delta) = &mut wrong_revision[1] {
+            delta.base_revision = 0;
+        }
+        assert!(expect_initial_pushes(&wrong_revision, &expected).is_err());
+        let mut wrong_cue = expected.clone();
+        if let SessionEvent::Presentation(delta) = &mut wrong_cue[0] {
+            delta.value[0].kind = PresentationEventKind::AmbientSound { cue_id: 25 };
+        }
+        assert!(expect_initial_pushes(&wrong_cue, &expected).is_err());
+        let mut wrong_icon = expected.clone();
+        if let SessionEvent::PartyIcons(delta) = &mut wrong_icon[2] {
+            delta.value[0].shield = 1;
+        }
+        assert!(expect_initial_pushes(&wrong_icon, &expected).is_err());
+    }
 }
