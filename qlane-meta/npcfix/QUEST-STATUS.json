@@ -3166,8 +3166,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/86",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-26",
+        "postgres_red_seconds": 51.08,
+        "postgres_green_seconds": 118.8,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Edgar-Ellen",
@@ -3189,8 +3195,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/89",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-26",
+        "postgres_red_seconds": 51.08,
+        "postgres_green_seconds": 118.8,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Elane",
@@ -3198,8 +3210,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/91",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-26",
+        "postgres_red_seconds": 51.08,
+        "postgres_green_seconds": 118.8,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Emiliana",
@@ -3234,8 +3252,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/116",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-26",
+        "postgres_red_seconds": 51.08,
+        "postgres_green_seconds": 118.8,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Ferryman Kamil (Meluna)",
@@ -3270,8 +3294,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/128",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-26",
+        "postgres_red_seconds": 51.08,
+        "postgres_green_seconds": 118.8,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Gamel",
@@ -3279,8 +3309,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/129",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-26",
+        "postgres_red_seconds": 51.08,
+        "postgres_green_seconds": 118.8,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Ghost Captain",
@@ -3298,8 +3334,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/147",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-27",
+        "postgres_red_seconds": 73.91,
+        "postgres_green_seconds": 199.58,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Grof, The Guard",
@@ -3316,8 +3358,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/153",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-27",
+        "postgres_red_seconds": 73.91,
+        "postgres_green_seconds": 199.58,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Hanna",
@@ -3325,8 +3373,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/159",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-27",
+        "postgres_red_seconds": 73.91,
+        "postgres_green_seconds": 199.58,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Hans Gender",
@@ -3343,8 +3397,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/160",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-27",
+        "postgres_red_seconds": 73.91,
+        "postgres_green_seconds": 199.58,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Harsky",
@@ -3352,8 +3412,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/162",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-27",
+        "postgres_red_seconds": 73.91,
+        "postgres_green_seconds": 199.58,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Hector The Mentor",
@@ -3361,8 +3427,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/165",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-27",
+        "postgres_red_seconds": 73.91,
+        "postgres_green_seconds": 199.58,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Henricus",
@@ -4039,15 +4111,42 @@
       "npc": "Tarak (Inner)",
       "town": "Yalahar",
       "audit_status": "DIFF",
-      "work": "Retail placement authored. Monument Tower50 route; passage/trip keyword aliases; displayed name Tarak.",
+      "work": "Monument Tower50/aliases and exact Tarak display retained. Canonical blocked boat target uses the existing bounded radius3 admission order before payment; actual arrival skips protected fallback cells, retains authored target, persists the admitted shoreline and replays without another debit.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/302; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:2596; content/services/travel/travel-00000-00058.json:1#/records/50",
-      "test": "npcfix_fading_and_retained_placements_postgres; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "test": "npcfix_fading_and_retained_placements_postgres; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals; npcfix_retail_services_and_greeting_match_the_audited_repairs; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals (canonical blocked-boat/house/shore regression)",
       "status": "QUALIFIED",
       "qualification": {
         "batch": "retail-travel-and-placement-qualification-24",
         "postgres_red_seconds": 47.16,
         "postgres_green_seconds": 134.5,
-        "scope": "Existing authored retail placements with exact native identity plus matching previously green PostgreSQL travel components; full source repair declarations were independently checked by the content catalogue test."
+        "scope": "Monument Tower50/aliases and exact Tarak display retained. Canonical blocked boat target uses the existing bounded radius3 admission order before payment; actual arrival skips protected fallback cells, retains authored target, persists the admitted shoreline and replays without another debit.",
+        "landing_red": {
+          "log": "/tmp/npcfix-evidence/paid-landing-red.log",
+          "duration_seconds": 160.38,
+          "sha256": "c8a25be6127b7d9854d83b5f781db6584f419bdfbbf560e6522700a6c1f8a9d0",
+          "marker": "POSTGRES_STARTED TRAVEL npc_paid_travel"
+        },
+        "landing_green": {
+          "log": "/tmp/npcfix-evidence/paid-landing-green.log",
+          "duration_seconds": 169.91,
+          "sha256": "32d19c88cd7adaaf8e7c2d758ad9711208e885ed8b979b841502671a29ffb4b8",
+          "marker": "POSTGRES_STARTED TRAVEL npc_paid_travel"
+        }
+      },
+      "runtime_landing_issue": {
+        "source_cell": [
+          32939,
+          31182,
+          7
+        ],
+        "source_items": [
+          4602,
+          1756
+        ],
+        "known_ground_walkable": false,
+        "cause": "paid_travel.rs exact-cell preflight rejects a target for which arrival already supports NPC-0 radius3 fallback",
+        "active_test": "npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals; all18 routes retained, actual water target plus protected nearer-house candidate and admitted shore",
+        "state": "RESOLVED"
       }
     },
     {
@@ -5469,7 +5568,33 @@
       },
       "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at 0fc546da09e407e4d346cab34c89c355f1005f2b; details in verification_components.latest_checked_source. Source identity checked before each slice",
       "test_code_commit": "7a0d7c335f0404915a92497b8c74f0b567422967",
-      "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
+      "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring.",
+      "qualified_entries": [
+        "Captain Seahorse",
+        "Captain Max",
+        "Tarak (Sunken)"
+      ],
+      "additional_runtime_gate": {
+        "source_cell": [
+          32939,
+          31182,
+          7
+        ],
+        "source_items": [
+          4602,
+          1756
+        ],
+        "known_ground_walkable": false,
+        "cause": "paid_travel.rs exact-cell preflight rejects a target for which arrival already supports NPC-0 radius3 fallback",
+        "active_test": "npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals; all18 routes retained, actual water target plus protected nearer-house candidate and admitted shore",
+        "state": "RESOLVED"
+      },
+      "landing_proof": {
+        "log": "/tmp/npcfix-evidence/paid-landing-green.log",
+        "duration_seconds": 169.91,
+        "sha256": "32d19c88cd7adaaf8e7c2d758ad9711208e885ed8b979b841502671a29ffb4b8",
+        "marker": "POSTGRES_STARTED TRAVEL npc_paid_travel"
+      }
     },
     {
       "name": "Four retail NPC actors with explicit L2 quest ownership",
@@ -5503,6 +5628,87 @@
         "digest": "483097258d0597917f5e52d30f3f19d884d8bb8bcd43990ef63923efdcd855c9",
         "world": "oteryn"
       }
+    },
+    {
+      "name": "native-paid-travel-bounded-landing",
+      "state": "QUALIFIED",
+      "entries": [
+        "Tarak (Inner)",
+        "Tarak (Sunken)",
+        "Captain Max",
+        "Captain Seahorse"
+      ],
+      "scope": "Generic paid preflight agrees with the existing NPC-0 bounded placement search. Authored house/closed-door targets still refuse; every fallback candidate is pinned, walkable and outside houses/closed doors. Authored destination and price are unchanged; actual placement is persisted once.",
+      "red": {
+        "log": "/tmp/npcfix-evidence/paid-landing-red.log",
+        "duration_seconds": 160.38,
+        "sha256": "c8a25be6127b7d9854d83b5f781db6584f419bdfbbf560e6522700a6c1f8a9d0",
+        "marker": "POSTGRES_STARTED TRAVEL npc_paid_travel"
+      },
+      "green": {
+        "log": "/tmp/npcfix-evidence/paid-landing-green.log",
+        "duration_seconds": 169.91,
+        "sha256": "32d19c88cd7adaaf8e7c2d758ad9711208e885ed8b979b841502671a29ffb4b8",
+        "marker": "POSTGRES_STARTED TRAVEL npc_paid_travel"
+      },
+      "regressions": "All18 original S10T routes, transaction rollback, exact price/confirmation, actual arrival, durable position, one fee/receipt per occurrence and replay retained. Tarak uses its canonical non-walkable water target, an adversarial nearer-house candidate and admitted shore. Existing fallback iterator body byte-identical; only exported for reuse.",
+      "checks": "fmt PASS; changed entities and dispatch check alltargets/allfeatures PASS; same crates strict Clippy -D warnings PASS. No World terrain/pin/generated-file change."
+    },
+    {
+      "name": "retail-population-qualification-26",
+      "state": "QUALIFIED",
+      "entries": [
+        "Eddy",
+        "Edowir",
+        "Elane",
+        "Ferryman Kamil",
+        "Galuna",
+        "Gamel"
+      ],
+      "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed.",
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 51.08,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-26-red.log",
+        "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
+      },
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 118.8,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-26-green.log",
+        "cumulative_cases": 150
+      },
+      "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at 9bca5359f4c44b5cf5219600385df8a0017866a2; details in verification_components.latest_checked_source. Source identity checked before each slice",
+      "test_code_commit": "9bca5359f4c44b5cf5219600385df8a0017866a2",
+      "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
+    },
+    {
+      "name": "retail-population-qualification-27",
+      "state": "QUALIFIED",
+      "entries": [
+        "Gorn",
+        "Guide Luke",
+        "Hanna",
+        "Hardek",
+        "Harsky",
+        "Hector The Mentor"
+      ],
+      "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed.",
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 73.91,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-27-red.log",
+        "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
+      },
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 199.58,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-27-green.log",
+        "cumulative_cases": 156
+      },
+      "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at 9bca5359f4c44b5cf5219600385df8a0017866a2; details in verification_components.latest_checked_source. Source identity checked before each slice",
+      "test_code_commit": "9bca5359f4c44b5cf5219600385df8a0017866a2",
+      "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
     }
   ],
   "owner_constraints": {
@@ -6118,14 +6324,14 @@
     }
   },
   "counts": {
-    "QUALIFIED": 160,
+    "QUALIFIED": 172,
     "PENDING": 8,
     "EXCLUDED": 24,
-    "AUTHORED; QUALIFICATION PENDING": 125,
+    "AUTHORED; QUALIFICATION PENDING": 113,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
   },
-  "last_publication": "Book World generic floor source and3actor batch fully green; committing then merging latest concurrent evidence for fast-forward push.",
+  "last_publication": "Green Book World source9e616eba0 joined with all incoming qualifications and safe landing sourcece893d6b1; fast-forward push now.",
   "active_bulk_batch": {
     "state": "GREEN and PUSHED4d34d0efd; do not redo",
     "red": "PostgreSQL case npcfix-reward-workshop-soul-orbs FAILED95.56852851s; exact yes left2 orbs instead of0. POSTGRES_STARTED and POSTGRES_CASE_COMPLETED retained in soul-orbs-red-retry.log. Prior No space left build did not execute tests and is not RED proof.",
@@ -6414,5 +6620,46 @@
       "path": "qlane-meta/qengine2/LANE-L1.json",
       "rule": "Whole quest is explicitly owned L1 and not claimed qualified by this NPCFIX batch."
     }
+  },
+  "active_landing_batch": {
+    "name": "native-paid-travel-bounded-landing",
+    "state": "QUALIFIED",
+    "entries": [
+      "Tarak (Inner)",
+      "Tarak (Sunken)",
+      "Captain Max",
+      "Captain Seahorse"
+    ],
+    "scope": "Generic paid preflight agrees with the existing NPC-0 bounded placement search. Authored house/closed-door targets still refuse; every fallback candidate is pinned, walkable and outside houses/closed doors. Authored destination and price are unchanged; actual placement is persisted once.",
+    "red": {
+      "log": "/tmp/npcfix-evidence/paid-landing-red.log",
+      "duration_seconds": 160.38,
+      "sha256": "c8a25be6127b7d9854d83b5f781db6584f419bdfbbf560e6522700a6c1f8a9d0",
+      "marker": "POSTGRES_STARTED TRAVEL npc_paid_travel"
+    },
+    "green": {
+      "log": "/tmp/npcfix-evidence/paid-landing-green.log",
+      "duration_seconds": 169.91,
+      "sha256": "32d19c88cd7adaaf8e7c2d758ad9711208e885ed8b979b841502671a29ffb4b8",
+      "marker": "POSTGRES_STARTED TRAVEL npc_paid_travel"
+    },
+    "regressions": "All18 original S10T routes, transaction rollback, exact price/confirmation, actual arrival, durable position, one fee/receipt per occurrence and replay retained. Tarak uses its canonical non-walkable water target, an adversarial nearer-house candidate and admitted shore. Existing fallback iterator body byte-identical; only exported for reuse.",
+    "checks": "fmt PASS; changed entities and dispatch check alltargets/allfeatures PASS; same crates strict Clippy -D warnings PASS. No World terrain/pin/generated-file change."
+  },
+  "book_world_merged_validation": {
+    "source_commit": "9e616eba0",
+    "incoming_commit": "ce893d6b1",
+    "incoming_reusable_mechanism": "9bca5359f bounded safe landing before NPC travel charge, shared existing radius-three order, House and door refusal preserved",
+    "postgres": {
+      "passed": 2,
+      "duration_seconds": 115.61,
+      "actors": 159,
+      "markers": true,
+      "log": "book-world-merged-actors-travel-pg.log",
+      "proof": "Actual merged code: native actor manifest plus atomic paid travel/replay/landing/injected failure/refusal/count invariants"
+    },
+    "check": "PASS changed dispatch/entities alltargets/allfeatures8m28s",
+    "clippy": "PASS -D warnings changed dispatch/entities4m54s",
+    "world_pin": "483097258d0597917f5e52d30f3f19d884d8bb8bcd43990ef63923efdcd855c9 unchanged by travel-only merge"
   }
 }
