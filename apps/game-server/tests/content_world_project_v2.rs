@@ -30,6 +30,7 @@ fn candidate() -> ProjectV2Draft {
             // Deliberately unordered: the writer normalizes canonical identity order.
             declarations: vec![
                 ProjectV2Declaration::Npc {
+                    visibility: Default::default(),
                     identity: identity("npc.courier"),
                     presentation: Some(presentation.clone()),
                     behavior: None,
@@ -75,6 +76,7 @@ fn candidate() -> ProjectV2Draft {
                     fields: vec![],
                 },
                 ProjectV2Declaration::Quest {
+                    visibility: Default::default(),
                     identity: identity("quest.courier"),
                     fields: vec![ProjectV2CandidateField {
                         field_path: "oteryn:source.stage-id".into(),
@@ -1011,6 +1013,7 @@ fn wiki_coverage_candidate() -> ProjectV2Draft {
 
     draft.state.declarations.extend([
         ProjectV2Declaration::Area {
+            visibility: Default::default(),
             identity: identity("area.thais"),
             parent: None,
             fields: vec![],
