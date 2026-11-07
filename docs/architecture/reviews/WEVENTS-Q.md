@@ -97,3 +97,16 @@ and pin check passed: inputs `bdf720e5cce527a9ca45b09d196d878ec12a1a6de47a3d28dd
 World `d5e52c7a0ef24bf6aa7b78926fd0806e43eb731ac69b10783f20c9f10dcd88e5`,
 31101950 bytes. Strict clippy/content checks continue after this immediate
 owner-requested publication; their final result will be recorded separately.
+
+Qualification follow-up for the first three rows: all nine production libraries
+passed strict `cargo clippy --locked --all-features --lib -- -D warnings`
+(3m52s). The earlier broader all-target attempt exhausted the workspace disk;
+unused compiler caches were removed and the required changed-library check
+completed. Focused content checks passed: 123 selected integration content tests
+(4.77 s) and 5 World-package tests (76.65 s). These are scoped content targets,
+not a workspace test run. No full nextest or full PG suite was run.
+
+Spring native membership scan found exactly six current B3 item14098 dragon
+nests. Candidate coordinates and region SHA256 values are retained in the
+session scratch record `/tmp/wevents-native-spring-nests.json`; authored seasonal
+policy will bind those existing objects rather than infer empty map positions.

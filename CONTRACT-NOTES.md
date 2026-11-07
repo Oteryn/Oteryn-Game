@@ -31,3 +31,27 @@ Unrecoverable rules use explicit conservative policy rather than deferred work.
 
 Detailed validation and subsequent event decisions belong in
 `docs/architecture/reviews/WEVENTS-Q.md` and this task's WORLDCHG-Q rows.
+
+## Spring into Life implementation policy
+
+Recovered donor facts: Crystal `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`,
+`data/items/items.xml:33011-33052`, SHA256
+`c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb`,
+defines dragon nest 14757 and surprise nests 14750/14759.
+`data/scripts/actions/items/surprise_bags.lua:6,17-27,31`, SHA256
+`66ba74a2b736e0631776ac7674c21a6838ebd5ecd25d9804b7f9613fefe11e1e`,
+uses 14759: eleven uniformly selected categories, with quantities uniformly
+1–10 for candy and five coloured eggs, and quantity one for chocolate, hydra
+egg, blue/red surprise bags and phoenix egg. The existing reward-bag owner
+already implements this rule; reuse it rather than add another random grant.
+
+The ten-minute investigation budget found no donor calendar, nest hatch clock
+or merchant implementation. Conservative rules selected for implementation:
+April 16 server save through April 23 server save, one hour to hatch an admitted
+native nest, and one free participation reward per Character per season.
+Reuse Rosemarie's existing source-bound merchant population during this window;
+paid surprise nests cost one crystal coin each and cannot bypass participation
+requirements for the free reward. These calendar/hatch/merchant choices are
+Oteryn policy, not claims about donor code. April as the month is independently
+corroborated by
+https://github.com/s2ward/talesoftibia.com/blob/9bc90ae10ee2f0c6ea21063b4188a402e378e4bf/site/json/events.json .
