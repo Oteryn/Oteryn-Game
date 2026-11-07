@@ -125,8 +125,14 @@ fn claim_case(
             )?;
         let generation = controller.active().ok_or("active generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
-        let world = retained_world(chest, native)?;
-        let _ = (choices, appearance);
+        // Doublet binds the real ground entry (ordinal zero). Other source
+        // chests reuse the production dispatch fixture; the companion Python
+        // check verifies every UID/appearance against the shipped region files.
+        let world = if claim == "oteryn:reward-claim.kv.doublet" {
+            retained_world(chest, native)?
+        } else {
+            super::quest_callbacks::source_world_choices(chest, choices, appearance)?
+        };
         let start = world.start();
         let report = crate::content::world_reward_claims::bind_embedded_reward_claims(
             world.base().as_ref(),
