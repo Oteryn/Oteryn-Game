@@ -737,3 +737,15 @@ item remains explicit: source teleport 1949 at `(33567,32758,15)` has donor
 destination `(0,0,0)` and requires the encounter exit owner; it is not silently
 promoted to ordinary terrain or an invented destination. Three Python tests
 pass, including red-before-green item-source substitution coverage.
+
+### Source-qualified Primal map facts
+
+`qualify_primal_region` consumes only the exact generated 510-tile document and
+its explicit parent coordinate frame/map revision. It provides scoped collision
+facts without issuing an artifact pin, activated room or mutable instance. The
+source teleport remains `Unqualified` until the exit owner is composed. The new
+Rust test `primal_region_admits_source_placements_and_refuses_pending_teleport`
+failed before the qualifier existed and passes after implementation (0.04s),
+covering boss/return walkability, pending teleport refusal and document
+substitution. This is a source-admission slice; production template integration
+and the real-dispatch W10 chain remain incomplete.
