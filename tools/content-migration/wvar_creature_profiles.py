@@ -82,3 +82,34 @@ def admit(root, generated):
     for key, path in [('creature_profiles', CREATURES), ('presentation_profiles', PRESENTATIONS)]:
         manifest[key]['sha256'] = hashlib.sha256(generated[path]).hexdigest()
     generated[MANIFEST] = canonical(manifest)
+    import wvar_item_profiles
+    if (root/wvar_item_profiles.REWARD_PATH).is_file():
+        wvar_item_profiles.admit_recipe_reward_closure(root,generated)
+    else:
+        admit_reward_loot(root,generated)
+
+
+def admit_reward_loot(root,generated):
+    """Only the two pinned Crystal actors replace their incorrectly imported loot."""
+    import wvar_item_profiles
+    overlay=wvar_item_profiles.overlay(root)
+    path='tools/content-schema/native-gameplay/loot-tables.json'
+    document=json.loads(generated.get(path,(root/path).read_bytes()))
+    replacements={r['identity']['key']:copy.deepcopy(r) for r in overlay['loot_tables']}
+    expected={'oteryn:loot.creature.bibby_bloodbath','oteryn:loot.creature.giant_spider_wyda'}
+    if set(replacements)!=expected:raise ValueError('WVAR_REWARD_LOOT_TABLE_SET')
+    seen=set()
+    for i,row in enumerate(document['tables']):
+        key=row['identity']['key']
+        if key in replacements:document['tables'][i]=replacements[key];seen.add(key)
+    if seen!=expected:raise ValueError('WVAR_REWARD_LOOT_TABLE_MISSING')
+    keys={f'oteryn:item.tibia.i{i}' for i in wvar_item_profiles.REWARD_IDS}
+    for row in document['items']:
+        if row['item']['key'] in keys:row['materializable']=True
+    import wvar_corpse_items
+    corpses={item:capacity for item,capacity,_,_ in wvar_corpse_items.CHAIN}
+    for row in document['items']:
+        for item,capacity in corpses.items():
+            if row['item']['key']==f'oteryn:item.tibia.i{item}':
+                row['materializable']=True;row['container_capacity']=capacity
+    generated[path]=('{"schema":'+json.dumps(document["schema"])+',\n'+',\n'.join(json.dumps(key)+':[\n'+',\n'.join(json.dumps(row,sort_keys=True,separators=(",",":"),ensure_ascii=False) for row in document[key])+'\n]' for key in ["creature_loot","tables","items"])+'}\n').encode()

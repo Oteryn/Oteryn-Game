@@ -488,6 +488,45 @@ mod tests {
     }
 
     #[test]
+    fn wvar_spider_web_barrier_is_explicit_and_return_lands_beside_it() {
+        let definition = oteryn_gameplay_world_change::variants::definitions()
+            .expect("definitions")
+            .iter()
+            .find(|d| d.key == "spider_nest")
+            .expect("spider");
+        let mut day = DailyWorldChanges::roll(7, 1, 1, |_| u64::MAX);
+        day.variants = Default::default();
+        day.variants.0[definition.slot] = Some(1);
+        day.variants.1 = oteryn_gameplay_world_change::variants::recipe_digest();
+        let closed = boot_physical(&day);
+        let entrance = TilePos {
+            x: 32817,
+            y: 32280,
+            floor: -7,
+        };
+        assert!(
+            closed
+                .base()
+                .tile(entrance.x, entrance.y, entrance.floor)
+                .expect("ground")
+                .walkable(),
+            "the Item is decorative; the source barrier supplies collision"
+        );
+        assert!(!closed.enterable(entrance));
+        let return_landing = TilePos {
+            x: 32818,
+            y: 32280,
+            floor: -7,
+        };
+        assert!(closed.enterable(return_landing));
+        day.variants.0[definition.slot] = Some(0);
+        let opened = boot_physical(&day);
+        assert!(opened.enterable(entrance));
+        let landing = definition.variants[0].portals[0].destination;
+        assert_ne!(landing, definition.variants[0].spawns[0].position);
+    }
+
+    #[test]
     fn wvar_closed_entrances_keep_walkable_exit_landings() {
         let mut day = DailyWorldChanges::roll(7, 1, 1, |_| u64::MAX);
         day.variants = Default::default();

@@ -7080,5 +7080,2115 @@
         ]
       }
     ]
+  },
+  {
+    "slot": 6,
+    "key": "jungle_camp",
+    "chance_permille": 500,
+    "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world.otbm sha256:c0549a4c94e1706861252a6cd7db7a3545cdd2f96259f405c5481e45d02a3f85; https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world-monster.xml lines:50694,50695 sha256:f90e82203a112c9068d4ed123e3e5bb4c1b9743f2c2d3bcb12039ac8ebd9ad4e; https://tibia.fandom.com/index.php?curid=76243&oldid=887148",
+    "assumption": "Wiki identifies Hunter/Dworc alternatives and conditional Arthom.500permille,49:1:50 weights and reusing the exact Hunter camp's pads for Dworc membership are conservative assumptions; rare boss replaces one guard rather than overlaps it.",
+    "variants": [
+      {
+        "key": "hunter",
+        "weight": 49,
+        "layers": [],
+        "tiles": [
+          {
+            "position": [
+              32930,
+              32753,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                1020,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32926,
+              32756,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                1020,
+                null,
+                null
+              ],
+              [
+                1063,
+                null,
+                null
+              ]
+            ]
+          }
+        ],
+        "tags": [],
+        "spawns": [
+          {
+            "position": [
+              32930,
+              32753,
+              7
+            ],
+            "creature": "oteryn:creature.hunter",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32926,
+              32756,
+              7
+            ],
+            "creature": "oteryn:creature.hunter",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          }
+        ],
+        "npcs": [],
+        "portals": []
+      },
+      {
+        "key": "hunter_arthom",
+        "weight": 1,
+        "layers": [],
+        "tiles": [
+          {
+            "position": [
+              32930,
+              32753,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                1020,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32926,
+              32756,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                1020,
+                null,
+                null
+              ],
+              [
+                1063,
+                null,
+                null
+              ]
+            ]
+          }
+        ],
+        "tags": [],
+        "spawns": [
+          {
+            "position": [
+              32930,
+              32753,
+              7
+            ],
+            "creature": "oteryn:creature.arthom_the_hunter",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32926,
+              32756,
+              7
+            ],
+            "creature": "oteryn:creature.hunter",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          }
+        ],
+        "npcs": [],
+        "portals": []
+      },
+      {
+        "key": "dworc",
+        "weight": 50,
+        "layers": [],
+        "tiles": [
+          {
+            "position": [
+              32930,
+              32753,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                1020,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32926,
+              32756,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                1020,
+                null,
+                null
+              ],
+              [
+                1063,
+                null,
+                null
+              ]
+            ]
+          }
+        ],
+        "tags": [],
+        "spawns": [
+          {
+            "position": [
+              32930,
+              32753,
+              7
+            ],
+            "creature": "oteryn:creature.dworc_fleshhunter",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32926,
+              32756,
+              7
+            ],
+            "creature": "oteryn:creature.dworc_venomsniper",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          }
+        ],
+        "npcs": [],
+        "portals": []
+      }
+    ]
+  },
+  {
+    "slot": 7,
+    "key": "warpath",
+    "chance_permille": 373,
+    "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world.otbm sha256:c0549a4c94e1706861252a6cd7db7a3545cdd2f96259f405c5481e45d02a3f85; https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world-monster.xml lines:tile-coordinate witnesses in authored recipe sha256:f90e82203a112c9068d4ed123e3e5bb4c1b9743f2c2d3bcb12039ac8ebd9ad4e; https://tibia.fandom.com/index.php?curid=76270&oldid=944151",
+    "assumption": "W15 fixes373permille. The retained Femor camp and Bibby anchor are used; other possible camp locations are not invented. Wiki inside roster2Berserkers/3Warlords/oneLeader drives six distinct guard sources. Two nearby guard pads are inferred. Bibby requires all six guard identities, not six farmed kills. The sourced24hour personal entry clock restarts on early revisit through an actual movement-step Quest receipt. A bounded rectangular palisade1597 and adjacent entry/return pads are conservative admission geometry; guards and Bibby remain at their declared source/inferred cells. Palisade source Crystal items.xml:3528, SHA2568a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509. First Bibby credited kill grants the sourced achievement; return is independent of cooldown.",
+    "variants": [
+      {
+        "key": "east_femor_hills",
+        "weight": 1,
+        "layers": [],
+        "tiles": [
+          {
+            "position": [
+              32620,
+              31825,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                9529,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32622,
+              31830,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                9524,
+                null,
+                null
+              ],
+              [
+                3119,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32620,
+              31830,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                9524,
+                null,
+                null
+              ],
+              [
+                4534,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32625,
+              31830,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                9527,
+                null,
+                null
+              ],
+              [
+                6218,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32625,
+              31828,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                9527,
+                null,
+                null
+              ],
+              [
+                4538,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32628,
+              31831,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                4402,
+                null,
+                null
+              ],
+              [
+                4541,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32618,
+              31823,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32618,
+              31824,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32618,
+              31825,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32618,
+              31826,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32618,
+              31827,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32618,
+              31828,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32618,
+              31829,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32618,
+              31830,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32618,
+              31831,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32618,
+              31832,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32618,
+              31833,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32619,
+              31823,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32619,
+              31833,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32620,
+              31823,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32620,
+              31833,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32621,
+              31823,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32621,
+              31833,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32622,
+              31823,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32622,
+              31833,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32623,
+              31823,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32623,
+              31833,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32624,
+              31823,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32624,
+              31833,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32625,
+              31823,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32625,
+              31833,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32626,
+              31823,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32626,
+              31833,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32627,
+              31823,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32627,
+              31833,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32628,
+              31823,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32628,
+              31833,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32629,
+              31823,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32629,
+              31833,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32630,
+              31823,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32630,
+              31824,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32630,
+              31825,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32630,
+              31826,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32630,
+              31827,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32630,
+              31828,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32630,
+              31829,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32630,
+              31830,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32630,
+              31831,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32630,
+              31832,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32630,
+              31833,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ],
+              [
+                1597,
+                null,
+                null
+              ]
+            ]
+          }
+        ],
+        "tags": [],
+        "spawns": [
+          {
+            "position": [
+              32620,
+              31825,
+              7
+            ],
+            "creature": "oteryn:creature.orc_warlord",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32622,
+              31830,
+              7
+            ],
+            "creature": "oteryn:creature.orc_warlord",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32620,
+              31830,
+              7
+            ],
+            "creature": "oteryn:creature.orc_warlord",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32625,
+              31830,
+              7
+            ],
+            "creature": "oteryn:creature.orc_berserker",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32625,
+              31828,
+              7
+            ],
+            "creature": "oteryn:creature.orc_berserker",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32628,
+              31831,
+              7
+            ],
+            "creature": "oteryn:creature.orc_leader",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32622,
+              31826,
+              7
+            ],
+            "creature": "oteryn:creature.bibby_bloodbath",
+            "respawn_ms": 1768000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE",
+            "after_kills": 6
+          }
+        ],
+        "npcs": [],
+        "portals": [
+          {
+            "position": [
+              32617,
+              31828,
+              7
+            ],
+            "destination": [
+              32619,
+              31828,
+              7
+            ],
+            "appearance": 1949,
+            "action": null,
+            "unique": null,
+            "premium": false,
+            "promoted": false,
+            "min_level": 0,
+            "exit": false
+          },
+          {
+            "position": [
+              32619,
+              31827,
+              7
+            ],
+            "destination": [
+              32617,
+              31827,
+              7
+            ],
+            "appearance": 1949,
+            "action": null,
+            "unique": null,
+            "premium": false,
+            "promoted": false,
+            "min_level": 0,
+            "exit": true
+          }
+        ],
+        "barriers": [
+          [
+            32618,
+            31823,
+            7
+          ],
+          [
+            32618,
+            31824,
+            7
+          ],
+          [
+            32618,
+            31825,
+            7
+          ],
+          [
+            32618,
+            31826,
+            7
+          ],
+          [
+            32618,
+            31827,
+            7
+          ],
+          [
+            32618,
+            31828,
+            7
+          ],
+          [
+            32618,
+            31829,
+            7
+          ],
+          [
+            32618,
+            31830,
+            7
+          ],
+          [
+            32618,
+            31831,
+            7
+          ],
+          [
+            32618,
+            31832,
+            7
+          ],
+          [
+            32618,
+            31833,
+            7
+          ],
+          [
+            32619,
+            31823,
+            7
+          ],
+          [
+            32619,
+            31833,
+            7
+          ],
+          [
+            32620,
+            31823,
+            7
+          ],
+          [
+            32620,
+            31833,
+            7
+          ],
+          [
+            32621,
+            31823,
+            7
+          ],
+          [
+            32621,
+            31833,
+            7
+          ],
+          [
+            32622,
+            31823,
+            7
+          ],
+          [
+            32622,
+            31833,
+            7
+          ],
+          [
+            32623,
+            31823,
+            7
+          ],
+          [
+            32623,
+            31833,
+            7
+          ],
+          [
+            32624,
+            31823,
+            7
+          ],
+          [
+            32624,
+            31833,
+            7
+          ],
+          [
+            32625,
+            31823,
+            7
+          ],
+          [
+            32625,
+            31833,
+            7
+          ],
+          [
+            32626,
+            31823,
+            7
+          ],
+          [
+            32626,
+            31833,
+            7
+          ],
+          [
+            32627,
+            31823,
+            7
+          ],
+          [
+            32627,
+            31833,
+            7
+          ],
+          [
+            32628,
+            31823,
+            7
+          ],
+          [
+            32628,
+            31833,
+            7
+          ],
+          [
+            32629,
+            31823,
+            7
+          ],
+          [
+            32629,
+            31833,
+            7
+          ],
+          [
+            32630,
+            31823,
+            7
+          ],
+          [
+            32630,
+            31824,
+            7
+          ],
+          [
+            32630,
+            31825,
+            7
+          ],
+          [
+            32630,
+            31826,
+            7
+          ],
+          [
+            32630,
+            31827,
+            7
+          ],
+          [
+            32630,
+            31828,
+            7
+          ],
+          [
+            32630,
+            31829,
+            7
+          ],
+          [
+            32630,
+            31830,
+            7
+          ],
+          [
+            32630,
+            31831,
+            7
+          ],
+          [
+            32630,
+            31832,
+            7
+          ],
+          [
+            32630,
+            31833,
+            7
+          ]
+        ]
+      }
+    ],
+    "entry_cooldown": "warpath",
+    "inactive_tiles": [
+      {
+        "position": [
+          32617,
+          31828,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            432,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          32619,
+          31828,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            432,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          32619,
+          31827,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            432,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          32617,
+          31827,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            432,
+            null,
+            null
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "slot": 9,
+    "key": "spider_nest",
+    "chance_permille": 1000,
+    "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world.otbm sha256:c0549a4c94e1706861252a6cd7db7a3545cdd2f96259f405c5481e45d02a3f85; https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world-monster.xml lines:tile-coordinate witnesses in authored recipe sha256:f90e82203a112c9068d4ed123e3e5bb4c1b9743f2c2d3bcb12039ac8ebd9ad4e; https://tibia.fandom.com/index.php?curid=76262&oldid=887154",
+    "assumption": "Exact source GiantSpider pad is conservatively assigned to Mamma; its source surface anchor is the entry and adjacent cave tile the return. Equal open/sealed alternatives and90second respawn are assumptions. Personal third Mamma kill denies subsequent entry; the sealed variant has a physical large-web barrier. Explicit return remains usable after closure; if a shared return has no current selected entrance, the first authored safe surface return is used. The entry arrives on an adjacent dry pad instead of the live boss cell; the persistent return lands beside the closed entry. Three lifetime credited kills deny further entry. Retained appearance12747 is decorative, so an explicit bounded variant barrier uses the existing collision owner rather than inventing solidity for the Item.",
+    "variants": [
+      {
+        "key": "open",
+        "weight": 1,
+        "layers": [],
+        "tiles": [
+          {
+            "position": [
+              32817,
+              32280,
+              8
+            ],
+            "flags": null,
+            "entries": [
+              [
+                355,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32817,
+              32280,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                432,
+                null,
+                null
+              ]
+            ]
+          }
+        ],
+        "tags": [],
+        "spawns": [
+          {
+            "position": [
+              32817,
+              32280,
+              8
+            ],
+            "creature": "oteryn:creature.mamma_longlegs",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          }
+        ],
+        "npcs": [],
+        "portals": [
+          {
+            "exit": false,
+            "position": [
+              32817,
+              32280,
+              7
+            ],
+            "destination": [
+              32816,
+              32280,
+              8
+            ],
+            "premium": false,
+            "promoted": false,
+            "min_level": 0,
+            "appearance": 1949,
+            "action": null,
+            "unique": null
+          },
+          {
+            "exit": true,
+            "position": [
+              32818,
+              32280,
+              8
+            ],
+            "destination": [
+              32818,
+              32280,
+              7
+            ],
+            "premium": false,
+            "promoted": false,
+            "min_level": 0,
+            "appearance": 1949,
+            "action": null,
+            "unique": null
+          }
+        ]
+      },
+      {
+        "key": "sealed",
+        "weight": 1,
+        "layers": [],
+        "tiles": [
+          {
+            "position": [
+              32817,
+              32280,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                4524,
+                null,
+                null
+              ],
+              [
+                12747,
+                null,
+                null
+              ]
+            ]
+          }
+        ],
+        "tags": [],
+        "spawns": [],
+        "npcs": [],
+        "portals": [],
+        "barriers": [
+          [
+            32817,
+            32280,
+            7
+          ]
+        ]
+      }
+    ],
+    "entry_limit": {
+      "track": "oteryn:quest-progress/world-change/spider-nest/credited-kills",
+      "maximum": 3
+    },
+    "inactive_tiles": [
+      {
+        "position": [
+          32818,
+          32280,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            432,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          32816,
+          32280,
+          8
+        ],
+        "flags": null,
+        "entries": [
+          [
+            432,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          32818,
+          32280,
+          8
+        ],
+        "flags": null,
+        "entries": [
+          [
+            432,
+            null,
+            null
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "slot": 11,
+    "key": "lumberjack",
+    "chance_permille": 90,
+    "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world.otbm sha256:c0549a4c94e1706861252a6cd7db7a3545cdd2f96259f405c5481e45d02a3f85; https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world-monster.xml lines:tile-coordinate witnesses in authored recipe sha256:f90e82203a112c9068d4ed123e3e5bb4c1b9743f2c2d3bcb12039ac8ebd9ad4e; https://tibia.fandom.com/index.php?curid=76247&oldid=893906",
+    "assumption": "W15 fixes90permille. Eight exact source stump tiles form the bounded Fields of Glory layer; Chip's nearby source-terrain pad is inferred. Chip\u2192Queen Eloise report ordering and50gold wood sale are wiki-sourced; quantity is conservatively one piece of5901wood for50gold, through the existing NPC trade owner.",
+    "variants": [
+      {
+        "key": "felled_trees",
+        "weight": 1,
+        "layers": [],
+        "tiles": [
+          {
+            "position": [
+              32417,
+              31695,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                4515,
+                null,
+                null
+              ],
+              [
+                7958,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32419,
+              31696,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                4515,
+                null,
+                null
+              ],
+              [
+                7957,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32414,
+              31699,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                4515,
+                null,
+                null
+              ],
+              [
+                7958,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32422,
+              31699,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                4526,
+                null,
+                null
+              ],
+              [
+                7958,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32424,
+              31700,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                4515,
+                null,
+                null
+              ],
+              [
+                7958,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32417,
+              31701,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                4515,
+                null,
+                null
+              ],
+              [
+                7960,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32420,
+              31701,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                4527,
+                null,
+                null
+              ],
+              [
+                7958,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32422,
+              31704,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                4515,
+                null,
+                null
+              ],
+              [
+                7958,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32418,
+              31699,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                4515,
+                null,
+                null
+              ]
+            ]
+          }
+        ],
+        "tags": [],
+        "spawns": [],
+        "npcs": [
+          {
+            "position": [
+              32418,
+              31699,
+              7
+            ],
+            "key": "oteryn:npc.chip"
+          }
+        ],
+        "portals": []
+      }
+    ]
+  },
+  {
+    "slot": 12,
+    "key": "bored",
+    "chance_permille": 82,
+    "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world.otbm sha256:c0549a4c94e1706861252a6cd7db7a3545cdd2f96259f405c5481e45d02a3f85; https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world-monster.xml lines:tile-coordinate witnesses in authored recipe sha256:f90e82203a112c9068d4ed123e3e5bb4c1b9743f2c2d3bcb12039ac8ebd9ad4e; https://tibia.fandom.com/index.php?curid=76211&oldid=1135336; Crystal@201189f871d23597b82caf88fd611454a2ddefb8:data/scripts/creaturescripts/monster/giant_spider_wyda_death.lua:1-12 sha256:4b78cf145d150264e8630ec73381e66b0fa4e1dca855292b93505805acacf0c2",
+    "assumption": "W15 fixes82permille. Existing GreenClaw GiantSpider pad is conservatively assigned to admitted GiantSpiderWyda identity. Its retained onDeath callback supplies the illusion message andSomeone's Bored achievement; no ordinary GiantSpider receives that credit. With no retained executable population count, three adjacent pads around Wyda are the conservative illusion population; the NPC home cell is not occupied. Only the exact20HP Wyda illusion identity grants the sourced top-damage achievement.",
+    "variants": [
+      {
+        "key": "illusion_spider",
+        "weight": 1,
+        "layers": [],
+        "tiles": [
+          {
+            "position": [
+              32766,
+              31974,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                104,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32768,
+              31974,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                104,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              32767,
+              31973,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                104,
+                null,
+                null
+              ]
+            ]
+          }
+        ],
+        "tags": [],
+        "spawns": [
+          {
+            "position": [
+              32766,
+              31974,
+              7
+            ],
+            "creature": "oteryn:creature.giant_spider_wyda",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32768,
+              31974,
+              7
+            ],
+            "creature": "oteryn:creature.giant_spider_wyda",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          },
+          {
+            "position": [
+              32767,
+              31973,
+              7
+            ],
+            "creature": "oteryn:creature.giant_spider_wyda",
+            "respawn_ms": 90000,
+            "multiplicity": "CHANNEL_LOCAL_REPEATABLE"
+          }
+        ],
+        "npcs": [],
+        "portals": []
+      }
+    ]
   }
 ]

@@ -61,7 +61,12 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
                     "nomads",
                     "awash",
                     "down_the_drain",
-                    "river_runs_deep"
+                    "river_runs_deep",
+                    "jungle_camp",
+                    "warpath",
+                    "spider_nest",
+                    "lumberjack",
+                    "bored"
                 ]
                 .contains(&key)
             );
@@ -75,7 +80,7 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
         }
     }
     assert_eq!(ready, 4);
-    assert_eq!(qualified, 7);
+    assert_eq!(qualified, 12);
     for key in [
         "river_runs_deep",
         "spider_nest",

@@ -156,8 +156,10 @@ impl NpcTalkBook {
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
                 "{}\0{}\0{}",
-                crate::content::npc_catalogue::grizzly_shop::book_digest(
-                    model.source_tree_digest()
+                crate::content::npc_catalogue::world_change_shop::book_digest(
+                    &crate::content::npc_catalogue::grizzly_shop::book_digest(
+                        model.source_tree_digest()
+                    )
                 ),
                 dark_trails::TEXT,
                 isle_of_evil::revision_material(),
@@ -192,6 +194,13 @@ impl NpcTalkBook {
                     "Welcome to the Paw and Fur - Hunting Elite. Would you like to join?".into(),
                     "Good hunting!".into(),
                     Some("Ask me about tasks, points, rank, promotion or bosses.".into()),
+                    Vec::new(),
+                )
+            } else if reference.key == "oteryn:npc.chip" {
+                (
+                    "Hello. Ask me about wood or logging.".into(),
+                    "Farewell.".into(),
+                    Some("Ask about logging, or ask to trade wood.".into()),
                     Vec::new(),
                 )
             } else if matches!(

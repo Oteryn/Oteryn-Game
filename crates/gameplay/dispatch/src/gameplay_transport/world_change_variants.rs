@@ -12,6 +12,73 @@ use crate::map::{
 use oteryn_gameplay_world_change::variants;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    async fn world_change_entry_clock(
+        &self,
+        slot: &mut crate::durability::character_revision_sequencer::RevisionSlot,
+        fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        entered: MovementPositionSnapshot,
+    ) -> (bool, bool) {
+        use crate::durability::quest_state::{
+            NativeWorldChangeEntry, QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
+        };
+        use oteryn_gameplay_quests::quest::{QuestRefusal, world_change_entry as rule};
+        let Some(command) = super::quest_callbacks::step_command(
+            actor,
+            session,
+            entered.revision(),
+            self.reset_epoch,
+        ) else {
+            return (false, false);
+        };
+        let source = {
+            let runtime = self.runtime.lock().await;
+            match NativeWorldChangeEntry::from_current_runtime(
+                &runtime,
+                actor,
+                command,
+                entered,
+                self.reset_epoch,
+                fence.item_fence(),
+            ) {
+                Ok(None) => return (true, false),
+                Ok(Some(source)) => source,
+                Err(_) => return (false, false),
+            }
+        };
+        let Some(catalogue) = self.quest_catalogue.as_ref() else {
+            return (false, false);
+        };
+        for transition in [rule::ENTER, rule::REFRESH] {
+            let request = QuestTransitionRequest {
+                transition_key: transition.into(),
+                cause: QuestCause::Step(command),
+            };
+            match slot
+                .commit_world_change_entry(
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request,
+                    std::sync::Arc::clone(catalogue),
+                    source.clone(),
+                )
+                .await
+            {
+                Ok(
+                    QuestTransitionOutcome::Committed(_)
+                    | QuestTransitionOutcome::AlreadyCommitted(_),
+                ) => return (transition == rule::ENTER, true),
+                Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))
+                    if transition == rule::ENTER => {}
+                _ => return (false, false),
+            }
+        }
+        (false, false)
+    }
+
     pub(super) async fn world_change_step(
         &self,
         permit: &SpellLanePermit,
@@ -97,7 +164,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return entered;
             }
         }
-        let destination = self
+        let mut destination = self
             .root
             .world_change_passage(
                 self.character,
@@ -108,6 +175,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &self.premium_coordinator,
             )
             .await;
+        let mut refresh = false;
+        if destination.as_ref().is_ok_and(|value| value.is_some()) {
+            let (allowed, changed) = self
+                .world_change_entry_clock(&mut slot, fence, actor, session, entered)
+                .await;
+            refresh = changed;
+            if !allowed {
+                destination = Ok(None);
+            }
+        }
+        drop(slot);
+        if refresh {
+            self.refresh_quest_session(session, false).await;
+        }
         // Denial returns to the exact previous tile, including a failed current read.
         let target = match destination {
             Ok(Some((x, y, z))) => MovementLocalPosition {

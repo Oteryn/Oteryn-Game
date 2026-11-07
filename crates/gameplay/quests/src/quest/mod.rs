@@ -46,6 +46,7 @@ pub mod threatened_dreams;
 pub mod unnatural_selection;
 pub mod world_callbacks;
 pub mod world_change_kills;
+pub mod world_change_npcs;
 pub mod wrath_sleeping_dragon;
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -990,3 +991,5 @@ mod tests {
         assert!(QuestStateCatalogue::empty("bad revision").is_none());
     }
 }
+
+pub mod world_change_entry;

@@ -24,6 +24,7 @@ mod appearance_revision;
 mod arena_match;
 mod atelier;
 mod world_change_kills;
+mod world_change_npcs;
 
 use std::collections::HashMap;
 use std::future::Future;
@@ -1365,3 +1366,5 @@ mod tests {
         assert!(slots.contains_key(&character(9)) && slots.len() <= 2);
     }
 }
+
+mod world_change_entry;

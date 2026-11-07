@@ -79,7 +79,7 @@ def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
     for key, path in REPOSITORY_PINS.items():
         manifest[key] = {
             "path": Path(os.path.relpath(path, "content")).as_posix(),
-            "sha256": hashlib.sha256((root / path).read_bytes()).hexdigest(),
+            "sha256": hashlib.sha256(generated.get(path, (root / path).read_bytes())).hexdigest(),
         }
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(manifest)
 

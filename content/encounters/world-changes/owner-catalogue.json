@@ -98,7 +98,7 @@
       "key": "bored",
       "title": "Bored Mini World Change",
       "quest": "oteryn:quest.bored_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00100-00199.json",
@@ -115,6 +115,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "bored; source and assumption fields"
         }
       ],
       "source_refs": [
@@ -135,14 +139,16 @@
           "url": "https://tibia.fandom.com/index.php?curid=76211&oldid=1135336"
         }
       ],
-      "reason": "W 15 fixes 82 permille. Wyda and fake-spider components do not identify the active illusion-spider spawn variant or daily availability binding.",
-      "missing_facts": [
-        "W 15 fixes 82 permille. Wyda and fake-spider components do not identify the active illusion-spider spawn variant or daily availability binding."
-      ],
+      "reason": "82‰ illusion membership uses exact20HP giant_spider_wyda, three documented conservative adjacent pads and existing top-damage native kill proof. RealPG proves Someone's Bored, exact once-only illusion MonsterSay across duplicate/settled recapture, ordinary Giant Spider exclusion and stale fences (WVAR_SPIDER_BORED marker). Crystal death callback and source roster citations remain in variants.json; no observational reward probability is presented as a sourced rule.",
+      "missing_facts": [],
       "trigger": {
         "kind": "at_reset",
         "chance_permille": 82,
         "duration": "until_next_reset"
+      },
+      "binding": {
+        "kind": "world_change_variant",
+        "definition": "bored"
       }
     },
     {
@@ -768,7 +774,7 @@
       "key": "jungle_camp",
       "title": "Jungle Camp Mini World Change",
       "quest": "oteryn:quest.authored.jungle_camp_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -781,6 +787,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "jungle_camp; source and assumption fields"
         }
       ],
       "source_refs": [
@@ -801,10 +811,12 @@
           "url": "https://tibia.fandom.com/index.php?curid=76243&oldid=887148"
         }
       ],
-      "reason": "Camp-to-variant membership, daily variant trigger and rare-boss selection rules are not bound.",
-      "missing_facts": [
-        "Camp-to-variant membership, daily variant trigger and rare-boss selection rules are not bound."
-      ]
+      "reason": "500‰ daily admission; Hunter/Arthom/Dworc weights49/1/50 and exact camp pads through the existing variant owner. Source and bounded geometry assumptions are recorded in variants.json and CONTRACT-NOTES.md. Native actor policy/health admission is covered by the real42-creature PostgreSQL case, including actual native reward rows; stored decisions and map projection cover every variant.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "world_change_variant",
+        "definition": "jungle_camp"
+      }
     },
     {
       "key": "kingsday",
@@ -861,7 +873,7 @@
       "key": "lumberjack",
       "title": "Lumberjack Mini World Change",
       "quest": "oteryn:quest.authored.lumberjack_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -878,6 +890,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "lumberjack; source and assumption fields"
         }
       ],
       "source_refs": [
@@ -898,14 +914,16 @@
           "url": "https://tibia.fandom.com/index.php?curid=76247&oldid=893906"
         }
       ],
-      "reason": "W 15 fixes 90 permille. Native felled-tree variant, Chip activation and report/reset mutation are absent.",
-      "missing_facts": [
-        "W 15 fixes 90 permille. Native felled-tree variant, Chip activation and report/reset mutation are absent."
-      ],
+      "reason": "90‰ felled-tree/Chip variant, current exact NPC identity/generation/authored home checks, Chip→Queen report after the change ends and once-only Whistle Blower through existing Quest/account achievement owners. Existing NPC trade debits one5901wood and credits50gold independently of the report. NativePG marker WVAR_LUMBERJACK proves home after wandering, source/alias/current-fence refusals, trade, report and replay; source and conservative Chip pad are documented in variants.json and CONTRACT-NOTES.md.",
+      "missing_facts": [],
       "trigger": {
         "kind": "at_reset",
         "chance_permille": 90,
         "duration": "until_next_reset"
+      },
+      "binding": {
+        "kind": "world_change_variant",
+        "definition": "lumberjack"
       }
     },
     {
@@ -1352,7 +1370,7 @@
       "key": "spider_nest",
       "title": "Spider Nest Mini World Change",
       "quest": "oteryn:quest.authored.spider_nest_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -1365,6 +1383,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "spider_nest; source and assumption fields"
         }
       ],
       "source_refs": [
@@ -1385,10 +1407,12 @@
           "url": "https://tibia.fandom.com/index.php?curid=76262&oldid=887154"
         }
       ],
-      "reason": "Mamma Longlegs spell/base creature exists; active nest spawn membership, entry barrier, daily activation rule and kill progression are not bound.",
-      "missing_facts": [
-        "Mamma Longlegs spell/base creature exists; active nest spawn membership, entry barrier, daily activation rule and kill progression are not bound."
-      ]
+      "reason": "Stored open/sealed selection, explicit web collision barrier, native1800HP Mamma Longlegs and separate safe permanent return. Existing credited-kill Quest owner grants Nestling after three actual deaths and refuses further entries while preserving escape after closure. RealPG proved3×1800HP deaths,6600neutralXP, achievement, entry limit, closed-day return and stale fences (WVAR_SPIDER_BORED marker). Source and conservative safe pads are cited in variants.json and CONTRACT-NOTES.md.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "world_change_variant",
+        "definition": "spider_nest"
+      }
     },
     {
       "key": "spirit_grounds",
@@ -1919,7 +1943,7 @@
       "key": "warpath",
       "title": "Warpath Mini World Change",
       "quest": "oteryn:quest.authored.warpath_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -1936,6 +1960,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "warpath; source and assumption fields"
         }
       ],
       "source_refs": [
@@ -1956,14 +1984,16 @@
           "url": "https://tibia.fandom.com/index.php?curid=76270&oldid=944151"
         }
       ],
-      "reason": "W 15 fixes 373 permille. Native camp/guard/Bibby kill-to-spawn progression, entrance and cooldown binding are absent.",
-      "missing_facts": [
-        "W 15 fixes 373 permille. Native camp/guard/Bibby kill-to-spawn progression, entrance and cooldown binding are absent."
-      ],
+      "reason": "373‰ camp admission; six distinct guard homes (two Berserkers, three Warlords, one Leader) unlock Bibby through the existing spawn prerequisite owner. Existing Quest receipts implement24-hour entry and early-revisit clock reset, with independent safe return. Native Bibby death grants Bibby's Bloodbath. Conservative Femor-only location and bounded palisade are explicit in CONTRACT-NOTES.md; source wiki revision944151 and donor XML citations are retained in variants.json. Focused realPG verifies native step admission/current fences and actual Bibby progression.",
+      "missing_facts": [],
       "trigger": {
         "kind": "at_reset",
         "chance_permille": 373,
         "duration": "until_next_reset"
+      },
+      "binding": {
+        "kind": "world_change_variant",
+        "definition": "warpath"
       }
     }
   ]

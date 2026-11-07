@@ -16,6 +16,16 @@ class WvarCorpseItemsTests(unittest.TestCase):
         return [r['definition'] for path in SHARDS
                 for r in json.loads((ROOT / path).read_bytes())['records']]
 
+    def test_bibby_corpse_is_materializable_with_sourced_capacity_weight_and_decay(self):
+        definitions=self.definitions()
+        wvar.apply_admissions(definitions)
+        by_key={d['identity']['key']:d for d in definitions}
+        for item,capacity,duration,target,weight in [(6008,10,10000,4148,0),(4148,10,300000,4149,120000),(4149,10,300000,4147,120000),(4147,None,60000,None,10000)]:
+            row=by_key[f'oteryn:item.tibia.i{item}']
+            self.assertTrue(row['materializable'])
+            self.assertEqual(row['semantics']['physical']['value']['weight'],{'state':'KNOWN','value':weight})
+            self.assertEqual(row['semantics']['temporal']['value']['duration'],{'state':'KNOWN','value':duration})
+
     def test_only_related_corpse_chain_is_admitted_with_exact_source_decay(self):
         definitions = self.definitions()
         before = copy.deepcopy(definitions)

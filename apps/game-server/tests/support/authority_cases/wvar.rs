@@ -26,7 +26,7 @@ fn wvar_postgres_stored_variants_and_current_passages() -> fixture::TestResult {
             let result = exercise(&h).await;
             h.cleanup().await?;
             result?;
-            println!("WVAR POSTGRES_CASE_COMPLETED batch1 stored-selection,current-passage,all-pairs,premium,promotion,level,stale-session,reset; duration={:?}", start.elapsed());
+            println!("WVAR POSTGRES_CASE_COMPLETED definitions={} stored-selection,current-passage,all-pairs,premium,promotion,level,stale-session,reset; duration={:?}", variants::definitions()?.len(), start.elapsed());
             Ok::<(), Box<dyn std::error::Error>>(())
         }).map_err(fixture::debug)
     })?.join().map_err(|_| "wvar PG thread failed")?.map_err(Into::into)

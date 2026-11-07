@@ -56,6 +56,16 @@ pub(super) fn requires_decision(data: &[u8]) -> Result<bool, Error> {
 }
 
 impl Projection {
+    pub(super) fn barriers(
+        &self,
+    ) -> impl Iterator<Item = oteryn_gameplay_world_change::variants::Position> + '_ {
+        self.manifest.world_changes.iter().flat_map(move |_| {
+            self.daily
+                .variants
+                .active()
+                .flat_map(|variant| variant.barriers.iter().copied())
+        })
+    }
     pub(super) fn world_changes_admitted(&self) -> bool {
         self.manifest.world_changes.is_some()
     }
@@ -436,6 +446,7 @@ pub(super) fn visit(
         .iter()
         .flat_map(|_| daily.variants.portals())
         .map(|p| p.position)
+        .chain(projection.barriers())
         .collect();
     let mut projected = |sector: Sector| {
         let sector = project_sector(manifest, daily, sector)?;

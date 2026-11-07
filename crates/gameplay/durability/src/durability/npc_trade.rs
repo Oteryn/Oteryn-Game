@@ -32,6 +32,7 @@
 
 use oteryn_gameplay_economy::npc_trade as rules;
 mod grizzly;
+mod world_changes;
 pub use oteryn_gameplay_economy::npc_trade::{
     Entry, NpcTradeCoins, NpcTradeLine, NpcTradeLineKind,
 };
@@ -74,11 +75,12 @@ type Result<T> = std::result::Result<T, NpcTradeError>;
 const REQUEST_BINDING_VERSION: u8 = 1;
 mod hireling;
 pub(super) mod sell_hireling;
-pub use hireling::{HirelingTradeSelection,HirelingPackageSelection};
+pub use hireling::{HirelingPackageSelection, HirelingTradeSelection};
 
 #[derive(Default)]
 struct TradeCommitOptions<'a> {
     sell_all: bool,
+    world_npc: Option<super::quest_state::NativeWorldChangeNpc>,
     hireling: Option<hireling::Extra>,
     weights: Option<&'a dyn super::item_transfer::ItemWeightLookup>,
 }
@@ -330,10 +332,14 @@ fn is_coin(definition: &TypedDefinitionRef) -> bool {
 /// backpack declaring a capacity within `GAMEITEM01-CONTAINER-ENTRIES-MAX`. A sell-all names one
 /// unit of a count-1 SELL offer; its total and units come from the plan (`None` here).
 fn validate(request: &NpcTradeRequest, sell_all: bool) -> Result<Option<(u64, u32)>> {
-    validate_sell_bound(request,sell_all,rules::NPC_TRADE_SELL_GOLD_UNITS_MAX)
+    validate_sell_bound(request, sell_all, rules::NPC_TRADE_SELL_GOLD_UNITS_MAX)
 }
 
-fn validate_sell_bound(request:&NpcTradeRequest,sell_all:bool,sell_max:u64)->Result<Option<(u64,u32)>> {
+fn validate_sell_bound(
+    request: &NpcTradeRequest,
+    sell_all: bool,
+    sell_max: u64,
+) -> Result<Option<(u64, u32)>> {
     let cause = &request.cause;
     let priced = if sell_all {
         if cause.side != NpcTradeSide::Sell
@@ -345,11 +351,17 @@ fn validate_sell_bound(request:&NpcTradeRequest,sell_all:bool,sell_max:u64)->Res
         }
         None
     } else {
-        Some(if cause.side==NpcTradeSide::Buy {
-            rules::trade_total(true,request.quantity,request.unit_price)?
+        Some(if cause.side == NpcTradeSide::Buy {
+            rules::trade_total(true, request.quantity, request.unit_price)?
         } else {
-            let total=request.unit_price.checked_mul(u64::from(request.quantity)).ok_or(NpcTradeError::InvalidInput)?;
-            if !(1..=rules::NPC_TRADE_QUANTITY_MAX).contains(&request.quantity) || total>sell_max {return Err(NpcTradeError::InvalidInput)}
+            let total = request
+                .unit_price
+                .checked_mul(u64::from(request.quantity))
+                .ok_or(NpcTradeError::InvalidInput)?;
+            if !(1..=rules::NPC_TRADE_QUANTITY_MAX).contains(&request.quantity) || total > sell_max
+            {
+                return Err(NpcTradeError::InvalidInput);
+            }
             total
         })
     };
@@ -611,8 +623,14 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         request: NpcTradeRequest,
     ) -> Result<NpcTradeOutcome> {
-        self.commit_trade(authority, node, fence, request, TradeCommitOptions::default())
-            .await
+        self.commit_trade(
+            authority,
+            node,
+            fence,
+            request,
+            TradeCommitOptions::default(),
+        )
+        .await
     }
 
     /// Commit one sell-all (NPC-TRADE-SELLALL-1, see the module documentation) of a count-1 SELL
@@ -625,8 +643,41 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         request: NpcTradeRequest,
     ) -> Result<NpcTradeOutcome> {
-        self.commit_trade(authority, node, fence, request, TradeCommitOptions { sell_all: true, ..TradeCommitOptions::default() })
-            .await
+        self.commit_trade(
+            authority,
+            node,
+            fence,
+            request,
+            TradeCommitOptions {
+                sell_all: true,
+                ..TradeCommitOptions::default()
+            },
+        )
+        .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_world_change_npc_trade(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: NpcTradeRequest,
+        source: super::quest_state::NativeWorldChangeNpc,
+        sell_all: bool,
+    ) -> Result<NpcTradeOutcome> {
+        self.commit_trade(
+            authority,
+            node,
+            fence,
+            request,
+            TradeCommitOptions {
+                sell_all,
+                world_npc: Some(source),
+                ..TradeCommitOptions::default()
+            },
+        )
+        .await
     }
 
     async fn commit_trade(
@@ -637,21 +688,34 @@ impl DurabilityRoot {
         request: NpcTradeRequest,
         options: TradeCommitOptions<'_>,
     ) -> Result<NpcTradeOutcome> {
-        let TradeCommitOptions { sell_all, hireling, weights } = options;
-        let (world_id, channel_id) = if let Some(source)=&hireling {
-            source.validate(&request,sell_all)?;
-            (fence.runtime_scope.world_id(),source.channel())
-        } else {scope_of(&fence).map_err(|_|NpcTradeError::AuthorityRejected)?};
-        let hireling_sell=sell_hireling::selected(hireling.as_ref(),&request);
-        let priced = if hireling_sell {sell_hireling::validate(&request,sell_all)?} else {validate(&request, sell_all)?};
+        let TradeCommitOptions {
+            sell_all,
+            hireling,
+            weights,
+            world_npc,
+        } = options;
+        let (world_id, channel_id) = if let Some(source) = &hireling {
+            source.validate(&request, sell_all)?;
+            (fence.runtime_scope.world_id(), source.channel())
+        } else {
+            scope_of(&fence).map_err(|_| NpcTradeError::AuthorityRejected)?
+        };
+        let hireling_sell = sell_hireling::selected(hireling.as_ref(), &request);
+        let priced = if hireling_sell {
+            sell_hireling::validate(&request, sell_all)?
+        } else {
+            validate(&request, sell_all)?
+        };
         let mut binding = request_binding(&fence, world_id, &request, sell_all);
-        if let Some(source)=&hireling {binding=source.bind(binding);}
+        if let Some(source) = &hireling {
+            binding = source.bind(binding);
+        }
         let recovery = authority
             .record_for(self)
             .map_err(|_| NpcTradeError::AuthorityRejected)?;
         let node = node.clone();
 
-        let mut weight_context=weights;
+        let mut weight_context = weights;
         self.try_issue_semantic_pass()?
             .run_with_context(&mut weight_context,move |holder, deadline, weights| {
                 Box::pin(async move {
@@ -701,6 +765,9 @@ impl DurabilityRoot {
                     let current=if let Some(source)=&hireling {source.admit(&mut tx,&node,&fence).await.map_err(|_|DurabilityError::InvalidStoredState)?}
                         else {character_item_fence_is_current(&mut tx,&node,&fence,request.command,fence.character_id,*world_id.as_bytes(),*channel_id.as_bytes()).await?};
                     if !current {
+                        return Ok(Err(NpcTradeError::AuthorityRejected));
+                    }
+                    if !world_changes::permitted(&mut tx,fence,&request,world_npc.as_ref()).await? {
                         return Ok(Err(NpcTradeError::AuthorityRejected));
                     }
                     let house_key=if hireling.is_some() {Some(super::house_hireling::audit::read_key(&mut tx,&fence).await?)} else {None};
@@ -988,7 +1055,7 @@ async fn apply_trade(
     plan: &Plan,
     envelope: &[u8],
     tuple: Type2EventTuple,
-    house_key:Option<&str>,
+    house_key: Option<&str>,
 ) -> std::result::Result<(), DurabilityError> {
     let gold = |value: u64| i64::try_from(value).map_err(|_| DurabilityError::InvalidStoredState);
     let cause = &request.cause;

@@ -288,7 +288,12 @@ fn scan(
     let mut masks: Vec<u8> = Vec::new();
     let mut floors = FloorTable::default();
     let mut refused = None;
-    let mut blocked = BTreeSet::new();
+    let barriers: BTreeSet<_> = daily
+        .into_iter()
+        .flat_map(|projection| projection.barriers())
+        .map(|(x, y, z)| TilePos { x, y, floor: -z })
+        .collect();
+    let mut blocked = barriers.clone();
     let managed_portals: BTreeSet<_> = if daily.is_some_and(|p| p.world_changes_admitted()) {
         oteryn_gameplay_world_change::variants::definitions()
             .into_iter()
@@ -369,6 +374,12 @@ fn scan(
         None => BundleFacts::palette(&visited.manifest, item)?,
     };
     facts.finish();
+    if !facts.seed_variant_barriers(&barriers) {
+        return Err(LoadError::from(oteryn_world_bundle::Error::Format(
+            "variant barrier admission refused".into(),
+        ))
+        .into());
+    }
     Ok((facts, blocked, floors))
 }
 

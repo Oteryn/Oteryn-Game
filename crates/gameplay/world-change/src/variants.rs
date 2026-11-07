@@ -42,6 +42,8 @@ pub struct Definition {
     pub stations: Vec<UseStation>,
     #[serde(default)]
     pub entry_limit: Option<EntryLimit>,
+    #[serde(default)]
+    pub entry_cooldown: Option<String>,
     pub variants: Vec<Variant>,
 }
 
@@ -118,6 +120,8 @@ pub struct Variant {
     pub spawns: Vec<Spawn>,
     pub npcs: Vec<Npc>,
     pub portals: Vec<Portal>,
+    #[serde(default)]
+    pub barriers: Vec<Position>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -201,6 +205,9 @@ pub fn validate(definitions: &[Definition]) -> Result<(), &'static str> {
                     || limit.track.len() > 512
                     || !limit.track.starts_with("oteryn:quest-progress/")
             })
+            || d.entry_cooldown
+                .as_ref()
+                .is_some_and(|key| key != &d.key || key != "warpath" || key.len() > 64)
             || d.stations.len() > 1024
             || d.variants.is_empty()
             || d.variants.len() > 16
@@ -247,6 +254,7 @@ pub fn validate(definitions: &[Definition]) -> Result<(), &'static str> {
                 || v.spawns.len() > 4096
                 || v.npcs.len() > 64
                 || v.portals.len() > 64
+                || v.barriers.len() > 256
             {
                 return Err("invalid world variant recipe");
             }
@@ -257,6 +265,7 @@ pub fn validate(definitions: &[Definition]) -> Result<(), &'static str> {
                 .chain(v.tags.iter().map(|t| t.position))
                 .chain(v.spawns.iter().map(|s| s.position))
                 .chain(v.npcs.iter().map(|n| n.position))
+                .chain(v.barriers.iter().copied())
                 .chain(v.portals.iter().flat_map(|p| [p.position, p.destination]));
             if positions
                 .into_iter()

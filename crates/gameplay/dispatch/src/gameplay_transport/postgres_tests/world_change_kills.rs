@@ -236,12 +236,17 @@ async fn counter(h: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce((SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2),0)").bind(id(41).as_slice()).bind(rules::DOWN_THE_DRAIN.track).fetch_one(&h.pool).await?)
 }
 
-async fn activate(h: &Harness, server: [u8; 32], client: [u8; 32], frame: [u8; 32]) -> TestResult {
+pub(super) async fn activate(
+    h: &Harness,
+    server: [u8; 32],
+    client: [u8; 32],
+    frame: [u8; 32],
+) -> TestResult {
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(server.as_slice()).bind(client.as_slice()).bind(frame.as_slice()).execute(&h.pool).await?;
     Ok(())
 }
-async fn seed_epoch(
+pub(super) async fn seed_epoch(
     h: &Harness,
     world: crate::foundation::WorldId,
     epoch: u64,
@@ -265,6 +270,40 @@ async fn capture(
     ExactActorRef,
     crate::durability::quest_state::world_change_kills::NativeWorldChangeKill,
 )> {
+    capture_creature(
+        owner,
+        actor,
+        session,
+        command,
+        rules::DOWN_THE_DRAIN.creature,
+    )
+    .await
+}
+
+pub(super) async fn capture_creature(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    command: u64,
+    key: &str,
+) -> TestResult<(
+    ExactActorRef,
+    crate::durability::quest_state::world_change_kills::NativeWorldChangeKill,
+)> {
+    let (actor, proof) = capture_native(owner, actor, session, command, key).await?;
+    Ok((actor, proof.ok_or("frozen world kill")?))
+}
+
+pub(super) async fn capture_native(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    command: u64,
+    key: &str,
+) -> TestResult<(
+    ExactActorRef,
+    Option<crate::durability::quest_state::world_change_kills::NativeWorldChangeKill>,
+)> {
     owner.refresh_quest_session(session, false).await;
     let native = owner
         .active_generation
@@ -280,7 +319,6 @@ async fn capture(
             .read_actor_position(actor)
             .map_err(debug)?
             .position();
-        let key = rules::DOWN_THE_DRAIN.creature;
         let policy = runtime.companion_policy(key).map_err(debug)?;
         target = runtime
             .admit_encounter_actor(
@@ -346,10 +384,7 @@ async fn capture(
     else {
         return Err("native queue entry".into());
     };
-    let context = taken
-        .entry()
-        .and_then(|e| e.world_change_kill.clone())
-        .ok_or("frozen world kill")?;
+    let context = taken.entry().and_then(|e| e.world_change_kill.clone());
     drop(taken);
     Ok((target, context))
 }

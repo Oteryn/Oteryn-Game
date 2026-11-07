@@ -182,7 +182,7 @@ pub(super) async fn trade(
         return Err(Box::new(NpcTradeStep::rejected()));
     }
     let now = unix_ms_now();
-    let (offer, coins) = {
+    let (offer, coins, world_npc) = {
         let runtime = admission.runtime.lock().await;
         let index = pinned_index(&runtime, admission.active_generation);
         let offer = match admission.states.npc_conversations.trade_in(
@@ -215,6 +215,30 @@ pub(super) async fn trade(
         if !available {
             return Err(Box::new(NpcTradeStep::rejected()));
         }
+        let world_npc = if crate::content::npc_catalogue::world_change_shop::OFFERS
+            .iter()
+            .any(|r| r.npc == offer.npc_key)
+        {
+            let Ok(states) = admission.states.spell_states.try_lock() else {
+                return Err(Box::new(NpcTradeStep::rejected()));
+            };
+            if states.is_dead(actor) || !states.spell_idle(&runtime, actor, session) {
+                return Err(Box::new(NpcTradeStep::rejected()));
+            }
+            let Some(source) = super::npc_command::world_change_npcs::source(
+                admission,
+                actor,
+                command,
+                intent.npc_actor.identity,
+                intent.npc_actor.generation,
+                &runtime,
+            ) else {
+                return Err(Box::new(NpcTradeStep::rejected()));
+            };
+            Some(source)
+        } else {
+            None
+        };
         let coin = |coin: Coin| {
             let production_key = coin.production_key();
             index
@@ -237,6 +261,7 @@ pub(super) async fn trade(
                 platinum,
                 crystal,
             },
+            world_npc,
         )
     };
     // Crystal npc.cpp590-595: source23721 invokes the actual LootPouch sweep.
@@ -357,7 +382,19 @@ pub(super) async fn trade(
     {
         return Err(Box::new(NpcTradeStep::rejected()));
     }
-    let result = if let Some(selection) = hireling {
+    let result = if let Some(source) = world_npc {
+        admission
+            .root
+            .commit_world_change_npc_trade(
+                admission.character,
+                admission.holder,
+                fence,
+                request,
+                source,
+                sell_all,
+            )
+            .await
+    } else if let Some(selection) = hireling {
         admission
             .root
             .commit_hireling_trade(

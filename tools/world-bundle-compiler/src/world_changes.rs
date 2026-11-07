@@ -80,6 +80,13 @@ pub fn admit(input: &Input<'_>, resolver: &dyn KeyResolver) -> Result<Option<Pac
             check(tile)?;
         }
         for variant in &definition.variants {
+            for position in &variant.barriers {
+                check(&Tile {
+                    position: *position,
+                    flags: None,
+                    entries: Vec::new(),
+                })?;
+            }
             for portal in &variant.portals {
                 check(&Tile {
                     position: portal.position,

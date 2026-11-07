@@ -98,9 +98,11 @@ fn priced(request: &NpcTradeRequest) -> Result<(u64, u32)> {
 
 #[test]
 fn a_sell_all_names_one_unit_of_a_count_one_sell_offer() {
-    assert!(validate(&request(NpcTradeSide::Sell, 1, 99), true)
-        .unwrap()
-        .is_none());
+    assert!(
+        validate(&request(NpcTradeSide::Sell, 1, 99), true)
+            .unwrap()
+            .is_none()
+    );
     let mut count = request(NpcTradeSide::Sell, 1, 1);
     count.offer_count = 2;
     for (name, value) in [
@@ -109,7 +111,11 @@ fn a_sell_all_names_one_unit_of_a_count_one_sell_offer() {
         ("a count of 2", count),
         (
             "a price above the SELL ceiling",
-            request(NpcTradeSide::Sell, 1, rules::NPC_TRADE_SELL_GOLD_UNITS_MAX + 1),
+            request(
+                NpcTradeSide::Sell,
+                1,
+                rules::NPC_TRADE_SELL_GOLD_UNITS_MAX + 1,
+            ),
         ),
     ] {
         assert!(
@@ -290,7 +296,15 @@ fn bundled_buy_and_sell_plans_encode_purchase_quantity_and_actual_item_units() {
                 )
                 .unwrap(),
             };
-            let message = trade_message(&fence, world, channel, &id(4), &value, (quantity, total, false), &plan);
+            let message = trade_message(
+                &fence,
+                world,
+                channel,
+                &id(4),
+                &value,
+                (quantity, total, false),
+                &plan,
+            );
             assert_eq!(
                 (
                     message.quantity,

@@ -555,6 +555,8 @@ mod tests;
 mod wrath_sleeping_dragon;
 
 pub mod world_change_kills;
+pub(super) mod world_change_npcs;
+pub use world_change_npcs::NativeWorldChangeNpc;
 mod writer;
 use storage::*;
 
@@ -566,3 +568,6 @@ pub(super) async fn inquisition_blessing_eligible(
     Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.the_inquisition_quest' AND track_key='oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline' AND value=25)")
         .bind(character.as_bytes().as_slice()).fetch_one(connection).await?)
 }
+
+pub mod world_change_entry;
+pub use world_change_entry::NativeWorldChangeEntry;
