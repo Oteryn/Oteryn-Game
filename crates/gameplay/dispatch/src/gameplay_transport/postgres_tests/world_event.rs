@@ -40,10 +40,14 @@ fn world_event_postgres_real_dispatch_reset_restart_and_fences() -> TestResult {
 }
 
 pub(super) fn scenario(epochs: u64) -> TestResult {
+    scenario_with_consumers(epochs, false)
+}
+
+pub(super) fn scenario_with_consumers(epochs: u64, consumers: bool) -> TestResult {
     run(async move |admin| {
         reset();
         let h =
-            Harness::create_with_admission_seed(admin, "world_event_dispatch", true, false).await?;
+            Harness::create_with_admission_seed(admin, "world_event_dispatch", !consumers, false).await?;
         let world = WorldId::decode(&id(42)).map_err(debug)?;
         let channel = ChannelId::decode(&id(43)).map_err(debug)?;
         assert_eq!(h.root.active_world_event_epoch(world).await?, None);
@@ -116,6 +120,8 @@ pub(super) fn scenario(epochs: u64) -> TestResult {
         event_fixture::admit(&h, epochs + 1).await?;
         let mut deps = Dependencies::new()?;
         deps.room = room.clone();
+        if consumers { deps.combat_room = Some(room.clone()); }
+
         planned_world_reset::reset_fixture::set_runtime(
             &mut deps,
             world,
@@ -123,6 +129,7 @@ pub(super) fn scenario(epochs: u64) -> TestResult {
             &pin,
             epochs + 1,
         )?;
+        let channel_pin = deps.runtime.lock().await.content_pin().clone();
         let actor = {
             let mut runtime = deps.runtime.lock().await;
             let reservation = runtime
@@ -138,6 +145,13 @@ pub(super) fn scenario(epochs: u64) -> TestResult {
         item_fence.scope_ownership_generation =
             ScopeOwnershipGeneration::new(epochs + 1).map_err(debug)?;
         deps.admitted.item_fence = Some(item_fence);
+        if consumers {
+            let mut runtime = deps.runtime.lock().await;
+            runtime.initialize_pinned_test_position(actor, crate::foundation::MovementLocalPosition { x: 2, y: 11, floor: -7 }).map_err(debug)?;
+            runtime.bind_attacker_lease(actor, deps.admitted.game_session_id,
+                crate::foundation::CharacterLease::new(crate::foundation::CharacterId::decode(&id(41)).map_err(debug)?, 2).map_err(debug)?).map_err(debug)?;
+        }
+
         let mut admitted = deps.admitted;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = controller.active();
@@ -148,6 +162,10 @@ pub(super) fn scenario(epochs: u64) -> TestResult {
             .await?
             .ok_or("active epoch")?;
         deps.initialize(&owner).await;
+        if consumers {
+            super::qworld::consumers::qualify(&h, &mut owner, &mut admitted, actor, channel_pin, room, epochs).await?;
+        }
+
         owner
             .runtime
             .lock()

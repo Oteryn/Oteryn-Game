@@ -690,3 +690,16 @@ Source kill thresholds, schedules, and exact quest action gates for the other
 listed world changes have not yet been established; no threshold or dialogue
 text is inferred from a title alone. These require source evidence before title
 qualification, while the reusable engine implementation proceeds here.
+
+### QWORLD consumer verification, 2026-11-07
+- Real reset occurrence 4 -> native rat kill settlement -> world counter -> fenced
+  quest completion and active/inactive travel quote -> admitted world-event wire
+  response and restart: focused PostgreSQL case passed in 55.96 seconds.
+- Persisted active/inactive snapshots -> source-compiled Fury Gates layers and
+  retained exits, Their Master's Voice fungus boundaries, and Grimvale native
+  spawn/death/respawn -> repeat snapshot: focused PostgreSQL case passed in
+  128.74 seconds.
+- The generic rat-cull quest and travel route prove reusable consumers, not
+  title-specific NPC/quest completion. Counter replay coverage will be strengthened
+  to replay a first kill before a two-kill threshold; saturation at one cannot
+  independently detect an accidental duplicate increment.
