@@ -27,7 +27,7 @@ mod boss_dialogue;
 #[path = "grizzly_npc/progression.rs"]
 mod progression;
 #[path = "grizzly_npc/questpc8_campaign.rs"]
-mod questpc8_campaign;
+pub(super) mod questpc8_campaign;
 #[path = "grizzly_npc/shop.rs"]
 mod shop;
 #[path = "grizzly_npc/wire.rs"]

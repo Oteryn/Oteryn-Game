@@ -29,6 +29,7 @@ fn snapshot(seed: u8, active: &[u8], revision: u64) -> TaskSnapshot {
         character: id(seed),
         lease_generation: 2,
         observed_revision: revision,
+        objective_keys: Vec::new(),
         active_tasks: active.to_vec(),
     }
 }

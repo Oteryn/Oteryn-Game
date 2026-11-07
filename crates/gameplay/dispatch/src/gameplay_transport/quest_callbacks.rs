@@ -97,6 +97,9 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     // A position-registered USE acts on the resolved object the player clicked;
     // its native placement may be above ground. STEP still selects the floor.
     selector.position.is_none_or(|p| tile(p) == pos)
+        && selector
+            .ordinal
+            .is_none_or(|expected| expected == u16::from(ordinal))
         && (selector.position.is_none()
             || selector.unique.is_some()
             || selector.action.is_some()

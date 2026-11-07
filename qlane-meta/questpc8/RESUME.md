@@ -9,7 +9,8 @@ Author: blakinio <75369544+blakinio@users.noreply.github.com>. Preserve the
 owner-specified co-author and session trailers from the current task and git log.
 
 Active L7 scope is LANE-L7.json: 23 entries, three qualified elsewhere (skip),
-one qualified here (Killing in the Name of...), 19 remain in authoring. Historical
+two qualified here (Killing in the Name of... and Braindeath), 18 remain in
+authoring. Historical
 non-L7 rows in QUEST-STATUS.json are not additional active scope. Shared engine
 features are our job, with qengine2 reuse checked before new implementation.
 
@@ -30,7 +31,7 @@ four-state lever 27.42s. All print POSTGRES_CASE_COMPLETED. Four reward units an
 on all six changed crates, fmt, generator check and pin refresh/check pass.
 World digest remains 2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968.
 Additional checks pass: NPC reward conversations 1, floor routing 13, content
-integration 123 and world repository 5. No Cargo job remains active. Detailed commands,
+integration 123 and world repository 5. No Cargo job remained active at the prior checkpoint. Detailed commands,
 log digests and retained RED evidence are in campaign-validation.json.
 
 Environment started and PostgreSQL is available. Source
@@ -39,8 +40,17 @@ old incremental cache exhausted disk and was safely cleared. Run large Rust
 builds, world pin compilation and world repository tests serially (otherwise
 combined peak memory can kill the dispatch compiler). No full PG/nextest suite.
 
-Next: finish native programmes and world reward/kill bindings, starting with
-Braindeath and the authored placement candidates. Detailed researched next-engine
+Incoming 28a7715f7 adds and qualifies Braindeath through reusable death
+objectives, native world reward/Premium participants and authored selectors. Its
+PG proof is38.439s, with source checks and independent review. This newer merge
+has passed merged revalidation: Braindeath25.801730527s, hunting116.451671655s,
+4 reward units,16 world units,9 capture units, check, strict Clippy and fmt.
+See cloud-braindeath-proof.json and /tmp/questpc8-braindeath-merge-*.log. Preserve both this
+work and the ordered hunting programme. The previous reconciliation commit
+2ab818fac could not push because the remote advanced.
+
+Next: finish the remaining native programmes and bindings; avoid redoing the
+completed Braindeath slice. Remote RESUME says Tinder Box work is starting. Detailed researched next-engine
 and PG RED design is in /tmp/questpc8-next-engine-plan.md (scratch only, not a new
 contract). Braindeath native right coffin: (32546,31522,11), appearance1983,
 ordinal1, no UID in committed map. Crystal source:
@@ -49,10 +59,11 @@ Chosen rewards: red backpack2867, great health potion239 x2, platinum3035 x13;
 do not add the source's rope/shovel/mana. Three stages: explore Beregar lava
 passage, real Braindeath death, correct coffin completion; Premium required.
 
-Extend the same fenced writer and MINT participant for world USE, with real
-world selectors and no invented NPC. Preserve existing wrappers, add typed
-participants for Premium and reward admission, and a forward migration for USE
-reward evidence. General kill capture belongs to the existing frozen death
-queue, with phase revision guards. Seal world reward/eligibility values in the
-quest definition hash, as already done for NPC reward plans. Material freeze and
+The incoming slice already extends the fenced writer/MINT for world USE and
+Premium, and adds death objectives to the existing frozen queue. Reuse these
+owners for further work. Preserve ordered programme/capture guards and seal
+world value/eligibility plans as for NPC rewards. Exact remote refs must be
+fetched with explicit source:tracking refspecs; a plain named-branch fetch can
+update only FETCH_HEAD and leave origin tracking stale. qengine2 is now refreshed
+to059364f38; newer native payment support is available before writing our own. Material freeze and
 independent exact-head review remain ahead; no readiness/main/deployment claim.

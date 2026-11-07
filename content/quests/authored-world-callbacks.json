@@ -1,0 +1,109 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "quest": "oteryn:quest.authored.braindeath_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:braindeath:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=38390&oldid=322750",
+        "Crystal 201189f871d23597b82caf88fd611454a2ddefb8 data-global/startup/tables/chest.lua:2709-2715; UID6283 at 32546,31522,11."
+      ],
+      "key": "oteryn:quest-callback/authored-braindeath",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32545,
+          "y": 31522,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/braindeath/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/braindeath/kills",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "premium_required": true
+    },
+    {
+      "quest": "oteryn:quest.authored.braindeath_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:braindeath:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=38390&oldid=322750",
+        "Crystal 201189f871d23597b82caf88fd611454a2ddefb8 data-global/startup/tables/chest.lua:2709-2715; UID6283 at 32546,31522,11."
+      ],
+      "key": "oteryn:quest-callback/authored-braindeath-coffin",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32546,
+          "y": 31522,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 1983,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/braindeath/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/braindeath/kills",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "premium_required": true,
+      "completes": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i2867",
+          "count": 1,
+          "contents": [
+            {
+              "item": "oteryn:item.tibia.i239",
+              "count": 2
+            },
+            {
+              "item": "oteryn:item.tibia.i3035",
+              "count": 13
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

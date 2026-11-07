@@ -346,7 +346,7 @@
       "scope": "complete chosen eleven-stage programme plus retained native source task/rank/portal/report obligations",
       "test": "questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards",
       "marker": "POSTGRES_CASE_COMPLETED questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards",
-      "duration_seconds": 117.259208372,
+      "duration_seconds": 116.451671655,
       "red_duration_seconds": 113.73,
       "native_deaths": 2003,
       "ordinary_deaths": 2000,
@@ -1505,13 +1505,16 @@
   {
     "canonical": "oteryn:quest.authored.braindeath_quest",
     "title": "Braindeath Quest",
-    "status": "UNFINISHED",
-    "disposition": "authoring",
+    "status": "QUALIFIED",
+    "disposition": "qualified-current-lane",
     "qualified_elsewhere": [],
-    "mechanism": "none",
-    "blocker": {
-      "missing_piece": "Beregar exploration, Braindeath kill and right-coffin completion lack a lowered three-stage native programme and a complete dispatch PostgreSQL proof."
-    },
-    "round": "L7"
+    "mechanism": "native exploration, frozen principal death objective, exact coffin ordinal, atomic world MINT",
+    "round": "L7",
+    "proof": "cloud-braindeath-proof.json",
+    "merged_revalidation": {
+      "proof": "cloud-braindeath-proof.json",
+      "duration_seconds": 25.801730527,
+      "marker": "POSTGRES_CASE_COMPLETED questpc8_braindeath_exploration_native_death_coffin_and_replay"
+    }
   }
 ]

@@ -4,6 +4,7 @@ use super::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition,
 };
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 
 pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-callbacks.json");
@@ -37,6 +38,9 @@ pub use effects::{
 #[serde(deny_unknown_fields)]
 pub struct Selector {
     pub position: Option<Position>,
+    /// Exact native top-level stack ordinal; never a fabricated source UID.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ordinal: Option<u16>,
     pub unique: Option<u16>,
     pub action: Option<u16>,
     pub appearance: Option<u16>,
@@ -119,6 +123,10 @@ pub struct Callback {
     pub minimum_level: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub experience: Option<i64>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub completes: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub premium_required: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub monk_reward: Option<MonkReward>,
     pub offerings: Vec<Offering>,
@@ -159,6 +167,10 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/shared-outfit-callbacks.json"
     ))?);
+    callbacks.extend(parse_with_provenance(
+        include_str!("../../../../../content/quests/authored-world-callbacks.json"),
+        true,
+    )?);
     callbacks.retain(|callback| super::in_runtime_scope(&callback.quest));
     if callbacks.len() >= MAX_CALLBACKS {
         return Err("callback bounds including Rotten Blood altar".into());
@@ -172,6 +184,10 @@ pub fn load() -> Result<Vec<Callback>, String> {
 }
 
 fn parse(text: &str) -> Result<Vec<Callback>, String> {
+    parse_with_provenance(text, false)
+}
+
+fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, String> {
     let document: Document = serde_json::from_str(text).map_err(|e| e.to_string())?;
     if document.schema != 1 || document.callbacks.len() > MAX_CALLBACKS {
         return Err("callback bounds".into());
@@ -190,6 +206,9 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 && selector.unique.is_none()
                 && selector.action.is_none())
             || selector.position.is_some_and(|p| !valid_pos(p))
+            || (selector.ordinal.is_some() && selector.position.is_none())
+            || (callback.trigger != Trigger::Use
+                && selector.ordinal.is_some_and(|ordinal| ordinal != 0))
             || callback.teleport.is_some_and(|p| !valid_pos(p))
             || !effects::valid(callback)
             || unique_offerings.len() != callback.offerings.len()
@@ -235,9 +254,16 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             })
             || (!callback.offerings.is_empty() && callback.storage.is_empty())
             || callback.sources.is_empty()
+            || (authored
+                && (!callback.key.starts_with("oteryn:quest-callback/authored-")
+                    || !callback
+                        .sources
+                        .iter()
+                        .any(|source| source.starts_with("oteryn-authored:"))))
             || !callback.sources.iter().any(|source| {
                 // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
-                source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
+                (authored && source.starts_with("oteryn-authored:"))
+                    || source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
                     || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
                     || (callback.effects.outfit_reward.is_some()
                         && source.starts_with("crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:"))
@@ -329,6 +355,30 @@ fn extend_callbacks(
         if callback.is_read_only() {
             continue;
         }
+        if callback.effects.item_reward.is_some() || callback.completes || callback.premium_required
+        {
+            let digest: String =
+                Sha256::digest(serde_json::to_vec(&callback).map_err(|e| e.to_string())?)
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect();
+            transitions.push(QuestTransition {
+                key: format!("oteryn:quest-world-plan/{digest}"),
+                quest: callback.quest.clone(),
+                effects: vec![QuestEffect {
+                    track: callback
+                        .storage
+                        .first()
+                        .ok_or("missing value guard")?
+                        .track
+                        .clone(),
+                    from: QuestComparison::Any,
+                    effect: QuestEffectKind::Computed,
+                }],
+                completes: false,
+                experience: None,
+            });
+        }
         transitions.push(QuestTransition {
             key: callback.key.clone(),
             quest: callback.quest.clone(),
@@ -345,7 +395,7 @@ fn extend_callbacks(
                     },
                 })
                 .collect(),
-            completes: false,
+            completes: callback.completes,
             experience: callback.experience,
         });
     }
@@ -359,6 +409,18 @@ mod batch4_tests;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn authored_world_provenance_cannot_enter_the_pinned_source_registry() -> Result<(), String> {
+        let source = include_str!("../../../../../content/quests/authored-world-callbacks.json");
+        assert!(parse(source).is_err());
+        parse_with_provenance(source, true)?;
+        let mut value: serde_json::Value =
+            serde_json::from_str(source).map_err(|e| e.to_string())?;
+        value["callbacks"][0]["key"] = "oteryn:quest-callback/source-masquerade".into();
+        assert!(parse_with_provenance(&value.to_string(), true).is_err());
+        Ok(())
+    }
 
     #[test]
     fn qengine_shared_access_rejects_ambiguous_or_unbounded_effects() -> Result<(), String> {
