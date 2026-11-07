@@ -5,6 +5,7 @@
 //! Every read runs under the reconciled Character authority, so a restored or
 //! unreconciled store never publishes. Each call is one semantic transaction.
 
+pub mod house_catalogue;
 mod v2;
 mod world_totals;
 
@@ -66,17 +67,24 @@ WITH head AS (SELECT o.character_id, min(o.created_at) AS oldest \
                                   WHERE n.character_id = o.character_id \
                                     AND x.vacated_at > floor(extract(epoch FROM \
                                         statement_timestamp()) * 1000)::bigint - $2) \
+                 AND NOT EXISTS (SELECT 1 FROM game_character_roots n \
+                     JOIN game_public_v2_name_handoffs x ON x.namespace_world = '' \
+                      AND x.name_key = n.name_key WHERE n.character_id = o.character_id \
+                      AND x.created_ms > floor(extract(epoch FROM statement_timestamp()) * 1000)::bigint - $2) \
                GROUP BY o.character_id \
                ORDER BY oldest, o.character_id LIMIT $3) \
 SELECT h.character_id::text AS character_id, e.projection_epoch, p.projection_revision, \
        p.revised_at / 1000 AS observed_at, r.world_id::text AS world_id, r.name, r.lifecycle, \
-       coalesce(g.level, 1)::text AS level, coalesce(b.vocation, 'none') AS vocation \
+       coalesce(g.level, 1)::text AS level, coalesce(b.vocation, 'none') AS vocation, \
+       pg.guild_id::text AS public_guild_id, gm.rank_level AS public_guild_rank \
   FROM head h \
   JOIN game_public_character_profiles p USING (character_id) \
  CROSS JOIN game_public_projection_epoch e \
   LEFT JOIN game_character_roots r ON r.character_id = h.character_id AND NOT game_account_closure_detached(r.character_id) \
   LEFT JOIN game_character_progression_state g ON g.character_id = h.character_id \
   LEFT JOIN game_character_build_state b ON b.character_id = h.character_id \
+  LEFT JOIN game_guild_members gm ON gm.character_id = h.character_id \
+  LEFT JOIN game_guilds pg ON pg.guild_id = gm.guild_id AND pg.world_id = r.world_id AND pg.state IN (1,2,3) \
  WHERE e.epoch_scope = 1 \
  ORDER BY h.oldest, h.character_id";
 
@@ -553,8 +561,18 @@ fn profile_snapshot(row: &sqlx::postgres::PgRow) -> Decoded<ProfileSnapshot> {
                     // Guild membership defaults to public (§4.2, the Tibia
                     // reference); no Game-side setting lowers it yet.
                     guild_visible: true,
-                    // No guild exists natively yet (§4.2): always `[]`.
-                    guild: None,
+                    guild: match (
+                        row.try_get::<Option<String>, _>("public_guild_id")?,
+                        row.try_get::<Option<i16>, _>("public_guild_rank")?,
+                    ) {
+                        (Some(guild_id), Some(rank)) if (1..=20).contains(&rank) => {
+                            Some(crate::native_admission_source::public_projections::ProfileGuild {
+                                guild_id,
+                                rank_level: u8::try_from(rank).map_err(|_| sqlx::Error::Protocol("invalid public guild rank".into()))?,
+                            })
+                        }
+                        _ => None,
+                    },
                 })
             }
             // Unclassifiable: published as absent, never held (§4.2).

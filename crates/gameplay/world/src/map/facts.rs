@@ -368,6 +368,11 @@ impl BundleFacts {
         self.doors.finish();
     }
 
+    /// Source house identities in the checked active map, for public catalogue qualification.
+    pub fn house_ids(&self) -> impl Iterator<Item = u32> + '_ {
+        self.houses.iter().map(|(_, id)| *id)
+    }
+
     /// Exact source membership of an authored House tile. A boolean House marker
     /// cannot admit movement into an adjacent House; ambiguous records grant none.
     pub fn house_id(&self, pos: TilePos) -> Option<u32> {

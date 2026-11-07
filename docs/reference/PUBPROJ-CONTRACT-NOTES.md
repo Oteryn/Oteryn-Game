@@ -79,3 +79,20 @@ all player killers collapsed to player and unattributed causes to unknown;
 private G-4 CharacterIds never enter that admin feed. Known invalid source
 metadata must remain quarantined, not be relabelled unknown. C/D source and
 retention implementation is in progress; no ADMINAN producer is implemented.
+
+### House boot checkpoint and executed PG red point
+
+Active checked-map catalogue capture is wired before listener readiness; the
+server compiles with the native Guild profile join and catalogue source
+(2m57s). Focused PostgreSQL source cases executed with the configured route
+(8.54s target run), rather than route-less success, and exposed the resync
+coalescing defect: unchanged acknowledged Guild/house snapshots do not get
+re-enqueued. The exact red case is
+`pubproj_house_catalogue_source_revision_withdrawal_pending_freshness_and_resync`,
+assertion at `pubproj_guild_house.rs:112`: `next_public_v2(...).is_some()`.
+The fix needs a forced resync enqueue separate from normal content coalescing.
+Neither PG case is claimed green in this checkpoint.
+
+Effective reset calendar is Europe/Berlin06:00 after migration0562; the original
+0148 Berlin10:00 declaration was superseded. C follows the persisted calendar
+and its revision, including DST, rather than a fixed86400-second day.

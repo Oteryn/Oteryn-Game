@@ -10,6 +10,7 @@
 
 mod audit_collector;
 mod channel_boot;
+mod public_house_catalogue;
 mod qualification_fixture;
 mod supervision;
 mod t94;
@@ -3077,6 +3078,16 @@ async fn boot_and_serve(
         timed_npcs,
         required_capabilities,
     } = channel;
+    public_house_catalogue::capture(
+        root,
+        &authority,
+        &proof,
+        material,
+        &assignment,
+        reset_epoch,
+        bundle.as_ref(),
+    )
+    .await;
     if signalled.is_cancelled() {
         stopped_before_ready();
         return Ok(());
