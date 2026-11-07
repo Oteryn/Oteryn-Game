@@ -1362,3 +1362,13 @@ Source17d0a9f83 merges after the explicit WVAR/WCONTRIB/WEVENTS reverts. Preserv
 ### SRV9 all-target checkpoint
 
 All changed crates passed strict Clippy for all targets/features in266.089s. The all-feature library check passed185s including queued build time. Format check passed. Legacy regeneration is preserving the main corpse, cheese, consumable and ranged-source custody phases; native/tree generation, pins, focused PostgreSQL and final integration checks remain pending. No tracked qlane-meta/ or .qengine/ bookkeeping remains.
+
+
+### SRV9 generated-content checkpoint
+
+- `srv9-legacy-generation`: 736.52s, passed.
+- `srv9-tree-native`: 510.106s, passed.
+- `srv9-native-fresh-check`: 110.699s, passed.
+- `srv9-native-precompile`: 398.836s, passed.
+
+The native dispatch test binary compiles; this is not PostgreSQL execution proof. Generated legacy/tree/native files are reproduced by repository tooling, including preserved WORLDCHG and main custody inputs. Pin refresh/check, focused PostgreSQL and final integration validation remain pending.
