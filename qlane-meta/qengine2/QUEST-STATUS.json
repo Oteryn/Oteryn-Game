@@ -1567,6 +1567,127 @@
       },
       "commit": "ba797c537",
       "push": "Fast-forward push confirmed to origin/claude/happy-davinci-ijz3wy-qengine2"
+    },
+    {
+      "id": "L1-04",
+      "base": "aae647c63",
+      "entries": [
+        "unresolved:questpc2:nobleman_outfits_quest",
+        "oteryn:quest.royal_costume_outfits_quest",
+        "unresolved:questpc2:pirate_outfits_quest"
+      ],
+      "current_slice": "L1-04C complete Pirate source story",
+      "reuse_audit": "Primary questpc2..8 branches refreshed; none of the matched current entries is QUALIFIED. Latest questpc8 npc_program still calls plan_storage (line130); no native fee/outfit participant exists there. Reuse existing item_fee_burn owner and Type2 gate here.",
+      "source": "Crystal9f5a72c data-global/npc/irmana.lua:50-135 and corresponding male branches. Carried-only150000 per addon; no10000 payment implementation despite dialogue.",
+      "phase": "COMPLETE:all three outfit stories and focused checks passed and slices pushed.",
+      "red": {
+        "result": "1 failed in44.66s: missing Nobleman first-start binding",
+        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-nobleman-story duration=44.661348814s success=false",
+        "command": "cargo test --locked -p oteryn-gameplay-dispatch qengine_l4_ -- --nocapture"
+      },
+      "source_sha256": "Irmana donor source pinned by qengine generator; exact source SHA recorded in generated callback citations.",
+      "native_fee_proof": "Migration1000 adds immutable game_quest_reward_fees FK to same-transaction source receipt, exact fee/bank policy and source consistency arms. No detached monetary charge is admitted.",
+      "slices": [
+        {
+          "id": "L1-04A",
+          "status": "QUALIFIED",
+          "entries": [
+            "unresolved:questpc2:nobleman_outfits_quest"
+          ],
+          "resolved_canonical": "oteryn:quest.nobleman_outfits_quest",
+          "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-nobleman-story duration=44.661348814s success=false",
+          "green": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-nobleman-story duration=82.309922214s success=true",
+          "result": "1 passed;0 failed;0 ignored;82.31s;actualPostgreSQL18.6",
+          "checks": [
+            "cargo fmt --all --check",
+            "all-feature quests/durability/dispatch check1m16s",
+            "final strict clippy all targets/features38.65s",
+            "2 Quest unit tests1.15s",
+            "33 native fee audit tests0.13s",
+            "15 authoring tests5.468s",
+            "deterministic callbacks/placements reproduce",
+            "123 content integration tests passed2.70s",
+            "5 world repository tests passed46.63s",
+            "repo pin-check passed digestf5858ace5ba0497d24a15c8f01649ad61b5cf0b4685f1194c2fd1c78f8cceddb"
+          ],
+          "proof": "Complete Nobleman source introductions and both paid addons. Unpaid attempts refuse; exact total300000 carried gold; two native fee receipts with zero bank debit; change retained; replay cannot charge again;3 immutable account facts,source achievement and normal final appearance selection.",
+          "native_guards": "Source payment kind18 reuses complete carried coin proof, custody/order/epochs and fresh Character proof. Immutable Quest fee receipt FK/source price/policy validated in same transaction. Existing proof arms retained.",
+          "commit": "33b640335",
+          "push": "Fast-forward confirmed",
+          "verification": "All focused checks complete after immediate slice push. Previous disk-only integration failure recovered; no skipped/weakened tests."
+        },
+        {
+          "id": "L1-04B",
+          "status": "QUALIFIED",
+          "entries": [
+            "oteryn:quest.royal_costume_outfits_quest"
+          ],
+          "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-royal-costume-story duration=43.794021327s success=false",
+          "green": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-royal-costume-story duration=130.656709439s success=true",
+          "result": "1 passed;0 failed;0 ignored;130.66s;actualPostgreSQL18.6",
+          "scope": "Complete source base/shield/crown token exchanges;15000silver/12500gold base,7500/6250 each addon;late missing second token retains all first-token inputs;literal replay;3 immutable account facts;normal final appearance selection.",
+          "source": "Crystal9f5a72c data-global/npc/percybald.lua:149-228 sha256b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc",
+          "admission": "Two token custody profiles via repo register_spell_families;admitted client1456/1457 Royal store-tag exception scoped by owner-selected native quest/sourceNPC;captured Percybald placement.",
+          "checks": [
+            "cargo fmt --all --check;explicit story rustfmt",
+            "check20.68s",
+            "2 Quest tests1.16s",
+            "strict clippy44.58s",
+            "16 authoring tests5.506s;reproducers",
+            "pin-refresh passed6989e9ea9b9b48dafa8bff6295f0b20aa8786916893dadd5aa2962e7e953b125"
+          ],
+          "follow_on_verification": "COMPLETE:123 content tests2.12s;5 world repository tests46.20s;pin-check passed6989e9ea9b9b48dafa8bff6295f0b20aa8786916893dadd5aa2962e7e953b125.",
+          "commit": "059364f38",
+          "push": "fast-forward confirmed"
+        },
+        {
+          "id": "L1-04C",
+          "status": "QUALIFIED",
+          "entries": [
+            "unresolved:questpc2:pirate_outfits_quest"
+          ],
+          "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-pirate-story duration=43.849494574s success=false",
+          "green": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-pirate-story duration=81.775046751s success=true",
+          "result": "1 passed;0failed;0ignored;81.78s;actualPostgreSQL18.6",
+          "scope": "Complete source base, Duncan introductions and three100-item hand-ins, original Morgan sabre, Ariella introduction and four-item hat exchange. Only external Shattered Isles prerequisites seeded;partial recipe refuses atomically;replay,three immutable account facts and ordinary final appearance selection pass.",
+          "sources": [
+            "duncan.lua:61-134 sha256292f86b5b453474645ce9f13955af7e4efc29cdb12e9d0cc5f7fd2115502815f",
+            "raymond_striker.lua:144-152 sha2569788635e604e865c0b06091cc9c4bff3c58aa5bc0c752e433790e00f52d4fab8",
+            "ariella.lua:91-130 pinned corpus;all output callbacks retain exact file hash"
+          ],
+          "checks": [
+            "17 authoring tests6.005s;callback/placement reproduction",
+            "cargo fmt --all --check;check59.16s;2 unit tests1.14s;strict clippy1m23s",
+            "repo pin-refresh passed;actual PostgreSQL GREEN81.775046751s"
+          ],
+          "follow_on_verification": "COMPLETE:123content tests2.10s;5world tests46.14s;pin-check77bd6a93507af938959dc35150cc927abb487f43fbd842e9601c9c88dc5968dc",
+          "commit": "7a25db767",
+          "push": "fast-forward confirmed"
+        }
+      ],
+      "debug_evidence": [
+        "Initial payment case82.56251676s failed: carried proof only admitted Atelier fee kinds. Migration extends existing source set to18, keeping all custody checks.",
+        "Second80.468007016s and third80.35737872s failed: fresh Character proof required Atelier-specific receipt. Added exact Quest receipt alternative; retained old proof.",
+        "Integration compile failed with No space left on device; obsolete compiler snapshots cleaned,normal execution restored. No source/test proof deleted."
+      ],
+      "royal_source": "Crystal9f5a72c data-global/npc/percybald.lua:149-228 sha256 b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc",
+      "royal_red": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-royal-costume-story duration=43.794021327s success=false",
+      "royal_checks": [
+        "16 authoring tests5.506s;reproducers passed",
+        "check20.68s;2 Quest tests1.16s;strict clippy44.58s",
+        "repo pin-refresh passed;PG GREEN pending"
+      ],
+      "pirate_sources": [
+        "duncan.lua:61-134 sha256292f86b5b453474645ce9f13955af7e4efc29cdb12e9d0cc5f7fd2115502815f",
+        "raymond_striker.lua:144-152 sha2569788635e604e865c0b06091cc9c4bff3c58aa5bc0c752e433790e00f52d4fab8",
+        "ariella.lua:91-130 pinned corpus;all output callbacks retain exact file hash"
+      ],
+      "pirate_red": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-pirate-story duration=43.849494574s success=false",
+      "pirate_checks": [
+        "17 authoring tests6.005s;callback/placement reproduction",
+        "cargo fmt --all --check;check59.16s;2 unit tests1.14s;strict clippy1m23s",
+        "repo pin-refresh passed;actual PostgreSQL GREEN81.775046751s"
+      ]
     }
   ],
   "owner_rule": "This lane implements missing generic engine, reward/binding, world, NPC, item and callback features after checking/reusing related branches; dependency-only inherited blockers are superseded.",
@@ -1896,122 +2017,14 @@
   },
   "delivery_rule": "Push every finished green quest/mechanism slice immediately and at least every30minutes while green work exists. Bound each investigation/missing-fact search to10minutes; record conservative decisions in CONTRACT-NOTES.md and implement. No full workspace/PG suite.",
   "active_batch": {
-    "id": "L1-04",
-    "base": "aae647c63",
+    "id": "L1-05",
     "entries": [
-      "unresolved:questpc2:nobleman_outfits_quest",
-      "oteryn:quest.royal_costume_outfits_quest",
-      "unresolved:questpc2:pirate_outfits_quest"
+      "unresolved:questpc2:oriental_outfits_quest",
+      "oteryn:quest.hunter_outfits_quest",
+      "oteryn:quest.assassin_outfit"
     ],
-    "current_slice": "L1-04C complete Pirate source story",
-    "reuse_audit": "Primary questpc2..8 branches refreshed; none of the matched current entries is QUALIFIED. Latest questpc8 npc_program still calls plan_storage (line130); no native fee/outfit participant exists there. Reuse existing item_fee_burn owner and Type2 gate here.",
-    "source": "Crystal9f5a72c data-global/npc/irmana.lua:50-135 and corresponding male branches. Carried-only150000 per addon; no10000 payment implementation despite dialogue.",
-    "phase": "All three source outfit entries QUALIFIED;Pirate focused PG GREEN;immediate slice push. Follow-on content/world/pin-check session30485.",
-    "red": {
-      "result": "1 failed in44.66s: missing Nobleman first-start binding",
-      "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-nobleman-story duration=44.661348814s success=false",
-      "command": "cargo test --locked -p oteryn-gameplay-dispatch qengine_l4_ -- --nocapture"
-    },
-    "source_sha256": "Irmana donor source pinned by qengine generator; exact source SHA recorded in generated callback citations.",
-    "native_fee_proof": "Migration1000 adds immutable game_quest_reward_fees FK to same-transaction source receipt, exact fee/bank policy and source consistency arms. No detached monetary charge is admitted.",
-    "slices": [
-      {
-        "id": "L1-04A",
-        "status": "QUALIFIED",
-        "entries": [
-          "unresolved:questpc2:nobleman_outfits_quest"
-        ],
-        "resolved_canonical": "oteryn:quest.nobleman_outfits_quest",
-        "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-nobleman-story duration=44.661348814s success=false",
-        "green": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-nobleman-story duration=82.309922214s success=true",
-        "result": "1 passed;0 failed;0 ignored;82.31s;actualPostgreSQL18.6",
-        "checks": [
-          "cargo fmt --all --check",
-          "all-feature quests/durability/dispatch check1m16s",
-          "final strict clippy all targets/features38.65s",
-          "2 Quest unit tests1.15s",
-          "33 native fee audit tests0.13s",
-          "15 authoring tests5.468s",
-          "deterministic callbacks/placements reproduce",
-          "123 content integration tests passed2.70s",
-          "5 world repository tests passed46.63s",
-          "repo pin-check passed digestf5858ace5ba0497d24a15c8f01649ad61b5cf0b4685f1194c2fd1c78f8cceddb"
-        ],
-        "proof": "Complete Nobleman source introductions and both paid addons. Unpaid attempts refuse; exact total300000 carried gold; two native fee receipts with zero bank debit; change retained; replay cannot charge again;3 immutable account facts,source achievement and normal final appearance selection.",
-        "native_guards": "Source payment kind18 reuses complete carried coin proof, custody/order/epochs and fresh Character proof. Immutable Quest fee receipt FK/source price/policy validated in same transaction. Existing proof arms retained.",
-        "commit": "33b640335",
-        "push": "Fast-forward confirmed",
-        "verification": "All focused checks complete after immediate slice push. Previous disk-only integration failure recovered; no skipped/weakened tests."
-      },
-      {
-        "id": "L1-04B",
-        "status": "QUALIFIED",
-        "entries": [
-          "oteryn:quest.royal_costume_outfits_quest"
-        ],
-        "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-royal-costume-story duration=43.794021327s success=false",
-        "green": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-royal-costume-story duration=130.656709439s success=true",
-        "result": "1 passed;0 failed;0 ignored;130.66s;actualPostgreSQL18.6",
-        "scope": "Complete source base/shield/crown token exchanges;15000silver/12500gold base,7500/6250 each addon;late missing second token retains all first-token inputs;literal replay;3 immutable account facts;normal final appearance selection.",
-        "source": "Crystal9f5a72c data-global/npc/percybald.lua:149-228 sha256b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc",
-        "admission": "Two token custody profiles via repo register_spell_families;admitted client1456/1457 Royal store-tag exception scoped by owner-selected native quest/sourceNPC;captured Percybald placement.",
-        "checks": [
-          "cargo fmt --all --check;explicit story rustfmt",
-          "check20.68s",
-          "2 Quest tests1.16s",
-          "strict clippy44.58s",
-          "16 authoring tests5.506s;reproducers",
-          "pin-refresh passed6989e9ea9b9b48dafa8bff6295f0b20aa8786916893dadd5aa2962e7e953b125"
-        ],
-        "follow_on_verification": "COMPLETE:123 content tests2.12s;5 world repository tests46.20s;pin-check passed6989e9ea9b9b48dafa8bff6295f0b20aa8786916893dadd5aa2962e7e953b125.",
-        "commit": "059364f38",
-        "push": "fast-forward confirmed"
-      },
-      {
-        "id": "L1-04C",
-        "status": "QUALIFIED",
-        "entries": [
-          "unresolved:questpc2:pirate_outfits_quest"
-        ],
-        "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-pirate-story duration=43.849494574s success=false",
-        "green": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-pirate-story duration=81.775046751s success=true",
-        "result": "1 passed;0failed;0ignored;81.78s;actualPostgreSQL18.6",
-        "scope": "Complete source base, Duncan introductions and three100-item hand-ins, original Morgan sabre, Ariella introduction and four-item hat exchange. Only external Shattered Isles prerequisites seeded;partial recipe refuses atomically;replay,three immutable account facts and ordinary final appearance selection pass.",
-        "sources": [
-          "duncan.lua:61-134 sha256292f86b5b453474645ce9f13955af7e4efc29cdb12e9d0cc5f7fd2115502815f",
-          "raymond_striker.lua:144-152 sha2569788635e604e865c0b06091cc9c4bff3c58aa5bc0c752e433790e00f52d4fab8",
-          "ariella.lua:91-130 pinned corpus;all output callbacks retain exact file hash"
-        ],
-        "checks": [
-          "17 authoring tests6.005s;callback/placement reproduction",
-          "cargo fmt --all --check;check59.16s;2 unit tests1.14s;strict clippy1m23s",
-          "repo pin-refresh passed;actual PostgreSQL GREEN81.775046751s"
-        ],
-        "follow_on_verification": "Running30485;not claimed complete."
-      }
-    ],
-    "debug_evidence": [
-      "Initial payment case82.56251676s failed: carried proof only admitted Atelier fee kinds. Migration extends existing source set to18, keeping all custody checks.",
-      "Second80.468007016s and third80.35737872s failed: fresh Character proof required Atelier-specific receipt. Added exact Quest receipt alternative; retained old proof.",
-      "Integration compile failed with No space left on device; obsolete compiler snapshots cleaned,normal execution restored. No source/test proof deleted."
-    ],
-    "royal_source": "Crystal9f5a72c data-global/npc/percybald.lua:149-228 sha256 b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc",
-    "royal_red": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-royal-costume-story duration=43.794021327s success=false",
-    "royal_checks": [
-      "16 authoring tests5.506s;reproducers passed",
-      "check20.68s;2 Quest tests1.16s;strict clippy44.58s",
-      "repo pin-refresh passed;PG GREEN pending"
-    ],
-    "pirate_sources": [
-      "duncan.lua:61-134 sha256292f86b5b453474645ce9f13955af7e4efc29cdb12e9d0cc5f7fd2115502815f",
-      "raymond_striker.lua:144-152 sha2569788635e604e865c0b06091cc9c4bff3c58aa5bc0c752e433790e00f52d4fab8",
-      "ariella.lua:91-130 pinned corpus;all output callbacks retain exact file hash"
-    ],
-    "pirate_red": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-pirate-story duration=43.849494574s success=false",
-    "pirate_checks": [
-      "17 authoring tests6.005s;callback/placement reproduction",
-      "cargo fmt --all --check;check59.16s;2 unit tests1.14s;strict clippy1m23s",
-      "repo pin-refresh passed;actual PostgreSQL GREEN81.775046751s"
-    ]
+    "phase": "Oriental full-source female story PG RED compiling before production changes. Generic creation-sex eligibility and later Hunter sex-specific addon support owned here. Source investigation bounded and facts captured.",
+    "reuse_audit": "Refreshed questpc2..8 primary branches; no current matched entry QUALIFIED; no newer reward sex guard found. Existing immutable Character sex reader reused. Audit /tmp/qengine2-batch5-status-audit.log.",
+    "red_command": "cargo test --locked -p oteryn-gameplay-dispatch qengine_l5_oriental -- --nocapture"
   }
 }

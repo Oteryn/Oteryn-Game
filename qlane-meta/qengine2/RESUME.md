@@ -202,3 +202,14 @@ RED43.849494574s. Complete eight-stage source story,source guards and exact
 normal appearance pass. No internal stages seeded;existing Morgan unchanged.
 Counts12/66qual,54remaining. Immediate commit/push;follow-on content/world/pin
 checks running30485. Continue next batch after push;do not stop.
+
+Pirate pushed7a25db767. Follow-on COMPLETE:123content2.10s,5world tests,
+pin-check77bd6a93507af938959dc35150cc927abb487f43fbd842e9601c9c88dc5968dc.
+L1-04 archived complete. L1-05 Oriental/Hunter/Assassin selected. Oriental
+female full story test authored;PG RED84565 compiling before production edits.
+Reuse audit refreshed questpc2..8,no matching QUALIFIED. Source four Oriental
+NPCs /tmp/qengine2-{ishina,habdel,miraia,razan}.lua pinnedCrystal9f5a72c.
+Seven stages:comb intro/exact5945,second intro,100ape5883,100fins5895,
+2wings5891,100bluecloth5912. Source first intro requires OrcPowder>=35.
+Immutable sex guard is missing generic feature;implement it here,using existing
+appearance owner item_action_sex reader. No duplicate Character sex owner.
