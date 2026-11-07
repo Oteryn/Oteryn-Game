@@ -72,12 +72,21 @@ pub struct QuestRewardFeePayment {
     pub occurred_at_unix_ms: i64,
 }
 
+/// Exact selected carried instance and bounded native ingress retained for recovery.
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct QuestCarriedUse {
+    pub source: [u8; 16],
+    pub intent: Vec<u8>,
+}
+
 /// The runtime supplies its admitted generation and the normal wheel-aware capacity lookup.
 #[derive(Clone, Copy)]
 pub struct QuestRewardAdmission<'a> {
     pub native: &'a NativeGameplayState,
     pub weights: &'a dyn super::super::item_transfer::ItemWeightLookup,
     pub fee_payment: Option<&'a QuestRewardFeePayment>,
+    pub carried_use: Option<&'a QuestCarriedUse>,
 }
 
 #[allow(
@@ -97,6 +106,13 @@ pub(crate) async fn apply(
     let super::super::quest_state::QuestCause::Command(command) = request.cause else {
         return Ok(false);
     };
+    if callback.carried_item.is_some() != admission.carried_use.is_some()
+        || admission.carried_use.is_some_and(|use_| {
+            use_.source == [0; 16] || use_.intent.is_empty() || use_.intent.len() > 4096
+        })
+    {
+        return Ok(false);
+    }
     if admission.weights.generation_digest() != admission.native.source_digest() {
         return Ok(false);
     }
@@ -160,7 +176,7 @@ pub(crate) async fn apply(
                 .execute(&mut **tx).await?;
         }
     }
-    if !super::super::quest_world_callback::consume_reward_inputs(tx, fence, request, callback)
+    if !super::super::quest_world_callback::consume_reward_inputs(tx, fence, request, callback, admission.carried_use)
         .await?
     {
         return Ok(false);

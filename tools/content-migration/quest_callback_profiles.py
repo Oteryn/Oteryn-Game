@@ -143,6 +143,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             if reward:
                 keys.add(reward['item'])
                 keys.update(item['item'] for item in reward.get('contents', []))
+                keys.update(item['item'] for item in reward.get('backpack_outputs', []))
     # Rotten Blood's fixed Rust callback is not part of the JSON inventory.
     # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
     # apply the same pinned source, exact binding and portability checks below.
@@ -157,6 +158,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         if reward:
             keys.add(reward['item'])
             keys.update(item['item'] for item in reward.get('contents', []))
+            keys.update(item['item'] for item in reward.get('backpack_outputs', []))
         item = callback.get('item_on_target')
         if item:
             keys.add(item['item'])

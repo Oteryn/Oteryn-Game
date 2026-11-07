@@ -121,7 +121,7 @@ mod contents;
 mod grizzly;
 mod monk;
 pub(crate) mod quest;
-pub use quest::{QuestRewardAdmission, QuestRewardFeePayment};
+pub use quest::{QuestCarriedUse, QuestRewardAdmission, QuestRewardFeePayment};
 mod soul_war;
 mod tibiadrome;
 

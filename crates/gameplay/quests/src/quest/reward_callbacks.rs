@@ -49,6 +49,9 @@ pub struct RewardCallback {
     pub key: String,
     pub quest: String,
     pub npc: String,
+    /// Native USE must select this exact carried definition; NPC text cannot invoke it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub carried_item: Option<String>,
     pub keywords: Vec<String>,
     pub topic: u16,
     pub next_topic: u16,
@@ -170,6 +173,10 @@ fn reward_binding(callback: &RewardCallback) -> Result<[u8; 32], String> {
         digest.update(b"\0quest-reward-fee-v1\0");
         digest.update(serde_json::to_vec(fee).map_err(|error| error.to_string())?);
     }
+    if let Some(item) = &callback.carried_item {
+        digest.update(b"\0quest-reward-carried-use-v1\0");
+        digest.update(item.as_bytes());
+    }
     Ok(digest.finalize().into())
 }
 
@@ -210,6 +217,13 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
             || !slug(&c.npc, "oteryn:npc.", b"_", 128)
+            || c.carried_item.as_ref().is_some_and(|item| {
+                !c.take
+                    .iter()
+                    .any(|take| &take.item == item && take.count == 1)
+                    || c.fee.is_some()
+                    || c.health_loss.is_some()
+            })
             || c.storage.is_empty()
             || c.storage.len() > 8
             || tracks.len() != c.storage.len()

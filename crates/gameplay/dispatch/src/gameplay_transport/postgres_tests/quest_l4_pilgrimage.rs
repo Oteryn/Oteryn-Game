@@ -300,6 +300,7 @@ fn scenario(full_route: bool) -> TestResult {
                         native,
                         weights: &weights,
                         fee_payment: None,
+                        carried_use: None,
                     },
                     &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
                 )

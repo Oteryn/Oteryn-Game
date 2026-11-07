@@ -1605,6 +1605,7 @@ fn scenario(mode: Scenario) -> TestResult {
                         native,
                         weights: &weights,
                         fee_payment: None,
+                        carried_use: None,
                     },
                     &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
                 )
@@ -1662,6 +1663,7 @@ fn scenario(mode: Scenario) -> TestResult {
                     native,
                     weights: &weights,
                     fee_payment: None,
+                    carried_use: None,
                 },
                 &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
             )

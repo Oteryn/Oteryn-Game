@@ -64,6 +64,13 @@
           "items": {
             "$ref": "#/$defs/item"
           }
+        },
+        "backpack_outputs": {
+          "type": "array",
+          "maxItems": 19,
+          "items": {
+            "$ref": "#/$defs/item"
+          }
         }
       }
     },
@@ -273,6 +280,11 @@
           ],
           "pattern": "^oteryn:service\\.blessing\\.[a-z0-9_]+$",
           "maxLength": 128
+        },
+        "carried_item": {
+          "type": "string",
+          "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
+          "maxLength": 256
         },
         "premium": {
           "type": "boolean"
