@@ -1691,3 +1691,178 @@ fn wevents_postgres_insect_restoration() -> fixture::TestResult {
         .map_err(|_| "insect thread")??;
     Ok(())
 }
+
+#[test]
+fn wevents_postgres_devovorga_native_stages() -> fixture::TestResult {
+    let Some(admin) = fixture::configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || {
+            fixture::runtime()
+                .map_err(fixture::debug)?
+                .block_on(async {
+                    let started = std::time::Instant::now();
+                    let h =
+                        fixture::Harness::create(admin, "wevents_devovorga_stages", false).await?;
+                    let result = devovorga_stages(&h).await;
+                    h.cleanup().await?;
+                    result?;
+                    eprintln!(
+                        "WEVENTS PG EXECUTED: devovorga native stages duration={:?}",
+                        started.elapsed()
+                    );
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                })
+                .map_err(fixture::debug)
+        })?
+        .join()
+        .map_err(|_| "devovorga stages thread")??;
+    Ok(())
+}
+
+async fn devovorga_stages(h: &fixture::Harness) -> fixture::TestResult {
+    use crate::durability::world_event::changes::timed::{NativeKillOutcome, NativeKillRequest};
+    let start: i64 = sqlx::query_scalar(
+        "SELECT (extract(epoch FROM '2031-09-01 06:00 Europe/Berlin'::timestamptz)*1000)::bigint",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    seed(h, start).await?;
+    let world = fixture::scope()?.world_id();
+    let seal = h.recovery.seal_current().map_err(fixture::debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(fixture::debug)?;
+    let names = [
+        "anmothra",
+        "chikhaton",
+        "irahsae",
+        "phrodomo",
+        "teneshpar",
+        "devovorga",
+        "bloom_of_doom",
+        "spawn_of_devovorga",
+        "vulnerable_cocoon",
+    ];
+    for (ordinal, member) in [0_usize, 1, 2, 3, 4, 6, 7, 0, 1, 2, 3, 4, 8, 5]
+        .into_iter()
+        .enumerate()
+    {
+        let now = start + 86_400_000 + i64::try_from(ordinal)? * 60_000;
+        h.root
+            .set_world_event_clock_for_test(Some(now))
+            .map_err(fixture::debug)?;
+        let id = 150 + u8::try_from(ordinal)?;
+        let selected = candidate(&format!("raid:world-events.rise-{}", names[member]), id)?;
+        let req = request(selected.clone(), now)?;
+        assert_eq!(
+            h.root
+                .check_raid_schedules(&authority, &h.node, req.clone())
+                .await?
+                .firings
+                .len(),
+            1,
+            "member {member}"
+        );
+        let wave = h
+            .root
+            .advance_raid_run(
+                &h.node,
+                fixture::id(id),
+                req.channel,
+                req.generation,
+                selected.definition.clone(),
+                now,
+            )
+            .await?
+            .ok_or("incarnation wave")?;
+        let CommittedRaidAction::Wave { creatures, .. } = &wave.action else {
+            return Err("incarnation wave action".into());
+        };
+        assert_eq!(creatures.len(), 1);
+        assert!(creatures[0].timed_event);
+        h.root
+            .acknowledge_raid_effect(
+                &h.node,
+                wave.identity,
+                vec![RaidPlacementOutcome {
+                    identity: creatures[0].identity,
+                    placed: true,
+                }],
+                now,
+            )
+            .await?;
+        let end = h
+            .root
+            .advance_raid_run(
+                &h.node,
+                fixture::id(id),
+                req.channel,
+                req.generation,
+                selected.definition.clone(),
+                now,
+            )
+            .await?
+            .ok_or("incarnation end")?;
+        h.root
+            .acknowledge_raid_effect(&h.node, end.identity, vec![], now)
+            .await?;
+        let mut occurrence = Vec::new();
+        occurrence.extend_from_slice(world.as_bytes());
+        occurrence.extend_from_slice(req.channel.as_bytes());
+        occurrence.extend_from_slice(&req.generation.get().to_be_bytes());
+        occurrence.extend_from_slice(&(1000 + u32::try_from(ordinal)?).to_be_bytes());
+        occurrence.extend_from_slice(&1_u64.to_be_bytes());
+        let death = NativeKillRequest {
+            source: oteryn_gameplay_entities::carrier::RaidSpawnIdentity {
+                firing_id: fixture::id(id),
+                wave: creatures[0].identity.wave,
+                entry: creatures[0].identity.entry,
+                index: creatures[0].identity.index,
+            },
+            occurrence,
+            occurred_at_ms: now,
+            participants: vec![fixture::fence(1)?.character_id],
+        };
+        assert_eq!(
+            h.root
+                .credit_timed_world_kill(
+                    &authority,
+                    &h.node,
+                    fixture::scope()?,
+                    req.generation,
+                    1,
+                    death.clone()
+                )
+                .await?,
+            NativeKillOutcome::Applied
+        );
+        assert_eq!(
+            h.root
+                .credit_timed_world_kill(
+                    &authority,
+                    &h.node,
+                    fixture::scope()?,
+                    req.generation,
+                    1,
+                    death
+                )
+                .await?,
+            NativeKillOutcome::AlreadyApplied
+        );
+    }
+    let state = h
+        .root
+        .timed_world_event(world, 1, EventKind::RiseOfDevovorga)
+        .await?
+        .ok_or("season state")?;
+    assert_eq!(state.phase, Phase::Victory);
+    assert_eq!(state.lifecycle.stage, 5);
+    let ready:bool=sqlx::query_scalar("SELECT reward_ready FROM game_world_timed_participants WHERE event_key='rise_of_devovorga'").fetch_one(&h.pool).await?;
+    assert!(ready);
+    Ok(())
+}

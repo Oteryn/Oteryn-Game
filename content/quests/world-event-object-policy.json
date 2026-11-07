@@ -72,6 +72,78 @@
       "unique": null,
       "region": "content/world/placements/region-z07-x125-y125.b3",
       "region_sha256": "268c6b75fad682c6d9baeadc6563c2cace27d8414caa66ca538b49687a6dc262"
+    },
+    {
+      "position": [
+        32970,
+        31580,
+        7
+      ],
+      "item": null,
+      "action": 52710,
+      "unique": null,
+      "region": "content/world/placements/region-z07-x128-y123.b3",
+      "region_sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+    },
+    {
+      "position": [
+        32969,
+        31572,
+        7
+      ],
+      "item": null,
+      "action": 52720,
+      "unique": null,
+      "region": "content/world/placements/region-z07-x128-y123.b3",
+      "region_sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+    },
+    {
+      "position": [
+        32969,
+        31573,
+        7
+      ],
+      "item": null,
+      "action": 52721,
+      "unique": null,
+      "region": "content/world/placements/region-z07-x128-y123.b3",
+      "region_sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+    },
+    {
+      "position": [
+        32969,
+        31574,
+        7
+      ],
+      "item": null,
+      "action": 52722,
+      "unique": null,
+      "region": "content/world/placements/region-z07-x128-y123.b3",
+      "region_sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+    },
+    {
+      "position": [
+        32969,
+        31575,
+        7
+      ],
+      "item": null,
+      "action": 52723,
+      "unique": null,
+      "region": "content/world/placements/region-z07-x128-y123.b3",
+      "region_sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+    },
+    {
+      "position": [
+        32969,
+        31576,
+        7
+      ],
+      "item": null,
+      "action": 52724,
+      "unique": null,
+      "region": "content/world/placements/region-z07-x128-y123.b3",
+      "region_sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
     }
   ],
   "projections": [

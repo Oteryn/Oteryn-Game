@@ -41,7 +41,7 @@ impl RaidOrigin {
         self.cycle >= 0
             && match self.kind {
                 EventKind::SpringIntoLife => (1..=2).contains(&self.member),
-                EventKind::RiseOfDevovorga => self.member <= 5,
+                EventKind::RiseOfDevovorga => self.member <= 8,
                 EventKind::DevovorgasEssence => self.member <= 4,
                 _ => self.member == 0,
             }
@@ -211,7 +211,7 @@ async fn credit(
     }
     if (matches!(
         origin.kind,
-        EventKind::BankRobbery | EventKind::InsectoidInvasion
+        EventKind::RiseOfDevovorga | EventKind::BankRobbery | EventKind::InsectoidInvasion
     ) && state.phase != oteryn_gameplay_world_change::timed::Phase::Active)
         || state.lifecycle.generation != origin.generation
         || !matches!(
@@ -222,6 +222,9 @@ async fn credit(
     {
         return Ok(NativeKillOutcome::Refused);
     }
+    let final_credit = origin.kind == EventKind::RiseOfDevovorga
+        && origin.member == 5
+        && state.lifecycle.stage == 5;
     if matches!(
         origin.kind,
         EventKind::RiseOfDevovorga | EventKind::Kingsday
@@ -239,8 +242,8 @@ async fn credit(
             .map_err(|_| DurabilityError::InvalidStoredState)?;
     }
     for person in &people {
-        sqlx::query("INSERT INTO game_world_timed_participants(world_id,event_key,cycle_id,character_id,credited) VALUES(encode($1,'hex')::uuid,$2,$3,encode($4,'hex')::uuid,1) ON CONFLICT(world_id,event_key,cycle_id,character_id) DO UPDATE SET credited=game_world_timed_participants.credited+1")
-            .bind(world.as_bytes().as_slice()).bind(origin.kind.key()).bind(origin.cycle).bind(person.as_bytes().as_slice()).execute(&mut **tx).await?;
+        sqlx::query("INSERT INTO game_world_timed_participants(world_id,event_key,cycle_id,character_id,credited,reward_ready) VALUES(encode($1,'hex')::uuid,$2,$3,encode($4,'hex')::uuid,1,$5) ON CONFLICT(world_id,event_key,cycle_id,character_id) DO UPDATE SET credited=game_world_timed_participants.credited+1,reward_ready=game_world_timed_participants.reward_ready OR $5")
+            .bind(world.as_bytes().as_slice()).bind(origin.kind.key()).bind(origin.cycle).bind(person.as_bytes().as_slice()).bind(final_credit).execute(&mut **tx).await?;
     }
     save(tx, world, origin.kind, &state, origin.cycle).await?;
     sqlx::query("INSERT INTO game_world_timed_kill_receipts VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5,encode($6,'hex')::uuid,encode($7,'hex')::uuid,$8,$9,$10)")

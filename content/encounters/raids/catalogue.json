@@ -41817,7 +41817,7 @@
           "evidence": "OTERYN_AUTHORED_POLICY",
           "line": 1,
           "policy": "content/quests/world-event-raid-policy.json",
-          "sha256": "36b9487b4012ba1821ca3daf538706e306ce466e2a32288c24395341c3aa56ca"
+          "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
         }
       ],
       "variant_group": null,
@@ -41830,7 +41830,7 @@
               "evidence": "OTERYN_AUTHORED_POLICY",
               "line": 1,
               "policy": "content/quests/world-event-raid-policy.json",
-              "sha256": "36b9487b4012ba1821ca3daf538706e306ce466e2a32288c24395341c3aa56ca"
+              "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
             }
           ],
           "unresolved": [],
@@ -41871,7 +41871,7 @@
                     "evidence": "OTERYN_AUTHORED_POLICY",
                     "line": 1,
                     "policy": "content/quests/world-event-raid-policy.json",
-                    "sha256": "36b9487b4012ba1821ca3daf538706e306ce466e2a32288c24395341c3aa56ca"
+                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
                   },
                   "source_name": "Jesse the Wicked",
                   "spawn_mode": "area"
@@ -41916,7 +41916,7 @@
           "evidence": "OTERYN_AUTHORED_POLICY",
           "line": 1,
           "policy": "content/quests/world-event-raid-policy.json",
-          "sha256": "36b9487b4012ba1821ca3daf538706e306ce466e2a32288c24395341c3aa56ca"
+          "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
         }
       ],
       "variant_group": null,
@@ -41929,7 +41929,7 @@
               "evidence": "OTERYN_AUTHORED_POLICY",
               "line": 1,
               "policy": "content/quests/world-event-raid-policy.json",
-              "sha256": "36b9487b4012ba1821ca3daf538706e306ce466e2a32288c24395341c3aa56ca"
+              "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
             }
           ],
           "unresolved": [],
@@ -41970,7 +41970,7 @@
                     "evidence": "OTERYN_AUTHORED_POLICY",
                     "line": 1,
                     "policy": "content/quests/world-event-raid-policy.json",
-                    "sha256": "36b9487b4012ba1821ca3daf538706e306ce466e2a32288c24395341c3aa56ca"
+                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
                   },
                   "source_name": "Insectoid Scout",
                   "spawn_mode": "single"
@@ -42008,7 +42008,7 @@
                     "evidence": "OTERYN_AUTHORED_POLICY",
                     "line": 1,
                     "policy": "content/quests/world-event-raid-policy.json",
-                    "sha256": "36b9487b4012ba1821ca3daf538706e306ce466e2a32288c24395341c3aa56ca"
+                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
                   },
                   "source_name": "Insectoid Scout",
                   "spawn_mode": "single"
@@ -42159,7 +42159,7 @@
           "evidence": "OTERYN_AUTHORED_POLICY",
           "line": 1,
           "policy": "content/quests/world-event-raid-policy.json",
-          "sha256": "36b9487b4012ba1821ca3daf538706e306ce466e2a32288c24395341c3aa56ca"
+          "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
         }
       ],
       "variant_group": null,
@@ -42172,7 +42172,7 @@
               "evidence": "OTERYN_AUTHORED_POLICY",
               "line": 1,
               "policy": "content/quests/world-event-raid-policy.json",
-              "sha256": "36b9487b4012ba1821ca3daf538706e306ce466e2a32288c24395341c3aa56ca"
+              "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
             }
           ],
           "unresolved": [],
@@ -42213,7 +42213,7 @@
                     "evidence": "OTERYN_AUTHORED_POLICY",
                     "line": 1,
                     "policy": "content/quests/world-event-raid-policy.json",
-                    "sha256": "36b9487b4012ba1821ca3daf538706e306ce466e2a32288c24395341c3aa56ca"
+                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
                   },
                   "source_name": "Orc Warlord",
                   "spawn_mode": "area"
@@ -42224,6 +42224,915 @@
         }
       ],
       "wiki_area": "Thais",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
+      "boss_names": [
+        "Anmothra"
+      ],
+      "end": {
+        "despawn_after_ms": null,
+        "kind": "until_reset"
+      },
+      "inactive_reasons": [],
+      "key": "raid:world-events.rise-anmothra",
+      "kind": "calendar",
+      "name": "Rise of Devovorga: anmothra",
+      "schedule": {
+        "interval_ms": 60000,
+        "kind": "calendar",
+        "repeat_persistent": true,
+        "start_immediately": true,
+        "window": {
+          "end_day": 31,
+          "end_month": 12,
+          "start_day": 1,
+          "start_month": 1
+        }
+      },
+      "source_conflicts": [
+        "CONTRACT-NOTES.md#devovorga-world-event-policy"
+      ],
+      "sources": [
+        {
+          "evidence": "OTERYN_AUTHORED_POLICY",
+          "line": 1,
+          "policy": "content/quests/world-event-raid-policy.json",
+          "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "world-events.rise-anmothra",
+          "sources": [
+            {
+              "evidence": "OTERYN_AUTHORED_POLICY",
+              "line": 1,
+              "policy": "content/quests/world-event-raid-policy.json",
+              "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 0,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32968,
+                      "y": 31570
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x128-y123.b3",
+                        "sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32968,
+                      "y": 31570
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32968_31570_7-32968_31570_7",
+                  "boss": true,
+                  "creature": "oteryn:creature.wevents.anmothra",
+                  "source": {
+                    "evidence": "OTERYN_AUTHORED_POLICY",
+                    "line": 1,
+                    "policy": "content/quests/world-event-raid-policy.json",
+                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+                  },
+                  "source_name": "Anmothra",
+                  "spawn_mode": "single"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Vengoth",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
+      "boss_names": [
+        "Bloom Of Doom"
+      ],
+      "end": {
+        "despawn_after_ms": null,
+        "kind": "until_reset"
+      },
+      "inactive_reasons": [],
+      "key": "raid:world-events.rise-bloom_of_doom",
+      "kind": "calendar",
+      "name": "Rise of Devovorga: bloom of doom",
+      "schedule": {
+        "interval_ms": 60000,
+        "kind": "calendar",
+        "repeat_persistent": true,
+        "start_immediately": true,
+        "window": {
+          "end_day": 31,
+          "end_month": 12,
+          "start_day": 1,
+          "start_month": 1
+        }
+      },
+      "source_conflicts": [
+        "CONTRACT-NOTES.md#devovorga-world-event-policy"
+      ],
+      "sources": [
+        {
+          "evidence": "OTERYN_AUTHORED_POLICY",
+          "line": 1,
+          "policy": "content/quests/world-event-raid-policy.json",
+          "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "world-events.rise-bloom_of_doom",
+          "sources": [
+            {
+              "evidence": "OTERYN_AUTHORED_POLICY",
+              "line": 1,
+              "policy": "content/quests/world-event-raid-policy.json",
+              "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 0,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32968,
+                      "y": 31574
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x128-y123.b3",
+                        "sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32968,
+                      "y": 31574
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32968_31574_7-32968_31574_7",
+                  "boss": true,
+                  "creature": "oteryn:creature.wevents.bloom_of_doom",
+                  "source": {
+                    "evidence": "OTERYN_AUTHORED_POLICY",
+                    "line": 1,
+                    "policy": "content/quests/world-event-raid-policy.json",
+                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+                  },
+                  "source_name": "Bloom Of Doom",
+                  "spawn_mode": "single"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Vengoth",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
+      "boss_names": [
+        "Chikhaton"
+      ],
+      "end": {
+        "despawn_after_ms": null,
+        "kind": "until_reset"
+      },
+      "inactive_reasons": [],
+      "key": "raid:world-events.rise-chikhaton",
+      "kind": "calendar",
+      "name": "Rise of Devovorga: chikhaton",
+      "schedule": {
+        "interval_ms": 60000,
+        "kind": "calendar",
+        "repeat_persistent": true,
+        "start_immediately": true,
+        "window": {
+          "end_day": 31,
+          "end_month": 12,
+          "start_day": 1,
+          "start_month": 1
+        }
+      },
+      "source_conflicts": [
+        "CONTRACT-NOTES.md#devovorga-world-event-policy"
+      ],
+      "sources": [
+        {
+          "evidence": "OTERYN_AUTHORED_POLICY",
+          "line": 1,
+          "policy": "content/quests/world-event-raid-policy.json",
+          "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "world-events.rise-chikhaton",
+          "sources": [
+            {
+              "evidence": "OTERYN_AUTHORED_POLICY",
+              "line": 1,
+              "policy": "content/quests/world-event-raid-policy.json",
+              "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 0,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32970,
+                      "y": 31572
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x128-y123.b3",
+                        "sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32970,
+                      "y": 31572
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32970_31572_7-32970_31572_7",
+                  "boss": true,
+                  "creature": "oteryn:creature.chikhaton",
+                  "source": {
+                    "evidence": "OTERYN_AUTHORED_POLICY",
+                    "line": 1,
+                    "policy": "content/quests/world-event-raid-policy.json",
+                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+                  },
+                  "source_name": "Chikhaton",
+                  "spawn_mode": "single"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Vengoth",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
+      "boss_names": [
+        "Devovorga"
+      ],
+      "end": {
+        "despawn_after_ms": null,
+        "kind": "until_reset"
+      },
+      "inactive_reasons": [],
+      "key": "raid:world-events.rise-devovorga",
+      "kind": "calendar",
+      "name": "Rise of Devovorga: devovorga",
+      "schedule": {
+        "interval_ms": 60000,
+        "kind": "calendar",
+        "repeat_persistent": true,
+        "start_immediately": true,
+        "window": {
+          "end_day": 31,
+          "end_month": 12,
+          "start_day": 1,
+          "start_month": 1
+        }
+      },
+      "source_conflicts": [
+        "CONTRACT-NOTES.md#devovorga-world-event-policy"
+      ],
+      "sources": [
+        {
+          "evidence": "OTERYN_AUTHORED_POLICY",
+          "line": 1,
+          "policy": "content/quests/world-event-raid-policy.json",
+          "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "world-events.rise-devovorga",
+          "sources": [
+            {
+              "evidence": "OTERYN_AUTHORED_POLICY",
+              "line": 1,
+              "policy": "content/quests/world-event-raid-policy.json",
+              "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 0,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32968,
+                      "y": 31574
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x128-y123.b3",
+                        "sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32968,
+                      "y": 31574
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32968_31574_7-32968_31574_7",
+                  "boss": true,
+                  "creature": "oteryn:creature.wevents.devovorga",
+                  "source": {
+                    "evidence": "OTERYN_AUTHORED_POLICY",
+                    "line": 1,
+                    "policy": "content/quests/world-event-raid-policy.json",
+                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+                  },
+                  "source_name": "Devovorga",
+                  "spawn_mode": "single"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Vengoth",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
+      "boss_names": [
+        "Irahsae"
+      ],
+      "end": {
+        "despawn_after_ms": null,
+        "kind": "until_reset"
+      },
+      "inactive_reasons": [],
+      "key": "raid:world-events.rise-irahsae",
+      "kind": "calendar",
+      "name": "Rise of Devovorga: irahsae",
+      "schedule": {
+        "interval_ms": 60000,
+        "kind": "calendar",
+        "repeat_persistent": true,
+        "start_immediately": true,
+        "window": {
+          "end_day": 31,
+          "end_month": 12,
+          "start_day": 1,
+          "start_month": 1
+        }
+      },
+      "source_conflicts": [
+        "CONTRACT-NOTES.md#devovorga-world-event-policy"
+      ],
+      "sources": [
+        {
+          "evidence": "OTERYN_AUTHORED_POLICY",
+          "line": 1,
+          "policy": "content/quests/world-event-raid-policy.json",
+          "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "world-events.rise-irahsae",
+          "sources": [
+            {
+              "evidence": "OTERYN_AUTHORED_POLICY",
+              "line": 1,
+              "policy": "content/quests/world-event-raid-policy.json",
+              "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 0,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32968,
+                      "y": 31574
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x128-y123.b3",
+                        "sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32968,
+                      "y": 31574
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32968_31574_7-32968_31574_7",
+                  "boss": true,
+                  "creature": "oteryn:creature.wevents.irahsae",
+                  "source": {
+                    "evidence": "OTERYN_AUTHORED_POLICY",
+                    "line": 1,
+                    "policy": "content/quests/world-event-raid-policy.json",
+                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+                  },
+                  "source_name": "Irahsae",
+                  "spawn_mode": "single"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Vengoth",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
+      "boss_names": [
+        "Phrodomo"
+      ],
+      "end": {
+        "despawn_after_ms": null,
+        "kind": "until_reset"
+      },
+      "inactive_reasons": [],
+      "key": "raid:world-events.rise-phrodomo",
+      "kind": "calendar",
+      "name": "Rise of Devovorga: phrodomo",
+      "schedule": {
+        "interval_ms": 60000,
+        "kind": "calendar",
+        "repeat_persistent": true,
+        "start_immediately": true,
+        "window": {
+          "end_day": 31,
+          "end_month": 12,
+          "start_day": 1,
+          "start_month": 1
+        }
+      },
+      "source_conflicts": [
+        "CONTRACT-NOTES.md#devovorga-world-event-policy"
+      ],
+      "sources": [
+        {
+          "evidence": "OTERYN_AUTHORED_POLICY",
+          "line": 1,
+          "policy": "content/quests/world-event-raid-policy.json",
+          "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "world-events.rise-phrodomo",
+          "sources": [
+            {
+              "evidence": "OTERYN_AUTHORED_POLICY",
+              "line": 1,
+              "policy": "content/quests/world-event-raid-policy.json",
+              "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 0,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32970,
+                      "y": 31576
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x128-y123.b3",
+                        "sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32970,
+                      "y": 31576
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32970_31576_7-32970_31576_7",
+                  "boss": true,
+                  "creature": "oteryn:creature.wevents.phrodomo",
+                  "source": {
+                    "evidence": "OTERYN_AUTHORED_POLICY",
+                    "line": 1,
+                    "policy": "content/quests/world-event-raid-policy.json",
+                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+                  },
+                  "source_name": "Phrodomo",
+                  "spawn_mode": "single"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Vengoth",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
+      "boss_names": [
+        "Spawn Of Devovorga"
+      ],
+      "end": {
+        "despawn_after_ms": null,
+        "kind": "until_reset"
+      },
+      "inactive_reasons": [],
+      "key": "raid:world-events.rise-spawn_of_devovorga",
+      "kind": "calendar",
+      "name": "Rise of Devovorga: spawn of devovorga",
+      "schedule": {
+        "interval_ms": 60000,
+        "kind": "calendar",
+        "repeat_persistent": true,
+        "start_immediately": true,
+        "window": {
+          "end_day": 31,
+          "end_month": 12,
+          "start_day": 1,
+          "start_month": 1
+        }
+      },
+      "source_conflicts": [
+        "CONTRACT-NOTES.md#devovorga-world-event-policy"
+      ],
+      "sources": [
+        {
+          "evidence": "OTERYN_AUTHORED_POLICY",
+          "line": 1,
+          "policy": "content/quests/world-event-raid-policy.json",
+          "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "world-events.rise-spawn_of_devovorga",
+          "sources": [
+            {
+              "evidence": "OTERYN_AUTHORED_POLICY",
+              "line": 1,
+              "policy": "content/quests/world-event-raid-policy.json",
+              "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 0,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32970,
+                      "y": 31576
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x128-y123.b3",
+                        "sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32970,
+                      "y": 31576
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32970_31576_7-32970_31576_7",
+                  "boss": true,
+                  "creature": "oteryn:creature.wevents.spawn_of_devovorga",
+                  "source": {
+                    "evidence": "OTERYN_AUTHORED_POLICY",
+                    "line": 1,
+                    "policy": "content/quests/world-event-raid-policy.json",
+                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+                  },
+                  "source_name": "Spawn Of Devovorga",
+                  "spawn_mode": "single"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Vengoth",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
+      "boss_names": [
+        "Teneshpar"
+      ],
+      "end": {
+        "despawn_after_ms": null,
+        "kind": "until_reset"
+      },
+      "inactive_reasons": [],
+      "key": "raid:world-events.rise-teneshpar",
+      "kind": "calendar",
+      "name": "Rise of Devovorga: teneshpar",
+      "schedule": {
+        "interval_ms": 60000,
+        "kind": "calendar",
+        "repeat_persistent": true,
+        "start_immediately": true,
+        "window": {
+          "end_day": 31,
+          "end_month": 12,
+          "start_day": 1,
+          "start_month": 1
+        }
+      },
+      "source_conflicts": [
+        "CONTRACT-NOTES.md#devovorga-world-event-policy"
+      ],
+      "sources": [
+        {
+          "evidence": "OTERYN_AUTHORED_POLICY",
+          "line": 1,
+          "policy": "content/quests/world-event-raid-policy.json",
+          "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "world-events.rise-teneshpar",
+          "sources": [
+            {
+              "evidence": "OTERYN_AUTHORED_POLICY",
+              "line": 1,
+              "policy": "content/quests/world-event-raid-policy.json",
+              "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 0,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32968,
+                      "y": 31578
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x128-y123.b3",
+                        "sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32968,
+                      "y": 31578
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32968_31578_7-32968_31578_7",
+                  "boss": true,
+                  "creature": "oteryn:creature.wevents.teneshpar",
+                  "source": {
+                    "evidence": "OTERYN_AUTHORED_POLICY",
+                    "line": 1,
+                    "policy": "content/quests/world-event-raid-policy.json",
+                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+                  },
+                  "source_name": "Teneshpar",
+                  "spawn_mode": "single"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Vengoth",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
+      "boss_names": [
+        "Vulnerable Cocoon"
+      ],
+      "end": {
+        "despawn_after_ms": null,
+        "kind": "until_reset"
+      },
+      "inactive_reasons": [],
+      "key": "raid:world-events.rise-vulnerable_cocoon",
+      "kind": "calendar",
+      "name": "Rise of Devovorga: vulnerable cocoon",
+      "schedule": {
+        "interval_ms": 60000,
+        "kind": "calendar",
+        "repeat_persistent": true,
+        "start_immediately": true,
+        "window": {
+          "end_day": 31,
+          "end_month": 12,
+          "start_day": 1,
+          "start_month": 1
+        }
+      },
+      "source_conflicts": [
+        "CONTRACT-NOTES.md#devovorga-world-event-policy"
+      ],
+      "sources": [
+        {
+          "evidence": "OTERYN_AUTHORED_POLICY",
+          "line": 1,
+          "policy": "content/quests/world-event-raid-policy.json",
+          "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "world-events.rise-vulnerable_cocoon",
+          "sources": [
+            {
+              "evidence": "OTERYN_AUTHORED_POLICY",
+              "line": 1,
+              "policy": "content/quests/world-event-raid-policy.json",
+              "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 0,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32968,
+                      "y": 31574
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x128-y123.b3",
+                        "sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32968,
+                      "y": 31574
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32968_31574_7-32968_31574_7",
+                  "boss": true,
+                  "creature": "oteryn:creature.wevents.vulnerable_cocoon",
+                  "source": {
+                    "evidence": "OTERYN_AUTHORED_POLICY",
+                    "line": 1,
+                    "policy": "content/quests/world-event-raid-policy.json",
+                    "sha256": "2eadd4a6d3459dd17ebe8288db6c1e0a862b42fff9d1df694c3e18598a1aefb4"
+                  },
+                  "source_name": "Vulnerable Cocoon",
+                  "spawn_mode": "single"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Vengoth",
       "wiki_records": [],
       "wiki_sources": []
     },
@@ -42818,8 +43727,8 @@
       "total": 86
     },
     "calendar": {
-      "active": 7,
-      "total": 11
+      "active": 16,
+      "total": 20
     },
     "city": {
       "active": 2,

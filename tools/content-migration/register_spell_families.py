@@ -411,6 +411,11 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     # Creature roots. Bind executable closures only after those policies settle.
     from bind_monster_source_definitions import bind_definitions
     generated = bind_definitions(root, generated)
+    import wevents_creature_profiles
+    wevents_creature_profiles.admit(root, generated,
+        spell_import.PROVIDER_DESTINATIONS['creature_profiles'],
+        spell_import.PROVIDER_DESTINATIONS['presentation_profiles'],
+        NATIVE_MANIFEST, spell_import.canonical_bytes)
     pin_repository_inputs(root, generated)
     # PKG1R2 owner decision (2026-10-30), Energy_Field_(Field) rev 1011133:
     # Global measurement wins over the immutable donor's 98 seconds for 2122 only.

@@ -50,6 +50,10 @@ fn parse_rules(
                     | (EventKind::Kingsday, "hourly", 0)
                     | (EventKind::BankRobbery, "recovery", 0)
                     | (EventKind::InsectoidInvasion, "population", 0)
+                    | (EventKind::RiseOfDevovorga, "incarnation", 0..=4)
+                    | (EventKind::RiseOfDevovorga, "mutation", 6..=7)
+                    | (EventKind::RiseOfDevovorga, "cocoon", 8)
+                    | (EventKind::RiseOfDevovorga, "final", 5)
             );
             if !supported
                 || rule.key.len() > 160
@@ -72,6 +76,19 @@ pub(crate) fn admits(state: &EventState, rule: &EventRaidRule, now: i64) -> bool
         return false;
     }
     match rule.condition.as_str() {
+        "incarnation" | "mutation" | "cocoon" | "final" => {
+            let stage = match rule.condition.as_str() {
+                "incarnation" => matches!(state.lifecycle.stage, 1 | 3),
+                "mutation" => state.lifecycle.stage == 2,
+                "cocoon" => state.lifecycle.stage == 4,
+                "final" => state.lifecycle.stage == 5,
+                _ => false,
+            };
+            state.phase == oteryn_gameplay_world_change::timed::Phase::Active
+                && stage
+                && state.lifecycle.mask & (1_u16 << rule.member) == 0
+                && !state.lifecycle.firing_versions.contains_key(&rule.member)
+        }
         "hatch" => {
             state.object_ready(rule.member, now)
                 && state.lifecycle.objects.get(&rule.member).is_some_and(|o| {
@@ -139,6 +156,30 @@ pub(crate) async fn acknowledge_hatch(
     let Some((world, origin)) = locked else {
         return Ok(());
     };
+    if origin.kind == EventKind::RiseOfDevovorga {
+        let raw: serde_json::Value = sqlx::query_scalar("SELECT state FROM game_world_timed_events WHERE world_id=encode($1,'hex')::uuid AND event_key=$2 AND cycle_id=$3 FOR UPDATE")
+            .bind(world.as_bytes().as_slice()).bind(origin.kind.key()).bind(origin.cycle).fetch_one(&mut **tx).await?;
+        let mut state: EventState =
+            serde_json::from_value(raw).map_err(|_| DurabilityError::InvalidStoredState)?;
+        if state.lifecycle.generation != origin.generation
+            || state.lifecycle.last_firing.get(&origin.member) != Some(&firing)
+        {
+            return Ok(());
+        }
+        state
+            .note_spawn(origin.member, placed)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        if !placed {
+            let all_failed: bool = sqlx::query_scalar("SELECT (SELECT count(*) FROM game_world_raid_creature_placements WHERE firing_id=encode($1,'hex')::uuid)=(SELECT count(*) FROM game_world_raid_targets WHERE firing_id=encode($1,'hex')::uuid) AND NOT EXISTS(SELECT 1 FROM game_world_raid_creature_placements WHERE firing_id=encode($1,'hex')::uuid AND placed)")
+                .bind(firing.as_slice()).fetch_one(&mut **tx).await?;
+            if all_failed {
+                state.lifecycle.firing_versions.remove(&origin.member);
+                state.lifecycle.last_firing.remove(&origin.member);
+            }
+        }
+        save(tx, *world, origin.kind, &state, origin.cycle).await?;
+        return Ok(());
+    }
     if origin.kind == EventKind::BankRobbery {
         if !placed {
             let all_failed: bool = sqlx::query_scalar("SELECT (SELECT count(*) FROM game_world_raid_creature_placements WHERE firing_id=encode($1,'hex')::uuid)=(SELECT count(*) FROM game_world_raid_targets WHERE firing_id=encode($1,'hex')::uuid) AND NOT EXISTS(SELECT 1 FROM game_world_raid_creature_placements WHERE firing_id=encode($1,'hex')::uuid AND placed)")
@@ -241,6 +282,7 @@ pub(crate) async fn origin_current(
     if !matches!(
         origin.kind,
         EventKind::SpringIntoLife
+            | EventKind::RiseOfDevovorga
             | EventKind::Kingsday
             | EventKind::BankRobbery
             | EventKind::InsectoidInvasion
@@ -262,6 +304,8 @@ pub(crate) async fn origin_current(
         origin.kind,
         EventKind::BankRobbery | EventKind::InsectoidInvasion
     ) || state.phase == oteryn_gameplay_world_change::timed::Phase::Active)
+        && (origin.kind != EventKind::RiseOfDevovorga
+            || state.lifecycle.mask & (1_u16 << origin.member) == 0)
         && state.lifecycle.generation == origin.generation
         && state.lifecycle.firing_versions.get(&origin.member) == Some(&origin.version))
 }
@@ -272,7 +316,7 @@ pub(crate) async fn retire_stale(
     world: WorldId,
     now: i64,
 ) -> Result<(), DurabilityError> {
-    sqlx::query("WITH stale AS (SELECT f.firing_id FROM game_world_raid_firings f JOIN game_world_timed_raid_origins o USING(firing_id) LEFT JOIN game_world_timed_events e ON e.world_id=f.world_id AND e.event_key=o.origin->>'kind' AND e.cycle_id=(o.origin->>'cycle')::bigint WHERE f.world_id=encode($1,'hex')::uuid AND f.state IN(1,2) AND NOT EXISTS(SELECT 1 FROM game_world_raid_retirements r WHERE r.firing_id=f.firing_id) AND o.origin->>'kind' IN('spring_into_life','kingsday','bank_robbery','insectoid_invasion') AND (e.state IS NULL OR e.state->>'phase'='Failure' OR (o.origin->>'kind' IN('bank_robbery','insectoid_invasion') AND e.state->>'phase'<>'Active') OR (e.state->>'end_ms')::bigint <= $2 OR e.state->'lifecycle'->'generation' IS DISTINCT FROM o.origin->'generation' OR e.state->'lifecycle'->'firing_versions'->(o.origin->>'member') IS DISTINCT FROM o.origin->'version') ORDER BY f.firing_id LIMIT 32), retired AS (INSERT INTO game_world_raid_retirements SELECT firing_id,$2,'world_event_stale' FROM stale ON CONFLICT DO NOTHING RETURNING firing_id) UPDATE game_world_raid_firings f SET state=3 FROM retired WHERE f.firing_id=retired.firing_id AND f.state=1")
+    sqlx::query("WITH stale AS (SELECT f.firing_id FROM game_world_raid_firings f JOIN game_world_timed_raid_origins o USING(firing_id) LEFT JOIN game_world_timed_events e ON e.world_id=f.world_id AND e.event_key=o.origin->>'kind' AND e.cycle_id=(o.origin->>'cycle')::bigint WHERE f.world_id=encode($1,'hex')::uuid AND f.state IN(1,2) AND NOT EXISTS(SELECT 1 FROM game_world_raid_retirements r WHERE r.firing_id=f.firing_id) AND o.origin->>'kind' IN('spring_into_life','kingsday','bank_robbery','insectoid_invasion','rise_of_devovorga') AND (e.state IS NULL OR e.state->>'phase'='Failure' OR (o.origin->>'kind'='rise_of_devovorga' AND ((e.state->'lifecycle'->>'mask')::integer & (1 << (o.origin->>'member')::integer)) <> 0) OR (o.origin->>'kind' IN('bank_robbery','insectoid_invasion','rise_of_devovorga') AND e.state->>'phase'<>'Active') OR (e.state->>'end_ms')::bigint <= $2 OR e.state->'lifecycle'->'generation' IS DISTINCT FROM o.origin->'generation' OR e.state->'lifecycle'->'firing_versions'->(o.origin->>'member') IS DISTINCT FROM o.origin->'version') ORDER BY f.firing_id LIMIT 32), retired AS (INSERT INTO game_world_raid_retirements SELECT firing_id,$2,'world_event_stale' FROM stale ON CONFLICT DO NOTHING RETURNING firing_id) UPDATE game_world_raid_firings f SET state=3 FROM retired WHERE f.firing_id=retired.firing_id AND f.state=1")
         .bind(world.as_bytes().as_slice()).bind(now).execute(&mut **tx).await?;
     Ok(())
 }
@@ -326,6 +370,42 @@ pub(crate) async fn reconcile_hatches(
             cycle(EventKind::SpringIntoLife, epoch, state.start_ms)?,
         )
         .await?;
+    }
+    Ok(())
+}
+
+/// Seasonal stages outlive a daily reset; cancelled physical members must be
+/// readmitted without losing already credited members or restarting the clock.
+pub(crate) async fn reconcile_stage_firings(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+    epoch: u64,
+    kind: EventKind,
+    state: &mut EventState,
+) -> Result<(), DurabilityError> {
+    let mut retry = Vec::new();
+    for (&member, &firing) in &state.lifecycle.last_firing {
+        let bit = 1_u16
+            .checked_shl(u32::from(member))
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        if state.lifecycle.mask & bit != 0 {
+            continue;
+        }
+        let facts: Option<(i16,String,bool)> = sqlx::query_as("SELECT state,reset_epoch::text,EXISTS(SELECT 1 FROM game_world_raid_retirements r WHERE r.firing_id=f.firing_id) FROM game_world_raid_firings f WHERE firing_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid")
+            .bind(firing.as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+        let Some((status, prior_epoch, retired)) = facts else {
+            return Err(DurabilityError::InvalidStoredState);
+        };
+        if status == 3 || retired || prior_epoch != epoch.to_string() {
+            retry.push(member);
+        }
+    }
+    if !retry.is_empty() {
+        for member in retry {
+            state.lifecycle.last_firing.remove(&member);
+            state.lifecycle.firing_versions.remove(&member);
+        }
+        save(tx, world, kind, state, cycle(kind, epoch, state.start_ms)?).await?;
     }
     Ok(())
 }

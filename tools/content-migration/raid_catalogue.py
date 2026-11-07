@@ -251,6 +251,23 @@ def creature_catalogue(root: Path) -> dict[str, bool]:
             details = record["authoring"]["profile"]["details"]
             result[record["definition"]["identity"]["key"]] = (
                 details.get("bosstiary") is not None or details["system_eligibility"]["reward_boss"])
+    policy_path = root / "content/quests/world-event-creature-policy.json"
+    profiles_path = root / "content/creatures/definitions/spell-native-profiles.json"
+    if policy_path.exists() and profiles_path.exists():
+        policy_raw = policy_path.read_bytes()
+        policy = json.loads(policy_raw)
+        names = {"oteryn:creature.wevents." + row["name"] for row in policy["actors"]}
+        for record in json.loads(profiles_path.read_bytes())["records"]:
+            key = record["profile"]["target"]["key"]
+            if key not in names:
+                continue
+            declaration = record.get("source_qualification", "")
+            if not declaration.startswith("OTERYN_AUTHORED_POLICY "):
+                raise ValueError("WEVENTS_ACTOR_SOURCE")
+            proof = json.loads(declaration.removeprefix("OTERYN_AUTHORED_POLICY "))
+            if proof["sha256"] != hashlib.sha256(policy_raw).hexdigest():
+                raise ValueError("WEVENTS_ACTOR_POLICY_STALE")
+            result[key] = True
     if not result:
         raise ValueError("RAID_CREATURE_CATALOGUE_EMPTY")
     return result

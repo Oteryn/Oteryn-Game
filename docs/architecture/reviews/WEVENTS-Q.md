@@ -555,3 +555,129 @@ Locked dispatch check and workspace fmt check also passed for the qualification
 checkpoint (`wevents-insect-qualification-check.log`, 2m 51s, and
 `wevents-insect-qualification-fmt.log`); explicit mounted-test rustfmt and staged
 whitespace checks passed.
+
+## Devovorga phase engine and native content
+
+The phase regression first failed because a final-boss defeat was admitted during
+mutation stage 2 (`/tmp/wevents-devovorga-phases-red.log`). After enforcing the
+complete sequence, the focused phase and seasonal cases passed (7 tests).
+The room-reservation regression first failed with the missing API, then passed
+(1 test, 0.01 s), including overlap refusal and explicit/drop release.
+
+The real PostgreSQL stage case passed in 9.32 s and printed
+`WEVENTS PG EXECUTED: devovorga native stages duration=9.31095389s`.
+It admits and acknowledges all fourteen stage members through the production
+scheduler, uses native attributed defeat receipts, rejects receipt replays and
+verifies final victory and reward eligibility. This is a focused case, not the
+full PostgreSQL suite. Native physical actor and USE proof is recorded below.
+
+Eight authored actor profiles use the pinned source facts and conservative rules
+in `content/quests/world-event-creature-policy.json` and
+`CONTRACT-NOTES.md#devovorga-world-event-policy`. The full-manifest native
+qualification test passed (one test, 164.13 s): server
+`cb7a70a75c950ef9f5c98ac631a63b150620f088a89af6d8b285ae203b64458f`, client
+`009901a087d26614751f51a9b0676964ea5c4f50b0bc5d5c9f5579932eed2e28`.
+The actual Rust prey simulation passed all 15 cases over 776 creature profiles.
+Creature producer tests passed (2), raid catalogue tests passed (15), and the
+native object generator verified 28 ground selectors against current B3 tiles.
+
+Strict changed-crate Clippy passed with `-D warnings` (world-change, world,
+content, quests, durability, entities and dispatch, all features, library targets;
+6m39s). Formatting, mounted-test formatting and diff whitespace checks passed.
+Tool-generated pin refresh and check passed: input digest
+`7bda0321c586bdcfe2bace6a53d75e0a42532ede4f399294b925a9cea6440edf`, unchanged
+World `d5e52c7a0ef24bf6aa7b78926fd0806e43eb731ac69b10783f20c9f10dcd88e5`
+(31101950 bytes). Bounded staged state and room leases need no new tables. Migration 1127
+repairs the existing reward owner’s deferred receipt-cause guard, as below.
+
+The first four-case native PostgreSQL run passed the physical Anmothra and final
+Devovorga cases (markers 106.902581703 s and 104.375961076 s). Its USE fixtures
+failed before exercising successful admission: direct level mutation was refused
+by the typed progression trigger, and the synthetic map omitted some room cells.
+The corrected fixtures use a sequenced XP receipt and materialize the entire
+bounded encounter room. They do not relax production progression or room checks.
+Logs: `/tmp/wevents-devovorga-native-pg-final.log` (initial run),
+`/tmp/wevents-devovorga-native-pg-green.log` (first corrected run).
+
+The final dispatch/entities `cargo check --locked` passed (8m20s). Strict dispatch
+library/test Clippy passed (10m07s), including the corrected typed-XP and room
+fixtures. The final workspace formatting check and explicit mounted-fixture
+rustfmt check also passed.
+
+
+The first corrected native run exposed a production database regression:
+PostgreSQL rejected reward COMMIT with `quest reward lacks same-transaction quest
+receipt` (server log 2026-11-07 08:35:44 UTC). Migration 0999 accepted only
+`command`, while the Rust reward owner also accepts native `use`/`step` causes.
+Migration 1127 extends that closed cause set and retains every same-transaction
+receipt, carried-input, MINT and outfit guard. Historical migration bytes remain
+unchanged. The negative participation cases still run before successful MINT.
+The Essence custom scenario also now performs the normal encounter capability
+negotiation and attacker-lease binding, which its earlier custom branch skipped.
+
+Fresh branch migration checks before choosing 1127: main `9668e0a04e`, wvar
+`5fe1204192`, wcontrib `c8a8d97cf0`, worldchg `ebc53bc6e5`, qengine2 `5ad49dbe99`.
+None reserves 1120–1129; qengine2 still has the command-only reward guard.
+The focused native rerun with migration 1127 is captured in
+`/tmp/wevents-devovorga-native-pg-green3.log`.
+
+
+### Rise native reward qualification
+
+The native reward USE case passed with embedded migration 1127, printing
+`WEVENTS PG EXECUTED: devovorga native reward duration=73.734820933s success=true`
+(`/tmp/wevents-devovorga-native-pg-green6.log`). It refuses a nonparticipant,
+refuses a participant without final-defeat eligibility, mints one Demon Backpack
+with the authored contents and grants I Did My Part, then refuses a second claim.
+Together with the fourteen-defeat owner PG case and both physical actor cases,
+this qualifies Rise's seasonal stages and reward boundary.
+
+The focused migration example applies the standard embedded GAME_MIGRATOR to a
+fresh PostgreSQL database and executes the real reward trigger against a source
+with no matching Quest receipt. It passed with the execution marker
+`WEVENTS PG EXECUTED: migration 1127 and missing-receipt guard duration=5.006066295s`.
+The SQL file and reusable example are committed in `103bf17a3`. Earlier native
+runs lacked the SQL file; the final cases explicitly require embedded version
+1127. A probe of the exact native-test durability library confirms that version.
+
+The Essence fixture now uses the same selected, nondefault epoch for the Channel
+pin and owner. Its leased-room refusal accepts either the occupied-room result
+or the movement landing refusal, while requiring both fee pieces to remain.
+
+
+### Essence native admission qualification
+
+The final focused PostgreSQL case passed (1 test, 72.27 s), printing
+`WEVENTS PG EXECUTED: Essence native admission duration=72.262045703s success=true`
+(`/tmp/wevents-devovorga-native-essence-green10.log`). The case uses selected
+reset epoch 122 for both the Channel pin and owner. It refuses an unpaid USE,
+refuses a leased room without consuming either carried fee piece, then commits
+World admission and the two-piece debit together, relocates the player, confirms
+an actual native Anmothra with 7000 maximum HP, and verifies that neither the
+pending callback nor room lease remains. The diagnostic records
+`Essence native paid use=Committed remaining_fee=0 pending=false`.
+
+The red native case exposed missing policy registration: an empty Channel had no
+creature policy table for the encounter lookup. The generic encounter executor
+now binds the admitted generation's complete policy table before preflight,
+independently of prior creature spawns. This is shared engine support, not a
+per-title monster special case. Refused previews and transaction outcomes remain
+visible in test diagnostics; production default behavior is unchanged by logging.
+
+Final strict dispatch/durability library and test-target Clippy passed with
+`-D warnings` (6m54s). The fresh migration qualification and all native title
+cases above print execution markers; no full PostgreSQL suite or nextest ran.
+The catalogue scope test passed (1 test, 2.95 s), checking all nine timed event
+qualifications plus Stampede. Producer rechecks passed (2 tests, 1.117 s),
+including reuse of an already generated Devovorga appearance cue. All 42
+registered content outputs passed their generator check. Pins were regenerated
+and checked with tooling; no generated digest was edited manually.
+
+
+The final affected-crate `cargo check --locked --all-features` passed after the
+policy binding and diagnostic changes (dispatch and durability, 7m47s). The
+earlier eight-crate all-features check, game-server focused-test Clippy, and
+strict library checks for world-change, world, content, quests and entities also
+passed. Final workspace and mounted-fixture formatting and diff whitespace
+checks passed. All nine WEVENTS rows are QUALIFIED; other lanes' rows are
+unchanged.

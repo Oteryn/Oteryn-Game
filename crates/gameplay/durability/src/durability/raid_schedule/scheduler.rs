@@ -137,6 +137,9 @@ impl DurabilityRoot {
             sqlx::query("INSERT INTO game_world_raid_scheduler_clocks(world_id,reset_epoch,last_end_at_ms) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3) ON CONFLICT(world_id) DO UPDATE SET reset_epoch=EXCLUDED.reset_epoch,last_end_at_ms=EXCLUDED.last_end_at_ms WHERE game_world_raid_scheduler_clocks.reset_epoch<EXCLUDED.reset_epoch")
                 .bind(request.world.as_bytes().as_slice()).bind(request.reset_epoch.to_string()).bind(request.now_ms).execute(&mut *tx).await?;
             crate::durability::raid_runner::reconcile_deadlines(&mut tx, request.world, request.now_ms).await?;
+            if let Some(state) = timed_events.get_mut("rise_of_devovorga") {
+                crate::durability::world_event::changes::timed::schedules::reconcile_stage_firings(&mut tx,request.world,request.reset_epoch,oteryn_gameplay_world_change::timed::EventKind::RiseOfDevovorga,state).await?;
+            }
             if let Some(state) = timed_events.get_mut("spring_into_life") {
                 crate::durability::world_event::changes::timed::schedules::reconcile_hatches(&mut tx, request.world, request.reset_epoch, state, request.now_ms).await?;
             }

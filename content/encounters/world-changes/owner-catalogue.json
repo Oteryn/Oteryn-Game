@@ -337,7 +337,7 @@
       "key": "devovorga_s_essence",
       "title": "Devovorga's Essence Mini World Change",
       "quest": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00200-00299.json",
@@ -374,14 +374,24 @@
           "url": "https://tibia.fandom.com/index.php?curid=76217&oldid=944253"
         }
       ],
-      "reason": "W 15 fixes 16 permille. Native Vengoth gate/destination, incarnation selection/cost debit and encounter admission are absent.",
-      "missing_facts": [
-        "W 15 fixes 16 permille. Native Vengoth gate/destination, incarnation selection/cost debit and encounter admission are absent."
-      ],
+      "reason": "Native Vengoth gates debit exact incarnation costs through the fenced quest and World owners, with native encounter preflight and room reservation.",
+      "missing_facts": [],
       "trigger": {
-        "kind": "at_reset",
-        "chance_permille": 16,
-        "duration": "until_next_reset"
+        "kind": "timed",
+        "event": "devovorga_s_essence",
+        "owner": "world_event::changes::timed",
+        "activation": {
+          "chance_permille": 16
+        }
+      },
+      "binding": {
+        "native_actions": [
+          52720,
+          52721,
+          52722,
+          52723,
+          52724
+        ]
       }
     },
     {
@@ -1309,7 +1319,7 @@
       "key": "rise_of_devovorga",
       "title": "Rise of Devovorga",
       "quest": "oteryn:quest.authored.rise_of_devovorga",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -1342,10 +1352,62 @@
           "url": "https://tibia.fandom.com/index.php?curid=48437&oldid=1204791"
         }
       ],
-      "reason": "Boss spell/storage metadata exists; exact seasonal interval, synchronized phases, victory/failure and participation/reward admission are absent.",
-      "missing_facts": [
-        "Boss spell/storage metadata exists; exact seasonal interval, synchronized phases, victory/failure and participation/reward admission are absent."
-      ]
+      "reason": "Synchronized seasonal five-stage native raid sequence, bounded retries, final-defeat participation and fenced container reward.",
+      "missing_facts": [],
+      "trigger": {
+        "kind": "timed",
+        "event": "rise_of_devovorga",
+        "owner": "world_event::changes::timed"
+      },
+      "binding": {
+        "raids": [
+          {
+            "key": "raid:world-events.rise-anmothra",
+            "member": 0,
+            "condition": "incarnation"
+          },
+          {
+            "key": "raid:world-events.rise-chikhaton",
+            "member": 1,
+            "condition": "incarnation"
+          },
+          {
+            "key": "raid:world-events.rise-irahsae",
+            "member": 2,
+            "condition": "incarnation"
+          },
+          {
+            "key": "raid:world-events.rise-phrodomo",
+            "member": 3,
+            "condition": "incarnation"
+          },
+          {
+            "key": "raid:world-events.rise-teneshpar",
+            "member": 4,
+            "condition": "incarnation"
+          },
+          {
+            "key": "raid:world-events.rise-devovorga",
+            "member": 5,
+            "condition": "final"
+          },
+          {
+            "key": "raid:world-events.rise-bloom_of_doom",
+            "member": 6,
+            "condition": "mutation"
+          },
+          {
+            "key": "raid:world-events.rise-spawn_of_devovorga",
+            "member": 7,
+            "condition": "mutation"
+          },
+          {
+            "key": "raid:world-events.rise-vulnerable_cocoon",
+            "member": 8,
+            "condition": "cocoon"
+          }
+        ]
+      }
     },
     {
       "key": "river_runs_deep",

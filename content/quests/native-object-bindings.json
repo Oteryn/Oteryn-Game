@@ -284,7 +284,7 @@
       "unique": null,
       "source": {
         "policy": "content/quests/world-event-object-policy.json",
-        "sha256": "5a3dde385c4c8b29c106b7494d39ed0a32c07ca27b219ebea7d2b0ca87982c3b",
+        "sha256": "a48996c71e16fd65f6ed213c456f214dc7746a2aefcfe8be95de9b7d708032f6",
         "region": "content/world/placements/region-z06-x126-y123.b3",
         "region_sha256": "1d806e1732b6f958c33bf75e8981a730603fda4959c2bea4b0fa9b90a9d9c4ac"
       }
@@ -300,7 +300,7 @@
       "unique": null,
       "source": {
         "policy": "content/quests/world-event-object-policy.json",
-        "sha256": "5a3dde385c4c8b29c106b7494d39ed0a32c07ca27b219ebea7d2b0ca87982c3b",
+        "sha256": "a48996c71e16fd65f6ed213c456f214dc7746a2aefcfe8be95de9b7d708032f6",
         "region": "content/world/placements/region-z06-x132-y127.b3",
         "region_sha256": "4e1ea1caa375784daad020cad4d706fed1bb4c832585316962a2e790ab54ce04"
       }
@@ -316,7 +316,7 @@
       "unique": null,
       "source": {
         "policy": "content/quests/world-event-object-policy.json",
-        "sha256": "5a3dde385c4c8b29c106b7494d39ed0a32c07ca27b219ebea7d2b0ca87982c3b",
+        "sha256": "a48996c71e16fd65f6ed213c456f214dc7746a2aefcfe8be95de9b7d708032f6",
         "region": "content/world/placements/region-z07-x125-y125.b3",
         "region_sha256": "268c6b75fad682c6d9baeadc6563c2cace27d8414caa66ca538b49687a6dc262"
       }
@@ -332,7 +332,7 @@
       "unique": null,
       "source": {
         "policy": "content/quests/world-event-object-policy.json",
-        "sha256": "5a3dde385c4c8b29c106b7494d39ed0a32c07ca27b219ebea7d2b0ca87982c3b",
+        "sha256": "a48996c71e16fd65f6ed213c456f214dc7746a2aefcfe8be95de9b7d708032f6",
         "region": "content/world/placements/region-z07-x125-y125.b3",
         "region_sha256": "268c6b75fad682c6d9baeadc6563c2cace27d8414caa66ca538b49687a6dc262"
       }
@@ -348,7 +348,7 @@
       "unique": null,
       "source": {
         "policy": "content/quests/world-event-object-policy.json",
-        "sha256": "5a3dde385c4c8b29c106b7494d39ed0a32c07ca27b219ebea7d2b0ca87982c3b",
+        "sha256": "a48996c71e16fd65f6ed213c456f214dc7746a2aefcfe8be95de9b7d708032f6",
         "region": "content/world/placements/region-z07-x125-y125.b3",
         "region_sha256": "268c6b75fad682c6d9baeadc6563c2cace27d8414caa66ca538b49687a6dc262"
       }
@@ -364,9 +364,105 @@
       "unique": null,
       "source": {
         "policy": "content/quests/world-event-object-policy.json",
-        "sha256": "5a3dde385c4c8b29c106b7494d39ed0a32c07ca27b219ebea7d2b0ca87982c3b",
+        "sha256": "a48996c71e16fd65f6ed213c456f214dc7746a2aefcfe8be95de9b7d708032f6",
         "region": "content/world/placements/region-z07-x125-y125.b3",
         "region_sha256": "268c6b75fad682c6d9baeadc6563c2cace27d8414caa66ca538b49687a6dc262"
+      }
+    },
+    {
+      "position": [
+        32970,
+        31580,
+        7
+      ],
+      "item": null,
+      "action": 52710,
+      "unique": null,
+      "source": {
+        "policy": "content/quests/world-event-object-policy.json",
+        "sha256": "a48996c71e16fd65f6ed213c456f214dc7746a2aefcfe8be95de9b7d708032f6",
+        "region": "content/world/placements/region-z07-x128-y123.b3",
+        "region_sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+      }
+    },
+    {
+      "position": [
+        32969,
+        31572,
+        7
+      ],
+      "item": null,
+      "action": 52720,
+      "unique": null,
+      "source": {
+        "policy": "content/quests/world-event-object-policy.json",
+        "sha256": "a48996c71e16fd65f6ed213c456f214dc7746a2aefcfe8be95de9b7d708032f6",
+        "region": "content/world/placements/region-z07-x128-y123.b3",
+        "region_sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+      }
+    },
+    {
+      "position": [
+        32969,
+        31573,
+        7
+      ],
+      "item": null,
+      "action": 52721,
+      "unique": null,
+      "source": {
+        "policy": "content/quests/world-event-object-policy.json",
+        "sha256": "a48996c71e16fd65f6ed213c456f214dc7746a2aefcfe8be95de9b7d708032f6",
+        "region": "content/world/placements/region-z07-x128-y123.b3",
+        "region_sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+      }
+    },
+    {
+      "position": [
+        32969,
+        31574,
+        7
+      ],
+      "item": null,
+      "action": 52722,
+      "unique": null,
+      "source": {
+        "policy": "content/quests/world-event-object-policy.json",
+        "sha256": "a48996c71e16fd65f6ed213c456f214dc7746a2aefcfe8be95de9b7d708032f6",
+        "region": "content/world/placements/region-z07-x128-y123.b3",
+        "region_sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+      }
+    },
+    {
+      "position": [
+        32969,
+        31575,
+        7
+      ],
+      "item": null,
+      "action": 52723,
+      "unique": null,
+      "source": {
+        "policy": "content/quests/world-event-object-policy.json",
+        "sha256": "a48996c71e16fd65f6ed213c456f214dc7746a2aefcfe8be95de9b7d708032f6",
+        "region": "content/world/placements/region-z07-x128-y123.b3",
+        "region_sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+      }
+    },
+    {
+      "position": [
+        32969,
+        31576,
+        7
+      ],
+      "item": null,
+      "action": 52724,
+      "unique": null,
+      "source": {
+        "policy": "content/quests/world-event-object-policy.json",
+        "sha256": "a48996c71e16fd65f6ed213c456f214dc7746a2aefcfe8be95de9b7d708032f6",
+        "region": "content/world/placements/region-z07-x128-y123.b3",
+        "region_sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
       }
     }
   ]

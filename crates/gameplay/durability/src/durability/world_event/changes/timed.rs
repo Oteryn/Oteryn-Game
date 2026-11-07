@@ -398,12 +398,13 @@ pub async fn interact(
         if !state.reward_admitted(
             u64::try_from(credited).map_err(|_| DurabilityError::InvalidStoredState)?,
             claimed,
-        ) || (request.kind == EventKind::SpringIntoLife
-            && !reward_ready
-            && !u16::try_from(ready_object)
-                .ok()
-                .and_then(|member| state.lifecycle.last_success_ms.get(&member))
-                .is_some_and(|at| ready > 0 && *at >= ready))
+        ) || (request.kind == EventKind::RiseOfDevovorga && !reward_ready)
+            || (request.kind == EventKind::SpringIntoLife
+                && !reward_ready
+                && !u16::try_from(ready_object)
+                    .ok()
+                    .and_then(|member| state.lifecycle.last_success_ms.get(&member))
+                    .is_some_and(|at| ready > 0 && *at >= ready))
         {
             return Ok(None);
         }
@@ -647,7 +648,7 @@ pub(crate) async fn apply_binding(
     hash.update(request.transition_key.as_bytes());
     let mut operation = [0; 16];
     operation.copy_from_slice(&hash.finalize()[..16]);
-    Ok(interact(
+    let applied = interact(
         tx,
         actor,
         TimedRequest {
@@ -659,8 +660,12 @@ pub(crate) async fn apply_binding(
             input: binding.action,
         },
     )
-    .await?
-        == Some(true))
+    .await?;
+    #[cfg(feature = "test-support")]
+    if binding.event == EventKind::DevovorgasEssence {
+        eprintln!("native Essence World admission epoch={epoch} level={level} applied={applied:?}");
+    }
+    Ok(applied == Some(true))
 }
 
 #[path = "timed/raids.rs"]

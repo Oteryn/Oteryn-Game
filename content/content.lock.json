@@ -23,7 +23,7 @@
     "Document": 1609,
     "Effect": 5797,
     "Encounter": 108,
-    "Encounter.Raid": 245,
+    "Encounter.Raid": 254,
     "Formula": 6126,
     "Item": 34111,
     "Loot": 1290,
@@ -155,7 +155,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/creatures/definitions/spell-native-profiles.json",
-          "record_count": 1870,
+          "record_count": 1878,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_CREATURE_PROFILES/v1",
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "06b0bee295bf0d09d5b3c87827d66cc276771bc79a3c0a05cf8cfebf4c1282a5"
+          "sha256": "c2c01a24c8655598ceae989f4926a14a3cc5676cbea30e364f6892573569bfa8"
         },
         {
           "creates_canonical_identities": false,
@@ -262,7 +262,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/presentations/definitions/spell-native-profiles.json",
-          "record_count": 1870,
+          "record_count": 1871,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_PRESENTATION_PROFILES/v1",
@@ -270,7 +270,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#PresentationProfilesDocument"
           },
-          "sha256": "b94a936eeac887eeeb807bf81ba5ae1bbd482d665404c247319421464c5bcea8"
+          "sha256": "a81a6371e8cb52c5647893ce9d38504f07d8c8564fd40fe3323404c7113300cc"
         },
         {
           "creates_canonical_identities": false,

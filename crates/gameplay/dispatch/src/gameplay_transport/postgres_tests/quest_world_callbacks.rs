@@ -262,6 +262,11 @@ pub(super) fn world(
         effect_positions.push(cycle.position);
     }
     if let Some(encounter) = &callback.effects.encounter {
+        for x in encounter.room_min.x..=encounter.room_max.x {
+            for y in encounter.room_min.y..=encounter.room_max.y {
+                cells.entry((encounter.room_min.floor, x, y)).or_default();
+            }
+        }
         for player in &encounter.players {
             effect_positions.extend([player.from, player.to]);
         }

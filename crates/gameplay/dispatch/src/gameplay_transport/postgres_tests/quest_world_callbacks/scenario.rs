@@ -1,4 +1,5 @@
 use super::*;
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 
 pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> TestResult {
     scenario_case(name, trigger, lever_fixture, None)
@@ -147,9 +148,7 @@ fn scenario_case(
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
-        if name == "qengine-rewards-kingsday" || name == "qengine-rewards-bank" {
-            owner.reset_epoch = event_epoch;
-        }
+        owner.reset_epoch = event_epoch;
         owner.movement_cells = &cells;
         owner.quest_catalogue = Some(std::sync::Arc::new(
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
@@ -213,7 +212,51 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if name.starts_with("insect-restoration") {
+        if name.starts_with("devovorga-essence-") {
+            let mut supported = admitted
+                .continuity
+                .selected_capabilities
+                .as_slice()
+                .to_vec();
+            supported.extend([4, 6, 11, 15, 18]);
+            supported.sort_unstable();
+            supported.dedup();
+            admitted.continuity.selected_capabilities =
+                crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+                    owner.offered_capabilities(),
+                    &supported,
+                )
+                .ok_or("Devovorga native capabilities")?;
+            owner
+                .runtime
+                .lock()
+                .await
+                .bind_attacker_lease(
+                    deps.actor,
+                    admitted.game_session_id,
+                    crate::foundation::CharacterLease::new(
+                        crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                            .map_err(debug)?,
+                        fence.character_lease_generation,
+                    )
+                    .map_err(debug)?,
+                )
+                .map_err(debug)?;
+        }
+        if name == "devovorga-season-reward" {
+            super::super::qengine_access::devovorga_reward(&mut owner, &mut admitted, &h, trigger)
+                .await?;
+        } else if name.starts_with("devovorga-essence-") {
+            super::super::qengine_access::essence_use(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &callback,
+                trigger,
+                deps.actor,
+            )
+            .await?;
+        } else if name.starts_with("insect-restoration") {
             super::super::qengine_access::insect_use(&mut owner, &mut admitted, &h, trigger)
                 .await?;
         } else if name.starts_with("spring-nest-") {

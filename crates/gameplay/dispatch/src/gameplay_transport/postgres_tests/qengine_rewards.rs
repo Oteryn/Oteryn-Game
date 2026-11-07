@@ -1277,6 +1277,14 @@ pub(super) fn event_fixture_epoch(
     name: &str,
     world: crate::foundation::WorldId,
 ) -> TestResult<u64> {
+    if name.starts_with("devovorga-essence-") {
+        return (2..=4096)
+            .find(|epoch| {
+                crate::durability::world_event::changes::roll(world, *epoch, 1_934_078_400_000)
+                    .is_ok_and(|day| day.timed.essence)
+            })
+            .ok_or_else(|| "no selected Essence day".into());
+    }
     if name == "qengine-rewards-bank" {
         use crate::durability::world_event::changes::timed::{EventKind, hourly_trigger_draw};
         for epoch in 1_u64..=10000 {

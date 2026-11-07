@@ -234,3 +234,71 @@ These restoration details are Oteryn policy, not claimed donor behavior.
 
 The Greenshore shared restoration rule, native coordinates and source hashes are
 specified above under [WEVENTS: Greenshore restoration policy](#wevents-greenshore-restoration-policy).
+
+### Devovorga world event policy
+
+Retained Crystal `data-global/npc/a_beautiful_girl.lua:1-58` at
+`9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`, SHA256
+`2a4dd3dc8afca0ee526d223b827d773b2974ffd0aeb198ce5da7a0b583f33e61`,
+contains NPC setup and a greeting, with no calendar, encounter fee or reward
+implementation. The retained corpus and inspected public tree contain no complete
+Devovorga World controller. The following calendar, mutation and location choices
+are explicit conservative Oteryn rules, rather than claimed donor script facts.
+
+Rise retains the existing September 1 Berlin 06:00 through September 8 Berlin
+06:00 window and one-day preparation. Five distinct incarnations must fall within
+five minutes of the first credited defeat. Bloom of Doom and Spawn of Devovorga
+then precede a second synchronized incarnation round, Vulnerable Cocoon, and final
+Devovorga. Expired incarnation attempts restart together; seasonal expiry fails
+an unfinished event and preserves a completed victory. Daily reset readmits
+uncredited members. Global stage completion retires superseded projections.
+
+The authored public Vengoth clearing and separate paid encounter room are verified
+against `content/world/placements/region-z07-x128-y123.b3:1`, SHA256
+`865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d`.
+The existing 16-permille daily Essence selection gates five entrances. Admission
+consumes tentacle pieces 11666 in tiers 2/5/8/12/16 for
+Anmothra/Chikhaton/Irahsae/Phrodomo/Teneshpar. Native encounters first bind the admitted generation's complete creature policy
+table, including in a Channel with no previous creature spawn. Native encounter
+preflight and a bounded room lease precede the fenced debit. Active calls are serialized against
+other native room admissions. These authored USE entrances admit level-1 and
+higher characters without an upper level bracket; this is an explicit Oteryn
+admission choice in the absence of a complete donor encounter controller. The source recipe and pinned wiki citations for
+these tiers remain in `content/quests/definitions/quests-00200-00299.json:1`.
+
+Normalized actor facts and exact public source URLs/file lines/SHA256 are in
+`content/quests/world-event-creature-policy.json`. Public Fencore source is
+`fifth-empearl/fencore` @ `00484ac96d3379fd7f18a3a410e53c2ae31fc981`:
+`data-otservbr-global/monster/devovorga.lua:5-25,83-90` SHA256
+`32f3e3a4854a0e30c223bc58beb1a1d307128afcae17267e32bcf815ff3c1361`,
+`phrodomo.lua:5-25,77-86` SHA256
+`78ed2e396f95cb2d516f453bdf7d5b205f24c5a174355140e6eaaf3066481830`,
+and `teneshpar.lua:5-24,83-92` SHA256
+`d1faede5a81ca84fc06f0c3f6d37e61d8e0bc8d05bfe5d191ed8f61edc012b07`.
+Anmothra and Irahsae literal health/default defensive facts come from
+`soul4soul/converted-tibiawiki-monster-data` @
+`a2cccf99fccc547e13720704f99cd0125f22f82f`,
+`tfs revscriptsys/Anmothra.lua:6-22,87-88` SHA256
+`f2fbfc4e6bd51d5c338d96abfd9c1a9bb24f7ea8a329ed79fe71f2a8f0f94711`
+and `Irahsae.lua:6-22,87-88` SHA256
+`a0ef65c05bf48aa5ead6f0fb8bd451e42ff2e4fad482d53f924ddac4867b2160`.
+Their zero outfit IDs are incomplete conversion fields: the authored fallback
+uses Chikhaton's presentation and Cave Rat physical attack. Mutation actors use
+1000 HP, with Bloom/Cocoon passive. Other physical attacks use donor ranges or the
+existing native nonlethal attack/skill approximation. These actors claim primary
+physical combat, not complete donor spell parity. Null loot bindings explicitly
+admit no ordinary corpse/loot/XP; fenced event rewards remain separate.
+
+Rise's chosen level-160 reward is one Demon Backpack 9601 containing five
+Tentacle Pieces, three blue giant shimmering pearls 281 and five Gold Ingots
+9058, plus I Did My Part. This retains the selected high-level source package;
+the spoiler's blue pearls win its base-page green-pearl conflict. Admission is
+once per character/season, requires global victory and a native final-boss defeat
+receipt, and uses the existing container MINT and account achievement owners.
+
+
+The existing NPC reward proof in migration 0999 admitted only `command`, despite
+its Rust owner accepting native selector rewards. Migration 1127 uses the same
+closed `command`/`use`/`step` set without relaxing same-transaction receipt,
+consumption, MINT or outfit evidence. Native reward USE remains a fenced Quest
+and World transaction; it does not bypass the reward owner.

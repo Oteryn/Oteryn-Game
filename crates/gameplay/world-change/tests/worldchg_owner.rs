@@ -73,7 +73,7 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
         }
     }
     assert_eq!(ready, 4);
-    assert_eq!(qualified, 8);
+    assert_eq!(qualified, 10);
     for key in [
         "river_runs_deep",
         "spider_nest",

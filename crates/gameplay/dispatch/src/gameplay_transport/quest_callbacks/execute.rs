@@ -207,6 +207,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 false,
             );
             if admission != UseDisposition::Committed {
+                #[cfg(test)]
+                eprintln!(
+                    "native paid encounter preview {}: {admission:?}",
+                    callback.key
+                );
                 return admission;
             }
             let Some(reservation) = map.facts.reserve_encounter_room(
@@ -271,6 +276,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     context,
                 )
                 .await;
+            #[cfg(test)]
+            if callback.effects.encounter.is_some() {
+                eprintln!(
+                    "native paid encounter transaction {}: {outcome:?}",
+                    callback.key
+                );
+            }
             let fresh = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));
             match outcome {
                 Ok(

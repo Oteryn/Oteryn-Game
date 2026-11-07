@@ -770,6 +770,498 @@
       "sources": [
         "oteryn-policy:CONTRACT-NOTES.md#wevents-greenshore-restoration-policy"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/devovorga-season-reward",
+      "quest": "oteryn:quest.authored.rise_of_devovorga",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32970,
+          "y": 31580,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 52710,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/rise_of_devovorga/reward",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The season is not victorious, you did not defeat the final boss, or this reward was already claimed.",
+      "success_message": "You receive your reward for defeating Devovorga.",
+      "effects": {
+        "world_event": {
+          "event": "rise_of_devovorga",
+          "action": "Reward",
+          "minimum_level": 160
+        },
+        "item_reward": {
+          "item": "oteryn:item.tibia.i9601",
+          "count": 1,
+          "contents": [
+            {
+              "item": "oteryn:item.tibia.i11666",
+              "count": 5
+            },
+            {
+              "item": "oteryn:item.tibia.i281",
+              "count": 3
+            },
+            {
+              "item": "oteryn:item.tibia.i9058",
+              "count": 5
+            }
+          ]
+        },
+        "achievement": "oteryn:achievement/i_did_my_part"
+      },
+      "sources": [
+        "oteryn-policy:CONTRACT-NOTES.md#devovorga-world-event-policy"
+      ],
+      "minimum_level": 160
+    },
+    {
+      "key": "oteryn:quest-callback/devovorga-essence-0",
+      "quest": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32969,
+          "y": 31572,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 52720,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/devovorga_s_essence/entry",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The gate is inactive, the room is occupied, or you lack the required tentacle pieces.",
+      "success_message": "Your offering is accepted. Face the incarnation.",
+      "effects": {
+        "world_event": {
+          "event": "devovorga_s_essence",
+          "action": {
+            "Enter": 0
+          }
+        },
+        "encounter": {
+          "minimum_level": 1,
+          "players": [
+            {
+              "from": {
+                "x": 32968,
+                "y": 31572,
+                "floor": -7
+              },
+              "to": {
+                "x": 32965,
+                "y": 31567,
+                "floor": -7
+              }
+            }
+          ],
+          "monsters": [
+            {
+              "position": {
+                "x": 32966,
+                "y": 31567,
+                "floor": -7
+              },
+              "creature": "oteryn:creature.wevents.anmothra"
+            }
+          ],
+          "room_min": {
+            "x": 32964,
+            "y": 31565,
+            "floor": -7
+          },
+          "room_max": {
+            "x": 32966,
+            "y": 31569,
+            "floor": -7
+          }
+        }
+      },
+      "sources": [
+        "oteryn-policy:CONTRACT-NOTES.md#devovorga-world-event-policy"
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i11666",
+        "count": 2,
+        "replacement": null,
+        "target_replacement": null
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/devovorga-essence-1",
+      "quest": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32969,
+          "y": 31573,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 52721,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/devovorga_s_essence/entry",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The gate is inactive, the room is occupied, or you lack the required tentacle pieces.",
+      "success_message": "Your offering is accepted. Face the incarnation.",
+      "effects": {
+        "world_event": {
+          "event": "devovorga_s_essence",
+          "action": {
+            "Enter": 1
+          }
+        },
+        "encounter": {
+          "minimum_level": 1,
+          "players": [
+            {
+              "from": {
+                "x": 32968,
+                "y": 31573,
+                "floor": -7
+              },
+              "to": {
+                "x": 32965,
+                "y": 31567,
+                "floor": -7
+              }
+            }
+          ],
+          "monsters": [
+            {
+              "position": {
+                "x": 32966,
+                "y": 31567,
+                "floor": -7
+              },
+              "creature": "oteryn:creature.chikhaton"
+            }
+          ],
+          "room_min": {
+            "x": 32964,
+            "y": 31565,
+            "floor": -7
+          },
+          "room_max": {
+            "x": 32966,
+            "y": 31569,
+            "floor": -7
+          }
+        }
+      },
+      "sources": [
+        "oteryn-policy:CONTRACT-NOTES.md#devovorga-world-event-policy"
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i11666",
+        "count": 5,
+        "replacement": null,
+        "target_replacement": null
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/devovorga-essence-2",
+      "quest": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32969,
+          "y": 31574,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 52722,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/devovorga_s_essence/entry",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The gate is inactive, the room is occupied, or you lack the required tentacle pieces.",
+      "success_message": "Your offering is accepted. Face the incarnation.",
+      "effects": {
+        "world_event": {
+          "event": "devovorga_s_essence",
+          "action": {
+            "Enter": 2
+          }
+        },
+        "encounter": {
+          "minimum_level": 1,
+          "players": [
+            {
+              "from": {
+                "x": 32968,
+                "y": 31574,
+                "floor": -7
+              },
+              "to": {
+                "x": 32965,
+                "y": 31567,
+                "floor": -7
+              }
+            }
+          ],
+          "monsters": [
+            {
+              "position": {
+                "x": 32966,
+                "y": 31567,
+                "floor": -7
+              },
+              "creature": "oteryn:creature.wevents.irahsae"
+            }
+          ],
+          "room_min": {
+            "x": 32964,
+            "y": 31565,
+            "floor": -7
+          },
+          "room_max": {
+            "x": 32966,
+            "y": 31569,
+            "floor": -7
+          }
+        }
+      },
+      "sources": [
+        "oteryn-policy:CONTRACT-NOTES.md#devovorga-world-event-policy"
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i11666",
+        "count": 8,
+        "replacement": null,
+        "target_replacement": null
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/devovorga-essence-3",
+      "quest": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32969,
+          "y": 31575,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 52723,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/devovorga_s_essence/entry",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The gate is inactive, the room is occupied, or you lack the required tentacle pieces.",
+      "success_message": "Your offering is accepted. Face the incarnation.",
+      "effects": {
+        "world_event": {
+          "event": "devovorga_s_essence",
+          "action": {
+            "Enter": 3
+          }
+        },
+        "encounter": {
+          "minimum_level": 1,
+          "players": [
+            {
+              "from": {
+                "x": 32968,
+                "y": 31575,
+                "floor": -7
+              },
+              "to": {
+                "x": 32965,
+                "y": 31567,
+                "floor": -7
+              }
+            }
+          ],
+          "monsters": [
+            {
+              "position": {
+                "x": 32966,
+                "y": 31567,
+                "floor": -7
+              },
+              "creature": "oteryn:creature.wevents.phrodomo"
+            }
+          ],
+          "room_min": {
+            "x": 32964,
+            "y": 31565,
+            "floor": -7
+          },
+          "room_max": {
+            "x": 32966,
+            "y": 31569,
+            "floor": -7
+          }
+        }
+      },
+      "sources": [
+        "oteryn-policy:CONTRACT-NOTES.md#devovorga-world-event-policy"
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i11666",
+        "count": 12,
+        "replacement": null,
+        "target_replacement": null
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/devovorga-essence-4",
+      "quest": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32969,
+          "y": 31576,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 52724,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/devovorga_s_essence/entry",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The gate is inactive, the room is occupied, or you lack the required tentacle pieces.",
+      "success_message": "Your offering is accepted. Face the incarnation.",
+      "effects": {
+        "world_event": {
+          "event": "devovorga_s_essence",
+          "action": {
+            "Enter": 4
+          }
+        },
+        "encounter": {
+          "minimum_level": 1,
+          "players": [
+            {
+              "from": {
+                "x": 32968,
+                "y": 31576,
+                "floor": -7
+              },
+              "to": {
+                "x": 32965,
+                "y": 31567,
+                "floor": -7
+              }
+            }
+          ],
+          "monsters": [
+            {
+              "position": {
+                "x": 32966,
+                "y": 31567,
+                "floor": -7
+              },
+              "creature": "oteryn:creature.wevents.teneshpar"
+            }
+          ],
+          "room_min": {
+            "x": 32964,
+            "y": 31565,
+            "floor": -7
+          },
+          "room_max": {
+            "x": 32966,
+            "y": 31569,
+            "floor": -7
+          }
+        }
+      },
+      "sources": [
+        "oteryn-policy:CONTRACT-NOTES.md#devovorga-world-event-policy"
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i11666",
+        "count": 16,
+        "replacement": null,
+        "target_replacement": null
+      }
     }
   ]
 }

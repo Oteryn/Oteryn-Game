@@ -1217,3 +1217,288 @@ pub(super) async fn insect_use(
     }
     Ok(())
 }
+
+#[test]
+fn wevents_devovorga_native_essence_admission() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    assert!(
+        oteryn_gameplay_durability::GAME_MIGRATOR
+            .iter()
+            .any(|migration| migration.version == 1127),
+        "native selector rewards require migration 1127"
+    );
+    let started = std::time::Instant::now();
+    let result = super::kill_reward_e2e::scenario_thread::run("essence-native-admission", || {
+        super::quest_world_callbacks::scenario(
+            "devovorga-essence-0",
+            Position {
+                x: 32969,
+                y: 31572,
+                floor: -7,
+            },
+            false,
+        )
+    });
+    eprintln!(
+        "WEVENTS PG EXECUTED: Essence native admission duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
+pub(super) async fn essence_use(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    callback: &Callback,
+    trigger: Position,
+    actor: ExactActorRef,
+) -> TestResult {
+    use super::quest_world_callbacks::local;
+    let at = 1_934_078_400_000_i64;
+    let epoch = owner.reset_epoch;
+    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2,$3,'essence-native',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp($4::double precision/1000),'2031-04')")
+        .bind(owner.world_id.as_bytes().as_slice()).bind(i64::try_from(epoch)?).bind([7u8;32].as_slice()).bind(at).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,$2)")
+        .bind(owner.world_id.as_bytes().as_slice())
+        .bind(i64::try_from(epoch)?)
+        .execute(&h.pool)
+        .await?;
+    owner
+        .root
+        .set_world_event_clock_for_test(Some(at))
+        .map_err(debug)?;
+    assert_eq!(
+        use_lever(owner, admitted, 1, trigger, 0).await?,
+        UseDisposition::Rejected
+    );
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|_| "Essence fence")?
+        .ok_or("Essence active fence")?;
+    let offering = oteryn_gameplay_quests::quest::world_callbacks::Offering {
+        position: trigger,
+        item: "oteryn:item.tibia.i11666".into(),
+        count: 1,
+    };
+    for serial in [880, 881] {
+        super::quest_world_callbacks::input_item(
+            owner,
+            fence.item_fence(),
+            &offering,
+            serial,
+            true,
+        )
+        .await?;
+    }
+    let amount = || {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i11666' AND lifecycle=1",
+        )
+    };
+    assert_eq!(amount().fetch_one(&h.pool).await?, 2);
+    let room = callback.effects.encounter.as_ref().ok_or("Essence room")?;
+    let map = owner.bundle_map().ok_or("map")?;
+    let lease = map
+        .facts
+        .reserve_encounter_room(map.overlay.base(), tile(room.room_min), tile(room.room_max))
+        .ok_or("room lease")?;
+    assert!(matches!(
+        use_lever(owner, admitted, 2, trigger, 0).await?,
+        UseDisposition::Occupied | UseDisposition::NotPossible
+    ));
+    assert_eq!(amount().fetch_one(&h.pool).await?, 2);
+    lease.release();
+    let admission = use_lever(owner, admitted, 3, trigger, 0).await?;
+    let remaining = amount().fetch_one(&h.pool).await?;
+    eprintln!(
+        "Essence native paid use={admission:?} remaining_fee={remaining} pending={}",
+        owner.has_pending_quest_callback(admitted.game_session_id)
+    );
+    assert_eq!(admission, UseDisposition::Committed);
+    assert_eq!(remaining, 0);
+    assert!(!owner.has_pending_quest_callback(admitted.game_session_id));
+    let runtime = owner.runtime.lock().await;
+    assert_eq!(
+        runtime
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        local(room.players[0].to)
+    );
+    assert!(
+        runtime
+            .positioned_melee_census()
+            .map_err(debug)?
+            .iter()
+            .any(|(actor, at, session)| session.is_none()
+                && at.position() == local(room.monsters[0].position)
+                && runtime
+                    .companion_snapshot(*actor)
+                    .is_ok_and(|snapshot| snapshot.maximum_health == 7000))
+    );
+    drop(runtime);
+    let map = owner.bundle_map().ok_or("map")?;
+    assert!(
+        !map.facts
+            .quest_callback_blocked(map.overlay.base(), tile(room.room_min), false)
+    );
+    Ok(())
+}
+
+#[test]
+fn wevents_devovorga_native_season_reward() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    assert!(
+        oteryn_gameplay_durability::GAME_MIGRATOR
+            .iter()
+            .any(|migration| migration.version == 1127),
+        "native selector rewards require migration 1127"
+    );
+    let started = std::time::Instant::now();
+    let result = super::kill_reward_e2e::scenario_thread::run("devovorga-native-reward", || {
+        super::quest_world_callbacks::scenario(
+            "devovorga-season-reward",
+            Position {
+                x: 32970,
+                y: 31580,
+                floor: -7,
+            },
+            false,
+        )
+    });
+    eprintln!(
+        "WEVENTS PG EXECUTED: devovorga native reward duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
+pub(super) async fn devovorga_reward(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    trigger: Position,
+) -> TestResult {
+    use crate::durability::world_event::changes::timed::{self, EventKind, Input, Phase};
+    let at: i64 = sqlx::query_scalar(
+        "SELECT (extract(epoch FROM '2031-09-02 06:00 Europe/Berlin'::timestamptz)*1000)::bigint",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,1,$2,'devovorga-reward',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp($3::double precision/1000),'2031-09')")
+        .bind(owner.world_id.as_bytes().as_slice()).bind([7u8;32].as_slice()).bind(at-86_400_000).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,1)")
+        .bind(owner.world_id.as_bytes().as_slice())
+        .execute(&h.pool)
+        .await?;
+    owner.reset_epoch = 1;
+    owner
+        .root
+        .set_world_event_clock_for_test(Some(at))
+        .map_err(debug)?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|_| "reward fence")?
+        .ok_or("reward session")?;
+    use crate::domain::progression::{FiniteProgressionPolicy, LevelThreshold};
+    use crate::durability::character_progression::{
+        ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
+    };
+    use oteryn_simulation_determinism::{ExactI64, RoundingMode};
+    let before = owner
+        .root
+        .read_character_progression(owner.character, fence.character_id)
+        .await?
+        .ok_or("reward progression")?;
+    let context = before.context.clone();
+    let baseline = before.total_experience.get();
+    let thresholds: [LevelThreshold; 160] = (0_u32..160)
+        .map(|offset| LevelThreshold {
+            level: before.level + offset,
+            minimum_experience: ExactI64::new(baseline + i64::from(offset) * 100),
+        })
+        .collect::<Vec<_>>()
+        .try_into()
+        .map_err(|_| "fixture threshold count")?;
+    let request = ExperienceAwardRequest {
+        occurrence: ExperienceRewardOccurrence::from_bytes(id(228)).map_err(debug)?,
+        amount: ExactI64::new(i64::from(160 - before.level) * 100),
+        context: context.clone(),
+        policy_revision: before.policy_revision.clone(),
+        reward_revision: before.reward_revision.clone(),
+        policy: FiniteProgressionPolicy {
+            context: context.clone(),
+            policy_revision: before.policy_revision,
+            reward_revision: before.reward_revision,
+            death_policy_revision: "death-1".into(),
+            declared_difference_revision: context.declaration,
+            thresholds,
+            terminal_exclusive_experience: ExactI64::new(baseline + 16_000),
+            death_loss_numerator: 1,
+            death_loss_denominator: 10,
+            death_loss_rounding: RoundingMode::Floor,
+        },
+    };
+    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+    assert!(matches!(
+        slot.commit_experience(
+            owner.root,
+            owner.character,
+            owner.holder,
+            fence,
+            request,
+            None
+        )
+        .await?,
+        ExperienceCommitOutcome::Committed(_)
+    ));
+    drop(slot);
+
+    let mut tx = h.pool.begin().await?;
+    let mut state = timed::poll(&mut tx, owner.world_id, 1, EventKind::RiseOfDevovorga, at)
+        .await?
+        .ok_or("reward season")?;
+    for member in [0, 1, 2, 3, 4, 6, 7, 0, 1, 2, 3, 4, 8, 5] {
+        state
+            .advance(EventKind::RiseOfDevovorga, at, Input::Defeat(member), 0)
+            .map_err(debug)?;
+    }
+    assert_eq!(state.phase, Phase::Victory);
+    sqlx::query("UPDATE game_world_timed_events SET state=$2 WHERE world_id=encode($1,'hex')::uuid AND event_key='rise_of_devovorga'").bind(owner.world_id.as_bytes().as_slice()).bind(serde_json::to_value(state)?).execute(&mut *tx).await?;
+    tx.commit().await?;
+    assert_eq!(
+        use_lever(owner, admitted, 1, trigger, 0).await?,
+        UseDisposition::Rejected
+    );
+    sqlx::query("INSERT INTO game_world_timed_participants(world_id,event_key,cycle_id,character_id,credited,reward_ready) SELECT world_id,event_key,cycle_id,encode($2,'hex')::uuid,1,false FROM game_world_timed_events WHERE world_id=encode($1,'hex')::uuid AND event_key='rise_of_devovorga'")
+        .bind(owner.world_id.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).execute(&h.pool).await?;
+    assert_eq!(
+        use_lever(owner, admitted, 2, trigger, 0).await?,
+        UseDisposition::Rejected
+    );
+    sqlx::query("UPDATE game_world_timed_participants SET reward_ready=true WHERE event_key='rise_of_devovorga'").execute(&h.pool).await?;
+    assert_eq!(
+        use_lever(owner, admitted, 3, trigger, 0).await?,
+        UseDisposition::Committed
+    );
+    let bags:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i9601' AND lifecycle=1").fetch_one(&h.pool).await?;
+    assert_eq!(bags, 1);
+    let achievement:i64=sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/i_did_my_part'").fetch_one(&h.pool).await?;
+    assert_eq!(achievement, 1);
+    assert_eq!(
+        use_lever(owner, admitted, 4, trigger, 1).await?,
+        UseDisposition::Rejected
+    );
+    let bags:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i9601' AND lifecycle=1").fetch_one(&h.pool).await?;
+    assert_eq!(bags, 1);
+    Ok(())
+}

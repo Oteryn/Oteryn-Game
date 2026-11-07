@@ -14,6 +14,25 @@ use oteryn_gameplay_entities::carrier::RaidSpawnOutcome;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 #[test]
+fn wevents_devovorga_native_incarnation_actor() -> TestResult {
+    run_case(
+        "wevents_devovorga_incarnation",
+        "raid:world-events.rise-anmothra",
+        1,
+        false,
+    )
+}
+#[test]
+fn wevents_devovorga_native_final_actor() -> TestResult {
+    run_case(
+        "wevents_devovorga_final",
+        "raid:world-events.rise-devovorga",
+        1,
+        false,
+    )
+}
+
+#[test]
 fn wevents_postgres_insect_native_population() -> TestResult {
     run_case(
         "wevents_insectoid_invasion",

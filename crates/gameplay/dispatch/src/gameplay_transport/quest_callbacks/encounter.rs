@@ -24,6 +24,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
         };
+        let Some(native_gameplay) = self
+            .active_generation
+            .and_then(|generation| generation.native_gameplay())
+        else {
+            return UseDisposition::Rejected;
+        };
+        if runtime
+            .install_companion_policies(native_gameplay.policies().clone())
+            .is_err()
+        {
+            return UseDisposition::Rejected;
+        }
         let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
         };
@@ -112,10 +124,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             monsters.push((monster.creature.as_str(), policy.maximum_health, at));
         }
         if !commit {
-            return if runtime
-                .preflight_quest_encounter_entry(proofs, &monsters)
-                .is_ok()
-            {
+            let preview = runtime.preflight_quest_encounter_entry(proofs, &monsters);
+            #[cfg(test)]
+            eprintln!(
+                "native encounter carrier preview {}: {preview:?}",
+                callback.key
+            );
+            return if preview.is_ok() {
                 UseDisposition::Committed
             } else {
                 UseDisposition::Rejected

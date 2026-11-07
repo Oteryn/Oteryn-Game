@@ -141,6 +141,11 @@ pub(super) async fn consume(
         return Ok(false);
     };
     if !context_is_current(tx, permit, fence, context).await? {
+        #[cfg(feature = "test-support")]
+        eprintln!(
+            "native world callback context refused {} epoch={}",
+            callback.key, context.reset_epoch
+        );
         return Ok(false);
     }
     if let Some(minimum) = callback.minimum_level {
@@ -175,7 +180,13 @@ pub(super) async fn consume(
                 count,
             },
         );
-        return consume_reward_inputs(tx, fence, request, &fee).await;
+        let consumed = consume_reward_inputs(tx, fence, request, &fee).await?;
+        #[cfg(feature = "test-support")]
+        eprintln!(
+            "native world callback fee {} consumed={consumed}",
+            callback.key
+        );
+        return Ok(consumed);
     }
     if callback.offerings.is_empty() && callback.item_on_target.is_none() {
         return Ok(true);
