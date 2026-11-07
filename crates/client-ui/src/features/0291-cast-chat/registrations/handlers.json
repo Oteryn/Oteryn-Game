@@ -1,17 +1,15 @@
 {
   "mechanic": "0291-cast-chat",
   "kind": "handlers",
-  "id": "0291-cast-chat-unsupported",
-  "status": "unsupported",
-  "reason": "S17-A is server phase 1; native client is a later task.",
+  "id": "0291-cast-chat-command",
+  "status": "supported",
   "commands": [
     504
   ],
+  "direction": "client_to_server",
+  "capability": 291,
+  "entry": "protocol.rs::command",
   "not_applicable": {
-    "state": "Native cast UI is a later task.",
-    "protocol": "Native cast UI is a later task.",
-    "view": "Native cast UI is a later task.",
-    "input": "Native cast UI is a later task.",
-    "settings": "Native cast UI is a later task."
+    "settings": "Room state is connection-local and never persisted in a player preference."
   }
 }

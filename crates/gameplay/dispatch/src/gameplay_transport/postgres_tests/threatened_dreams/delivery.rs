@@ -77,6 +77,7 @@ fn fixture_catalogue() -> TestResult<QuestStateCatalogue> {
     }
     for value in [0, 2, 6, 8] {
         transitions.push(QuestTransition {
+world_change: None,
             key: prior(value),
             quest: QUEST.into(),
             effects: [ANIMALS, ALIAS]

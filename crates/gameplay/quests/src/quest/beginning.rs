@@ -33,6 +33,7 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
         effect: QuestEffectKind::Set(1),
     });
     let chest = QuestTransition {
+        world_change: None,
         key: COAT_CHEST.into(),
         quest: start.quest.clone(),
         effects: vec![QuestEffect {

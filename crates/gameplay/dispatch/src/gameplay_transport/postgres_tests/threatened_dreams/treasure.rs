@@ -46,7 +46,8 @@ fn catalogue()->TestResult<QuestStateCatalogue>{
  for c in oteryn_gameplay_quests::quest::reward_callbacks::load()?.into_iter().filter(|c|c.key.starts_with(CARRIED)){
   transitions.push(source.catalogue().transition(&c.key).ok_or("carried source transition")?.clone());
  }
- for value in [1,2,4]{transitions.push(QuestTransition{key:prior(value),quest:track.quest.clone(),effects:vec![QuestEffect{track:STONE.into(),from:QuestComparison::Any,effect:QuestEffectKind::Set(value)}],completes:false,experience:None});}
+ for value in [1,2,4]{transitions.push(QuestTransition{
+world_change: None,key:prior(value),quest:track.quest.clone(),effects:vec![QuestEffect{track:STONE.into(),from:QuestComparison::Any,effect:QuestEffectKind::Set(value)}],completes:false,experience:None});}
  QuestStateCatalogue::new("content-1",vec![track],transitions).map_err(|e|format!("{e:?}").into())
 }
 fn scenario()->TestResult{

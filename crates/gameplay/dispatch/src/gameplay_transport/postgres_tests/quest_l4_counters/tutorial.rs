@@ -49,6 +49,7 @@ pub(super) fn catalogue(source: &QuestStateCatalogue) -> TestResult<Arc<QuestSta
         })
         .collect();
     let mut transitions = vec![QuestTransition {
+world_change: None,
         key: START.into(),
         quest: QUEST.into(),
         // Only the previously accepted club/mission is a fixture milestone.

@@ -42,22 +42,32 @@ pub(super) fn display_map(
         })
         .collect();
     if tiles.is_empty() {
-        return vec![PublicMedia::Map {
-            reset: true,
-            last: true,
-            tiles: vec![],
-        }];
+        return vec![
+            PublicMedia::Camera {
+                floor: snapshot.header.origin.floor,
+            },
+            PublicMedia::Map {
+                reset: true,
+                last: true,
+                tiles: vec![],
+            },
+        ];
     }
     let count = tiles.len().div_ceil(32);
-    tiles
-        .chunks(32)
-        .enumerate()
-        .map(|(i, tiles)| PublicMedia::Map {
-            reset: i == 0,
-            last: i + 1 == count,
-            tiles: tiles.to_vec(),
-        })
-        .collect()
+    std::iter::once(PublicMedia::Camera {
+        floor: snapshot.header.origin.floor,
+    })
+    .chain(
+        tiles
+            .chunks(32)
+            .enumerate()
+            .map(|(i, tiles)| PublicMedia::Map {
+                reset: i == 0,
+                last: i + 1 == count,
+                tiles: tiles.to_vec(),
+            }),
+    )
+    .collect()
 }
 pub(super) fn same_camera(
     runtime: world_spatial::ActorPosition,
@@ -281,7 +291,7 @@ fn relative_media(mut media: PublicMedia, viewport: Viewport) -> Option<PublicMe
                 return None;
             }
         }
-        PublicMedia::Map { .. } => {}
+        PublicMedia::Map { .. } | PublicMedia::Camera { .. } => {}
     }
     Some(media)
 }

@@ -164,6 +164,7 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
             return Err(format!("foreign native counter {}", counter.track));
         }
         transitions.push(QuestTransition {
+            world_change: None,
             key: counter.transition.into(),
             quest: counter.quest.into(),
             effects: vec![

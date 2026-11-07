@@ -26,7 +26,8 @@ fn catalogue()->TestResult<QuestStateCatalogue>{
  for i in 0..5{tracks.push(source.catalogue().track(&flag(i)).cloned().unwrap_or(QuestTrack{key:flag(i),quest:QUEST.into(),initial:-1,min:-1,max:1}));}
  let mut transitions=Vec::new();
  for c in oteryn_gameplay_quests::quest::world_callbacks::load()?.into_iter().filter(|c|c.key.starts_with(PREFIX)){transitions.push(source.catalogue().transition(&c.key).ok_or("source fairy transition")?.clone());}
- for value in [2,3]{transitions.push(QuestTransition{key:prior(value),quest:QUEST.into(),effects:vec![QuestEffect{track:NIGHT.into(),from:QuestComparison::Any,effect:QuestEffectKind::Set(value)}],completes:false,experience:None});}
+ for value in [2,3]{transitions.push(QuestTransition{
+world_change: None,key:prior(value),quest:QUEST.into(),effects:vec![QuestEffect{track:NIGHT.into(),from:QuestComparison::Any,effect:QuestEffectKind::Set(value)}],completes:false,experience:None});}
  QuestStateCatalogue::new("content-1",tracks,transitions).map_err(|e|format!("{e:?}").into())
 }
 #[test]

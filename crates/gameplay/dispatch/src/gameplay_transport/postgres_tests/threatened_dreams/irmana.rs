@@ -96,6 +96,7 @@ fn scenario() -> TestResult {
         }
         for (key, notes) in [(SEED, 0), (READY, 1)] {
             transitions.push(QuestTransition {
+world_change: None,
                 key: key.into(),
                 quest: QUEST.into(),
                 effects: [(ANIMALS, 7), (NOTES, notes)]

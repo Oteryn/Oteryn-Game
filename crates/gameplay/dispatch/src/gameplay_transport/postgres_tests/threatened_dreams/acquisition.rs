@@ -47,7 +47,8 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
     let mut transitions=Vec::new();
     if let Some(callback)=source.catalogue().transition(KEY) { transitions.push(callback.clone()); }
     for (key,value) in [(PRIOR6,6),(PRIOR7,7)] {
-        transitions.push(QuestTransition { key:key.into(), quest:"oteryn:quest.threatened_dreams_quest".into(), effects:vec![QuestEffect {track:ANIMALS.into(),from:QuestComparison::Any,effect:QuestEffectKind::Set(value)}], completes:false,experience:None });
+        transitions.push(QuestTransition {
+world_change: None, key:key.into(), quest:"oteryn:quest.threatened_dreams_quest".into(), effects:vec![QuestEffect {track:ANIMALS.into(),from:QuestComparison::Any,effect:QuestEffectKind::Set(value)}], completes:false,experience:None });
     }
     QuestStateCatalogue::new("content-1",tracks,transitions).map_err(|e|format!("{e:?}").into())
 }

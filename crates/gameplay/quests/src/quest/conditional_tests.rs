@@ -29,6 +29,7 @@ fn catalogue(
             },
         ],
         vec![QuestTransition {
+            world_change: None,
             key: STEP.into(),
             quest: QUEST.into(),
             effects: vec![

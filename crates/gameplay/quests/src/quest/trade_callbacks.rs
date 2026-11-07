@@ -148,6 +148,7 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
             }
         }
         transitions.push(QuestTransition {
+            world_change: None,
             key: c.key,
             quest: c.quest,
             effects: c

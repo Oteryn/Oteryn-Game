@@ -113,6 +113,7 @@ fn scenario() -> TestResult {
         // Only the required preceding story is a fixture. No reward, exchange
         // flag, item consumption or successful receipt is supplied here.
         transitions.push(QuestTransition {
+world_change: None,
             key: SEED.into(),
             quest: QUEST.into(),
             effects: [(FAIRY, 0), (COLLECTION, 0), (TREE, 0)]

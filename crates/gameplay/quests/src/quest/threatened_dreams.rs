@@ -661,6 +661,7 @@ pub(super) fn extend(
         let key = format!("oteryn:quest-transition/quest/u11_40/threatened_dreams/{suffix}/chest");
         let track = tracks.get(flag).ok_or("missing source chest flag")?;
         let transition = super::QuestTransition {
+            world_change: None,
             key: key.clone(),
             quest: track.quest.clone(),
             effects: vec![QuestEffect {

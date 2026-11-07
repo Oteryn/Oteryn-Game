@@ -89,6 +89,7 @@ fn beginning_greet() -> TestResult {
             .collect::<Result<Vec<_>, _>>()?;
         for (stage, log) in [(7, 5), (11, 9)] {
             transitions.push(QuestTransition {
+world_change: None,
                 key: format!("oteryn:quest-transition/fixture/beginning-prior-{stage}"),
                 quest: "oteryn:quest.the_beginning_quest".into(),
                 effects: [

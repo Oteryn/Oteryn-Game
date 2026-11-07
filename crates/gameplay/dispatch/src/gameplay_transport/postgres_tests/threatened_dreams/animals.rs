@@ -107,6 +107,7 @@ fn scenario() -> TestResult {
         // Only preceding milestones and collected feathers are fixtures. Outputs,
         // hand-in consumption and successful receipts are never seeded.
         transitions.push(QuestTransition {
+world_change: None,
             key: SEED.into(),
             quest: QUEST.into(),
             effects: [(ANIMALS, 4), (STONE, 1)]
@@ -127,6 +128,7 @@ fn scenario() -> TestResult {
             experience: None,
         });
         transitions.push(QuestTransition {
+world_change: None,
             key: SWAN_SEED.into(),
             quest: QUEST.into(),
             effects: vec![

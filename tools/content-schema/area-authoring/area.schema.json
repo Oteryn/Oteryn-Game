@@ -34,7 +34,7 @@
         "hometown",
         "provenance"
       ],
-      "properties": {
+      "properties": {"visibility":{"type":"string","enum":["public","hidden"],"default":"public"},
         "identity": {
           "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/identity"
         },

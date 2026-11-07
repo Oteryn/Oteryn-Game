@@ -89,6 +89,7 @@ fn fixture_catalogue() -> TestResult<QuestStateCatalogue> {
     }
     for value in [12, 13] {
         transitions.push(QuestTransition {
+world_change: None,
             key: prior(value),
             quest: QUEST.into(),
             effects: vec![QuestEffect {

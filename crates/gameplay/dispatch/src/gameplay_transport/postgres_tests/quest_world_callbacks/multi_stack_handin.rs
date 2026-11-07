@@ -43,6 +43,7 @@ pub(super) async fn exercise(
     // successor always run through literal USE and the production Quest writer.
     let original = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
     let prepare = QuestTransition {
+world_change: None,
         key: "oteryn:quest-transition/fixture/multi-stack-prerequisite".into(),
         quest: callback.quest.clone(),
         effects: vec![QuestEffect {

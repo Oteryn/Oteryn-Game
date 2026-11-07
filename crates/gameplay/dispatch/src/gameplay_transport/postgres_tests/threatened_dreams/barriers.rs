@@ -170,6 +170,7 @@ fn fixture_catalogue() -> TestResult<QuestStateCatalogue> {
         );
     }
     transitions.push(QuestTransition {
+world_change: None,
         key: SEED.into(),
         quest: QUEST.into(),
         effects: seed

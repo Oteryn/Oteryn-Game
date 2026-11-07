@@ -347,6 +347,7 @@ fn scenario(mode: Scenario) -> TestResult {
             ("zirella", "zirella", 7, 7),
         ] {
             transitions.push(QuestTransition {
+world_change: None,
                 key: format!("oteryn:quest-transition/fixture/beginning-reward/{phase}"),
                 quest: QUEST.into(),
                 effects: [
@@ -366,6 +367,7 @@ fn scenario(mode: Scenario) -> TestResult {
         }
         if matches!(mode, Scenario::CarlosSalePreEligible) {
             transitions.push(QuestTransition {
+world_change: None,
                 key: "oteryn:quest-transition/fixture/beginning-reward/carlos-prior-readiness"
                     .into(),
                 quest: QUEST.into(),

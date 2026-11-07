@@ -34,6 +34,7 @@ pub(crate) fn altar_callback() -> super::world_callbacks::Callback {
         repeatable_reward: false,
         effects: Default::default(),
         carried_use: None,
+        world_change: None,
         key: SACRIFICE.into(), quest: QUEST.into(), trigger: Trigger::Use,
         selector: Selector { position: None, unique: None, action: None,
             appearance: Some(SACRIFICIAL_PLATE_APPEARANCE) },
@@ -151,6 +152,7 @@ pub(super) fn extend(
         ),
     ] {
         transitions.push(QuestTransition {
+            world_change: None,
             key: key.into(),
             quest: QUEST.into(),
             effects,

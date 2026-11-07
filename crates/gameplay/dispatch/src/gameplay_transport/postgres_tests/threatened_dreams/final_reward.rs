@@ -118,6 +118,7 @@ fn scenario() -> TestResult {
         // Only the required preceding story is a fixture. No reward, exchange
         // flag, item consumption or successful receipt is supplied here.
         transitions.push(QuestTransition {
+world_change: None,
             key: SEED.into(),
             quest: QUEST.into(),
             effects: [(COUPLE,2),(JOURNAL,2),(NIGHTMARE,6),(CHARGES[0],5),(CHARGES[1],5),(CHARGES[2],5)]
@@ -133,7 +134,8 @@ fn scenario() -> TestResult {
         });
         // Isolated final-reward precondition only: actual fifteen-source world
         // repairs are a separate mechanism. This never grants a reward or NM8.
-        transitions.push(QuestTransition {key:READY.into(),quest:QUEST.into(),
+        transitions.push(QuestTransition {
+world_change: None,key:READY.into(),quest:QUEST.into(),
             effects:CHARGES.into_iter().map(|track|QuestEffect {track:track.into(),
                 from:QuestComparison::Between(5,5),effect:QuestEffectKind::Set(0)}).collect(),
             completes:false,experience:None});

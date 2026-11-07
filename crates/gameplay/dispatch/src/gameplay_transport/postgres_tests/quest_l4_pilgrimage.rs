@@ -119,6 +119,7 @@ fn scenario(full_route: bool) -> TestResult {
         // Only the prior guide visit is a fixture. No blessing, gift receipt or
         // completed quest is seeded; those must be produced by the real caller.
         transitions.push(QuestTransition {
+world_change: None,
             key: SEED.into(),
             quest: QUEST.into(),
             effects: vec![QuestEffect {

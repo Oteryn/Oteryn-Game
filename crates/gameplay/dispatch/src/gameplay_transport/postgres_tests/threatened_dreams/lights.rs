@@ -191,6 +191,7 @@ fn scenario() -> TestResult {
                 (FINISH, vec![(NIGHTMARE, 8), (counter.as_str(), 0)]),
             ] {
                 transitions.push(QuestTransition {
+world_change: None,
                     key: key.into(),
                     quest: QUEST.into(),
                     effects: values
