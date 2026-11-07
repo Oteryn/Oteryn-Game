@@ -23,7 +23,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let monk = name.starts_with("monk-guidance");
-    let shared_rewards = name == "l1-warmaster-wardrobe" || name.starts_with("questpc7-eligibility-")
+    let shared_rewards = name.starts_with("questpc7-outfits-") || name == "l1-warmaster-wardrobe" || name.starts_with("questpc7-eligibility-")
         || name.starts_with("qengine-rewards-")
         || name == "questpc7-golden"
         || name == "questpc7-friends";
@@ -93,8 +93,13 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        if name == "questpc7-eligibility-high" {
-            // The subject starts with the published native level1000 prerequisite;
+        let initial_level: Option<u32> = match name {
+            "questpc7-eligibility-high" => Some(1000),
+            "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
+            _ => None,
+        };
+        if let Some(initial_level) = initial_level {
+            // The subject starts at the published native prerequisite level;
             // no subject quest progress is arranged by this fixture.
             let policy = generation
                 .native_gameplay()
@@ -108,12 +113,12 @@ fn scenario_case(
                 .policy
                 .thresholds
                 .iter()
-                .find(|t| t.level == 1000)
-                .ok_or("native level1000 threshold")?
+                .find(|t| t.level == initial_level)
+                .ok_or("native initial level threshold")?
                 .minimum_experience
                 .get();
-            let inserted = sqlx::query("INSERT INTO game_character_progression_state VALUES(encode($1,'hex')::uuid,1,1000,$2,'profile-1','ruleset-1','content-1',$3,$4,$5,$6,$7)")
-                .bind(id(41).as_slice()).bind(xp).bind(&binding.context.simulation).bind(&binding.context.evidence)
+            let inserted = sqlx::query("INSERT INTO game_character_progression_state VALUES(encode($1,'hex')::uuid,1,$2,$3,'profile-1','ruleset-1','content-1',$4,$5,$6,$7,$8)")
+                .bind(id(41).as_slice()).bind(i64::from(initial_level)).bind(xp).bind(&binding.context.simulation).bind(&binding.context.evidence)
                 .bind(&binding.context.declaration).bind(&binding.policy_revision).bind(&binding.reward_revision).execute(&h.pool).await?;
             assert_eq!(inserted.rows_affected(), 1);
         }
@@ -171,7 +176,7 @@ fn scenario_case(
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let eligibility_premium =
-            if name.starts_with("questpc7-eligibility-") && !name.ends_with("no-premium") {
+            if (name.starts_with("questpc7-eligibility-") && !name.ends_with("no-premium")) || name.starts_with("questpc7-outfits-") {
                 use crate::gameplay_transport::spell_premium_coordinator::{
                     SpellPremiumCoordinator, purchase_fixture,
                 };
@@ -261,7 +266,9 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if name == "l1-warmaster-wardrobe" {
+        if name.starts_with("questpc7-outfits-") {
+            super::super::questpc7_outfit_items::exercise(&mut owner, &mut admitted, &h, name).await?;
+        } else if name == "l1-warmaster-wardrobe" {
             super::super::questpc7_world_outfit::exercise(&mut owner, &mut admitted, &h, &callback, deps.actor).await?;
         } else if name == "npc-item-exchanges" {
             super::super::npc_item_exchanges::exercise(&mut owner, &mut admitted, &h, &authority)

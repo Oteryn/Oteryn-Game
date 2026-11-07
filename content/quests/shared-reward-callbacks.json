@@ -1039,6 +1039,183 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/questpc7-fiend-commission",
+      "quest": "oteryn:quest.fiend_slayer_outfits_quest",
+      "npc": "oteryn:npc.the_forgemaster",
+      "keywords": [
+        "fiend commission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/fiend/programme",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": [
+          "oteryn:quest.no_rest_for_the_wicked_quest"
+        ]
+      },
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.fiend_slayer",
+        "addons": 0
+      },
+      "achievement": null,
+      "completes": false,
+      "reply": [
+        "Your fiend commission qualification is recorded."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/43/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_forgemaster.lua:1-250:sha256:4d3c8a44257795fcb949cdd1bb30a0f1ba0cad8b88fad050fba97852946db76e"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-fiend-complete",
+      "quest": "oteryn:quest.fiend_slayer_outfits_quest",
+      "npc": "oteryn:npc.the_forgemaster",
+      "keywords": [
+        "fiend complete"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/fiend/programme",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": [
+          "oteryn:quest.no_rest_for_the_wicked_quest"
+        ],
+        "owned_cosmetics": [
+          {
+            "outfit": "oteryn:outfit.fiend_slayer",
+            "addons": 3
+          }
+        ]
+      },
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "completes": true,
+      "reply": [
+        "Your fiend complete qualification is recorded."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/43/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_forgemaster.lua:1-250:sha256:4d3c8a44257795fcb949cdd1bb30a0f1ba0cad8b88fad050fba97852946db76e"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-fiend-first-token",
+      "quest": "oteryn:quest.fiend_slayer_outfits_quest",
+      "npc": "oteryn:npc.the_forgemaster",
+      "keywords": [
+        "fiend first token"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/fiend/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": [
+          "oteryn:quest.no_rest_for_the_wicked_quest"
+        ],
+        "owned_cosmetics": [
+          {
+            "outfit": "oteryn:outfit.fiend_slayer",
+            "addons": 0
+          }
+        ]
+      },
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i50060",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "completes": false,
+      "reply": [
+        "Your fiend first token qualification is recorded."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/43/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_forgemaster.lua:1-250:sha256:4d3c8a44257795fcb949cdd1bb30a0f1ba0cad8b88fad050fba97852946db76e"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-fiend-second-token",
+      "quest": "oteryn:quest.fiend_slayer_outfits_quest",
+      "npc": "oteryn:npc.the_forgemaster",
+      "keywords": [
+        "fiend second token"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/fiend/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": [
+          "oteryn:quest.no_rest_for_the_wicked_quest"
+        ],
+        "owned_cosmetics": [
+          {
+            "outfit": "oteryn:outfit.fiend_slayer",
+            "addons": 1
+          }
+        ]
+      },
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i50061",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "completes": false,
+      "reply": [
+        "Your fiend second token qualification is recorded."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/43/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_forgemaster.lua:1-250:sha256:4d3c8a44257795fcb949cdd1bb30a0f1ba0cad8b88fad050fba97852946db76e"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/questpc7-friends-blessing",
       "quest": "oteryn:quest.friends_and_traders",
       "npc": "oteryn:npc.quentin",
@@ -1920,6 +2097,183 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/5/definition:sha256:4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a",
         "crystal-summer:00ce02a57ca5a12e48f32a3476e37471167e4c3f:data-global/npc/wayland_smythers.lua:1-128:sha256:9a6b7b1ff8c351bc44275c053a6992093e69984f6ae77a519dcdc9040be7b851"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-inquisition-commission",
+      "quest": "oteryn:quest.hand_of_the_inquisition_outfits_quest",
+      "npc": "oteryn:npc.henricus",
+      "keywords": [
+        "inquisition commission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/inquisition/programme",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": [
+          "oteryn:quest.grave_danger_quest"
+        ]
+      },
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.hand_of_the_inquisition",
+        "addons": 0
+      },
+      "achievement": null,
+      "completes": false,
+      "reply": [
+        "Your inquisition commission qualification is recorded."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:1-416:sha256:1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-inquisition-complete",
+      "quest": "oteryn:quest.hand_of_the_inquisition_outfits_quest",
+      "npc": "oteryn:npc.henricus",
+      "keywords": [
+        "inquisition complete"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/inquisition/programme",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": [
+          "oteryn:quest.grave_danger_quest"
+        ],
+        "owned_cosmetics": [
+          {
+            "outfit": "oteryn:outfit.hand_of_the_inquisition",
+            "addons": 3
+          }
+        ]
+      },
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "completes": true,
+      "reply": [
+        "Your inquisition complete qualification is recorded."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:1-416:sha256:1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-inquisition-first-token",
+      "quest": "oteryn:quest.hand_of_the_inquisition_outfits_quest",
+      "npc": "oteryn:npc.henricus",
+      "keywords": [
+        "inquisition first token"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/inquisition/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": [
+          "oteryn:quest.grave_danger_quest"
+        ],
+        "owned_cosmetics": [
+          {
+            "outfit": "oteryn:outfit.hand_of_the_inquisition",
+            "addons": 0
+          }
+        ]
+      },
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i31738",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "completes": false,
+      "reply": [
+        "Your inquisition first token qualification is recorded."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:1-416:sha256:1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-inquisition-second-token",
+      "quest": "oteryn:quest.hand_of_the_inquisition_outfits_quest",
+      "npc": "oteryn:npc.henricus",
+      "keywords": [
+        "inquisition second token"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/inquisition/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": [
+          "oteryn:quest.grave_danger_quest"
+        ],
+        "owned_cosmetics": [
+          {
+            "outfit": "oteryn:outfit.hand_of_the_inquisition",
+            "addons": 1
+          }
+        ]
+      },
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i31737",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "completes": false,
+      "reply": [
+        "Your inquisition second token qualification is recorded."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:1-416:sha256:1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d"
       ]
     },
     {

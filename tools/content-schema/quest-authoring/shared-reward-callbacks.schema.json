@@ -378,6 +378,14 @@
             "pattern": "^oteryn:quest[.][a-z0-9._/:-]+$",
             "maxLength": 128
           }
+        },
+        "owned_cosmetics": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/outfit"
+          }
         }
       }
     }

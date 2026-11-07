@@ -273,36 +273,10 @@
     "title": "Fiend Slayer Outfits Quest",
     "canonical": "oteryn:quest.fiend_slayer_outfits_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/43/definition",
-    "status": "ACTIVE",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
-    "queued_stage_binding": {
-      "stage": "s2",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
-    },
-    "first_unqualified_stage": {
-      "key": "s2",
-      "kind": "collect",
-      "objective": "Recover one Demon Claws addon token from the Azzilon challenge.",
-      "targets": [
-        "Demon Claws"
-      ]
-    },
     "owner": "questpc7",
-    "remaining_work": {
-      "kind": "lane_implementation_work",
-      "missing_piece": "Fiend Slayer Outfits, Fiend Slayer first addon, Fiend Slayer second addon: the reusable fenced NPC outfit/addon and account appearance mapping owner is implemented. Compose the full pinned route and exact owned NPC/physical/encounter bindings; implement remaining guard or currency mechanisms here and qualify the whole route with real PostgreSQL proof.",
-      "evidence": [
-        "content/quests/definitions/quests-00100-00199.json:1#/records/43/definition",
-        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
-        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
-      ],
-      "attempts": [
-        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
-      ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
-    },
     "shared_reward_mechanism": {
       "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
       "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
@@ -310,8 +284,25 @@
       "scope": "Generic owner only; not this quest's route qualification"
     },
     "outfit_item_progress": {
-      "state": "Complete native route PG GREEN and source/content/world checks GREEN; final pins/fmt finishing",
+      "state": "Complete selected route QUALIFIED; all source/content/pin checks GREEN",
       "proof": "qlane-meta/questpc7/OUTFIT-ITEMS-PG-PROOF.json"
+    },
+    "qualification": {
+      "kind": "complete selected native NPC/token/use/completion/appearance programme",
+      "proof": "qlane-meta/questpc7/OUTFIT-ITEMS-PG-PROOF.json",
+      "test": "questpc7_fiend_personal_tokens_require_actual_native_addons",
+      "postgres": "18.6",
+      "red_seconds": 73.227148735,
+      "green_seconds": 78.262979488,
+      "npc": "oteryn:npc.the_forgemaster",
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": [
+          "oteryn:quest.no_rest_for_the_wicked_quest"
+        ]
+      },
+      "fixture_boundary": "Only the completed prerequisite is arranged through its fenced writer. This does not qualify that parent; all subject progress, token MINT/consumption and appearance facts start fresh."
     }
   },
   {
@@ -1094,36 +1085,10 @@
     "title": "Hand of the Inquisition Outfits Quest",
     "canonical": "oteryn:quest.hand_of_the_inquisition_outfits_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/56/definition",
-    "status": "ACTIVE",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
-    "queued_stage_binding": {
-      "stage": "s2",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
-    },
-    "first_unqualified_stage": {
-      "key": "s2",
-      "kind": "collect",
-      "objective": "Recover one Final Judgement token for the first addon.",
-      "targets": [
-        "Final Judgement"
-      ]
-    },
     "owner": "questpc7",
-    "remaining_work": {
-      "kind": "lane_implementation_work",
-      "missing_piece": "Hand of the Inquisition Outfits, Hand of the Inquisition first addon, Hand of the Inquisition second addon: the reusable fenced NPC outfit/addon and account appearance mapping owner is implemented. Compose the full pinned route and exact owned NPC/physical/encounter bindings; implement remaining guard or currency mechanisms here and qualify the whole route with real PostgreSQL proof.",
-      "evidence": [
-        "content/quests/definitions/quests-00100-00199.json:1#/records/56/definition",
-        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
-        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
-      ],
-      "attempts": [
-        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
-      ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
-    },
     "shared_reward_mechanism": {
       "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
       "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
@@ -1131,8 +1096,25 @@
       "scope": "Generic owner only; not this quest's route qualification"
     },
     "outfit_item_progress": {
-      "state": "Complete native route PG GREEN and source/content/world checks GREEN; final pins/fmt finishing",
+      "state": "Complete selected route QUALIFIED; all source/content/pin checks GREEN",
       "proof": "qlane-meta/questpc7/OUTFIT-ITEMS-PG-PROOF.json"
+    },
+    "qualification": {
+      "kind": "complete selected native NPC/token/use/completion/appearance programme",
+      "proof": "qlane-meta/questpc7/OUTFIT-ITEMS-PG-PROOF.json",
+      "test": "questpc7_inquisition_personal_tokens_require_actual_native_addons",
+      "postgres": "18.6",
+      "red_seconds": 73.227148735,
+      "green_seconds": 78.216713065,
+      "npc": "oteryn:npc.henricus",
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": [
+          "oteryn:quest.grave_danger_quest"
+        ]
+      },
+      "fixture_boundary": "Only the completed prerequisite is arranged through its fenced writer. This does not qualify that parent; all subject progress, token MINT/consumption and appearance facts start fresh."
     }
   },
   {

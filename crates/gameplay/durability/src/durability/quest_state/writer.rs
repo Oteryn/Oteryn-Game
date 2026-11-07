@@ -422,6 +422,13 @@ impl DurabilityRoot {
                                 return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                             }
                         }
+                        if !requirements.owned_cosmetics.is_empty()
+                            && !super::owned_cosmetics::holds(&mut tx, fence.character_id,
+                                reward_admission.as_ref().map(|admission| admission.native),
+                                &requirements.owned_cosmetics).await?
+                        {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
                         // The Character root lock serializes every quest write for this owner.
                         // These existing completion facts remain read-only prerequisites.
                         if !requirements.completed_quests.is_empty() {

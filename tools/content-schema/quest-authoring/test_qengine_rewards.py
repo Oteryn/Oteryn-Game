@@ -112,6 +112,29 @@ class QuestRewards(unittest.TestCase):
             with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(bad)
         self.assertEqual(sum(c.get('completes',False) for c in selected),1)
 
+    def test_selected_consumptive_grants_keep_explicit_pairs_and_real_ownership_guards(self):
+        from jsonschema import ValidationError
+        document = self.author['document']
+        formal = next(o for o in document['outfits'] if o['key'] == 'oteryn:outfit.formal_dress')
+        self.assertEqual((formal['female']['id'], formal['male']['id'], formal['addon_count']), (1461, 1460, 2))
+        self.assertTrue(formal['premium'])
+        self.assertFalse(formal['starter_female'] or formal['starter_male'])
+        targets = {'oteryn:outfit.formal_dress', 'oteryn:outfit.fiend_slayer', 'oteryn:outfit.hand_of_the_inquisition'}
+        aliases = [m for m in document['grant_mappings'] if m['grant_key'].startswith('oteryn:item-grant.')]
+        self.assertEqual(len(aliases), 9)
+        self.assertEqual({m['target']['outfit_key'] for m in aliases}, targets)
+        self.assertTrue(all(m['compatible_provenance'] == ['crystal-item-cosmetics-201189f-v1'] for m in aliases))
+        callbacks = {c['key'].split('/')[-1]: c for c in self.callbacks['callbacks']}
+        for slug in ('fiend', 'inquisition'):
+            self.assertEqual(callbacks[f'questpc7-{slug}-second-token']['requirements']['owned_cosmetics'][0]['addons'], 1)
+            self.assertEqual(callbacks[f'questpc7-{slug}-complete']['requirements']['owned_cosmetics'][0]['addons'], 3)
+            self.assertTrue(callbacks[f'questpc7-{slug}-complete']['completes'])
+        bad = copy.deepcopy(self.callbacks)
+        callback = next(c for c in bad['callbacks'] if c['key'].endswith('questpc7-fiend-second-token'))
+        callback['requirements']['owned_cosmetics'][0]['addons'] = 4
+        with self.assertRaises((ValueError, ValidationError)):
+            q.validate_callbacks(bad)
+
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=[c for c in self.callbacks['callbacks'] if not c['key'].split('/')[-1].startswith('questpc7-')]
         self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-'))},

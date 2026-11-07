@@ -1,3 +1,34 @@
+# Fiend Slayer and Hand of the Inquisition QUALIFIED — 2026-11-07
+
+Both complete selected routes are QUALIFIED. OUTFIT-ITEMS-PG-PROOF.json records
+actual PG18.6 ownership RED73.227s and GREEN Fiend78.263s/Hand78.217s,
+including physical token MINT, actual consumption, both source addons, full
+achievements, final quest completion and ordinary native appearance selection.
+The parent quests are read-only fenced fixture preconditions, never subject
+stage seeds or qualifications of those parent quests. Grave Danger stays ours.
+
+Reusable semantic ownership requirements join the existing Character/account
+grant locks and admitted native compatibility graph. Nine explicit item-action
+aliases retain the existing201189f provenance and bridge the9f quest bases.
+Six item physical policies were already admitted and remain unchanged.
+Formal Dress's explicit selected native catalogue promotion is supported by
+the retained Lord Retro grant and official1460/1461 appearance records.
+The Forgemaster/Henricus source placements and greetings are materialized.
+
+All checks GREEN:16 authoring tests, reward callback Rust units, retained Sam
+PG74.653s, strict all-target/all-feature Clippy, explicit Cargo check,123 content
+and5 world checks, repository generation/placement/registration checks, pins,
+and fmt. No new migration, command, capability, raw donor dump or binary.
+
+17 ACTIVE entries remain. Continue Formal Dress immediately: the planned
+producer is /tmp/questpc7-formal-producer.py. Apply the existing world outfit
+owner to the exact palace display and entry, with reusable world prerequisites
+using the same fresh Premium/level/ownership owners; prove missing authority
+RED and full selected route GREEN. The chosen entry can use the admitted
+ground464 at(32314,32170,-6), adjacent to display2110 at(32315,32170,-6);
+this avoids the fixture NPC's adjacent cell. Record the finalized binding in
+CONTRACT-NOTES.md. Keep every further green slice committed and pushed.
+
 # Two complete outfit routes PG GREEN; pins finishing — 2026-11-07
 
 Fiend Slayer GREEN78.263s and Hand of the Inquisition GREEN78.217s on

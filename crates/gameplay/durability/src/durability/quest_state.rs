@@ -548,6 +548,7 @@ mod storage;
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests;
+mod owned_cosmetics;
 mod writer;
 use storage::*;
 

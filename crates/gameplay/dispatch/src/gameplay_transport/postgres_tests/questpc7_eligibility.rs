@@ -45,6 +45,14 @@ async fn complete_parent(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
 ) -> TestResult {
+    complete_parent_key(owner, admitted, "oteryn:quest.authored.make_believe_quest").await
+}
+
+pub(super) async fn complete_parent_key(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    parent: &str,
+) -> TestResult {
     use crate::durability::quest_state::{
         QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
     };
@@ -53,9 +61,11 @@ async fn complete_parent(
         QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
         QuestTransition,
     };
-    let parent = "oteryn:quest.authored.make_believe_quest";
-    let track = "oteryn:quest-progress/fixture/prior-make-believe";
-    let key = "oteryn:quest-transition/fixture/prior-make-believe-completed";
+    let slug = parent.rsplit('.').next().ok_or("parent key")?;
+    let track_value = format!("oteryn:quest-progress/fixture/prior-{slug}");
+    let key_value = format!("oteryn:quest-transition/fixture/prior-{slug}-completed");
+    let track = track_value.as_str();
+    let key = key_value.as_str();
     let catalogue = std::sync::Arc::new(
         QuestStateCatalogue::new(
             "content-1",

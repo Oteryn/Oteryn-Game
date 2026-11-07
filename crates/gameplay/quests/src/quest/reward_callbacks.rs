@@ -56,6 +56,8 @@ pub struct RewardRequirements {
     pub premium: bool,
     #[serde(default)]
     pub completed_quests: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub owned_cosmetics: Vec<OutfitReward>,
 }
 
 /// A read-only prerequisite: its original quest retains ownership and writes.
@@ -172,7 +174,17 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                     || requires.contains(&counter.track)
             })
             || c.requirements.as_ref().is_some_and(|r| {
-                r.min_level > 1_000_000
+                r.owned_cosmetics.len() > 8
+                    || r.owned_cosmetics
+                        .iter()
+                        .map(|o| &o.outfit)
+                        .collect::<BTreeSet<_>>()
+                        .len()
+                        != r.owned_cosmetics.len()
+                    || r.owned_cosmetics
+                        .iter()
+                        .any(|o| !slug(&o.outfit, "oteryn:outfit.", b"_", 160) || o.addons > 3)
+                    || r.min_level > 1_000_000
                     || r.completed_quests.len() > 8
                     || r.completed_quests.iter().collect::<BTreeSet<_>>().len()
                         != r.completed_quests.len()

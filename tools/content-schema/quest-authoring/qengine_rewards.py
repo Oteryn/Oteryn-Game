@@ -32,11 +32,12 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'king_tibianus', 'elane', 'a_sweaty_cyclops', 'marina', 'gamon', 'quentin', 'tibra', 'maealil',
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'king_tibianus', 'henricus', 'the_forgemaster', 'elane', 'a_sweaty_cyclops', 'marina', 'gamon', 'quentin', 'tibra', 'maealil',
         'yberius', 'isimov', 'amanda', 'kasmir', 'rahkem', 'brewster', 'tyrias')]
     paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
-              'data-global/startup/tables/item.lua']
+              'data-global/startup/tables/item.lua',
+              'data-global/scripts/quests/25_years_of _tibia_quest/lord_retro_death.lua']
     result = {}
     with tarfile.open(ROOT / 'tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz') as corpus:
         manifest = json.load(corpus.extractfile('corpus-manifest.json'))
@@ -70,10 +71,14 @@ def build():
     xml = ET.fromstring(inputs['data/XML/outfits.xml'])
     # Explicit identities for the two sex-specific donor display names.
     aliases = {'Noblewoman': 'Nobleman', 'Norsewoman': 'Norseman'}
+    programmes = load_module('questpc7_outfit_programmes', 'tools/content-schema/quest-authoring/questpc7_outfit_programmes.py')
+    retro = inputs['data-global/scripts/quests/25_years_of _tibia_quest/lord_retro_death.lua']
+    if b'player:addOutfit(1460)' not in retro or b'player:addOutfit(1461)' not in retro:
+        raise ValueError('QUESTPC7_FORMAL_BASE_SOURCE_DRIFT')
     groups = {}
     for row in xml:
         name = aliases.get(row.get('name'), row.get('name'))
-        if row.get('enabled') == 'yes' and row.get('from') != 'store':
+        if row.get('enabled') == 'yes' and (row.get('from') != 'store' or name == 'Formal Dress'):
             groups.setdefault(name, {})[row.get('type')] = row.attrib
     appearance = ROOT / 'imports/cipsoft-appearances/outfits'
     manifest_raw = (appearance / 'manifest.json').read_bytes()
@@ -117,6 +122,7 @@ def build():
     mappings.append({'grant_key': 'oteryn:appearance-grant/quest/rotten-blood/decaying-defender-base',
         'target': {'kind': 'Outfit', 'outfit_key': 'oteryn:outfit.decaying_defender'},
         'compatible_provenance': ['owner-pr2784-decaying-defender-base-v1']})
+    item_grant_source = programmes.consumptive_mappings(ROOT, outfits, mappings)
     atlas = load_module('qengine_atlas_palette', 'tools/game-atlas-appearances/export.py')
     palette_path = 'tools/game-atlas-appearances/export.py'
     palette_source = {'reference': palette_path + '#outfit_color', 'revision': 'rounded-hsi-133-v1',
@@ -135,12 +141,12 @@ def build():
         'profile': {'kind': 'reference', 'revision': 'quest-cosmetics-r1', 'mount_speed_bonus': 10},
         'client_version': manifest['client_version'], 'document': doc, 'promotions': []}
     for path in sorted(cosmetics.promotion_paths(doc)):
-        citation=palette_source if path == '/palette' else source
+        citation=palette_source if path == '/palette' else item_grant_source if path == '/grant_mappings' else source
         if path in ('/source_manifest_sha256','/source_appearances_sha256'):
             citation={'reference': 'imports/cipsoft-appearances/outfits/manifest.json',
                       'revision':manifest['client_version'],'sha256':sha(manifest_raw)}
         author['promotions'].append({'path': path, 'value': cosmetics.pointer(doc, path),
-            'state': 'PROMOTED', 'decision': DECISION,
+            'state': 'PROMOTED', 'decision': programmes.DECISION if path == '/grant_mappings' else DECISION,
             'source_kind': 'OWNER_DECISION' if path.startswith('/fallbacks/') or path=='/grant_mappings' else 'STRUCTURED_REFERENCE_DATA',
             'source': citation})
     callbacks = []
@@ -283,6 +289,7 @@ def build():
     selected.append_golden(ROOT, callbacks, offers, inputs, PIN)
     selected.append_friends(ROOT, callbacks, offers, inputs, PIN)
     selected.append_eligibility_starts(ROOT, callbacks, inputs, PIN)
+    programmes.append(ROOT, callbacks, inputs, PIN)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'callbacks':callbacks})
