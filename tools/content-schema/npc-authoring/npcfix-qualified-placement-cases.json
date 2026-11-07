@@ -2596,6 +2596,53 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-40",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "Historical ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb 33-placement tree proves the selected cohort absent. Retain exact current audited retail positions and pinned promotion-candidates-v1.json SHA2561f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a; source-qualified names unchanged.",
+      "cases": [
+        {
+          "npc": "oteryn:npc.maris",
+          "name": "Maris",
+          "expected": {
+            "x": 32649,
+            "y": 31293,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.maritima",
+          "name": "Maritima",
+          "expected": {
+            "x": 32905,
+            "y": 31167,
+            "floor": -13
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.ortheus",
+          "name": "Ortheus",
+          "expected": {
+            "x": 32879,
+            "y": 31085,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.palimuth",
+          "name": "Palimuth",
+          "expected": {
+            "x": 32802,
+            "y": 31223,
+            "floor": -7
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }

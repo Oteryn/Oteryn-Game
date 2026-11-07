@@ -263,29 +263,27 @@
   },
   "incoming_cooldown_delivery": {},
   "active_physical_batch": {
-    "name": "retail-population-qualification-39",
+    "name": "retail-population-qualification-40",
     "state": "PG_RED_GREEN_COMPLETE; STRICT_SOURCE_GATES_PENDING",
     "entries": [
-      "Maria",
-      "Nathaniel",
-      "Nelliem",
-      "Oldrak",
-      "Chuckles",
-      "Emperor Rehal"
+      "Maris",
+      "Maritima",
+      "Ortheus",
+      "Palimuth"
     ],
-    "source_commit": "a381a0e47f8fa6ca40ff465d4b26ada9078181a6",
+    "source_commit": "8f10f58947b82381fe1a959c02c393bbdb441ea1",
     "scope": "Existing authored placement only; exact source name/cell and normal native/map admission. No service behavior claimed.",
     "red": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 76.14,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-39-red.log",
-      "sha256": "4d2ba1ab22133ff95136e6081eaf79f8018aad817bfcf3651fe0891931d66277"
+      "seconds": 69.66,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-40-red.log",
+      "sha256": "f5ed80b90d245a51a765ebf6f098411976d8a3a724035986f69caffcc0ccb073"
     },
     "green": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 171.02,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-39-green.log",
-      "sha256": "f0906db64b414e2bf652cc992556d124b3235843b6b6763f9754a03d8406223c"
+      "seconds": 253.62,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-40-green.log",
+      "sha256": "ee62c0d32b7b72df0bebd3fe98c04a725b7d2e6feeff3856efe55272de3a8214"
     }
   },
   "active_refusal_batch": {
@@ -7679,6 +7677,30 @@
         "seconds": 171.02,
         "log": "/tmp/npcfix-evidence/retail-population-qualification-39-green.log",
         "sha256": "f0906db64b414e2bf652cc992556d124b3235843b6b6763f9754a03d8406223c"
+      }
+    },
+    {
+      "name": "retail-population-qualification-40",
+      "state": "PG_RED_GREEN_COMPLETE; STRICT_SOURCE_GATES_PENDING",
+      "entries": [
+        "Maris",
+        "Maritima",
+        "Ortheus",
+        "Palimuth"
+      ],
+      "source_commit": "8f10f58947b82381fe1a959c02c393bbdb441ea1",
+      "scope": "Existing authored placement only; exact source name/cell and normal native/map admission. No service behavior claimed.",
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 69.66,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-40-red.log",
+        "sha256": "f5ed80b90d245a51a765ebf6f098411976d8a3a724035986f69caffcc0ccb073"
+      },
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 253.62,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-40-green.log",
+        "sha256": "ee62c0d32b7b72df0bebd3fe98c04a725b7d2e6feeff3856efe55272de3a8214"
       }
     }
   ]
