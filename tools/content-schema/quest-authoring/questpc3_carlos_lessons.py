@@ -48,6 +48,19 @@ def documents():
                  "take": [], "give": None, "outfit": None, "achievement": None,
                  "reply": ["That smells delicious. Ask me for a trade and I will pay two gold pieces for each piece of meat or ham."],
                  "sources": [SOURCE + "#L168-L177"]})
+    # The native trade leaves dialogue topic6 in place. The committed Greet7
+    # milestone is the authoritative source post-sale readiness guard.
+    for name, keywords, topic, line, reply in [
+        ("report-ready", ["ready", "yes", "ok"], 6, "205-L218",
+         "That is how trading works. You are ready to cross the bridge to Rookgaard. Follow the path to the northwest. Good luck, |PLAYERNAME|!"),
+        ("report-greeting", ["hi", "hello", "greetings"], 0, "114-L119",
+         "Welcome back, |PLAYERNAME|. That is how trading works. You are ready to cross the bridge to Rookgaard. Take care!"),
+    ]:
+        rows.append({"key": PREFIX + name, "quest": QUEST, "npc": NPC,
+                     "keywords": keywords, "topic": topic, "next_topic": 0,
+                     "storage": [storage(GREET, 7, 7, 8), storage(LOG, 6, 6, 7)],
+                     "take": [], "give": None, "outfit": None, "achievement": None,
+                     "reply": [reply], "sources": [SOURCE + "#L" + line]})
     offers = []
     for stage, topic, reply in [
         (1, 1, "Shall I explain how to change your outfit?"),
@@ -56,6 +69,7 @@ def documents():
         (4, 4, "Will you bring me meat or ham from a rabbit or deer?"),
         (5, 5, "Did your hunt succeed? Have you brought meat or ham?"),
         (6, 6, "Do you still have meat or ham? Ask me for a trade to sell it."),
+        (8, 0, "Hello again, |PLAYERNAME|. Head over the bridge to Rookgaard village now."),
     ]:
         offers.append({"npc": NPC, "keywords": ["hi", "hello", "greetings"],
                        "topic": 0, "next_topic": topic,

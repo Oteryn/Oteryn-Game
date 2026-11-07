@@ -62,6 +62,8 @@ enum Scenario {
     CarlosSale,
     CarlosSaleRecovery,
     CarlosSalePreEligible,
+    CarlosReportReady,
+    CarlosReportGreeting,
 }
 
 #[test]
@@ -191,6 +193,47 @@ fn questpc3_beginning_carlos_preeligible_sale_cannot_qualify_on_replay() -> Test
         eprintln!("QUESTPC3_CARLOS_CARLOSSALEPREELIGIBLE POSTGRES_CASE_COMPLETED duration_ms={} success={}",started.elapsed().as_millis(),matches!(&result,Ok(Ok(()))));
         match result {Ok(result)=>result.map_err(|error|error.to_string()),Err(panic)=>std::panic::resume_unwind(panic)}
     })?.join().map_err(|_|"Carlos sale proof panicked")??;
+    Ok(())
+}
+
+#[test]
+fn questpc3_beginning_carlos_report_ready_follows_real_sale() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("QUESTPC3_CARLOS_REPORT_ready POSTGRES_SKIPPED no_admin_url");
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            let started = std::time::Instant::now();
+            let result = std::panic::catch_unwind(|| scenario(Scenario::CarlosReportReady));
+            eprintln!(
+                "QUESTPC3_CARLOS_REPORT_ready POSTGRES_CASE_COMPLETED duration_ms={} success={}",
+                started.elapsed().as_millis(),
+                matches!(&result, Ok(Ok(())))
+            );
+            match result {
+                Ok(result) => result.map_err(|error| error.to_string()),
+                Err(panic) => std::panic::resume_unwind(panic),
+            }
+        })?
+        .join()
+        .map_err(|_| "Carlos report panicked")??;
+    Ok(())
+}
+
+#[test]
+fn questpc3_beginning_carlos_report_return_greeting_follows_real_sale() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("QUESTPC3_CARLOS_REPORT_return_greeting POSTGRES_SKIPPED no_admin_url");
+        return Ok(());
+    }
+    std::thread::Builder::new().stack_size(256 << 20).spawn(|| {
+        let started=std::time::Instant::now();
+        let result=std::panic::catch_unwind(||scenario(Scenario::CarlosReportGreeting));
+        eprintln!("QUESTPC3_CARLOS_REPORT_return_greeting POSTGRES_CASE_COMPLETED duration_ms={} success={}",started.elapsed().as_millis(),matches!(&result,Ok(Ok(()))));
+        match result {Ok(result)=>result.map_err(|error|error.to_string()),Err(panic)=>std::panic::resume_unwind(panic)}
+    })?.join().map_err(|_|"Carlos report panicked")??;
     Ok(())
 }
 
@@ -363,6 +406,8 @@ fn scenario(mode: Scenario) -> TestResult {
                 | Scenario::CarlosSale
                 | Scenario::CarlosSaleRecovery
                 | Scenario::CarlosSalePreEligible
+                | Scenario::CarlosReportReady
+                | Scenario::CarlosReportGreeting
         ) {
             let [carlos] =
                 super::classic_quests::install(&owner, &admitted, ["oteryn:npc.carlos"]).await?;
@@ -447,6 +492,8 @@ fn scenario(mode: Scenario) -> TestResult {
                     | Scenario::CarlosSale
                     | Scenario::CarlosSaleRecovery
                     | Scenario::CarlosSalePreEligible
+                    | Scenario::CarlosReportReady
+                    | Scenario::CarlosReportGreeting
             ) {
                 for (index, input) in [None, Some((3578, 115_u8)), Some((3582, 116_u8))]
                     .into_iter()
@@ -570,6 +617,8 @@ fn scenario(mode: Scenario) -> TestResult {
                     Scenario::CarlosSale
                         | Scenario::CarlosSaleRecovery
                         | Scenario::CarlosSalePreEligible
+                        | Scenario::CarlosReportReady
+                        | Scenario::CarlosReportGreeting
                 ) {
                     use oteryn_protocol_oteryn::npc_service::{NpcTradeIntent, NpcTradeSide};
                     // A valid current fence cannot execute a trade continuation without its captured source.
@@ -935,6 +984,59 @@ fn scenario(mode: Scenario) -> TestResult {
                         receipts, 1,
                         "original sale receipt drives one quest transition"
                     );
+                    if matches!(
+                        mode,
+                        Scenario::CarlosReportReady | Scenario::CarlosReportGreeting
+                    ) {
+                        if matches!(mode, Scenario::CarlosReportGreeting) {
+                            super::classic_quests::talk(&mut owner, &admitted, carlos, 4900, "bye")
+                                .await?;
+                            super::classic_quests::talk(&mut owner, &admitted, carlos, 4901, "hi")
+                                .await?;
+                        } else {
+                            super::classic_quests::talk(
+                                &mut owner, &admitted, carlos, 4900, "ready",
+                            )
+                            .await?;
+                        }
+                        for (name, expected) in
+                            [("carlos_npc_greet_storage", 8), ("carlos_quest_log", 7)]
+                        {
+                            let actual = super::classic_quests::progress(
+                                &owner,
+                                &admitted,
+                                &authority,
+                                &format!("{BASE}{name}"),
+                            )
+                            .await?;
+                            eprintln!(
+                                "QUESTPC3_CARLOS_REPORT POSTGRES_ASSERTION_REACHED track={name} actual={actual} expected={expected} duration_ms={}",
+                                started.elapsed().as_millis()
+                            );
+                            assert_eq!(
+                                actual, expected,
+                                "source report must follow the real eligible food sale"
+                            );
+                        }
+                        let report_receipts:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key LIKE 'oteryn:quest-reward/questpc3/beginning-carlos/report-%'").fetch_one(&h.pool).await?;
+                        assert_eq!(report_receipts, 1);
+                        super::classic_quests::talk(&mut owner, &admitted, carlos, 4902, "bye")
+                            .await?;
+                        let reply =
+                            super::classic_quests::talk(&mut owner, &admitted, carlos, 4903, "hi")
+                                .await?;
+                        assert!(
+                            reply.iter().any(|line| line.contains("bridge")),
+                            "finished Carlos greeting retains source bridge instruction"
+                        );
+                        let repeated:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key LIKE 'oteryn:quest-reward/questpc3/beginning-carlos/report-%'").fetch_one(&h.pool).await?;
+                        assert_eq!(repeated, report_receipts);
+                        assert_eq!(
+                            quantity(&h, "oteryn:item.tibia.i3031").await?,
+                            gold_before + 2
+                        );
+                        assert_eq!(quantity(&h, "oteryn:item.tibia.i3582").await?, 0);
+                    }
                 }
             }
             return Ok(());
