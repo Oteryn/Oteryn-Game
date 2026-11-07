@@ -274,6 +274,35 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 mod tests {
     use super::*;
     #[test]
+    fn carried_npc_tools_require_exact_input_and_cannot_be_value_exchanges() -> Result<(), String> {
+        let original = load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-reward/noodles-recovered")
+            .ok_or("carried callback")?;
+        for edit in 0..5 {
+            let mut row = serde_json::to_value(&original).map_err(|e| e.to_string())?;
+            match edit {
+                0 => row["carried_item"] = "oteryn:item.tibia.i14157".into(),
+                1 => row["take"] = serde_json::json!([]),
+                2 => row["take"][0]["count"] = 2.into(),
+                3 => {
+                    row["give"] = serde_json::json!({"item":"oteryn:item.tibia.i3035","count":1,"contents":[]})
+                }
+                _ => {
+                    row.as_object_mut()
+                        .ok_or("callback")?
+                        .remove("carried_item");
+                }
+            }
+            assert!(
+                parse(&serde_json::json!({"schema":1,"callbacks":[row]}).to_string()).is_err(),
+                "edit{edit}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn reward_experience_and_level_bounds_preserve_legacy_serialization() -> Result<(), String> {
         let source = include_str!("../../../../../content/quests/shared-reward-callbacks.json");
         let mut value: serde_json::Value =

@@ -951,7 +951,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return Ok(Some(outcome));
         }
         if let Some(outcome) = self
-            .use_carried_quest_item(actor, command, &intent, source)
+            .use_carried_quest_item(actor, command, &intent, source, visible_target)
             .await?
         {
             return Ok(Some(outcome));

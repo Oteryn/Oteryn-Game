@@ -327,6 +327,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         intent: &UseIntent,
         source: Option<ItemKey>,
+        visible_target: bool,
     ) -> Result<Option<UseOutcome>, ()> {
         use crate::durability::quest_state::{
             QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
@@ -363,6 +364,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| ())?
         {
+            if matches {
+                self.refresh_quest_session(command.game_session_id, false)
+                    .await;
+            }
             return Ok(Some(outcome(if matches {
                 UseDisposition::Committed
             } else {
@@ -405,14 +410,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         }
-        {
+        let target_key = {
             let runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
             if states.is_dead(actor) || !states.spell_idle(&runtime, actor, command.game_session_id)
             {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             }
-        }
+            match intent.use_with {
+                Some(named) if visible_target => {
+                    reached_quest_npc(&runtime, actor, named).map(str::to_owned)
+                }
+                Some(_) => return Ok(Some(outcome(UseDisposition::Rejected))),
+                None => None,
+            }
+        };
         let Some(catalogue) = self.quest_catalogue.as_ref() else {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         };
@@ -433,7 +445,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .is_some_and(|v| (s.minimum..=s.maximum).contains(&v))
                     })
                 };
-            let mut selected = bound.into_iter().filter(|c| eligible(&c.storage));
+            let mut selected = bound.into_iter().filter(|c| {
+                eligible(&c.storage)
+                    && if c.carried_target_npc {
+                        target_key.as_deref() == Some(c.npc.as_str())
+                    } else {
+                        intent.use_with.is_none()
+                    }
+            });
             let Some(callback) = selected.next() else {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             };
@@ -442,33 +461,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             callback.clone()
         };
-        {
-            let runtime = self.runtime.lock().await;
-            if callback.carried_target_npc {
-                let Some(named) = intent.use_with else {
-                    return Ok(Some(outcome(UseDisposition::Rejected)));
-                };
-                let Some(target) = runtime.visible_entities().npcs.into_iter().find(|npc| {
-                    npc.actor.placement_identity() == named.identity
-                        && npc.generation == named.generation
-                }) else {
-                    return Ok(Some(outcome(UseDisposition::Rejected)));
-                };
-                let position = runtime
-                    .read_actor_position(actor)
-                    .map_err(|_| ())?
-                    .position();
-                if runtime.npc_key(target.actor) != Some(callback.npc.as_str())
-                    || position.floor != target.position.floor
-                    || position.x.abs_diff(target.position.x) > 1
-                    || position.y.abs_diff(target.position.y) > 1
-                {
-                    return Ok(Some(outcome(UseDisposition::Rejected)));
-                }
-            } else if intent.use_with.is_some() {
-                return Ok(Some(outcome(UseDisposition::Rejected)));
-            }
-        }
         let Some(permit) = self.spell_lane_permit().await else {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         };
@@ -525,4 +517,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         Ok(Some(outcome(disposition)))
     }
+}
+
+/// One authoritative target snapshot; display names cannot impersonate canonical NPC keys.
+fn reached_quest_npc(
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    actor: ExactActorRef,
+    named: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+) -> Option<&str> {
+    let target = runtime.visible_entities().npcs.into_iter().find(|npc| {
+        npc.actor.placement_identity() == named.identity && npc.generation == named.generation
+    })?;
+    let position = runtime.read_actor_position(actor).ok()?.position();
+    if position.floor != target.position.floor
+        || position.x.abs_diff(target.position.x) > 1
+        || position.y.abs_diff(target.position.y) > 1
+    {
+        return None;
+    }
+    runtime.npc_key(target.actor)
 }

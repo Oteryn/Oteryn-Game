@@ -288,10 +288,21 @@
       "evidence": "content/encounters/world-changes/owner-catalogue.json",
       "reviewed_wvar_sha": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
     },
-    "active_checkpoint": "QENGINE2 selected-instance carried-use/reconcile reused, actor-target NPC validation and three Noodles callbacks authored; native14156 exact donor profile and bothNPCplacements generated. All-target/all-feature gameplay compile PASS. Whole PG RED52.200411359s retained; next regenerate World pins, strengthen actor-target/replay tests, run actual PG GREEN/fmt/strict clippy. No qualification claimed.",
+    "active_checkpoint": "Actor targeting/publication/frozen replay implementation compiles; post-exploration wrongNPC/out-of-reach and exact/mismatched ingress assertions added. Carried callback Rust3/Python1/placement10 tests PASS. World pins regenerated; next actual whole PG GREEN and strict gameplay clippy/fmt. No whole qualification claimed.",
     "assumptions": [
       "Use retained permanent King/Noodles courtyard NPC placements for guaranteed personal route in Thais Peninsula; do not implement global escape/Dog Lady/Puppies/calendar changes."
-    ]
+    ],
+    "native_collar_source": "imports/canary/items-xml/items.xml:32492-32496 sha2561cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2; exact14156 nonstackable1.10oz native profile, no fallback.",
+    "world_pin_refresh": {
+      "inputs_digest": "64eaff1acedc88abb4e42c67274390bcb76020d397eaaa6a9f2c716c9c055710",
+      "pins": [
+        {
+          "digest": "e68caf65219557465f2102bfe55dcbf34ba037f9b483cedd9f3cb22b8c7c68b8",
+          "previous": "639485b04a204b8efe593cbf76c0af353d3ad058d390d7f13bbb863dca3ce97c",
+          "world": "oteryn"
+        }
+      ]
+    }
   },
   {
     "canonical": "oteryn:quest.opticording_sphere_quest",

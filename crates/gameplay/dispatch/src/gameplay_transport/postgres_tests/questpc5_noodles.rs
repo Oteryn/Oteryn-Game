@@ -184,10 +184,56 @@ pub(super) async fn exercise(
         p(32314, 32178),
     )
     .await?;
+    at(owner, admitted, p(32310, 32172)).await?;
+    assert_ne!(
+        collar(owner, admitted, king).await?,
+        UseDisposition::Committed,
+        "wrong canonical NPC after exploration"
+    );
+    assert_ne!(
+        collar(owner, admitted, dog).await?,
+        UseDisposition::Committed,
+        "correct dog out of reach"
+    );
+    assert_eq!(stage(h).await?, 1);
+    assert_eq!(count(h, "oteryn:item.tibia.i14156").await?, 1);
+    at(owner, admitted, p(32314, 32178)).await?;
+    let use_command = admitted.continuity.next_command_id;
     assert_eq!(
         collar(owner, admitted, dog).await?,
         UseDisposition::Committed
     );
+    let replay = UseIntent {
+        target: UseTarget::Item(std::num::NonZeroU64::new(3).ok_or("collar handle")?),
+        use_with: Some(dog),
+        use_with_map_item: None,
+        use_with_position: None,
+    };
+    let body =
+        oteryn_protocol_oteryn::world_object::encode_item_use_intent(&replay).map_err(debug)?;
+    let command = crate::foundation::CommandRef::new(
+        admitted.game_session_id,
+        crate::foundation::CommandId::new(use_command).map_err(debug)?,
+    );
+    assert_eq!(
+        owner
+            .root
+            .reconcile_quest_carried_use(owner.character, fence.character_id, command, body)
+            .await
+            .map_err(debug)?,
+        Some(true),
+        "exact frozen actor USE after input consumption"
+    );
+    assert_eq!(
+        owner
+            .root
+            .reconcile_quest_carried_use(owner.character, fence.character_id, command, vec![255])
+            .await
+            .map_err(debug)?,
+        Some(false),
+        "changed actor USE cannot rebind historical consumption"
+    );
+
     assert_eq!(stage(h).await?, 2);
     assert_eq!(
         count(h, "oteryn:item.tibia.i14156").await?,
