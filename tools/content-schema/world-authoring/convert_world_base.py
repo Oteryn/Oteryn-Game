@@ -1170,8 +1170,10 @@ def build(
 
     quest_door_bindings.overlay_outputs(out)
     import quest_startup_bindings
+    import quest_access_bindings
 
     quest_startup_bindings.overlay_outputs(out)
+    quest_access_bindings.overlay_outputs(out)
     return out
 
 

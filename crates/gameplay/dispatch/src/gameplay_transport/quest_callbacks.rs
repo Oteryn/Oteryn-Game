@@ -4,6 +4,8 @@ use super::{
     actor_spell::ChannelSpellStates,
     connection::{UseCommand, UseOutcome},
 };
+mod effects;
+mod encounter;
 mod execute;
 mod rewards;
 mod soul_war_reward;
@@ -174,7 +176,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
             let disposition = match slot.commit_world_callback(self.root, self.character, self.holder, fence,
                 QuestTransitionRequest { transition_key: pending.callback, cause: pending.cause },
-                std::sync::Arc::clone(catalogue), &permit, context).await {
+                std::sync::Arc::clone(catalogue), &permit, context,
+                self.active_generation.and_then(|generation| generation.native_gameplay()),
+            ).await {
                 Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => UseDisposition::Committed,
                 Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => return false,
                 Ok(_) | Err(_) => UseDisposition::Rejected,
@@ -428,10 +432,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         origin: MovementPositionSnapshot,
         entered: MovementPositionSnapshot,
     ) -> MovementPositionSnapshot {
+        let entered = if origin.position() != entered.position() {
+            self.step_quest_trigger(permit, actor, session, origin, entered, Trigger::StepOut)
+                .await
+        } else {
+            entered
+        };
+        let entered = self
+            .step_dynamic_quest_portal(permit, actor, session, entered)
+            .await;
+        self.step_quest_trigger(permit, actor, session, origin, entered, Trigger::StepIn)
+            .await
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "binds the exact actor, session, movement snapshots and source trigger"
+    )]
+    async fn step_quest_trigger(
+        &self,
+        permit: &SpellLanePermit,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        origin: MovementPositionSnapshot,
+        entered: MovementPositionSnapshot,
+        trigger: Trigger,
+    ) -> MovementPositionSnapshot {
         let Some(map) = self.bundle_map() else {
             return entered;
         };
-        let Some(at) = native(entered.position()) else {
+        let selected_position = if trigger == Trigger::StepOut {
+            origin.position()
+        } else {
+            entered.position()
+        };
+        let Some(at) = native(selected_position) else {
             return entered;
         };
         let Some(base) = map.overlay.base().tile(at.x, at.y, at.floor) else {
@@ -446,7 +481,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(
                     self.callback_content()
                         .iter()
-                        .filter(move |c| c.trigger == Trigger::StepIn && matches(map, c, key))
+                        .filter(move |c| c.trigger == trigger && matches(map, c, key))
                         .map(move |c| (c, key)),
                 )
             })
@@ -546,7 +581,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "binds the exact actor, session, movement snapshots and source trigger"
+    )]
     fn refuse_quest_step(
         &self,
         optional_pvp: Option<bool>,
@@ -564,7 +602,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let closed = crate::map::floor::BundleDoors(map.facts.doors());
         let blocked = super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
-        if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+        if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport_facing(
             runtime,
             self.movement_cells,
             actor,

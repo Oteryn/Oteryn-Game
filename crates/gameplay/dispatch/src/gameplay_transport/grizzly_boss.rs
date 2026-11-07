@@ -263,7 +263,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok()
             .filter(|policy| policy.definition_key == boss.creature_key);
         let closed = crate::map::floor::BundleDoors(map.facts.doors());
-        let teleport = crate::map::floor::prepare_quest_callback_teleport(
+        let teleport = crate::map::floor::prepare_quest_callback_teleport_facing(
             &runtime,
             self.movement_cells,
             pending.actor,
@@ -473,7 +473,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return true;
         }
         let closed = crate::map::floor::BundleDoors(map.facts.doors());
-        let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+        let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport_facing(
             runtime,
             self.movement_cells,
             actor,

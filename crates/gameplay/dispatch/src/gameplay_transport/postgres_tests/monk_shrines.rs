@@ -212,7 +212,7 @@ pub(super) async fn exercise(
             let actor = admitted.runtime_actor.ok_or("actor")?;
             let expected = runtime.read_actor_position(actor).map_err(debug)?;
             let doors = crate::map::floor::BundleDoors(world.facts().doors());
-            let proof = crate::map::floor::prepare_quest_callback_teleport(
+            let proof = crate::map::floor::prepare_quest_callback_teleport_facing(
                 &runtime,
                 owner.movement_cells,
                 actor,
