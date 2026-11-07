@@ -350,10 +350,10 @@
     "final_pg_log": "/tmp/npcfix-evidence/refusal-final-paid-clock-pg.log"
   },
   "counts": {
-    "QUALIFIED": 244,
+    "QUALIFIED": 250,
     "EXCLUDED": 24,
     "PENDING": 7,
-    "AUTHORED; QUALIFICATION PENDING": 42,
+    "AUTHORED; QUALIFICATION PENDING": 36,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
   },
@@ -748,8 +748,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored. 32 retail offers including default-state Ice Rapier buyback; existing Marid mission03=3 gate enforced in window and durable sale.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/234; content/services/trade/trade-00000-00326.json:1#/records/207",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "npcfix-exact-displayed-names-43",
+        "postgres_red_seconds": 162.13,
+        "postgres_green_seconds": 111.62,
+        "scope": "Exact captured displayed identity and every authored retail anchor; all prior NPC facts preserved. Nah Bob retains its existing qualified mission-gated shop component."
+      }
     },
     {
       "npc": "Oblivion",
@@ -1187,8 +1193,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/196",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "npcfix-exact-displayed-names-43",
+        "postgres_red_seconds": 162.13,
+        "postgres_green_seconds": 111.62,
+        "scope": "Exact captured displayed identity and every authored retail anchor; all prior NPC facts preserved. Nah Bob retains its existing qualified mission-gated shop component."
+      }
     },
     {
       "npc": "Luna",
@@ -2010,8 +2022,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/168",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "npcfix-exact-displayed-names-43",
+        "postgres_red_seconds": 162.13,
+        "postgres_green_seconds": 111.62,
+        "scope": "Exact captured displayed identity and every authored retail anchor; all prior NPC facts preserved. Nah Bob retains its existing qualified mission-gated shop component."
+      }
     },
     {
       "npc": "Humnog, the guard",
@@ -2019,8 +2037,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/171",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "npcfix-exact-displayed-names-43",
+        "postgres_red_seconds": 162.13,
+        "postgres_green_seconds": 111.62,
+        "scope": "Exact captured displayed identity and every authored retail anchor; all prior NPC facts preserved. Nah Bob retains its existing qualified mission-gated shop component."
+      }
     },
     {
       "npc": "Lokur",
@@ -2399,8 +2423,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/256",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "npcfix-exact-displayed-names-43",
+        "postgres_red_seconds": 162.13,
+        "postgres_green_seconds": 111.62,
+        "scope": "Exact captured displayed identity and every authored retail anchor; all prior NPC facts preserved. Nah Bob retains its existing qualified mission-gated shop component."
+      }
     },
     {
       "npc": "Polly",
@@ -2985,8 +3015,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/152",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "npcfix-exact-displayed-names-43",
+        "postgres_red_seconds": 162.13,
+        "postgres_green_seconds": 111.62,
+        "scope": "Exact captured displayed identity and every authored retail anchor; all prior NPC facts preserved. Nah Bob retains its existing qualified mission-gated shop component."
+      }
     },
     {
       "npc": "Guide Kunibert",
@@ -7361,6 +7397,113 @@
       "rust_source_snapshot": "89e78174f9cd845e8e64130ba549352dd70eaa07",
       "cumulative_native_actors": 233,
       "cumulative_npcs": 232
+    },
+    {
+      "state": "QUALIFIED",
+      "entries": [
+        "Guardian of the Deep Seas",
+        "Hemor, the guard",
+        "Humnog, the guard",
+        "Lesser Messenger of Heaven",
+        "Nah'Bob",
+        "One-Eyed Joe"
+      ],
+      "fixture_prerequisite_red": {
+        "error": "PlacementsNotAscending",
+        "seconds": 306.37,
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "log": "/tmp/npcfix-evidence/six-name-fixture-order-red.log"
+      },
+      "fix": "Only new case points sorted by exact runtime order(floor,y,x); both Lesser Messenger anchors retained and checked against frozen retail positions. No Rust, runtime ordering guard, prior case or canonical NPC data changed. Fresh name RED rerun active.",
+      "postgres_red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 162.13,
+        "error": "Guardian Of The Deep Seas != Guardian of the Deep Seas",
+        "log": "/tmp/npcfix-evidence/six-name-pg-red.log",
+        "sha256": "42bb5395379ed378c5e56f3bc0199721d79496d48c3bfca95f4d3639d7048f77"
+      },
+      "source_packet": {
+        "repairs": 60,
+        "original54_preserved": true,
+        "sha256": "0ba41960fed44d4535c0b494e2b6fb158c7481f4da08d0f18e7bd99caf629a66"
+      },
+      "compile_proof": "Current cargo-run materializer executable is running against predecessor and output temporary roots after packet60/digest refresh. No Rust behavior change beyond repo-generated packet digest/count; canonical name RED162.13s retained; authoring tests and full generation active.",
+      "authoring_tests": "4 exact-before/atomicity tests PASS0.22s",
+      "materialization": "All protected predecessor stages and eleven legacy documents completed; inventory pins refreshed through repository tooling. Six canonical names emitted; prey-model build and remaining generation/check/Clippy gates running.",
+      "postgres_green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 111.62,
+        "log": "/tmp/npcfix-evidence/six-name-pg-green.log",
+        "sha256": "c810f32a37c60f33e17b94e8c8735974eee84c2e7f5f2e78a75e7183d7662f3b"
+      },
+      "content_delta": {
+        "items": {
+          "records": 34111,
+          "preserved_exactly": true
+        },
+        "trade": {
+          "records": 327,
+          "preserved_exactly": true
+        },
+        "creatures": {
+          "records": 1863,
+          "preserved_exactly": true
+        },
+        "spawns": {
+          "records": 54684,
+          "preserved_exactly": true
+        },
+        "placements": {
+          "records": 345,
+          "preserved_exactly": true
+        },
+        "native": {
+          "records": 3628,
+          "preserved_exactly": true
+        },
+        "fluid_items": {
+          "records": 2,
+          "preserved_exactly": true
+        },
+        "terrain": {
+          "records": 8618,
+          "preserved_exactly": true
+        },
+        "npcs": {
+          "records": 1290,
+          "changed_only_display_name": [
+            "oteryn:npc.guardian_of_the_deep_seas",
+            "oteryn:npc.hemor_the_guard",
+            "oteryn:npc.humnog_the_guard",
+            "oteryn:npc.lesser_messenger_of_heaven",
+            "oteryn:npc.nah_bob",
+            "oteryn:npc.one_eyed_joe"
+          ]
+        }
+      },
+      "canonical_order_fix": {
+        "old_packet_sha256": "0ba41960fed44d4535c0b494e2b6fb158c7481f4da08d0f18e7bd99caf629a66",
+        "new_packet_sha256": "bde7214723c91671cf00238d9db6b8de64c58323c5591de0cd7b1ed3c44bfcae",
+        "original54_unchanged": true,
+        "all6_after_records_equal_existing_legacy_records": true,
+        "fix": "Canonical field_path ordering in only six new after-records; no canonical data or test assertion changed."
+      },
+      "catalogue": "Fresh NPC catalogue target compiled and passed55.83s after canonical field order correction",
+      "world_pin": {
+        "inputs_digest": "3f6980e2c46edc44d3cccf4e9204b49cd242c50855c0b45f91154535f1a8f307",
+        "pins": [
+          {
+            "bytes": 31822062,
+            "digest": "bebbda21662d3b0e37b68a718b5b11b9903e2647e5b7f40173842a3916e06e27",
+            "world": "oteryn"
+          }
+        ]
+      },
+      "remaining_gates": "Only final post-canonical-order strict Clippy and four atomicity tests remain active. Full regeneration/repository5 tests125.91s, corrected catalogue55.83s, final check, fmt, duplicate migrations and independent pin PASS; PG111.62s and source delta retained.",
+      "name": "npcfix-exact-displayed-names-43",
+      "checks": "PASS: PG RED162.13s/GREEN111.62s; full generator including repository5 tests125.91s; final game-server alltargets/allfeatures check and strict Clippy; canonical-order authoring4 tests; catalogue55.83s; fmt; duplicate migration check; independent regenerated world pin.",
+      "cumulative_npcs": 238,
+      "cumulative_native_actors": 240
     }
   ],
   "shared_engine_lookup": {
@@ -7787,7 +7930,7 @@
       "normal_profile": "This checkout retained normal unoptimized+debuginfo profiles and existing env.sh. Only stopped-build incremental caches were removed."
     }
   },
-  "next_batch": "Continue remaining owned entries immediately. No final turn until all scope qualified and pushed.",
+  "next_batch": "Five retained exact-price shop contracts: Dixi, Lubo, Pompan, Shiantis, Toffee. Continue immediately.",
   "active_batch": {
     "name": "reviewed-passive-cells-35",
     "state": "QUALIFIED",
@@ -8439,7 +8582,7 @@
     "cumulative_npcs": 232
   },
   "active_name_work": {
-    "state": "POSTGRES_AND_CATALOGUE_GREEN; CANONICAL_ORDER_FIXED; FINAL_RECHECKS_RUNNING",
+    "state": "QUALIFIED",
     "entries": [
       "Guardian of the Deep Seas",
       "Hemor, the guard",
@@ -8539,6 +8682,10 @@
         }
       ]
     },
-    "remaining_gates": "Only final post-canonical-order strict Clippy and four atomicity tests remain active. Full regeneration/repository5 tests125.91s, corrected catalogue55.83s, final check, fmt, duplicate migrations and independent pin PASS; PG111.62s and source delta retained."
+    "remaining_gates": "Only final post-canonical-order strict Clippy and four atomicity tests remain active. Full regeneration/repository5 tests125.91s, corrected catalogue55.83s, final check, fmt, duplicate migrations and independent pin PASS; PG111.62s and source delta retained.",
+    "name": "npcfix-exact-displayed-names-43",
+    "checks": "PASS: PG RED162.13s/GREEN111.62s; full generator including repository5 tests125.91s; final game-server alltargets/allfeatures check and strict Clippy; canonical-order authoring4 tests; catalogue55.83s; fmt; duplicate migration check; independent regenerated world pin.",
+    "cumulative_npcs": 238,
+    "cumulative_native_actors": 240
   }
 }
