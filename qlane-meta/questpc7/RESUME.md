@@ -1,3 +1,34 @@
+# Forgotten Knowledge QUALIFIED — 2026-11-07
+
+Actual PG18.6 RED42.191567216s→GREEN88.533725484s. Whole eleven-stage
+selected route: exact physical tome recovery/hand-in, six native terminal
+bosses, physical egg, Ivalisse and actual source father A Strange Chalice,
+ordered six-word aid/password, Premium refusals, completion/repeat. Heart is
+uncompleted yet real Powerful Strike succeeds, burns exact source materials
+and250000gold, writes72000000ms. Both NPCs use retained source placements.
+All17 final focused gates PASS, including whole Heart PG80.646798132s,
+loader/world-callback/objective/learning units,32 author tests, source item
+checks/generators, strict check/clippy, pins, content123/world5/fmt.
+No new SQL; coordinator migration list/range1280-1284 remain unchanged.
+
+Push qualification now. Four ACTIVE remain:
+- Feaster of Souls Quest
+- Goblin Merchant Quest
+- Hot Cuisine Quest
+- Illuminated Warrior Outfits Quest
+
+Continue Feaster next. Retained donor bytes are verified in /tmp/questpc7-
+feaster-source-extract.json (TEMP ONLY); bounded facts in source-facts.json.
+Generic repeated USE plan is /tmp/questpc7-bounded-world-counter-plan.md.
+Reuse checked Add in existing quest evaluator/durable callback TX: no SQL.
+First actual PG RED before implementation; then20 sample/purification and100
+mining counters with hard terminal cap, replay/refusal/no-charge proof.
+Check QENGINE2 and peers before new shared feature; qengine world Storage
+currently onlyset/preserve; peer1002 is NPC reward operations, not required.
+Source tools/items/NPCs are our job; author missing facts conservatively and
+record exact citations. No more than10minutes investigating one fact.
+Push compiling/green slices at least every15minutes, never end with ACTIVE.
+
 # Forgotten strict validation checkpoint — 2026-11-07 14:38 UTC
 
 WholePG88.533725484s, HeartPG80.646798132s and first12 of17 final gates

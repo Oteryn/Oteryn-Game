@@ -374,7 +374,7 @@
     "title": "Forgotten Knowledge Quest",
     "canonical": "oteryn:quest.forgotten_knowledge_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/45/definition",
-    "status": "ACTIVE",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [
       {
@@ -498,35 +498,39 @@
         "log": ".questpc7/lane-rewards-pg.log:357"
       }
     ],
-    "queued_stage_binding": {
-      "stage": "s2",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
-    },
-    "first_unqualified_stage": {
-      "key": "s2",
-      "kind": "collect",
-      "objective": "Recover one Heavy Old Tome to restore the temple record.",
-      "targets": [
-        "Heavy Old Tome"
-      ]
-    },
     "owner": "questpc7",
-    "remaining_work": {
-      "kind": "lane_implementation_work",
-      "missing_piece": "Compose the selected route through the shared encounter/party admission and frozen-participant death settlement owner; earn access and rewards only from real encounter settlement, then prove repeat/reset/recovery behavior.",
-      "evidence": [
-        "content/quests/definitions/quests-00100-00199.json:1#/records/45/definition",
-        "crates/gameplay/quests/src/quest/world_callbacks.rs:98",
-        "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:92"
+    "assumptions": "Conservative selected bindings and completion-based native learning recorded in CONTRACT-NOTES.md and FORGOTTEN-PG-PROOF.json.",
+    "qualification": {
+      "kind": "complete selected Forgotten Knowledge route and actual native powerful learning",
+      "proof": "qlane-meta/questpc7/FORGOTTEN-PG-PROOF.json",
+      "test": "questpc7_forgotten_whole_native_paths_and_learning",
+      "postgres": "18.6",
+      "red_seconds": 42.191567216,
+      "green_seconds": 88.533725484,
+      "scope": [
+        "No subject quest/item/reward seeds; independent fenced ordinary service inputs only.",
+        "Valid source sword/materials/250000gold/shrine refuse unearned Powerful Strike without consuming anything.",
+        "Current Premium refusal before mission and completion.",
+        "One actual Heavy Old Tome recovered then consumed exactly once; no-item/repeat cannot advance or duplicate.",
+        "All six source terminal native bosses and frozen-once credit counters.",
+        "Existing physical dragon egg4839 selected USE and source Ivalisse/father contacts.",
+        "Actual A Strange Chalice at retained source cell: learned alone refuses, six ordered words supply zzubaran.",
+        "Selected completion and unchanged completion revision on repeat.",
+        "Heart remains incomplete; Forgotten independently licenses actual native Powerful Strike, burns exact materials and250000gold, persists72000000ms."
       ],
-      "attempts": [
-        "Inspected the selected boss stages, current callback operation shape and frozen kill entry; selected all eight exact reward claims for independent real-USE qualification."
+      "assumptions": [
+        "Chosen personal temple tome recovery site does not claim original spawn.",
+        "Physical egg4839 is selected USE adaptation, not original Frozen Horror creature fight.",
+        "Terminal Soul fights in retained base Dragon King arena; original floor12 spawn has only one clear tile.",
+        "Whole selected completion licenses the seventeen source Forgotten powerful families; no unrelated quest or early original boss flags."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
-    },
-    "current_batch": "Whole PG GREEN88.533725484s, retained HeartPG80.646798132s. Twelve final gates PASS including strict all-target/all-feature Clippy215.086s. Pin refresh/check, content/world/fmt pending; remains ACTIVE until all17 gates pass.",
-    "assumptions": "Conservative selected bindings and completion-based native learning recorded in CONTRACT-NOTES.md and FORGOTTEN-PG-PROOF.json."
+      "bindings": [
+        "content/quests/questpc7-world-callbacks.json",
+        "content/quests/questpc7-death-objectives.json",
+        "content/quests/shared-reward-callbacks.json",
+        "content/quests/imbuement-knowledge.json"
+      ]
+    }
   },
   {
     "title": "Formal Dress Outfits Quest",
