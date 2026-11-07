@@ -1260,3 +1260,21 @@ restart proof emitted `QWORLD_PHYSICAL_PG_EXECUTED elapsed_ms=125726`.
 Both ran against the retained real PostgreSQL 18.6 cluster. No reverse-dependency
 tests executed in this final filtered run; full-suite follow-up belongs to CI
 under the owner's replacement rule. No tests were weakened or deleted.
+
+### PR 3026 CI metadata repair
+Reproduced classifier parity failure for runtime.json and the architecture edge
+failure before changing policy. Added the missing Python world-bundle input to
+match the existing Rust list. Compared all workspace internal edges and declared
+the two omissions: dispatch -> world-change and world-change -> determinism.
+The complete classifier regression script and architecture workspace validator
+now pass. No production mechanics or tests were changed.
+
+Validation: workspace all-target check passed in 3m54s; changed-crate Clippy with
+-D warnings passed in 5m05s; formatting, duplicate migrations and official pin
+refresh/check passed. The own-mechanic library run passed all 21 cases in 128.328s,
+including real PG markers QWORLD_PG_EXECUTED elapsed_ms=64087 and
+QWORLD_PHYSICAL_PG_EXECUTED elapsed_ms=128288. A prior build hit disk exhaustion;
+completed generated caches were removed and the focused run succeeded.
+The owner's newer PUSH READY WORK NOW instruction supersedes the earlier hold
+for a PG shard message or 19:25 UTC. Any additional CI failures remain a separate
+follow-up batch; this repair does not claim full-suite qualification.
