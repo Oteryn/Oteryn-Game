@@ -712,3 +712,18 @@ and formatting. This integration repairs the three completed quest regressions
 with real PG proof, while the four unfinished quests retain explicit qengine2
 requests. The unqualified Feaster prefix stays present and RED; no test is skipped
 or weakened and no unfinished quest is relabelled QUALIFIED.
+
+## Goblin introduction: exact source tool purchases
+
+Rafzan's pinned9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d source
+`data-global/npc/rafzan.lua:73-90`,SHA256
+`9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34`,
+prices Sign17668 at75gp, Guardcatcher17669 at200, PerfumeGatherer17670 at400,
+RatUrine17671 at150 and Trunkhammer17676 at150. Three signs plus the four tools
+cost1125gp. The chosen grouping/phrases are an authored convenience; each source
+price is retained. Mission acceptance does not manufacture stock.
+Canary `imports/canary/items-xml/items.xml:35704-35725`,SHA256
+`1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2`,
+independently confirms these identities. Item17679 is the cracked stone target.
+The programme is intentionally unwired while the corrected native test establishes
+a real mechanic RED; its pure source/recipe/price validation already passes.

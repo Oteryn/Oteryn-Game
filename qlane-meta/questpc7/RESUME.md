@@ -1,3 +1,38 @@
+# Compiling checkpoint — 2026-11-07 20:26 UTC
+
+Current main87957a7fa merged cleanly in5f68638f8. Fresh workspace all-target
+check PASS2m57s. Fmt PASS. Publish the compiling Goblin test/data checkpoint
+now under the owner's30minute rule, without waiting for another native run.
+GOBLIN-INTRO-CHECKPOINT.json records exact proof and the pending RED boundary.
+The quest-specific producer is UNWIRED; no false native qualification is claimed.
+Next: rerun corrected NPC capability fixture to a valid mechanic RED; then enable
+its2quest callbacks, append Rafzan's pinned source capture and admit the5source
+portable tool IDs via existing repository tooling. Regenerate once at the next
+batch boundary. Keep7-track start atomic, exact1125gp payment and command replay.
+No free tool grant, no new engine, no whole Goblin qualification yet.
+
+# Next compiling checkpoint — 2026-11-07 20:24 UTC
+
+Last push49341c18f6ec74419c3f5205327d6d2fe4e33821 at~20:00UTC.
+Main CLCAST87957a7fa merged cleanly in local5f68638f8; no unresolved conflicts.
+New Goblin intro test and an UNWIRED quest-specific producer are authored.
+Source verification passes: exact Rafzan prices total1125gp, seven tool
+instances, seven atomic start tracks. Advertisement Sign is17668;17679 is
+Cracked Stone, not a carried sign. No tools are granted freely.
+The first PG18.6 attempt took66.448987651s but failedMalformed before the quest
+action; the fixture now negotiates the normal NPC/item capabilities. Its new
+trait import was fixed after cargo check caught it. This is NOT a mechanic RED.
+Do not enable the producer/runtime hook until the corrected test reaches RED.
+No new shared engine; creature capture remains qengine2-owned.
+
+Current check:/tmp/questpc7-clcast-goblin-wip-workspace2.log
+Current fmt:/tmp/questpc7-goblin-current-fmt.log
+Publish once check+fmt pass, before~20:30UTC; hard owner rule permits compiling
+WIP, no test wait. The corrected native rerun was interrupted to prioritize this
+checkpoint. After push rerun it, then wire the already-prepared quest producer,
+Rafzan source capture and five portable item IDs using repository tooling once
+at the batch boundary. Do not create a new engine or label Goblin QUALIFIED.
+
 # PUBLISH NOW — owner hard rule, 2026-11-07 20:00 UTC
 
 cargo check --workspace --all-targets PASS10m59s; cargo fmt --all -- --check

@@ -368,7 +368,9 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if name == "qengine-rewards-feaster-prefix" {
+        if name == "qengine-rewards-goblin-intro" {
+            super::super::questpc7_goblin::exercise(&mut owner,&mut admitted,&h).await?;
+        } else if name == "qengine-rewards-feaster-prefix" {
             super::super::questpc7_feaster::exercise(&mut owner,&mut admitted,&h).await?;
         } else if name == "qengine-rewards-forgotten-story" {
             super::super::questpc7_forgotten_story::exercise(&mut owner,&mut admitted,&h).await?;
