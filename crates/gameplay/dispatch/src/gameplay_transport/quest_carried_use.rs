@@ -357,8 +357,18 @@ async fn run_inner(
         target.as_ref().is_none_or(|target| {
             super::super::quest_callbacks::matches(map, callback, target.placement_key)
         }) && callback.storage.iter().all(|storage| {
-            (storage.minimum..=storage.maximum)
-                .contains(&tracks.get(&storage.track).copied().unwrap_or(-1))
+            let value = tracks
+                .get(&storage.track)
+                .copied()
+                .or_else(|| {
+                    admission
+                        .quest_catalogue
+                        .as_ref()?
+                        .track(&storage.track)
+                        .map(|track| track.initial)
+                })
+                .unwrap_or(-1);
+            (storage.minimum..=storage.maximum).contains(&value)
         })
     });
     let callback = eligible.next().ok_or(UseDisposition::NotPossible)?;
@@ -540,6 +550,11 @@ async fn commit(
         gate.in_flight_since_ms = Some(admission.owner_ms());
     }
     let result = commit_pending(admission, &mut slot, &permit, catalogue, &pending).await;
+    #[cfg(test)]
+    eprintln!(
+        "CARRIED_WORLD_QUEST command={} callback={} result={result:?}",
+        command.command_id, pending.callback
+    );
     drop(states);
     drop(runtime);
     drop(slot);
