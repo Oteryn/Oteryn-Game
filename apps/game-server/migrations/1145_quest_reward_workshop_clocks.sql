@@ -35,7 +35,7 @@ BEGIN
   RAISE EXCEPTION 'missing bounded repeat/completion predecessor';
  END IF;
  body:=replace(body,original,
-  '(jsonb_array_length(NEW.plan->''take'')=0 AND NEW.plan->''fee'' IS NULL AND NEW.plan->''cooldown'' IS NULL)');
+  '(jsonb_array_length(NEW.plan->''take'')=0 AND NEW.plan->''fee'' IS NULL)');
  EXECUTE replace(body,'RETURN NULL;',$proof$
  IF NEW.plan ? 'fee' AND NOT EXISTS(SELECT 1 FROM game_quest_reward_fees q
   WHERE q.character_id=NEW.character_id AND q.cause_id=NEW.cause_id

@@ -115,5 +115,23 @@ class NpcfixRewardAuthoring(unittest.TestCase):
             self.assertEqual(first, PRODUCER.outputs(root))
 
 
+    def test_shared_generation_retains_deadlines_and_achievement_once(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.fixture(root)
+            callbacks = json.loads((HERE.parents[2] / 'content/quests/shared-reward-callbacks.json').read_text())['callbacks']
+            soul = next(row for row in callbacks if row['npc'] == 'oteryn:npc.a_wandering_soul')
+            path = 'content/quests/shared-reward-callbacks.json'
+            generated = {path: json.dumps({'schema': 1, 'callbacks': [soul]}).encode(), 'foreign-provider': b'unchanged'}
+            result = PRODUCER.overlay_generated(generated, root)
+            document = json.loads(result[path])
+            self.assertEqual(document['callbacks'][0], soul)
+            self.assertTrue(soul['achievement_once'])
+            self.assertEqual(soul['give']['decay']['duration_millis'], 604_800_000)
+            self.assertEqual(document['callbacks'][1]['cooldown']['seconds'], 72_000)
+            self.assertEqual(len(document['tracks']), 1)
+            self.assertEqual(result['foreign-provider'], b'unchanged')
+
+
 if __name__ == '__main__':
     unittest.main()
