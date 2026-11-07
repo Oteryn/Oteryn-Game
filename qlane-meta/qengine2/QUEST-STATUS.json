@@ -1896,7 +1896,7 @@
     "current_slice": "Generic native monetary fee participant + complete Nobleman source story; push this slice immediately after focused PG GREEN. Remaining entries follow with separate green commits.",
     "reuse_audit": "Primary questpc2..8 branches refreshed; none of the matched current entries is QUALIFIED. Latest questpc8 npc_program still calls plan_storage (line130); no native fee/outfit participant exists there. Reuse existing item_fee_burn owner and Type2 gate here.",
     "source": "Crystal9f5a72c data-global/npc/irmana.lua:50-135 and corresponding male branches. Carried-only150000 per addon; no10000 payment implementation despite dialogue.",
-    "phase": "First native fee/Nobleman slice is PostgreSQL GREEN and pushed immediately under owner pressure rule; Royal Costume/Pirate remain next. Retry content integration/pin-check after push; previous integration compile hit disk exhaustion, resolved by obsolete build-cache cleanup.",
+    "phase": "Royal Costume full base/shield/crown PG RED authored before content changes; source prices15000silver12500gold,then7500/6250each; token IDs22516/22721. Source donor Percybald Lua known in corpus. Nobleman ancillary checks retry running session17823.",
     "red": {
       "result": "1 failed in44.66s: missing Nobleman first-start binding",
       "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l4-nobleman-story duration=44.661348814s success=false",
@@ -1923,16 +1923,22 @@
           "33 native fee audit tests0.13s",
           "15 authoring tests5.468s",
           "deterministic callbacks/placements reproduce",
-          "repo pin-refresh passed; pin-check/integration retry pending after immediate push"
+          "123 content integration tests passed2.70s",
+          "5 world repository tests passed46.63s",
+          "repo pin-check passed digestf5858ace5ba0497d24a15c8f01649ad61b5cf0b4685f1194c2fd1c78f8cceddb"
         ],
         "proof": "Complete Nobleman source introductions and both paid addons. Unpaid attempts refuse; exact total300000 carried gold; two native fee receipts with zero bank debit; change retained; replay cannot charge again;3 immutable account facts,source achievement and normal final appearance selection.",
-        "native_guards": "Source payment kind18 reuses complete carried coin proof, custody/order/epochs and fresh Character proof. Immutable Quest fee receipt FK/source price/policy validated in same transaction. Existing proof arms retained."
+        "native_guards": "Source payment kind18 reuses complete carried coin proof, custody/order/epochs and fresh Character proof. Immutable Quest fee receipt FK/source price/policy validated in same transaction. Existing proof arms retained.",
+        "commit": "33b640335",
+        "push": "Fast-forward confirmed",
+        "verification": "All focused checks complete after immediate slice push. Previous disk-only integration failure recovered; no skipped/weakened tests."
       }
     ],
     "debug_evidence": [
       "Initial payment case82.56251676s failed: carried proof only admitted Atelier fee kinds. Migration extends existing source set to18, keeping all custody checks.",
       "Second80.468007016s and third80.35737872s failed: fresh Character proof required Atelier-specific receipt. Added exact Quest receipt alternative; retained old proof.",
       "Integration compile failed with No space left on device; obsolete compiler snapshots cleaned,normal execution restored. No source/test proof deleted."
-    ]
+    ],
+    "royal_source": "Crystal9f5a72c data-global/npc/percybald.lua:149-228 sha256 b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc"
   }
 }

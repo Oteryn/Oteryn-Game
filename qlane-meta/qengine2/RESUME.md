@@ -146,11 +146,18 @@ real PG failures exposed closed Atelier kind/receipt gates; fixed and retained
 all proof checks. CONTRACT-NOTES records source one-shot150000 payment behavior
 and canonical dress/coat alias. Native appearance uses immutable creation sex.
 
-IMPORTANT: content integration compile hit disk exhaustion. Obsolete compiler
-snapshots cleaned (no sources/evidence deleted). Retry the two focused content
-integration targets and pin-check AFTER the immediate green slice push; do not
-claim these ancillary checks passed yet. SQL-only fixes are in final PG green4.
-Logs /tmp/qengine2-batch4-{red,green4,unit-quests,unit-fees,final-clippy,pins}.log.
-Then continue Royal Costume/Pirate in same group and push each green slice.
-Latest existing push before this sliceaae647c63. Other primary questpc branches
-refreshed; no matched current entry QUALIFIED,source NPC writer stillstorage-only.
+Nobleman auxiliary verification is now COMPLETE:123 content tests2.70s,
+5 world tests46.63s,pin-check passedf5858ace5ba0497d24a15c8f01649ad61b5cf0b4685f1194c2fd1c78f8cceddb.
+Earlier disk exhaustion recovered by removing obsolete compiler snapshots,
+without deleting source/evidence. Native fee/Nobleman slice pushed33b640335.
+
+Current Royal Costume PG RED build session8478;log
+/tmp/qengine2-batch4-royal-red.log. Test covers base/shield/crown with all exact
+source token quantities, no internal-stage seeding. Test carrying capacity is
+earned through real XP owner at level200; closed bags reuse actual freed slots.
+No Royal content changed before RED. Source Percybald in pinned corpus grants
+looks1456/1457 despite XML from=store; both admitted client records exist.
+CONTRACT-NOTES scopes native quest admission to Royal only, keeps other store
+looks excluded. Token IDs22516/22721;base15000/12500,then7500/6250each. After
+actual RED implement/reproduce item/profile/appearance/NPC bindings,run focused
+GREEN and push slice immediately. Pirate follows in sameL1-04group.
