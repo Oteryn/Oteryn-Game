@@ -5181,7 +5181,7 @@
     },
     "current_batch": {
       "batch": "beginning_world_18",
-      "phase": "GREEN; publish immediately",
+      "phase": "GREEN and pushed6a2333cb1; source-backed engine requests recorded for remaining owned quests",
       "entries": [
         "missing owned coat produces source3562 replacement without greeting advance",
         "owned coat prevents duplicate and exact source reply replays",
@@ -9817,11 +9817,10 @@
       },
       "review": "Read strict combined admission union, all unchanged conflicting Item weights, retained source observation guards, disjoint NPC producer prefixes, both new physical PG contracts and generated input witnesses. All three PG cases, 4callbackunits,15profiles,9authoring,actual15case/776creatureprey,check/strictClippy3crates,123content,5repository andpinchecks pass; no blocking finding."
     },
-    "updated_at": "2026-11-07T19:48:32.945796+00:00",
+    "updated_at": "2026-11-07T19:54:59.496921+00:00",
     "standing_validation_rule": {
-      "owner_override": "Latest owner SPEED: stop extra verification; focused failures fixed and own PostgreSQL proof, cargo check --workspace --all-targets + fmt, push immediately; CI runs heavy suites",
+      "owner_override": "Latest HARD RULE: push compiling state after cargo check --workspace --all-targets and fmt; CI owns full suites; push at least every30minutes",
       "before_each_push": [
-        "Own focused mechanic tests with real PostgreSQL proof",
         "cargo check --workspace --all-targets",
         "cargo fmt --all -- --check"
       ],
@@ -9873,6 +9872,37 @@
             "crates/gameplay/durability/src/durability/quest_world_callback.rs"
           ],
           "state": "REQUESTED"
+        },
+        {
+          "feature": "Conditional achievement participant on world Item MINT, Treasure Hunter on twentieth unique chest",
+          "needed_by": [
+            "oteryn:quest.the_first_dragon_quest"
+          ],
+          "where": [
+            "crates/gameplay/quests/src/quest/world_callbacks/effects.rs"
+          ],
+          "state": "REQUESTED"
+        },
+        {
+          "feature": "Annual calendar gates for NPC quest dialogue, January14-February12",
+          "needed_by": [
+            "oteryn:quest.the_first_dragon_quest"
+          ],
+          "where": [
+            "crates/gameplay/quests/src/quest/reward_callbacks.rs"
+          ],
+          "state": "REQUESTED"
+        },
+        {
+          "feature": "Live-creature item-use callback with atomic transformation and per-character soul credit, including summons",
+          "needed_by": [
+            "oteryn:quest.the_tainted_soul"
+          ],
+          "where": [
+            "crates/gameplay/dispatch/src/gameplay_transport/quest_carried_use.rs",
+            "crates/gameplay/durability"
+          ],
+          "state": "REQUESTED"
         }
       ],
       "reuse_checked": {
@@ -9884,7 +9914,8 @@
     "collector": {
       "owner": "wpkg",
       "publication": "Push this lane branch; collector pulls green batches; no lane PR; merge main after coordinator announces collector merge"
-    }
+    },
+    "latest_green_publication": "6a2333cb1d6378217e132e0b8cd8ca51c9e86a89"
   },
   "counts": {
     "scope_total": 22,
