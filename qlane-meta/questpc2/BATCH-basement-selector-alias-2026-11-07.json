@@ -1,0 +1,34 @@
+{
+  "batch_id": "basement-selector-alias-2026-11-07",
+  "state": "GREEN_RUNTIME_SLICE_FINAL_PINS_PENDING",
+  "lifecycle": "AUTHORING",
+  "source_head": "1327ef861",
+  "red_pg_seconds": 75.36,
+  "rejected_noncanonical_attempt_seconds": 75.39,
+  "green": {
+    "postgres_version": 180006,
+    "source_seconds": 85.6,
+    "source_marker_ms": 10615,
+    "atomic_cases": 2,
+    "atomic_seconds": 166.36,
+    "goal_cases": 2,
+    "goal_seconds": 99.3,
+    "focused_pg_cases": 5,
+    "check_seconds": 78,
+    "clippy_seconds": 185,
+    "clippy_scope": "quests+dispatch all-targets all-features -D warnings",
+    "fmt": "PASS",
+    "alias_unit_cases": 6,
+    "closed_goal_tests": 2,
+    "scoped_native_generation": "43write+43check PASS",
+    "qengine_access": "write/check PASS"
+  },
+  "logs": {
+    "source": "/tmp/questpc2-basement-selector-alias-cold-green-pg.log",
+    "goals": "/tmp/questpc2-basement-selector-alias-goals-regression-pg.log",
+    "atomic": "/tmp/questpc2-basement-selector-alias-atomic-regression-pg.log",
+    "clippy": "/tmp/questpc2-basement-selector-alias-clippy.log"
+  },
+  "implementation": "One canonical once-only activation with bounded step position aliases at original41 and actual53 basement entries; ownphase1+nativephase0 same xmin/revision. All old source ladder/poison/Dragon, origin/cap/authority/replay and atomic assertions retained. Native closed-run guard unchanged. Fixture early return database cleanup exercised by three actual PG cases.",
+  "pending": "session6237 pin-refresh/check; complete proof and push immediately. Whole Elvenbane real-wire combat/rewards/exit/journal still unfinished."
+}

@@ -384,7 +384,7 @@
       "title": "Elvenbane Quest",
       "mechanism": "native_source_origin_personal_kill_goals",
       "status": "UNFINISHED",
-      "blocker": "Source exploration/ladder PG GREEN88.74s; native goals+existing objective+XP combined transaction PG GREEN78.10s with original receipt/replay and counter1/same-xmin proof; exact defender2cases GREEN82.78s. Next stale-capture retry closure, actual source goal activation/full wire six-defender combat and atomic seven-item reward/exit/journal.",
+      "blocker": "Earned source basement/cohort activation same xmin/revision, ladder/poison/Dragon route PG GREEN85.60s; exact-origin2cases99.30s and atomic/stale2cases166.36s GREEN. Native closed activation/counter guards intact. Final pins running; next real wire six-defender combat and seven-item atomic treasure/exit/journal.",
       "source_lane_checks": [
         {
           "lane": "questpc",
@@ -2046,16 +2046,20 @@
     "state": "GREEN_MIGRATION_RENUMBER_SLICE"
   },
   "basement_cohort_authoring": {
-    "state": "WIP_CANONICAL_SELECTOR_ALIAS_COMPILES",
+    "state": "GREEN_RUNTIME_FINAL_PINS_PENDING",
     "red_postgres_seconds": 75.36,
     "red": "Actual basement landing earns ownphase1 but cohort absent, expected0.",
     "rejected_attempt_postgres_seconds": 75.39,
     "rejected_attempt": "Catalogue native goal run may reopen; reverted attempt, keep closed activation guard.",
     "check": "quests+dispatch PASS41.79s; fixture early-return cleanup compiles.",
-    "next": "Native PG build running; actual basement activation/same-xmin route proof, original goal and atomic regressions, clippy and pin tools then push green.",
+    "next": "Finalize session6237 pins then full wire six defenders, atomic seven-item treasure/source exit/journal.",
     "check_seconds": 78,
     "alias_unit_cases": 6,
     "closed_goal_tests": 2,
-    "generation": "qengine_access write/check; native43write+43check PASS"
+    "generation": "qengine_access write/check; native43write+43check PASS",
+    "batch": "BATCH-basement-selector-alias-2026-11-07.json",
+    "source_pg_seconds": 85.6,
+    "atomic_pg_seconds": 166.36,
+    "goal_pg_seconds": 99.3
   }
 }

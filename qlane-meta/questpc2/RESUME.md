@@ -1,31 +1,20 @@
-# Active r2: canonical selector aliases compiling WIP, continue
+# Active r2: canonical basement runtime GREEN, final pins pending
 
-Bounded StepIn/StepOut position_aliases (max7+primary) implemented generically;
-no USE/native-fixed aliases, invalid/duplicate/overbound/unpositioned rejected.
-Canonical old elvenbane-basement-entry now matches original41 and actual53
-source basement positions and atomically earns ownphase1+nativephase0. Separate
-own BASEMENT callback removed. NativeGoalvalidate_closed untouched; no foreign
-counter or reopening writer. qengine_access repo generation write/check PASS;
-native-only43write+43check PASS. Quests+dispatch check78s, alias6case unit and
-closed native-goal2tests PASS. Source6PGRED75.36s before implementation (no
-nativephase) and rejected broaderange attempt75.39s remains reverted.
+BATCH-basement-selector-alias-2026-11-07.json: actualPG180006 sourceRED75.36
+->GREEN85.60s/10615ms marker. Nativephase0+ownphase1 same xmin/revision at
+actual basement53; original41 remains canonical alias, closed -1->0 guard
+untouched. Exact goals2cases99.30s and atomic/stale2cases166.36s GREEN.
+Check78s, clippy185s alltargets/allfeatures-Dwarnings, fmt, alias6unit,
+closed-goal2unit, qengine_access write/check, native43write/check PASS.
+Cold build3m44s after new ABI native incremental OOM20/kill9; no test skip.
+Current executable/READY positive, helper caches restored, source stable.
 
-RIGHT NOW: session88247 native build/PGrun
-/tmp/questpc2-basement-selector-alias-green-pg.log. Before everypush fetch own
-branch/merge if moved. Push at least15min; current snapshot explicitly WIP.
-After native build startsPG, cache helper restore clippy, run changed quests+
-dispatch alltarget/allfeatures-Dwarnings; stage/pin-refresh/check repo tools;
-run original native goal2case and atomic2case focused regressions including
-new early-return h.cleanup behavior. Marker/duration realPG required. Keep
-source stable during build. Then commit/push green immediately, continue real
-wire6defenders and atomic7-item treasure/source exit/journal whole Elvenbane.
-No final while owned27 remain. Shared mechanisms are our job; no deferrals.
-
-Cache helper /tmp/questpc2-cache-slice.py, index /tmp/questpc2-cache-latest.json;
-restore clippy only after native rustc exits; latest completed READY retained.
-33idle own route DBs older10minutes removed withoutFORCE; active/recent kept.
-Early-return fixture cleanup source now fixed, runtime regression pending.
-Range1240–1244 used;1245–1249 free. Canonical QENGINE0999 unchanged/no QBASE.
+IMMEDIATE: session6237 final pin-refresh/check; logs
+/tmp/questpc2-basement-selector-alias-pin-{refresh,check}.log. Finalize proof
+and push, then full wire source six-defender combat and atomic seven physical
+rewards, source exit/journal; whole Elvenbane remains unfinished. No final while
+owned27 remain. Push everygreen and within15min. Native latest source1327ef861.
+No tests/SQL guards weakened, no new migration. Range1240–44 unchanged.
 
 Branch claude/happy-davinci-ijz3wy-questpc2; AUTHORING. Owned29:
 2QUALIFIED (Desert/Annihilator),27UNFINISHED,6world titles SKIPPED_OTHER_LANE
