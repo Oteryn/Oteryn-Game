@@ -23,6 +23,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
     )> {
         let mut runtime = self.runtime.lock().await;
+        if runtime.house_actor_state(actor, session).is_ok() {
+            let states = self.states.spell_states.try_lock().ok()?;
+            return states.sounds.observe(&runtime, actor, session, after, true);
+        }
         runtime.player_control_facts(actor, session).ok()?;
         let zone = crate::gameplay_transport::spell_presentation_publisher::ambient_sounds::zone(
             &mut runtime,

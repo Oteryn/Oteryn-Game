@@ -768,3 +768,19 @@ calendar, producers and focused crate validation remain in progress.
 The exact restriction for bridge 48227 is retained at
 `tools/content-schema/native-gameplay/event_item_identity.py:3-4,18,34-46`;
 it does not stop this independent combat consumer. No ID or migration allocated.
+
+### W18 House effect and speech publication
+
+The existing bounded presentation/chat owners now support current named-House
+actors and recipients. Effect entries retain exact House scope and ownership
+generation; other Houses and Channel observers cannot receive them. Generic
+Channel spell outboxes remain Channel-scoped even if drained after a handoff.
+Only the explicit, current-session House Item producer can attach House scope.
+Crystal `wall_mirror.lua:17-24`, `music.lua:76-80`, `fish_tank.lua:3-8` and
+`birdcage.lua:3-9` are the decoration speech/effect consumers.
+
+All 13 presentation publisher tests pass (0.01 s), including the real delayed
+Channel-outbox handoff regression, House/Channel and cross-House isolation,
+current-session rejection, and House speech. The new House observation adapter
+uses a nonblocking state lock under the runtime lock. No wire ID is introduced.
+Full decoration owner and expiry integration remains in progress.

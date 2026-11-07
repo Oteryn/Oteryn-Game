@@ -574,8 +574,11 @@ struct SoundEntry {
     creature: bool,
     effect: bool,
     private: bool,
+    house_scope: Option<(crate::foundation::RuntimeScopeRefV1, u64)>,
 }
 impl SoundPublisher {
+    /// Channel outbox ownership does not change when its caster enters a House
+    /// before the publisher drains the committed events.
     pub fn record(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -616,6 +619,7 @@ impl SoundPublisher {
             creature: runtime.companion_snapshot_including_dead(actor).is_ok(),
             effect: false,
             private: false,
+            house_scope: None,
         });
     }
     pub(super) fn record_item_effect(
@@ -636,6 +640,33 @@ impl SoundPublisher {
         {
             entry.effect = true;
             entry.private = private;
+        }
+    }
+    /// Crystal 201189f `data-global/scripts/actions/other/fish_tank.lua:3-5` emits at
+    /// the item tile. The existing journal retains its actual named-House owner.
+    pub(super) fn record_house_item_effect(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        position: MovementLocalPosition,
+        cue: u16,
+    ) {
+        if !runtime
+            .house_player_control_facts(actor, session)
+            .is_ok_and(|facts| facts.control_loss.is_none())
+        {
+            return;
+        }
+        let Ok(house) = runtime.house_actor_state(actor, session) else {
+            return;
+        };
+        let before = self.revision;
+        self.record_item_effect(runtime, actor, position, cue, false);
+        if self.revision != before
+            && let Some(entry) = self.sounds.back_mut()
+        {
+            entry.house_scope = Some((house.scope, house.generation.get()));
         }
     }
     pub fn capture(
@@ -680,11 +711,25 @@ impl SoundPublisher {
             return Some((self.revision, Vec::new()));
         }
         runtime.owner_fence().ok()?;
-        runtime.player_control_facts(actor, session).ok()?;
-        let observer = view(runtime.read_actor_position(actor).ok()?.position()).ok()?;
+        let (position, house_scope) = if let Ok(house) = runtime.house_actor_state(actor, session) {
+            runtime.house_player_control_facts(actor, session).ok()?;
+            (
+                MovementLocalPosition {
+                    x: house.position.x,
+                    y: house.position.y,
+                    floor: house.position.floor,
+                },
+                Some((house.scope, house.generation.get())),
+            )
+        } else {
+            runtime.player_control_facts(actor, session).ok()?;
+            (runtime.read_actor_position(actor).ok()?.position(), None)
+        };
+        let observer = view(position).ok()?;
         let mut events = Vec::new();
         // The current private loop survives overflow of the transient journal.
         if let Some((subject, _, cue, revision)) = self.ambient.get(&session)
+            && house_scope.is_none()
             && *subject == actor
             && *revision > after
         {
@@ -697,7 +742,7 @@ impl SoundPublisher {
             });
         }
         for sound in self.sounds.iter().filter(|sound| sound.revision > after) {
-            if sound.private && sound.actor != actor {
+            if sound.house_scope != house_scope || (sound.private && sound.actor != actor) {
                 continue;
             }
             let Ok(target) = view(sound.position) else {

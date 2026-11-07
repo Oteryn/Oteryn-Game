@@ -20,6 +20,22 @@ pub(in crate::gameplay_transport) struct NoveltyEffectRequest<'a> {
 }
 
 impl ChannelSpellStates {
+    /// Crystal 201189f `data-global/scripts/actions/other/fish_tank.lua:3-5` and
+    /// `data-global/scripts/actions/other/music.lua:65-66`: publish the committed item's cues.
+    pub(in crate::gameplay_transport) fn publish_house_decoration_visuals(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        position: MovementLocalPosition,
+        effect_ids: &[u16],
+    ) {
+        for effect in effect_ids {
+            self.sounds
+                .record_house_item_effect(runtime, actor, session, position, *effect);
+        }
+    }
+
     pub(in crate::gameplay_transport) fn publish_novelty_visuals(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -27,14 +43,31 @@ impl ChannelSpellStates {
         position: MovementLocalPosition,
         effects: &NoveltyEffects,
     ) {
+        let house_session = runtime
+            .house_observer(actor)
+            .ok()
+            .flatten()
+            .map(|(session, _)| session);
         for cue in &effects.cues {
-            self.sounds.record_item_effect(
-                runtime,
-                actor,
-                position,
-                cue.effect_id,
-                effects.require_player_target,
-            );
+            if let Some(session) = house_session
+                && !effects.require_player_target
+            {
+                self.publish_house_decoration_visuals(
+                    runtime,
+                    actor,
+                    session,
+                    position,
+                    std::slice::from_ref(&cue.effect_id),
+                );
+            } else {
+                self.sounds.record_item_effect(
+                    runtime,
+                    actor,
+                    position,
+                    cue.effect_id,
+                    effects.require_player_target,
+                );
+            }
         }
     }
     pub(in crate::gameplay_transport) fn prepare_novelty_effect(

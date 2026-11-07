@@ -502,3 +502,208 @@ fn nx5_private_toy_effect_is_fenced_and_never_visible_to_other_observers() {
             .is_empty()
     );
 }
+
+#[test]
+fn w18_house_decoration_effects_follow_current_house_custody_and_hide_channel_cues() {
+    use crate::foundation::{
+        CharacterId, CharacterLease, LocalPosition, RuntimeScopeRefV1, ScopeOwnershipGeneration,
+    };
+    use oteryn_gameplay_entities::carrier::house_custody::HouseActorState;
+    let (mut runtime, actor, other, source) = runtime();
+    let position = runtime.read_actor_position(actor).unwrap().position();
+    let other_session = runtime
+        .positioned_actor_census()
+        .unwrap()
+        .into_iter()
+        .find(|(present, _, _)| *present == other)
+        .unwrap()
+        .2
+        .unwrap();
+    let mut character_id = *source.as_bytes();
+    character_id[5] = 6;
+    character_id[15] = 6;
+    let character = CharacterId::decode(&character_id).unwrap();
+    runtime
+        .bind_attacker_lease(actor, source, CharacterLease::new(character, 1).unwrap())
+        .unwrap();
+    let mut outbox = SpellPresentationOwner::new(&runtime);
+    crate::gameplay_transport::spell_presentations::tests::commit_sound_fixture(
+        &mut outbox,
+        &mut runtime,
+        actor,
+        source,
+    );
+    let mut publisher = SoundPublisher::default();
+    publisher.record_item_effect(
+        &runtime,
+        actor,
+        runtime.read_actor_position(actor).unwrap().position(),
+        1,
+        false,
+    );
+    let mut id = *source.as_bytes();
+    id[15] = 90;
+    let session = GameSessionId::decode(&id).unwrap();
+    let lease = CharacterLease::new(character, 2).unwrap();
+    id[15] = 92;
+    let scope = RuntimeScopeRefV1::instance(runtime.binding().world_id(), id).unwrap();
+    let at = LocalPosition {
+        x: position.x,
+        y: position.y,
+        floor: position.floor,
+    };
+    let actor = runtime
+        .restore_transfer_actor(
+            source,
+            session,
+            lease,
+            at,
+            Some(HouseActorState {
+                house: "oteryn:house.presentation_fixture".into(),
+                scope,
+                generation: ScopeOwnershipGeneration::new(1).unwrap(),
+                position: at,
+                lease,
+                origin_position: at,
+            }),
+        )
+        .unwrap();
+    // The real Channel outbox can drain after its caster has entered a House.
+    // Its source scope is still Channel, even when both rooms use these coordinates.
+    publisher.capture(&mut outbox, &runtime).unwrap();
+    assert!(
+        publisher
+            .observe(&runtime, actor, session, 0, true)
+            .unwrap()
+            .1
+            .is_empty(),
+        "a House resident cannot receive the Channel journal"
+    );
+    let position = MovementLocalPosition {
+        x: at.x,
+        y: at.y,
+        floor: at.floor,
+    };
+    publisher.record_house_item_effect(&runtime, actor, source, position, 175);
+    assert!(
+        publisher
+            .observe(&runtime, actor, session, 0, true)
+            .unwrap()
+            .1
+            .is_empty(),
+        "a retired session cannot publish a House effect"
+    );
+    publisher.record_house_item_effect(&runtime, actor, session, position, 175);
+    let (revision, effects) = publisher
+        .observe(&runtime, actor, session, 0, true)
+        .unwrap();
+    assert_eq!(effects.len(), 1);
+    assert!(matches!(
+        effects[0].kind,
+        oteryn_protocol_oteryn::presentation::PresentationEventKind::MagicEffect {
+            effect_id: 175,
+            ..
+        }
+    ));
+    assert_eq!(
+        publisher
+            .observe(&runtime, other, other_session, 0, true)
+            .unwrap()
+            .1
+            .len(),
+        2,
+        "the Channel observer receives the earlier and delayed Channel cues"
+    );
+    assert!(
+        publisher
+            .observe(&runtime, actor, source, 0, true)
+            .is_none(),
+        "a retired Channel session cannot observe House effects"
+    );
+    assert!(
+        publisher
+            .observe(&runtime, actor, session, revision, true)
+            .unwrap()
+            .1
+            .is_empty()
+    );
+    let chat = crate::gameplay_transport::chat_intent::ChatRuntime::default();
+    let now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(1);
+    chat.admit(session, "House Observer", now);
+    chat.admit(other_session, "Channel Observer", now);
+    let effects = oteryn_gameplay_items::novelty_items::NoveltyEffects {
+        kind: oteryn_gameplay_items::novelty_items::NoveltyKind::HouseTransform,
+        source_item_id: 2603,
+        donor: "data/scripts/actions/objects/wall_mirror.lua:17-24".into(),
+        ground: None,
+        cues: Vec::new(),
+        speech: Some("You look awesome!".into()),
+        private_speech: false,
+        require_head: false,
+        require_player_target: false,
+        dice_value: None,
+        costume: None,
+        damage: None,
+        achievement: None,
+        achievement_progress: Vec::new(),
+        timed_output: None,
+    };
+    chat.publish_item_speech(&runtime, actor, session, &effects);
+    assert_eq!(
+        chat.drain(session).len(),
+        1,
+        "House mirror speech reaches its actual resident"
+    );
+    assert!(
+        chat.drain(other_session).is_empty(),
+        "House speech cannot leak to a Channel session"
+    );
+    chat.publish_house_decoration_speech(&runtime, actor, source, "You look awesome!");
+    assert!(
+        chat.drain(session).is_empty(),
+        "a retired session cannot publish House speech"
+    );
+    chat.publish_house_decoration_speech(&runtime, actor, session, "You look awesome!");
+    assert_eq!(chat.drain(session).len(), 1);
+    id[15] = 97;
+    let foreign_session = GameSessionId::decode(&id).unwrap();
+    id[15] = 98;
+    let foreign_character = CharacterId::decode(&id).unwrap();
+    runtime
+        .bind_attacker_lease(
+            other,
+            other_session,
+            CharacterLease::new(foreign_character, 1).unwrap(),
+        )
+        .unwrap();
+    let foreign_lease = CharacterLease::new(foreign_character, 2).unwrap();
+    id[15] = 99;
+    let mut foreign_house = runtime.house_actor_state(actor, session).unwrap();
+    foreign_house.house = "oteryn:house.other_presentation_fixture".into();
+    foreign_house.scope = RuntimeScopeRefV1::instance(runtime.binding().world_id(), id).unwrap();
+    foreign_house.lease = foreign_lease;
+    let foreign = runtime
+        .restore_transfer_actor(
+            other_session,
+            foreign_session,
+            foreign_lease,
+            at,
+            Some(foreign_house),
+        )
+        .unwrap();
+    assert!(
+        publisher
+            .observe(&runtime, foreign, foreign_session, 0, true)
+            .unwrap()
+            .1
+            .is_empty(),
+        "matching coordinates in another named House cannot reveal the original House journal"
+    );
+    chat.admit(foreign_session, "Other House Observer", now);
+    chat.publish_house_decoration_speech(&runtime, actor, session, "You look awesome!");
+    assert_eq!(chat.drain(session).len(), 1);
+    assert!(
+        chat.drain(foreign_session).is_empty(),
+        "matching coordinates cannot leak House speech"
+    );
+}
