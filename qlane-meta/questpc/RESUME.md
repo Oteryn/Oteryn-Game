@@ -1,3 +1,25 @@
+## Active dropdown slice — 2026-11-07
+Mintwallin remains pushed at4a88a91a0. Generic435 USE is under focused PG validation;
+no new title promotion. RED45.80s: actualPG marker, source grate returnedNothingToUse.
+First handler candidate45.23s exposed coordinate sign (fixed). Static USE now passes.
+Created-object candidate89.11s exposed LoopGroundFacts omitting movement_items and
+movement_item from its wrapped facts; forward both so live clients receive handles.
+The current PG peer reads the actual initial domain17 snapshot before encoding USE.
+Cargo is active; candidate logs/tmp/questpc-dropdown-{red,green,green2,green3,green4}.log.
+Next: finish this mechanic's focused PG/check/clippy, archive proof, push immediately;
+then UID25030 StepIn(create435)/StepOut(remove435) and all five Devil Helmet rewards.
+Keep the explicit435 object-creation guard until that source composition is tested.
+
+## Devil Helmet source clarification
+435 is USE dropdown, not passive floor change. Exact pinned ladder_up.lua registers
+435 and teleports to object.x,object.y,object.z+1 with PZ lock guard. Keep canonical
+floor facts unchanged. Next generic435 USE handler must resolve static/dynamic
+world objects, use existing sealed teleport owner, then dispatch StepOut cleanup
+for the source pressure plate. Register UID25030 StepIn(create435)/StepOut(remove)
+and compose all five existing source rewards. CONTRACT-NOTES.md has exactURLs.
+Reference scratch:/tmp/questpc-ladder-up.lua and /tmp/questpc-crystal-items-201189.xml.
+Do not commit donor copies.
+
 ## Mintwallin qualified — 2026-11-07
 Mintwallin Cyclops Quest original source contractQUALIFIED: exact AID30008 consumes
 its lever, creates two1270 walls, removes nine1271 walls; correct collision and

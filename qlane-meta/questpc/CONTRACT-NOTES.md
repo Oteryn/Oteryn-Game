@@ -60,3 +60,21 @@ exact-match charge grants.
 - Fresh questpc8@15b02adfd status for Mintwallin isUNFINISHED. This lane's source
   qualification does not certify a deployed complete World route or unrelated
   authored stage approximations.
+
+## Devil Helmet: source fact correction
+
+435 is a USE dropdown, not a passive floor-change. Crystal201189 items.xml marks
+it primarytype=dropdowns; data/scripts/actions/items/ladder_up.lua registers435,
+adds1 to the object position's z, checks PZ lock, and teleports the player. Keep
+canonical floor_change UNKNOWN unchanged; do not invent a down flag. Implement
+generic435 USE for static/dynamic objects and run departure after relocation so
+UID25030 removes its temporary sewer. This supersedes the earlier floor-routing
+assumption. Sources:
+- https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml
+- https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/items/ladder_up.lua
+
+The live map composition wraps pinned facts in LoopGroundFacts. That wrapper must
+forward movement_items and movement_item; otherwise callback-created objects are
+absent from the actual client view despite existing in direct tile composition.
+Focused PostgreSQL created-grate candidate89.11s found this omission. The final
+regression obtains its handle from the serving connection's domain17 snapshot.
