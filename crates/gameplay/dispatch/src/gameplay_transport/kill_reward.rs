@@ -1441,7 +1441,7 @@ pub fn record_creature_kill(
     let mut row = match reward {
         Ok(row) => row,
         Err(reason) => {
-            // Ordinary reward admission remains closed. A recognised Grizzly death
+            // Ordinary reward admission remains closed. A recognised quest death
             // with a present native principal may carry quest-only work; no fallback
             // invents an XP amount, loot table, corpse Item or Bestiary race.
             let boss = sink.rewards.boss(&creature);

@@ -117,7 +117,12 @@ fn scenario_case(
     if stateless_destination.is_some() {
         assert_eq!(callback.selector.position, Some(trigger));
     }
-    let world = world(&callback, trigger)?;
+    let world = if name == "qengine-rewards-fibula-native-goals" {
+        let mut cells:Vec<_>=oteryn_gameplay_quests::quest::native_kill_goals::load()?.iter()
+            .flat_map(|g|g.origins.iter()).map(|p|i8::try_from(p.floor).map(|floor|Position{x:p.x,y:p.y,floor:-floor})).collect::<Result<Vec<_>,_>>()?;
+        cells.push(Position{x:32200,y:32474,floor:-10});
+        super::world_with_cells(&callback,trigger,&cells)?
+    } else {world(&callback, trigger)?};
     run(async |admin| {
         let h = if qengine_reward || outfit_world {
             Harness::create_quest_reward(admin, "quest_rewards", !name.ends_with("pirate")).await

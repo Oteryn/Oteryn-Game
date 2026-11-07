@@ -168,6 +168,14 @@ impl DurabilityRoot {
         if request.transition_key.starts_with("oteryn:quest-npc/") {
             return Err(CharacterProgressionError::InvalidInput);
         }
+        // Native goal counters are inaccessible to NPC/client command transitions.
+        if request.transition_key.starts_with("oteryn:quest-transition/native-kill/")
+            && (!matches!(request.cause, QuestCause::CreatureDeath(_))
+                || !oteryn_gameplay_quests::quest::native_kill_goals::load()
+                    .map_err(|_|CharacterProgressionError::InvalidInput)?
+                    .iter().any(|goal|goal.key==request.transition_key)) {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         // The specialised owner evaluates these computed rules under the locked snapshot.
         // A generic NPC transition cannot bypass the action/cause validation.
         let grizzly_key = request

@@ -81,3 +81,27 @@ kill implementation. Its newer changes qualify foreign outfits and do not supply
 the required native-origin one-shot kill goal. Existing native spawn-origin lookup
 is reusable but currently requires a live creature; the retained-death accessor
 will use the same exact actor/source ownership rather than an invented cavern box.
+
+## Personal native-origin goals
+
+The chosen recipe s4 requires eight Dragon/Dragon Lord deaths, once. Native
+source bindings select all21 final-cavern spawn declarations, never an invented
+rectangle or a new private instance. Credit belongs to the present most-damage
+principal and its death-time lease/phase snapshot. Matching uses the exact native
+spawn origin/species, so a summoned encounter copy at the same coordinates cannot
+qualify. Roaming members remain members of that chosen native population.
+
+Source content/world/spawns/spawns-34000-35999.json:1 SHA256 b1a9de667ffebaed9f8b9e4b5c216f259a965b3e70541690580d7b3fc0f8be36; exact record pointers are retained in the normalized capture.
+Source tools/content-schema/quest-authoring/samples/completion242/recipes.json:1 SHA256 6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321; exact record pointers are retained in the normalized capture.
+
+Reuse the existing lethal queue/corpse cache and QuestState writer. A checked
+read-only retained-death origin accessor reuses the live spawn lookup and exact
+actor generation/context validation. Counter writes require CreatureDeath causes;
+loaded rules cannot reset the one-shot phase or set the counter. Native corpse
+admission remains closed; quest-only settlement never invents loot or XP.
+
+Native PG fixture uses admitted policies/actual health/native source realization,
+explicit physical tiles, duplicate capture and cancelled queue take. It retires
+fixture actors only after durable settlement releases their pins, preserving the
+production actor ceilings. Minimum level50 and earned six-claim terminal proof are
+required by the next completion batch; these goals alone do not qualify the quest.

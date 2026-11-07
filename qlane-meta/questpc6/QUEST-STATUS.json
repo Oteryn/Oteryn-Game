@@ -748,15 +748,14 @@
           "expertise teleport"
         ]
       },
-      "missing_piece": "Active implementation: native expertise portal composition, generic personal one-shot goals for eight native cavern deaths, and terminal completion after earned source claims.",
+      "missing_piece": "Active implementation: native expertise portal StepIn and terminal completion after level50, eight credited deaths and earned source claims. Native origin-bound death goals are qualified with PostgreSQL replay/refusal/cap proof.",
       "evidence": [
         "content/quests/definitions/quests-00000-00099.json:1#/records/20/definition",
         ".questpc6/NOTE-coordination.md:16"
       ],
       "remaining_work": [
         "Prove the native expertise portal StepIn and earned Key3980 in the composed authored path; source Key3980 acquisition and exact level50 gate retain green PostgreSQL regression.",
-        "Implement reusable one-shot participant-bound kill goals on the existing lethal queue, including pre-activation refusal and replay.",
-        "Compose the eight-death goal and terminal source reward path into authored supplement completion with PostgreSQL proof."
+        "Compose terminal completion using native minimum level50, eight credited deaths and all six exact earned source claim receipts; prove the full authored path and obtain required exact-head independent review."
       ],
       "keyed_access": {
         "status": "QUALIFIED_MECHANISM",
@@ -772,6 +771,11 @@
         "status": "QUALIFIED_MECHANISM",
         "evidence": "cloud-fibula-route-verification.json",
         "scope": "Both raw source wells; exact native expertise door1050 refuses49/admit50/replay. Native portal StepIn and whole authored completion remain active."
+      },
+      "native_kill_goals": {
+        "status": "QUALIFIED_MECHANISM",
+        "evidence": "cloud-fibula-native-goals-verification.json",
+        "scope": "Eight native-origin personal deaths, capped once, with exact most-damage lease, pre-activation/origin/species/encounter/command refusal and queue cancellation/replay proof."
       }
     },
     "qualification": {

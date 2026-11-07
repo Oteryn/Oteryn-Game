@@ -32,6 +32,7 @@ pub mod liquid_black;
 pub mod loader;
 pub mod log;
 pub mod monk_shrines;
+pub mod native_kill_goals;
 pub mod native_rules;
 pub mod npc_rules;
 mod quests_2_focus;

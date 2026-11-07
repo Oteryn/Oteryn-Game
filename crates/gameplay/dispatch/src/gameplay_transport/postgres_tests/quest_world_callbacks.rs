@@ -232,6 +232,30 @@ fn world_ordinal(
     appearance: u16,
     ordinal: u8,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    world_cells(callback, trigger, appearance, ordinal, &[])
+}
+
+pub(super) fn world_with_cells(
+    callback: &Callback,
+    trigger: Position,
+    cells: &[Position],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    world_cells(
+        callback,
+        trigger,
+        callback.selector.appearance.unwrap_or(100),
+        1,
+        cells,
+    )
+}
+
+fn world_cells(
+    callback: &Callback,
+    trigger: Position,
+    appearance: u16,
+    ordinal: u8,
+    extra: &[Position],
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
@@ -263,7 +287,7 @@ fn world_ordinal(
             cells.entry((p.floor - 1, p.x, p.y)).or_default();
         }
     }
-    let mut effect_positions = Vec::new();
+    let mut effect_positions = extra.to_vec();
     if let Some(pair) = &callback.effects.portals {
         for portal in &pair.portals {
             effect_positions.extend([portal.position, portal.destination]);

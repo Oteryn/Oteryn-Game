@@ -4,38 +4,46 @@ One owned entry remains IN_PROGRESS: the authored Fibula supplement. Original
 well/six-claim contract remains QUALIFIED;31 verified foreign titles and excluded
 Dawnport remain skipped. Do not stop on source-only or mechanism qualification.
 
-Completed batches: exact source Key3940/3980 doors (cloud-fibula-keys-verification.json),
-source Dermot placement/repeatable atomic paid key sale (cloud-fibula-purchase-verification.json),
-and both raw well startup selectors/native level50 expertise gate
-(cloud-fibula-route-verification.json). The latest PostgreSQL18.6 RED failures
-were NothingToUse48.75s and missing ItemReference48.31s. GREEN level gate48.01s
-(marker44.074331965s); both wells plus six original source claims167.11s
-(marker167.058484999s), including earned native Key3980. No raw action is seeded
-for either well or either source key/level door. Existing item profiles unchanged;
-only missing source1648/1649 were added. World digest77d515155be0a03af5dc4fb6abfbfaec9795660aa15e512efdad033f2908c5b0 unchanged.
+Completed mechanisms: source3940/3980 doors, Dermot source placement/repeatable
+atomic paid key sale, both raw wells and native level50 gate. Their proofs are
+cloud-fibula-keys/purchase/route-verification.json. The latest native goal batch
+is cloud-fibula-native-goals-verification.json: PostgreSQL18.6 RED46.44s dropped
+unrecognized Dragon deaths; final GREEN100.33s (goal marker42.59693677s,
+outer100.330559135s) proves pre-activation/origin/species/encounter-copy refusal,
+command bypass refusal, native lethal capture/cancellation/replay, eight-death
+cap and ninth-death refusal.268 quest units,9 Grizzly capture regressions,
+normalization unit, four-crate all-target check and strict all-target/all-feature
+Clippy3m04s passed. Only then_some construction changed after the first green;
+the final PG rerun includes it. An inherited Dawnport exclusion test expected
+only one of the three already-loaded callback registries; exact-set coverage now
+includes shared-access/shared-outfit while retaining the exclusion assertion.
 
-Level fixture decision: fresh source Character is vocationless; commit XP through
-the native owner and rebuild the admission projection from coherent Character-owned
-facts for49/50. The classed live-refresh hook does not install vocationless facts.
-No invented level/vocation or quest flags. Reward/native generators now share the
-canonical manifest serializer so ordered regeneration remains deterministic.
+Runtime goals reuse the ordinary retained lethal queue, exact most-damage lease,
+Character revision/CreatureDeath receipts, and a checked native retained-death
+spawn-origin accessor. Config uses21 exact native final-cavern origins; no private
+instance or invented rectangle. Loaded rules cannot reset the phase or set kills.
+The fixture supplies actual tiles and retires actors only after native corpse-pin
+release; production ceilings and ordinary loot/XP admission are unchanged.
 
-NEXT: implement/prove reusable personal native-death goals capped at eight, using
-exact native spawn origins for the final cavern, not an invented room rectangle
-or private instance. Latest qengine2 head8d3145a1d was checked and has no such goal.
-Reuse existing grizzly capture/settlement on the ordinary kill queue; freeze
-eligibility at death. Runtime creature_spawn_cell requires live actors; its existing
-private locate_spawn_cell supports retained deaths and can provide a checked
-read-only accessor with companion_snapshot_including_dead generation validation.
-21 Dragon/Dragon Lord source points are in content/world/spawns/spawns-34000-35999.json.
-Read-only navigation reports are available from explore_fibula_engine (no writes).
-A draft PG test is in /tmp/questpc6-next-native-goals.rs; apply/review after this push.
-Then prove the physical expertise portal StepIn, compose earned six claims and
-terminal quest completion, obtain required independent exact-head review, and
+NEXT: prove the physical expertise portal StepIn and compose terminal completion
+from native level50, eight credited deaths and six exact earned source claims.
+A final Dermot expedition confirmation records completion without duplicating
+source cache loot. Add reusable bounded minimum-level/earned-claim/completes
+callback support; qengine2 latest a585529d7 was fetched/inspected and offers
+track participants but none of these three guards/completion fields. Reuse existing
+QuestState completed flags and immutable source reward receipts, not fake flags.
+No new SQL table should be needed. Preserve source sale repeatability after phase1.
+Then obtain required independent exact-head review, repair verified findings and
 continue until the whole owned supplement is QUALIFIED and pushed. No PR.
 
-Keep batch commits/pushes. Fetch task ref before every push; compare FETCH_HEAD
-because remote.origin.fetch only maps main and the task tracking ref can be stale.
+Fresh source Character is vocationless: source level fixture commits native XP
+and rebuilds admission projection from coherent Character-owned facts for49/50.
+Source well callbacks remain stateless. World digest77d515155be0a03af5dc4fb6abfbfaec9795660aa15e512efdad033f2908c5b0 unchanged.
+
+Keep green batch commits/pushes. Fetch task ref before every push; compare
+FETCH_HEAD because remote.origin.fetch maps only main and the task tracking ref
+can be stale. Read-only explore_fibula_engine made no writes. All engine work
+remains owned here; never defer missing shared support.
 
 ---
 Historical continuation records below do not describe the active queue.

@@ -595,6 +595,9 @@ pub(super) async fn exercise(
         .await?;
     println!("POSTGRES_CASE_STARTED {name} server_version={version}");
 
+    if name == "qengine-rewards-fibula-native-goals" {
+        return super::questpc6_native_goals::exercise(owner, admitted, h).await;
+    }
     if name.starts_with("qengine-rewards-fibula-key-") {
         return super::questpc6_fibula_purchase::exercise(owner, admitted, h, name).await;
     }
