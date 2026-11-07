@@ -2,7 +2,7 @@
 //! through the existing captured-death seam; this does not claim a Primal fight
 //! or qualify a Primal template. No Primal catalogue row is seeded.
 use super::*;
-use crate::gameplay_transport::monk_save::postgres_tests::soul_war::{
+use super::super::soul_war::{
     CapturedEndgameDeath, settle_captured_endgame_death,
 };
 
@@ -38,8 +38,12 @@ pub(super) async fn assert_receipts(
         .bind(&source.death_key).fetch_one(&h.pool).await?;
     assert_eq!(retained, 1);
     source.death_key.remove(0);
+    source.occurrence = fixture::id(92);
     assert!(settle_captured_endgame_death(owner, &h.pool, admitted.game_session_id, &source).await.is_err(),
         "stripping the Instance tag must not reinterpret its UUID as a Channel");
+    let rejected_receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_party_kill_xp_receipts WHERE death_key=$1")
+        .bind(&source.death_key).fetch_one(&h.pool).await?;
+    assert_eq!(rejected_receipts, 0, "scope rejection must not leave an XP receipt");
     let state_after: (i16, i16) = sqlx::query_as("SELECT unlocked,selected FROM game_character_hazard WHERE character_id=encode($1,'hex')::uuid")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(state_after, state);

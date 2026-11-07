@@ -102,8 +102,7 @@ pub(super) async fn settle_captured_endgame_death<K: AsRef<[u8]>>(
     use crate::durability::party_kill_xp::{PartyKillXpMember, PartyKillXpRequest};
     use crate::durability::character_progression::{ExperienceAwardRequest, ExperienceRewardOccurrence};
     let initial = current(owner, session).await?;
-    let crate::foundation::RuntimeScopeRefV1::Channel { world_id, channel_id } = initial.runtime_scope else { return Err("channel fixture".into()); };
-    let lane = crate::durability::spell_owner_commit::SpellLane::new(world_id, channel_id);
+    let lane = crate::durability::spell_owner_commit::SpellLane::for_scope(initial.runtime_scope);
     let permit = lane.acquire().await.map_err(|_| "spell lane")?;
     let mut slot = owner.revision_sequencer.acquire(initial.character_id).await;
     slot.observe_endgame_progression();

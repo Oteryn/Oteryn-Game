@@ -877,3 +877,17 @@ their default 52-byte key type; the helper now also accepts a tagged-key type.
 The new case compiles (test build 1m44s) and is still running at this checkpoint.
 The helper's known remaining Channel-only guard is `Err("channel fixture")`;
 the runtime red result has not yet been observed. No new numbers are allocated.
+
+### Scoped receipt helper fix
+
+The new Instance receipt case reached `Error: "channel fixture"` after a real
+native handoff (205.88s). Selecting `SpellLane::for_scope` from the current fence
+instead of constructing a Channel lane turns the same component case green
+(205.57s): the native tagged Primal receipt grants one Hazard unlock, replays
+without another grant and rejects a stripped namespace tag. Test-target dispatch
+clippy passed with warnings denied (3m42s).
+
+The negative case is further strengthened with a fresh XP occurrence and an
+explicit assertion that no rejected-key XP receipt remains; that rerun is
+pending at this WIP checkpoint. This proves consumer scope composition after a
+native handoff, not a physical Primal encounter or template qualification.
