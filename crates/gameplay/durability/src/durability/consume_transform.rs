@@ -214,7 +214,13 @@ impl DurabilityRoot {
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
                 .fetch_optional(&mut **tx).await?;
             if let Some((intent, character, effects, recipe)) = previous {
-                let caller_matches = matches!(context.3,ActionContext::CakeBaker(_)) == (recipe==cake::RECIPE);
+                let caller_matches = match context.3 {
+                    ActionContext::CakeBaker(caller) => recipe==cake::RECIPE
+                        && cake::is_baker(&caller.npc_key)
+                        && effects.get("npc_key").and_then(Value::as_str)==Some(caller.npc_key.as_str())
+                        && effects.get("reset_epoch").and_then(Value::as_str)==Some(caller.expected_epoch.to_string().as_str()),
+                    _ => recipe!=cake::RECIPE,
+                };
                 let result = if caller_matches && intent == request.intent && character == fence.character_id.as_bytes() {
                     ConsumeTransformResult { disposition: UseDisposition::Committed, fresh: false, effects, recipe: Some(recipe.clone()) }
                 } else { ConsumeTransformResult { recipe: Some(recipe), ..ConsumeTransformResult::refused(UseDisposition::Rejected) } };

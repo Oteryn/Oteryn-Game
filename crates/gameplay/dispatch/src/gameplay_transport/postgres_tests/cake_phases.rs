@@ -40,6 +40,13 @@ fn w05d_cake_bites_use_native_map_and_commit_exact_world_receipts() -> TestResul
                 deps.initialize(&owner).await;
                 let current=crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone()).current_session_at(deps.admitted.game_session_id).await?.0;
                 let fence=crate::gameplay_transport::item_fence_of(current).ok_or("current item fence")?;
+                let equipment_before:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_equipment_state WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+                assert_eq!(equipment_before,0);
+                let ground_key=crate::map::view::placement_key(world.start(),0).ok_or("unrelated ground placement")?;
+                let unrelated=WorldObjectTarget{placement:world.base().digest().into_iter().chain(ground_key.to_be_bytes()).collect(),expected_revision:0};
+                let unrelated_command=UseCommand{game_session_id:deps.admitted.game_session_id,command_id:900,item_fence:Some(fence)};
+                assert!(owner.use_cake_world_object(deps.actor,unrelated_command,&unrelated).await.is_none(),"unrelated base source never enters Cake's equipment owner");
+                assert_eq!(owner.use_world_object(deps.actor,unrelated_command,unrelated).await.disposition,UseDisposition::NothingToUse);
                 sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&h.pool).await?;
                 sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
                 sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(room.frame_binding().digest().as_slice()).execute(&h.pool).await?;

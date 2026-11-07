@@ -31,6 +31,46 @@ fn item_id(key: &str) -> Option<u16> {
 pub(super) struct SourceCache(std::sync::Mutex<Option<([u8; 32], [u8; 32], Vec<CakeMapSource>)>>);
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    fn immutable_cake_candidate(&self, target: &WorldObjectTarget) -> bool {
+        let Some(map) = self.bundle_map() else {
+            return false;
+        };
+        if target.placement.len() != 40 || target.placement[..32] != map.overlay.base().digest() {
+            return false;
+        }
+        let Ok(bytes) = target.placement[32..].try_into() else {
+            return false;
+        };
+        let key = u64::from_be_bytes(bytes);
+        let Some((pos, _)) = view::placement_of(key) else {
+            return false;
+        };
+        let facts = map.facts.base_only();
+        let Some(tile) = view::compose_tile(&map.overlay, &facts, pos).ok().flatten() else {
+            return false;
+        };
+        let Some(entry) = tile
+            .entries
+            .into_iter()
+            .find(|entry| entry.source.key() == MapEntryKey::Base(key))
+        else {
+            return false;
+        };
+        let MapDefinition::Item(reference) = entry.facts.definition else {
+            return false;
+        };
+        let Some(index) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .and_then(|native| native.item_index())
+        else {
+            return false;
+        };
+        super::item_look::typed_definition(index, reference)
+            .and_then(|definition| item_id(&definition.production_key))
+            .is_some_and(|id| matches!(id, 12085 | 12086))
+    }
+
     /// Immutable source facts, never the current hidden/transformed stack, define
     /// the tower's fixed placements (config.lua127-134,162-185,508-512).
     fn cake_sources(&self) -> Option<Vec<CakeMapSource>> {
@@ -213,6 +253,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let map = self.bundle_map()?;
         let native = self.active_generation?.native_gameplay()?;
+        let candidate = self.immutable_cake_candidate(target);
         let permit = self.spell_lane_permit().await?;
         let (at, generation) = {
             let runtime = self.runtime.lock().await;
@@ -243,12 +284,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 reference,
                 intent.clone(),
                 native.source_digest(),
+                candidate,
             )
             .await
         {
             Ok(Some(disposition)) => return Some(outcome(disposition)),
             Ok(None) => {}
             Err(_) => return Some(outcome(UseDisposition::NotPossible)),
+        }
+        if !candidate {
+            return None;
         }
         if !self.refresh_cake_world_map().await {
             return Some(outcome(UseDisposition::NotPossible));

@@ -6,6 +6,8 @@ const MS: u64 = 1_000;
 
 #[path = "condition_attribute_slot_tests.rs"]
 mod condition_attribute_slot_tests;
+#[path = "condition_cake_regen_tests.rs"]
+mod condition_cake_regen_tests;
 #[path = "condition_suppression_tests.rs"]
 mod condition_suppression_tests;
 

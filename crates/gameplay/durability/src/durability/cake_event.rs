@@ -246,6 +246,7 @@ impl DurabilityRoot {
         command: CommandRef,
         intent: Vec<u8>,
         content: [u8; 32],
+        candidate: bool,
     ) -> Result<Option<UseDisposition>, DurabilityError> {
         if command.game_session_id() != fence.game_session_id {
             return Ok(Some(UseDisposition::StaleState));
@@ -257,6 +258,11 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move|holder,deadline|Box::pin(async move{
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&record).await?;
+            if !candidate {
+                let historical:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_cake_bite_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric)")
+                    .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_one(&mut *tx).await?;
+                if !historical{commit_semantic_transaction(tx,deadline).await?;return Ok(None)}
+            }
             if assert_current_equipment_in_transaction(&mut tx,&record,&node,&fence,Some(command),content).await.is_err(){return Ok(Some(UseDisposition::StaleState))}
             sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:cake-command:'||encode($1,'hex')||':'||$2,0))")
                 .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).execute(&mut *tx).await?;

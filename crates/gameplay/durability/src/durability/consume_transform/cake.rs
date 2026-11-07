@@ -48,6 +48,34 @@ impl DurabilityRoot {
         )
         .await
     }
+
+    /// Probe only the original source receipt; never consume current inventory.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn reconcile_cake_substances<C: ItemLoopContent>(
+        &self,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: ConsumeTransformRequest,
+        native: &NativeGameplayState,
+        content: &C,
+        context: &CakeBakerContext,
+    ) -> Result<Option<ConsumeTransformResult>, DurabilityError> {
+        self.consume_transform_inner(
+            permit,
+            recovery,
+            node,
+            fence,
+            request,
+            native,
+            content,
+            true,
+            None,
+            ActionContext::CakeBaker(context),
+        )
+        .await
+    }
 }
 
 pub(super) async fn prepare(

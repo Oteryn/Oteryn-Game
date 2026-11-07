@@ -197,6 +197,49 @@ fn scenario(equipped: bool, tiny: bool) -> TestResult {
         assert_eq!(replay.disposition, UseDisposition::Committed);
         assert!(!replay.fresh);
         assert_eq!(replay.effects, first.effects);
+        let probed = h
+            .root
+            .reconcile_cake_substances(
+                &permit,
+                &authority,
+                &h.node,
+                fence,
+                request.clone(),
+                native,
+                &content,
+                &context,
+            )
+            .await?
+            .ok_or("closed Cake receipt probe after source exhaustion")?;
+        assert_eq!(probed.disposition, UseDisposition::Committed);
+        assert!(!probed.fresh);
+        assert_eq!(probed.effects, first.effects);
+        for foreign in [
+            CakeBakerContext {
+                npc_key: "oteryn:npc.benny_the_baker".into(),
+                expected_epoch: context.expected_epoch,
+            },
+            CakeBakerContext {
+                npc_key: context.npc_key.clone(),
+                expected_epoch: context.expected_epoch + 1,
+            },
+        ] {
+            let refused = h
+                .root
+                .reconcile_cake_substances(
+                    &permit,
+                    &authority,
+                    &h.node,
+                    fence,
+                    request.clone(),
+                    native,
+                    &content,
+                    &foreign,
+                )
+                .await?
+                .ok_or("foreign Cake context refusal")?;
+            assert_eq!(refused.disposition, UseDisposition::Rejected);
+        }
         use crate::durability::runtime_scope_assignment::{
             BootstrapSecret, NodeIncarnationProof, NodeRegistrationFact,
         };

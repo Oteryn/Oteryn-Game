@@ -11,6 +11,7 @@ pub(super) struct Pending {
     request: ConsumeTransformRequest,
     intent: NpcTalkIntent,
     context: (u64, u64, String),
+    baker: CakeBakerContext,
 }
 fn clear(admission: &ComposedFreshAdmission<'_, '_, '_>, session: GameSessionId) {
     if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
@@ -262,6 +263,7 @@ pub(super) async fn apply(
             request: request.clone(),
             intent: intent.clone(),
             context: step.context.clone(),
+            baker: context.clone(),
         });
     }
     let result = admission
@@ -355,7 +357,7 @@ pub(in crate::gameplay_transport) async fn resume(
         .with_wheel(admission.premium_coordinator);
     match admission
         .root
-        .consume_transform_detailed(
+        .reconcile_cake_substances(
             &permit,
             admission.character,
             admission.holder,
@@ -363,7 +365,7 @@ pub(in crate::gameplay_transport) async fn resume(
             pending.request,
             native,
             &content,
-            true,
+            &pending.baker,
         )
         .await
     {
