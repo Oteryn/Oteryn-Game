@@ -146,7 +146,7 @@
     "title": "Nimmersatt's Lair",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "Active implementation: the shared atomic world MINT participant and exact20 native snowball supply are PostgreSQL proven. Continue Rascalio personal passage/Premium gates, twenty-consumption wall counter with final projection, and once44179 hand-in; no owner fact or external engine delivery is pending.",
+    "blocker": "Active implementation: supply and twenty exact consumed snowball wall hits are PostgreSQL proven. Continue actual Rascalio passage/Premium gates and once44179 final hand-in; no missing shared feature or source fact is deferred.",
     "from_lanes": [
       "questpc2"
     ],
@@ -163,6 +163,12 @@
       "proof": "cloud-nimmersatt-world-items-proof.json",
       "postgres_red_seconds": 53.552287386,
       "postgres_green_seconds": 55.312982382,
+      "whole_recipe_qualified": false
+    },
+    "counted_use_progress": {
+      "proof": "cloud-nimmersatt-counted-use-proof.json",
+      "postgres_red_seconds": 52.591790992,
+      "postgres_green_seconds": 58.014944345,
       "whole_recipe_qualified": false
     }
   },

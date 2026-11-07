@@ -23,7 +23,10 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
     let result = super::kill_reward_e2e::scenario_thread::run(name, move || {
         super::quest_world_callbacks::scenario(
             name,
-            if name == "qengine-rewards-nimmersatt-world-items" {
+            if matches!(
+                name,
+                "qengine-rewards-nimmersatt-world-items" | "qengine-rewards-nimmersatt-wall"
+            ) {
                 Position {
                     x: 32232,
                     y: 31578,
@@ -616,6 +619,12 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-nimmersatt-wall" {
+        return Box::pin(super::questpc5_nimmersatt_world_items::exercise_wall(
+            owner, admitted, h,
+        ))
+        .await;
+    }
     if name == "qengine-rewards-nimmersatt-world-items" {
         return Box::pin(super::questpc5_nimmersatt_world_items::exercise(
             owner, admitted, h,

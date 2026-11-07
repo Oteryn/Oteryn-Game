@@ -234,6 +234,32 @@ pub fn load_embedded_quest_state(
     lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
         .map_err(QuestLoadError::Json)?;
     super::native_kill_goals::validate_closed(&lowered.catalogue).map_err(QuestLoadError::Json)?;
+    super::world_callbacks::validate_counted_use_closed(&lowered.catalogue)
+        .map_err(QuestLoadError::Json)?;
+    // Authored personal programmes retain their pinned recipe witness separately
+    // from legacy storage identifiers. Never replace captured donor bindings.
+    for callback in super::world_callbacks::load().map_err(QuestLoadError::Json)? {
+        if callback.key.starts_with("oteryn:quest-callback/authored-") {
+            let source = callback
+                .sources
+                .iter()
+                .find(|source| source.starts_with("oteryn:selected-recipe:"))
+                .ok_or_else(|| {
+                    QuestLoadError::Json("authored callback missing recipe witness".into())
+                })?;
+            for track in callback
+                .storage
+                .iter()
+                .map(|storage| &storage.track)
+                .chain(callback.counted_use.iter().map(|counter| &counter.track))
+            {
+                lowered
+                    .source_tracks
+                    .entry(track.clone())
+                    .or_insert_with(|| source.clone());
+            }
+        }
+    }
     // Preserve source captures and their counts; only the production catalogue
     // and its executable bindings are filtered by the owner's target scope.
     let npc_legacy = std::mem::take(&mut lowered.catalogue.npc_legacy);

@@ -451,6 +451,7 @@ fn scenario_in_world(
                 premium_required: false,
                 movement_origins: Vec::new(),
                 required_claims: Vec::new(),
+                counted_use: None,
                 experience: None,
                 monk_reward: None,
                 item_on_target: None,

@@ -288,6 +288,7 @@ impl DurabilityRoot {
                                 || c.minimum_level.is_some()
                                 || c.experience.is_some()
                                 || c.monk_reward.is_some()
+                                || c.counted_use.is_some()
                                 || c.completes
                                 || c.premium_required
                                 || c.effects.item_reward.is_some()

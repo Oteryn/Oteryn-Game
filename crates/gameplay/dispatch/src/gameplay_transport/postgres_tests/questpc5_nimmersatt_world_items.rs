@@ -71,29 +71,29 @@ pub(super) async fn exercise(
         .map(|s| original.track(&s.track).cloned().ok_or("track"))
         .collect::<Result<Vec<_>, _>>()?;
     let setup = "oteryn:quest-transition/fixture-nimmersatt-accept";
+    let mut transitions = vec![
+        original
+            .transition(&callback.key)
+            .cloned()
+            .ok_or("world transition")?,
+        QuestTransition {
+            key: setup.into(),
+            quest: callback.quest.clone(),
+            effects: vec![QuestEffect {
+                track: "oteryn:quest-progress/nimmersatt/stage".into(),
+                from: QuestComparison::Eq(-1),
+                effect: QuestEffectKind::Set(0),
+            }],
+            completes: false,
+            experience: None,
+        },
+    ];
+    if let Some(wall) = original.transition("oteryn:quest-callback/authored-nimmersatt-wall") {
+        transitions.push(wall.clone());
+    }
     let catalogue = std::sync::Arc::new(
-        QuestStateCatalogue::new(
-            original.content_revision(),
-            tracks,
-            vec![
-                original
-                    .transition(&callback.key)
-                    .cloned()
-                    .ok_or("world transition")?,
-                QuestTransition {
-                    key: setup.into(),
-                    quest: callback.quest.clone(),
-                    effects: vec![QuestEffect {
-                        track: "oteryn:quest-progress/nimmersatt/stage".into(),
-                        from: QuestComparison::Eq(-1),
-                        effect: QuestEffectKind::Set(0),
-                    }],
-                    completes: false,
-                    experience: None,
-                },
-            ],
-        )
-        .map_err(debug)?,
+        QuestStateCatalogue::new(original.content_revision(), tracks, transitions)
+            .map_err(debug)?,
     );
     owner.quest_catalogue = Some(std::sync::Arc::clone(&catalogue));
     let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
@@ -190,6 +190,16 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
             ground_speed: Some(160),
         }),
     }];
+    data.manifest.palette.push(bundle::PaletteEntry {
+        key: "oteryn:terrain.tibia.i1441".into(),
+        family: bundle::Family::Terrain,
+        id: 1,
+        terrain: Some(bundle::Terrain {
+            kind: bundle::TerrainKind::Common,
+            walkable: None,
+            ground_speed: None,
+        }),
+    });
     let mut grouped = std::collections::BTreeMap::<(u16, u16), Vec<sector::Tile>>::new();
     for y in 31577..=31583 {
         for x in 32231..=32237 {
@@ -245,4 +255,166 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
         |_| None,
     )
     .map_err(debug)
+}
+
+#[test]
+fn questpc5_nimmersatt_twenty_exact_snowball_uses_open_wall_only_on_committed_last_hit()
+-> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-nimmersatt-wall")
+}
+async fn wall_appearance(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult<u16> {
+    let map = owner.bundle_map().ok_or("map")?;
+    let facts = map.facts.pinned();
+    let tile = crate::map::view::compose_tile(
+        &map.overlay,
+        &facts,
+        crate::map::overlay::TilePos {
+            x: 32236,
+            y: 31582,
+            floor: -7,
+        },
+    )
+    .map_err(debug)?
+    .ok_or("wall tile")?;
+    Ok(tile
+        .entries
+        .first()
+        .ok_or("wall entry")?
+        .facts
+        .appearance_id)
+}
+async fn hits(h: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/nimmersatt/wall_hits'").bind(id(41).as_slice()).fetch_one(&h.pool).await?)
+}
+pub(super) async fn exercise_wall(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::{
+        MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
+        encode_item_use_intent,
+    };
+    let started = std::time::Instant::now();
+    assert!(
+        oteryn_gameplay_quests::quest::world_callbacks::load()?
+            .iter()
+            .any(|c| c.key == "oteryn:quest-callback/authored-nimmersatt-wall"),
+        "missing bounded counted-use wall callback"
+    );
+    exercise(owner, admitted, h).await?;
+    assert_eq!(hits(h).await?, 0);
+    assert_eq!(wall_appearance(owner).await?, 1441);
+    let offered = crate::gameplay_transport::appearance_change::offer::offered(
+        owner.offered_capabilities(),
+        owner.appearance_available(),
+    );
+    let mut selected = admitted
+        .continuity
+        .selected_capabilities
+        .as_slice()
+        .to_vec();
+    selected.extend([4, 6, 11, 15, 18]);
+    selected.sort_unstable();
+    selected.dedup();
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
+            .ok_or("item use capabilities")?;
+    super::quest_catalogue_chests::relocate_source_actor(
+        owner,
+        admitted,
+        admitted.runtime_actor.ok_or("actor")?,
+        Position {
+            x: 32235,
+            y: 31582,
+            floor: -7,
+        },
+    )
+    .await?;
+    let source = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .and_then(|n| n.item_index())
+        .and_then(|i| i.definition_ref("Item", "oteryn:item.tibia.i2992", "definition-r1"))
+        .ok_or("snowball ref")?;
+    let mut last = Vec::new();
+    for hit in 1..=20 {
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(2))
+            .ok_or("clock")?;
+        let map = owner.bundle_map().ok_or("map")?;
+        let key = oteryn_world_bundle::bundle::placement_key(-7, 32236, 31582, 0).ok_or("wall")?;
+        let mut placement = map.overlay.base().digest().to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        let intent = UseIntent {
+            target: UseTarget::Item(std::num::NonZeroU64::new(3).ok_or("handle")?),
+            use_with: None,
+            use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget {
+                placement,
+                expected_revision: map.facts.pinned().object_revision(key),
+            })),
+            use_with_position: None,
+        };
+        if hit == 1 {
+            let Some(MapUseTarget::Object(target)) = intent.use_with_map_item.clone() else {
+                return Err("wall target".into());
+            };
+            let plain = UseIntent {
+                target: UseTarget::WorldObject(target),
+                use_with: None,
+                use_with_map_item: None,
+                use_with_position: None,
+            };
+            let command = admitted.continuity.next_command_id;
+            let (next, result, _) = super::item_craft::exchange(
+                owner,
+                *admitted,
+                command,
+                &encode_item_use_intent(&plain).map_err(debug)?,
+                None,
+            )
+            .await?;
+            *admitted = next;
+            assert_ne!(
+                result,
+                UseDisposition::Committed,
+                "plain wall click must not infer an input"
+            );
+            assert_eq!(hits(h).await?, 0);
+            assert_eq!(count(h).await?, 20);
+            assert_eq!(wall_appearance(owner).await?, 1441);
+        }
+        let command = admitted.continuity.next_command_id;
+        let (next, result, payload) = super::item_craft::exchange(
+            owner,
+            *admitted,
+            command,
+            &encode_item_use_intent(&intent).map_err(debug)?,
+            Some(source),
+        )
+        .await?;
+        *admitted = next;
+        last = payload;
+        assert_eq!(result, UseDisposition::Committed, "exact snowball hit{hit}");
+        assert_eq!(hits(h).await?, hit);
+        assert_eq!(count(h).await?, 20 - hit);
+        assert_eq!(
+            wall_appearance(owner).await?,
+            if hit == 20 { 799 } else { 1441 },
+            "map opens only after the committed twentieth input"
+        );
+    }
+    let command = admitted.continuity.next_command_id;
+    let (next, result, _) =
+        super::item_craft::exchange(owner, *admitted, command, &last, None).await?;
+    *admitted = next;
+    assert_ne!(result, UseDisposition::Committed);
+    assert_eq!(hits(h).await?, 20);
+    assert_eq!(count(h).await?, 0);
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED nimmersatt_counted_wall duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
 }

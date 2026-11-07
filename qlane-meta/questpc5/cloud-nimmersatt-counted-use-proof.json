@@ -1,0 +1,42 @@
+{
+  "slice": "Reusable bounded counted inventory use with final committed map projection",
+  "whole_recipe_qualified": false,
+  "filter": "questpc5_nimmersatt_twenty_exact_snowball_uses_open_wall_only_on_committed_last_hit",
+  "postgres_server": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red": {
+    "seconds": 52.591790992,
+    "failure": "missing bounded counted-use wall callback",
+    "log": "/tmp/questpc5-nimmersatt-wall-red.log"
+  },
+  "intermediate_red": {
+    "seconds": 54.126343867,
+    "failure": "inventory USE returned NothingToUse before exact-source callback routing"
+  },
+  "green": {
+    "seconds": 58.014944345,
+    "component_seconds": 3.873256487,
+    "log": "/tmp/questpc5-nimmersatt-wall-green3.log"
+  },
+  "coverage": [
+    "Actual twenty inventory-to-map protocol uses",
+    "Exactly one2992 consumed and counter advanced per committed hit",
+    "Wall1441 remains through hit19; committed hit20 projects799",
+    "Further stale/empty-source use cannot advance beyond20",
+    "Closed counter writers and inactive/bounded arithmetic Rust test",
+    "Plain wall click refuses without consuming any snowball or advancing the counter"
+  ],
+  "scope": "Mission acceptance remains explicitly fixture seeded for this component; actual NPC/Premium and final44179 hand-in are next. No whole qualification.",
+  "checks": {
+    "generator": "PASS",
+    "nimmersatt_python_units": 3,
+    "legion_preservation_python_units": 5,
+    "remaining": "independent World pin check",
+    "world_callback_rust_units": 23,
+    "loader_rust_units": 7,
+    "fmt": "PASS",
+    "cargo_check": "PASS125s final",
+    "strict_all_targets_all_features_clippy": "PASS72s final"
+  },
+  "world_digest": "3492205b964d74c721dba0c3db3e7e8ca32647aae1c41d9837c34935f965293b",
+  "previous_green_seconds": 59.926035917
+}

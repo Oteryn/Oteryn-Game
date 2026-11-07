@@ -50,6 +50,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         target: Option<ItemKey>,
     ) -> Option<UseOutcome> {
+        if let (Some(ItemKey::Instance(source)), Some(MapUseTarget::Object(target))) =
+            (source, intent.use_with_map_item.as_ref())
+            && intent.use_with.is_none()
+            && intent.use_with_position.is_none()
+            && let (Some(fence), Some(map)) = (command.item_fence, self.bundle_map())
+            && let Ok(inventory) = self
+                .root
+                .read_item_use_inventory(self.character, self.holder, fence)
+                .await
+            && let Some(item) = inventory
+                .backpack
+                .iter()
+                .flat_map(|b| &b.entries)
+                .chain(inventory.nested.iter().map(|(_, entry)| entry))
+                .find(|entry| entry.item.item_instance_id == source)
+            && let Some(outcome) = self
+                .use_quest_callback_with_item(
+                    actor,
+                    command,
+                    map,
+                    target,
+                    Some(&item.item.definition.production_key),
+                )
+                .await
+        {
+            return Some(outcome);
+        }
         match self
             .use_planting(actor, command, &intent, source, target)
             .await

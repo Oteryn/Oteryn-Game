@@ -79,6 +79,8 @@ fn is_false(value: &bool) -> bool {
     !*value
 }
 
+mod counted_use;
+pub use counted_use::CountedUse;
 mod native;
 use native::valid_native_callback;
 
@@ -162,6 +164,8 @@ pub struct Callback {
     /// Actual personal once-claim receipts required in the fenced transaction.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub required_claims: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub counted_use: Option<CountedUse>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub monk_reward: Option<MonkReward>,
     pub offerings: Vec<Offering>,
@@ -262,6 +266,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || ((callback.completes || callback.premium_required || !callback.movement_origins.is_empty() || !callback.required_claims.is_empty())
                 && (callback.storage.is_empty() || callback.is_read_only() || callback.occupancy_driven))
             || !effects::valid(callback)
+            || !counted_use::valid(callback)
             || callback.remote_teleport.as_ref().is_some_and(|remote| {
                 !valid_pos(remote.position)
                     || !valid_pos(remote.destination)
@@ -427,6 +432,7 @@ fn extend_callbacks(
                 });
             }
         }
+        let counted_effect = counted_use::extend(callback, &mut tracks)?;
         // Pure gates must not acquire a generic transition: even ADD(0)
         // creates a Character revision, quest state and receipt.
         if callback.is_read_only() {
@@ -435,6 +441,7 @@ fn extend_callbacks(
         // Reuse questpc8's immutable plan witness so admission predicates and
         // completion participate in the existing quest definition hash.
         if callback.completes
+            || callback.counted_use.is_some()
             || callback.premium_required
             || callback.effects.item_reward.is_some()
             || (callback.effects.portals.is_some() && !callback.storage.is_empty())
@@ -478,6 +485,7 @@ fn extend_callbacks(
                         None => QuestEffectKind::Set(s.set),
                     },
                 })
+                .chain(counted_effect)
                 .collect(),
             completes: callback.completes,
             experience: callback.experience,
@@ -1223,4 +1231,8 @@ mod world_item_reward_tests {
         }
         Ok(())
     }
+}
+
+pub(super) fn validate_counted_use_closed(catalogue: &QuestStateCatalogue) -> Result<(), String> {
+    counted_use::validate_closed(catalogue, &load()?)
 }

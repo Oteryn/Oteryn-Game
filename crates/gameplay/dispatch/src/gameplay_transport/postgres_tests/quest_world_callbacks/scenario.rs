@@ -79,7 +79,10 @@ fn scenario_case(
     if stateless_destination.is_some() {
         assert_eq!(callback.selector.position, Some(trigger));
     }
-    let world = if name == "qengine-rewards-nimmersatt-world-items" {
+    let world = if matches!(
+        name,
+        "qengine-rewards-nimmersatt-world-items" | "qengine-rewards-nimmersatt-wall"
+    ) {
         super::super::questpc5_nimmersatt_world_items::world()?
     } else if name == "qengine-rewards-newhaven-legion-route" {
         super::super::questpc5_legion_route::world()?

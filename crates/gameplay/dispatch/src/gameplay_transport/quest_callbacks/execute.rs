@@ -228,6 +228,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
+        let mut project_map = true;
         let mut success_message = if callback.storage.is_empty() || callback.is_read_only() {
             callback.success_message.clone()
         } else {
@@ -329,6 +330,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     QuestTransitionOutcome::Committed(ref committed)
                     | QuestTransitionOutcome::AlreadyCommitted(ref committed),
                 ) => {
+                    if let Some(counter)=callback.counted_use.as_ref().filter(|c|c.project_on_complete) {
+                        let Some(change)=committed.changes.iter().find(|c|c.track==counter.track) else {
+                            return UseDisposition::Rejected;
+                        };
+                        project_map=change.after==counter.limit;
+                    }
                     if fresh {
                         success_message = callback.committed_message(&committed.changes).map(str::to_owned);
                     }
@@ -383,15 +390,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 after,
             );
         }
-        if !map.facts.apply_quest_callback(
-            key,
-            expected_revision,
-            after,
-            &passages,
-            &replacements,
-            close,
-            projection.as_ref(),
-        ) {
+        if project_map
+            && !map.facts.apply_quest_callback(
+                key,
+                expected_revision,
+                after,
+                &passages,
+                &replacements,
+                close,
+                projection.as_ref(),
+            )
+        {
             return UseDisposition::Rejected;
         }
         if callback

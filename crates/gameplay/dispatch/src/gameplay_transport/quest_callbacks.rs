@@ -476,6 +476,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map: &BundleMap,
         target: &WorldObjectTarget,
     ) -> Option<UseOutcome> {
+        self.use_quest_callback_with_item(actor, command, map, target, None)
+            .await
+    }
+
+    pub(super) async fn use_quest_callback_with_item(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        map: &BundleMap,
+        target: &WorldObjectTarget,
+        used_item: Option<&str>,
+    ) -> Option<UseOutcome> {
         if let Some(outcome) = self.use_soul_war_reward(actor, command, map, target).await {
             return Some(outcome);
         }
@@ -495,6 +507,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let [callback] = selected.as_slice() else {
             return None;
         };
+        if (callback.counted_use.is_some() || used_item.is_some())
+            && !callback
+                .item_on_target
+                .as_ref()
+                .is_some_and(|required| used_item == Some(required.item.as_str()))
+        {
+            return Some(UseOutcome::rejected());
+        }
         let result = tokio::time::timeout(std::time::Duration::from_secs(10), async {
             let Some(permit) = self.spell_lane_permit().await else {
                 return UseDisposition::Rejected;

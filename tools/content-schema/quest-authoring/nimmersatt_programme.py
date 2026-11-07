@@ -31,7 +31,19 @@ def extend_world(rows):
         at=dict(x=32232,y=31578,floor=-7),appearance=799)
     row['storage']=[dict(track='oteryn:quest-progress/nimmersatt/stage',minimum=0,maximum=0,set=1),
                     dict(track='oteryn:quest-progress/nimmersatt/wall_hits',minimum=-1,maximum=-1,set=0)]
+    row['passages']=[dict(position=dict(x=32236,y=31582,floor=-7),appearance=799,replacement=1441)]
     row['effects']['item_reward']=dict(item='oteryn:item.tibia.i2992',count=20,contents=[])
+    row['sources'] += [f'oteryn:selected-recipe:{path}:/records/19/definition:sha256:{hashlib.sha256(raw).hexdigest()}',
+                       f'oteryn:source-map:{region}:sha256:{hashlib.sha256(region_raw).hexdigest()}']
+    rows.append(row)
+
+    row=callback('authored-nimmersatt-wall','authored.nimmersatt_s_lair','use',
+        'selected-personal-programme:twenty-exact-snowball-wall-uses',source_pin='oteryn-authored:',
+        at=dict(x=32236,y=31582,floor=-7))
+    row['storage']=[dict(track='oteryn:quest-progress/nimmersatt/stage',minimum=1,maximum=1,set=1,preserve=True)]
+    row['item_on_target']=dict(item='oteryn:item.tibia.i2992',count=1,replacement=None,target_replacement=None)
+    row['counted_use']=dict(track='oteryn:quest-progress/nimmersatt/wall_hits',limit=20,project_on_complete=True)
+    row['effects']['transform']=799
     row['sources'] += [f'oteryn:selected-recipe:{path}:/records/19/definition:sha256:{hashlib.sha256(raw).hexdigest()}',
                        f'oteryn:source-map:{region}:sha256:{hashlib.sha256(region_raw).hexdigest()}']
     rows.append(row)
