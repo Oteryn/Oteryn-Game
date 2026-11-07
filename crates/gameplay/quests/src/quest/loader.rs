@@ -237,6 +237,8 @@ pub fn load_embedded_quest_state(
     );
     lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
         .map_err(QuestLoadError::Json)?;
+    lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
+        .map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     // Preserve source captures and their counts; only the production catalogue
@@ -502,6 +504,13 @@ mod tests {
             (track.quest.as_str(), track.initial, track.min, track.max),
             (QUEST, 0, 0, 1)
         );
+        // Keep the observed completion domain and the pre-existing wider
+        // integer counter domain; the source sentinel must not lower either min.
+        for (suffix, max) in [("status", 2), ("progress", i64::from(i32::MAX))] {
+            let key = format!("oteryn:quest-progress/quest/u8_6/afathers_burden/{suffix}");
+            let track = lowered.catalogue().track(&key).expect("Father track");
+            assert_eq!((track.initial, track.min, track.max), (0, 0, max));
+        }
         let native = embedded();
         let track = native.catalogue().track(QUEST_LOG).expect("native track");
         assert_eq!(
