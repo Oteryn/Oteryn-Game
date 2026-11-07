@@ -185,11 +185,11 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 #[cfg(test)]
 mod tests {
     use super::*;
-    fn fixture(count: usize) -> serde_json::Value {
+    fn fixture(count: usize) -> Result<serde_json::Value, String> {
         let source: serde_json::Value = serde_json::from_str(include_str!(
             "../../../../../content/quests/questpc7-death-objectives.json"
         ))
-        .expect("production source");
+        .map_err(|error| error.to_string())?;
         let rows: Vec<_> = (0..count)
             .map(|i| {
                 let mut row = source["objectives"][0].clone();
@@ -197,22 +197,21 @@ mod tests {
                 row
             })
             .collect();
-        serde_json::json!({"schema":1,"objectives":rows})
+        Ok(serde_json::json!({"schema":1,"objectives":rows}))
     }
     #[test]
-    fn static_catalogue_has_its_own_closed_bound() {
+    fn static_catalogue_has_its_own_closed_bound() -> Result<(), String> {
         assert_eq!(
-            parse(&fixture(MAX_OBJECTIVES).to_string())
-                .expect("bounded catalogue")
-                .len(),
+            parse(&fixture(MAX_OBJECTIVES)?.to_string())?.len(),
             MAX_OBJECTIVES
         );
-        assert!(parse(&fixture(MAX_OBJECTIVES + 1).to_string()).is_err());
+        assert!(parse(&fixture(MAX_OBJECTIVES + 1)?.to_string()).is_err());
+        Ok(())
     }
     #[test]
-    fn expanded_catalogue_preserves_every_spatial_credit_and_source_guard() {
+    fn expanded_catalogue_preserves_every_spatial_credit_and_source_guard() -> Result<(), String> {
         for case in 0..9 {
-            let mut document = fixture(2);
+            let mut document = fixture(2)?;
             match case {
                 0 => document["schema"] = 2.into(),
                 1 => document["objectives"][1]["key"] = document["objectives"][0]["key"].clone(),
@@ -227,7 +226,7 @@ mod tests {
                     document["objectives"][0]["maximum"]["x"] =
                         (document["objectives"][0]["minimum"]["x"]
                             .as_u64()
-                            .expect("coordinate")
+                            .ok_or("coordinate")?
                             + 65)
                             .into()
                 }
@@ -236,5 +235,6 @@ mod tests {
             }
             assert!(parse(&document.to_string()).is_err(), "case {case}");
         }
+        Ok(())
     }
 }

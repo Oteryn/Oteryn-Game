@@ -1,3 +1,7 @@
+# Heart validation checkpoint — 2026-11-07 14:00 UTC
+
+Full Heart PG remains GREEN81.696754812s. Basic imbuing PG40.901043364s and Grimvale PG93.001633257s pass. Strict Clippy rejected three expect() calls in objective tests; new objective/knowledge tests now propagate errors and both focused unit groups pass. Cargo check passed before this test-only correction. Remaining: rerun strict Clippy, pins, content/world and fmt. Heart remains ACTIVE pending all gates. Push compiling checkpoint now; continue immediately.
+
 # Whole Heart PG GREEN with actual Powerful Strike — 2026-11-07
 
 Actual PG18.6 RED42.197816668s→GREEN81.696754812s. All6 native bosses,
