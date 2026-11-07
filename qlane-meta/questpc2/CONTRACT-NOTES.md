@@ -655,3 +655,32 @@ wrapper retains its exact channel check. Both call the unchanged SQL mutation
 body. The regression covers all four admitted carried location kinds and the
 ground refusal; the real NPC XP hand-in remains the integration proof target.
 No migrations, quantities, receipt assertions or production guards are weakened.
+
+
+## Decisions from the PREPUSH-2 unit run
+
+Five source corpse aliases are newly available relative to main: Apprentice
+Sheng uses admitted Monk corpse5981; Bazir and Infernatil use Demon corpse4097;
+Dharalion uses Elf corpse6011; Bakragore uses Rotten Blood corpse44012. These
+are consequences of the existing questpc2 source corpse admissions, not new
+quests or new private reward entitlements. The source reward-boss census is
+387 total:52 missing bodies,324 bodies still inadmissible,10 named independently
+checked corpse closures, and the existing Primal empty-row case. All five new
+aliases still have inadmissible private loot. Preserve every old private-loot
+assertion, add those five explicit refusal expectations, and keep the complete
+census exact. Scratch derivation: /tmp/questpc2-unit-source-corpse-census.json.
+
+Spite's source corpse33867 has48 slots; Bakragore corpse44012 has30. The ordinary
+private-row API retains its existing30-slot bound, so the exact source refusal
+for Spite is CorpseItemInadmissible before private-loot lowering; Bakragore's is
+LootItemInadmissible. Keep both exact fail-closed reasons and empty physical
+corpse assertions. Do not relax the30-slot private bound or admit unknown loot
+just to make tests pass. Independent private admission remains requested from
+qengine2. The previous new test incorrectly expected the same error ordering
+for both source bodies.
+
+Nine durability PG setup cases hit SQLSTATE53100 while completed build caches
+filled the lane filesystem. Retiring only completed lane incremental caches
+recovered8GiB; this is an infrastructure retry, not a mechanism blocker. Collect
+all failures from the full selected run before applying the repairs together,
+then rerun the complete same selected set. Own PG compilation was restarted.

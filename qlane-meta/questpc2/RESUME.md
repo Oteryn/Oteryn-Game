@@ -1,3 +1,33 @@
+# GREEN changed-content tests and all known failures; publish now
+
+Prior push948834804d9e80202f6012c5e18b066cda29ab7e. This batch changes only two
+content test expectations and lane notes, with production code/data unchanged.
+Exact387-boss census:52 missing/324 inadmissible/10 explicit corpse closures/
+1 existing Primal row. Five new aliases retain exact private-loot refusals.
+Spite48-slot body gives CorpseItemInadmissible; Bakragore30-slot body gives
+LootItemInadmissible. No guard/bound, test selection or existing ignore changed.
+
+First full selected run1326:1315passed,11failed (2 expectations+9 ENOSPC setups).
+Same four-crate1326 selection is rerunning; all320 default content units and
+all11 formerly failing cases have passed. One preexisting full-manifest ignored
+content qualification case is unchanged and not counted as passing. Additional
+unchanged-crate cases remain running; don't claim the full run passed before
+its final result. Log /tmp/questpc2-corpse-refusals-full-unit-rerun.log.
+
+Own five PG cases PASS198.738s, PostgreSQL180006 observed; actual20-item/10000XP
+NPC hand-in, both endgame corpse paths and Elvenbane route. Workspace alltargets
+PASS3m52s,fmtPASS,content clippyPASS23.13s.44 generated native files reproduced
+exactly; central evidence/matrix/audit goldens refreshed. Repo pin-refresh and
+migration duplicate check PASS; runtime pin and input digest unchanged.
+PREPUSH-2 permits cadence publication with additional unit cases pending.
+Proof BATCH-source-corpse-expectations-2026-11-07.json. Quest counts unchanged.
+
+Next finish full unit rerun and continue Rotten Blood source Item preparation.
+Readonly alternate XML replay found43501-43504/43899/43900 accepted by existing
+identity guards;43961+ require independent source revision qualification. No
+runtime data changed by that probe. Never bypass source guards. Existing48-slot
+private admission and boss hooks remain requested from qengine2.
+
 # Compiling PREPUSH-2 checkpoint, tests still running
 
 Main f641d8d6c integrated; merge conflicts resolved preserving both lanes.

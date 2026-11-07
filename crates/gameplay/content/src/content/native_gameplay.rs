@@ -3137,17 +3137,21 @@ mod tests {
         let (controller, _) = activated_with_loot_tables(world, None);
         let native = controller.active().unwrap().native_gameplay().unwrap();
         let rewards = native.reward_table();
-        for (creature, item) in [
+        use crate::content::creature_reward::NoSettlementReason;
+        for (creature, item, private_refusal) in [
             (
                 "oteryn:creature.goshnar_s_spite",
                 "oteryn:item.tibia.i33867",
+                // The source body has 48 slots; private rows retain the 30-slot bound.
+                NoSettlementReason::CorpseItemInadmissible,
             ),
-            ("oteryn:creature.bakragore", "oteryn:item.tibia.i44012"),
+            (
+                "oteryn:creature.bakragore",
+                "oteryn:item.tibia.i44012",
+                NoSettlementReason::LootItemInadmissible,
+            ),
         ] {
-            assert!(matches!(
-                rewards.row(creature),
-                Err(crate::content::creature_reward::NoSettlementReason::LootItemInadmissible)
-            ));
+            assert_eq!(rewards.row(creature).err(), Some(private_refusal));
             let corpse = rewards.reward_boss_corpse(creature).unwrap();
             assert_eq!(corpse.corpse_item.production_key, item);
             assert!(corpse.loot_table.entries.is_empty());

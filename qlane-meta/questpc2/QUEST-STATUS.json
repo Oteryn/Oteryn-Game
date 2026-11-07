@@ -1757,11 +1757,10 @@
     }
   },
   "current_batch": {
-    "name": "PREPUSH-2 main f641d8d6c integration",
-    "state": "WIP_TESTS_PENDING",
-    "scope": "Preserve main NPC and ground-write owners, source-bound Soul item admissions, and lane native quest branches; regenerate central evidence.",
-    "red": "Main NPC caller still supplies three arguments to five-argument apply_input (E0061).",
-    "repair": "New small NPC carried-input wrapper requires fenced NpcItemPermit and rejects ground; existing spell wrapper retains channel permit before common mutation."
+    "name": "source corpse expectation repair",
+    "state": "CHANGED_CRATE_GREEN_ADDITIONAL_RERUN_PENDING",
+    "scope": "Two content test expectation repairs, unchanged production code/data; no new quest qualification.",
+    "proof": "qlane-meta/questpc2/BATCH-source-corpse-expectations-2026-11-07.json"
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
@@ -2215,66 +2214,66 @@
     "push_policy": "one push after full dependent failure collection/grouped fixes and green full rerun; auto push reminder retracted"
   },
   "current_validation": {
-    "batch": "PREPUSH-2 main integration compiling checkpoint",
-    "main": "f641d8d6c1b7b800db28103f9a5f4e48972d051d",
-    "state": "WIP_TESTS_PENDING",
-    "qualified_quests_added": 0,
-    "checks": {
-      "cargo check --workspace --all-targets": {
-        "result": "PASS",
-        "duration": "4m14s",
-        "log": "/tmp/questpc2-prepush2-final-workspace-check.log"
-      },
-      "cargo fmt --all --check": "PASS",
-      "cargo clippy --locked -p oteryn-gameplay-durability --all-targets -- -D warnings": {
-        "result": "PASS",
-        "duration": "5m21s including build-lock wait"
-      },
-      "duplicate_migrations_staged_tree": "PASS",
-      "world_pin_refresh": "PASS unchanged aa3dab1114ad6ab7036761f91334d66b343b67c22d3f424b27a66f7cfac54341",
-      "world_pin_check": "PASS",
-      "item_mount_equivalence": "PASS 34111 Items/252 Mounts",
-      "content_tree": "PASS 97/97",
-      "source_item_test": "PASS 1.315s",
-      "source_entry_test": "PASS 1.563s"
+    "batch": "source corpse expectation repair",
+    "production_code_changed": false,
+    "new_qualified_quests": 0,
+    "changed_content_crate": {
+      "selected_default_units_passed": 320,
+      "preexisting_ignored_full_manifest_case": "requires OTERYN_FULL_SPELL_TEST_MANIFEST; unchanged and not counted as passed"
     },
-    "generation": [
-      "canonical tree and native providers",
-      "registered authoring tools",
-      "Rust inventory pins",
-      "item audit tags and wire fixture",
-      "quest binding evidence including NPC dialogue links",
-      "completion matrix",
-      "Grizzly room evidence",
-      "World pins"
-    ],
-    "world_decision": "No incoming World inputs or generator changes; retain unchanged committed World package through documented native-only regeneration path. Redundant reconstruction stopped before copying outputs.",
-    "unit_run": {
-      "state": "RUNNING --no-fail-fast",
-      "packages": [
-        "oteryn-gameplay-content",
-        "oteryn-gameplay-durability",
-        "oteryn-gameplay-npc",
-        "oteryn-gameplay-quests"
-      ],
-      "selected": 1326,
-      "known_failures": [
+    "red": {
+      "selected_unit_tests": 1326,
+      "passed": 1315,
+      "failed": 11,
+      "duration_seconds": 1069.333,
+      "groups": {
+        "source_expectations": 2,
+        "ENOSPC_in_PG_setup": 9
+      }
+    },
+    "green": {
+      "all_11_prior_failures_passed": true,
+      "prior_failures": [
         "oteryn-gameplay-content content::native_gameplay::test_support::activation_fixture::reward_boss_test_fixture_preserves_source_loot_and_production_unavailability",
-        "oteryn-gameplay-content content::native_gameplay::tests::reward_boss_empty_corpse_does_not_admit_missing_private_loot"
+        "oteryn-gameplay-content content::native_gameplay::tests::reward_boss_empty_corpse_does_not_admit_missing_private_loot",
+        "oteryn-gameplay-durability durability::boss_encounter::activity_assignment_tests::character_fence::boss_activity_full_character_fence_postgres",
+        "oteryn-gameplay-durability durability::boss_encounter::activity_assignment_tests::item_consumers::boss_activity_item_consumers_postgres",
+        "oteryn-gameplay-durability durability::boss_encounter::preparation::tests::boss_clock_native_owner_cas_and_restart_storage_postgres",
+        "oteryn-gameplay-durability durability::boss_encounter::preparation::tests::boss_cooldown_atomic_group_replay_and_compensation_postgres",
+        "oteryn-gameplay-durability durability::boss_encounter::preparation::tests::boss_reward_native_fences_atomic_claim_and_reload_postgres",
+        "oteryn-gameplay-durability durability::boss_encounter::preparation::tests::boss_reward_time_and_epoch_boundaries_postgres",
+        "oteryn-gameplay-durability durability::boss_encounter::preparation::tests::boss_spawn1_world_exclusion_restart_and_reset_postgres",
+        "oteryn-gameplay-durability durability::character_death::death_build_postgres::concurrent_native_deaths_serialize_build_and_one_receipt_on_the_root",
+        "oteryn-gameplay-durability durability::character_death::death_build_postgres::historical_v2_training_then_death_replays_and_reconciles_after_restart"
       ],
-      "log": "/tmp/questpc2-prepush2-owner-unit-tests.log"
+      "own_postgres_cases_passed": 5,
+      "postgres_version_num": 180006,
+      "own_pg_runtime_seconds": 198.738,
+      "own_pg_build_plus_run_seconds": 685.415,
+      "own_pg_head": "948834804d9e80202f6012c5e18b066cda29ab7e",
+      "production_code_and_runtime_data_unchanged_since_pg": true,
+      "workspace_all_targets_check": "PASS3m52s",
+      "fmt": "PASS",
+      "content_clippy": "PASS23.13s -D warnings",
+      "native_generated_outputs": "44 files reproduced exactly",
+      "central_evidence": "binding packets, NPC links, matrix and audit goldens refreshed",
+      "pin_refresh": "PASS unchanged runtime digest and inputs digest",
+      "duplicate_migrations": "PASS"
     },
-    "own_postgres": {
-      "state": "PENDING; queued compilation paused to prioritize required final check and cadence push; no skipped PG case counted as a pass",
-      "cases": [
-        "elvenbane_source_treasure_exit_and_journal_via_wire",
-        "l3_instance_endgame_soul_war_native_death_progresses_once",
-        "l3_instance_endgame_rotten_blood_native_death_progresses_once",
-        "catalogue_npc_source_acceptance_is_atomic_and_replay_bound",
-        "catalogue_npc_general_xp_handin_runs_in_real_dispatch"
-      ]
+    "conservative_same_four_crate_unit_rerun": {
+      "state": "RUNNING no failures observed",
+      "selected": 1326,
+      "passed_at_snapshot": 957,
+      "log": "/tmp/questpc2-corpse-refusals-full-unit-rerun.log"
     },
-    "publication_authority": "PREPUSH-2 cadence exception: publish after steps 1,2,4 while step 3 remains pending. This is a compiling WIP, not a green mechanic or new qualification."
+    "source_census": {
+      "total_bosses": 387,
+      "missing": 52,
+      "inadmissible": 324,
+      "explicit_source_corpse_closures": 10,
+      "primal_empty_row": 1
+    },
+    "publication": "Changed-crate default units, own PG cases and all known failures are green. Additional unchanged-crate unit cases continue under PREPUSH-2 cadence exception."
   },
   "engine_requests": [
     {
