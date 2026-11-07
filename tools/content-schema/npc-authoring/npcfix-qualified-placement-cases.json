@@ -2717,6 +2717,80 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "npcfix-exact-displayed-names-43",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "Exact displayed names from tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json SHA2561f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a; each source page/revision retained in the name authoring plan. Preserve every existing retail coordinate, NPC fact and earlier test case. Default actual PG RED against 2471f5408ab20f8fe11db4dfc46a3470271e4c92 before name repairs.",
+      "cases": [
+        {
+          "npc": "oteryn:npc.guardian_of_the_deep_seas",
+          "name": "Guardian of the Deep Seas",
+          "expected": {
+            "x": 33547,
+            "y": 31632,
+            "floor": -14
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.hemor_the_guard",
+          "name": "Hemor, the guard",
+          "expected": {
+            "x": 32627,
+            "y": 31925,
+            "floor": -3
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.humnog_the_guard",
+          "name": "Humnog, the guard",
+          "expected": {
+            "x": 32627,
+            "y": 31921,
+            "floor": -3
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.lesser_messenger_of_heaven",
+          "name": "Lesser Messenger of Heaven",
+          "expected": {
+            "x": 33189,
+            "y": 31642,
+            "floor": -7
+          },
+          "before": null,
+          "additional": [
+            {
+              "x": 32536,
+              "y": 32026,
+              "floor": -7
+            }
+          ]
+        },
+        {
+          "npc": "oteryn:npc.nah_bob",
+          "name": "Nah'Bob",
+          "expected": {
+            "x": 33104,
+            "y": 32520,
+            "floor": -2
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.one_eyed_joe",
+          "name": "One-Eyed Joe",
+          "expected": {
+            "x": 32026,
+            "y": 32886,
+            "floor": -6
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }

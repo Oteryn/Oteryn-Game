@@ -8437,5 +8437,23 @@
     "rust_source_snapshot": "89e78174f9cd845e8e64130ba549352dd70eaa07",
     "cumulative_native_actors": 233,
     "cumulative_npcs": 232
+  },
+  "active_name_work": {
+    "state": "COMPILES; CORRECTED_NEW_FIXTURE_ORDER; DEFAULT_NAME_RED_RUNNING",
+    "entries": [
+      "Guardian of the Deep Seas",
+      "Hemor, the guard",
+      "Humnog, the guard",
+      "Lesser Messenger of Heaven",
+      "Nah'Bob",
+      "One-Eyed Joe"
+    ],
+    "fixture_prerequisite_red": {
+      "error": "PlacementsNotAscending",
+      "seconds": 306.37,
+      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+      "log": "/tmp/npcfix-evidence/six-name-fixture-order-red.log"
+    },
+    "fix": "Only new case points sorted by exact runtime order(floor,y,x); both Lesser Messenger anchors retained and checked against frozen retail positions. No Rust, runtime ordering guard, prior case or canonical NPC data changed. Fresh name RED rerun active."
   }
 }
