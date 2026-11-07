@@ -13,7 +13,7 @@ class QuestRewards(unittest.TestCase):
         mappings={r['grant_key']:r for r in doc['grant_mappings']}
         self.assertEqual(len(outfits),131)
         packet=json.loads(self.outputs['tools/content-schema/native-gameplay/item-cosmetic-actions-native.json'])
-        self.assertEqual(len(packet['grants']),201)
+        self.assertEqual(len(packet['grants']),202)
         for grant in packet['grants']:
             mapping=mappings[grant['key']]
             self.assertEqual(mapping['compatible_provenance'],[packet['provenance']])
@@ -27,7 +27,8 @@ class QuestRewards(unittest.TestCase):
         capture=(q.ROOT/'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes()
         self.assertEqual(admission['source_packet_sha256'],q.sha(capture))
         original=json.loads(capture)
-        self.assertEqual([r['item_id'] for r in packet['rules']],[r['item_id'] for r in original['rules']])
+        self.assertEqual([r['item_id'] for r in packet['rules'] if r['item_id']!=21897], [r['item_id'] for r in original['rules']])
+        self.assertEqual(sum(r['item_id']==21897 for r in packet['rules']),1)
         old=next(r for r in original['rules'] if r['mode']=='random_outfit')
         native=next(r for r in packet['rules'] if r['mode']=='random_outfit')
         self.assertEqual(len(native['choices']),len(old['choices']))
@@ -38,6 +39,24 @@ class QuestRewards(unittest.TestCase):
         self.assertEqual((jungle['female']['id'],jungle['male']['id']),(620,621))
         self.assertFalse(jungle['starter_female'] or jungle['starter_male'])
         self.assertTrue(jungle['premium'])
+
+    def test_complete_glider_recipe_preserves_every_source_taming_row(self):
+        original=json.loads((q.ROOT/'content/cosmetics/taming.json').read_bytes())
+        native=json.loads(self.outputs['content/cosmetics/taming-native.json'])
+        self.assertEqual(len(original),51)
+        self.assertEqual(len(native),50)
+        self.assertEqual(native,[r for r in original if r['item_key']!='oteryn:item.tibia.i21897'])
+        packet=json.loads(self.outputs['tools/content-schema/native-gameplay/item-cosmetic-actions-native.json'])
+        rule=next(r for r in packet['rules'] if r['item_id']==21897)
+        self.assertEqual(rule['mode'],'pieces')
+        self.assertEqual(rule['required_items'],[21897,21898,21899,21901,21902,21905,21906])
+        self.assertFalse(rule['premium'])
+        self.assertEqual(rule['choices'][0]['grants'],['oteryn:item-grant.mount.71'])
+        self.assertEqual(rule['choices'][0]['cues'],[{'binding':'canary.appearance:effect/magic_green','effect_id':15}])
+        grant=next(r for r in packet['grants'] if r['key']=='oteryn:item-grant.mount.71')
+        mappings={r['grant_key']:r for r in self.author['document']['grant_mappings']}
+        self.assertEqual(grant['mount_id'],71)
+        self.assertEqual(mappings[grant['key']]['target'],{'kind':'Mount','mount_key':'oteryn:content.mount.glooth_glider'})
 
     def test_stock_mounts_bind_every_taming_and_item_acquisition(self):
         doc=self.author['document']

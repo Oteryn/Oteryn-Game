@@ -168,7 +168,13 @@ fn valid_rule(c: &Catalogue, r: &Rule) -> bool {
             Mode::RandomMount => r.components.is_empty(),
             Mode::Pieces => {
                 r.choices.len() == 1
-                    && r.required_items.len() == 6
+                    && (2..=8).contains(&r.required_items.len())
+                    && r.required_items.iter().all(|id| *id > 0)
+                    && r.required_items
+                        .iter()
+                        .collect::<std::collections::BTreeSet<_>>()
+                        .len()
+                        == r.required_items.len()
                     && r.required_items.contains(&r.item_id)
             }
             Mode::Parts => {

@@ -893,3 +893,17 @@ SQL/Python drafts in /tmp/qengine2-glider-piece-migration.sql and
 missed qualification-fixture initializer for W15b; uncommitted one-field fix is
 being verified. Legacy chest PG GREEN65.51s. Fresh questpc fetch15:06 found no
 new QUALIFIED matches for remaining22. Counts44/66.
+
+S06 complete-piece implementation compiling WIP: source Glider7recipe and
+mount71 grant, generic2..8unique ingredient rules, bounded8extra-input writer;
+migration1008 validates complete exact source ingredient/grant/provenance
+profiles and retains Afflicted6carried/Ground behavior. Native taming50 plus
+one Glider piece recipe covers all51captured source rows; raw capture retained.
+Authoring32GREEN87.595s; dispatch binary compiled7m56s. Actual PG remains RED
+NotPossible: six Glider components21898,21899,21901,21902,21905,21906 lack native
+materializable profiles (blueprint21897 is admitted). Next extend existing
+tools/content-migration/qengine_reward_item_profiles.py IDS and regenerate
+through qengine_rewards.py; it already invokes the physical profile producer.
+No recipe/PG qualification claimed. Server world repository5GREEN100.30s;
+legacy content shape expectation corrected to accept2/reject0and21. Remaining
+required gates, pins and legacy regressions queued. Counts44/66.

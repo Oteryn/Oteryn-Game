@@ -15057,6 +15057,16 @@
         ]
       },
       {
+        "grant_key": "oteryn:item-grant.mount.71",
+        "target": {
+          "kind": "Mount",
+          "mount_key": "oteryn:content.mount.glooth_glider"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
         "grant_key": "oteryn:item-grant.mount.94",
         "target": {
           "kind": "Mount",
@@ -21831,6 +21841,16 @@
           "target": {
             "kind": "Mount",
             "mount_key": "oteryn:content.mount.copper_fly"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.mount.71",
+          "target": {
+            "kind": "Mount",
+            "mount_key": "oteryn:content.mount.glooth_glider"
           },
           "compatible_provenance": [
             "crystal-item-cosmetics-201189f-v1"

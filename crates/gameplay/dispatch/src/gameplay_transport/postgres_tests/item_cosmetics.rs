@@ -290,6 +290,9 @@ fn scenario(
                 ];
                 if missing {
                     pieces.retain(|(key, _)| *key != "oteryn:item.tibia.i21898");
+                } else {
+                    // Retain a second complete recipe to prove already-owned no-spend.
+                    pieces.extend(pieces.clone());
                 }
                 if ground {
                     pieces.splice(0..0, [(key, 1), (bag, 1)]);
@@ -374,7 +377,7 @@ fn scenario(
                 // handle for 12551 is now the actual Ground trigger, regardless of
                 // snapshot domain ordering; the shared USE helper cannot pick a bag entry.
                 let last = match case {
-                    Some(positive::Case::Glider { missing: false }) => 79,
+                    Some(positive::Case::Glider { missing: false }) => 86,
                     _ => 78,
                 };
                 for (offset, item) in (73_u8..=last).enumerate() {

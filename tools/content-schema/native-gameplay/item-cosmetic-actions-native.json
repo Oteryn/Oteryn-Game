@@ -366,6 +366,13 @@
       "identity_source": "data/XML/mounts.xml:90"
     },
     {
+      "key": "oteryn:item-grant.mount.71",
+      "kind": "mount",
+      "mount_id": 71,
+      "look_type": 682,
+      "donor": "data-global/scripts/actions/mounts/mounts.lua:20-36,112-139"
+    },
+    {
       "key": "oteryn:item-grant.mount.94",
       "kind": "mount",
       "mount_id": 94,
@@ -3786,6 +3793,41 @@
       ]
     },
     {
+      "item_id": 21897,
+      "donor": "data-global/scripts/actions/mounts/mounts.lua:20-36,112-139",
+      "mode": "pieces",
+      "premium": false,
+      "required_items": [
+        21897,
+        21898,
+        21899,
+        21901,
+        21902,
+        21905,
+        21906
+      ],
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.mount.71"
+          ],
+          "owned": "oteryn:item-grant.mount.71",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/magic_green",
+              "effect_id": 15
+            }
+          ],
+          "feedback": "You successfully constructed a Glooth Glider!",
+          "achievements": [
+            "oteryn:achievement/fabled_construction",
+            "oteryn:achievement/natural_born_cowboy"
+          ]
+        }
+      ]
+    },
+    {
       "item_id": 23538,
       "donor": "data/scripts/actions/items/usable_mount_items.lua:2",
       "mode": "direct",
@@ -5381,6 +5423,13 @@
           "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
         },
         "reason": "explicit source family and admitted sex pair; only renderable addons"
+      }
+    ],
+    "construction_sources": [
+      {
+        "reference": "crystal:data-global/scripts/actions/mounts/mounts.lua",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "bf241ac7938e044199b989a8c46a4b1ba787328dc44aab5d382fcb0ea7ec100f"
       }
     ]
   }

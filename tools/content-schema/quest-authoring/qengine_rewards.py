@@ -108,6 +108,13 @@ def build():
     source_rows,_=table_parser.table(inputs[acquisition_path].decode(),'outfits')
     item_admission.extend_catalogue(outfits,source_rows,looks,addon_patterns,acquisition_source)
     item_packet=item_admission.build(json.loads(item_capture_raw),outfits,source,sha(item_capture_raw))
+    construction=load_module('qengine_item_construction','tools/content-schema/quest-authoring/qengine_item_construction.py')
+    construction_path='data-global/scripts/actions/mounts/mounts.lua'
+    construction.append_glider(item_packet, inputs[construction_path].decode(), inputs['data/XML/mounts.xml'],
+        table_parser, json.loads((ROOT/'content/presentations/bindings/client-ids.json').read_bytes()),
+        {'reference':'crystal:'+construction_path,'revision':PIN,'sha256':sha(inputs[construction_path])})
+    native_taming=[r for r in json.loads((ROOT/'content/cosmetics/taming.json').read_bytes())
+                   if r['item_key']!='oteryn:item.tibia.i21897']
     for outfit in outfits:
         key=outfit['key']
         for addon in range(outfit['addon_count']+1):
@@ -911,7 +918,8 @@ def build():
     native_cosmetics=cosmetics.build(author, appearance/'manifest.json')
     gameplay['schema']='OTERYN_NATIVE_GAMEPLAY_MANIFEST/v6'
     gameplay['cosmetics']={'path':'cosmetics/outfits/native-cosmetics.json','sha256':sha(native_cosmetics)}
-    generated = {'tools/content-schema/native-gameplay/item-cosmetic-actions-native.json':encoded(item_packet),
+    generated = {'content/cosmetics/taming-native.json':encoded(native_taming),
+            'tools/content-schema/native-gameplay/item-cosmetic-actions-native.json':encoded(item_packet),
             'content/cosmetics/outfits/authoring.json': encoded(author),
             'content/cosmetics/outfits/native-cosmetics.json': native_cosmetics,
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),

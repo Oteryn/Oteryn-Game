@@ -62,7 +62,11 @@ pub(super) async fn run(
     music: bool,
 ) -> TestResult {
     let rules = crate::content::native_gameplay::mount_taming::rules();
-    assert_eq!(rules.len(), 51, "every qualified pair remains covered");
+    assert_eq!(
+        rules.len(),
+        50,
+        "47 creature rules and three item targets; Glider has its own complete piece recipe"
+    );
     let mut retained = admitted(owner, actor, session)?;
     owner
         .states

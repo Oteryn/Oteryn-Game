@@ -3035,11 +3035,18 @@
           }
         },
         "construction_step": {
-          "status": "RED",
+          "status": "AUTHORING",
           "point": "Real wire USE with all seven source Glider pieces returns NothingToUse instead of Committed.",
           "marker": "POSTGRES_CASE_COMPLETED S06_GLIDER ground=false missing=false duration=76.292884279s success=false",
           "log": "/tmp/qengine2-s06-glider-red.log",
-          "remaining": "Implement generic bounded complete piece recipes, source Glider grant and source item-target constructions."
+          "remaining": "Implement generic bounded complete piece recipes, source Glider grant and source item-target constructions.",
+          "progress": "Generic bounded complete-piece owner, immutable SQL source profiles, Glider source grant and recipe implemented; 32 authoring tests GREEN87.595s and dispatch test binary compiled7m56s. PG remains NotPossible because six ingredient Items lack materializable native profiles. Admit them with the existing qengine source-item producer next.",
+          "last_pg_log": "/tmp/qengine2-s06-glider-green1.log",
+          "red_markers": [
+            "POSTGRES_CASE_COMPLETED S06_GLIDER ground=false missing=false duration=76.292884279s success=false",
+            "POSTGRES_CASE_COMPLETED S06_GLIDER ground=false missing=true duration=82.527214895s success=false",
+            "POSTGRES_CASE_COMPLETED S06_GLIDER ground=true missing=false duration=85.552327297s success=false"
+          ]
         }
       },
       {
