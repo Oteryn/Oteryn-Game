@@ -1,3 +1,8 @@
+Current qualification update: Giant Smithhammer complete chosen programme is QUALIFIED.
+Real producer PG RED35.59s/GREEN37.615971969s, strict checks and pin refresh pass.
+See cloud-smith-cache-proof.json and current QUEST-STATUS.json; historical text
+below records the original run and is superseded for completed programmes.
+
 # L7 incomplete delivery
 
 Counts: 3 QUALIFIED (all qualified-elsewhere), 20 UNFINISHED, 0 BLOCKED.

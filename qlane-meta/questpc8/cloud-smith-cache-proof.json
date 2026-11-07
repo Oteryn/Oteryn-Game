@@ -24,14 +24,17 @@
     "mint_unit": "1 passed; layout bound and root entry counted",
     "custody_unit": "1 passed9.716s; canonical unchanged",
     "schema_preflight": "actual PostgreSQL18.6 migration inside rolled-back transaction",
-    "regeneration": "repository register_spell_families40files passed"
+    "regeneration": "repository register_spell_families40files passed",
+    "previous_final_six_crate_check": "passed83s",
+    "previous_final_strict_clippy": "passed308s",
+    "generator_regressions": "16 passed109.015s;40file drift check passed",
+    "guardian_changed_crate_check": "passed91s all features; dispatch and quests",
+    "guardian_strict_clippy": "passed180s all targets/all features -D warnings; dispatch and quests",
+    "guardian_fmt": "cargo fmt --all -- --check passed",
+    "guardian_pin_refresh": "passed; world digest unchanged2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968",
+    "guardian_engine_reuse_check": "qengine2 refreshed to e45e8f8a9; no authored guardian admission found; existing native encounter/policy/death owners reused"
   },
-  "checks_pending": [
-    "final changed crate check including server",
-    "strict all-target/all-feature Clippy",
-    "generator drift/pin refresh",
-    "production guardian activation and corresponding native spawn PG proof"
-  ],
+  "checks_pending": [],
   "logs": {
     "questpc8-smith-cache-red.log": "350f7ed51ba933c8edc934b597fed0150d9d319a90708e10488a8a408ec7ae0d",
     "questpc8-smith-cache-green2.log": "79670f4b3d75ff9708af9fd00c800c33e3ae1c1f53f5f6afe722e0dd4e9474f0",
@@ -44,7 +47,11 @@
     "questpc8-flat-mint-nested-regression.log": "5b9c35ca30b58d0518116f721daafac5428fdd6672b613d0e2d839f7ad0e81e2",
     "questpc8-flat-mint-father-regression.log": "2f2337cdd322bfc2f858225ce255f8ae5daf40134c766218728d925c9edcd553",
     "questpc8-flat-npc-layout-red.log": "53d85d5cd28d12309e04afb98b952196e9c2ac2bacf7cffd7d44a2cdb4ffa200",
-    "questpc8-flat-npc-layout-green.log": "61bf5c1985c62b74d7c5fd4f08fa84ee7acb83151e5d01b1b53bf6e869ba65d4"
+    "questpc8-flat-npc-layout-green.log": "61bf5c1985c62b74d7c5fd4f08fa84ee7acb83151e5d01b1b53bf6e869ba65d4",
+    "questpc8-guardian-check.log": "1a90d4c86c30a8f6b751c6068c46b5bcae81be9263f98de5ce1733b9505a3128",
+    "questpc8-guardian-clippy.log": "6bb8c1f141bb46c5b8a22d520d4462249a21adcfbb44d362fa318f60b20dbbab",
+    "questpc8-guardian-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "questpc8-guardian-pin.log": "7ac09f19255ce0ad3470e332a0543a88e2e870d89f5d224f23a0a1a7a1785c4c"
   },
   "review": {
     "head": "9bfdafcfc",
@@ -64,5 +71,26 @@
     "passed": 1,
     "test": "catalogue_npc_father_fresh_acceptance_is_one_eleven_track_transaction"
   },
-  "merged_validation": "native-alias-smith-merge-validation.json"
+  "merged_validation": "native-alias-smith-merge-validation.json",
+  "guardian_red": {
+    "test": "questpc8_smith_cache_native_guardian_and_atomic_outputs",
+    "duration_seconds": 35.59,
+    "marker": "POSTGRES_CASE_STARTED authored-smith-cache after PostgreSQL fixture initialization",
+    "failure": "the native objective must create its guardian",
+    "log_sha256": "187ccbd30e31596ac3c02abe6a9cd08ce8cc564e0c15d23221ce0ec2115934b7"
+  },
+  "guardian_green": {
+    "test": "questpc8_smith_cache_native_guardian_and_atomic_outputs",
+    "duration_seconds": 37.615971969,
+    "passed": 1,
+    "marker": "POSTGRES_CASE_COMPLETED questpc8_smith_cache_native_guardian_and_atomic_outputs",
+    "coverage": [
+      "guardian absent before quest",
+      "actual native spawn after exploration",
+      "refresh reuses exact actor",
+      "native lethal capture and duplicate notification",
+      "exact completion/capacity/refusal/replay through durable owners"
+    ],
+    "log_sha256": "497f753320e61a46d67e5975d361f5aba1ee8bfd93c01a919e8f7084a08466b7"
+  }
 }

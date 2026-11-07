@@ -1,131 +1,61 @@
-# Current completed native reward batch
-
-Mintwallin Cyclops and Giant Smithhammer are QUALIFIED in this lane. Mintwallin
-retains its original Ruby claim/once ledger through one approved native alias;
-its eleven-edit source scene was already PG-qualified. Smith's chosen native
-exploration/guardian/cache gives hammer1, Talon1 and gold100 through reusable
-atomic backpack outputs, with full-capacity refusal and replay. Both features
-survived the concurrent-head merge. Do not redo either programme.
-
-Combined PG: Mintwallin25.03837681s, smith26.27184565s, nested bag25.879177332s,
-Father's exact atomic eleven-track acceptance47.156350738s and exact-charge
-chest29.083511268s. All-feature six-crate check, strict all-target/all-feature
-Clippy, fmt,16 profile units,40-file generator drift and pin refresh/check pass.
-World digest remains2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968.
-See native-alias-smith-merge-validation.json. An additional out-of-lane full
-Father eight-hand-in probe hit pre-existing missing native Item profiles; the
-exact before/after profile comparison is retained there, and no tests/guards
-were weakened. This is distinct from the required atomic write, which passed.
-
-Counts:5 qualified here,3 elsewhere,15 remaining. Next chosen batch is Voodoo
-Doll, Mastermind Potion and Kormarak. Scratch drafts (not applied):
-/tmp/questpc8-retrieval-tests.rs, /tmp/questpc8-apply-retrieval-data.py and
-/tmp/questpc8-next-retrieval-batch.md. First add only test harness/mount data and
-run all three PG cases RED; then add callbacks/death objectives/item profiles.
-Kormarak also needs an explicitly authored native guardian counterpart: current
-map has body32342,32125,z10 (4240 ordinal2) but no confirmed source coffin/guardian
-there. Use a documented conservative chosen restoration; never label it donor
-fact. No reference copies or binaries. Final stable candidate review remains
-for the completed lane; current state is AUTHORING.
-
 # questpc8 — AUTHORING
 
-Continue directly on claude/happy-davinci-ijz3wy-questpc8. Fetch and merge its
-remote before every fast-forward push; never force/rebase/main/PR. Push each
-green slice immediately, at least every30minutes. Investigations are bounded
-to ten minutes; document conservative choices in CONTRACT-NOTES.md. Shared
-engine features belong to this lane. Earlier publication bans are superseded.
+Continue directly on claude/happy-davinci-ijz3wy-questpc8. Preserve its published
+history. Before every push fetch the exact ref explicitly:
+`git fetch origin refs/heads/claude/happy-davinci-ijz3wy-questpc8:refs/remotes/origin/claude/happy-davinci-ijz3wy-questpc8`.
+Merge remote movement without rebase, then push
+`git push origin HEAD:claude/happy-davinci-ijz3wy-questpc8`. Another session has
+contributed to this same remote branch; retain all of its work. Git identity is
+blakinio <75369544+blakinio@users.noreply.github.com>; required Claude coauthor and
+session trailers still apply. Never main/force/PR. Push each green slice and at
+least every30minutes. Earlier publication bans and /home/mole paths are obsolete.
 
-Scope: LANE-L7.json,23 entries. Triangle Tower, Waterfall and Vampire Shield are
-QUALIFIED elsewhere. Killing in the Name of, Braindeath, Tinder Box, Mintwallin and Giant Smithhammer are QUALIFIED here;
-15 remain. Historical non-L7 rows are not additional scope. Preserve exclusions
-Dawnport, W14/P23/X01-X06, atomic Father's Burden11-track write and exact charges.
+Scope: LANE-L7.json,23 entries. Eight QUALIFIED: Killing in the Name of,
+Braindeath, Tinder Box, Mintwallin and Giant Smithhammer here; Triangle Tower, Waterfall and Vampire
+Shield elsewhere. Smith guardian PG and final checks are green;
+15 entries remain. Non-L7 historical rows are not scope.
+Exclusions Dawnport, W14/P23/X01-X06; Father's eleven-track acceptance remains
+one atomic write, grants charge only on an exact match. No binaries/reference
+copies, workflows or tools/repository edits. No full workspace/PG/nextest runs.
 
-Pushed28a7715f7 after d90c1bfa2: Braindeath chosen exploration/native death/coffin
-programme. Actual native coffin32546,31522,z11 appearance1983 ordinal1 has no
-UID. Reusable bounded death objectives use existing frozen death capture and
-quest revision settlement. World rewards use existing Premium/MINT owners.
-PG RED2.64s; final PG PASS1/1 in38.43930999s with POSTGRES_CASE_COMPLETED.
-Strict changed-crate check/Clippy, provenance unit, pin-refresh and independent
-exact-head review passed. See cloud-braindeath-proof.json.
+Completed slice: Smith production guardian admission. PG RED35.59s failed because
+no actual native guardian existed. GREEN37.615971969s exercises the creature
+created by quest refresh, exact-actor reuse across refresh, native death capture,
+full-backpack refusal, exact hammer3208x1/Talon3034x1/gold3031x100 grant, completion
+and command replay/second-claim refusal. No quest state/kill/receipts seeded.
+The previous flat-output MINT and source lever proofs remain valid. See
+cloud-smith-cache-proof.json and CONTRACT-NOTES.md. Native chamber spawn is an
+explicit authored restoration because source population has no Giant Spider.
+One shared slot per objective; installed native policy, walkability/occupancy,
+pinned-corpse retention and90second respawn. No new progress writer. Final check91s, strict Clippy180s, fmt and pin-refresh
+passed. Push this green slice immediately, then continue Kormarak.
 
-Killing campaign: real native300Crocodiles/150Carniphilas repeats,650Hydras,
-three boss portals/victories/reports and rank gates. Historical successful boss
-report receipts survive legitimate source rearming. Chosen extra10000XP and
-5000gold units (50platinum) exact/once. PG RED171.08s; GREEN179.886708384s,
-source regression36.07s. Static checks/regen/review passed. See
-cloud-hunting-campaign-proof.json. qengine2 reusable participants reused from
-5a6de28c1; source NPC executor and Smithhammer no-op preserved.
+Already pushed89d5e1413 integrates native Mintwallin cache aliases and preserves
+all remote ordered hunting and eleven-edit scene work.28f9a9252 fixed review P2:
+NPC reward layouts now use the shared bounds/mutual-exclusion validator, with
+RED/GREEN unit regression. Previous six-crate check83s, strict Clippy308s,
+16 generator tests109.015s,40-file drift check, Braindeath nested PG37.4845s,
+Father exact atomic acceptance PG66.01s passed. Details in JSON proofs.
+A prior automatic merge9bfdafcfc used the repository's default author; retain
+published history. Local identity was corrected. New merges must use explicit
+attributed commits and trailers, never a silent default merge commit.
 
-Current worktree: Tinder Box fixture and chosen permanent summit callbacks.
-Actual summit bone pile32085,31025,z1 appearance4285 ordinal1, no UID; western
-approach32084,31025,z1. Premium exploration and once-only item20357. Real PG
-RED2.71s at missing callback. Focused PG GREEN40.243466689s passed with regenerated native provider.
-All15 generator regressions passed; changed-crate check/Clippy and pin refresh
-passed. Tinder Box QUALIFIED after independent review, clean and merged Cargo PG runs,
-merged check/strict Clippy and generator drift check. See cloud-tinder-box-proof.json. No new source binaries/map edits.
+Next: Kormarak, Mastermind Potion and Voodoo Doll. Do not spend over ten minutes
+on one fact. Document conservative authored choices in CONTRACT-NOTES.md.
+Kormarak actual dead human32342,32125,z10 appearance4240 ordinal2, no UID, was
+verified in retained B3. Four items3359/3354/3276/3287 already have admitted native
+profiles. No confirmed historical coffin/guardian binding: author and document
+the conservative restoration, using the new native guardian owner. Prior scratch
+drafts mentioned by the other session are not present in this container; do not
+assume /tmp state is shared across sessions. Shared engine support is this lane's
+job; explicitly refresh qengine2/other lane refs before implementing a new one.
+Latest checked qengine2 e45e8f8a9 has native payment support; no flat-output MINT
+was found. Migration1108 is already published; never rewrite it.
 
 Source /workspace/oteryn-env/env.sh for Cargo/PG; never print/read credentials.
-PostgreSQL18.6 local harness. Full regeneration already passed, world pin stayed
-unchanged. Incremental cache exhausted disk; disposable cache cleared. Use
-CARGO_INCREMENTAL=0 until stable. Logs under /tmp. Only focused tests; no full
-workspace/PG/nextest suites. No workflow/tools-repository edits.
-
-Next after Tinder: multi-item native reward composition and remaining chosen
-programmes; source Life Ring six-tile bridge/occupant relocation also researched
-from pinned Crystal thais_quest/actions_life_ring_lever.lua. Rechecked qengine2
-and other lane branches: no reusable multi-root reward batch found.
-
-Tinder fix: native provider omitted20357; generic authored callback Item closure
-added to quest_callback_profiles.py and regenerated40 repository artifacts. Only
-one native profile added, no existing profile changed/removed. Diagnostic build
-OOM was retried; direct exact test binary proved actual native reward behavior.
-Giant Smithhammer next RED2.69s after real PG initialization, missing callback;
-its uncommitted questpc8_smith_cache.rs scaffold is intentionally not in this
-green slice. Native chest32776,32253,z8 appearance2472 ordinal1 has no UID.
-
-Concurrent remote reconciliation (11335ecd3) preserves a stronger ordered
-hunting programme and generated chosen reward callbacks. Use
-content/quests/chosen-reward-callbacks.json (renamed from authored NPC file).
-Merged proof: hunting116.451671655s, Braindeath25.801730527s; see
-campaign-validation.json and cloud-braindeath-proof.json. Keep ordered
-programme/capture guards. Serial large Rust/Python builds avoid peak OOM.
-qengine2 newer059364f38 includes native payment support; explicit refspec fetch
-required before any new engine feature. Prior plain fetch left tracking stale.
-
-Tinder Box qualification: merged PG37.322011193s, clean PG36.814023825s,
-15 generator regressions104.667s, merged static checks and independent review
-passed. L7 now17 remaining. Last mechanism push c8cad5fdf01:13:06Z November7.
-Next Smithhammer: real PG RED2.69s; untracked test scaffold and unmounted
-backpack_outputs.rs capacity helper belong to next batch. Prepared API/contents/SQL
-patch scripts under /tmp/questpc8-flat-mint-*.py; apply and inspect before use.
-Do not claim the draft MINT mode qualified. Fresh explicit-ref qengine2 head
-ebdad836a and all six other lane heads checked: no multi-output batch exists.
-
-Current green slice: chosen Giant Smithhammer PG PASS38.608864311s, after RED2.69s.
-Source lever remains separate. Central native chest32776,32253,z8 appearance2472
-ordinal1, no UID; southern approach, one native Giant Spider, hammer/talon/100gold.
-New backpack_outputs layout reuses MINT reservation, stable child IDs, one-item
-audits and exact deferred custody/source-plan proof. Legacy layout defaults
-false and retains its intent bindings. Capacity refusal/physical item-owner
-retry/replay passed. New custody qualifier admits3208 from pinned client/core
-facts without canonical mutation; accepted holds and stateful items refuse.
-See cloud-smith-cache-proof.json. Final changed-crate checks, legacy PG and
-review are pending, so keep authoring status until they finish. L7 remains17
-unqualified (Smith is verification pending). Do not discard any current files.
-
-Review9bfd found one NPC parser layout validation gap; fixed using the same
-shared validator, RED/GREEN unit. Merged Smith PG37.6266s, nested Braindeath
-PG37.4845s and Father eleven-track atomic acceptance PG66.01s passed. Final
-checks running. Static population has no Giant Spider in the selected chamber;
-next add bounded guardian activation and update the PG case to fight its real
-spawn, before qualification. Work is author-owned and continuing.
-Git local author identity corrected; future divergent merges use --no-commit
-and an explicit attributed/trailered commit. Published9bfd retains the earlier
-default-identity merge; history will not be rewritten.
-
-Concurrent7acf3ab44 adds and qualifies Mintwallin native cache alias; preserve
-all native-alias-smith-merge-validation.json proof. Smith cached grant/kill
-proofs retained, but live population contains no chamber Giant Spider. Keep
-Smith in verification while adding bounded guardian activation and a test
-that fights that actual spawned actor. Next source work belongs to this root.
+Real PostgreSQL18.6. Use CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1. Serial large Rust
+and Python builds avoid the16GB cgroup ceiling. /workspace/oteryn-env/target holds
+artifacts; logs /tmp/questpc8-*.log. Tooling pin-refresh is the built
+/workspace/oteryn-env/target/debug/oteryn-world-bundle-compiler. Four bounded
+independent reviews have run; last review had one P2, already fixed with its
+regression. Keep any required final stable-candidate review within owner quota.
