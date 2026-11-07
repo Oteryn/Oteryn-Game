@@ -940,7 +940,7 @@ bloodshade_rotten.lua:1-6 SHA256
 ## QENGPR merge validation (2026-11-07)
 
 Material merge: c3211f597e600054eb9496f804d6a0638dd90ccf; parents QENGINE2
- e7867e061 and main 9668e0a04. Lane bookkeeping is removed; its notes remain above.
+e7867e061 and main 9668e0a04. Lane bookkeeping is removed; its notes remain above.
 
 Conflict resolutions preserve both sources: sequencer creation fixtures plus starter
 bindings; monk cosmetics rebinding plus main's activation helper; both native Item
@@ -955,7 +955,7 @@ Passed on the material merge tree:
 - fmt --check: 25.771s.
 - cargo check, all targets/features of the ten changed crates: 468.083s.
 - clippy -D warnings, all targets/features of those crates: 393.305s.
-- Quest-authoring: 1,084 tests exercised; the two stale generated-output modules
+- Quest-authoring: 1,084 tests discovered (8 pre-existing skips); the two stale generated-output modules
   passed after regeneration (28 QENGINE2 tests: 56.153s; Grizzly: 6.000s).
 - Cosmetics authoring: 27 tests, 5.809s including process startup.
 - QENGINE2 generator reproducibility: 19.607s; native provider freshness: 43 files.
@@ -963,3 +963,5 @@ Passed on the material merge tree:
   d528b2dfce1bedf9db643ff78c45060ef6c08f69459c9edbf632cdc4ca73eb95.
 
 Content integration and focused real-PostgreSQL execution are still running.
+
+QENGPR validation `integration`: 123 passed, 0 ignored; command wall time 125.665s.
