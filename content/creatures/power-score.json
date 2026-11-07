@@ -471,8 +471,8 @@
         "non_damage": 36
       },
       "donor_health_conflict": {
-        "damage": 256,
-        "non_damage": 42
+        "damage": 270,
+        "non_damage": 44
       },
       "no_unique_donor_bundle": {
         "damage": 243,
@@ -575,7 +575,7 @@
       "attack_count_differs_from_donor": 24,
       "conflicting_creature_bindings": 33,
       "donor_ability_has_no_effects": 36,
-      "donor_health_conflict": 298,
+      "donor_health_conflict": 314,
       "no_unique_donor_bundle": 269,
       "source_provenance_ambiguous": 4
     },
