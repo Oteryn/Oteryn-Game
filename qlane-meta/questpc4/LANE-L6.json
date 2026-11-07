@@ -238,7 +238,7 @@
         "checks": "fmt/check5crates/clippy5crates alltargets allfeatures -Dwarnings,9pureunits,pin-check and generated ladder check PASS"
       },
       "world_admission_component": {
-        "status": "GREEN_LOCAL_COMMIT_READY",
+        "status": "GREEN_MERGED_READY_TO_FF_PUSH",
         "proof": "QUEST-STATUS.json#/world_admission_batch",
         "whole_entry": "IN_PROGRESS",
         "scopes": [

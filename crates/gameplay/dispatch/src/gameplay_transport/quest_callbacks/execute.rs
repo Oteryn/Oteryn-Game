@@ -356,6 +356,106 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Exhausted;
         }
+        if oteryn_gameplay_quests::quest::shared_switches::recipe(&callback.key).is_some() {
+            let (Some(fence), QuestCause::Use(command), Some(native)) = (
+                fence,
+                cause,
+                self.active_generation.and_then(|g| g.native_gameplay()),
+            ) else {
+                return UseDisposition::Rejected;
+            };
+            let context = QuestWorldContext {
+                map_revision: crate::map::overlay::map_revision(map.overlay.base()),
+                content_revision: format!(
+                    "sha256:{}",
+                    hex(&runtime.content_pin().server_artifact_digest())
+                ),
+                placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
+                reset_epoch: self.reset_epoch,
+                actor_placement: actor.placement_identity(),
+                movement_revision: expected.revision(),
+            };
+            let context = if let Ok(mut records) = self.states.quest_callbacks.records.lock() {
+                let pending = records.entry(session).or_insert(Pending {
+                    actor,
+                    session,
+                    expected,
+                    callback: callback.key.clone(),
+                    key,
+                    revision: expected_revision,
+                    cause,
+                    origin: None,
+                    context: None,
+                    ingress_settled: false,
+                });
+                pending.context.get_or_insert(context).clone()
+            } else {
+                return UseDisposition::Rejected;
+            };
+            let mut placement = map.overlay.base().digest().to_vec();
+            placement.extend_from_slice(&key.to_be_bytes());
+            let result = self
+                .root
+                .activate_shared_switch(
+                    permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    command,
+                    native,
+                    crate::durability::quest_world_callback::shared_switch::Request {
+                        recipe: callback.key.clone(),
+                        placement,
+                        object_revision: expected_revision,
+                        context,
+                    },
+                )
+                .await;
+            match result {
+                Ok(Some(_)) => {
+                    #[cfg(test)]
+                    if self
+                        .states
+                        .quest_callbacks
+                        .interrupt_after_commit
+                        .swap(false, std::sync::atomic::Ordering::AcqRel)
+                    {
+                        return UseDisposition::Rejected;
+                    }
+                }
+                Ok(None) => {
+                    if let Ok(mut records) = self.states.quest_callbacks.records.lock() {
+                        records.remove(&session);
+                    }
+                    return UseDisposition::Rejected;
+                }
+                Err(error) => {
+                    #[cfg(test)]
+                    eprintln!("SHARED_SWITCH commit error: {error:?}");
+                    #[cfg(not(test))]
+                    let _ = error;
+                    return UseDisposition::Rejected;
+                }
+            }
+        }
+        if !self
+            .admit_shared_switch_gate(
+                permit,
+                runtime,
+                actor,
+                session,
+                map,
+                callback,
+                key,
+                expected_revision,
+                cause,
+                fence,
+                expected,
+            )
+            .await
+        {
+            return UseDisposition::Rejected;
+        }
         let durable = !callback.storage.is_empty() && !(close && callback.opening_only);
         let mut success_message = if !durable {
             callback.success_message.clone()
