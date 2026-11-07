@@ -54,6 +54,41 @@ fn s17b_native_picture_draws_map_and_creatures_then_blanks_on_terminal()
     assert!(!drawn.sprites.is_empty());
     assert!(!drawn.tiles.instances().is_empty());
     assert!(drawn.atlas.width() > 0);
+    let now = Instant::now();
+    link.apply(Message::Media {
+        epoch: 1,
+        sequence: 4,
+        media: PublicMedia::Effects(vec![oteryn_session::PresentationEvent {
+            decision_ordinal: 1,
+            emission_ordinal: 1,
+            kind: oteryn_session::PresentationEventKind::MagicEffect {
+                position: oteryn_session::ActorPosition {
+                    x: 16,
+                    y: 16,
+                    floor: 7,
+                },
+                effect_id: 1,
+                source: oteryn_session::PresentationSource::Global,
+            },
+        }]),
+    })?;
+    let (_, effects) = link.snapshot().ok_or("effects panel")?;
+    let visible = assets.draw(&effects.picture, now)?;
+    assert_eq!(visible.sprites.len(), drawn.sprites.len() + 1);
+    assert_eq!(
+        visible
+            .sprites
+            .instances()
+            .last()
+            .ok_or("effect cue")?
+            .position,
+        drawn
+            .sprites
+            .instances()
+            .first()
+            .ok_or("map tile")?
+            .position
+    );
     link.fail();
     let (_, panel) = link.snapshot().ok_or("terminal panel")?;
     let blank = assets.draw(&panel.picture, Instant::now())?;

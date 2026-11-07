@@ -65,7 +65,13 @@ impl WatchLink {
         self.state.lock().ok().map(|state| state.clone())
     }
     pub fn chat(&self, text: String) {
-        if let Ok(mut state)=self.state.lock() && !state.1.picture.chat_enabled {state.1.feedback="Cast chat is disabled".into();state.0=state.0.wrapping_add(1);return;}
+        if let Ok(mut state) = self.state.lock()
+            && !state.1.picture.chat_enabled
+        {
+            state.1.feedback = "Cast chat is disabled".into();
+            state.0 = state.0.wrapping_add(1);
+            return;
+        }
         let _ = self.commands.send(Input::Chat(text));
     }
     pub fn leave(&self) {
@@ -132,7 +138,11 @@ async fn watch(
     let mut session = CastViewerSession::join(stream, &config.ticket, Duration::from_secs(10))
         .await
         .map_err(|_| "Watch admission unavailable")?;
-    link.apply(Message::Ready {epoch:session.epoch(),chat:session.chat_allowed(),delay:session.delay()})?;
+    link.apply(Message::Ready {
+        epoch: session.epoch(),
+        chat: session.chat_allowed(),
+        delay: session.delay(),
+    })?;
     let mut keepalive = tokio::time::interval(Duration::from_secs(2));
     loop {
         tokio::select! {

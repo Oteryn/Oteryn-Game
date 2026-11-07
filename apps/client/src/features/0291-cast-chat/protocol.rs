@@ -47,10 +47,12 @@ pub(in crate::play) fn reduce(mailbox: &mut Mailbox, events: &[SessionEvent]) {
                     roster.value.clone(),
                 );
             }
-            SessionEvent::CastCasterLine(line) => oteryn_client_ui::cast_chat::protocol::append(
-                &mut mailbox.cast_chat,
-                line.value.clone(),
-            ),
+            SessionEvent::CastCasterLine(line) if mailbox.cast_control.active => {
+                oteryn_client_ui::cast_chat::protocol::append(
+                    &mut mailbox.cast_chat,
+                    line.value.clone(),
+                )
+            }
             SessionEvent::GatedSnapshotReplaced(snapshot) if snapshot.value.domain_id == 103 => {
                 mailbox.cast_chat.lines.clear();
                 mailbox.cast_chat.subjects.clear();

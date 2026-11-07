@@ -4,12 +4,12 @@
 pub mod appearance;
 #[path = "features/0291-cast-chat/mod.rs"]
 pub mod cast_chat;
-#[path = "features/0289-cast-view/mod.rs"]
-pub mod cast_view;
-#[path = "features/0290-cast-control/mod.rs"]
-pub mod cast_control;
 #[path = "features/0292-cast-consent/mod.rs"]
 pub mod cast_consent;
+#[path = "features/0290-cast-control/mod.rs"]
+pub mod cast_control;
+#[path = "features/0289-cast-view/mod.rs"]
+pub mod cast_view;
 #[path = "features/0083-channel-list/mod.rs"]
 pub mod channel_list;
 #[path = "features/0097-character-info/mod.rs"]
