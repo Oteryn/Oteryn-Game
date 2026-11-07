@@ -32,11 +32,13 @@ pub mod liquid_black;
 pub mod loader;
 pub mod log;
 pub mod monk_shrines;
+pub mod native_kills;
 pub mod native_rules;
 #[cfg(test)]
 pub mod npc_rules;
 pub mod planegazer_finale;
 mod quests_2_focus;
+pub mod reward_callbacks;
 pub mod rotten_blood;
 pub mod schrodinger_island;
 pub mod soul_war;
@@ -314,7 +316,11 @@ impl QuestStateCatalogue {
             if transition.effects.len() > QUESTSTATE0_RL_02 {
                 return Err(E::TooManyEffects(transition.key));
             }
-            if transition.effects.is_empty() && !transition.completes {
+            if transition.effects.is_empty()
+                && !transition.completes
+                && !(transition.key.starts_with("oteryn:quest-reward/")
+                    && transition.experience.is_none())
+            {
                 return Err(E::InvalidEffect(transition.key));
             }
             if transition.world_change.as_ref().is_some_and(|key| {

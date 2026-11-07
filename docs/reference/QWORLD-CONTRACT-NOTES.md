@@ -681,6 +681,454 @@ Read-only donor evidence fetched successfully:
 
 Fury Gates selects/realizes at startup; donor content is not an accepted Game realization receipt or an advance prediction window. Wiki checks: **wiki-pending**. NEED-FETCH: none.
 
+# qengine2 contract notes
+
+Owner rule: bound each investigation or missing-fact search to ten minutes.
+Use the documented conservative behavior, implement and test it, and continue.
+Push each finished green quest/mechanism slice immediately; do not hold green
+work longer than thirty minutes. Only focused checks, no full workspace suite.
+
+Accepted implemented decisions (all PostgreSQL qualified and pushed):
+
+- Dedoras: charge exactly five Sturdy Books or twenty Epaulettes, matching his
+  dialogue and the selected canonical recipe. Repair donor strict-greater-than
+  checks and the unreachable epaulettes keyword branch. Crystal9f5a72c,
+  data-global/npc/dedoras.lua:198-224,
+  sha25675b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1.
+- Muriel: his source offers require the addon flag that only those offers set.
+  The corpus has no other writer. Bootstrap stage1 only after base completion
+  and matching carried evidence, without consuming or granting; the next exact
+  hand-in earns the addon. Completed stage2 cannot restart. Crystal9f5a72c,
+  data-global/npc/muriel.lua:97-149,
+  sha2567bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc.
+- Oramond VotingPoints: declare only the missing read-only catalogue fact,
+  retaining Oramond ownership. Donor absence is-1; use the conservative signed
+  32-bit ceiling2147483647. No player progress is written by this declaration.
+  Exact thresholds3/6 and second-addon priority come from Crystal9f5a72c,
+  data-global/npc/ezebeth.lua:93-103,
+  sha256280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82.
+
+All source blobs remain in the committed pinned donor corpus; no donor copies
+or binaries are added. QUEST-STATUS.json retains exact tests and case markers.
+
+- Nobleman: the donor implements the150000 carried-money choice for each addon.
+  Its10000-instalment text has no executable payment branch; preserve that
+  implemented one-shot behavior. Dress/coat are aliases for the same canonical
+  first-addon effect; the appearance owner uses immutable sex for the actual
+  look. Hat is the second addon. No bank balance pays a carried-only request.
+  Crystal9f5a72c, data-global/npc/irmana.lua:50-135 and male counterpart.
+
+  Exact Nobleman donor citation: crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/irmana.lua:sha256:08e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03.
+
+- Native Quest payments reuse the complete bounded carried-coin proof profile.
+  The new cause must also have its exact same-transaction Quest fee/source
+  receipt; no legacy custody, ordering, epoch or Character proof is skipped.
+
+- Royal Costume: donor XML tags looks1456/1457 as store, but the pinned source
+  NPC and owner-selected quest recipe explicitly grant them for in-game tokens.
+  Admit only Royal Costume as a native quest path; leave other store looks out.
+  Both client appearance records exist in the admitted corpus. Exact source
+  costs are15000 Silver Tokens22516 +12500 Gold Tokens22721 for base, then
+  7500+6250 each for shield and crown, in that order. Do not use the total-package
+  30000/25000 dialogue number as the base-only price. Source Crystal9f5a72c,
+  data-global/npc/percybald.lua:149-228,
+  sha256b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc.
+
+- Pirate keeps the existing shared OutfitAndAddon quest ownership of its source
+  base/sabre/hat and DefaultStart tracks. Do not reassign them to the title alias.
+  Reuse Morgan's already-delivered firebird stage4->5; implement Duncan's exact
+  three100-item hand-ins and both NPC introductions before claiming the whole
+  outfit story. Only the Shattered Isles parent objective flags are arranged as
+  external prerequisites in the test; no internal outfit stages are seeded.
+
+- L1-05 Oriental: Crystal9f5a72c NPC ishina.lua:60-94 (sha2569eb2e869db4d0dfad8f04fc171773dcf9045e35647bd4069f9e9b18dc0513c71), habdel.lua:60-93 (0666e7207a7fd9565f5311ffc3d87f9b138c858117d802c089a7d00c727c7b78), miraia.lua:57-155 (7114cc53c7119cd7a42947a5be07611956e11e7f7c8833f68197f136be5e353f), razan.lua:57-149 (c12e695654ada3a5f4b1775657835fa18e5957b0870e735803a5ead2e7483acb). Exact comb5945x1; then ape fur5883x100,fish fins5895x100,wings5891x2,blue cloth5912x100. Both gender paths retain the existing shared addon owner. The door retains Oriental owner; source simultaneous write uses a generic atomic participant, never a reassigned track or detached follow-up.
+- Source first introduction requires Explorer Society OrcPowder>=35; only that other lane's prerequisite is arranged by the test. Immutable sex guards all reachable authored stages; wrong-sex advisory offers confer no authority and the native commit rejects before writes/costs. Existing physical profiles for four materials are reused; only comb custody was missing. No new donor fact was inferred.
+
+- L1-05B Norseman/Formorgar shared outfit reward: Crystal9f5a72c data-global/npc/hjaern.lua:107-155,189-197 sha2564e9e42e8daf616fe8c5ef71cfd0a4ac0ae0ae5d7bd786c80ccb2c26286d40466. At Questline39 and all four Obelisks5, take frost charm7289x1;write Questline40,Mission12=6,YakchalDoor1 and shared NorsemanOutfit1/DefaultStart1 atomically. Then exact5shards7290 lead40->41,reward41->42/addon1;exact10shards lead42->43,reward43->44/addon2. General owns NorsemanOutfit and DefaultStart;IceIslands retains other flags. Only pre-outfit parentQuestline39/Obelisks5 are arranged;no outfit stage is seeded. Father11 write remains untouched.
+- Item name correction: imports/canary/items-xml/items.xml:18927 at pinned sha2561cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2 names7289 frost charm,19oz,no charges/duration/fluid. Earlier scratch note called it spirit container;IDs/costs were unchanged. Reuse existing7290 physical profile;promote only7289 custody.
+
+- Canonical identity clarification: the admitted source catalogue has Pirate/Norseman outfit paths under `oteryn:quest.outfit_and_addon_quests`;there are no separate native quest records with the earlier scratch dedicated Pirate/Norseman URI spellings. Original L1 title keys/counts are retained;metadata now names the verified shared owner rather than implying a separately admitted record. Norseman progress also uses existing IceIslands owner. This changes no runtime data or finished reward behavior. Evidence: content/quests/missions/quest-state.json source track ownership and the qualified PG receipt/state assertions.
+
+- Nobleman does have dedicated catalogue identity `oteryn:quest.nobleman_outfits_quest`;its source state still uses General. Pirate/Norseman lack separate dedicated records in the admitted definition shards. Native ownership evidence: content/quests/missions/quest-state.json:1 sha25665b74015fd8af6c4f1e4074d5166a5cc56e45d52e0e564da9a83fa202e7f6100. Catalogue identity and state owner are distinct;both are now recorded accurately.
+
+- Hjaern continuous conversation: donor hjaern.lua:129-137 permits the root shard keyword independently of prior topic;rewards at141-155 leave topic3/4. Admit the root question at all reachable L1 topics0/3/4 with disjoint exact Questline40/42 guards. Preserve source next topics and fresh cost guards;never replicate the donor stale-topic yes branch that could charge/rewind after reward. A published-flow regression fails before the additional root offers and passes after.
+
+- L1-06A Rookgaard Druid body: Crystal9f5a72c data-global/npc/tom.lua:230-250 sha2565079fd40c677dcee45941eac3eb4961c1260c5889635585d9d3441829de800b4. Source addon word startsBody0->1;paws/bear paws question and yes hand-in consume5896x50+5897x50,Body1->2,grantDruid addon1 for both sexes. Existing dedicated DruidRook state owner retained;existing material profiles and Tom placement reused. This source path has only body addon1;do not fabricate a second reward. Story independently expects mask1/two account facts and verifies the unearned addon refuses ordinary appearance selection.
+
+- Generic greeting fallback: Tom.lua:61-87 selects four quest-specific greetings and sex-specific farewells. Shared reward greetings now use the pinned NPCHandler neutral defaults whenever a source NPC has no unique static message;functional conditionals retain their owned selectors. Each emitted default cites its exact handler source line/hash. No arbitrary quest branch or gender is guessed,and reward eligibility remains independently fenced.
+
+- L1-06B Citizen Rook: Crystal9f5a72c data-global/npc/amber.lua:69-122 sha25600a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9;norma.lua:80-118 sha256c1eb0cbfdf9520fe110dd90b07674729d70aeaf69926f8f40a5f65d2983e2105. Amber takes100minotaurleathers5878,thenstrictlymorethan7200seconds before backpack addon1. Internal timer is normalized to start timestamp plus ElapsedAtLeast7201;the public wait is unchanged. Ref lacks native declaration:conservative sharedGeneral owner/initial0/nonnegative i32 bounds,source-backed writable declaration. Increment is native checkedAdd1;finish resets0 as donor math.min does forpositive refs,while retaining0 ifalreadyreset,nevercreatingnegative UI sentinels. Exact quest stages remain independent of Ref.
+- Norma takes1legionhelmet3374,50honeycombs5902,100chickenfeathers5890 foraddon2. Source finalMissionHat0 could allow repeated intro;retain completedHat2 guard to prevent restarting/charging a finished outfit. No source costs,body waits or required stages are skipped. Clock-only fixture transition simulates elapsed time after proving fresh stamp/refusal;all outfit stages run literally. Existing materials/NPC placements reused.
+- State-operation declarations:default remains read-only;writable requires explicitflag,provenance and every declared writer matching the named owner. Existing native definitions must match exactly. Combinedowned/participant writes remain<=8. Core checkedAdd/SetNow/Elapsed comparison,sortedlocks,capacity and source proofs are reused;SQL1002 validates exact operation preconditions/results andsame physical source transaction.
+
+Beggar source: Crystal9f5a72c data-global/npc/hugo.lua:54-199 sha25660069ed647e4379a2e1177d32652602d86d8d50ad8da066f7dc65529b92fa55d;data-global/npc/simon_the_beggar.lua:84-222 sha2567ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74. Hugo's strict deadline os.time()+86400 becomes native start+ElapsedAtLeast86401,Simon male uses exact432000>= after beard request;only clocks advance in test fixtures. Native General remains original owner. FirstAddonDoor is absent from the native catalogue:explicit source-backed writable declaration General/initial0/min-1/max1 treats native0 as source-unset-1;both refuse once1. Simon's female gypsy branch grants addon1 but omits advancement,blocking his staff branch;conservative completion writes stage10/door1 like the male completed reward. Shared paid hand-in stamps the existing addon clock for both sexes;female never reads it,male beard request resets it exactly as source. Source staff replay lacks a completion guard;retain its written SecondAddon2 as a one-shot bound. Premium Current is required for Hugo introduction/base and Simon paid/staff hand-ins;Simon first introduction requires the native earned/starter outfit proof. No premium or outfit ownership is inferred from conversation cache.
+
+L1-07 pinned Crystal9f5a72c source ranges/hashes: morgan.lua:115-148 fbef2b0d61842368915e506ff5d2e1e96f00a3f55bb3cad4ee97178824832610;gregor.lua:63-211 f56640cfe0501c564d092d3572b7b065aebaa6e22cb8f5af561a524079c8db98;sam.lua:67-88 ed713aa63d597133355328a16e9c36d1b382c0e1d7e40dc199211f4fc4d14e6b;ustan.lua:63-85 441ed6570ee072e3e75ffa98af95aa653b3d6ec8836327f6a5927833c5faed89;ceiron.lua:60-187 fb4cc1a978148a1ea552764b78930c098afd735af56738433797f20aa17da780;a_majestic_warwolf.lua:64-75 9fa8cee3622cacee85aec7770960d7d1bf46d25569f3a6ef857d0605bc842572;vescu.lua:56-189 af26eb8e9e31d41d3d00f08d03a971cf3136c4c2ffc83317af414e1dcb40262b;erayo.lua:57-114 dc6c54417c8bfdd32abcea9f068322f17d029c4d7722f1acfdeb6cd795a4c48f;atrad.lua:60-105 ffdc0e1b8d0d5455be4be4c6875b3f832dca3a488440ed08020bfa20bd7bde01. All paths data-global/npc/. General remains original owner; missing primary AddonHelmet/RamsayDoor/DruidAmuletDoor/Atrad flags receive source-bounded metadata with native-unset0. Existing declared Ref nonnegative rule also applies to Gregor increment/Sam finish0. Sam strict2h deadline normalizes native start+7201. ApeCity predicate>15 admits16..18,the complete native track domain. Assassin Shipwrecked2 remains read-only under its original parent owner. Source Vescu initial greeting requiresDrunk,Atrad greeting requiresFire: bounded proof samples both existing native condition owners at the value command's admission and binds the exact command/callback/itemfence/nativegeneration. This conservatively rechecks Atrad on each value command rather than retaining an expired greeting condition; no runtime locks are acquired inside SQL. Greeting prose may use the pinned neutral NPCHandler variant,never eligibility truth. PG fixtures apply/clear real native owned conditions;no outfit stages are seeded. Source hand-in prerequisites,quest progression and gifts run literally through NPC dispatch. Knight's existing source hand-in wording is retained;new unowned-addon requirement matches Morgan's explicit hasOutfit check,including account facts from another character.
+L1-07 correction from actual PG83.573871312s Druid/79.114808667s Knight failures:two omitted primary door flags inherited the generic unknown-storage sentinel-1,but offers incorrectly required0. Source assignments are unconditional under the main stage guard:explicit writable General declarations now admit initial0/min-1 and assignments accept full-1..1 domain. Knight MissionHelmet assignments likewise admit its full native domain rather than invent an extra stage predicate. Python regression checks assert both door ranges and explicit defaults. Assassin full source path already passed actualPG92.674685234s before this metadata correction. The unowned-addon check takes the existing account appearance grant lock before reading and keeps it through costs/grant,so another character cannot race the negative ownership predicate and still charge. No duplicate account or condition owner is introduced.
+
+## L1-08 source rules and compatibility
+
+- `data-global/npc/elane.lua:55-148`, crystal revision `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`, sha256 `beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef`.
+- `data-global/npc/legola.lua:60-110`, crystal revision `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`, sha256 `26084a8748e9d3a01d59745bb30e67fb3610924430ce86034828c893c9b8dfc2`.
+- `data-global/npc/angelina.lua:53-80`, crystal revision `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`, sha256 `9c9d66498d3880f1c587aea1b43fd44f2c4ceaa9b8b839a4192aaa3dd572ca98`.
+- `data-global/npc/lynda.lua:60-245`, crystal revision `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`, sha256 `c02b3072ac121d52ccd9e4e6d911942633bddbd9489c9325f66e375e8f5207a9`.
+- `data-global/npc/sandra.lua:68-124`, crystal revision `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`, sha256 `566fd1c69a69ed447fbf6f56d08603631983cfbc9f203a11c41b71b9bd47ae53`.
+- `data-global/npc/myra.lua:62-330`, crystal revision `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`, sha256 `5939c5f235ac5f58bff2b2bf6668145e6da0a7ded222d46c3a792c02a386f94b`.
+- `data-global/npc/zoltan.lua:60-150`, crystal revision `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`, sha256 `c184ead30d167e379ccd628713028fd9cc8acc24713bb7c6943deefce14032d1`.
+- `data-global/npc/eruaran.lua:153-199`, crystal revision `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`, sha256 `6da2bd991078e0b7ac9cf96f855f4e931800e5609ba82280ea19bd749ae49936`.
+
+Hunter grants preserve raw male/female addon permutations. Mage grants preserve each explicit source looktype, including cross-family Summoner grants and the female Summoner hat in Zoltan. Legacy neutral account facts remain compatible for both sexes. New qualified facts require matching sex in normal appearance projection and selection.
+
+The male Mage hat has no source quest flag: qualification uses the actual unowned addon predicate under the existing account lock, exactly one carried 5903, and a same-transaction native quest/source/grant receipt. No invented progress flag or completion is recorded. All ten wand/rod types are consumed atomically; the existing bounded recipe limit grows from eight to sixteen.
+
+Conservative donor correction: Eruaran repeats looktype 577 twice for each Dream Warden addon; the canonical outfit family includes male 577 and female 578. The family grant therefore supports both canonical sexes. Premium and each distinct source flag remain required. Missing Lua storage -1 is normalized to native zero for initial one-shot addon flags. Winning lottery tickets are supplied through ordinary native item custody, like other required rare materials; unrelated repeatable vial trading is not an outfit quest stage.
+
+## L1-09 source item grants and paid exchanges
+
+- Crystal `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d` `data-global/npc/gnomally.lua:75-169`, sha256 `e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1`:20Major16129 for16252/16255,70Minor16128 for16253/16256; private config[message] selection normalized to distinct ephemeral topics101-104. These are repeatable trades, not quest-progress storage.
+- Same revision `data-global/npc/ottokar.lua:61-78`, sha256 `fe8c4a6740a75448c3af035f27c3b2783b9fe91ecad7ba4d255544003370a951`: one Medicine Pouch12517 buys belongings12413 and advances Doctor! Doctor! toward100. Reuse existing achievement owner, with per-command replay protection from the quest/source receipt.
+- `data/scripts/actions/items/usable_outfit_items.lua:1-10`, sha256 `69b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37`; `usable_afflicted_outfit_items.lua:1-61`, sha256 `d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391`: byte-identical in the existing201189f item-action policy packet and9f5a72c corpus. Preserve existing item-action provenance and exact canonical look-pair matching. No synthetic cosmetics catalogue.
+
+The chosen finite quests accept ordinary legal possession of rare addon vouchers and plague accessories; tests do not assert a loot probability or turn supply packages/belongings into a guaranteed rare drop. The full selected token trades, six-piece combination, Ottokar trade and native USE stages are exercised. A cost-backed value-only receipt is valid only with nonempty positive input and an exact native MINT in the same fenced transaction; the original source completion trigger continues to prove every consumption and MINT. A free gift or detached receipt is not admitted by this arm.
+
+Paid exchange identity: the existing RewardClaim MINT owner remains one-shot per claim, including its pending/reservation exclusion. A source exchange with no storage/state operations/participants and positive inputs plus a MINT gets a deterministic per-command claim key: SHA256(version prefix, fixed-width Character UUID, Session UUID, colon-terminated decimal unsigned CommandId, source callback key). SQL derives the same key and still proves exact same-transaction command, input count and MINT item/quantity. Ordinary phase-bound quest claims retain their existing identity. No claim ledger row is deleted or made reusable.
+
+Scope clarification for L1-09B: the selected Soil Guardian s7 and Crystal Warlord s6 explicitly require supply-package acquisition. Whole-entry qualification therefore also requires ordinary USE of15698 to produce the rare voucher. The original chance table is `data-global/scripts/actions/valuables/random_items.lua:49-77`, Crystal9f5a72c, sha256 `14fc3cf10ca10338aa4479a5371bb3dd7b9b0dede3353a4dec92ffdd11c7023b`. Preserve its1..10001 draw and exact intervals; a deterministic test witness is not a changed drop probability. The earlier legal-possession discussion does not waive these selected package steps.
+
+L1-09B package implementation preserves every one of the25 contiguous source intervals, their exact quantities, and the10001-point roll domain. The existing generic reward-bag consume/MINT owner executes the captured row. Existing richer potion/ammunition profiles are reused; only six missing physical custody profiles are added. Gnomally's source `supply` trade costs2 Minor Crystalline Tokens, gives15698, and is selected by normalized ephemeral topic105; its existing canonical parent is `oteryn:quest.bigfoot_s_burden_quest`.
+
+The PG acquisition witness uses the actual NPC-minted package UUID. Read-only evaluation finds a future ordinary CommandId with the rare outcome, and real harmless NPC commands advance admission to that ID. Neither the source item identity nor the production roll/probabilities is rewritten, and no command admission is skipped. The package is then consumed by ordinary USE; replay cannot consume or mint again.
+
+L1-10 Golden commission: the selected definition in
+content/quests/definitions/quests-00100-00199.json#/records/52/definition/oteryn_recipe/payload/recipe/stages
+explicitly chooses 100000 gold base, 50000 boots/gloves, then 50000 helmet,
+with no Premium requirement. Preserve those authored values and sequence instead
+of donor 500000000/250000000/250000000 and helmet-before-boots. Donor
+Crystal 9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d,
+data-global/npc/king_tibianus.lua:117-216, SHA256
+e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd,
+supplies King dialogue topics, paired looks1210/1211, addon1 boots and addon2
+helmet, existing GoldenOutfit storage, and carried-or-bank monetary semantics.
+The donor-only decoration kit is outside the selected outfit programme and is
+not an authored reward. Existing fee owner accepts equivalent coin denominations;
+no synthetic inventory grant or duplicate monetary owner is introduced.
+
+L1-10B Brotherhood/Nightmare: reuse the existing account appearance and Quest
+transaction owners for ordinary carried USE; never select the branch from item
+number alone. Crystal 9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d source:
+- data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:1-69,
+  SHA256 1e3d15bb73efa6f3b26bdd1d0882a579279c0cff39c2fb166d98d03b3ed6be16:
+  follower768/base, officer769/addon1, leader770/addon2; rank1/2/3;
+  Brotherhood rank greater than Nightmare selects Brotherhood. Joining remains
+  mutually exclusive, making that comparison unambiguous. Owned grants retain
+  the document; addon use requires the base.
+- data-global/npc/the_bone_master.lua:61-119, SHA256
+  65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1.
+- data-global/npc/the_dream_master.lua:61-121, SHA256
+  eac3bc09ddfe9b4fb83bb9751fc684f1687cc2f940365892cac5755ab50fe6f7.
+  Join/yes/yes creates follower; subsequent advancement consumes500 then1000
+  demonic essences6499 and creates officer then leader. No fixture-created
+  documents count as the selected acquisition programme. Donor-only shield and
+  rank4 advancement are outside these selected three outfit milestones.
+The named Dreamer's Challenge prerequisite is the completed puzzle route, chosen
+stage s4 (Tic Tac Toe). Its chosen stages s5-s7 already include joining Nightmare
+and a document reward, so requiring s7 before joining would create a circular
+condition and break the source's actual initiation. Read s4 through the original
+Dreamer owner, without writing it or its Knightwatch/world effects here. PG only
+arranges that separate parent's qualifying fact. Both order ranks and account
+ownership are rechecked before costs. New per-character document claim facts
+record the successful one-shot USE; immutable account ownership still prevents
+another character paying for an already owned outfit or addon.
+
+L1-11 selected level programmes (no missing-fact hold):
+- Dream Warrior: Crystal9f data-global/npc/vanys.lua:83-157 SHA256
+  fbc0bb272ed67594e0d385ae0baf41271c81aca511b28455bd896c51f083e59a:
+  WardStones.Questline>=3 and SummerCourt=1 grant1146/1147; five
+  pomegranates30169 and one ice shield30168 grant addons1/2. The bounded
+  claim selector "dream warrior outfit" addresses that completed-task reward
+  without intercepting the separate parent's talk/task initiation menu. Its
+  readonly original tracks remain owned by The Dream Courts. The selected
+  programme explicitly adds level250/Premium. Refuse already-owned grants
+  before charging, correcting the donor's repeat-addon-charge behaviour.
+- Citizen of Issavi: the authored recipe names an unresolved attire-keeper
+  ROLE, not a source NPC. Bind it conservatively to Eshaya, the actual Wanted
+  report contact. NPC identity/greeting: Crystal9f data-global/npc/eshaya.lua
+  SHA256 0b84914661498605630d5e98bfb74579760e035d280e5395862c14b975e749db.
+  The original Kilmaresh selected s21 reports the three outlaw victories;
+  use that existing parent's chosen completion signal read-only. Do not
+  invent independent outlaw kills or rewrite the parent. Selected base level250,
+  Current Premium; eye-embroidered veil37003 addon1 then tagralt-inlaid
+  scabbard37002 addon2, one each. Item identities are pinned Canary items.xml
+  lines68951-68958 SHA2561cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2.
+  The addon-slot order is an explicit conservative binding of the selected
+  ordered accessory programme (the source recipe leaves native encoding open).
+- Makeshift: the recipe explicitly authors a Gnome Deep Hub qualification desk.
+  Bind that role to the admitted Gnomadness; reaching this physical NPC within
+  normal interaction range witnesses the selected exploration. Salvage request
+  and confirmation execute the authored apprenticeship before the base reward.
+  Crystal9f data-global/npc/gnomadness.lua SHA256
+  e3411f8704927cc665340418f3b65fa40fdafa6d607364fde90827516b9f7279
+  supplies NPC identity, not a falsely recovered outfit callback. The recipe's
+  requirements.min_level=100 wins over its contradictory adaptation text saying
+  zero; preserve the stricter explicit requirement and Current Premium.
+  Crude wood planks27657/addon1 and tinged pot27656/addon2 match
+  Crystal9f usable_outfit_items.lua:14-15 SHA256
+  69b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37.
+  Enforce the chosen first-before-second accessory sequence and award
+  Cobbled and Patched only when the first addon is already owned.
+Shared implementation: current persisted character level is read while its root
+is locked; required addons use the existing compatible account facts. Storage-free
+base claims require an exact neutral target/unowned-base predicate under the
+existing account grant lock, with SQL1006 retaining all original proof arms.
+Carried addons use the existing one-shot account predicate and exact input/ingress
+proof without manufacturing quest progress flags.
+
+L12 native hunting trials (AUTHORING; not yet qualified): reuse generic native
+kill settlement from questpc3 commit5e72a3f0b0e16803bc5cd999298e4ec83f05eed9,
+without importing its other-lane quest bindings. Frozen native death eligibility,
+original party observation, occurrence identity, live lease and mission epoch
+checks use the existing bounded kill queue and durable revision sequencer.
+Dragon Slayer: selected20dragons +20dragon lords,10green/10red scales; base only.
+Cave Explorer: selected20Spike creatures is conservatively a fixed Crystal Spider
+assignment. Chosen level80 overrides source lower thresholds. Retain actual source
+prices1000base/2000first/3000second (5000both addons): Crystal9f
+9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d data-global/npc/gnommander.lua:75-97,
+SHA25662e3088421dd6f06c1decf2f2ce0c3c296d4a106b670cfa8927eb936e0bb69eb.
+Fire-Fighter: selected10fiery creatures is conservatively a fixed Lava Lurker
+assignment; Gnomadness is the physical Gnomprona qualification contact, as actually
+located in Gnomprona Gardens by the same pinned source npc/gnomadness.lua:102-105,
+SHA256e3411f8704927cc665340418f3b65fa40fdafa6d607364fde90827516b9f7279.
+These fixed trials are explicit authored rules, not claims of recovered donor
+outfit scripts. Firefighting axe39544 and portable flame39545 retain existing
+canonical identities and native profiles. NPC dialogue accepts trials before any
+counter credit; no direct counter writes are used in the positive PG stories.
+Dragon Slayer appearance: pinned Crystal9f outfits.xml marks admitted looks
+female1289/male1288 as store. The owner explicitly selected an authored Dragon
+Slayer quest and authorizes missing bindings; promote this pair for its quest
+base grant as an explicit exception, retaining exact captured appearance hashes.
+Do not infer a recovered donor quest or enable unrelated store grants. The
+canonical outfit now participates in the existing account grant/appearance owner.
+A unique NPC exchange owns its exact keyword even with unmet predicates: after
+eligible conversation offers, route that unique exchange to the locked durable
+writer for a stage refusal instead of generic legacy-dialogue fallthrough.
+Cyclops identity evidence: same Crystal9f data-global/npc/a_sweaty_cyclops.lua:1-14,
+SHA256bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a.
+The authored20+20trial is an owner-selected supplement, not a donor script claim.
+
+L13 endgame accessories: pinned Crystal9f9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d
+ data/scripts/actions/items/usable_outfit_items.lua:26-31 SHA256
+69b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37 binds
+Revenant skull34075 to native bit2 and bracelet34076 to bit1. Keep the chosen
+skull-before-bracelet sequence using those actual slot bits; do not swap the
+native encoding because the recipe calls its ordered steps first/second.
+Cursed wood43899 bit1 then darklight geode43900 bit2. Min250/Current Premium
+and original compatible native base facts precede consumption. Parent Soul War
+and Rotten Blood grant mechanisms and their account provenance remain unchanged.
+New PG variants compose at their earned native base reward checkpoint; the
+original parent cases retain all their assertions and historical-state checks.
+Rift Warrior: Cledwyn Lua:168-204 SHA256
+915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431 demands
+100silver tokens22516 for EACH addon, source looks845/846. Conservatively bind
+the chosen completed-Ferumbras base attestation to Cledwyn as an explicit role;
+his donor script itself only supplies addon exchanges. Parent completion remains
+read-only under the original Ferumbras quest owner; do not duplicate its world
+or boss mechanisms. Source NPC identities: flickering_soul.lua:1-6 SHA256
+67a704c084d2490ea37ad337d472a7f3075375f0a3a043b1a615be12d5ac2405;
+bloodshade_rotten.lua:1-6 SHA256
+153105638eeaa55321f4e30caf4f5796291c89329092b32b3d4e6d6f9103df7c.
+
+## QENGPR merge validation (2026-11-07)
+
+Material merge: c3211f597e600054eb9496f804d6a0638dd90ccf; parents QENGINE2
+e7867e061 and main 9668e0a04. Lane bookkeeping is removed; its notes remain above.
+
+Conflict resolutions preserve both sources: sequencer creation fixtures plus starter
+bindings; monk cosmetics rebinding plus main's activation helper; both native Item
+admissions; both quest callback hooks (daily gates remain step-in only); both
+quest-authoring documentation additions. NX-5's maintained authoring is retained
+byte-for-byte as a generator input, with its outfits, mounts and grants combined
+with QENGINE2. Eleven shared mappings explicitly retain both outfit keys through
+source-validated aliases. Repository tools regenerated the cosmetics descriptor,
+Item profiles/index, callbacks, lock, manifests, world pin and deployment digest.
+
+Passed on the material merge tree:
+- fmt --check: 25.771s.
+- cargo check, all targets/features of the ten changed crates: 468.083s.
+- clippy -D warnings, all targets/features of those crates: 393.305s.
+- Quest-authoring: 1,084 tests discovered (8 pre-existing skips); the two stale generated-output modules
+  passed after regeneration (28 QENGINE2 tests: 56.153s; Grizzly: 6.000s).
+- Cosmetics authoring: 27 tests, 5.809s including process startup.
+- QENGINE2 generator reproducibility: 19.607s; native provider freshness: 43 files.
+- pin-refresh: 201.293s; pin-check: 200.637s, digest
+  d528b2dfce1bedf9db643ff78c45060ef6c08f69459c9edbf632cdc4ca73eb95.
+
+Content integration and focused real-PostgreSQL execution are still running.
+
+QENGPR validation `integration`: 123 passed, 0 ignored; command wall time 125.665s.
+
+QENGPR validation `world-integration`: 5 passed, 0 ignored; command wall time 118.875s.
+
+QENGPR validation `alias-unit`: 2 passed, 0 ignored; command wall time 74.507s.
+
+## PR #3020 CI repairs (2026-11-07)
+
+The cosmetics provisioning authoring document is 804,946 bytes after QENGINE2,
+so its old 200,000-byte sample limit rejected the canonical manifest before any
+gameplay could activate. Its limit now matches the authoring producer's 8 MiB
+document budget. Descriptor, source-shard, section and overall artifact limits
+remain independent. A real materialization test accepts exactly 8 MiB and rejects
+one byte more, with valid hashes at both boundaries; the test failed before the
+limit fix. Existing input-tampering checks remain intact.
+
+Regenerated islands and their capture sample with convert_islands.py. The normal
+world pin-refresh command now also refreshes the client placement-index digest,
+using the client's LF-normalized SHA256 convention, and refuses ambiguous pin
+source declarations. This replaces the obsolete client digest without editing a
+generated digest by hand.
+
+The Content tree family-count assertion is unchanged. The lock was incomplete:
+raid_catalogue.py restores Encounter.Raid=239 from content/encounters/raids/index.json
+and restores its manifest/project registrations. Every family count now equals
+origin/main. Provenance of the exact inventory (counts are index entries unless
+noted): Ability=7392 abilities/definitions; Behavior=3145 behaviors; Charm=25
+charms; Creature=1863 creatures/definitions; Dialogue=836 dialogues/definitions;
+Document=1609 documents; Effect=5797 abilities/effects; Encounter=108
+encounters/definitions; Encounter.Raid=239 encounters/raids; Formula=6126
+abilities/formulas; Item=34111 items; Loot=1290 loot; Mount=252 cosmetics/mounts;
+NPC=1282 npcs/definitions; Presentation=3145 presentations/definitions;
+Proficiency=443 proficiencies; Quest=352 quests/definitions; RewardClaim=336
+interactions/reward_claims (231 ordinary claims plus 105 variants); Service.Bank=1,
+Service.Blessing=4, Service.Promotion=4, Service.Trade=324 and Service.Travel=56
+from their services indices; StarterKit=1 starter; item_conversion=129 craft.
+QENGINE2 adds runtime profiles/reward bindings, not additional indexed family
+identities. The exact native-overlay output inventory is 43, including its
+QENGINE2 reward-item proof. The chest-profile identity inventory is 134: the prior
+130 plus ITEMHOLD-Q items 2859, 2949, 3053 and 3083 (also Triangle Tower).
+
+FeeBurnCause already assigns QuestRewardPayment tag 18. Added its missing exact
+golden tag and independent wire bytes; all existing tags and byte fixtures remain
+unchanged. All five audit wire tests passed in 0.081 seconds.
+
+The generator sweep also refreshed creature level-rating/power-score reports,
+monster-attack source authoring/pins, and explore-area candidate input hashes.
+The frozen Wave 1 market observation stays unchanged; its checker now recognizes
+only the accepted market packet's explicit WAVE1_WIKI_MARKETABLE_FALSE
+supersession. Positive and negative owner checks retain exact staged bytes.
+
+Validation at the owner's requested immediate CI push:
+- Cosmetics provisioning boundary and existing tamper tests: 2 passed, 8.44s.
+- All five fee-cause/operation golden and wire tests: passed, 0.081s.
+- Full requested world-metadata command sequence: passed.
+- pin-refresh and its new source-pin unit test: passed.
+- cargo fmt --all --check: passed, 33s.
+- Client placement digest and all five requested client scene/map cases: passed
+  in the ongoing 190-case run, including the 126 requested cases.
+- Cargo check/Clippy, final pin-check, requested Rust/real-PG run and focused
+  Python reruns remain in progress at this push; no success is claimed yet.
+- Exhaustive Python discovery ran 450 files in 3114.43s: 417 returned success,
+  33 returned nonzero initially. These include unavailable historical workspace
+  fixtures, old source-stage assumptions, stale reports since regenerated, and
+  a runner error invoking the script-only tree test through unittest (its script
+  assertions and child commands reached their final PASS before unittest exited
+  with no discovered classes). Focused corrections are being rerun.
+
+## PR #3020 main merge and guard regression repair
+
+Merged main d34807f5b (SRVWLD) while retaining QENGINE2's encounter callback
+branch. Dryad watersplash remains after successful commit_source_step and uses
+the committed destination. docs/reference/SRVWLD-CONTRACT-NOTES.md is taken
+byte-for-byte from main; existing QENGINE2 entries remain in this file.
+
+The receipt no-TRUNCATE probe explicitly includes the FK closure added by
+0999-1001: game_quest_reward_sources, game_quest_reward_fees and
+game_quest_reward_participants. No CASCADE is used. The exact 23514, guard
+message and unchanged-state assertions remain intact. The original repository
+guard module, linked against freshly built production dependencies in a focused
+source-module harness, passed on real PostgreSQL in 14.741s.
+
+The reward-bag catalogue has 28 playable bags: exactly 27 existing bags plus
+QENGINE_GNOMISH_SUPPLY (15698), captured from Crystal 9f5a72c64
+random_items.lua:49-80. The test preserves the 27-bag legacy inventory and
+one-item mint assertions, and independently reaches all 25 new supply outcomes
+with their exact source quantities and total weight 10001.
+
+Validation on the merged tree: dispatch cargo check, all targets/features, passed
+in 84s. The fresh dispatch binary ran 22 focused callback/real-PG regressions: all
+passed, execution 545.989s (1123.039s including compilation). Dryad enter/leave
+reported real-PG completion markers at 62.125s and 62.870s. The strengthened
+reward-bag case passed in 52.05s. PR #3022 was still open at this batch; its two
+main-red fixes are intentionally left to its owner and a subsequent main merge.
+
+## QENGINE2 source profile count and cosmetic voucher repair
+
+Main d34807f5b has 3572 raw native Item profiles; QENGINE2 e7867e061 has
+3619 and is missing six main-owned keys (2949, 12369, 14156, 33330, 44179,
+52732). QENGINE2 adds 53 other keys. The merged raw file correctly has 3625;
+materialization adds the same 38 main-owned update profiles, giving 3663 rather
+than the old main-only pin 3610. No Item data is removed or duplicated.
+All 3572 existing main records compare equal. The update packet's 59 records
+are unchanged (34 overlays plus 25 insertions); only its base SHA is rebound.
+The 13 starting-loadout records are also unchanged, completing the 38 additions.
+
+The 53 QENGINE2 IDs are:
+133, 139, 768, 769, 770, 875, 3244, 3723, 4867, 5886, 5903, 5921, 5924, 5937, 5938, 5939, 5940, 5945, 5947, 6099, 6100, 6101, 6102, 6107, 6126, 7289, 9041, 10198, 10199, 11700, 11701, 12413, 12517, 12599, 12601, 12803, 15698, 16103, 16128, 16129, 16165, 16167, 16242, 20275, 20276, 22516, 22721, 28792, 28793, 30168, 30169, 37002, 37003.
+
+They exactly equal qengine_reward_item_profiles.py's source IDS and generated
+qengine-reward-item-profiles.json records. All 53 qualify speed_bonus=0.
+Source: Canary 47dfd51f45280a59a1d3e50ba7edd573d7234446, items.xml SHA256
+1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2; appearance
+data SHA256 2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.
+The speed test derives the cohort from that generated proof, checks its exact
+53 unique keys and every zero-speed admission, then retains all existing raw
+attribute, equipment-slot and unknown-speed assertions. Native regeneration
+--check reproduces all 43 registered files without changing generated content.
+
+USE 16255 reaches the existing cosmetic owner. Its ContentUnavailable refusal
+came from two equally matching outfit keys (the QENGINE2 primary and retained
+NX-5 alias); it was not routed through Dryad callbacks. Item grants now resolve
+the explicit authored primary target before checking the source look pair and
+existing provenance/kind/addon compatibility. Unqualified ambiguous look lookup
+remains refused. Historical aliases remain compatible; no grant or receipt is
+created by this lookup. Negative wrong-look, missing-grant and wrong-provenance
+checks accompany the production catalogue regression. SRVWLD watersplash and
+QENGINE2 callback execution code remain unchanged.
+
+Plain-main ownership check (bbb3e06d04875fc1e63f024b853194f7580cc875):
+the speed catalogue case passed (96.990s), NX-5 global rules (13.582s),
+NX-5 outfit unlock/replay (132.953s), Atelier split dismantle (94.773s),
+and Forge pending revision refusal (227.200s), all against real PostgreSQL
+where applicable. QENGINE2 voucher/outfit story modules are absent on main;
+zero selected stories are not counted as passes.
+
+Forge's initial fixture rebinds both training and authored cosmetics to
+content-1. Its independently reconstructed successor previously rebound only
+training, so restoring the presentation bytes could not restore the original
+server digest. Initial and successor activation now share the same prepared
+native input; only the deliberate whitespace repack changes identity. All
+three original digest equality assertions and the retained refusal stay intact.
+The additional Atelier runtime/receipt case also passes on plain main
+(14.863s). The reported vector mismatch is in three later coin-proof functions,
+not a different copied assets-guard body: replaying 0314/0624/0744–0747 removes
+Quest cause 18 from coin admission/completion and duplicates the Atelier-only
+Character proof arm because 1000 broadened that arm. The repair keeps that arm
+Atelier-only and reapplies the later Quest coin/receipt extension from its
+migration; exact live function definitions, stored state and receipts remain
+the test's independent equality expectations.
+
+The Royal Costume failure reproduces as a PostgreSQL transaction timeout in
+the original two-second semantic pass (backend log), not a missing grant CHECK.
+The source recipe still consumes exactly 15,000 silver and 12,500 copper tokens,
+leaving the test's extra token of each kind untouched. Reward hand-ins now lock
+locations and check plain-item exclusions in bounded sets, insert every original
+consumption proof before mutation, update stacks together, and remove only
+fully consumed custody entries. All existing BEFORE/deferred guards still run.
+The carried membership projection walks the same bounded UUID tree before
+serializing selected location rows; its guard overload avoids projecting every
+inventory row for each input. The 500/501-node, depth-eight/nine, cycle and
+foreign Character/World/absent-item cases were compared against migration 0268's
+actual function on real PostgreSQL (six fixtures, full/selected equality).
+No deadline, recipe quantity, custody exclusion or receipt assertion was relaxed.
+
 ## QWORLD source facts (2026-11-07)
 The existing production daily roll and physical projections cover Fury Gates,
 Grimvale full-moon spawn substitution, and Their Master's Voice fungus. Calendar
@@ -778,3 +1226,37 @@ replacement of each required native rule. Both cases passed in 0.00 seconds
 (build 0.92 seconds); test-target Clippy `-D warnings` passed in 0.31 seconds.
 Formatting and whitespace checks passed. This adds regression coverage without
 changing production behavior or migrations.
+
+### Main integration: QENGINE2/QBASE 0999–1008
+Merged main `1ae39c7fb9bef09c3cd50d16410374f4134b1676` without text conflicts.
+Main's migrations 0999–1008 are retained byte-for-byte; there are no 1200–1205
+copies. QWORLD still owns only 1320–1322. Eleven new native-kill/reward and test
+transition constructors explicitly default the optional world-change gate to
+None, preserving main's behavior and fixing the merge's E0063 compile failures.
+Independent integration review found no concrete P0/P1 issue.
+
+Official merge-driver regeneration and pin-refresh/pin-check passed against
+world digest d528b2dfce1bedf9db643ff78c45060ef6c08f69459c9edbf632cdc4ca73eb95.
+Workspace all-target check passed in 5m52s; test-target Clippy with -D warnings for
+all 34 originally affected/reverse-dependent crates passed in 6m09s. Workspace
+formatting and the duplicate-migration check passed.
+
+Per the owner's replacement speed-first rule, the broad nextest run was stopped:
+1257 tests had passed, including QWORLD physical PG in 188.667 seconds; its four
+interrupted tests are not claimed as passes or product failures. Full-suite
+results are now delegated to CI by the owner. Earlier cache cleanup interrupted
+two compile targets; these were rerun, and later cleanup pauses Cargo scheduling
+and protects every active compiler crate before removing completed caches.
+
+The original mechanic red proof is retained in /tmp/qworld-pg-red.log: admitted
+world-event dispatch omitted Their Master's Voice (false instead of true), and
+the focused case failed in 70.00 seconds before the production wire fix.
+
+The final speed-first focused run selected only the world-change crate's 19
+mechanic tests and the two QWORLD PG cases: all 21 passed in 125.766 seconds.
+Real-dispatch reset/counter/quest/travel/recovery proof emitted
+`QWORLD_PG_EXECUTED elapsed_ms=60828`; the three-title physical overlay/spawn/
+restart proof emitted `QWORLD_PHYSICAL_PG_EXECUTED elapsed_ms=125726`.
+Both ran against the retained real PostgreSQL 18.6 cluster. No reverse-dependency
+tests executed in this final filtered run; full-suite follow-up belongs to CI
+under the owner's replacement rule. No tests were weakened or deleted.

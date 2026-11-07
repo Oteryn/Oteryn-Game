@@ -100,6 +100,16 @@ impl AppearanceContent<String> for PodiumContentView {
     ) -> UnlockFact {
         self.cosmetics.earned_unlock(grant_key, provenance, target)
     }
+    fn earned_unlock_for_sex(
+        &self,
+        grant_key: &str,
+        provenance: &str,
+        target: EarnedCosmetic<'_>,
+        sex: Sex,
+    ) -> UnlockFact {
+        self.cosmetics
+            .earned_unlock_for_sex(grant_key, provenance, target, sex)
+    }
     fn outfit_addon_count(&self, outfit: &String) -> Option<u8> {
         self.cosmetics.outfit_addon_count(outfit)
     }

@@ -14,6 +14,33 @@ mod tests {
     use super::*;
 
     #[test]
+    fn battle_instinct_panel_distinguishes_inactive_eligible_and_active() -> Result<(), &'static str>
+    {
+        let mut panel = BattleInstinctStatusPanel {
+            selected: true,
+            ..BattleInstinctStatusPanel::default()
+        };
+        for (active, melee, shielding, expected) in [
+            (false, 0, 0, "Inactive"),
+            (true, 0, 0, "Eligible"),
+            (true, 4, 24, "Active"),
+        ] {
+            assert!(request(&mut panel).is_some());
+            let status = BattleInstinctStatus {
+                active,
+                melee,
+                shielding,
+            };
+            assert!(panel.finish(true, &status.encode().ok_or("encode")?));
+            let text = panel_text(&panel);
+            assert!(text.contains(&format!("Battle Instinct: {expected}\r\n")));
+            assert!(text.contains(&format!("Melee: +{melee}\r\n")));
+            assert!(text.contains(&format!("Shielding: +{shielding}\r\n")));
+        }
+        Ok(())
+    }
+
+    #[test]
     fn battle_instinct_panel_requires_a_confirmed_snapshot_and_preserves_it_on_failure()
     -> Result<(), &'static str> {
         let mut panel = BattleInstinctStatusPanel::default();
