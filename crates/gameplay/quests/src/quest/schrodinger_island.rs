@@ -22,7 +22,7 @@ pub(crate) fn callback() -> Callback {
         teleport:Some(Position { x:32832, y:32435, floor:-7 }),
         facing:None,
         world_requirements: Vec::new(),
-        storage:vec![Storage { track:VISITED.into(), minimum:-1, maximum:1, set:1, preserve:false, increment:false }],
+        storage:vec![Storage { track:VISITED.into(), minimum:-1, maximum:1, set:1, preserve:false, increment:false, at_least:false }],
         minimum_level:Some(999),
         experience:None,
         monk_reward:None,

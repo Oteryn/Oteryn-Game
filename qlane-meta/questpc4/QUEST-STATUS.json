@@ -6369,7 +6369,7 @@
       "remote_verified": true
     },
     "room_raise_batch_19": {
-      "status": "COMPILED_RED_WIP_CHECKPOINT",
+      "status": "COMPILED_PG_GREEN_WIP_CHECKPOINT",
       "previous_pushed_head": "ce3d18208a008b9826b1f03407dfcd5688d74e4d",
       "scope": "Reusable monotone source room progress; five PG fixture cases lower/equal/higher/refusal/i64MAX+replay",
       "source_contract": "CONTRACT-NOTES.md batch19, exact retainedblob hashes/lines and primary frozen evidence distinguished",
@@ -6388,7 +6388,89 @@
         "error": "unknown field at_least; expected track/minimum/maximum/set/preserve/increment",
         "log": "/tmp/questpc4-room-raise-red2.log",
         "result": "0passed1failed, actualPGsetup complete before missingmechanism rejection; codecompiled3m47s"
+      },
+      "compiled_checkpoint_pushed_head": "96f946730c966851db2a7822df756a4b11340659",
+      "checkpoint_remote_verified": true,
+      "implementation": [
+        "RaiseTo and RaiseToWithBinding, unusedtags9/10, oldencodings unchanged",
+        "Storage.at_least false-default/omitted, parser rejects preserve/increment/native conflicts",
+        "same existingRootlockedcatalogue evaluator, max(before,target) without arithmetic overflow",
+        "boundeffect recognition retains closed canonical admission and protectedtrack rules",
+        "five sourceentries UID40085..40089, DefaultStartread-only, stage1/2withinexistinglegalbounds; sevenflamecallback/testsunchanged"
+      ],
+      "green_log": "/tmp/questpc4-room-raise-green.log",
+      "green_session": 27013,
+      "gates_session": 32344,
+      "gates_script": "/tmp/questpc4-room-raise-gates.sh",
+      "source_facts": [
+        {
+          "path": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/the_ancient_tombs/movements_enter_morguthis_room.lua",
+          "sha256": "877f9c447b5c709905754a8ac626db752defa111a89d0d15841e740346bafdfe",
+          "lines": "9-17"
+        },
+        {
+          "path": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/the_ancient_tombs/movements_enter_omruc_specific.lua",
+          "sha256": "3f415b69def5c42ec34f32efcbfb1d52738fb4506ffb75a1b8a288d8390c9a82",
+          "lines": "9-17"
+        },
+        {
+          "path": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/the_ancient_tombs/movements_enter_omruc_room.lua",
+          "sha256": "19fbb9e457955bfef4faeb0d1cdcb579ed4ac77528d03c2b2f6023e645712dd5",
+          "lines": "9-17"
+        },
+        {
+          "path": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/the_ancient_tombs/movements_enter_rahemos_levers.lua",
+          "sha256": "803f1b840524bef881bd25ebb4265f59682cdcd2678841f293d5915c1d55aec8",
+          "lines": "9-17"
+        },
+        {
+          "path": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/the_ancient_tombs/movements_enter_rahemos_room.lua",
+          "sha256": "3983bd3962116ee26c2fe9214857ff9ccd6bf1c70f42169d25bcab578c1a4643",
+          "lines": "9-17"
+        }
+      ],
+      "qualification_scope": "Genericlockedprogress andsourceentrydata; notnativeRoomtravel/cues/fullquest",
+      "postgres": {
+        "status": "GREEN",
+        "version": "18.6",
+        "passed": 5,
+        "failed": 0,
+        "ignored": 0,
+        "seconds": 139.57,
+        "cases": {
+          "l6-room-raise-extreme": 78.935527534,
+          "l6-room-raise-higher": 81.585494532,
+          "l6-room-raise-lower": 89.82008556,
+          "l6-room-raise-equal": 106.831678881,
+          "l6-room-raise-refusal": 60.626856901
+        },
+        "log": "/tmp/questpc4-room-raise-green.log"
+      },
+      "checks": {
+        "fmt": "PASS",
+        "check": "PASS quests/durability/dispatch alltargets/allfeatures6m53s includes buildlock wait",
+        "frozen_hashes": "PASS1pureunit1.41s publishedungated baseline",
+        "final_clippy_source_security": "PENDING running32344"
       }
+    },
+    "migration_registry_batch_20": {
+      "status": "AUDITED_PENDING_RENUMBER",
+      "owner_range": "1250-1269",
+      "planned": {
+        "1060": "1250",
+        "1061": "1251",
+        "1062": "1252",
+        "1063": "1253",
+        "1064": "1254",
+        "1065": "1255",
+        "1070": "1256",
+        "1071": "1257",
+        "1072": "1258"
+      },
+      "qbase": "None of coordinator listed files are present; no QBASE rename needed",
+      "qengine2": "0999..1002 byteidentical69609ef781c4e66d9c25fa61392c1ec0b6680033;1003..1006absentunused, no variants",
+      "main": "4508fd2f1 freshlyfetched,0998+1095present,0999..1006absent;3020notyetintegrated, preserve exact QENGINE2 files",
+      "next": "Finishinflightcompiler then gitmv9files, updateallreferences, owningpinrefresh, duplicatecheck andfocused actualPG, commit/freshfetch/FFpush and report list+head"
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",

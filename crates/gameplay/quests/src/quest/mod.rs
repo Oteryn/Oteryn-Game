@@ -166,6 +166,13 @@ impl QuestComparison {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QuestEffectKind {
     Set(i64),
+    /// Raise a locked value to this floor, preserving already higher progress.
+    RaiseTo(i64),
+    /// The same monotone operation pinned to its physical admission terms.
+    RaiseToWithBinding {
+        value: i64,
+        binding: [u8; 32],
+    },
     /// Set a value while pinning cross-owner admission terms (PC3 f673adfeb).
     SetWithBinding {
         value: i64,
@@ -193,6 +200,15 @@ impl QuestEffectKind {
             Self::Set(value) => {
                 out.push(1);
                 out.extend_from_slice(&value.to_be_bytes());
+            }
+            Self::RaiseTo(value) => {
+                out.push(9);
+                out.extend_from_slice(&value.to_be_bytes());
+            }
+            Self::RaiseToWithBinding { value, binding } => {
+                out.push(10);
+                out.extend_from_slice(&value.to_be_bytes());
+                out.extend_from_slice(&binding);
             }
             Self::SetWithBinding { value, binding } => {
                 out.push(7);
@@ -370,7 +386,10 @@ impl QuestStateCatalogue {
                     _ => true,
                 };
                 let effect_ok = match effect.effect {
-                    QuestEffectKind::Set(value) | QuestEffectKind::SetWithBinding { value, .. } => {
+                    QuestEffectKind::Set(value)
+                    | QuestEffectKind::SetWithBinding { value, .. }
+                    | QuestEffectKind::RaiseTo(value)
+                    | QuestEffectKind::RaiseToWithBinding { value, .. } => {
                         (track.min..=track.max).contains(&value)
                     }
                     _ => true,
@@ -511,6 +530,8 @@ impl QuestStateCatalogue {
             .zip(current)
             .map(|(effect, (track, before))| {
                 let after = match effect.effect {
+                    QuestEffectKind::RaiseTo(value)
+                    | QuestEffectKind::RaiseToWithBinding { value, .. } => Some(before.max(value)),
                     QuestEffectKind::Set(value) | QuestEffectKind::SetWithBinding { value, .. } => {
                         Some(value)
                     }

@@ -71,7 +71,9 @@ pub fn validate(transition: &QuestTransition, world_context: bool) -> Result<(),
     } else if transition.effects.iter().any(|effect| {
         matches!(
             effect.effect,
-            QuestEffectKind::SetWithBinding { .. } | QuestEffectKind::AddWithBinding { .. }
+            QuestEffectKind::SetWithBinding { .. }
+                | QuestEffectKind::AddWithBinding { .. }
+                | QuestEffectKind::RaiseToWithBinding { .. }
         ) || registry.protected_tracks.contains(&effect.track)
     }) {
         return Err("unregistered write to bound track".into());
@@ -82,6 +84,36 @@ pub fn validate(transition: &QuestTransition, world_context: bool) -> Result<(),
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn monotone_effect_cannot_replace_or_strip_a_registered_physical_operation()
+    -> Result<(), String> {
+        let callback = world_callbacks::load()?
+            .into_iter()
+            .find(|c| c.key.ends_with("/paradox-food-four"))
+            .ok_or("physical consumer")?;
+        let original = world_callbacks::primary_transition(&callback)?;
+        let QuestEffectKind::AddWithBinding { binding, .. } = original.effects[0].effect else {
+            return Err("bound source operation".into());
+        };
+        let mut changed = original.clone();
+        changed.effects[0].effect = QuestEffectKind::RaiseToWithBinding { value: 1, binding };
+        assert!(
+            validate(&changed, true).is_err(),
+            "copied binding does not authorize a different effect"
+        );
+        changed.key.push_str("-shadow");
+        assert!(
+            validate(&changed, true).is_err(),
+            "unregistered bound raise is refused"
+        );
+        changed.effects[0].effect = QuestEffectKind::RaiseTo(1);
+        assert!(
+            validate(&changed, true).is_err(),
+            "stripping the raise binding cannot release track ownership"
+        );
+        Ok(())
+    }
 
     #[test]
     fn physical_owner_checks_context_and_complete_operation() -> Result<(), String> {

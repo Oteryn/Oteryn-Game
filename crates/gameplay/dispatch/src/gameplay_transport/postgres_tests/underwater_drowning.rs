@@ -416,7 +416,9 @@ fn scenario_in_world(
             // The production callback selector and movement proof operate on real bundle
             // ground. An unknown storage track refuses before any callback mutation.
             let fixture = Callback {
-                actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
+                actor_kind: Default::default(),
+                opening_only: false,
+                requires_world_admission: false,
                 key: "fixture:underwater-callback".into(),
                 quest: "fixture:underwater".into(),
                 trigger: Trigger::StepIn,
@@ -441,6 +443,7 @@ fn scenario_in_world(
                         set: 1,
                         preserve: false,
                         increment: false,
+                        at_least: false,
                     }]
                 } else {
                     vec![]

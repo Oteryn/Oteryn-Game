@@ -75,6 +75,9 @@ pub struct Storage {
     /// Add `set` to the locked value instead of replacing it.
     #[serde(default, skip_serializing_if = "is_false")]
     pub increment: bool,
+    /// Preserve higher progress while raising lower values to `set`.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub at_least: bool,
 }
 
 fn is_false(value: &bool) -> bool {
@@ -207,6 +210,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/l6-world-puzzles.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/l6-tomb-rooms.json"
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/shared-access-callbacks.json"
@@ -422,6 +428,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || callback.storage.iter().any(|s| {
                 !super::valid_quest_key(&s.track)
                     || s.minimum > s.maximum
+                    || (s.at_least && (s.preserve || s.increment || callback.native_rule.is_some()))
                     || (s.increment
                         && (s.preserve
                             || callback.native_rule.is_some()
@@ -503,6 +510,15 @@ pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String
                 effect: match callback.native_rule {
                     Some(rule) => QuestEffectKind::Native(rule),
                     None if state.preserve => QuestEffectKind::Add(0),
+                    None if state.at_least => {
+                        match binding.filter(|_| Some(index) == bound_index) {
+                            Some(binding) => QuestEffectKind::RaiseToWithBinding {
+                                value: state.set,
+                                binding,
+                            },
+                            None => QuestEffectKind::RaiseTo(state.set),
+                        }
+                    }
                     None if state.increment => match binding.filter(|_| Some(index) == bound_index)
                     {
                         Some(binding) => QuestEffectKind::AddWithBinding {
