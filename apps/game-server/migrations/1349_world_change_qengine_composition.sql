@@ -2,7 +2,13 @@
 -- Canonical migrations 0999-1006 stay unchanged; neither owner admits the other's proofs.
 ALTER TABLE game_character_quest_receipts DROP CONSTRAINT game_character_quest_receipt_effects_shape;
 ALTER TABLE game_character_quest_receipts ADD CONSTRAINT game_character_quest_receipt_effects_shape CHECK (
-    cardinality(track_keys) BETWEEN 0 AND 8
+    (cardinality(track_keys) BETWEEN 0 AND 8
+             OR (cause_kind = 'command'
+                 AND NOT completes
+                 AND quest_key = 'oteryn:quest.a_father_s_burden_quest'
+                 AND transition_key = 'oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-accept'
+                 AND track_keys = ARRAY['oteryn:quest-progress/quest/u8_6/afathers_burden/cloth','oteryn:quest-progress/quest/u8_6/afathers_burden/crystal','oteryn:quest-progress/quest/u8_6/afathers_burden/iron','oteryn:quest-progress/quest/u8_6/afathers_burden/progress','oteryn:quest-progress/quest/u8_6/afathers_burden/quest_log','oteryn:quest-progress/quest/u8_6/afathers_burden/root','oteryn:quest-progress/quest/u8_6/afathers_burden/scale','oteryn:quest-progress/quest/u8_6/afathers_burden/silk','oteryn:quest-progress/quest/u8_6/afathers_burden/sinew','oteryn:quest-progress/quest/u8_6/afathers_burden/status','oteryn:quest-progress/quest/u8_6/afathers_burden/wood']::text[]
+                 AND values_after = ARRAY[1,1,1,0,1,1,1,1,1,1,1]::bigint[]))
     AND (cardinality(track_keys)>0 OR completes OR transition_key LIKE 'oteryn:quest-reward/%' OR (
         transition_key='oteryn:quest-transition/worldchange/benevola/handover'
         AND quest_key='oteryn:quest/worldchange/benevola' AND cause_kind='command' AND NOT completes))

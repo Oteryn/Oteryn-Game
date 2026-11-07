@@ -98,9 +98,12 @@ pub(super) async fn prepare_channel(
     };
     if reset_epoch != 0 {
         root.world_change_calendar(material.world, reset_epoch)
-            .await.map_err(|_| BootError::Readiness("world change calendar"))?;
-        let occurrence = root.world_change_snapshot(material.world, reset_epoch)
-            .await.map_err(|_| BootError::Readiness("world change snapshot"))?;
+            .await
+            .map_err(|_| BootError::Readiness("world change calendar"))?;
+        let occurrence = root
+            .world_change_snapshot(material.world, reset_epoch)
+            .await
+            .map_err(|_| BootError::Readiness("world change snapshot"))?;
         daily.fury_gates = occurrence.fury_gates;
         daily.grimvale_full_moon = occurrence.grimvale_full_moon;
         daily.their_masters_voice = occurrence.their_masters_voice;

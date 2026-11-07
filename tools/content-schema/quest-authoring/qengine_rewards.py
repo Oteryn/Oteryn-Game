@@ -170,7 +170,7 @@ def build():
     cosmetics.validate(nx5)
     nx5_doc = nx5['document']
     doc['outfits'].extend(nx5_doc['outfits'])
-    doc['mounts'] = nx5_doc['mounts']
+    doc['mounts'] = mounts + [row for row in nx5_doc['mounts'] if row['key'] not in {mount['key'] for mount in mounts}]
     grant_keys = {row['grant_key'] for row in mappings}
     for row in nx5_doc['grant_mappings']:
         if row['grant_key'] not in grant_keys:
