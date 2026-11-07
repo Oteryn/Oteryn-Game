@@ -821,3 +821,19 @@ post-Animus rollback use real shared entry rather than fabricated admission.
 Primary fixtures use the existing test-admin root; the restarted negative GM
 owner uses `oteryn_game_runtime`, with positive lookup privileges checked
 separately under that same runtime role. Independent review is the remaining gate.
+
+### Review repair: serialized encounter clock
+
+Independent review of the first frozen implementation found a queued-tick race:
+entry or exit could publish a later encounter clock while a tick waited for the
+transition lock. The owner now samples its monotonic clock after that lock and
+uses it throughout the pass. The trusted caller timestamp remains a lower bound
+for deterministic deadline scenarios; production elapsed time always advances.
+This preserves Crystal's serialized encounter/global-event ordering (the donor
+files and lines are cited in the shared-owner section above).
+
+The deterministic tests `soulpit_tick_clock_waits_for_entry_transition` and
+`soulpit_tick_clock_waits_for_exit_transition` both fail with `InvalidClock` under
+the original sampling order and both pass after the fix (80.702 seconds including
+compilation). They use a real async mutex, queued waiter and domain encounter,
+without timing sleeps. Existing cadence and deadline validation are unchanged.

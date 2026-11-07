@@ -52,6 +52,16 @@ fn read_retry_deadline(now: u64, prior: Option<u64>) -> Option<u64> {
     Some(prior.map_or(retry, |prior| prior.min(retry)))
 }
 
+async fn lock_owner_cycle<'a>(
+    transitions: &'a tokio::sync::Mutex<()>,
+    lower_bound: u64,
+    clock: impl FnOnce() -> u64,
+) -> (tokio::sync::MutexGuard<'a, ()>, u64) {
+    let cycle = transitions.lock().await;
+    let now = lower_bound.max(clock());
+    (cycle, now)
+}
+
 pub struct NativeSoulpitHandoff;
 
 impl NativeSoulpitHandoff {
@@ -61,7 +71,12 @@ impl NativeSoulpitHandoff {
         now_micros: u64,
         global_tick: bool,
     ) -> Result<Option<u64>, ()> {
-        let _cycle = admission.activity_runtimes.soulpit_transitions.lock().await;
+        let (_cycle, now_micros) = lock_owner_cycle(
+            &admission.activity_runtimes.soulpit_transitions,
+            now_micros,
+            || admission.owner_now().get(),
+        )
+        .await;
         let world = admission
             .runtime
             .lock()
@@ -518,5 +533,87 @@ mod read_retry_tests {
             assert_eq!(calls, 1);
         });
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod clock_contention_tests {
+    use super::lock_owner_cycle;
+    use crate::domain::soulpit::SoulpitEncounter;
+    use std::sync::{
+        Arc,
+        atomic::{AtomicU64, Ordering},
+    };
+    use tokio::sync::{Mutex, oneshot};
+
+    #[test]
+    fn soulpit_tick_clock_waits_for_entry_transition() -> Result<(), String> {
+        contention(false)
+    }
+
+    #[test]
+    fn soulpit_tick_clock_waits_for_exit_transition() -> Result<(), String> {
+        contention(true)
+    }
+
+    fn contention(exit: bool) -> Result<(), String> {
+        fn debug(error: impl std::fmt::Debug) -> String {
+            format!("{error:?}")
+        }
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .map_err(debug)?;
+        runtime.block_on(async {
+            let gate = Arc::new(Mutex::new(()));
+            let clock = Arc::new(AtomicU64::new(100));
+            let encounter = Arc::new(Mutex::new(if exit {
+                Some(SoulpitEncounter::new(100, &[0, 1]).map_err(debug)?)
+            } else {
+                None
+            }));
+            let held = gate.lock().await;
+            let (queued, waiting) = oneshot::channel();
+            let tick_gate = Arc::clone(&gate);
+            let tick_clock = Arc::clone(&clock);
+            let tick_encounter = Arc::clone(&encounter);
+            let tick = tokio::spawn(async move {
+                queued
+                    .send(())
+                    .map_err(|_| "clock waiter receiver closed".to_string())?;
+                let (_guard, now) =
+                    lock_owner_cycle(&tick_gate, 100, || tick_clock.load(Ordering::SeqCst)).await;
+                tick_encounter
+                    .lock()
+                    .await
+                    .as_mut()
+                    .ok_or("entry encounter")?
+                    .advance(now)
+                    .map_err(debug)?;
+                Ok::<_, String>(now)
+            });
+            // On this current-thread runtime, the waiter reaches the held gate before
+            // this receiver resumes. No guessed sleep controls the contention.
+            waiting.await.map_err(debug)?;
+            if exit {
+                encounter
+                    .lock()
+                    .await
+                    .as_mut()
+                    .ok_or("exit encounter")?
+                    .leave(1, 200)
+                    .map_err(debug)?;
+            } else {
+                *encounter.lock().await = Some(SoulpitEncounter::new(200, &[0, 1]).map_err(debug)?);
+            }
+            clock.store(200, Ordering::SeqCst);
+            drop(held);
+            assert_eq!(tick.await.map_err(debug)??, 200);
+            // Existing trusted PG scenarios can advance a future owner deadline without
+            // sleeping. Preserve that lower bound while taking the fresh clock sample.
+            let (_guard, now) = lock_owner_cycle(&gate, 300, || clock.load(Ordering::SeqCst)).await;
+            assert_eq!(now, 300);
+            Ok(())
+        })
     }
 }
