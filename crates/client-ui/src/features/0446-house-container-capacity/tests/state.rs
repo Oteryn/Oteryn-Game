@@ -48,3 +48,27 @@ fn negotiated_twenty_fifth_entry_is_visible_and_selectable()
     );
     Ok(())
 }
+
+#[test]
+fn negotiated_extension_keeps_ordinary_backpack_label_generic()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut panel = ContainerPanel::default();
+    panel.house_capacity_v2 = true;
+    assert!(project(
+        &mut panel,
+        Some(ContainerViews {
+            views: vec![ContainerView {
+                view_id: 0,
+                container_handle: 7_u64.try_into()?,
+                parent_handle: None,
+                capacity: 20,
+                entries: vec![],
+                browse: None,
+            }]
+        })
+    ));
+    let text = crate::house_container_capacity::view::panel_text(&panel);
+    assert!(text.contains("Container 7"));
+    assert!(!text.contains("House container"));
+    Ok(())
+}

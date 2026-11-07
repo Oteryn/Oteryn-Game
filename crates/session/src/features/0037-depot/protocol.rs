@@ -21,14 +21,7 @@ impl<S: SessionStream> Session<S> {
             &container_tree::ContainerViewIntent::Open {
                 handle,
                 replace_view: self
-                    .gated_snapshot(14)
-                    .and_then(|s| {
-                        container_tree::decode_container_views_for(
-                            &s.payload,
-                            self.is_selected(230),
-                        )
-                        .ok()
-                    })
+                    .container_views()
                     .filter(|views| views.views.iter().any(|v| v.view_id == 0))
                     .map(|_| 0),
             },
@@ -62,6 +55,35 @@ impl<S: SessionStream> Session<S> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn negotiated_house_container_is_kept_in_typed_depot_source_snapshot() {
+        let views = container_tree::ContainerViews {
+            views: vec![container_tree::ContainerView {
+                view_id: 0,
+                container_handle: ItemHandle::MIN,
+                parent_handle: None,
+                capacity: 25,
+                entries: vec![],
+                browse: None,
+            }],
+        };
+        let payload =
+            container_tree::encode_container_views_with_house_capacity(&views, false, true)
+                .unwrap();
+        let snapshot = GatedSnapshot {
+            domain_id: 14,
+            snapshot_type: 1,
+            revision: 1,
+            payload,
+        };
+        let accepted = container_tree::initial(&[14, 446], &[snapshot.clone()])
+            .unwrap()
+            .unwrap();
+        assert_eq!(accepted, views);
+        assert!(accepted.views.iter().any(|view| view.view_id == 0));
+        assert!(container_tree::initial(&[14], &[snapshot]).is_err());
+    }
+
     #[test]
     fn selected_container_snapshot_is_required_typed_and_versioned() {
         assert!(validate_join(&[], &[]).is_ok());

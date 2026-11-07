@@ -909,3 +909,10 @@ The decoder's second non-browse byte guard now follows authenticated446
 selection. Protocol all-target/all-feature clippy-D warnings passes12.10s;
 full session176 tests pass21.19s execution. Native entry25 selection/open test
 passes11.81s build/run. Other adapter follow-ups remain independently tracked.
+
+Native adapter follow-up: depot/trade reuse the authenticated typed session
+container projection; shop/browse pass negotiated446 to the extended decoder.
+The generic backpack label remains unchanged. Native UI2 tests pass3.76s;
+depot regression passes4.59s; native shop+browse2 tests pass35.47s build/run.
+These checks preserve the legacy refusal cases and select the actual entry25.
+All721 protocol unit tests also pass0.59s execution.

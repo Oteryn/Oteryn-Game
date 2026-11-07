@@ -4,6 +4,8 @@ pub fn panel_text(panel: &ContainerPanel) -> String {
     let text = crate::container_tree::view::panel_text(panel);
     if panel.house_capacity_v2
         && let Some(view) = panel.current()
+        && view.capacity > 20
+        && view.browse.is_none()
     {
         text.replacen(
             &format!("Container {}", view.container_handle),
