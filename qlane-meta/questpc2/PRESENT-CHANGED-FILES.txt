@@ -1,4 +1,4 @@
-apps/game-server/migrations/1022_seymour_present_exchange.sql
+apps/game-server/migrations/1242_seymour_present_exchange.sql
 crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs
 crates/gameplay/dispatch/src/gameplay_transport/npc_command/npc_item_exchanges.rs
 crates/gameplay/dispatch/src/gameplay_transport/npc_command/questpc2_item_exchanges.rs

@@ -1151,7 +1151,7 @@
           "log": ".questpc2/item-exchanges-pg-final.log",
           "evidence": [
             "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pick_exchange.rs:75",
-            "apps/game-server/migrations/1021_uzgod_obsidian_knife_exchange.sql:1"
+            "apps/game-server/migrations/1241_uzgod_obsidian_knife_exchange.sql:1"
           ],
           "validation": [
             "8 NPC trade durability units passed",
@@ -1324,7 +1324,7 @@
           "log": ".questpc2/item-exchanges-pg-final.log",
           "evidence": [
             "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pick_exchange.rs:31",
-            "apps/game-server/migrations/1020_al_dee_item_exchange.sql:1"
+            "apps/game-server/migrations/1240_al_dee_item_exchange.sql:1"
           ],
           "validation": [
             "8 NPC trade durability units passed",
@@ -1502,7 +1502,7 @@
                 ".questpc2/wiki/Present Quest_Spoiler.wiki:1",
                 ".questpc2/reference/native-items/items.xml:5953",
                 ".questpc2/reference/native-items/items.xml:9797",
-                "apps/game-server/migrations/1022_seymour_present_exchange.sql:1",
+                "apps/game-server/migrations/1242_seymour_present_exchange.sql:1",
                 "crates/gameplay/dispatch/src/gameplay_transport/npc_command/npc_item_exchanges.rs:42"
               ],
               "validation_state": "All9 verification stages PASS; 31 tests passed (9 trade units,17 NPC units,4 exchange PG cases,1 Yasir PG regression),0 failed/ignored; check, all-target clippy -D warnings and fmt passed."
@@ -2015,12 +2015,29 @@
   },
   "native_goals_atomic_authoring": {
     "batch": "BATCH-native-goals-atomic-2026-11-07.json",
-    "state": "WIP_CHECK_PASS_PG_CODEGEN_OOM",
+    "state": "WIP_PG_RED_MULTI_RECEIPT_REVISION_GUARD",
     "base": "5a26f9a0e",
     "red_postgres_seconds": 75.68,
     "postgres_version": 180006,
     "red_point": "Exact-origin goal receipt absent from XP transaction, expected Some(true).",
     "check": "durability+dispatch PASS92s; fmt PASS",
-    "next": "Reduce failed/inactive native RAM caches; rerun focused atomic PG and authority/defender regressions; clippy then push green. Whole Elvenbane remains unfinished."
+    "next": "Compose native goals and existing objectives in one bounded revision receipt, retain all database guards.",
+    "latest_pg_red_seconds": 82.9,
+    "exact_error": "quest receipt is not at the current Character root revision",
+    "authority_pg_green_seconds": 5.77,
+    "defender_cases_pg_green_seconds": 85.11
+  },
+  "migration_registry": {
+    "batch": "BATCH-migration-registry-2026-11-07.json",
+    "owned_files": [
+      "apps/game-server/migrations/1240_al_dee_item_exchange.sql",
+      "apps/game-server/migrations/1241_uzgod_obsidian_knife_exchange.sql",
+      "apps/game-server/migrations/1242_seymour_present_exchange.sql",
+      "apps/game-server/migrations/1243_native_encounter_progression_scope.sql",
+      "apps/game-server/migrations/1244_instance_corpse_mint.sql"
+    ],
+    "qengine_0999": "Byte-identical to QENGINE2; no local variant.",
+    "qbase_present": false,
+    "state": "GREEN_MIGRATION_RENUMBER_SLICE"
   }
 }

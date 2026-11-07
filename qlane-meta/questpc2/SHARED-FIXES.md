@@ -78,7 +78,7 @@ cursor passes `quest_reward_claims_panpipe_locked_door_to_reward_and_replay`
 (POSTGRES_CASE_COMPLETED/27802ms). No shared fixture, lease, migration trigger,
 fresh-admission or replay guard changed.
 
-Owner-stop-rule continuation: migration1020_al_dee_item_exchange.sql is a new
+Owner-stop-rule continuation: migration1240_al_dee_item_exchange.sql is a new
 feature, not a fixture repair. It extends game_npc_trade_consistency_guard's
 current body for the closed Al Dee side3; existing Buy/Sell arms are preserved.
 No old migration, lease, fresh-admission or replay guard was edited. Proving

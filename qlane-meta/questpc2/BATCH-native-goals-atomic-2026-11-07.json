@@ -1,6 +1,6 @@
 {
   "batch_id": "native-goals-atomic-2026-11-07",
-  "state": "WIP_CHECK_PASS_PG_CODEGEN_OOM",
+  "state": "WIP_PG_RED_MULTI_RECEIPT_REVISION_GUARD",
   "lifecycle": "AUTHORING",
   "base_sha": "5a26f9a0e",
   "scope": "Six exact-origin native defender goals reuse sealed native XP/Quest transaction; whole Elvenbane remains unfinished.",
@@ -14,13 +14,16 @@
   "checks": {
     "cargo_check": "PASS durability+dispatch, 1m32s",
     "log": "/tmp/questpc2-exact-goal-atomic-final-check.log",
-    "fmt": "PASS"
+    "fmt": "PASS",
+    "authority_pg_seconds": 5.77,
+    "defender_pg_cases": 2,
+    "defender_pg_seconds": 85.11,
+    "clippy_seconds": 144,
+    "head_check_seconds": 143
   },
   "pending": [
-    "Native test compilation killed signal9; cgroup oom19/kill8, previously18/7. No new PG result. Reduce inactive/failed RAM caches, retry unchanged focused case.",
-    "Corrected focused PostgreSQL atomic case",
-    "Focused authority and exact-origin defender regressions",
-    "fmt and changed-crate all-targets/all-features clippy -D warnings"
+    "Refine new exact-origin assertion to actual counter1 and same-XP xmin; preserve all original objective receipt/phase/replay assertions. Run actual PG RED before fix.",
+    "Compose native goals/objectives in one bounded Character-revision receipt; PG GREEN then changed-crate checks and push."
   ],
   "implementation": [
     "Capture sealed native death and immutable source origin with original coherent snapshot.",
@@ -29,5 +32,12 @@
     "Refresh coherent recipient snapshots after settlement and invalidate Character cursors for uncertain commits.",
     "Generic Command and arbitrary CreatureDeath UUID cannot write native goal keys."
   ],
-  "self_review": "AUTHORING; focused verification pending, no whole quest/readiness claim."
+  "self_review": "AUTHORING; focused verification pending, no whole quest/readiness claim.",
+  "latest_red": {
+    "postgres_version": 180006,
+    "seconds": 82.9,
+    "log": "/tmp/questpc2-exact-goal-atomic-memory-recovered-pg.log",
+    "error": "quest receipt is not at the current Character root revision",
+    "finding": "Two native quest writes advance one Character twice; SQL permits one receipt per revision and requires final root revision. Compose bounded effects once; retain guards."
+  }
 }

@@ -1,0 +1,73 @@
+{
+  "batch_id": "migration-registry-1240-1244-2026-11-07",
+  "lifecycle": "AUTHORING",
+  "state": "GREEN_MIGRATION_RENUMBER_SLICE",
+  "scope": "Owner registry migration renumber only; SQL bytes unchanged; preserve ongoing native-goal atomicity WIP.",
+  "renames": [
+    {
+      "old": "apps/game-server/migrations/1020_al_dee_item_exchange.sql",
+      "new": "apps/game-server/migrations/1240_al_dee_item_exchange.sql",
+      "sha256": "ec2652acfbfa3d02ca9d99f1ab7c21c6a545fe46446aa38a5136a0a09a51df87",
+      "content_unchanged": true
+    },
+    {
+      "old": "apps/game-server/migrations/1021_uzgod_obsidian_knife_exchange.sql",
+      "new": "apps/game-server/migrations/1241_uzgod_obsidian_knife_exchange.sql",
+      "sha256": "0cd2ef88e5cc9fdfdca3fbce945a169606e800f9a78ae49e929b7a6b28f09606",
+      "content_unchanged": true
+    },
+    {
+      "old": "apps/game-server/migrations/1022_seymour_present_exchange.sql",
+      "new": "apps/game-server/migrations/1242_seymour_present_exchange.sql",
+      "sha256": "e827c2f746cec494410c4ed0a226ff25142b731686d6be701f8dd5a3dcaf7037",
+      "content_unchanged": true
+    },
+    {
+      "old": "apps/game-server/migrations/1023_native_encounter_progression_scope.sql",
+      "new": "apps/game-server/migrations/1243_native_encounter_progression_scope.sql",
+      "sha256": "dbee9f8bb8d7a01a3e2c657520c1b395698368450f2764457df81fdb87c3336e",
+      "content_unchanged": true
+    },
+    {
+      "old": "apps/game-server/migrations/1024_instance_corpse_mint.sql",
+      "new": "apps/game-server/migrations/1244_instance_corpse_mint.sql",
+      "sha256": "e8d216b49e0890642c71041648c80efa00b5eefad46807f9f2ba28840c29e2ef",
+      "content_unchanged": true
+    }
+  ],
+  "qengine_consumed_as_is": {
+    "file": "apps/game-server/migrations/0999_quest_reward_callbacks.sql",
+    "source_head": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+    "git_blob": "d7728c4a094b5b25c615dc106e4fc68dca88eec5"
+  },
+  "qbase_files_present": [],
+  "checks": {
+    "duplicate_migrations": "repo script on staged index tree: no duplicates; full directory number uniqueness also PASS",
+    "postgres": {
+      "version": 180006,
+      "test": "market_postgres_migration_diagnostic",
+      "mechanism": "Dynamic sqlx Migrator::new(current checkout migrations directory) on a fresh database, not the older executable embedded migrator.",
+      "seconds": 3.352,
+      "test_seconds": 3.32,
+      "log": "/tmp/questpc2-migration-registry-dynamic-pg.log"
+    },
+    "cargo_check_seconds": 13.73,
+    "cargo_check_log": "/tmp/questpc2-migration-registry-check.log",
+    "fmt": "PASS",
+    "pin_refresh": "PASS",
+    "pin_check": "PASS",
+    "pin_digest": "32170e60e0f946dd1ba74dc68e45399579b85e66e819259a7adfef3bc5ad8502",
+    "clippy_seconds": 35.17,
+    "clippy_scope": "durability+dispatch all-targets all-features -D warnings PASS",
+    "clippy_log": "/tmp/questpc2-migration-registry-clippy.log"
+  },
+  "atomicity_continuation": {
+    "actual_pg_red_seconds": 82.9,
+    "error": "game_character_quest_receipt_guard: quest receipt is not at the current Character root revision",
+    "authority_pg_green_seconds": 5.77,
+    "exact_origin_cases": 2,
+    "exact_origin_pg_green_seconds": 85.11,
+    "next": "Compose eligible native quest effects in one bounded Character-revision receipt; preserve database guards and rerun RED/GREEN."
+  },
+  "self_review": "All five git mv edits preserve exact SQL bytes; references and checksums verified; unchanged canonical QENGINE0999; no QBASE variant; no duplicate number; no guard/test weakened. Native-goal atomicity remains explicitly RED and separate."
+}

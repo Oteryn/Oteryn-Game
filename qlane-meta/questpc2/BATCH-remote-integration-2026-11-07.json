@@ -10,7 +10,7 @@
     "f9cc1e550 source-pinned corpse authoring and guarded canonical-shard fingerprint refresh"
   ],
   "published_migration": {
-    "path": "apps/game-server/migrations/1024_instance_corpse_mint.sql",
+    "path": "apps/game-server/migrations/1244_instance_corpse_mint.sql",
     "git_blob": "c89455d0a109379a848015f815f1e3a997b07b48",
     "byte_identical_to_remote": true,
     "unpublished_duplicate_removed": "apps/game-server/migrations/1024_instance_creature_mint.sql"

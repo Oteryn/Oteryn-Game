@@ -1,19 +1,30 @@
-# Active r2: exact-origin goal atomicity WIP, continue immediately
+# Registry1240–1244 and atomicity continuation
 
-Latest BATCH-native-goals-atomic-2026-11-07.json: PG180006 RED75.68s,
-exact-origin Dragon receipt absent from XP transaction. Native goals previously
-committed separately BEFORE ordinary XP. New code composes sealed death/origin
-goals into existing XP transaction, refuses generic forged UUID causes, refreshes
-recipient copies and invalidates uncertain revision cursors. Cargo check for
-durability+dispatch PASS92s; fmt PASS. New native PG build hit SIGKILL/cgroup
-OOM19/kill8 (was18/7), not a PG result. Fix resource retention then retry:
-/tmp/questpc2-exact-goal-atomic-green-retry-pg.log. Earlier compile errors
-(visibility and auto-mounted test module path) were corrected; latest failure
-is codegen memory only. New isolated test also proves native-goal capture.
-Do not count whole Elvenbane qualified. Immediate: recover failed native working
-cache / current READY without profile changes, rerun focused atomic, authority
-and incoming defender cases; all-target/all-feature clippy -Dwarnings changed
-crates; publish green. WIP publication explicitly authorized by owner15min rule.
+Owner migration registry applied: lane SQL files1240_al_dee_item_exchange,
+1241_uzgod_obsidian_knife_exchange,1242_seymour_present_exchange,
+1243_native_encounter_progression_scope,1244_instance_corpse_mint. Each SQL
+SHA256 unchanged by git mv; all active file references updated. QENGINE20999
+byte-identical to source5a6de28c1, no variant; no QBASE files in this branch.
+Dynamic sqlx migration diagnostic read current directory and applied fresh
+PostgreSQL180006 GREEN3.352s, repo duplicate staged-tree check PASS, fmt,
+check13.73s, pin refresh/check PASS. Clippy all-target/all-feature -Dwarnings GREEN35.17s in
+/tmp/questpc2-migration-registry-clippy.log. Renumber slice green; push now.
+
+AtomicityWIPa6e69c429 compiled after cache recovery (3m54s), actualPG RED82.90s:
+Postgres error quest receipt is not at the current Character root revision.
+Existing SQL requires ONE quest receipt per Character revision. Native goal
+and existing objective currently use two writes. Fix composition generically
+into one bounded receipt; do not relax database guards or old test assertions.
+Refine the newly added exact-origin test to assert actual counter1 and its
+same XP xmin rather than assume a second separate receipt; rerun that actual
+PG RED before implementation and GREEN after. Existing objective receipt and
+phase/replay checks remain unchanged. Authorityguard GREEN5.77s and incoming
+exact-origin2cases GREEN85.11s. Clippy for a6 code PASS144s; check143s PASS.
+ResourceOOM19/kill8 was overcome by cold rebuilding one native cache; no
+profile flags/large suite/credential reads. Current native READY/exe live;
+/tmp/questpc2-exact-goal-* records archive/restoration/retirement precisely.
+Do not restore retired pre-fix cache archive. Next keep Rust stable during
+heavy compilation, prune only superseded completed/inactive/failed caches.
 
 Branch claude/happy-davinci-ijz3wy-questpc2; AUTHORING. Owned29:
 2QUALIFIED (Desert/Annihilator),27UNFINISHED,6world titles SKIPPED_OTHER_LANE

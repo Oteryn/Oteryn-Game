@@ -4,9 +4,9 @@ AUTHORING; current worktree only, no Git mutations. Includes inherited committed
 
 81 product files:
 
-- `apps/game-server/migrations/1020_al_dee_item_exchange.sql`
-- `apps/game-server/migrations/1021_uzgod_obsidian_knife_exchange.sql`
-- `apps/game-server/migrations/1022_seymour_present_exchange.sql`
+- `apps/game-server/migrations/1240_al_dee_item_exchange.sql`
+- `apps/game-server/migrations/1241_uzgod_obsidian_knife_exchange.sql`
+- `apps/game-server/migrations/1242_seymour_present_exchange.sql`
 - `content/content.lock.json`
 - `content/encounters/raids/catalogue.json`
 - `content/encounters/raids/index.json`

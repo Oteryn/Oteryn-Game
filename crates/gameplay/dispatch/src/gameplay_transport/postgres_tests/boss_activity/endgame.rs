@@ -94,7 +94,7 @@ pub(super) async fn settle(
     // The migration preserves the source truth tables when applied twice.
     sqlx::raw_sql(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../../apps/game-server/migrations/1023_native_encounter_progression_scope.sql"
+        "/../../../apps/game-server/migrations/1243_native_encounter_progression_scope.sql"
     )))
     .execute(&h.pool)
     .await?;
