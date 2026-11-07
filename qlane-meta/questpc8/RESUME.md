@@ -1,3 +1,26 @@
+# Native Mystery authoring checkpoint
+
+Working-tree geometry probe passed real PostgreSQL in108.474782636s: all five
+native landmark cells/ordinals resolve, native collision admits arrival, Lai's
+introduction earns its receipt, and fixture arrival does not advance the quest.
+The combined run also passed the standalone introduction in70.957669443s;
+full route failed on client command7010when ingress expected1. Its fixture now
+uses ordered commands1..12and a focused RED rerun is compiling. This is an
+evidence checkpoint, not publication or qualification of pending runtime code.
+See mystery-native-authoring-checkpoint.json and CONTRACT-NOTES.md.
+
+Important corrections: preserve the full original World coordinate frame when
+loading bounded B3 patches, so source portal targets remain valid but unloaded
+cells stay ABSENT. PostgreSQL rejects unreceipted quest tracks, so exercise the
+full Lai→three native USEs→crystal STEP→assembly USE path; never seed Mystery
+progress/items. Drop/recover the third fragment through the existing custody
+owner to prove missing-input refusal at the legitimate assembly stage. The
+pending helpers and generic carried-input code remain local authoring work.
+
+14of23active entries remain QUALIFIED,9remain. Continue the focused RED, add
+the four documented callbacks, run the full route GREEN and targeted checks,
+then publish the completed slice immediately. Do not end the session.
+
 # Exact constructor reuse regression coverage published
 
 Three Python tests pass in3.360s, including unchanged-profile reuse for all four

@@ -381,3 +381,45 @@ an imported binding. The recipe, canonical identity, role and pinned official
 client facts must all match before generation. Sources: the recipe's retained
 Fandom references and the existing official15.30 appearance file with SHA256
 2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.
+
+## Mystery native landmark bindings and reusable carried inputs
+
+The public walkthrough at
+https://www.tibiawiki.com.br/index.php?title=Mystery_of_the_Valley_Quest&action=raw
+locates the three shrine approaches and Kha'zeel levitation ledges. The frozen
+B3 snapshot predates the2025shrines and has no certified Carved Shrine object
+identity. The chosen Oteryn interactions therefore use existing canonical native
+landmarks, rather than inventing donor item IDs or legacy UIDs:
+
+| Objective | Native cell(x,y,z) | Top-level ordinal | Appearance |
+|---|---|---|---|
+| Inukaya/Grimlund fragment |32459,31093,6|0|799 snow ground|
+| Muggy Plains fragment |33198,31184,6|0|469 plateau stair ground|
+| Kilmaresh fragment |33834,31697,6|0|4408 plateau ground|
+| Crystal exploration STEP |33080,32704,5|0|231 ground|
+| Assembly USE |33080,32705,5|1|4448 rock border|
+
+These are explicit first-party landmark bindings, not source shrine/crystal
+object equivalence claims. The accepted item constructor roles retain the
+previously documented50336..50338ordinal mapping and50335plain statue reward.
+Collection is sequential and once-only; crystal exploration precedes assembly.
+Every effect requires CurrentPremium. Assembly consumes all three distinct
+carried fragments in the existing locked BURN/MINT transaction. Input sets are
+bounded to8distinct definitions,1..100units each; each quantity must be available
+in one live instance, matching the existing scalar input's custody semantics.
+
+The full PG test uses bounded real B3 patches, original registry/native physics
+and exact positions/ordinals. Provisional tiles remain ABSENT. Arrival between
+regions is explicit fixture setup through the existing exact-snapshot physical
+relocation owner after checking native collision; it grants no quest travel,
+progress or items and does not claim to test the world's transport network.
+All quest progress is earned through the actual NPC/USE/STEP receipt owners,
+and all fragments through the actual reward owner. The third fragment is
+dropped and recovered through the existing custody owner to test missing-input
+refusal at the real assembly stage.
+
+Initial isolated fixture attempts were rejected by PostgreSQL's positive
+CharacterRevision and matching quest-receipt constraints. Those constraints
+remain intact. Inventory transfers do not advance CharacterRevision. The final
+route fixture must not insert Mystery tracks or items by SQL; its introduction,
+collection and exploration must produce the required legitimate receipts.

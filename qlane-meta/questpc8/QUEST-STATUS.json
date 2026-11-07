@@ -1291,7 +1291,7 @@
       "runtime_enabled": false
     },
     "blocker": {
-      "missing_piece": "Three once-only shrine bindings, crystal exploration and atomic three-fragment consumption are the next active slice; mandatory introduction, production NPC and all four item constructors are implemented."
+      "missing_piece": "Active authoring of three collection bindings and crystal exploration. Native landmark geometry probe passed; fixture client sequencing is corrected locally. Full receipt-backed route validation remains in progress; no lane handoff or shared-engine hold."
     },
     "first_unqualified_stage": {
       "key": "s2",
@@ -1340,7 +1340,12 @@
         "proof": "constructor-reuse-validation.json",
         "python_tests": 3
       }
-    ]
+    ],
+    "authoring_checkpoint": {
+      "proof": "mystery-native-authoring-checkpoint.json",
+      "runtime_changes_published": false,
+      "next": "Focused receipt-backed native route RED, then three shrine collection bindings and crystal STEP before assembly GREEN."
+    }
   },
   {
     "canonical": "oteryn:quest.giant_smithhammer_quest",

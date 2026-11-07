@@ -1,0 +1,22 @@
+{
+  "scope": "Authoring checkpoint only. Probe ran on the working tree; pending Rust helpers/runtime changes are not published or qualified by this documentation commit.",
+  "base": "ec811acb7",
+  "log_sha256": "7648cca905b3163e78e49da4419fcdb642754a8ab1ec1221c08b4592f0b9b34a",
+  "geometry_marker": "POSTGRES_CASE_COMPLETED questpc8_mystery_native_landmark_geometry_and_lai_receipts duration=108.474782636s",
+  "geometry_duration_seconds": 108.474782636,
+  "postgres": true,
+  "combined_run": "Two probes passed; full route failed on a fixture client-command sequence gap. No failure is omitted from the referenced log.",
+  "retained_guards": [
+    "positive quest track CharacterRevision",
+    "quest track equals its durable receipt effect",
+    "ordered client command ingress",
+    "native map collision",
+    "provisional tiles remain ABSENT"
+  ],
+  "next": "Finish focused route RED with client commands1..12; register three collection callbacks and crystal STEP; prove legitimate receipt-backed assembly without seeded Mystery tracks/items.",
+  "qualification_counts": {
+    "active": 23,
+    "qualified": 14,
+    "remaining": 9
+  }
+}
