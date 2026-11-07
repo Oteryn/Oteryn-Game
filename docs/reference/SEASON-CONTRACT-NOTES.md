@@ -941,3 +941,11 @@ passes4.987s. The normal SRX1 dispenser owner coalesces only its exact captured
 profile plus verified source-top metadata; three regressions pass2.265s,
 including changed-weight and unverified-top refusals. Required normal Prey
 refresh/provider regeneration is still running, so this is source capture only.
+
+The full negotiated-capacity boundary now passes through actual session join
+and sequenced delta frames:16 views x25 entries, exact12,862 bytes, all400 typed
+entries retained and legacy decoding refused (7.28s build/run). No generic
+limits were widened: domain14 already allows15,488 bytes. Four changed client
+crates pass all-target/all-feature Clippy-D warnings in1.19s after the test
+uses Result propagation. The complete native client345/UI274 tests pass16.57s
+and0.01s execution respectively.

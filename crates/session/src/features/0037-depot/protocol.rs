@@ -56,7 +56,8 @@ impl<S: SessionStream> Session<S> {
 mod tests {
     use super::*;
     #[test]
-    fn negotiated_house_container_is_kept_in_typed_depot_source_snapshot() {
+    fn negotiated_house_container_is_kept_in_typed_depot_source_snapshot()
+    -> Result<(), Box<dyn std::error::Error>> {
         let views = container_tree::ContainerViews {
             views: vec![container_tree::ContainerView {
                 view_id: 0,
@@ -69,19 +70,20 @@ mod tests {
         };
         let payload =
             container_tree::encode_container_views_with_house_capacity(&views, false, true)
-                .unwrap();
+                .map_err(|error| format!("{error:?}"))?;
         let snapshot = GatedSnapshot {
             domain_id: 14,
             snapshot_type: 1,
             revision: 1,
             payload,
         };
-        let accepted = container_tree::initial(&[14, 446], &[snapshot.clone()])
-            .unwrap()
-            .unwrap();
+        let accepted = container_tree::initial(&[14, 446], std::slice::from_ref(&snapshot))
+            .map_err(|error| format!("{error:?}"))?
+            .ok_or("selected container domain remains present")?;
         assert_eq!(accepted, views);
         assert!(accepted.views.iter().any(|view| view.view_id == 0));
         assert!(container_tree::initial(&[14], &[snapshot]).is_err());
+        Ok(())
     }
 
     #[test]
