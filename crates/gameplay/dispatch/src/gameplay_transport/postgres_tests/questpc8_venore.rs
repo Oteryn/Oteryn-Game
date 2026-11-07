@@ -354,7 +354,16 @@ async fn arrive_near(
 ) -> TestResult {
     use crate::content::{CollisionClass, LogicalCell};
     let cells = owner.movement_cells;
-    for (dx, dy) in [(-1, 0), (0, -1), (1, 0), (0, 1)] {
+    for (dx, dy) in [
+        (-1, 0),
+        (0, -1),
+        (1, 0),
+        (0, 1),
+        (-1, -1),
+        (-1, 1),
+        (1, -1),
+        (1, 1),
+    ] {
         let x = u16::try_from(i32::from(at.x) + dx)?;
         let y = u16::try_from(i32::from(at.y) + dy)?;
         if cells.index().lookup(
@@ -378,6 +387,23 @@ async fn arrive_near(
             .await;
         }
     }
+    let nearby = (-3..=3)
+        .flat_map(|dx| (-3..=3).map(move |dy| (dx, dy)))
+        .filter_map(|(dx, dy)| {
+            let x = u16::try_from(i32::from(at.x) + dx).ok()?;
+            let y = u16::try_from(i32::from(at.y) + dy).ok()?;
+            (cells.index().lookup(
+                cells.scope(),
+                LogicalCell {
+                    x: i32::from(x),
+                    y: i32::from(y),
+                    z: i32::from(-at.floor),
+                },
+            ) == Ok(CollisionClass::Walkable))
+            .then_some((x, y))
+        })
+        .collect::<Vec<_>>();
+    eprintln!("VENORE_NATIVE_LANDING_NEAR {at:?} walkable={nearby:?}");
     Err(format!("no native adjacent landing at {at:?}").into())
 }
 async fn carry(

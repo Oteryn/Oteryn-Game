@@ -1,3 +1,15 @@
+# Six native Venore machines pass; southern saw needs bounded reach
+
+Actual PG108.761397422s passes all six northern/middle machine USE/replay/
+fresh-refusal checks. Diagonal native arrivals resolved crane access. The
+southern saw33016,32142,z6 has nearest Walkable cells33018,32141 and
+33019,32141: both outside default reach1. Add reusable authored callback
+use_range2, bounded to1..2 and explicit USE tool+position+mutable storage.
+Keep default1 byte-stable, exact target revision/selector and held-item guards.
+Use that declared range in fixture landing selection; real USE must still
+commit through production authority. Then finish the route and occurrence
+MINT nonce regression.19of23remain QUALIFIED; four remain. Do not end.
+
 # Venore native route reaches third machine — source arrival RED109.945s
 
 Actual PostgreSQL proves correct initial held-tool refusals, the three supply

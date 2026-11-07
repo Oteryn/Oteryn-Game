@@ -1,9 +1,9 @@
 {
   "state": "Compiling full native circuit WIP",
-  "postgres_duration_seconds": 109.94506449,
+  "postgres_duration_seconds": 108.761397422,
   "postgres_marker": "POSTGRES_CASE_FINISHED questpc8_venore_native_daily_circuit",
-  "log_sha256": "630dd43921545c02f86ffd4fcc584107e7d3b36d4d74ddb0e4a8b1da6c4a35ba",
-  "exact_red_point": "Native prerequisite refusals, all three supply MINTs, the out-of-order guarded machine refusal and first two machine USE/replay/fresh refusal checks pass. Fixture arrival at third native crane33017,32041,z6 has no walkable cardinal neighbour; inspect native diagonal neighbours without changing collision or USE guards.",
+  "log_sha256": "580efcd857185cf34d15e7d3f90190dc74362fb8a061230f6fbfcf1e6f3a7f06",
+  "exact_red_point": "Six exact native machines pass, including both northern/middle cranes using diagonal native landing cells. Southern saw33016,32142,z6 has nearest walkable cells33018,32141 and33019,32141, beyond the default one-cell interaction. Add a bounded authored tool-callback reach2 while preserving default reach1 and exact selector/custody guards.",
   "native_walkable_chamber_cells": [
     [
       33008,
