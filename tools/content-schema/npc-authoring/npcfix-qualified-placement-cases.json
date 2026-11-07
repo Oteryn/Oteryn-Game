@@ -1588,6 +1588,53 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "npcfix-cross-lane-narrative-actors",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "Retail placement provenance in content/world/npc-placements; quest paths owned by L2 and Tutorial lane, see pinned ownership evidence.",
+      "cases": [
+        {
+          "npc": "oteryn:npc.a_behemoth",
+          "name": "A Behemoth",
+          "expected": {
+            "floor": -15,
+            "x": 32308,
+            "y": 32582
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.a_strange_fellow",
+          "name": "A Strange Fellow",
+          "expected": {
+            "floor": -9,
+            "x": 32910,
+            "y": 32077
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.alyxo",
+          "name": "Alyxo",
+          "expected": {
+            "floor": -7,
+            "x": 33941,
+            "y": 31464
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.gnomission",
+          "name": "Gnomission",
+          "expected": {
+            "floor": -9,
+            "x": 33007,
+            "y": 31892
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }

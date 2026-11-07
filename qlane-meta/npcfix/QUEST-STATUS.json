@@ -1355,7 +1355,7 @@
       "audit_status": "DIFF",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/26",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "PENDING",
+      "status": "QUALIFIED",
       "source": {
         "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/alyxo.lua",
         "sha256": "86f3cf5aa793d5ccffd14bdf35bda841bb00f8c3ce3352826b088f4f25c4b008",
@@ -1363,7 +1363,23 @@
         "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
       },
       "historical_note": "Retail placement authored. Kilmaresh quest dialogue/progression needs the excluded quest lane.",
-      "work": "Complete this NPC interaction with source-backed reusable state/reward/access callbacks; inspect and reuse qengine2 and relevant lane implementations first."
+      "work": "Audited retail placement and real native actor qualified by PostgreSQL. Quest progression/hand-ins belong to the explicitly recorded L2 owner and are outside this NPCFIX qualification.",
+      "cross_lane_ownership": {
+        "lane": "L2",
+        "branch": "origin/claude/happy-davinci-ijz3wy-questl2",
+        "commit": "47d1fc21f993212b2de008753ea4047395854c10",
+        "path": "tools/content-schema/quest-authoring/questl2-status.json",
+        "title": "Kilmaresh",
+        "quest_status": "PENDING in owning lane",
+        "rule": "Owner says skip other-lane-owned entries; no whole-quest qualification claim."
+      },
+      "qualification": {
+        "test": "npcfix_fading_and_retained_placements_postgres",
+        "batch": "npcfix-cross-lane-narrative-actors",
+        "red_seconds": 33.65,
+        "green_seconds": 79.63,
+        "scope": "NPCFIX audited placement; real admitted actor and normal greeting."
+      }
     },
     {
       "npc": "Captain Jack Rat",
@@ -1467,7 +1483,7 @@
       "audit_status": "DIFF",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/140",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "PENDING",
+      "status": "QUALIFIED",
       "source": {
         "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/gnomission.lua",
         "sha256": "3114a451c12b4ce3f470f1d3eaa7e7846da6068dfac5718e7423764a9656f341",
@@ -1475,7 +1491,23 @@
         "assumption": "Conservative pinned donor behavior under owner follow-up authorization when retail details are unavailable."
       },
       "historical_note": "Retail placement authored. Rank4 Warzone access needs Bigfoot quest predicates and action owner; excluded quest-lane repair required.",
-      "work": "Complete this NPC interaction with source-backed reusable state/reward/access callbacks; inspect and reuse qengine2 and relevant lane implementations first."
+      "work": "Audited retail placement and real native actor qualified by PostgreSQL. Quest progression/hand-ins belong to the explicitly recorded L2 owner and are outside this NPCFIX qualification.",
+      "cross_lane_ownership": {
+        "lane": "L2",
+        "branch": "origin/claude/happy-davinci-ijz3wy-questl2",
+        "commit": "47d1fc21f993212b2de008753ea4047395854c10",
+        "path": "tools/content-schema/quest-authoring/questl2-status.json",
+        "title": "Bigfoot's Burden",
+        "quest_status": "PENDING in owning lane",
+        "rule": "Owner says skip other-lane-owned entries; no whole-quest qualification claim."
+      },
+      "qualification": {
+        "test": "npcfix_fading_and_retained_placements_postgres",
+        "batch": "npcfix-cross-lane-narrative-actors",
+        "red_seconds": 33.65,
+        "green_seconds": 79.63,
+        "scope": "NPCFIX audited placement; real admitted actor and normal greeting."
+      }
     },
     {
       "npc": "Gnops Member",
@@ -3492,7 +3524,7 @@
       "audit_status": "DIFF",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/1",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "PENDING",
+      "status": "QUALIFIED",
       "source": {
         "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_behemoth.lua",
         "sha256": "fe1a118261b147228c708d85c2d0f4f3417fec10cc616372ea92dfa9526cd334",
@@ -3500,7 +3532,23 @@
         "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
       },
       "historical_note": "Retail placement authored. Spike quest-conditioned greetings require the excluded quest lane.",
-      "work": "Complete this NPC interaction with source-backed reusable state/reward/access callbacks; inspect and reuse qengine2 and relevant lane implementations first."
+      "work": "Audited retail placement and real native actor qualified by PostgreSQL. Quest progression/hand-ins belong to the explicitly recorded L2 owner and are outside this NPCFIX qualification.",
+      "cross_lane_ownership": {
+        "lane": "L2",
+        "branch": "origin/claude/happy-davinci-ijz3wy-questl2",
+        "commit": "47d1fc21f993212b2de008753ea4047395854c10",
+        "path": "tools/content-schema/quest-authoring/questl2-status.json",
+        "title": "Spike Tasks",
+        "quest_status": "PENDING in owning lane",
+        "rule": "Owner says skip other-lane-owned entries; no whole-quest qualification claim."
+      },
+      "qualification": {
+        "test": "npcfix_fading_and_retained_placements_postgres",
+        "batch": "npcfix-cross-lane-narrative-actors",
+        "red_seconds": 33.65,
+        "green_seconds": 79.63,
+        "scope": "NPCFIX audited placement; real admitted actor and normal greeting."
+      }
     },
     {
       "npc": "A Ghostly Guardian",
@@ -3523,7 +3571,7 @@
       "audit_status": "DIFF",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/11",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "PENDING",
+      "status": "QUALIFIED",
       "source": {
         "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_strange_fellow.lua",
         "sha256": "a942d86e6ce1066564a14f4976b4af1926b22807b1c7ae7beb338ec2097d8b01",
@@ -3531,7 +3579,23 @@
         "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
       },
       "historical_note": "Retail placement authored. Postman progression dialogue/actions require the excluded quest lane.",
-      "work": "Complete this NPC interaction with source-backed reusable state/reward/access callbacks; inspect and reuse qengine2 and relevant lane implementations first."
+      "work": "Audited retail placement and real native actor qualified by PostgreSQL. Quest progression/hand-ins belong to the explicitly recorded L2 owner and are outside this NPCFIX qualification.",
+      "cross_lane_ownership": {
+        "lane": "L2",
+        "branch": "origin/claude/happy-davinci-ijz3wy-questl2",
+        "commit": "47d1fc21f993212b2de008753ea4047395854c10",
+        "path": "tools/content-schema/quest-authoring/questl2-status.json",
+        "title": "Postman Missions",
+        "quest_status": "PENDING in owning lane",
+        "rule": "Owner says skip other-lane-owned entries; no whole-quest qualification claim."
+      },
+      "qualification": {
+        "test": "npcfix_fading_and_retained_placements_postgres",
+        "batch": "npcfix-cross-lane-narrative-actors",
+        "red_seconds": 33.65,
+        "green_seconds": 79.63,
+        "scope": "NPCFIX audited placement; real admitted actor and normal greeting."
+      }
     },
     {
       "npc": "A Weakened Forest Fury",
@@ -5366,6 +5430,20 @@
       "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at 0fc546da09e407e4d346cab34c89c355f1005f2b; details in verification_components.latest_checked_source. Source identity checked before each slice",
       "test_code_commit": "7a0d7c335f0404915a92497b8c74f0b567422967",
       "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
+    },
+    {
+      "name": "Four retail NPC actors with explicit L2 quest ownership",
+      "state": "QUALIFIED",
+      "entries": [
+        "A Behemoth",
+        "A Strange Fellow",
+        "Alyxo",
+        "Gnomission"
+      ],
+      "red_seconds": 33.65,
+      "green_seconds": 79.63,
+      "postgres_marker": true,
+      "scope": "Retail placement and actual NPC name/talk only. Four whole quest paths remain with L2, not claimed qualified."
     }
   ],
   "owner_constraints": {
@@ -5380,7 +5458,7 @@
     "grants": "charge only on an exact match",
     "publication": "commit as blakinio with required trailers; fetch and fast-forward push each green batch; no main, force push or PR"
   },
-  "next_batch": "Four audited retail actor placements with explicit L2/Tutorial quest-path ownership; then remaining owned fluid/travel/conditional NPC mechanisms.",
+  "next_batch": "Book World two corrected public-source cells plus one remaining ordinary authored actor; then owned fluid and ferry/conditional NPC mechanisms. Anna is Newhaven travel, not the unrelated Tutorial quest, and stays owned pending implementation.",
   "shared_engine_lookup": {
     "owner_rule": "Shared engine features are this lane\u2019s responsibility when required. Never leave an entry unfinished for missing engine support.",
     "qengine2": {
@@ -5981,14 +6059,14 @@
     }
   },
   "counts": {
-    "QUALIFIED": 153,
-    "PENDING": 14,
+    "QUALIFIED": 157,
+    "PENDING": 10,
     "EXCLUDED": 24,
     "AUTHORED; QUALIFICATION PENDING": 126,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
   },
-  "last_publication": "Merge latest qualified placement evidence with source refusal-topic repair; fast-forward push in progress.",
+  "last_publication": "Refusal source repair published79eb093c3. Four actor qualification batch green, commit+fast-forward push now.",
   "active_bulk_batch": {
     "state": "GREEN and PUSHED4d34d0efd; do not redo",
     "red": "PostgreSQL case npcfix-reward-workshop-soul-orbs FAILED95.56852851s; exact yes left2 orbs instead of0. POSTGRES_STARTED and POSTGRES_CASE_COMPLETED retained in soul-orbs-red-retry.log. Prior No space left build did not execute tests and is not RED proof.",
@@ -6129,5 +6207,58 @@
     },
     "postal_test_change": "Reuse incoming green exact parcel/letter Buy-side fixture binding; existing refusal/replay checks retained.",
     "fmt": "PASS all and explicit mounted postal fixture check"
+  },
+  "active_narrative_actor_batch": {
+    "state": "QUALIFIED",
+    "entries": [
+      "A Behemoth",
+      "A Strange Fellow",
+      "Alyxo",
+      "Gnomission"
+    ],
+    "scope": "Retail actor placement; quest paths explicitly owned L2 per owner skip rule",
+    "source_baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+    "ownership": {
+      "branch": "origin/claude/happy-davinci-ijz3wy-questl2",
+      "sha": "47d1fc21f993212b2de008753ea4047395854c10",
+      "path": "tools/content-schema/quest-authoring/questl2-status.json",
+      "lane": "L2",
+      "entries": [
+        {
+          "title": "Bigfoot's Burden",
+          "status": "PENDING",
+          "evidence": []
+        },
+        {
+          "title": "Kilmaresh",
+          "status": "PENDING",
+          "evidence": []
+        },
+        {
+          "title": "Spike Tasks",
+          "status": "PENDING",
+          "evidence": []
+        },
+        {
+          "title": "Postman Missions",
+          "status": "PENDING",
+          "evidence": []
+        }
+      ],
+      "rule": "Owner expressly says skip entries owned by other lanes OR qualified there. These own quest paths; NPCFIX still proves its audited retail actor placement. Do not label their pending quest paths qualified."
+    },
+    "red": {
+      "duration_seconds": 33.65,
+      "log": "narrative-four-actors-red.log",
+      "postgres_marker": true,
+      "baseline": "Committed original placements reconstructed exactly; four absent actors verified at ed788c4b"
+    },
+    "green": {
+      "duration_seconds": 79.63,
+      "log": "narrative-four-actors-green.log",
+      "postgres_marker": true,
+      "retained_actors": 144
+    },
+    "validation": "No Rust, production content or generated files changed in this qualification batch. Reuse exact production check/clippy proof248b3917e; retained test body unchanged, current case data read at runtime; fmt all PASS."
   }
 }
