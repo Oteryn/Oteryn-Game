@@ -134,6 +134,10 @@ impl CreatureAiTable {
 }
 
 #[cfg(test)]
+#[path = "native_profile_tests.rs"]
+mod tests;
+
+#[cfg(test)]
 mod soulpit_preflight_tests {
     use super::*;
     use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
