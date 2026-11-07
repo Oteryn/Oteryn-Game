@@ -2091,6 +2091,145 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/questpc3/threatened-animals/ikassis-talisman",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "npc": "oteryn:npc.ikassis",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i25295",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Nature's blessings! You may find the desperate wolf mother in the south of Cormaya. You will know the place because there is a big stone that looks like a grumpy face. ...",
+        "At night it will weep bloody tears and only at night you will meet the ghost there. Take this talisman so you may be able to talk with animals and even plants and stones. Just don't expect that all of them will answer you."
+      ],
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/npc/ikassis.lua:77-85 git-blob=b088ddfd72fa4608ecc1de64e4d9bd042ab8ae42 sha256=be3c921fb5987d8d1612b6162abd1a957965f4097558e5fd9a620a49e3f50592"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/threatened-animals/stone-map",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "npc": "oteryn:npc.grumpy_stone",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission04/grumpy_stone",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission04/stone1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission04/stone2",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission04/stone3",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission04/stone4",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission04/stone5",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i24945",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank You! Their lamentation lapsed into silence. Thus, I assume you brought them some relief. Here, take this map part in return. I'm not interested in this treasure anymore. I just want to return to our hidden realm. ...",
+        "Search for the last part somewhere in the Fields of Glory. It's hidden in a big fly agaric."
+      ],
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/npc/grumpy_stone.lua:76-88 git-blob=3ae5213cd071089acc9b1b5546a6db666ff4bcdd sha256=de0740cf81fed12bbeccabd6ee38c1d649d5c4f0e79c7c4658fbc91826db7b95"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/threatened-animals/swan-feathers",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "npc": "oteryn:npc.a_swan",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+          "minimum": 14,
+          "maximum": 14,
+          "set": 15,
+          "preserve": false
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i25244",
+          "count": 5
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "This is everything that remained of my cloak? That's terrible! However, I guess I can put the feathers together again. Yes, that should be enough feathers. ...",
+        "Please give them to me so I can restore my cloak. But don't watch me! Swan maidens don't like to be observed. Nature's blessings, human being. I will tell Ikassis that you have been of great assistance."
+      ],
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/npc/a_swan.lua:65-75 git-blob=c2af76c8ffbb1e593b025cb421f8c32e625058a1 sha256=4e087a3c28fabd6f339d64003db609921b7c99eb69a63f669b5a9642e53abc54"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/questpc3/threatened-final/maelyrra-blossom-bag",
       "quest": "oteryn:quest.threatened_dreams_quest",
       "npc": "oteryn:npc.maelyrra",

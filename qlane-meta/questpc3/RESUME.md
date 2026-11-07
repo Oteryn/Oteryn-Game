@@ -1,3 +1,11 @@
+threatened_animals_09 GREEN: PG RED109688ms then GREEN111630ms; all3 physical exchanges/3receipts. Authoring2testsPASS9.827s; checkPASS57.55s; strictClippyPASS2m08s; native41generation/checkPASS; fmtPASS; pin inputs3c9eba65/world0bf8d8c9. Commit and fetch+merge+push immediately, then continue5rakehooks (all-day window0..1440 generic extension; exact source in CONTRACT). Whole Threatened, Beginning, FirstDragon, Tainted remain active.
+
+ACTIVE threatened_animals_09: PG RED109688ms; production APPLIED; checkPASS57.55s, authoring2PASS9.827s, native41PASS, pin-refreshPASS inputs3c9eba65/world0bf8d8c9. StrictClippy session8509/log/tmp/questpc3-animals-clippy.log; PG GREEN queued session11340/log/tmp/questpc3-animals-green.log; native--check session66185. Await real GREEN marker, then archive proofs/review/commit/fetch+merge+push immediately. All3NPCs/oneitem3callbacks are staged, metadata updates need restaging. Continue5rakehooks next using CONTRACT source witness, never mark whole Threatened QUAL before remaining sourcehooks.
+
+ACTIVE threatened_animals_09: PG RED109688ms proved all3 physical exchanges absent. Production producer/admission25295/NPC scope3 APPLIED. Authoring2testsPASS9.827s; native generation running /tmp/questpc3-animals-native.log (session56971). After it exits: stage intended generated inputs, run repo world-bundle-compiler pin-refresh, then focused PG GREEN, check/strictClippy. Test strengthened with four-of-five scratch refusal and3 receipts. Earlier test-only notes below are historical.
+
+ACTIVE threatened_animals_09: test-only 3 NPC exchanges. PostgreSQL RED queued /tmp/questpc3-animals-red.log; production callbacks NOT applied. Draft producer /tmp/questpc3-threatened-animals-producer.py; missing admission25295 must preserve source weight200 and known portability. Barriers pushed aefdf542d (15 repairs GREEN89087ms; regression190131ms). Combined extra Clippy/native check still running; inspect logs.
+
 Current batch threatened_barriers_08 is GREEN: 15 repairs/15 receipts, PostgreSQL 89087ms; six-light regression 190131ms; fmt/check/strict Clippy passed (5m48s). Commit and integrate remote, then continue remaining Threatened NPC/world steps.
 
 ## CURRENT barrier implementation — overrides old RED-only notes

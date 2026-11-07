@@ -3,6 +3,7 @@
   "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QUESTPC3: Pilgrimage of Ashes city guides and six blessers at their existing reviewed promotion-candidate cells; no Dawnport; QUESTPC3: Aurita, Taegen and Valindara finite inventory exchanges at existing promotion-candidate cells; QUESTPC3: Tooth Fairy and Tired Tree source map exchanges at existing promotion-candidate cells; QUESTPC3: Maelyrra carried-light evidence and final blossom bag at existing promotion-candidate cell",
   "npcs": [
     "oteryn:npc.a_seagull",
+    "oteryn:npc.a_swan",
     "oteryn:npc.al_dee",
     "oteryn:npc.aldo",
     "oteryn:npc.ambassador_manop",
@@ -21,6 +22,7 @@
     "oteryn:npc.emael",
     "oteryn:npc.enpa_deia_pema",
     "oteryn:npc.eremo",
+    "oteryn:npc.grumpy_stone",
     "oteryn:npc.guide_alexena",
     "oteryn:npc.guide_behil",
     "oteryn:npc.guide_davina",
@@ -35,6 +37,7 @@
     "oteryn:npc.guide_tiko",
     "oteryn:npc.humphrey",
     "oteryn:npc.hyacinth",
+    "oteryn:npc.ikassis",
     "oteryn:npc.kawill",
     "oteryn:npc.kepar",
     "oteryn:npc.lily",

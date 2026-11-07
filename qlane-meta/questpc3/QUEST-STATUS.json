@@ -1516,6 +1516,68 @@
           "local_commit": "a4f1f4a21"
         },
         "environment_recovery": "Content repository linker hit signal7/bus error with137MB free. Removed only obsolete unlocked incremental snapshots, retained newest caches and all build settings; retry5tests passed84.49s."
+      },
+      {
+        "batch": "threatened_barriers_08",
+        "commit": "651071c21",
+        "published_merge": "aefdf542d",
+        "postgres_red_ms": 104046,
+        "postgres_green_ms": 89087,
+        "self_use_regression_ms": 190131,
+        "result": "GREEN; pushed"
+      },
+      {
+        "batch": "threatened_animals_09",
+        "result": "GREEN",
+        "pg_red_ms": 109688,
+        "pg_green_ms": 111630,
+        "entries": [
+          "Ikassis talisman",
+          "A Swan five feathers",
+          "Grumpy Stone map"
+        ],
+        "proofs": {
+          "pg_red": {
+            "sha256": "4a40e497a0d3bd11fbf1e6c9d480b632ffeab0a650efa559b66812c918a10ab7",
+            "log": "/tmp/questpc3-animals-red.log",
+            "result": "expected RED"
+          },
+          "pg_green": {
+            "sha256": "34ffb7d3bcc94bdd4448d47b7eed32c5baad7d117ecc295cec39e4ac6a13252a",
+            "log": "/tmp/questpc3-animals-green.log",
+            "result": "PASS"
+          },
+          "clippy": {
+            "sha256": "d870144065736f0da63ff107d550b182c3205dca3f3632e761c02e23b0a5d330",
+            "log": "/tmp/questpc3-animals-clippy.log",
+            "result": "PASS"
+          },
+          "cargo_check": {
+            "sha256": "fe1d9cbfb9bcaf73b419095bff14b6a428170ea6b13d5fb6795d09ca33314fa4",
+            "log": "/tmp/questpc3-animals-check.log",
+            "result": "PASS"
+          },
+          "authoring": {
+            "sha256": "c806509c2c244f151bef2cc65e328c4ea48d3440930dff1162c0528db8ae294c",
+            "log": "/tmp/questpc3-animals-authoring.log",
+            "result": "PASS"
+          },
+          "native_generation": {
+            "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+            "log": "/tmp/questpc3-animals-native.log",
+            "result": "PASS"
+          },
+          "native_check": {
+            "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+            "log": "/tmp/questpc3-animals-native-check.log",
+            "result": "PASS"
+          },
+          "pins": {
+            "sha256": "999b8f3cc6a5132306b6a8ea00040986e4f15c6151605d9717cb87f6d6a23228",
+            "log": "/tmp/questpc3-animals-pins.log",
+            "result": "PASS"
+          }
+        }
       }
     ],
     "completed_mechanism_batches": {
@@ -3060,127 +3122,90 @@
       "skipped_world_owner": 17
     },
     "current_batch": {
+      "batch": "threatened_animals_09",
+      "entries": [
+        "Ikassis talisman",
+        "A Swan five feathers",
+        "Grumpy Stone map"
+      ],
+      "phase": "GREEN; ready to commit and fast-forward publish",
+      "prior_fixtures": "Animals4 then14; GrumpyStone1 with four scratch flags1/fifth0, then prior fifth1; four then fifth collected feather. No outputs, consumption or successful receipts seeded.",
+      "test_log": "/tmp/questpc3-animals-red.log",
+      "postgres_red": {
+        "duration_ms": 109688,
+        "marker": "THREATENED_ANIMALS POSTGRES_CASE_COMPLETED",
+        "evidence": "talisman=false feathers=false stone_map=false",
+        "sha256": "4a40e497a0d3bd11fbf1e6c9d480b632ffeab0a650efa559b66812c918a10ab7"
+      },
+      "strengthened_after_red": "Add four-of-five scratch negative and exactly3 successful physical receipts; all original positive assertions retained.",
       "checks": {
-        "authoring": {
-          "log": "/tmp/questpc3-barriers-authoring.log",
-          "result": "11passed18.265s",
-          "sha256": "48b5d02df34991512c1406727e84465e066fe701c19354e9a2cfba0d90f385e9",
-          "tail": "................\n----------------------------------------------------------------------\nRan 16 tests in 29.799s\n\nOK\n"
+        "authoring": "PASS2 tests9.827s",
+        "cargo_check": "PASS57.55s",
+        "pin_refresh": {
+          "inputs_digest": "3c9eba653daec62be18469665aebfbef1d764cecb027d5f0015c946e2e02e701",
+          "pins": [
+            {
+              "digest": "0bf8d8c92c222f75cb44ccaaff4f231096629fc47078446277bde055c08b6baf",
+              "previous": "5feab142eb4a4387acf986fec44841e269c58848c4188160871945936863c973",
+              "world": "oteryn"
+            }
+          ]
         },
-        "binding_units": {
-          "log": "/tmp/questpc3-barriers-binding-units.log",
-          "sha256": "ea86bafa3190953f69b9258016bb22daf0e6a91c20896debf42076ad7ef8b733",
-          "result": "4passed0.02s; oldselfbinding unchanged,newselector/minlevel bound"
+        "native_generation": "PASS41 files",
+        "native_check": "running /tmp/questpc3-animals-native-check.log",
+        "clippy": "running /tmp/questpc3-animals-clippy.log",
+        "pg_green": "queued /tmp/questpc3-animals-green.log"
+      },
+      "postgres_green": {
+        "duration_ms": 111630,
+        "talisman": true,
+        "feathers": true,
+        "stone_map": true,
+        "successful_exchange_receipts": 3
+      },
+      "proofs": {
+        "pg_red": {
+          "sha256": "4a40e497a0d3bd11fbf1e6c9d480b632ffeab0a650efa559b66812c918a10ab7",
+          "log": "/tmp/questpc3-animals-red.log",
+          "result": "expected RED"
         },
-        "carlos-pg": {
-          "log": "/tmp/questpc3-food-light-carlos-pg.log",
-          "sha256": "6eccb5c2bb938eeb76d4b5208118ac4f03d7998d5071ba6198e8c32987de938c",
-          "tail": "los_accepts_either_food_without_consumption has been running for over 60 seconds\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=1 actual_greet=1 actual_log=1 duration_ms=159066\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=2 actual_greet=2 actual_log=2 duration_ms=159299\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=3 actual_greet=3 actual_log=3 duration_ms=159414\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=4 actual_greet=4 actual_log=4 duration_ms=159521\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=5 actual_greet=5 actual_log=5 duration_ms=159622\nQUESTPC3_CARLOS_FOOD POSTGRES_ASSERTION_REACHED case=0 greet=5 log=5 trade=0 duration_ms=159731\nQUESTPC3_CARLOS_FOOD POSTGRES_ASSERTION_REACHED case=1 greet=5 log=5 trade=0 duration_ms=159791\nQUESTPC3_CARLOS_FOOD POSTGRES_ASSERTION_REACHED case=2 greet=6 log=6 trade=1 duration_ms=159889\nQUESTPC3_BEGINNING_REWARDS POSTGRES_CASE_COMPLETED duration_ms=160348\nQUESTPC3_CARLOS_FOOD POSTGRES_CASE_COMPLETED duration_ms=160348 success=true\ntest gameplay_transport::monk_save::postgres_tests::questpc3_beginning_rewards::questpc3_beginning_carlos_accepts_either_food_without_consumption ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2570 filtered out; finished in 160.36s\n\n"
-        },
-        "check": {
-          "log": "/tmp/questpc3-barriers-check.log",
-          "sha256": "31e9ff0c7eb07bc64193814cc95e0b25592852950bd879558aa072073f68f392",
-          "result": "dispatch/allfeatures and changeddependencies PASS2m17s"
+        "pg_green": {
+          "sha256": "34ffb7d3bcc94bdd4448d47b7eed32c5baad7d117ecc295cec39e4ac6a13252a",
+          "log": "/tmp/questpc3-animals-green.log",
+          "result": "PASS"
         },
         "clippy": {
-          "log": "/tmp/questpc3-food-light-clippy.log",
-          "sha256": "f0cbaa3b71c1e50509fb5b2b19f78af7726cc23277d6a947aca1ec11c6ee510e",
-          "tail": " oteryn-gameplay-entities v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/entities)\n    Checking oteryn-gameplay-items v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/items)\n    Checking oteryn-gameplay-encounter-rules v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounter-rules)\n    Checking oteryn-gameplay-combat-rules v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat-rules)\n    Checking oteryn-gameplay-spell-rules v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell-rules)\n    Checking oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)\n    Checking oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)\n    Checking oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)\n    Checking oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)\n    Checking oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)\n    Checking oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)\n    Checking oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)\n    Checking oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 07s\n"
+          "sha256": "d870144065736f0da63ff107d550b182c3205dca3f3632e761c02e23b0a5d330",
+          "log": "/tmp/questpc3-animals-clippy.log",
+          "result": "PASS"
         },
-        "content": {
-          "log": "/tmp/questpc3-food-light-content.log",
-          "sha256": "8f38ab94d2ecde99749ba58d9472c8974604adf2880b3fabe456bfe29ba942c6",
-          "tail": "lf.readiness.fetch_update(AcqRel, Acquire, |curr| {\n208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {\n    |\n\nwarning: missing documentation for a function\n   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1\n    |\n502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |\nnote: the lint level is defined here\n   --> vendor/tokio-1.53.1/src/lib.rs:9:5\n    |\n  9 |     missing_docs,\n    |     ^^^^^^^^^^^^\n\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\n\nrunning 123 tests\n....................................................................................... 87/123\n....................................\ntest result: ok. 123 passed; 0 failed; 0 ignored; 0 measured; 152 filtered out; finished in 5.08s\n\n"
+        "cargo_check": {
+          "sha256": "fe1d9cbfb9bcaf73b419095bff14b6a428170ea6b13d5fb6795d09ca33314fa4",
+          "log": "/tmp/questpc3-animals-check.log",
+          "result": "PASS"
         },
-        "context_unit": {
-          "log": "/tmp/questpc3-barriers-context-unit.log",
-          "sha256": "86fa60c604fce981a36e3e2b05b4d80acbfeff4ec567e662f39d01eba68ec0a7",
-          "result": "1passed; historical JSON has no target field"
+        "authoring": {
+          "sha256": "c806509c2c244f151bef2cc65e328c4ea48d3440930dff1162c0528db8ae294c",
+          "log": "/tmp/questpc3-animals-authoring.log",
+          "result": "PASS"
         },
-        "fmt": {
-          "log": "/tmp/questpc3-barriers-fmt-check.log",
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "tail": ""
-        },
-        "lights-pg": {
-          "log": "/tmp/questpc3-food-light-lights-pg.log",
-          "sha256": "1b14c75971e1dca8c4a5ac80db3ca09df53c1de6a2e0ad65967546bf7d34c041",
-          "tail": "d\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\nwarning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.75s\n     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-4d705841b583da6d)\n\nrunning 1 test\ntest gameplay_transport::monk_save::postgres_tests::threatened_dreams::lights::threatened_six_light_transform_branches_are_fenced has been running for over 60 seconds\nTHREATENED_LIGHTS POSTGRES_ASSERTION_REACHED tool=moon primary=true cosmetic=true receipts=2\nTHREATENED_LIGHTS POSTGRES_ASSERTION_REACHED tool=star primary=true cosmetic=true receipts=2\nTHREATENED_LIGHTS POSTGRES_ASSERTION_REACHED tool=sun primary=true cosmetic=true receipts=2\nTHREATENED_LIGHTS POSTGRES_CASE_COMPLETED duration_ms=198251 success=true\ntest gameplay_transport::monk_save::postgres_tests::threatened_dreams::lights::threatened_six_light_transform_branches_are_fenced ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2570 filtered out; finished in 198.26s\n\n"
-        },
-        "mounted-fmt": {
-          "log": "/tmp/questpc3-food-light-mounted-fmt.log",
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "tail": ""
-        },
-        "native": {
-          "log": "/tmp/questpc3-barriers-native-check.log",
+        "native_generation": {
           "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
-          "result": "41producer drift checks PASS; no Item/profile changes"
+          "log": "/tmp/questpc3-animals-native.log",
+          "result": "PASS"
         },
-        "pin-check": {
-          "log": "/tmp/questpc3-food-light-pin-check.log",
-          "sha256": "614d9dbea480e7431582fe554d303552bfc995d638f41c238b2ecb8d35ce3fc3",
-          "tail": "{\n  \"inputs_digest\": \"22ded751f06206b4b13c924cbe7217c6bc2d0458cfc9e71d054812bc243a0efb\",\n  \"pins\": [\n    {\n      \"bytes\": 31102319,\n      \"digest\": \"5feab142eb4a4387acf986fec44841e269c58848c4188160871945936863c973\",\n      \"world\": \"oteryn\"\n    }\n  ]\n}\n"
+        "native_check": {
+          "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+          "log": "/tmp/questpc3-animals-native-check.log",
+          "result": "PASS"
         },
-        "pin-refresh": {
-          "log": "/tmp/questpc3-food-light-pin-refresh.log",
-          "sha256": "eb70634eb83d655f4091a997ef5cfbca1c3bc2803776dc90e6fa0dc919758f12",
-          "tail": "{\n  \"inputs_digest\": \"22ded751f06206b4b13c924cbe7217c6bc2d0458cfc9e71d054812bc243a0efb\",\n  \"pins\": [\n    {\n      \"digest\": \"5feab142eb4a4387acf986fec44841e269c58848c4188160871945936863c973\",\n      \"previous\": \"5feab142eb4a4387acf986fec44841e269c58848c4188160871945936863c973\",\n      \"world\": \"oteryn\"\n    }\n  ]\n}\n"
-        },
-        "postgres_green": {
-          "log": "/tmp/questpc3-barriers-green.log",
-          "sha256": "d9ceeede30c57b46baf54e721b10f140de02fa1bfa9fad638e37cf25e5a3d473",
-          "result": "ActualPG89087ms repairs15/receipts15;all3counters0/empty1each;handle+hotkey,lostack,replay/conflict,wrongperiod/repeats,unchangedglobalmap"
-        },
-        "profiles": {
-          "log": "/tmp/questpc3-food-light-profiles.log",
-          "sha256": "bea6998e912180af1ea77016718cc63c20c78183fbf75d1caf6fc6b971dfddab",
-          "tail": "................\n----------------------------------------------------------------------\nRan 16 tests in 159.647s\n\nOK\n"
-        },
-        "repository": {
-          "log": "/tmp/questpc3-food-light-repository.log",
-          "sha256": "d57631eb1a909bc34ed661c9bf61f53a19630fdcdda8595b489027a1d2633376",
-          "tail": "53.1/src/sync/oneshot.rs:502:1\n    |\n502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |\nnote: the lint level is defined here\n   --> vendor/tokio-1.53.1/src/lib.rs:9:5\n    |\n  9 |     missing_docs,\n    |     ^^^^^^^^^^^^\n\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\n\nrunning 5 tests\n..test bed_promotion_is_idempotent_on_the_committed_world has been running for over 60 seconds\ntest full_game_tree_contract_nodes_are_materialized_without_entering_legacy_package has been running for over 60 seconds\ntest repository_package_recaptures_and_rewrites_without_identity_or_layer_drift has been running for over 60 seconds\n...\ntest result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 138.24s\n\n"
-        },
-        "self_use_regression": {
-          "log": "/tmp/questpc3-barriers-light-regression.log",
-          "sha256": "fc2e62961382b796280b37cd7c3503d4a01572b278e9635c1fb235d5a8fc34dd",
-          "result": "ActualPG190131ms all6charging/cosmetic branches true;2receipts per family"
+        "pins": {
+          "sha256": "999b8f3cc6a5132306b6a8ea00040986e4f15c6151605d9717cb87f6d6a23228",
+          "log": "/tmp/questpc3-animals-pins.log",
+          "result": "PASS"
         }
       },
-      "checks_so_far": {
-        "check": "dispatch/allfeatures PASS2m17s /tmp/questpc3-barriers-check.log",
-        "binding_units": "4PASS0.02s, publishedself legacyencoding + targetselector/minlevel binding /tmp/questpc3-barriers-binding-units.log",
-        "authoring": "11PASS18.265s /tmp/questpc3-barriers-authoring.log",
-        "green_pending": "/tmp/questpc3-barriers-green.log; actual15target writes,wrongperiod/repeats/changedtarget/lostack/hotkeys and terminalphysicaltools",
-        "remaining_checks": "contextserialization unit/fmt/strictClippy3changedcrates /tmp/questpc3-barriers-{context-unit,fmt-check,clippy}.log"
-      },
-      "clippy_proof": {
-        "log": "/tmp/questpc3-barriers-clippy.log",
-        "sha256": "280fe23d5e6be81c3251308818cb9d612ee2b155ba69b86620876260e179b326",
-        "duration": "5m48s",
-        "result": "PASS"
-      },
-      "fixture": "Prior NM7 and all3charged tools/counters5 only; actual15flags/counterdecrements/terminaltools must come from native dispatch. Fixture relocation uses existing sealed movement owner. Catalogue validates before expensive capture.",
-      "id": "threatened_barriers_08",
-      "implementation": "Generic UseCarriedOnTarget with exact source/target-intent digest, pinned map resolution/revision/reachability, existing Character replacement/clock/receipt/recovery owners. Native handles and definition hotkeys. Source75exact-state recipes,15flags; nonfinal retain charged,terminal restore empty; map never mutated. Optional target context serializes away for existing self-use, old hashes preserved; new selector/minlevel terms bound only when present.",
-      "phase": "GREEN: PostgreSQL 15 repairs/15 receipts in 89087ms; self-use regression 190131ms; fmt, check and strict Clippy passed",
-      "pin_scope": "No existing Item/native/world/compiler input changed; source world callbacks only, existing native policies cover all6charged/empty operands. Verify native producer --check; retain prior pin proof if inputs unchanged.",
-      "producer_draft": "/tmp/questpc3-next-barrier-producer.py NOT APPLIED; 75 exact-state source recipes under existing512cap.",
-      "red_log": "/tmp/questpc3-barriers-red.log",
-      "red_proof": {
-        "log": "/tmp/questpc3-barriers-red-fixed-trait.log",
-        "sha256": "c9fef2a0fc286d3f2d6d70123632c33fc55cd10e70c85f36009e68c11c6a6361",
-        "duration_ms": 104046,
-        "marker": "THREATENED_BARRIERS POSTGRES_ASSERTION_REACHED repairs=0 receipts=0",
-        "result": "All3families counter5/empty0; real fifteen-target assertions reached; no production support yet."
-      },
-      "review": "Read all implementation diffs: native instance/hotkey entrypoints,source+target intent binding,server map/revision/reachability,Runtime movement/control/trade/death fences,retained pending/receipt reconciliation,Root exact-instance atomic replacement and track effects,per-player15flags,no shared map mutation,legacy binding/context compatibility. No new persistence owner or migration.",
-      "scope": "15 distinct per-player repairs, five charges per held tool, exact Native USE_WITH map target/time/source; final charge restores empty source, global map revision unchanged",
-      "test": "threatened_fifteen_distinct_barriers_decrement_exact_carried_tools",
-      "upstream": "qengine2=82278cf6c,PC5=f3f6a43fb,PC6=53d5648b8,L2=c9cdfd5ae checked; no carried-target/time/receipt owner. Reuse existing map resolver, minute math and Character replacement owner.",
-      "whole_entry_status": "Retain all qualifications; four owned whole quests still active unless durable quest rows show further remote qualification.",
-      "whole_quests": "Four remain IN_PROGRESS; no feature deferral."
+      "review": "Exactly3 new callback rows; all old callbacks preserved. Only25295 materializable/stack_class changes; canonical physical facts unchanged. Three NPC placements from retained promotion candidates. Four-of-five scratch negative, short feathers, topic guard and repeat refusal pass. No whole-quest completion claimed."
     },
     "diagnosis": {
       "log": "/tmp/questpc3-counter-diagnosis.log",

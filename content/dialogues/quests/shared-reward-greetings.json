@@ -2,6 +2,12 @@
   "schema": 1,
   "npcs": [
     {
+      "npc": "oteryn:npc.a_swan",
+      "greet": "I salute you, mortal being.",
+      "farewell": "Good bye, |PLAYERNAME|!",
+      "walkaway": "How rude!"
+    },
+    {
       "npc": "oteryn:npc.aurita",
       "greet": "Welcome, |PLAYERNAME|. How can I help you?",
       "farewell": "Safe travels, |PLAYERNAME|.",
@@ -24,6 +30,12 @@
       "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
       "farewell": "Safe travels, |PLAYERNAME|.",
       "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.grumpy_stone",
+      "greet": "Please don't bother me, human being. I have my own {problems}.",
+      "farewell": "Nature's blessing!",
+      "walkaway": "How rude!"
     },
     {
       "npc": "oteryn:npc.guide_alexena",
@@ -102,6 +114,12 @@
       "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
       "farewell": "Safe travels, |PLAYERNAME|.",
       "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.ikassis",
+      "greet": "Nature's blessing, traveler!",
+      "farewell": "Good bye, |PLAYERNAME|!",
+      "walkaway": "How rude!"
     },
     {
       "npc": "oteryn:npc.kawill",
