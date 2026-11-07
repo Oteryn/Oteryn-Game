@@ -902,3 +902,10 @@ Reserved normal MapMINT House destination field66 is next field6+lane60;
 materialization House key66 and scope generation67 are next fields6/7+lane60
 in their separate message. These fields admit a named House interior through
 the existing materialization owner; no command or mechanic ID is added.
+
+The negotiated House wire-bound regressions both pass (2.74s build/run),
+including the exact12,862-byte worst-case payload and legacy20-entry refusal.
+The decoder's second non-browse byte guard now follows authenticated446
+selection. Protocol all-target/all-feature clippy-D warnings passes12.10s;
+full session176 tests pass21.19s execution. Native entry25 selection/open test
+passes11.81s build/run. Other adapter follow-ups remain independently tracked.

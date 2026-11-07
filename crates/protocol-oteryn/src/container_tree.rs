@@ -72,8 +72,10 @@ pub const MAX_HOUSE_CONTAINER_VIEW_BYTES: usize = 2
     + 2 * MAX_ITEM_TARGET_BYTES
     + 2
     + MAX_HOUSE_CONTAINER_VIEW_ENTRIES * MAX_ITEM_ENTRY_ELEMENT_BYTES;
+// A complete16-view set necessarily contains view0, whose zero-valued id
+// omits its two-byte protobuf field. Other view counts are strictly smaller.
 pub const MAX_HOUSE_CONTAINER_VIEWS_BYTES: usize =
-    MAX_CONTAINER_VIEWS * (3 + MAX_HOUSE_CONTAINER_VIEW_BYTES);
+    MAX_CONTAINER_VIEWS * (3 + MAX_HOUSE_CONTAINER_VIEW_BYTES) - 2;
 /// Domain 14 snapshot and delta: 16 view elements.
 pub const MAX_CONTAINER_VIEWS_BYTES: usize = MAX_CONTAINER_VIEWS * MAX_CONTAINER_VIEW_ELEMENT_BYTES;
 /// `ContainerOpenV1`: the handle 1 + 10 and `replace_view` 1 + 1.
@@ -299,8 +301,14 @@ fn decode_view(
             _ => return malformed(),
         }
     }
-    // Selection permits the extension, but an ordinary view keeps its original byte bound.
-    if browse.is_none() && input.len() > MAX_CONTAINER_VIEW_BYTES {
+    // Browse selection never widens ordinary containers. Only the authenticated
+    // supplementary House mode raises their ordinary bound from20 to25 entries.
+    let ordinary_bytes = if house_capacity_v2 {
+        MAX_HOUSE_CONTAINER_VIEW_BYTES
+    } else {
+        MAX_CONTAINER_VIEW_BYTES
+    };
+    if browse.is_none() && input.len() > ordinary_bytes {
         return Err(ItemViewWireError::LimitExceeded);
     }
     let capacity = capacity.unwrap_or(0);
