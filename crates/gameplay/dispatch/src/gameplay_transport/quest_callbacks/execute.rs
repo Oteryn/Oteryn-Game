@@ -438,6 +438,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
+        if !self
+            .admit_shared_switch_gate(
+                permit,
+                runtime,
+                actor,
+                session,
+                map,
+                callback,
+                key,
+                expected_revision,
+                cause,
+                fence,
+                expected,
+            )
+            .await
+        {
+            return UseDisposition::Rejected;
+        }
         let mut success_message = if callback.storage.is_empty() {
             callback.success_message.clone()
         } else {

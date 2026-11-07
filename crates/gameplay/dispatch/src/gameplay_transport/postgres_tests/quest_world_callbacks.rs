@@ -265,7 +265,7 @@ pub(super) fn world(
     }
     if let Some(presence) = &callback.effects.item_presence {
         let p = presence.position;
-        cells.entry((p.floor + 1,p.x,p.y + 1)).or_default();
+        cells.entry((p.floor + 1, p.x, p.y + 1)).or_default();
     }
     let mut effect_positions = Vec::new();
     if let Some(pair) = &callback.effects.portals {
@@ -328,6 +328,42 @@ pub(super) fn world(
                 ..Default::default()
             },
         });
+    if callback.key == "oteryn:quest-callback/l6-shared-gate-fixture" {
+        let (action, _, _) =
+            super::l6_shared_gates::spec(callback.selector.unique.ok_or("gate UID")?)?;
+        for x in trigger.x - 2..=trigger.x + 18 {
+            for y in trigger.y - 1..=trigger.y + 1 {
+                cells.entry((trigger.floor, x, y)).or_default();
+            }
+        }
+        let off = u32::try_from(data.manifest.palette.len())?;
+        for appearance in [2772, 2773] {
+            let index = u32::try_from(data.manifest.palette.len())?;
+            data.manifest.palette.push(bundle::PaletteEntry {
+                key: format!("oteryn:terrain.tibia.i{appearance}"),
+                family: bundle::Family::Terrain,
+                id: index,
+                terrain: Some(bundle::Terrain {
+                    kind: bundle::TerrainKind::Common,
+                    walkable: None,
+                    ground_speed: None,
+                }),
+            });
+        }
+        for n in 0..8 {
+            cells
+                .entry((trigger.floor, trigger.x + 1 + 2 * n, trigger.y + 1))
+                .or_default()
+                .push(sector::Item {
+                    palette: off,
+                    depth: 0,
+                    attrs: sector::Attrs {
+                        action: Some(action),
+                        ..Default::default()
+                    },
+                });
+        }
+    }
     if callback.key == "oteryn:quest-callback/l6-instrument-fixture" {
         // A bounded open-room fixture retains the actual B3 instrument positions.
         // It qualifies the selector and transaction, not the tomb's collision path.

@@ -23,6 +23,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let small_ruby = name.starts_with("l6-small-ruby");
+    let shared_gate = name.starts_with("l6-tomb-gate-");
     let shared_switch = name.starts_with("l6-tomb-switch-");
     let tomb_native = name.starts_with("l6-tomb-native-");
     let carried_step = name.starts_with("l6-tomb-carried-") || tomb_native;
@@ -86,11 +87,29 @@ fn scenario_case(
         || floor_assembly
         || carried_step
         || shared_switch
+        || shared_gate
     {
         "fish-napping-key"
     } else {
         name.strip_suffix("-expiry").unwrap_or(name)
     })?;
+    if shared_gate {
+        let unique = name.rsplit('-').next().ok_or("gate UID")?.parse()?;
+        callback.key = "oteryn:quest-callback/l6-shared-gate-fixture".into();
+        callback.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn;
+        callback.selector.position = Some(trigger);
+        callback.selector.unique = Some(unique);
+        callback.selector.action = None;
+        callback.selector.appearance = Some(100);
+        callback.lever = None;
+        callback.storage.clear();
+        callback.offerings.clear();
+        callback.passages.clear();
+        callback.item_on_target = None;
+        callback.effects = Default::default();
+        callback.teleport = Some(super::super::l6_shared_gates::spec(unique)?.2);
+        callback.return_on_failure = true;
+    }
     if shared_switch {
         callback.key = "oteryn:quest-callback/l6-shared-switch-fixture".into();
         callback.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::Use;
@@ -553,6 +572,17 @@ fn scenario_case(
         } else if floor_assembly {
             super::super::l6_floor_assembly::exercise(&mut owner, &mut admitted, &h, fence, name)
                 .await?;
+        } else if shared_gate {
+            super::super::l6_shared_gates::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                trigger,
+                name,
+            )
+            .await?;
         } else if shared_switch {
             super::super::l6_shared_switches::exercise(&owner, &mut admitted, &h, trigger).await?;
         } else if carried_step {

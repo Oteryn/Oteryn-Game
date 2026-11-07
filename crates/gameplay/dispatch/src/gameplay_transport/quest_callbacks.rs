@@ -9,6 +9,7 @@ mod encounter;
 mod execute;
 pub(super) mod monsters;
 mod rewards;
+mod shared_gate;
 mod soul_war_reward;
 
 use super::paced_movement::underwater_drown::underwater;
@@ -408,7 +409,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             let fence = if callback.storage.is_empty() && oteryn_gameplay_quests::quest::carried_step::recipe(&callback.key).is_none()
-                && oteryn_gameplay_quests::quest::shared_switches::recipe(&callback.key).is_none() {
+                && oteryn_gameplay_quests::quest::shared_switches::recipe(&callback.key).is_none()
+                && oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key).is_none() {
                 None
             } else {
                 self.current_quest_fence(command.game_session_id)
@@ -571,6 +573,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let fence = if callback.storage.is_empty()
                 && oteryn_gameplay_quests::quest::carried_step::recipe(&callback.key).is_none()
                 && oteryn_gameplay_quests::quest::shared_switches::recipe(&callback.key).is_none()
+                && oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key).is_none()
             {
                 None
             } else {
@@ -706,6 +709,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, entered.position()),
                 underwater(map, snapshot.position()),
             );
+            if let Some(gate) = oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key)
+                && let Some(at) = native(snapshot.position())
+            {
+                let _ = map.facts.emit_movement_effect(at, gate.effect);
+            }
         }
         if let Some(message) = &callback.failure_message {
             self.states.chat.push_quest_feedback(session, message);
