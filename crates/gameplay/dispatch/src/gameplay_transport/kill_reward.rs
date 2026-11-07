@@ -90,6 +90,10 @@ type BossSlotBonuses = Vec<([u8; 16], u16)>;
 /// One captured kill awaiting its settle.
 #[derive(Debug, Clone)]
 pub struct PendingKillSettlement {
+    pub(super) world_change: Option<(
+        u64,
+        crate::durability::world_event::changes::counters::CreditEvent,
+    )>,
     pub facts: ProjectedCreatureDeathFacts,
     pub creature: String,
     pub row: Option<Arc<CreatureRewardRow>>,
@@ -128,6 +132,19 @@ pub struct PendingKillSettlement {
 pub(super) struct TaskBoardKillRecipient {
     pub fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
     pub occurrence: [u8; 16],
+}
+
+/// Carrier floors use the positive spawn-floor convention; map overlay floors are separate.
+pub(super) fn world_change_credits(
+    creature: &str,
+    position: crate::foundation::MovementLocalPosition,
+) -> Vec<(
+    crate::durability::world_event::changes::counters::CounterKind,
+    crate::durability::world_event::changes::counters::Credit,
+)> {
+    crate::durability::world_event::changes::counters::bindings()
+        .map(|bindings| bindings.credits(creature, (position.x, position.y, position.floor)))
+        .unwrap_or_default()
 }
 
 /// A native death's authored creature identity and first observed wall clock.
@@ -185,6 +202,7 @@ impl PendingKillSettlement {
             activity_observed_at: observed_at,
             activity_at_death: None,
             damage_shares: Vec::new(),
+            world_change: None,
             prey_checkpoint: None,
             forge: None,
             echo: None,
@@ -1241,6 +1259,9 @@ pub fn record_creature_kill(
         return;
     }
     let snapshot = runtime.companion_snapshot_including_dead(target);
+    let wild = snapshot
+        .as_ref()
+        .is_ok_and(|view| view.state.master.is_none() && !view.state.policy.is_familiar);
     let personal_rewards = snapshot.as_ref().is_ok_and(|view| {
         view.state.master.is_none()
             && !view.state.policy.is_familiar
@@ -1343,6 +1364,31 @@ pub fn record_creature_kill(
             receipts.kill = true;
         }
     }
+    let world_change = if wild {
+        runtime.world_change_cycles().and_then(|(epoch, cycles)| {
+            let credits = world_change_credits(&creature, facts.corpse);
+            if credits.is_empty() {
+                return None;
+            }
+            let mut generations = [0; 7];
+            for kind in crate::durability::world_event::changes::counters::CounterKind::ALL {
+                generations[kind.index()] = *cycles.get(kind.key())?;
+            }
+            Some((
+                *epoch,
+                crate::durability::world_event::changes::counters::CreditEvent {
+                    source_kind: 1,
+                    occurrence: crate::durability::party_kill_xp::encode_death_key(facts.death),
+                    credits,
+                    counter_generations: generations,
+                    occurred_at_ms: facts.died_at_unix_ms,
+                    character: Some(principal.character),
+                },
+            ))
+        })
+    } else {
+        None
+    };
     let source = sink.rewards.encounter_facts(&creature);
     let prey_checkpoint = sink.prey.and_then(|states| {
         states.prey_kill_checkpoint(
@@ -1398,7 +1444,7 @@ pub fn record_creature_kill(
                 // donor. Missing a native corpse row must not lose these points.
                 // A missing native corpse cannot erase the independently frozen
                 // Prey kill counter. Its actual settled loot value remains zero.
-                if echo.is_some() || prey_checkpoint.is_some() {
+                if echo.is_some() || prey_checkpoint.is_some() || world_change.is_some() {
                     accept_kill(
                         runtime,
                         sink.queue,
@@ -1413,6 +1459,7 @@ pub fn record_creature_kill(
                             activity_observed_at: observed_at,
                             activity_at_death: None,
                             damage_shares,
+                            world_change,
                             prey_checkpoint,
                             forge: None,
                             echo,
@@ -1449,6 +1496,7 @@ pub fn record_creature_kill(
             let mut entry = entry;
             // Only the actual lethal producer supplies the retained Instance clock.
             entry.activity_death = activity_death;
+            entry.world_change = world_change;
             refuse(reason.as_str(), &creature);
             entry.prey_checkpoint = prey_checkpoint;
             accept_kill(runtime, sink.queue, entry);
@@ -1735,6 +1783,7 @@ pub fn record_creature_kill(
         None
     };
     let entry = PendingKillSettlement {
+        world_change,
         boss_reward,
         activity_death,
         forge,
@@ -2422,6 +2471,41 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         inflight_before: usize,
     ) -> SettleReport {
         let admission = self.admission;
+        if let Some((epoch, event)) = &entry.world_change {
+            let current = {
+                let runtime = admission.runtime.lock().await;
+                let digest = runtime.content_pin().server_artifact_digest();
+                let revision = format!(
+                    "sha256:{}",
+                    digest
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>()
+                );
+                (runtime.owner_fence().is_ok() && revision == entry.ground.content_revision).then(
+                    || {
+                        (
+                            runtime.binding().runtime_scope(),
+                            runtime.binding().scope_generation(),
+                        )
+                    },
+                )
+            };
+            let Some((scope, generation)) = current else {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            };
+            match admission.root.credit_world_change_event(admission.character, admission.holder, scope, generation, *epoch, event.clone()).await {
+                Ok(crate::durability::world_event::changes::counters::CreditOutcome::Applied { .. } |
+                   crate::durability::world_event::changes::counters::CreditOutcome::AlreadyApplied) => {},
+                Ok(crate::durability::world_event::changes::counters::CreditOutcome::Refused) => {
+                    operator_event("world_change_credit_refused reason=stale_source_or_cycle");
+                },
+                Err(_) => return SettleReport { verdict: SettleVerdict::Retry, no_progression: false },
+            }
+        }
         if !admission.credit_echo_warden_death(entry).await {
             return SettleReport {
                 verdict: SettleVerdict::Retry,

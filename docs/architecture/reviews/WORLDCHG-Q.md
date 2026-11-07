@@ -2,6 +2,30 @@
 
 Branch: `claude/happy-davinci-ijz3wy-worldchg`. Follow-up starts at `34e506be735f40b5642e04ad3e5449b355ac4531`, fetched and advanced with `git merge --ff-only`. No PR is requested or opened; no force push or owner replacement.
 
+## Active scope after operator split
+
+This branch now owns the generic shared credited-kill counter, save-time stage transitions and phased spawns for **Demon Wars, The Fire-Feathered Serpent, The Mage's Tower, Deeplings, Hive Born, Overhunting and Fire from the Earth**, followed by qualification/callbacks for **Grimvale, Oriental Trader, Thawing and Their Master's Voice**. Other title bindings belong to WVAR, WCONTRIB and WEVENTS and are not changed here. The portal batch `b6efb554d` was validated and pushed before the split; its title-specific changes are removed by a forward commit. The generic all-inactive epoch-zero bootstrap safeguard is retained. No force push, reset, rebase or PR.
+
+Rescope validation: fmt and all-five-crate clippy `-D warnings` passed; world-change **22 tests passed**; bootstrap **1 passed**; PostgreSQL18.6 **2 passed**,7.76s, both `WORLDCHG-Q PG EXECUTED` markers (including8concurrent writers and native Stampede scheduling). Pin refresh/check passed with unchanged inputs`ebae5fa901f10f1711a101fc00c19584b7704e3beccf626c8afa4c1b2b1b8f87` and World`3af394d0f4e68a8485d4655e3109ceaf867320c5ca053290a29e8d297faf7afd`. Logs `/tmp/worldchg-rescope-*.log`. A disk-full interruption in the first bootstrap build was corrected by removing only superseded completed task incremental checkpoints; the rerun passed. Current publication principal is `blakinio`.
+
+### Shared credited-kill batch (qualification still in progress)
+
+The existing `world_event::changes` owner now has seven typed counter machines and migration1130 (free on main and every open PR when claimed). They reset/advance inside the existing reset transaction; persisted phase state is projected by `changes::load`, rather than changing immutable daily selection JSON. Receipt insertion, tally, personal observer counters and phase transitions share one transaction. Full native death identity deduplicates across principals; generation and epoch reject credits from an earlier cycle. The existing native kill queue freezes source region, wildness, cycle and clock on the lethal turn, including deaths without an ordinary loot/corpse row. It resolves independent current scope/node/content facts at settlement. No RAID/DAILY owner or additional kill queue was introduced.
+
+The retained source leaves the Deepling threshold and Overhunting thresholds unspecified. `credited-kills.json` explicitly labels native choices (200points,1000deer,100weightedrecovery) and native geometry separately from source facts. Serpent uses immediate1000/2000 milestones, requires both mission completion and2000renegades to reset; Hive distinguishes200points from200actions; Mage energized-death transition requires2000Yielothax and retains its five-minute collapse deadline; Fire from the Earth uses a purpose-separated199permille save draw, with50kills reserved for personal progress. These machines alone do not qualify missing phase projection/action consumers. The eleven active-scope titles remain in implementation until those consumers and their focused proofs are complete.
+
+Shared-counter batch validation (2026-11-06):
+
+- RED: missing counter module/API (`/tmp/worldchg-counter-red.log`, `/tmp/worldchg-counter-pg-red.log`); native floor regression failed with `left: []`, expected `FireFeathered/Kill(0)` (`/tmp/worldchg-native-floor-red.log`); real PG principal-substitution case failed in6.64s before the payload-binding repair (`/tmp/worldchg-counter-principal-red.log`).
+- `cargo test --locked -p oteryn-gameplay-world-change`: **30passed** (unit, content, owner and counter tests).
+- `cargo test --locked -p oteryn-gameplay-dispatch gameplay_transport::kill_reward::tests --lib --quiet`: **48passed**, including the positive carrier-floor boundary and negative overlay-floor case.
+- `cargo test --locked -p oteryn-game-server --test character_authority_postgres worldchg_ --quiet -- --nocapture`: **3passed**,8.98s. All three `WORLDCHG-Q PG EXECUTED` markers present; new counter case8.915989548s, including8concurrent runtime-role writers, same-death replay, changed-principal refusal, rollback, stale epoch/scope, transaction-token substitution and save replay. The first-character binding is immutable; changing it conflicts, while the receipt key remains the full World death.
+- `cargo clippy --locked -p oteryn-gameplay-world-change -p oteryn-gameplay-durability -p oteryn-gameplay-entities -p oteryn-gameplay-dispatch -p oteryn-game-server --all-targets --all-features -- -D warnings`: **passed**,2m15s after the final repair.
+- `oteryn-world-bundle-compiler pin-refresh .` and the same normally built compiler's `pin-check . /tmp/worldchg-counter-pin-check`: **passed**. Inputs and31,101,773-byte World digest remain unchanged (`ebae5fa...b8f87`, `3af394d...afd`). Generated pins were not hand-edited.
+- A disk-full link/check interruption was resolved by deleting only completed task-generated build checkpoints, including superseded pre-counter batches; current working sessions and prepared dependencies were retained. No reduced build profile or check waiver was used. Successful logs: `/tmp/worldchg-counter-{unit,kill-tests,pg-green-final,clippy-green-final,pin-refresh,pin-check}.log`.
+
+The remainder below records the historical owner/binding work at3722c495c; its inventory is not the final status of the narrowed task. Current credited-kill implementation and qualification evidence will replace this historical inventory as each batch completes.
+
 ## Qualification scope and existing owners
 
 **Four READY predicates retained, one HELD title promoted to QUALIFIED (Stampede),38HELD.** This qualifies the shared activation gate, its existing native physical path and the cited achievement prerequisite. It does not claim every title's personal quest journal/reward lane is implemented. `content/encounters/world-changes/owner-catalogue.json` remains the authored inventory. HELD content never enters selection even when its chance or a threshold is known.
@@ -26,7 +50,7 @@ General W1 activation/layer compilation is still held; extracted Fury/Nightmare 
 - `changes::raid_requirements()` returns authored raid→world-change preconditions; the current bindings are Stampede and Furyosa. The existing durable raid scheduler joins this with `changes::load` and `owner::is_active`. Furyosa is also bound to `fury_gates`; that predicate stays false while its native layer/movement admission is HELD, so no new Furyosa schedule/check is created. Quest lanes do not trigger or duplicate the raid.
 - Contributions remain `changes::contribute(tx,recovery,world,epoch,operation_id,ContributionKind::{Coal,Medicine,Votes},amount)` and `changes::tally(tx,world,epoch,kind)`. Fence current Character/session/generation and validate/debit custody/eligibility in the **same** transaction. Applied/Replayed are pending until commit; replay must not debit twice. A tally is not a transport, disease, election, rank or reward grant. No donation/vote route is exposed for held titles.
 
-## Per-title status and exact missing facts
+## Historical per-title inventory at3722c495c
 
 Evidence was read from the retained source definitions, EVENTS-WORLD-1 W15, `docs/agents/evidence/OTV2-20261102-quest-patterns-0.md`, the raid catalogue and the donor archive manifest/blobs. The archive pins Crystal9f5a72…, Canary04b83b… and Crystal-summer00ce02… separately; its individual exchange/stable/spell components do not certify a shared title. Exact wiki provider/page/revision/hash references remain in the catalogue. No map absence is inferred from a Lua absence: base creature positions do not establish selected-variant membership.
 
