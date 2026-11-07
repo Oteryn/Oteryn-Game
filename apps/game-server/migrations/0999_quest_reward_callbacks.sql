@@ -119,3 +119,7 @@ REVOKE ALL ON game_quest_reward_sources FROM PUBLIC;
 GRANT SELECT,INSERT ON game_quest_reward_sources TO oteryn_game_runtime;
 GRANT SELECT ON game_quest_reward_sources TO oteryn_game_control;
 REVOKE ALL ON FUNCTION game_quest_reward_complete() FROM PUBLIC;
+
+-- Source milestones are immutable even when optional repeats reset their tracks.
+CREATE INDEX game_quest_reward_receipt_evidence
+    ON game_character_quest_receipts(character_id, quest_key, transition_key);

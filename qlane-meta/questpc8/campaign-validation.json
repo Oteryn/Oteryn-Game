@@ -1,37 +1,40 @@
 {
   "base": "fced2532a",
   "qengine2_reused": "5a6de28c1",
-  "scope": "shared atomic NPC reward participant plus complete chosen hunting campaign",
+  "scope": "ordered chosen hunting campaign with immutable report evidence; reconciled shared qengine2 participants and world effects",
   "checks": {
     "campaign_pg": {
-      "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards -- --nocapture",
+      "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards -- --nocapture --test-threads=1",
+      "environment": "CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1; sourced /workspace/oteryn-env/env.sh",
       "exit_code": 0,
-      "log": "/tmp/questpc8-campaign-final2.log",
-      "sha256": "6bde54f42070b57e8e85d713b2152e924f05b71df032fc769ec02e636481067e",
+      "log": "/tmp/questpc8-merge-campaign.log",
+      "sha256": "78779197a0167bc052a5908e491da228233fdbdd56a473d08726d573d2e16220",
       "proof": [
         "GRIZZLY_NPC_WIRE POSTGRES_CASE_COMPLETED case=5",
-        "POSTGRES_CASE_COMPLETED questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards duration=116.125280947s",
-        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2534 filtered out; finished in 116.13s"
+        "POSTGRES_CASE_COMPLETED questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards duration=117.259208372s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2534 filtered out; finished in 117.26s"
       ]
     },
     "father_pg": {
-      "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib catalogue_npc_father_fresh_acceptance_is_one_eleven_track_transaction -- --nocapture",
+      "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib catalogue_npc_father_fresh_acceptance_is_one_eleven_track_transaction -- --nocapture --test-threads=1",
+      "environment": "CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1; sourced /workspace/oteryn-env/env.sh",
       "exit_code": 0,
-      "log": "/tmp/questpc8-campaign-father-final.log",
-      "sha256": "35ad0f291aae930ebc5f419014253a66214ef522fe983126aa61f39d806d7eee",
+      "log": "/tmp/questpc8-merge-father.log",
+      "sha256": "eabaad28e9a9d19385c3f5fbd0879b34497fb3e7c2d8a79bbdc359d7cf322747",
       "proof": [
-        "POSTGRES_CASE_COMPLETED catalogue-npc-father 47.018053928s",
-        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2534 filtered out; finished in 47.02s"
+        "test gameplay_transport::monk_save::postgres_tests::npc_program::catalogue_npc_father_fresh_acceptance_is_one_eleven_track_transaction ... POSTGRES_CASE_COMPLETED catalogue-npc-father 45.855361604s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2534 filtered out; finished in 45.86s"
       ]
     },
     "world_input_pg": {
-      "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib rotten_blood_postgres_literal_altar_consumption_and_replay -- --nocapture",
+      "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib rotten_blood_postgres_literal_altar_consumption_and_replay -- --nocapture --test-threads=1",
+      "environment": "CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1; sourced /workspace/oteryn-env/env.sh",
       "exit_code": 0,
-      "log": "/tmp/questpc8-campaign-input-final.log",
-      "sha256": "e549d621f91fe22ba35c6b864d260fb743c7f818cda513aacf5b606e8af752c6",
+      "log": "/tmp/questpc8-merge-altar.log",
+      "sha256": "af2e6523433bd623acbd2249581e21d51196212c1bdeeb57bbe5aaa7be953e98",
       "proof": [
         "ROTTEN_BLOOD POSTGRES_CASE_COMPLETED literal_altar possession_only_phase atomic_item_burn replay",
-        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2534 filtered out; finished in 25.13s"
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2534 filtered out; finished in 28.59s"
       ]
     },
     "rules_unit": {
@@ -45,53 +48,105 @@
     },
     "rewards_unit": {
       "command": "cargo test --locked -p oteryn-gameplay-quests --lib reward_callbacks -- --nocapture",
+      "environment": "CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=3; sourced /workspace/oteryn-env/env.sh",
       "exit_code": 0,
-      "log": "/tmp/questpc8-reward-final-unit.log",
-      "sha256": "e799736bce7228e0234f69d853594f0b58dd1efd84a52e79fc49335647aaa939",
+      "log": "/tmp/questpc8-merge-unit.log",
+      "sha256": "7b4778d33cc86d50126889d6ccdde4177f3d4d828205a2da916d14b25191958c",
       "proof": [
-        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 261 filtered out; finished in 0.68s"
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 263 filtered out; finished in 0.66s"
       ]
     },
     "check": {
-      "command": "cargo check --locked -p oteryn-gameplay-quests -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch --all-features",
+      "command": "cargo check --locked -p oteryn-gameplay-dispatch",
+      "environment": "CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1; sourced /workspace/oteryn-env/env.sh",
       "exit_code": 0,
-      "log": "/tmp/questpc8-campaign-check-final2.log",
-      "sha256": "f192c61e62575be244c6a28fb0581a6488b6ae57e257ef7e9b8946466ce4b378"
+      "log": "/tmp/questpc8-merge-check.log",
+      "sha256": "4e3fb87b639925eb3551a77d98985884ca1ad6a10a41d53f3aa17656a180a265",
+      "proof": []
     },
     "clippy": {
-      "command": "cargo clippy --locked -p oteryn-gameplay-quests -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch --all-features --all-targets -- -D warnings",
+      "command": "cargo clippy --locked -p oteryn-gameplay-quests -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-gameplay-entities -p oteryn-gameplay-world -p oteryn-gameplay-npc --all-features --all-targets -- -D warnings",
+      "environment": "CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1; sourced /workspace/oteryn-env/env.sh",
       "exit_code": 0,
-      "log": "/tmp/questpc8-campaign-clippy-final.log",
-      "sha256": "7ec63fd43ae79c8a475efec8fb199a48d7aefcc15247ea2080ee4a9e1b09f642"
+      "log": "/tmp/questpc8-merge-clippy.log",
+      "sha256": "38010e99175905bc8923936e2ffaaec6405c75894d2862e2064d99be54238fd0",
+      "proof": []
     },
     "fmt": {
       "command": "cargo fmt --all -- --check",
+      "environment": "CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1; sourced /workspace/oteryn-env/env.sh",
       "exit_code": 0,
-      "log": "/tmp/questpc8-campaign-fmt-final.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      "log": "/tmp/questpc8-merge-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "proof": []
     },
     "pins": {
-      "command": "oteryn-world-bundle-compiler pin-refresh .; oteryn-world-bundle-compiler pin-check . /tmp/questpc8-campaign-pincheck",
+      "command": "oteryn-world-bundle-compiler pin-refresh .; oteryn-world-bundle-compiler pin-check . /tmp/questpc8-merge-pincheck",
+      "environment": "standalone repository compiler binary, serialized with large Cargo builds",
       "exit_code": 0,
-      "log": "/tmp/questpc8-campaign-pins.log",
-      "sha256": "f72c2b54f69889fa07ea0a6d73a9d1bec049bb712242a1dc7b8e62c8a860d6c5"
+      "log": "/tmp/questpc8-merge-pins.log",
+      "sha256": "05b88d437ad4ba777c640b50766ce239d5a71a04b8935e4ca05d0254d8c4bba8",
+      "proof": []
     },
     "content_integration": {
       "command": "cargo test --locked -p oteryn-game-server --test integration_rest content_ --quiet",
+      "environment": "CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1; sourced /workspace/oteryn-env/env.sh",
       "exit_code": 0,
-      "log": "/tmp/questpc8-campaign-content-integration.log",
-      "sha256": "28ff304fdf1013c5d4d0b47071c2931a969bc96c5414da963201cddbbe74be92",
+      "log": "/tmp/questpc8-merge-content-integration.log",
+      "sha256": "42319359c15344e664e21012148ad89a5d149d04ec7a5f4f5094351e0c9ee8bf",
       "proof": [
-        "test result: ok. 123 passed; 0 failed; 0 ignored; 0 measured; 152 filtered out; finished in 1.42s"
+        "test result: ok. 123 passed; 0 failed; 0 ignored; 0 measured; 152 filtered out; finished in 1.56s"
       ]
     },
     "world_repository": {
       "command": "cargo test --locked -p oteryn-game-server --test content_world_project_repository --quiet",
+      "environment": "CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1; sourced /workspace/oteryn-env/env.sh",
       "exit_code": 0,
-      "log": "/tmp/questpc8-campaign-world-repository.log",
-      "sha256": "0b503f4ac79e69de4b61f257f9efe960675deceecab3db1ebe6494d768894864",
+      "log": "/tmp/questpc8-merge-world-repository.log",
+      "sha256": "9694f508dad953f80178a620cbba5e7494341f2b76d317461a44e0119d922bd9",
       "proof": [
-        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 31.00s"
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 32.17s"
+      ]
+    },
+    "source_asymmetric_pg": {
+      "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib quest_l7_giant_smithhammer_four_source_states -- --nocapture --test-threads=1",
+      "environment": "CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1; sourced /workspace/oteryn-env/env.sh",
+      "exit_code": 0,
+      "log": "/tmp/questpc8-merge-world.log",
+      "sha256": "666705a2e85282755f1d5333ef5cdaf95520f4b8aee78b0b50ad9529b8ee80de",
+      "proof": [
+        "POSTGRES_CASE_COMPLETED L7 giant-smithhammer four source states via USE",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2534 filtered out; finished in 27.42s"
+      ]
+    },
+    "world_callbacks_unit": {
+      "command": "cargo test --locked -p oteryn-gameplay-quests --lib world_callbacks -- --nocapture",
+      "environment": "CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1; sourced /workspace/oteryn-env/env.sh",
+      "exit_code": 0,
+      "log": "/tmp/questpc8-merge-world-units.log",
+      "sha256": "a3b5f106afc154520564a4a02d4299a03b38466ed3aea89017c7c20a4ffa8375",
+      "proof": [
+        "test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 252 filtered out; finished in 1.49s"
+      ]
+    },
+    "npc_reward_unit": {
+      "command": "cargo test --locked -p oteryn-gameplay-npc --lib qengine_reward_npcs_open_only_source_conversations -- --nocapture",
+      "environment": "CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1; sourced /workspace/oteryn-env/env.sh",
+      "exit_code": 0,
+      "log": "/tmp/questpc8-merge-npc-unit.log",
+      "sha256": "b600739ab8a0fa9d975b66176de52b35cb1e30aff37ed0e27caa8bae21e4ae04",
+      "proof": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 25 filtered out; finished in 21.50s"
+      ]
+    },
+    "floor_routing_unit": {
+      "command": "cargo test --locked -p oteryn-gameplay-world --lib map::floor::tests -- --nocapture",
+      "environment": "CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1; sourced /workspace/oteryn-env/env.sh",
+      "exit_code": 0,
+      "log": "/tmp/questpc8-merge-floor-unit.log",
+      "sha256": "1871e547653af79f4f1a86f5404bffc7586187a36cd47c5b08bdc48d487e1e5b",
+      "proof": [
+        "test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 204 filtered out; finished in 0.80s"
       ]
     }
   },
@@ -110,5 +165,16 @@
     "gold_per_item": 100,
     "basis": "native denomination normalization; economy/src/npc_trade.rs:42 and economy/src/coin_exchange.rs:26"
   },
-  "review": "Whole product diff reviewed: preserved fences/role guards and source task gates, reused qengine transaction/MINT, exact-value fingerprint and full NPC legacy sidecar preservation added. Father eleven-track and world-input regressions executed on PG. No blocking self-review finding remains. Task remains AUTHORING; no PR/main publication or deployment."
+  "review": "Reconciliation self-review checked additive merge duplicates, single payout registration, receipt predicates, ownership, value hash and legacy NPC metadata. The lane remains AUTHORING; material freeze and independent exact-head review are still ahead. No PR, deployment or main-branch publication is claimed.",
+  "merged_heads": [
+    "b75ad0765",
+    "89ebe9ef9"
+  ],
+  "merge_notes": [
+    "Consolidated the two chosen payout declarations into one callback.",
+    "Retained ordered phase/count guards and incoming immutable boss-report receipt requirements.",
+    "Removed add/add duplicate modules and duplicate catalogue/reward application.",
+    "Premature campaign request returns instructional dialogue without progress, XP or receipt; missing backpack refuses the actual grant.",
+    "Campaign executable validation preceded a citation-only registry amendment; value/condition plan and its definition hash are unchanged. Subsequent checks compile the amended registry."
+  ]
 }

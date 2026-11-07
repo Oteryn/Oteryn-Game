@@ -66,8 +66,7 @@ pub(super) async fn exercise(
             before,
             &[rock_key],
             &[],
-            !absent,
-        ));
+            !absent, None));
         assert_eq!(map.facts.base_hidden(rock_key), absent);
         let revision = map.facts.object_revision(key);
         let mut placement = map.overlay.base().digest().to_vec();

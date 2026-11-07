@@ -80,6 +80,25 @@ pub(crate) async fn apply(
     if admission.weights.generation_digest() != admission.native.source_digest() {
         return Ok(false);
     }
+    // The Character root is locked by the caller. Receipts are immutable, so an
+    // optional source reset cannot erase an earlier earned milestone.
+    for requirement in &callback.required_receipts {
+        let earned: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_character_quest_receipts \
+             WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 \
+               AND transition_key=$3 AND values_after[array_position(track_keys,$4)]=$5)",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(&callback.quest)
+        .bind(&requirement.transition)
+        .bind(&requirement.track)
+        .bind(requirement.value)
+        .fetch_one(&mut **tx)
+        .await?;
+        if !earned {
+            return Ok(false);
+        }
+    }
     if callback.outfit.as_ref().is_some_and(|reward| !outfit_compatible(admission.native, reward)) {
         return Ok(false);
     }

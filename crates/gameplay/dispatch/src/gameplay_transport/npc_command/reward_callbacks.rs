@@ -32,7 +32,7 @@ pub(super) fn prepare(
 ) -> Option<Step> {
     let callbacks = reward_callbacks::load().ok()?;
     let offers: Offers = serde_json::from_str(include_str!(
-        "../../../../../../content/quests/chosen-reward-offers.json"
+        "../../../../../../content/quests/shared-reward-offers.json"
     ))
     .ok()?;
     if offers.schema != 1 {

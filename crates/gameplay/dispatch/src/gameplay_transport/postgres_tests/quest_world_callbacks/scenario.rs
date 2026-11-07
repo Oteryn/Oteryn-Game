@@ -666,8 +666,7 @@ fn scenario_case(
                         request.clone(),
                         catalogue.clone(),
                         &permit,
-                        context.clone()
-                    )
+                        context.clone(), None)
                     .await
                     .map_err(debug)?,
                     QuestTransitionOutcome::AlreadyCommitted(_)
@@ -686,7 +685,7 @@ fn scenario_case(
                     ..request
                 };
                 assert!(matches!(slot.commit_world_callback(owner.root, owner.character, owner.holder,
-                    stale, fresh_request, catalogue, &permit, context).await,
+                    stale, fresh_request, catalogue, &permit, context, None).await,
                     Err(crate::durability::character_progression::CharacterProgressionError::AuthorityRejected)));
                 drop(slot);
                 drop(permit);

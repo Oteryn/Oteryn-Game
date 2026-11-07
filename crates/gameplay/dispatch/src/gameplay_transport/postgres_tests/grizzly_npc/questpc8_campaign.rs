@@ -67,6 +67,11 @@ pub(super) async fn exercise(
         .map_err(debug)?
         .position();
     let mut command = 2;
+    let initial_experience = experience(h).await?;
+    say(owner, admitted, npc, &mut command, &["hi", "campaign"]).await?;
+    assert_eq!(experience(h).await?, initial_experience);
+    assert_eq!(campaign_receipts(h).await?, 0);
+
     // The chosen next-rank milestone cannot bypass the source ten-point gate.
     // Complete all three allowed low-level repetitions to earn twelve points.
     for repetition in 0..3 {
@@ -120,6 +125,19 @@ pub(super) async fn exercise(
     assert_eq!(value(owner, authority, quest::POINTS_STORAGE).await?, 12);
     say(owner, admitted, npc, &mut command, &["hi", "promotion"]).await?;
     assert_eq!(value(owner, authority, quest::PROMOTION_STORAGE).await?, 0);
+    // Rank alone cannot replace the missing immutable victory/report evidence.
+    // An incomplete ordered campaign answers with its objectives, without a grant.
+    let early_xp = experience(h).await?;
+    say(owner, admitted, npc, &mut command, &["hi", "campaign"]).await?;
+    assert_eq!(experience(h).await?, early_xp);
+    assert_eq!(campaign_receipts(h).await?, 0);
+    let early_phase: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
+        .bind(id(41).as_slice()).bind(quest::campaign::PHASE).fetch_one(&h.pool).await?;
+    assert_eq!(
+        early_phase, 7,
+        "a premature claim cannot advance chosen progress"
+    );
+
     // Level 130 is an external eligibility condition. Establish it with the
     // actual XP owner, never by changing a stored level or bypassing the guard.
     level_130(owner, admitted).await?;
@@ -209,6 +227,15 @@ pub(super) async fn exercise(
         10_000,
         "fresh-command replay grants no XP twice"
     );
+    owner
+        .states
+        .quest_sessions
+        .lock()
+        .map_err(debug)?
+        .remove(&admitted.game_session_id);
+    owner.admit_quest_session(admitted).await;
+    say(owner, admitted, npc, &mut command, &["hi", "campaign"]).await?;
+    assert_eq!(experience(h).await? - before_campaign_xp, 10_000);
     let receipts: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_reward_claim_mint_receipts WHERE claim_production_key=$1",
     )
@@ -555,4 +582,8 @@ async fn level_130(
     // refresh owner, which reloads level/vocation facts before NPC admission.
     owner.states.level_refresh.mark([fence.character_id]);
     Ok(())
+}
+
+async fn campaign_receipts(h: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_sources WHERE character_id=encode($1,'hex')::uuid AND transition_key='oteryn:quest-reward/chosen/hunting-campaign'").bind(id(41).as_slice()).fetch_one(&h.pool).await?)
 }

@@ -33,6 +33,15 @@ pub struct OutfitReward {
     pub addons: u8,
 }
 
+/// Immutable evidence survives a source track being reset for another task run.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(deny_unknown_fields)]
+pub struct ReceiptPredicate {
+    pub transition: String,
+    pub track: String,
+    pub value: i64,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct RewardCallback {
@@ -42,11 +51,9 @@ pub struct RewardCallback {
     pub keywords: Vec<String>,
     pub topic: u16,
     pub next_topic: u16,
-    #[serde(default)]
-    pub completes: bool,
-    #[serde(default)]
-    pub experience: Option<i64>,
     pub storage: Vec<Storage>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub required_receipts: Vec<ReceiptPredicate>,
     pub take: Vec<ItemAmount>,
     /// Carried evidence checked under the same locks, without consuming it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -54,8 +61,16 @@ pub struct RewardCallback {
     pub give: Option<ItemReward>,
     pub outfit: Option<OutfitReward>,
     pub achievement: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub experience: Option<i64>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub completes: bool,
     pub reply: Vec<String>,
     pub sources: Vec<String>,
+}
+
+fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 #[derive(Deserialize)]
@@ -66,9 +81,17 @@ struct Document {
 }
 
 pub fn load() -> Result<Vec<RewardCallback>, String> {
-    parse(include_str!(
+    let mut callbacks = parse(include_str!(
+        "../../../../../content/quests/shared-reward-callbacks.json"
+    ))?;
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/chosen-reward-callbacks.json"
-    ))
+    ))?);
+    let keys: BTreeSet<_> = callbacks.iter().map(|callback| &callback.key).collect();
+    if keys.len() != callbacks.len() || callbacks.len() > 256 {
+        return Err("duplicate or excessive reward callbacks".into());
+    }
+    Ok(callbacks)
 }
 
 fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
@@ -96,8 +119,6 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
             || !slug(&c.npc, "oteryn:npc.", b"_", 128)
-            || c.experience
-                .is_some_and(|n| !(1..=super::QUESTGATE0_RL_05).contains(&n))
             || c.storage.is_empty()
             || c.storage.len() > 8
             || tracks.len() != c.storage.len()
@@ -107,6 +128,14 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || c.storage
                 .iter()
                 .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+            || c.required_receipts.len() > 8
+            || c.required_receipts.iter().collect::<BTreeSet<_>>().len()
+                != c.required_receipts.len()
+            || c.required_receipts.iter().any(|requirement| {
+                !super::valid_quest_key(&requirement.transition)
+                    || !super::valid_quest_key(&requirement.track)
+                    || requirement.transition == c.key
+            })
             || c.present.len() > 8
             || evidence.len() != c.present.len()
             || c.present
@@ -139,6 +168,8 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || c.achievement
                 .as_ref()
                 .is_some_and(|key| !slug(key, "oteryn:achievement/", b"_/-", 128))
+            || c.experience
+                .is_some_and(|amount| !(1..=super::QUESTGATE0_RL_05).contains(&amount))
             || c.sources.len() > 8
             || c.sources.iter().any(|s| s.is_empty() || s.len() > 1024)
             || c.sources.is_empty()
@@ -157,13 +188,32 @@ fn extend_callbacks(
     catalogue: QuestStateCatalogue,
     callbacks: Vec<RewardCallback>,
 ) -> Result<QuestStateCatalogue, String> {
-    let npc_legacy = catalogue.npc_legacy;
+    let npc_legacy = catalogue.npc_legacy.clone();
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
     for callback in callbacks {
+        for requirement in &callback.required_receipts {
+            if !catalogue
+                .transition(&requirement.transition)
+                .is_some_and(|transition| transition.quest == callback.quest)
+                || !catalogue.track(&requirement.track).is_some_and(|track| {
+                    track.quest == callback.quest
+                        && (track.min..=track.max).contains(&requirement.value)
+                })
+            {
+                return Err(format!(
+                    "foreign or invalid receipt predicate {}",
+                    callback.key
+                ));
+            }
+        }
+
         // Value participants are part of the pinned quest contract. Reply copy and
         // source citations remain journal metadata and do not invalidate progress.
         let value_plan = serde_json::to_vec(&(
+            &callback.key,
+            &callback.quest,
+            &callback.required_receipts,
             &callback.npc,
             &callback.keywords,
             callback.topic,
@@ -257,15 +307,20 @@ mod tests {
 
     #[test]
     fn reward_amount_is_part_of_the_quest_definition_hash() -> Result<(), String> {
-        let before = load()?;
+        let before = parse(include_str!(
+            "../../../../../content/quests/chosen-reward-callbacks.json"
+        ))?;
         let mut changed = before.clone();
         changed
             .first_mut()
             .and_then(|c| c.give.as_mut())
             .ok_or("reward")?
             .count = 51;
-        let empty =
-            || QuestStateCatalogue::new("content-1", vec![], vec![]).map_err(|e| format!("{e:?}"));
+        let empty = || {
+            super::super::grizzly_adams::extend(
+                QuestStateCatalogue::empty("content-1").ok_or("empty")?,
+            )
+        };
         let before = extend_callbacks(empty()?, before)?;
         let changed = extend_callbacks(empty()?, changed)?;
         assert_ne!(
@@ -277,15 +332,39 @@ mod tests {
     }
 
     #[test]
+    fn reward_receipt_predicates_require_the_same_quest_and_declared_value() -> Result<(), String> {
+        let empty =
+            QuestStateCatalogue::empty("receipt-predicate-test").ok_or("empty catalogue")?;
+        let base = super::super::grizzly_adams::extend(empty)?;
+        extend(base.clone())?;
+        let transition = "oteryn:quest-transition/grizzly/report-boss-1";
+        let track = super::super::grizzly_adams::storage_track(34100);
+        let mut foreign_transition = base.clone();
+        foreign_transition
+            .transitions
+            .get_mut(transition)
+            .ok_or("report")?
+            .quest = "oteryn:quest.foreign".into();
+        assert!(extend(foreign_transition).is_err());
+        let mut foreign_track = base.clone();
+        foreign_track
+            .tracks
+            .get_mut(&track)
+            .ok_or("boss track")?
+            .quest = "oteryn:quest.foreign".into();
+        assert!(extend(foreign_track).is_err());
+        let mut bounded = base;
+        bounded.tracks.get_mut(&track).ok_or("boss track")?.max = 2;
+        assert!(extend(bounded).is_err());
+        Ok(())
+    }
+
+    #[test]
     fn qengine_reward_callbacks_are_bounded_and_never_repeatable_value_grants() -> Result<(), String>
     {
-        let source = include_str!("../../../../../content/quests/chosen-reward-callbacks.json");
+        let source = include_str!("../../../../../content/quests/shared-reward-callbacks.json");
         let callbacks = load()?;
-        assert_eq!(
-            callbacks.len(),
-            1,
-            "chosen catalogue currently declares one campaign reward"
-        );
+        assert!(callbacks.len() >= 6);
         for edit in 0..6 {
             let mut value: serde_json::Value =
                 serde_json::from_str(source).map_err(|e| e.to_string())?;

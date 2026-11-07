@@ -346,7 +346,7 @@
       "scope": "complete chosen eleven-stage programme plus retained native source task/rank/portal/report obligations",
       "test": "questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards",
       "marker": "POSTGRES_CASE_COMPLETED questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards",
-      "duration_seconds": 116.125280947,
+      "duration_seconds": 117.259208372,
       "red_duration_seconds": 113.73,
       "native_deaths": 2003,
       "ordinary_deaths": 2000,
@@ -374,9 +374,19 @@
         "50 platinum coins and completed quest share the transaction; XP obligation pays exactly 10000",
         "command replay and fresh claim retry mint/pay nothing twice",
         "reward quantity and grant conditions participate in definition hash",
-        "Father start remains a single eleven-track transaction"
+        "Father start remains a single eleven-track transaction",
+        "immutable successful report receipts for Snapper, Deathbine and The Many are required by the same fenced transaction",
+        "premature claim leaves ordered progress at phase 7",
+        "quest session reload retains exactly one final payout"
       ]
-    }
+    },
+    "qualified_components": [
+      {
+        "scope": "incoming source task/boss reports and atomic final payout, before ordered-phase reconciliation",
+        "duration_seconds": 179.886708384,
+        "proof": "qlane-meta/questpc8/cloud-hunting-campaign-proof.json"
+      }
+    ]
   },
   {
     "title": "Kilmaresh Quest",

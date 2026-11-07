@@ -265,8 +265,7 @@ pub(super) async fn exercise(
                 },
                 catalogue.clone(),
                 &permit,
-                context
-            )
+                context, None)
             .await
             .map_err(debug)?,
             QuestTransitionOutcome::AlreadyCommitted(_)

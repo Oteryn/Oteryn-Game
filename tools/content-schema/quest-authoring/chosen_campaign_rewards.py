@@ -40,10 +40,15 @@ def generate():
         "completes": True, "experience": experience,
         "storage": [{"track": "oteryn:quest-progress/chosen/killing_in_the_name_of/phase",
                      "minimum": 10, "maximum": 10, "set": 11}],
+        "required_receipts": [{'transition': 'oteryn:quest-transition/grizzly/report-boss-1', 'track': 'oteryn:quest-progress/storage/34100', 'value': 3}, {'transition': 'oteryn:quest-transition/grizzly/report-boss-3', 'track': 'oteryn:quest-progress/storage/34102', 'value': 3}, {'transition': 'oteryn:quest-transition/grizzly/report-boss-19', 'track': 'oteryn:quest-progress/storage/34118', 'value': 3}],
         "take": [], "give": {"item": "oteryn:item.tibia.i3035", "count": gold // 100, "contents": []},
         "outfit": None, "achievement": None,
         "reply": ["Your hunting campaign is complete. You receive 10,000 experience and 5,000 gold."],
-        "sources": ["OTERYN_AUTHORED_APPROXIMATION: chosen Killing in the Name of... Quest recipe, stages s1-s11; exact currency value normalized by the native coin owner."]
+        "sources": [
+            "OTERYN_AUTHORED_APPROXIMATION: chosen Killing in the Name of... Quest recipe, stages s1-s11; exact currency value normalized by the native coin owner.",
+            "content/quests/definitions/quests-00100-00199.json#/records/64/definition/oteryn_recipe/payload/recipe",
+            "https://tibia.fandom.com/index.php?curid=36695&oldid=843864",
+        ]
     }
     return {
         "content/quests/chosen-reward-callbacks.json": {"schema": 1, "callbacks": [callback]},
