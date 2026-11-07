@@ -357,11 +357,22 @@ def validate_callbacks(document):
             or (not callback.get('repeatable',False) and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
             or (callback.get('repeatable',False) and (not (callback['take'] or callback.get('fee') or callback.get('cooldown')) or not callback['give'] or callback['outfit'] is not None or (callback['achievement'] is not None and not callback.get('achievement_once',False))))
             or (callback.get('achievement_once',False) and (not callback.get('repeatable',False) or callback['achievement'] is None))
+            or (callback.get('give') and callback['give'].get('decay') and callback['give'].get('backpack_outputs'))
+            or (callback.get('give') and callback['give'].get('contents') and callback['give'].get('backpack_outputs'))
             or (callback.get('cooldown_reply') and not (callback.get('cooldown') or any(clock.get('elapsed_seconds') is not None for clock in callback.get('clocks', []))))
             or any(k!=k.lower() or not k.isascii() for k in callback['keywords'])
             or any(len(line.encode('utf-8'))>512 or any(ord(c)<32 or 127<=ord(c)<=159 for c in line) for line in callback['reply'] + callback.get('cooldown_reply',[]))
             or any(len(source.encode('utf-8'))>1024 for source in callback['sources'])):
             raise ValueError('invalid reward callback '+callback['key'])
+        if callback.get('bulk') is not None:
+            bulk = callback['bulk']
+            give = callback['give']
+            if (not callback.get('repeatable') or callback['take'] != [{'item':bulk['item'],'count':1}]
+                or not give or give['item'] != bulk['output'] or give['count'] != bulk['base']
+                or give.get('contents') or give.get('backpack_outputs') or give.get('decay')
+                or bulk['item'] == bulk['output'] or callback.get('fee') or callback.get('present')
+                or callback['outfit'] or callback['achievement']):
+                raise ValueError('invalid bulk reward callback '+callback['key'])
         keys.add(callback['key'])
 
 

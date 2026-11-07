@@ -4023,6 +4023,27 @@
       "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse 9fd5ca426 upstream3787a419a all-target/all-feature check5m53s and strict clippy5m05s plus local combined PG18/79.06s; source identity checked before each slice",
       "test_code_commit": "bf56eaabdc2919e9ca5ebf7cacc23a72b8af2ea8",
       "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
+    },
+    {
+      "name": "npcfix-native-bulk-integration",
+      "state": "GREEN",
+      "scope": [
+        "atomic native peer outputs",
+        "all-carried source bulk exchange",
+        "existing paid reward compatibility",
+        "Father11 atomicity"
+      ],
+      "red": "Real PG95.56852851s:2orbs retained after exactyes. Integration92.28s retained unknown-lifetime refusal; no guard relaxed.",
+      "green": {
+        "bulk": "1 PASS97.976031242s, actual POSTGRES_STARTED/COMPLETED; all2 inputs consumed, inexact yes preserves both, independently rolled exact bolt quantity",
+        "native_outputs": "1 PASS4.698335393s, PostgreSQL18.6/server_version_num180006 marker; atomic peer placements, audits, capacity refusal and replay retained",
+        "paid_compatibility": "Altar1 PASS115.184269421s, actual PG markers; fee and exact whole-cost atomicity intact",
+        "father_atomicity": "1 PASS22.89s, actual PG starts for normal/stage mismatch/out-of-range; atomic11 tracks, replay and rollback retained"
+      },
+      "checks": "PASS cargo fmt all; check5 changed crates alltargets/allfeatures2m34s; clippy same-Dwarnings5m17s; quest263/12.34s; MINTunit10, including layout hash and root-entry bounds; authoring13/7.819s; profile9/20.352s; native42 and pin-check568fe0...",
+      "upstream": "96d03398f/fef3715a8; original PC8 eb196696c generic output owner. Only required engine and source NPC bindings reused.",
+      "migrations": "Forward1146/1147, published1144/1145 unchanged; local required physical permit and native temporal checks preserved.",
+      "remaining": "Continue source refusal-topic parity immediately before whole Sweaty qualification. No shared-feature deferral."
     }
   ],
   "owner_constraints": {
@@ -4645,5 +4666,25 @@
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
   },
-  "last_publication": "Merge latest green placement qualifications with canonical L2 fixed smithing integration; fast-forward push in progress."
+  "last_publication": "PUSHED b25b5b8ca; canonical fixed-smithing integration and incoming placement batches08 retained",
+  "active_bulk_batch": {
+    "state": "GREEN; commit and fast-forward publication",
+    "red": "PostgreSQL case npcfix-reward-workshop-soul-orbs FAILED95.56852851s; exact yes left2 orbs instead of0. POSTGRES_STARTED and POSTGRES_CASE_COMPLETED retained in soul-orbs-red-retry.log. Prior No space left build did not execute tests and is not RED proof.",
+    "reuse": "Latest L2 fef3715a8 qualifies complete Exchange Quests, normal and1% bonus outcomes PG94.770336667s. Reuse96d03398f backpack outputs (originalPC8 eb196696c) and fef3715a8 bulk resolver/retained draws; no second random or value owner.",
+    "compatibility": "Forward1146/1147 because published1144/1145 already own cooldown/workshop clocks here. Preserve local required SpellLanePermit, native generation weights, fee+clock proof, full absolute deadlines, original effect16 bound/Father11 atomicity. Unrepresented upstream fluid/charge/experience fields are not imported as partial mechanisms.",
+    "next": "Finish bounded constructors/schema adapter; targeted native bulk PG and inherited native peer output proof, existing affected reward paths, fmt/check/clippy, regenerate via tooling, commit+FFpush. Recheck source failure UI against ownership before expanding beyond audited scope.",
+    "postgres_green": {
+      "bulk": "1 PASS97.976031242s, actual POSTGRES_STARTED/COMPLETED; all2 inputs consumed, inexact yes preserves both, independently rolled exact bolt quantity",
+      "native_outputs": "1 PASS4.698335393s, PostgreSQL18.6/server_version_num180006 marker; atomic peer placements, audits, capacity refusal and replay retained",
+      "paid_compatibility": "Altar1 PASS115.184269421s, actual PG markers; fee and exact whole-cost atomicity intact",
+      "father_atomicity": "1 PASS22.89s, actual PG starts for normal/stage mismatch/out-of-range; atomic11 tracks, replay and rollback retained"
+    },
+    "item_fact_qualification": {
+      "item": 6528,
+      "source": "imports/canary/items-xml/items.xml:17979; sha2561cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+      "delta": "Only temporal UNKNOWN -> NOT_APPLICABLE. Every other semantic group byte-structure unchanged. Source equipment pattern unknown-field refinement is checked memberwise with fixed identity/order and concrete facts before retaining the original pattern; known conflicts still rejected.",
+      "tests": "Authoring13 PASS7.819s; profile9 PASS20.352s, including exact known equipment conflict refusal. Native42 regenerated/check PASS; independent pin-check568fe0... PASS."
+    },
+    "checks": "PASS cargo fmt all; check5 changed crates alltargets/allfeatures2m34s; clippy same-Dwarnings5m17s; quest263/12.34s; MINTunit10, including layout hash and root-entry bounds; authoring13/7.819s; profile9/20.352s; native42 and pin-check568fe0..."
+  }
 }

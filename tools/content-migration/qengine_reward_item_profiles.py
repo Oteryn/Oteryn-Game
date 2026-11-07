@@ -97,6 +97,26 @@ def capture(root=ROOT):
         'records':records}
 
 
+def lifetime_comparison(current, observed):
+    """Retain equipment patterns when the source only refines unknown members.
+
+    The pattern vector's identity, order, and every concrete member still match;
+    this producer promotes only lifetime facts for an existing native record.
+    """
+    projected = copy.deepcopy(observed)
+    try:
+        prior = current['equipment']['value']['patterns']['value']
+        fresh = projected['equipment']['value']['patterns']['value']
+    except KeyError:
+        return projected
+    if (len(prior) == len(fresh)
+            and all(a.get('pattern_id') == b.get('pattern_id')
+                    and not accepted.known_conflict(a, b)
+                    for a, b in zip(prior, fresh))):
+        projected['equipment']['value']['patterns']['value'] = copy.deepcopy(prior)
+    return projected
+
+
 def admit(root,generated,profile_path,manifest_path,order,canonical):
     packet=capture(root)
     generated[PROOF]=(json.dumps(packet,ensure_ascii=False,indent=2)+'\n').encode()
@@ -111,7 +131,8 @@ def admit(root,generated,profile_path,manifest_path,order,canonical):
                 # facts. Fill only those facts; retain every other owner field.
                 if (current['production_definition'] != record['production_definition']
                         or current['admission'] != record['admission']
-                        or accepted.known_conflict(current['semantics'], record['semantics'])):
+                        or accepted.known_conflict(current['semantics'],
+                            lifetime_comparison(current['semantics'], record['semantics']))):
                     raise ValueError('QENGINE_REWARD_ITEM_NATIVE_CONFLICT:'+key)
                 current['semantics']['temporal']=accepted.accepted_first(
                     current['semantics']['temporal'],record['semantics']['temporal'])

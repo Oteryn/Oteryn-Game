@@ -117,6 +117,13 @@
               ]
             }
           }
+        },
+        "backpack_outputs": {
+          "type": "array",
+          "maxItems": 19,
+          "items": {
+            "$ref": "#/$defs/item"
+          }
         }
       }
     },
@@ -396,6 +403,9 @@
             "minLength": 1,
             "maxLength": 512
           }
+        },
+        "bulk": {
+          "$ref": "#/$defs/bulk"
         }
       }
     },
@@ -488,6 +498,44 @@
             "minLength": 1,
             "maxLength": 1024
           }
+        }
+      }
+    },
+    "bulk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "item",
+        "output",
+        "base",
+        "bonus",
+        "chance_percent"
+      ],
+      "properties": {
+        "item": {
+          "type": "string",
+          "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
+          "maxLength": 256
+        },
+        "output": {
+          "type": "string",
+          "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
+          "maxLength": 256
+        },
+        "base": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "bonus": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "chance_percent": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
         }
       }
     }

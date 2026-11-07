@@ -60,6 +60,11 @@ fn npcfix_workshop_postgres_smithing_exchanges_require_friendship_and_exact_acce
     scenario("npcfix-reward-workshop-smithing")
 }
 
+#[test]
+fn npcfix_workshop_postgres_soul_orbs_trade_all_carried_inputs() -> TestResult {
+    scenario("npcfix-reward-workshop-soul-orbs")
+}
+
 const READY: &str = "oteryn:quest-transition/npcfix-workshop-fixture-ready";
 const ELAPSED: &str = "oteryn:quest-transition/npcfix-workshop-fixture-elapsed";
 
@@ -202,7 +207,7 @@ pub(super) async fn exercise(
         .collect();
     assert!(!callbacks.is_empty());
     let [actor] = install(owner, admitted, [npc]).await?;
-    if name.ends_with("smithing") {
+    if name.ends_with("smithing") || name.ends_with("soul-orbs") {
         talk(owner, admitted, actor, 100, "hi").await?;
         for (i, word) in ["uth'lokr", "yes", "yes"].iter().enumerate() {
             talk(owner, admitted, actor, 101 + u64::try_from(i)?, word).await?;
@@ -236,6 +241,45 @@ pub(super) async fn exercise(
         talk(owner, admitted, actor, 106, "uth'lokr").await?;
         talk(owner, admitted, actor, 107, "yes").await?;
         assert_eq!(count(h, 3560).await?, 0);
+        if name.ends_with("soul-orbs") {
+            talk(owner, admitted, actor, 108, "soul orb").await?;
+            let fence = owner
+                .current_quest_fence(admitted.game_session_id)
+                .await
+                .map_err(|_| "fence")?
+                .ok_or("fence")?;
+            super::quest_world_callbacks::input_item(
+                owner,
+                fence.item_fence(),
+                &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                    position,
+                    item: "oteryn:item.tibia.i5944".into(),
+                    count: 2,
+                },
+                250,
+                true,
+            )
+            .await?;
+            super::qengine_rewards::talk(owner, admitted, actor, 109, "yes please").await?;
+            assert_eq!(
+                count(h, 5944).await?,
+                2,
+                "inexact acceptance cannot consume any orb"
+            );
+            assert_eq!(count(h, 6528).await?, 0);
+            talk(owner, admitted, actor, 110, "yes").await?;
+            assert_eq!(
+                count(h, 5944).await?,
+                0,
+                "exact acceptance consumes every carried orb"
+            );
+            let bolts = count(h, 6528).await?;
+            assert!(
+                [200, 300, 400].contains(&bolts),
+                "two independently rolled orb rewards"
+            );
+            return Ok(());
+        }
         for (i, (word, input, output)) in [
             ("uth'kean", 3381, 5887),
             ("uth'lokr", 3416, 5889),

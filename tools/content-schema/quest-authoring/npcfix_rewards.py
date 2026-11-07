@@ -3,7 +3,7 @@ import hashlib
 import re
 
 NPCS = ('al_dee', 'a_weakened_forest_fury', 'a_wandering_soul')
-ITEMS = {3560,12804,3456, 8225, 8453, 8746, 23812, 43854, 43855, 7528, 7529, 7530, 7531, 7532}
+ITEMS = {6528,3560,12804,3456, 8225, 8453, 8746, 23812, 43854, 43855, 7528, 7529, 7530, 7531, 7532}
 
 
 def append(callbacks, offers, inputs, pin):
