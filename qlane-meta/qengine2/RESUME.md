@@ -720,3 +720,11 @@ covered via full run plus corrected inventory17.970s/endgame17.525s; reproducibl
 outputs. Pin-check completed24ab unchanged, inputsba9915519b5c78a50987ce70b8c2af6429737eac595b3daeaf53898cefcce5a2.
 Counts40QUALIFIED/26UNFINISHED/0BLOCKED. Publish this checked slice now; continue
 Revenant assertion precision and Decay EOF. S06/W15b also remain active scope.
+
+15-minute compiling WIP: current3-crate check passed9.64s. Revenant actual PG
+GREEN142.154759931s; exact canonical/native receipt set and final selection pass.
+Strict clippy rerun still active after removing temporary diagnostics. Decay
+exact red remains43899cmd2 EOF235.579221306s. Root cause: parent fixture carried
+item_fence=None (Dependencies initializer); fresh owner-read item_fence now
+supplied at accessory boundary. Focused Decay PG verification next. Counts40/26/0
+until final checks qualify Revenant. No engine or SQL guards weakened.

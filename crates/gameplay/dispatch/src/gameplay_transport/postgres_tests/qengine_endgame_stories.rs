@@ -24,6 +24,17 @@ pub(super) async fn accessories(
         );
     }
     let key = format!("oteryn:outfit.{family}");
+    let native_base = if family == "revenant" {
+        "oteryn:appearance-grant/quest/soul-war/revenant-base"
+    } else {
+        "oteryn:appearance-grant/quest/rotten-blood/decaying-defender-base"
+    };
+    let original_base: sqlx::types::Uuid = sqlx::query_scalar(
+        "SELECT grant_occurrence_id FROM game_account_appearance_unlocks WHERE unlock_key=$1",
+    )
+    .bind(native_base)
+    .fetch_one(&h.pool)
+    .await?;
     let (items, bits) = if family == "revenant" {
         ([34075, 34076], [2, 1])
     } else {
@@ -75,6 +86,8 @@ pub(super) async fn accessories(
         .await
         .map_err(|_| "fence")?
         .ok_or("fence")?;
+    // Parent-only fixtures have no carried-USE admission fence until this phase.
+    admitted.item_fence = Some(fence.item_fence());
     let has_bag: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_slots")
         .fetch_one(&h.pool)
         .await?;
@@ -151,10 +164,40 @@ pub(super) async fn accessories(
         super::qengine_voucher_stories::quantity(h, items[0]).await?,
         1
     );
-    let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_appearance_unlocks")
-        .fetch_one(&h.pool)
-        .await?;
-    assert_eq!(count, 3, "one earned native base and both accessory facts");
+    // The accepted generic callback contract includes its canonical base with
+    // addons; retain the earlier native receipt as a separate compatible source.
+    let canonical: Vec<String> = (0..=2)
+        .map(|bit| format!("{key}/quest-grant/{bit}"))
+        .collect();
+    let count: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_appearance_unlocks WHERE unlock_key=ANY($1::text[])",
+    )
+    .bind(&canonical)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(count, 3, "three exact canonical outfit facts");
+    let mut expected = canonical;
+    expected.push(native_base.into());
+    expected.sort();
+    let actual: Vec<String> = sqlx::query_scalar(
+        "SELECT unlock_key FROM game_account_appearance_unlocks ORDER BY unlock_key LIMIT 5",
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(
+        actual, expected,
+        "only the native base and canonical base/addons"
+    );
+    let retained_base: sqlx::types::Uuid = sqlx::query_scalar(
+        "SELECT grant_occurrence_id FROM game_account_appearance_unlocks WHERE unlock_key=$1",
+    )
+    .bind(native_base)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(
+        retained_base, original_base,
+        "native base provenance remains immutable"
+    );
     achievement(
         h,
         if family == "revenant" {
