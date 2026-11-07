@@ -3553,5 +3553,18 @@
         "note": "Merge preserved both source/qualification histories; only independent physical-placement data and metadata changed from the validated runtime component."
       }
     }
+  },
+  "npcfix_active_workshop": {
+    "entries": [
+      "A Fading Memory",
+      "Altar",
+      "A Sweaty Cyclops"
+    ],
+    "local_source_commit": "d1ab73204",
+    "merging_with": "803a33d39",
+    "state": "MERGED_SOURCE_REVALIDATING_IN_MAIN_CHECKOUT",
+    "work": "Incoming cooldown source and malformed-clock PG are retained. Generic bank+item atomic payments, delayed craft clocks, fresh database-time literal wait replies, and strict real map actors already locally validated. Incoming1144 unchanged; workshop extension1145. Fading physical32952,31440,3 already implemented and PG-qualified in main checkout; avoid duplicate Fading physical/UI work. Other entries remain active.",
+    "local_proof": "PG6/183.57s plus funded missing parts96.27s and existing bank96.20s; quest261/fee43/NPC25; fmt/check/clippy and pins. Combined quest263 and native42 reproduction now pass; combined PG8/check/clippy running.",
+    "normal_profile": "This checkout retained normal unoptimized+debuginfo profiles and existing env.sh. Only stopped-build incremental caches were removed."
   }
 }
