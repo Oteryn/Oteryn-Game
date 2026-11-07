@@ -3142,7 +3142,7 @@
         "Al Dee",
         "A Wandering Soul"
       ],
-      "state": "GREEN",
+      "state": "GREEN; PUSHED",
       "session": 71904,
       "command": "cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib npcfix_reward_postgres_ -- --nocapture",
       "log": "/tmp/npcfix-evidence/reward-guard-final-pg.log",
@@ -3228,7 +3228,7 @@
       ],
       "pre_review_pg": "PASS3,111.13s; all POSTGRES_STARTED and completion markers. Al Dee103.595s, Wandering108.389s, Fury111.127s; paid repeats/exact words/unpaid refusal/replay/voices/original timer/one achievement verified.",
       "commit": "12b2b40d233b0d07177bc2d9576eea168bdcc420",
-      "push": "Merge current incoming planner/source authoring, validate affected paths and push fast-forward.",
+      "push": "PASS origin exact NPCFIX branch639aae92f..c9a648fa9; source12b2b40d2, source merge d5469285d, metadata merge c9a648fa9.",
       "merge_head": "0cbb57db2",
       "merge_pin": "d622a839c5638cfdf3d3f81fa696f8cbe6ddab7152f3d8816e0705f8bceabd4a",
       "merged_checks": {
@@ -3396,7 +3396,7 @@
       "Al Dee",
       "A Wandering Soul"
     ],
-    "state": "GREEN",
+    "state": "GREEN; PUSHED",
     "session": 71904,
     "command": "cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib npcfix_reward_postgres_ -- --nocapture",
     "log": "/tmp/npcfix-evidence/reward-guard-final-pg.log",
@@ -3419,7 +3419,6 @@
     "next": "After Al Dee GREEN: full repository regeneration, all-three fresh PG plus focused common-engine regression, relevant unit/content checks, physical parity, strict changed-crate checks, then commit and fast-forward push.",
     "isolated_al_dee_green": "PASS, POSTGRES_STARTED and POSTGRES_CASE_COMPLETED,96.502s; two paid exchanges, exact words, unpaid refusal, exact replay",
     "metadata_checkpoint": "371b5ed38 pushed fast-forward on current remote2a871a435 via isolated sparse metadata worktree; published ACTIVE-REWARD-DELIVERY.md to prevent duplicate caller work while source validation continues.",
-    "upstream_merge_pending": "Source merge validated; commit then integrate metadata-only checkpoint639aae92f and fast-forward push.",
     "source_profile_tests": "PASS2,15.841s; unknown lifetime enrichment preserves every other existing field and known weight conflicts reject.",
     "regeneration": "Completed repository generation; exact 42-output registration and all original 41 outputs retained. All Python checks passed. Repository integration 5 passed in56.17s. Pin b2c1f0d77b22c96cb32de336768475913406451924a1ec92e7f45885eac782f8 refreshed and checked with repository compiler.",
     "physical_admission": {
@@ -3482,7 +3481,7 @@
     ],
     "pre_review_pg": "PASS3,111.13s; all POSTGRES_STARTED and completion markers. Al Dee103.595s, Wandering108.389s, Fury111.127s; paid repeats/exact words/unpaid refusal/replay/voices/original timer/one achievement verified.",
     "commit": "12b2b40d233b0d07177bc2d9576eea168bdcc420",
-    "push": "Merge current incoming planner/source authoring, validate affected paths and push fast-forward.",
+    "push": "PASS origin exact NPCFIX branch639aae92f..c9a648fa9; source12b2b40d2, source merge d5469285d, metadata merge c9a648fa9.",
     "merge_head": "0cbb57db2",
     "merge_pin": "d622a839c5638cfdf3d3f81fa696f8cbe6ddab7152f3d8816e0705f8bceabd4a",
     "merged_checks": {
