@@ -579,7 +579,7 @@
       "regenerated": true,
       "checked": true,
       "digest": "03dc19c5c053c939e0f4ab40c9e353a6488e7e453c82255039df65391d9edf99",
-      "bytes": 31101960,
+      "bytes": 31101986,
       "reason": "Reused PC5 source programme/claim foundation while retaining QENGINE2 rewards, Jorge production placement, exact conditional writes and failure landings",
       "tool": "regenerate_content.py --resolve --no-stage --skip-checks; world-bundle-compiler pin-check",
       "log": "/tmp/l2-foundation-merge-pin-check.log",
@@ -752,6 +752,11 @@
       "providers": 6,
       "state_lowering": 12,
       "failed": 0
+    },
+    "overlapping_conditional_remote": {
+      "commit": "c48ad3674cfa7138f3b49c4b199b0916043b701a",
+      "change": "Identical SetIf engine implementation and three PG regression tests; merge adds documentation and independent verification evidence only.",
+      "validation": {}
     }
   },
   "cross_lane_inspection": {
