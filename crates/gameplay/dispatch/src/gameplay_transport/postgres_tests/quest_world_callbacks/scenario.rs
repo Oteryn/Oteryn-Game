@@ -343,7 +343,33 @@ fn scenario_case(
             .await
             .map_err(|e| format!("callback starter items: {e:?}"))?;
         owner.admit_progression_session(&mut admitted).await;
-        deps.initialize(&owner).await;
+        if name == "qengine-rewards-l2-alliance" {
+            // Match the native kill fixtures: combat strength is unrelated to quest progression.
+            let runtime = owner.runtime.lock().await;
+            assert!(
+                owner
+                    .states
+                    .spell_states
+                    .lock()
+                    .await
+                    .initialize(
+                        &runtime,
+                        deps.actor,
+                        admitted.game_session_id,
+                        crate::spell::cast::CharacterCastFacts {
+                            vocation: crate::spell::Vocation::Monk,
+                            level: 1000,
+                            ..crate::gameplay_transport::actor_spell::tests::FACTS
+                        },
+                        (3, 7_000_000),
+                        owner.owner_now()
+                    )
+                    .is_some()
+            );
+        } else {
+            deps.initialize(&owner).await;
+        }
+
         owner.admit_quest_session(&admitted).await;
         if draconia {
             super::super::draconia_quest::exercise(

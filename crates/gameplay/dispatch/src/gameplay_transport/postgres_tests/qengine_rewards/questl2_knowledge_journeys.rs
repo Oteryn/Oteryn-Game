@@ -479,7 +479,7 @@ async fn kill_rebel(
     use oteryn_protocol_oteryn::attack::{
         AttackIntentDisposition, decode_attack_intent_result, encode_attack_target_intent,
     };
-    let target = {
+    let (target, creature_actor) = {
         let mut runtime = owner.runtime.lock().await;
         owner
             .active_generation
@@ -515,10 +515,13 @@ async fn kill_rebel(
         runtime
             .set_test_creature_health(creature.actor, 1)
             .map_err(debug)?;
-        EntityRef {
-            identity: creature.actor.placement_identity(),
-            generation: creature.generation,
-        }
+        (
+            EntityRef {
+                identity: creature.actor.placement_identity(),
+                generation: creature.generation,
+            },
+            creature.actor,
+        )
     };
     let command = admitted.continuity.next_command_id;
     let result = super::super::quest_world_callbacks::wire(
@@ -556,6 +559,15 @@ async fn kill_rebel(
             break;
         }
     }
+    assert!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .live_creature_health(creature_actor)
+            .is_none_or(|health| health == 0),
+        "native attacks must actually kill the source creature before quest settlement"
+    );
     assert_eq!(
         owner.drain_kill_rewards(admitted.game_session_id).await,
         crate::gameplay_transport::kill_reward::DrainOutcome::Drained

@@ -352,3 +352,9 @@ quest writer; no Alliance progress, death credit or Tome reward is seeded.
 Timed transformations reuse revision-bound movement decay; the PG journey
 checks the state immediately before its deadline and after advancing the
 Channel owner clock, without changing durable quest progress.
+
+Alliance combat qualification uses the same high-level attacker setup as the
+existing native kill reward tests, so unrelated armour/block balance cannot
+prevent the quest callback proof. The actual source creature, positive damage,
+native death queue and durable quest credit remain required; no quest death or
+progress is manufactured by this fixture.

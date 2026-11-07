@@ -2941,9 +2941,9 @@
       },
       "latest_red": {
         "postgres_version": "18.6",
-        "duration_seconds": 76.721244461,
-        "log": "/tmp/l2-alliance-native-pg5.log",
-        "point": "Native attack target facts unavailable: fixture grass palette had no source item ID, so both combat tiles were unknown."
+        "duration_seconds": 80.188994062,
+        "log": "/tmp/l2-alliance-native-pg7.log",
+        "point": "Native attack and creature-death assertion passed; reward settlement refuses source corpse6001 as corpse_item_inadmissible, so quest credit is not reached."
       },
       "fixture_correction": "Use source ground100, the qualified bundle combat view and active native creature policies; retain unknown-tile refusal.",
       "pin_refresh": {
@@ -2952,8 +2952,8 @@
       },
       "diagnostic_compile": {
         "status": "PASS",
-        "duration": "5m21s",
-        "log": "/tmp/l2-alliance-native-pg6.log"
+        "duration": "5m19s",
+        "log": "/tmp/l2-alliance-native-pg7.log"
       }
     }
   }
