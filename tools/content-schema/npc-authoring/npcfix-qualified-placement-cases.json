@@ -1702,6 +1702,73 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-27",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.gorn",
+          "name": "Gorn",
+          "expected": {
+            "x": 32377,
+            "y": 32200,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.guide_luke",
+          "name": "Guide Luke",
+          "expected": {
+            "x": 32319,
+            "y": 32207,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.hanna",
+          "name": "Hanna",
+          "expected": {
+            "x": 32407,
+            "y": 32219,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.hardek",
+          "name": "Hardek",
+          "expected": {
+            "x": 32272,
+            "y": 32339,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.harsky",
+          "name": "Harsky",
+          "expected": {
+            "x": 32312,
+            "y": 32170,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.hector_the_mentor",
+          "name": "Hector The Mentor",
+          "expected": {
+            "x": 32476,
+            "y": 32286,
+            "floor": -7
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }
