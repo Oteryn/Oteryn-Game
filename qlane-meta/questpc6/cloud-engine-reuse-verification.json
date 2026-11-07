@@ -232,7 +232,8 @@
     "native_provider_reproduction": "PASS,41 files",
     "content_integration": "PASS,123,2.48s",
     "cargo_fmt_all_check": "PASS",
-    "pin_refresh_and_check": "PASS"
+    "pin_refresh_and_check": "PASS",
+    "world_repository": "PASS,5,53.50s; cargo test -p oteryn-game-server --test content_world_project_repository"
   },
   "pins": {
     "inputs_digest": "eff7dcb5d213b754b27ca0f46fdc6b55f6da24706865ff53a55a3dbc9ac722d8",
@@ -240,5 +241,11 @@
     "bytes": 31101922
   },
   "remaining_owned_entries": 0,
-  "new_whole_quests_qualified": 0
+  "new_whole_quests_qualified": 0,
+  "publication": {
+    "green_code_commit": "2123b7871",
+    "branch": "claude/happy-davinci-ijz3wy-questpc6",
+    "pushed": true,
+    "final_repository_verification_date": "2026-11-07"
+  }
 }

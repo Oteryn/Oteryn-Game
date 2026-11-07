@@ -749,6 +749,12 @@
       "log": ".questpc6/source-final.log",
       "log_sha256": "04a10b3e5bd60f56081ac7d49ef789f97ed8c9f443c7f534201fd38c304abb57",
       "dispatch": "literal framed USE through serve_admitted, source callback and every native source chest placement; stale well target, replay, unchanged quest state, exact items and refusal"
+    },
+    "latest_lane_verification": {
+      "code_commit": "2123b7871",
+      "evidence": "cloud-engine-reuse-verification.json",
+      "repository_checks": "5 passed,53.50s",
+      "scope": "Shared repository gate only; inherited quest qualification unchanged."
     }
   },
   {
