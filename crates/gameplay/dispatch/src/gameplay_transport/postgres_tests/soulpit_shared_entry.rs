@@ -279,6 +279,11 @@ pub(super) async fn admit(h: &Harness, deps: &Dependencies) -> TestResult<Admitt
         }],
     };
     let entry = SoulpitEntryRequest {
+        source_definition: crate::durability::item_mint::TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: core.clone(),
+            revision_ref: "definition-r1".into(),
+        },
         handoff_id: group.handoff_id,
         command: CommandRef::new(source.game_session_id, CommandId::new(1).map_err(debug)?),
         source: id(71),
@@ -301,6 +306,25 @@ pub(super) async fn admit(h: &Harness, deps: &Dependencies) -> TestResult<Admitt
         ),
         "generic entry must not bypass the Soul Core debit"
     );
+    let mut stale_definition = entry.clone();
+    stale_definition.source_definition.revision_ref = "definition-r2".into();
+    assert_eq!(
+        owner
+            .enter_soulpit(
+                &authority,
+                &h.node,
+                &permit,
+                group.clone(),
+                &stale_definition,
+                native
+            )
+            .await?,
+        ActivityEnterOutcome::Refused(
+            crate::durability::activity_handoff::ActivityRefusal::AuthorityRejected
+        ),
+        "a custody definition changed since preflight must refuse the whole handoff"
+    );
+    assert_eq!(entry_counts(h).await?, (2, 0, 0, 0));
     // A failure after the debit and before successor issuance must preserve the source
     // and every custody/audit row. No replication-role change is used for this proof.
     sqlx::query("CREATE SEQUENCE soulpit_test_after_debit")
@@ -383,6 +407,23 @@ pub(super) async fn admit(h: &Harness, deps: &Dependencies) -> TestResult<Admitt
     ));
     rebound = entry.clone();
     rebound.intent.push(4);
+    assert!(matches!(
+        owner
+            .enter_soulpit(
+                &authority,
+                &h.node,
+                &permit,
+                group.clone(),
+                &rebound,
+                native
+            )
+            .await?,
+        ActivityEnterOutcome::Refused(
+            crate::durability::activity_handoff::ActivityRefusal::ReplayConflict
+        )
+    ));
+    rebound = entry.clone();
+    rebound.source_definition.revision_ref = "definition-r2".into();
     assert!(matches!(
         owner
             .enter_soulpit(

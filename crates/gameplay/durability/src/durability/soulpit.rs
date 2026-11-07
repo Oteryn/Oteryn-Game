@@ -111,6 +111,7 @@ pub struct SoulpitEntryRequest {
     pub handoff_id: [u8; 16],
     pub command: CommandRef,
     pub source: [u8; 16],
+    pub source_definition: crate::durability::item_mint::TypedDefinitionRef,
     pub intent: Vec<u8>,
     pub started_at_micros: u64,
     pub participants: Vec<SoulpitParticipantFact>,

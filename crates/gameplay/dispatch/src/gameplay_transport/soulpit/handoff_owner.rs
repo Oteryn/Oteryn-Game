@@ -382,6 +382,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 CommandId::new(request.command.command_id).map_err(|_| ())?,
             ),
             source: selected.item_instance_id,
+            source_definition: selected.definition,
             intent: request.encoded_intent,
             started_at_micros: self.owner_now().get(),
             participants: facts,

@@ -697,6 +697,9 @@ Fury Gates selects/realizes at startup; donor content is not an accepted Game re
   and every fresh destination session together. A failed successor rolls them
   all back. Core species uses the existing reverse-variation/name resolver and
   pinned Crystal roster, then preflights the real native AI closure before debit.
+  The exact selected core definition/revision is retained in that request and
+  its replay binding; the custody writer refuses a transformed replacement
+  before debit, so the species consumed is the species that passed preflight.
 - Runtime/LastPosition floor is source z `8`; map `TilePos` is `-8` under
   ADR-0021. Migration 1141 fixes the deferred participant proof forward while
   retaining exact source-position and same-transaction admission checks.
@@ -731,3 +734,15 @@ Fury Gates selects/realizes at startup; donor content is not an accepted Game re
   the full destination snapshot. The server preserves partial source frames
   and discards in-flight source commands until this acknowledgement, preventing
   generation-one commands from executing in the fresh destination namespace.
+
+- Passive Soulpit species retain their admitted targeting flags. Crystal `201189f`
+  `data-global/scripts/quests/soulpit/soulpit_fight.lua:67,87-88,131` accepts registered
+  cores without a hostility filter. `src/lua/functions/core/game/game_functions.cpp:288-310`
+  creates the ordinary source type and applies a Soulpit stack;
+  `src/creatures/monsters/monster.cpp:2341-2348,2752-2759` changes stack, HP and reward
+  policy, while `monster.cpp:258-259` still reads hostility from the original type.
+  Preflight therefore validates the native profile closure without imposing ordinary
+  hostile-AI eligibility. Only an owner-verified current Soulpit actor bypasses the
+  ordinary admission hostility filter; its targeting profile is unchanged. The actual
+  native Chocolate Blob/core `49087` regression proves ordinary refusal, Soulpit
+  admission, retained passive targeting, and rejection after actor retirement.
