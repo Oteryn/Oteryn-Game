@@ -1,0 +1,28 @@
+{
+  "slice": "Generic Premium NPC exchange and Rascalio personal source placement",
+  "whole_recipe_qualified": false,
+  "status": "COMPILES_PG_RERUN_ACTIVE",
+  "initial_red": {
+    "seconds": 52.895945826,
+    "failure": "missing Rascalio Premium passage callback",
+    "log": "/tmp/questpc5-nimmersatt-whole-red.log"
+  },
+  "intermediate_red": {
+    "seconds": 93.328804111,
+    "failure": "NoConversation on greeting command1",
+    "log": "/tmp/questpc5-nimmersatt-passage-green2.log"
+  },
+  "correction": "Authored Rascalio greetings through existing shared-reward dialogue producer; no donor greeting claimed.",
+  "active_pg_log": "/tmp/questpc5-nimmersatt-passage-green3.log",
+  "checks": {
+    "latest_full_dispatch_test_compilation": "PASS29.04s",
+    "cargo_check": "PASS15.99s",
+    "strict_clippy": "PASS48.14s",
+    "reward_rust_units": 2,
+    "counter_rust_units": 1,
+    "nimmersatt_python_units": 4,
+    "npc_placement_python_units": 10,
+    "pin_check": "pending"
+  },
+  "next": "Actual passage PG then source-qualified native44179 admission, world Premium gates and whole once-reward qualification."
+}

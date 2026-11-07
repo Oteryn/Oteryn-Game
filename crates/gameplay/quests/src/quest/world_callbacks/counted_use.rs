@@ -86,6 +86,11 @@ pub(super) fn validate_closed(
                 if effect.track != counter.track || transition.key == callback.key {
                     continue;
                 }
+                // Exact progress predicates may preserve a completed counter for a
+                // later turn-in; ADD(0) cannot activate or advance the counter.
+                if transition.quest == callback.quest && effect.effect == QuestEffectKind::Add(0) {
+                    continue;
+                }
                 if transition.quest == callback.quest
                     && matches!(
                         effect.from,

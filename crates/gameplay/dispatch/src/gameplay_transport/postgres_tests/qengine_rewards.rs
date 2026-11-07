@@ -25,7 +25,10 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
             name,
             if matches!(
                 name,
-                "qengine-rewards-nimmersatt-world-items" | "qengine-rewards-nimmersatt-wall"
+                "qengine-rewards-nimmersatt-world-items"
+                    | "qengine-rewards-nimmersatt-wall"
+                    | "qengine-rewards-nimmersatt-whole"
+                    | "qengine-rewards-nimmersatt-passage"
             ) {
                 Position {
                     x: 32232,
@@ -619,6 +622,16 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-nimmersatt-passage" {
+        super::questpc5_nimmersatt_world_items::exercise_passage(owner, admitted, h).await?;
+        return Ok(());
+    }
+    if name == "qengine-rewards-nimmersatt-whole" {
+        return Box::pin(super::questpc5_nimmersatt_world_items::exercise_whole(
+            owner, admitted, h,
+        ))
+        .await;
+    }
     if name == "qengine-rewards-nimmersatt-wall" {
         return Box::pin(super::questpc5_nimmersatt_world_items::exercise_wall(
             owner, admitted, h,

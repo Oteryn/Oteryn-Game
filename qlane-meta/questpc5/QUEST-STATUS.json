@@ -146,7 +146,7 @@
     "title": "Nimmersatt's Lair",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "Active implementation: supply and twenty exact consumed snowball wall hits are PostgreSQL proven. Continue actual Rascalio passage/Premium gates and once44179 final hand-in; no missing shared feature or source fact is deferred.",
+    "blocker": "Active implementation: Rascalio personal source placement, generic transactional NPC Premium gates and authored greetings compile. Latest actual PG passage RED93.328804111s NoConversation at greeting; missing greeting is now authored and its real PG rerun is active. Next source-qualified Oteryn native collectible admission44179, current Premium checks for world supply/hits, and complete once reward route. No external engine delivery is deferred.",
     "from_lanes": [
       "questpc2"
     ],
@@ -171,6 +171,13 @@
       "postgres_green_seconds": 58.014944345,
       "whole_recipe_qualified": false,
       "world_pin_check": "PASS3492205b964d74c721dba0c3db3e7e8ca32647aae1c41d9837c34935f965293b"
+    },
+    "npc_premium_progress": {
+      "proof": "cloud-nimmersatt-npc-premium-proof.json",
+      "postgres_initial_red_seconds": 52.895945826,
+      "postgres_intermediate_red_seconds": 93.328804111,
+      "status": "COMPILES_PG_RERUN_ACTIVE",
+      "whole_recipe_qualified": false
     }
   },
   {

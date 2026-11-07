@@ -22,6 +22,14 @@ class ConvertPlacementsTest(unittest.TestCase):
             for r in json.loads(text)["records"]
         ]
 
+    def test_personal_rascalio_uses_first_retained_canonical_position(self):
+        rascalio,=[r['declaration'] for r in self.records if r['declaration']['npc']=='oteryn:npc.rascalio']
+        self.assertEqual(rascalio['cell'],dict(x=32232,y=31582,floor=7))
+        source,=rascalio['provenance']
+        self.assertEqual(source['origin'],'oteryn-authored')
+        self.assertEqual(source['source_index'],0)
+        self.assertEqual(len(source['sha256']),64)
+
     def test_committed_family_is_the_conversion(self):
         for name, text in self.files.items():
             self.assertEqual((cp.OUT / name).read_text(), text, name)

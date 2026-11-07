@@ -88,6 +88,15 @@
       ]
     },
     {
+      "npc": "oteryn:npc.rascalio",
+      "greet": "Welcome. Ask about passage to the personal Nimmersatt trial.",
+      "farewell": "Farewell. Bring your report when the lava wall is broken.",
+      "walkaway": "Come back when you are ready for the trial.",
+      "sources": [
+        "oteryn:selected-recipe:content/quests/definitions/quests-00300-00351.json:/records/19/definition:sha256:4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a"
+      ]
+    },
+    {
       "npc": "oteryn:npc.sam",
       "greet": "Welcome to my shop, adventurer |PLAYERNAME|! I {trade} with weapons and armor.",
       "farewell": "Good bye and come again, |PLAYERNAME|.",

@@ -137,7 +137,7 @@ impl DurabilityRoot {
         clippy::too_many_arguments,
         reason = "binds the existing authority and Quest transition to admitted reward participants"
     )]
-    pub(crate) async fn commit_character_quest_reward(
+    pub(crate) async fn commit_character_quest_reward<G: grizzly::GrizzlyPremiumGate>(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
@@ -145,6 +145,7 @@ impl DurabilityRoot {
         request: QuestTransitionRequest,
         catalogue: Arc<QuestStateCatalogue>,
         admission: QuestRewardAdmission<'_>,
+        premium: &G,
     ) -> Result<QuestTransitionOutcome> {
         self.commit_quest_inner::<_, 0>(
             authority,
@@ -156,7 +157,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
-            &grizzly::NoGrizzlyPremium,
+            premium,
             None,
             None,
             Some(admission),
@@ -711,7 +712,8 @@ impl DurabilityRoot {
                     )? {
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
-                    if callback.as_ref().is_some_and(|c| c.premium_required) {
+                    if callback.as_ref().is_some_and(|c| c.premium_required)
+                        || reward_callback.as_ref().is_some_and(|c| c.premium_required) {
                         let account: String = sqlx::query_scalar("SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
                             .bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
                         if !grizzly_gate.task_permitted(&mut tx, uuid_text(&account)?).await? {

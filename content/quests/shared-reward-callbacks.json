@@ -670,6 +670,80 @@
       "completes": true
     },
     {
+      "key": "oteryn:quest-reward/nimmersatt-breath",
+      "quest": "oteryn:quest.authored.nimmersatt_s_lair",
+      "npc": "oteryn:npc.rascalio",
+      "keywords": [
+        "breath",
+        "report",
+        "reward"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/nimmersatt/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/nimmersatt/wall_hits",
+          "minimum": 20,
+          "maximum": 20,
+          "set": 20,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i44179",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "premium_required": true,
+      "reply": [
+        "You broke the lava wall. Take this bottled dragon breath as your reward."
+      ],
+      "sources": [
+        "oteryn:selected-recipe:content/quests/definitions/quests-00300-00351.json:/records/19/definition:sha256:4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a"
+      ],
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-reward/nimmersatt-passage",
+      "quest": "oteryn:quest.authored.nimmersatt_s_lair",
+      "npc": "oteryn:npc.rascalio",
+      "keywords": [
+        "passage",
+        "nimmersatt",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/nimmersatt/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "premium_required": true,
+      "reply": [
+        "You may enter the personal Nimmersatt trial. Collect twenty snowballs at the northern snowbank, use each against the lava wall, then report to me for bottled dragon breath."
+      ],
+      "sources": [
+        "oteryn:selected-recipe:content/quests/definitions/quests-00300-00351.json:/records/19/definition:sha256:4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/outfox-helmet",
       "quest": "oteryn:quest.tibia_tales",
       "npc": "oteryn:npc.budrik",

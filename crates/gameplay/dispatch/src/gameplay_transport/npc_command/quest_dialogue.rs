@@ -350,7 +350,9 @@ pub(super) async fn apply(
         };
         let weights = super::super::item_ref_admission::NativeItemWeights(native)
             .with_wheel(admission.premium_coordinator);
-        slot.commit_quest_reward(
+        let premium =
+            super::super::spell_premium_coordinator::QuestPremium(admission.premium_coordinator);
+        slot.commit_quest_reward_with_premium(
             admission.root,
             admission.character,
             admission.holder,
@@ -361,6 +363,7 @@ pub(super) async fn apply(
                 native,
                 weights: &weights,
             },
+            &premium,
         )
         .await
     } else {

@@ -81,7 +81,10 @@ fn scenario_case(
     }
     let world = if matches!(
         name,
-        "qengine-rewards-nimmersatt-world-items" | "qengine-rewards-nimmersatt-wall"
+        "qengine-rewards-nimmersatt-world-items"
+            | "qengine-rewards-nimmersatt-wall"
+            | "qengine-rewards-nimmersatt-whole"
+            | "qengine-rewards-nimmersatt-passage"
     ) {
         super::super::questpc5_nimmersatt_world_items::world()?
     } else if name == "qengine-rewards-newhaven-legion-route" {
@@ -180,7 +183,35 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
+        let nimmersatt_premium = if matches!(
+            name,
+            "qengine-rewards-nimmersatt-whole" | "qengine-rewards-nimmersatt-passage"
+        ) {
+            let (consumer, clock, activation, _) =
+                crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(
+                    id(40),
+                );
+            h.root
+                .latch_premium_activation(
+                    &activation.activation_id,
+                    activation.switch_over_us,
+                    activation.switch_over_us + 60_000_000,
+                )
+                .await
+                .map_err(debug)?;
+            Some(
+                crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
+                    consumer,
+                    Some(clock),
+                    Some(activation),
+                    Some(h.root.clone()),
+                ),
+            )
+        } else {
+            None
+        };
         let mut owner = deps.owner(&h, &authority);
+        owner.premium_coordinator = nimmersatt_premium.as_ref();
         owner.active_generation = Some(generation);
         owner.movement_cells = &cells;
         owner.quest_catalogue = Some(std::sync::Arc::new(
@@ -212,6 +243,9 @@ fn scenario_case(
         }
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
+        if nimmersatt_premium.is_some() {
+            owner.admit_premium(id(40), admitted.game_session_id);
+        }
         let fence = owner
             .current_quest_fence(admitted.game_session_id)
             .await

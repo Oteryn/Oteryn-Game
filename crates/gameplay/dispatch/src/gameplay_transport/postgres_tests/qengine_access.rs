@@ -1020,6 +1020,7 @@ async fn wardrobe(
         quest: callback.quest.clone(),
         npc: "oteryn:npc.fixture".into(),
         minimum_level: None,
+        premium_required: false,
         experience: None,
         completes: false,
         keywords: vec!["fixture".into()],

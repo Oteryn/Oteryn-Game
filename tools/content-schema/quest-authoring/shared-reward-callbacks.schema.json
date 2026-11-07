@@ -263,6 +263,9 @@
         },
         "completes": {
           "type": "boolean"
+        },
+        "premium_required": {
+          "type": "boolean"
         }
       }
     },

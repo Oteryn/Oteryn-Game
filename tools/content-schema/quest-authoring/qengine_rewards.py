@@ -262,6 +262,7 @@ def build():
     generated['content/quests/reward-claim-gates.json']=encoded(legion_helmet.claim_gates())
     authored_world=legion_helmet.world_callbacks()
     import nimmersatt_programme
+    nimmersatt_programme.extend_rewards(callbacks, greetings)
     nimmersatt_programme.extend_world(authored_world['callbacks'])
     authored_world['callbacks'].sort(key=lambda r:r['key'])
     generated['content/quests/authored-world-callbacks.json']=encoded(authored_world)

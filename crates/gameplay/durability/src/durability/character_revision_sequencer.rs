@@ -476,6 +476,44 @@ impl RevisionSlot {
                     request.clone(),
                     std::sync::Arc::clone(&catalogue),
                     admission,
+                    &super::quest_state::grizzly::NoGrizzlyPremium,
+                )
+            },
+        )
+        .await
+    }
+
+    /// Commit a content-bound NPC exchange and all its value participants.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the revision slot forwards the complete existing Quest and reward admission context"
+    )]
+    pub async fn commit_quest_reward_with_premium<
+        G: super::quest_state::grizzly::GrizzlyPremiumGate,
+    >(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+        admission: super::reward_claim_mint::quest::QuestRewardAdmission<'_>,
+        premium: &G,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_character_quest_reward(
+                    authority,
+                    node,
+                    fence,
+                    request.clone(),
+                    std::sync::Arc::clone(&catalogue),
+                    admission,
+                    premium,
                 )
             },
         )

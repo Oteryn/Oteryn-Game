@@ -5,6 +5,16 @@ import unittest
 import nimmersatt_programme as author
 
 class NimmersattSupply(unittest.TestCase):
+    def test_premium_passage_and_exact_completed_counter_turn_in(self):
+        rows=[];author.extend_rewards(rows)
+        passage,breath=rows
+        self.assertTrue(passage['premium_required'])
+        self.assertTrue(breath['premium_required'])
+        self.assertEqual(passage['storage'],[dict(track='oteryn:quest-progress/nimmersatt/stage',minimum=-1,maximum=-1,set=0)])
+        self.assertEqual(breath['storage'][-1],dict(track='oteryn:quest-progress/nimmersatt/wall_hits',minimum=20,maximum=20,set=20,preserve=True))
+        self.assertEqual(breath['give'],dict(item='oteryn:item.tibia.i44179',count=1,contents=[]))
+        self.assertTrue(breath['completes'])
+
     def test_exact_twenty_once_and_selected_recipe_evidence(self):
         rows=[];author.extend_world(rows);row,=[r for r in rows if r['key'].endswith('-snowbank')]
         self.assertEqual(row['key'],'oteryn:quest-callback/authored-nimmersatt-snowbank')

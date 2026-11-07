@@ -47,3 +47,26 @@ def extend_world(rows):
     row['sources'] += [f'oteryn:selected-recipe:{path}:/records/19/definition:sha256:{hashlib.sha256(raw).hexdigest()}',
                        f'oteryn:source-map:{region}:sha256:{hashlib.sha256(region_raw).hexdigest()}']
     rows.append(row)
+
+def extend_rewards(callbacks, greetings=None):
+    path='content/quests/definitions/quests-00300-00351.json'
+    raw=(ROOT/path).read_bytes()
+    source=f'oteryn:selected-recipe:{path}:/records/19/definition:sha256:{hashlib.sha256(raw).hexdigest()}'
+    if greetings is not None:
+        greetings.append(dict(npc='oteryn:npc.rascalio',
+            greet='Welcome. Ask about passage to the personal Nimmersatt trial.',
+            farewell='Farewell. Bring your report when the lava wall is broken.',
+            walkaway='Come back when you are ready for the trial.',sources=[source]))
+    def add(name,words,storage,reply,give=None,completes=False):
+        callbacks.append(dict(key='oteryn:quest-reward/nimmersatt-'+name,
+            quest=QUEST,npc='oteryn:npc.rascalio',keywords=words,topic=0,next_topic=0,
+            storage=storage,take=[],give=give,outfit=None,achievement=None,
+            premium_required=True,reply=[reply],sources=[source],**({'completes':True} if completes else {})))
+    add('passage',['passage','nimmersatt','mission'],
+        [dict(track='oteryn:quest-progress/nimmersatt/stage',minimum=-1,maximum=-1,set=0)],
+        'You may enter the personal Nimmersatt trial. Collect twenty snowballs at the northern snowbank, use each against the lava wall, then report to me for bottled dragon breath.')
+    add('breath',['breath','report','reward'],[
+        dict(track='oteryn:quest-progress/nimmersatt/stage',minimum=1,maximum=1,set=2),
+        dict(track='oteryn:quest-progress/nimmersatt/wall_hits',minimum=20,maximum=20,set=20,preserve=True)],
+        'You broke the lava wall. Take this bottled dragon breath as your reward.',
+        give=dict(item='oteryn:item.tibia.i44179',count=1,contents=[]),completes=True)

@@ -4,6 +4,7 @@ use super::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition,
 };
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 
 pub const PROVENANCE: &str = "crystal-9f5a72c-quest-rewards-v1";
@@ -68,6 +69,9 @@ pub struct RewardCallback {
     /// Checked from the locked durable progression row before any value effect.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub minimum_level: Option<u32>,
+    /// Current account Premium is checked by its existing transaction participant.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub premium_required: bool,
     /// Uses the existing quest XP obligation, never a separate reward writer.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub experience: Option<i64>,
@@ -194,6 +198,29 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                     max: s.maximum.max(s.set),
                 });
             }
+        }
+        if callback.premium_required {
+            let digest: String =
+                Sha256::digest(serde_json::to_vec(&callback).map_err(|e| e.to_string())?)
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect();
+            transitions.push(QuestTransition {
+                key: format!("oteryn:quest-reward-plan/{digest}"),
+                quest: callback.quest.clone(),
+                effects: vec![QuestEffect {
+                    track: callback
+                        .storage
+                        .first()
+                        .ok_or("missing Premium progress guard")?
+                        .track
+                        .clone(),
+                    from: QuestComparison::Any,
+                    effect: QuestEffectKind::Computed,
+                }],
+                completes: false,
+                experience: None,
+            });
         }
         transitions.push(QuestTransition {
             key: callback.key,

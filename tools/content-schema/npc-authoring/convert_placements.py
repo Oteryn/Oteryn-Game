@@ -165,6 +165,32 @@ def convert() -> dict[str, str]:
                     "provenance": rows,
                 }
             }
+    # Explicit personal programmes select one already-retained canonical cell.
+    # No external candidate data or global occurrence schedule is synthesized.
+    for selection in scope.get("personal_programmes", []):
+        npc = selection["npc"]
+        if npc not in npcs or any(r["declaration"]["npc"] == npc for r in records.values()):
+            raise ValueError("personal NPC selection is unscoped or duplicates a source placement")
+        found = []
+        for path in sorted(NPCS.glob("npcs-*.json")):
+            raw = path.read_bytes()
+            for record in json.loads(raw)["records"]:
+                declaration = record.get("definition", record.get("declaration"))
+                if declaration["identity"]["key"] == npc:
+                    fields = [f for f in declaration["fields"] if f["field_path"] == selection["source_field"]]
+                    field, = fields
+                    x, y, z = json.loads(field["value"]["value"])[selection["source_index"]]
+                    found.append((x, y, z, str(path.relative_to(ROOT)), hashlib.sha256(raw).hexdigest()))
+        (x, y, z, source, digest), = found
+        cell_of(dict(x=x,y=y,z=z))
+        if occupancy[(x,y,z)] or selection["direction"] not in ("north","east","south","west"):
+            raise ValueError("personal NPC cell is shared or direction invalid")
+        key=f"oteryn:npc_placement.{local_name(npc)}.x{x}_y{y}_z{z}"
+        records[key]={"declaration":dict(identity=dict(key=key,revision="definition-r1"),
+            npc=npc,cell=dict(x=x,y=y,floor=z),direction=selection["direction"],
+            provenance=[dict(origin="oteryn-authored",source=source,sha256=digest,
+                source_field=selection["source_field"],source_index=selection["source_index"],rule=selection["rule"])])}
+        held=[row for row in held if row["npc"] != npc]
     placed = {r["declaration"]["npc"] for r in records.values()}
     for npc in npcs:
         if npc not in placed and not any(h["npc"] == npc for h in held):

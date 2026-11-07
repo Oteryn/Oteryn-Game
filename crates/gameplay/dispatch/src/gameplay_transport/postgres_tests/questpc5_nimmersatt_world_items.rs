@@ -17,6 +17,14 @@ pub(super) async fn exercise(
     admitted: &mut AdmittedSession,
     h: &Harness,
 ) -> TestResult {
+    supply(owner, admitted, h, true).await
+}
+async fn supply(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    seed_acceptance: bool,
+) -> TestResult {
     use crate::durability::quest_state::{
         QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
     };
@@ -64,61 +72,63 @@ pub(super) async fn exercise(
             .map_err(debug)?,
         )
         .map_err(debug)?;
-    let original = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
-    let tracks = callback
-        .storage
-        .iter()
-        .map(|s| original.track(&s.track).cloned().ok_or("track"))
-        .collect::<Result<Vec<_>, _>>()?;
-    let setup = "oteryn:quest-transition/fixture-nimmersatt-accept";
-    let mut transitions = vec![
-        original
-            .transition(&callback.key)
-            .cloned()
-            .ok_or("world transition")?,
-        QuestTransition {
-            key: setup.into(),
-            quest: callback.quest.clone(),
-            effects: vec![QuestEffect {
-                track: "oteryn:quest-progress/nimmersatt/stage".into(),
-                from: QuestComparison::Eq(-1),
-                effect: QuestEffectKind::Set(0),
-            }],
-            completes: false,
-            experience: None,
-        },
-    ];
-    if let Some(wall) = original.transition("oteryn:quest-callback/authored-nimmersatt-wall") {
-        transitions.push(wall.clone());
-    }
-    let catalogue = std::sync::Arc::new(
-        QuestStateCatalogue::new(original.content_revision(), tracks, transitions)
-            .map_err(debug)?,
-    );
-    owner.quest_catalogue = Some(std::sync::Arc::clone(&catalogue));
-    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-    let result = slot
-        .commit_quest_transition(
-            owner.root,
-            owner.character,
-            owner.holder,
-            fence,
-            QuestTransitionRequest {
-                transition_key: setup.into(),
-                cause: QuestCause::Command(CommandRef::new(
-                    admitted.game_session_id,
-                    CommandId::new(9000).map_err(debug)?,
-                )),
+    if seed_acceptance {
+        let original = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
+        let tracks = callback
+            .storage
+            .iter()
+            .map(|s| original.track(&s.track).cloned().ok_or("track"))
+            .collect::<Result<Vec<_>, _>>()?;
+        let setup = "oteryn:quest-transition/fixture-nimmersatt-accept";
+        let mut transitions = vec![
+            original
+                .transition(&callback.key)
+                .cloned()
+                .ok_or("world transition")?,
+            QuestTransition {
+                key: setup.into(),
+                quest: callback.quest.clone(),
+                effects: vec![QuestEffect {
+                    track: "oteryn:quest-progress/nimmersatt/stage".into(),
+                    from: QuestComparison::Eq(-1),
+                    effect: QuestEffectKind::Set(0),
+                }],
+                completes: false,
+                experience: None,
             },
-            catalogue,
-        )
-        .await
-        .map_err(debug)?;
-    assert!(matches!(result, QuestTransitionOutcome::Committed(_)));
-    drop(slot);
-    owner
-        .refresh_quest_session(admitted.game_session_id, false)
-        .await;
+        ];
+        if let Some(wall) = original.transition("oteryn:quest-callback/authored-nimmersatt-wall") {
+            transitions.push(wall.clone());
+        }
+        let catalogue = std::sync::Arc::new(
+            QuestStateCatalogue::new(original.content_revision(), tracks, transitions)
+                .map_err(debug)?,
+        );
+        owner.quest_catalogue = Some(std::sync::Arc::clone(&catalogue));
+        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+        let result = slot
+            .commit_quest_transition(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                QuestTransitionRequest {
+                    transition_key: setup.into(),
+                    cause: QuestCause::Command(CommandRef::new(
+                        admitted.game_session_id,
+                        CommandId::new(9000).map_err(debug)?,
+                    )),
+                },
+                catalogue,
+            )
+            .await
+            .map_err(debug)?;
+        assert!(matches!(result, QuestTransitionOutcome::Committed(_)));
+        drop(slot);
+        owner
+            .refresh_quest_session(admitted.game_session_id, false)
+            .await;
+    }
     super::quest_catalogue_chests::relocate_source_actor(
         owner,
         admitted,
@@ -291,6 +301,14 @@ pub(super) async fn exercise_wall(
     admitted: &mut AdmittedSession,
     h: &Harness,
 ) -> TestResult {
+    wall(owner, admitted, h, true).await
+}
+async fn wall(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    seed_acceptance: bool,
+) -> TestResult {
     use oteryn_protocol_oteryn::world_object::{
         MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
         encode_item_use_intent,
@@ -302,7 +320,7 @@ pub(super) async fn exercise_wall(
             .any(|c| c.key == "oteryn:quest-callback/authored-nimmersatt-wall"),
         "missing bounded counted-use wall callback"
     );
-    exercise(owner, admitted, h).await?;
+    supply(owner, admitted, h, seed_acceptance).await?;
     assert_eq!(hits(h).await?, 0);
     assert_eq!(wall_appearance(owner).await?, 1441);
     let offered = crate::gameplay_transport::appearance_change::offer::offered(
@@ -417,4 +435,128 @@ pub(super) async fn exercise_wall(
         started.elapsed()
     );
     Ok(())
+}
+
+#[test]
+fn questpc5_nimmersatt_rascalio_premium_twenty_hits_and_once_breath() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-nimmersatt-whole")
+}
+
+#[test]
+fn questpc5_nimmersatt_rascalio_premium_passage() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-nimmersatt-passage")
+}
+
+pub(super) async fn exercise_passage(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult<oteryn_protocol_oteryn::world_spatial_entities::EntityRef> {
+    use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
+    assert!(
+        oteryn_gameplay_quests::quest::reward_callbacks::load()?
+            .iter()
+            .any(|callback| callback.key == "oteryn:quest-reward/nimmersatt-passage"),
+        "missing Rascalio Premium passage callback"
+    );
+    let [npc] =
+        super::classic_quests::install_source(owner, admitted, ["oteryn:npc.rascalio"]).await?;
+    let offered = crate::gameplay_transport::appearance_change::offer::offered(
+        owner.offered_capabilities(),
+        owner.appearance_available(),
+    );
+    let mut selected = admitted
+        .continuity
+        .selected_capabilities
+        .as_slice()
+        .to_vec();
+    selected.extend([3, 6, 25]);
+    selected.sort_unstable();
+    selected.dedup();
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
+            .ok_or("NPC capabilities")?;
+    super::quest_catalogue_chests::relocate_source_actor(
+        owner,
+        admitted,
+        admitted.runtime_actor.ok_or("actor")?,
+        Position {
+            x: 32231,
+            y: 31582,
+            floor: -7,
+        },
+    )
+    .await?;
+    let premium = owner.premium_coordinator.take();
+    let refused = say(owner, admitted, npc, "passage").await?;
+    assert_ne!(
+        refused,
+        NpcIntentDisposition::Ok,
+        "missing Premium registration must refuse passage"
+    );
+    let states:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/nimmersatt/stage'").fetch_one(&h.pool).await?;
+    assert_eq!(states, 0);
+    owner.premium_coordinator = premium;
+    assert_eq!(
+        say(owner, admitted, npc, "passage").await?,
+        NpcIntentDisposition::Ok
+    );
+    let stage:i64=sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/nimmersatt/stage'").fetch_one(&h.pool).await?;
+    assert_eq!(stage, 0);
+    let _ = say(owner, admitted, npc, "passage").await?;
+    let receipts:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key='oteryn:quest-reward/nimmersatt-passage'").fetch_one(&h.pool).await?;
+    assert_eq!(receipts, 1);
+    assert_eq!(count(h).await?, 0);
+    Ok(npc)
+}
+
+pub(super) async fn exercise_whole(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
+    let npc = exercise_passage(owner, admitted, h).await?;
+    let _ = say(owner, admitted, npc, "breath").await?;
+    assert_eq!(breath(h).await?, 0, "no reward before the twentieth hit");
+    wall(owner, admitted, h, false).await?;
+    super::quest_catalogue_chests::relocate_source_actor(
+        owner,
+        admitted,
+        admitted.runtime_actor.ok_or("actor")?,
+        Position {
+            x: 32231,
+            y: 31582,
+            floor: -7,
+        },
+    )
+    .await?;
+    assert_eq!(
+        say(owner, admitted, npc, "breath").await?,
+        NpcIntentDisposition::Ok
+    );
+    assert_eq!(breath(h).await?, 1);
+    let _ = say(owner, admitted, npc, "breath").await?;
+    assert_eq!(breath(h).await?, 1);
+    let stage:i64=sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/nimmersatt/stage'").fetch_one(&h.pool).await?;
+    assert_eq!(stage, 2);
+    Ok(())
+}
+async fn breath(h: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i44179' AND lifecycle=1").fetch_one(&h.pool).await?)
+}
+
+async fn say(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+    name: &str,
+) -> TestResult<oteryn_protocol_oteryn::npc_service::NpcIntentDisposition> {
+    let callback = oteryn_gameplay_quests::quest::reward_callbacks::load()?
+        .into_iter()
+        .find(|callback| callback.key == format!("oteryn:quest-reward/nimmersatt-{name}"))
+        .ok_or("Nimmersatt dialogue")?;
+    let (disposition, _, _) =
+        super::qengine_rewards::wire_grant(owner, admitted, npc, &callback).await?;
+    Ok(disposition)
 }

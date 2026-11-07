@@ -26,6 +26,7 @@
     "oteryn:npc.norma",
     "oteryn:npc.obi",
     "oteryn:npc.paulie",
+    "oteryn:npc.rascalio",
     "oteryn:npc.santiago",
     "oteryn:npc.seymour",
     "oteryn:npc.the_oracle",
@@ -37,5 +38,14 @@
     "oteryn:npc.zethra",
     "oteryn:npc.zirella"
   ],
-  "position_conflicts": []
+  "position_conflicts": [],
+  "personal_programmes": [
+    {
+      "npc": "oteryn:npc.rascalio",
+      "source_field": "oteryn:source.npc.bulk.wiki_positions",
+      "source_index": 0,
+      "direction": "north",
+      "rule": "Permanent first retained source position for the selected personal Nimmersatt trial; global raid scheduling is separate."
+    }
+  ]
 }
