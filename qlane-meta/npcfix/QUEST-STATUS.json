@@ -3184,14 +3184,22 @@
     "caller_draft": "Preserved in git stash; superseded by remote implementation, not part of publication."
   },
   "active_batch": {
-    "name": "Reuse generic atomic NPC reward support",
+    "name": "Fading Memory cooldown and independent physical admission repairs",
     "state": "AUTHORING",
-    "donors": {
-      "qengine2": "aae647c63b9022860699a5e2d31764881f38c472",
-      "questl2": "bfb4a5c6c2ece41600c3deebb9832703f22f093b"
-    },
-    "scope": "Selective code/schema/tool reuse only. Keep NPCFIX340 placements, exclude donor binary world outputs and foreign authored world changes. Cranky Lizard Crone Wayfarer already QUALIFIED in qengine2: do not redo.",
-    "next": "Add focused PG RED cases for exact-cost item-only and repeatable exchanges; import reusable engine; author owned source callbacks. Al Dee, Wandering Soul and Fading Memory source facts are captured in /tmp/npcfix-evidence and notes.",
-    "progress": "Source producer/input/schema published independently. Reused runtime engine remains staged/unpublished pending check and real PG GREEN. Preserve spell-lane proof through consumption; acquire before revision slot. No foreign world/outfit exports imported."
+    "ownership": "Active delivery in ACTIVE-REWARD-DELIVERY.md owns Al Dee, Wandering Soul and Weakened Forest Fury. Preserve/reuse it; do not duplicate these callers. Replacement source producer now owns Fading Memory only; two earlier input rows remain reference facts, not output bindings.",
+    "next": "Use the existing source anchor32256,31101,10 to resolve Restless Soul physical admission; retain strict compiler holds. Apply only the Fading Memory cooldown additions to the incoming reward core after delivery. No waiting or final engine blockers.",
+    "preserved_draft": "Latest git stash contains the unused reward-engine draft and three PG RED cases; use only cooldown-specific additions, never apply the whole superseded engine."
+  },
+  "active_reward_delivery": {
+    "entries": [
+      "Al Dee",
+      "A Wandering Soul",
+      "A Weakened Forest Fury"
+    ],
+    "state": "IMPLEMENTED_FINAL_VALIDATION",
+    "source_delivery": "pending green batch checks; no new NPC qualification claimed in this metadata checkpoint",
+    "evidence": "ACTIVE-REWARD-DELIVERY.md",
+    "upstream_to_merge": "2a871a435",
+    "avoid_duplicate_work": true
   }
 }
