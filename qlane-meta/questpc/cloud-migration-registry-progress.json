@@ -1,0 +1,106 @@
+{
+  "state": "NAMESPACE/CENSUS PASS; PG ordering repair validating; runtime renames not yet published",
+  "range": "1290-1299",
+  "qengine_commit": "69609ef78",
+  "shared_exact_content": {
+    "apps/game-server/migrations/1200_quest_finish.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-questpc6",
+      "sha256": "19cbc47c9b675b8527658d001d94fb66e3c494b4f4519de4d6b69a37cf15ada4",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/1201_corruptor_lifecycle.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-questpc6",
+      "sha256": "01bea81b0c68c863301828f9e190bbf7235426c0ea2d1da55f47ebc3eb285907",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/1202_questpc_npc_revision.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-questpc6",
+      "sha256": "557e97c2d6530e7cb9104d2cdaffbc3fd2b17a68446fd1575419117f5429be41",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/1203_questpc_viola.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-questpc6",
+      "sha256": "2fcccdb63dc6bc5da0b285392b090204caa1d670d51243cad3c67b39f4563b28",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/1204_questpc_viola_book.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-questpc6",
+      "sha256": "53b825590b3894684d38333b98e7b8e419c8a9d749e9e325d45a2c1575a43ab1",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/1205_fathers_burden_items.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-questpc6",
+      "sha256": "8c5da07a907b1325c5fe10d0263ecb26d62e198f968fd1a1f5d8b9faad84ed0d",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/0999_quest_reward_callbacks.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+      "sha256": "971451326e9473f01ab8587c18040f69d39740b6af944f62ac6b3df04ae9f294",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/1000_quest_reward_payments.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+      "sha256": "a041c1f4ad97c8642a81d0a06d2e834b10ae54a55bed7d93b98ec1141dbd9311",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/1001_quest_reward_participants.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+      "sha256": "de9d7f8d779b1b5d24105139c2b781afd09ad0067aa15ef904ef3267bd4c38e5",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/1002_quest_reward_state_operations.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+      "sha256": "7ccf2726dbe7637c646573a004a265b0e1c484aa5330dee42894b96fb2a27ba8",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/1003_quest_reward_target_sets.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+      "sha256": "56c9fd32ab49a247e41b66c2e0a4b4df6613e6366f6667bd00edf28d190704bf",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/1004_quest_paid_item_exchanges.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+      "sha256": "4a5da4833971b005a99adee986114a609744ad03e4441d06c724754e8a911800",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/1005_quest_carried_use_proofs.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+      "sha256": "77fe7b21e135c99a69b6e7ab26d14ff62c0f73dd01b1986bfba45912713fb023",
+      "content_unchanged": true
+    },
+    "apps/game-server/migrations/1006_quest_owned_base_predicates.sql": {
+      "canonical_ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+      "sha256": "2490e09e46f2f4bebb50cdebc2ae17183646f3e111f9cdafc9208bd6da6b21b2",
+      "content_unchanged": true
+    }
+  },
+  "duplicate_check": "repository staged-tree script and worktree versions PASS",
+  "embedded_identity": "PASS including1296",
+  "pins": "regenerated, unchanged174f5942b036a38769872612f292957daa670bfb2a3a96f3b6a2aec395d32a62",
+  "initial_pg": [
+    {
+      "case": "draconia-elathriel-full",
+      "postgres": "18.6",
+      "duration_seconds": 59.673528673,
+      "result": "RED"
+    },
+    {
+      "case": "draconia-elathriel-coins",
+      "postgres": "18.6",
+      "duration_seconds": 59.691409521,
+      "result": "RED"
+    },
+    {
+      "case": "draconia-elathriel-bank",
+      "postgres": "18.6",
+      "duration_seconds": 60.136727078,
+      "result": "RED"
+    }
+  ],
+  "schema_proof": "All17 asserted QENGINE/QBASE/paid versions present on actualPG18.6",
+  "finding": "QBASE1202 replaces the receipt check afterQENGINE1003, removing zero-effect reward arm",
+  "repair": "Own1294 extends the installed check without replacing its exact eleven-track Father arm; shared SQL stays unchanged",
+  "tests_weakened": false,
+  "raw_red_sha256": "e47a92b06cdf3b0ef674e9ae510be9f6de9b0f88ddb46e8c3e27b68317b9531c",
+  "normalized_red_sha256": "e47a92b06cdf3b0ef674e9ae510be9f6de9b0f88ddb46e8c3e27b68317b9531c"
+}

@@ -1,3 +1,15 @@
+## Migration registry custody / actual PG RED checkpoint — 2026-11-07
+Runtime rename implementation remains local pending finalPG/strict. Canonical
+map MIGRATION-REGISTRY.md; exactQENGINE8/QBASE6 hashes, staged duplicate check,
+embedded SQLx identity and pin refresh PASS. Initial actualPG3~60s each asserted
+all17schemaIDs but foundQBASE1202 overridesQENGINE1003 zero-effect receipt arm.
+Own1294 now restores that arm while retaining exactFather11 allowance; no shared
+SQL edited. Father local XPvariable fix is own1296; shared1205 canonical.
+Proof cloud-migration-registry-progress.json, rawRED hashes retained.
+Continue final6focusedPG/check/strict/fmt, then commit runtime renames and report
+final list+head. PR3020 OPEN at last check; merge main only after it merges.
+After registry, resume framed stock interaction and completeDraconia qualification.
+
 ## Shared stock epoch/cache GREEN — 2026-11-07
 ActualPG3 GREEN50.18s wall: replay50.114174652s,view50.142277481s,
 observer50.179889087s. Distinct real admitted character sees shared once-per-epoch
